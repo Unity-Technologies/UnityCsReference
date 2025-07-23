@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -45,6 +46,7 @@ namespace UnityEditor.UIElements
     /// ]]>
     /// </code>
     /// </example>
+    [Icon("UIToolkit/Icons/ToolbarBreadcrumbs.png")]
     public class ToolbarBreadcrumbs : VisualElement
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

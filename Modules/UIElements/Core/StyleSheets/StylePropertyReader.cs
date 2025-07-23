@@ -611,6 +611,30 @@ namespace UnityEngine.UIElements.StyleSheets
             while (index < valueCount);
         }
 
+        public StyleRatio ReadRatio(int index)
+        {
+            if(valueCount == 1 && GetValueType(0) == StyleValueType.Float )
+                return new StyleRatio(ReadFloat(index));
+
+            if (valueCount == 3)
+            {
+                var val2 = m_Values[m_CurrentValueIndex + index + 1];
+                var str = val2.sheet.ReadAsString(val2.handle);
+                
+                if(str == "/" )
+                    return ReadFloat(index) / ReadFloat(index + 2);
+
+            }
+
+            if(!IsKeyword(0, StyleValueKeyword.Auto))
+                Debug.LogError($"Unexpected value {m_Values[0].ToString() } in ratio parsing");
+
+            return StyleRatio.Auto();
+
+        }
+
+
+
         private void LoadProperties()
         {
             m_CurrentPropertyIndex = 0;

@@ -117,9 +117,6 @@
     <Compile Include="..\..\Modules\Accessibility\AssemblyInfo.cs">
       <Link>Modules\Accessibility\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityAction.bindings.cs">
-      <Link>Modules\Accessibility\Bindings\AccessibilityAction.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityManager.bindings.cs">
       <Link>Modules\Accessibility\Bindings\AccessibilityManager.bindings.cs</Link>
     </Compile>
@@ -128,9 +125,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityNodeManager.bindings.cs">
       <Link>Modules\Accessibility\Bindings\AccessibilityNodeManager.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilityNotificationContext.bindings.cs">
-      <Link>Modules\Accessibility\Bindings\AccessibilityNotificationContext.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Accessibility\Bindings\AccessibilitySettings.bindings.cs">
       <Link>Modules\Accessibility\Bindings\AccessibilitySettings.bindings.cs</Link>
@@ -144,20 +138,17 @@
     <Compile Include="..\..\Modules\Accessibility\Managed\Hierarchy\AccessibilityHierarchy.cs">
       <Link>Modules\Accessibility\Managed\Hierarchy\AccessibilityHierarchy.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Hierarchy\AccessibilityHierarchyService.cs">
+      <Link>Modules\Accessibility\Managed\Hierarchy\AccessibilityHierarchyService.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Accessibility\Managed\Hierarchy\AccessibilityNode.cs">
       <Link>Modules\Accessibility\Managed\Hierarchy\AccessibilityNode.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Accessibility\Managed\Hierarchy\AccessibilityNode.deprecated.cs">
+      <Link>Modules\Accessibility\Managed\Hierarchy\AccessibilityNode.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Accessibility\Managed\IAccessibilityNotificationDispatcher.cs">
       <Link>Modules\Accessibility\Managed\IAccessibilityNotificationDispatcher.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Accessibility\Managed\Services\AccessibilityHierarchyService.cs">
-      <Link>Modules\Accessibility\Managed\Services\AccessibilityHierarchyService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Accessibility\Managed\Services\IService.cs">
-      <Link>Modules\Accessibility\Managed\Services\IService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Accessibility\Managed\Services\ServiceManager.cs">
-      <Link>Modules\Accessibility\Managed\Services\ServiceManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
@@ -1292,6 +1283,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs">
       <Link>Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderRuntime\Bindings\ShaderTypes.bindings.cs">
+      <Link>Modules\ShaderRuntime\Bindings\ShaderTypes.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SharedInternals\Attributes.cs">
       <Link>Modules\SharedInternals\Attributes.cs</Link>
@@ -2637,6 +2631,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTree.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeAtlas.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeAtlas.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs</Link>
     </Compile>
@@ -2934,6 +2931,12 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\Length.cs">
       <Link>Modules\UIElements\Core\Style\Length.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Ratio.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Ratio.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Ratio.cs">
+      <Link>Modules\UIElements\Core\Style\Ratio.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\ResolvedStyleAccess.PropertyBag.cs">
       <Link>Modules\UIElements\Core\Style\ResolvedStyleAccess.PropertyBag.cs</Link>
     </Compile>
@@ -3005,6 +3008,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\StylePropertyUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleRatio.cs">
+      <Link>Modules\UIElements\Core\Style\StyleRatio.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleRotate.cs">
       <Link>Modules\UIElements\Core\Style\StyleRotate.cs</Link>

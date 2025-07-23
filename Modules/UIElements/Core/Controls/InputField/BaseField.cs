@@ -49,6 +49,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel, IEditableElement
     {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly BindingId valueProperty = nameof(value);
         internal static readonly BindingId labelProperty = nameof(label);
         internal static readonly BindingId showMixedValueProperty = nameof(showMixedValue);

@@ -7,6 +7,8 @@ using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Bindings;
+using NiceIO;
+using System.Collections.Generic;
 
 namespace UnityEditor.Build.Reporting
 {
@@ -223,5 +225,35 @@ namespace UnityEditor.Build.Reporting
         internal static extern BuildReport GetReport(GUID guid);
 
         internal extern void SetBuildGUID(GUID guid);
+
+        internal void ReplaceAllFileEntries(IEnumerable<NPath> paths)
+        {
+            // Keep a copy of existing files in the build report to preserve file roles
+            var fileNameToExistingBuildFile = new Dictionary<string, BuildFile>();
+            foreach (var file in GetFiles())
+            {
+                // only preserve roles for content portions of the files, as some PlayerBuildProgram relies on the roles of dlls being erased 
+                if (file.path.Contains("Library/PlayerDataCache"))
+                {
+                    // We know that these files never have the same filename twice so it is safe to match with that as a unique key.
+                    fileNameToExistingBuildFile.Add(file.path.ToNPath().FileName, file);
+                }
+            }
+
+            DeleteAllFileEntries();
+
+            foreach (var path in paths)
+            {
+                if (fileNameToExistingBuildFile.TryGetValue(path.FileName, out BuildFile buildFile))
+                {
+                    RecordFileAdded(path.ToString(), buildFile.role);
+                }
+                else
+                {
+                    // The file is not matched, so use the extension as the "role"
+                    RecordFileAdded(path.ToString(), path.Extension);
+                }
+            }
+        }
     }
 }

@@ -475,7 +475,13 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void CreateGraphicsSettings(BuildProfile buildProfile)
         {
-            buildProfile.CreateGraphicsSettings();
+            if (buildProfile.graphicsSettings != null)
+                return;
+
+            buildProfile.graphicsSettings = ScriptableObject.CreateInstance<BuildProfileGraphicsSettings>();
+            buildProfile.graphicsSettings.Instantiate();
+            AssetDatabase.AddObjectToAsset(buildProfile.graphicsSettings, buildProfile);
+            EditorUtility.SetDirty(buildProfile);
         }
 
         /// <summary>
@@ -483,7 +489,12 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void RemoveGraphicsSettings(BuildProfile buildProfile)
         {
-            buildProfile.RemoveGraphicsSettings();
+            if (buildProfile.graphicsSettings == null)
+                return;
+
+            AssetDatabase.RemoveObjectFromAsset(buildProfile.graphicsSettings);
+            buildProfile.graphicsSettings = null;
+            EditorUtility.SetDirty(buildProfile);
         }
 
         /// <summary>
@@ -491,7 +502,14 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void CreateQualitySettings(BuildProfile buildProfile)
         {
-            buildProfile.CreateQualitySettings();
+
+            if (buildProfile.qualitySettings != null)
+                return;
+
+            buildProfile.qualitySettings = ScriptableObject.CreateInstance<BuildProfileQualitySettings>();
+            buildProfile.qualitySettings.Instantiate();
+            AssetDatabase.AddObjectToAsset(buildProfile.qualitySettings, buildProfile);
+            EditorUtility.SetDirty(buildProfile);
         }
 
         /// <summary>
@@ -499,7 +517,12 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void RemoveQualitySettings(BuildProfile buildProfile)
         {
-            buildProfile.RemoveQualitySettings();
+            if (buildProfile.qualitySettings == null)
+                return;
+
+            AssetDatabase.RemoveObjectFromAsset(buildProfile.qualitySettings);
+            buildProfile.qualitySettings = null;
+            EditorUtility.SetDirty(buildProfile);
         }
 
         public static void NotifyBuildProfileExtensionOfCreation(BuildProfile buildProfile, int preconfiguredSettingsVariant)

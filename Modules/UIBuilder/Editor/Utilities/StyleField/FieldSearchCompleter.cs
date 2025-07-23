@@ -713,6 +713,7 @@ namespace Unity.UI.Builder
                 return;
 
             SubmitPendingValueChange();
+            m_Popup?.Hide();
         }
 
         void PendValueChange(ChangeEvent<string> e)

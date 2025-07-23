@@ -238,6 +238,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerUpdateCanvases {}
         [RequiredByNativeCode]
+        public struct AccessibilityLateUpdate {}
+        [RequiredByNativeCode]
         internal struct UIElementsRepaintPanels {}
         [RequiredByNativeCode]
         public struct UpdateAudio {}

@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A list view with multi column support. For more information, refer to [[wiki:UIE-uxml-element-MultiColumnListView|MultiColumnListView]].
     /// </summary>
+    [Icon("UIToolkit/Icons/MultiColumnListView.png")]
     public class MultiColumnListView : BaseListView
     {
         static readonly BindingId columnsProperty = nameof(columns);

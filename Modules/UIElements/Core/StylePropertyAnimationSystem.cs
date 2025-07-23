@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Translate startValue, Translate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, Rotate startValue, Rotate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, Ratio startValue, Ratio endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundPosition startValue, BackgroundPosition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundRepeat startValue, BackgroundRepeat endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
@@ -1198,6 +1199,56 @@ namespace UnityEngine.UIElements
             }
         }
 
+        class ValuesRatio : Values<Ratio>
+        {
+            public override Func<Ratio, Ratio, bool> SameFunc { get; } = IsSame;
+            private static bool IsSame(Ratio a, Ratio b) => a == b;
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref Ratio a, ref Ratio b)
+            {
+                if (b.IsAuto())
+                    return false;
+
+                if(a.IsAuto())
+                {
+                    if (owner.resolvedStyle.height == 0 || float.IsNaN(owner.resolvedStyle.height))
+                        return false;
+                    a = new Ratio(owner.resolvedStyle.width/ owner.resolvedStyle.height);
+                    return true;
+                }
+                return true;
+            }
+
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+
+            private static Ratio Lerp(Ratio a, Ratio b, float t) => new Ratio(Mathf.LerpUnclamped(a.value, b.value, t));
+
+            protected sealed override void UpdateValues()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    ref var timing = ref running.timing[i];
+                    ref var style = ref running.style[i];
+                    style.currentValue = Lerp(style.startValue, style.endValue, timing.easedProgress);
+                }
+            }
+        }
+
         class ValuesTranslate : Values<Translate>
         {
             public override Func<Translate, Translate, bool> SameFunc { get; } = IsSame;
@@ -1516,6 +1567,7 @@ namespace UnityEngine.UIElements
         private ValuesTextShadow m_TextShadows;
         private ValuesScale m_Scale;
         private ValuesRotate m_Rotate;
+        private ValuesRatio m_Ratio;
         private ValuesTranslate m_Translate;
         private ValuesTransformOrigin m_TransformOrigin;
         private ValuesBackgroundPosition m_BackgroundPosition;
@@ -1606,6 +1658,11 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Translate startValue, Translate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Translate));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, Ratio startValue, Ratio endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_Ratio));
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, TransformOrigin startValue, TransformOrigin endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
@@ -1771,6 +1828,11 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, Rotate startValue, Rotate endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, Ratio startValue, Ratio endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return false;
         }

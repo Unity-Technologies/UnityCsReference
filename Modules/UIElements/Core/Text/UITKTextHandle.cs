@@ -319,7 +319,6 @@ namespace UnityEngine.UIElements
                 s_TemporaryCache.RemoveFromCache(this);
                 m_TextEventHandler?.OnDestroy();
                 m_TextEventHandler = null;
-                m_ATGTextEventHandler = new ATGTextEventHandler(m_TextElement);
             }
             wasAdvancedTextEnabledForElement = usesATG;
         }

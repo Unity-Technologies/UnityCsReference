@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toolbar for tool windows. For more information, refer to [[wiki:UIE-uxml-element-Toolbar|UXML element Toolbar]].
     /// </summary>
+    [Icon("UIToolkit/Icons/Toolbar.png")]
     public class Toolbar : VisualElement
     {
         private static readonly string s_ToolbarDarkStyleSheetPath = "StyleSheets/Generated/ToolbarDark.uss.asset";

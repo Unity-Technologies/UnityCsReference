@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
@@ -15,6 +16,7 @@ namespace UnityEditor.Search
         public static bool HasAll(this QueryEnginePropositionsExtension.CombiningOperatorPropositions flags, QueryEnginePropositionsExtension.CombiningOperatorPropositions all) => (flags & all) == all;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static class QueryEnginePropositionsExtension
     {
         const string k_BaseSearchPropositionDataKey = "searchproposition_";

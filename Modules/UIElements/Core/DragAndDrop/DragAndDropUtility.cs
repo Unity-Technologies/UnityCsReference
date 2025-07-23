@@ -38,6 +38,7 @@ namespace UnityEngine.UIElements
 
         readonly Hashtable m_GenericData = new();
 
+        [Obsolete("Use entityIDs instead, and call Object.FindObjectFromInstanceID(entityId) if you need to get a Unity object from an EntityId.")]
         public override IEnumerable<Object> unityObjectReferences
         {
             get

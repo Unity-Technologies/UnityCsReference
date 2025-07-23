@@ -95,7 +95,7 @@ namespace Unity.UI.Builder
                     return BuilderSelectionType.StyleSheet;
                 if (selectedElement.GetVisualElementAsset() == null)
                 {
-                    if (selectedElement.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName)
+                    if (selectedElement.visualElementAsset != null
                         && BuilderAssetUtilities.GetVisualElementRootTemplate(selectedElement) != null
                         && !BuilderAssetUtilities.HasDynamicallyCreatedTemplateAncestor(selectedElement))
                     {
@@ -189,13 +189,13 @@ namespace Unity.UI.Builder
                 if (sel == null)
                     continue;
 
-                BuilderAssetUtilities.RemoveElementFromSelectionInAsset(m_PaneWindow.document, sel);
+                SelectionUtility.RemoveElementFromSelectionInAsset(m_PaneWindow.document, sel);
             }
 
             m_Selection.Clear();
 
             m_Selection.Add(ve);
-            BuilderAssetUtilities.AddElementToSelectionInAsset(m_PaneWindow.document, ve);
+            SelectionUtility.AddElementToSelectionInAsset(m_PaneWindow.document, ve);
 
             NotifyOfSelectionChange(source);
         }
@@ -218,7 +218,7 @@ namespace Unity.UI.Builder
                 SortSelection();
 
             if (undo)
-                BuilderAssetUtilities.AddElementToSelectionInAsset(m_PaneWindow.document, ve);
+                SelectionUtility.AddElementToSelectionInAsset(m_PaneWindow.document, ve);
 
             NotifyOfSelectionChange(source);
         }
@@ -228,7 +228,7 @@ namespace Unity.UI.Builder
             NotifyOfBeforeSelectionChange(source);
 
             m_Selection.Remove(ve);
-            BuilderAssetUtilities.RemoveElementFromSelectionInAsset(m_PaneWindow.document, ve);
+            SelectionUtility.RemoveElementFromSelectionInAsset(m_PaneWindow.document, ve);
 
             NotifyOfSelectionChange(source);
         }
@@ -242,7 +242,7 @@ namespace Unity.UI.Builder
 
             if (undo)
                 foreach (var sel in m_Selection)
-                    BuilderAssetUtilities.RemoveElementFromSelectionInAsset(m_PaneWindow.document, sel);
+                    SelectionUtility.RemoveElementFromSelectionInAsset(m_PaneWindow.document, sel);
 
             m_Selection.Clear();
 

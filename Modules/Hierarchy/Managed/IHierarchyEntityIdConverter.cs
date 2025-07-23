@@ -11,6 +11,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Interface that HierarchyNodeHandler should implement to be able to sync their selection with Unity global selection.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IHierarchyEntityIdConverter
     {
         /// <summary>

@@ -869,5 +869,7 @@ namespace UnityEditor.LightBaking
         [NativeMethod(IsThreadSafe = true)]
         public static extern bool ReportProgressToParentProcess(float progress, ExternalProcessConnection connection);
         public static extern ulong ConvertExpectedWorkToWorkSteps(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, ulong sampleCountPerLightmapTexel, ulong sampleCountPerProbe);
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern bool GetCancellationRequested(ExternalProcessConnection connection);
     }
 }

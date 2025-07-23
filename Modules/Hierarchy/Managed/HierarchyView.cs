@@ -17,6 +17,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// UI element control that displays a hierarchy.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class HierarchyView : VisualElement, IDisposable
     {
         internal const int k_ItemHeight = 20;
@@ -85,6 +86,11 @@ namespace Unity.Hierarchy
         internal int m_RenameDelayMs;
 
         /// <summary>
+        /// Returns the <see cref="VisualElement"/> used as the container for the styles and stylesheets of the <see cref="HierarchyView"/>.
+        /// </summary>
+        public VisualElement StyleContainer => m_StyleContainer;
+
+        /// <summary>
         /// Delegate type used to handle <see cref="SourceHierarchyChanging"/> event.
         /// </summary>
         /// <param name="oldHierarchy">The old source hierarchy.</param>
@@ -108,6 +114,13 @@ namespace Unity.Hierarchy
         /// This event is fired when the source hierarchy has been changed.
         /// </summary>
         public event SourceHierarchyChangedEventHandler SourceHierarchyChanged;
+
+        /// <summary>
+        /// This event is fired when the <see cref="HierarchyView"/> is initializing, typically allowing to load additional stylesheets and add styles to <see cref="StyleContainer"/>.
+        /// Internal because it is only used by HierarchyWindow to allow to statically customize the HierarchyView.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal event Action Initializing;
 
         /// <summary>
         /// This event is fired when a <see cref="HierarchyViewItem"/> is bound to a hierarchy view, allowing customization of the view item.
@@ -290,8 +303,6 @@ namespace Unity.Hierarchy
             var listViewInnerScrollView = m_MultiColumnListView.Q<ScrollView>();
             m_ListViewContentContainer = listViewInnerScrollView.contentContainer;
             listViewInnerScrollView.mode = ScrollViewMode.VerticalAndHorizontal;
-            listViewInnerScrollView.RegisterCallback<ValidateCommandEvent>(OnValidateCommand);
-            listViewInnerScrollView.RegisterCallback<ExecuteCommandEvent>(OnExecuteCommand);
             m_ListViewContentContainer.RegisterCallback<ClickEvent>(OnClickEvent);
             m_ListViewContentContainer.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
 
@@ -334,11 +345,18 @@ namespace Unity.Hierarchy
 
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetSourceHierarchy(hierarchy={hierarchy?.GetHashCode():X}, flags={defaultFlags})");
 
+            // Unregister handler created event
+            if (m_Hierarchy != null)
+                m_Hierarchy.HandlerCreated -= OnHandlerCreated;
+
             // Invoke source hierarchy changing
             SourceHierarchyChanging?.Invoke(m_Hierarchy, hierarchy, defaultFlags);
 
             // Clear columns before releasing UX
             ClearColumns();
+
+            // Reset styling
+            Reset();
 
             // Reset UX update state
             m_RenameDelayMs = k_RenamingDelayMs;
@@ -390,10 +408,13 @@ namespace Unity.Hierarchy
 
             // Update other UX elements
             BindColumns();
-            ApplyStyles();
+            Initialize();
 
             // Invoke source hierarchy changed
             SourceHierarchyChanged?.Invoke(hierarchy, defaultFlags);
+
+            // Register handler created event
+            m_Hierarchy.HandlerCreated += OnHandlerCreated;
         }
 
         /// <summary>
@@ -436,22 +457,30 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Apply styles provided by <see cref="HierarchyNodeTypeHandler.UpdateContainerStyles(HierarchyView, VisualElement)"/>.
+        /// Reset the view to its initial state.
         /// </summary>
-        public void ApplyStyles()
+        internal void Reset()
         {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).ApplyStyles()");
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).{nameof(Initialize)}()");
             m_StyleContainer.Remove(m_MultiColumnListView);
             m_StyleContainer.RemoveFromHierarchy();
             m_StyleContainer = new VisualElement();
             m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
             Add(m_StyleContainer);
+            m_StyleContainer.Add(m_MultiColumnListView);
+        }
 
+        /// <summary>
+        /// Initialize the view with styles and stylesheets provided by <see cref="HierarchyNodeTypeHandler.OnInitializingView(HierarchyView)"/>.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void Initialize()
+        {
             foreach (var handler in m_Hierarchy.EnumerateNodeTypeHandlers())
             {
                 try
                 {
-                    handler.Internal_UpdateContainerStyles(this, m_StyleContainer);
+                    handler.Internal_OnInitializingView(this);
                 }
                 catch (Exception ex)
                 {
@@ -459,7 +488,14 @@ namespace Unity.Hierarchy
                 }
             }
 
-            m_StyleContainer.Add(m_MultiColumnListView);
+            try
+            {
+                Initializing?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
         }
 
         /// <summary>
@@ -1060,97 +1096,6 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel.SetFlagsRecursive(parents.Span, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
         }
 
-        void OnExecuteCommand(ExecuteCommandEvent evt)
-        {
-            switch (evt.commandName)
-            {
-                case EventCommandNames.Cut:
-                    this.OnCut();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.Copy:
-                    this.OnCopy();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.Paste:
-                    this.OnPaste();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.Rename:
-                    var count = m_HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
-                    if (count == 1)
-                    {
-                        Span<HierarchyNode> nodes = stackalloc HierarchyNode[1];
-                        m_HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, nodes);
-                        this.OnSetName(nodes[0]);
-                    }
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.Duplicate:
-                    this.OnDuplicate();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.Delete:
-                case EventCommandNames.SoftDelete:
-                    this.OnDelete();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.SelectAll:
-                    this.SelectAll();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.DeselectAll:
-                    this.ClearSelection();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.InvertSelection:
-                    this.InvertSelection();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.SelectChildren:
-                    this.SelectChildrenForSelectedNodes();
-                    evt.StopPropagation();
-                    break;
-
-                case EventCommandNames.UndoRedoPerformed:
-                    m_Hierarchy.SetDirty();
-                    evt.StopPropagation();
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        void OnValidateCommand(ValidateCommandEvent evt)
-        {
-            switch (evt.commandName)
-            {
-                case EventCommandNames.Cut:
-                case EventCommandNames.Copy:
-                case EventCommandNames.Paste:
-                case EventCommandNames.Rename:
-                case EventCommandNames.Duplicate:
-                case EventCommandNames.Delete:
-                case EventCommandNames.SoftDelete:
-                case EventCommandNames.SelectAll:
-                case EventCommandNames.DeselectAll:
-                case EventCommandNames.InvertSelection:
-                case EventCommandNames.SelectChildren:
-                    evt.StopPropagation();
-                    break;
-            }
-        }
-
         void OnClickEvent(ClickEvent evt)
         {
             m_ScheduledItem?.Pause();
@@ -1327,6 +1272,12 @@ namespace Unity.Hierarchy
         void OnUnbindItem(HierarchyViewItem element)
         {
             element.ExpandedStateChanged -= SetExpandedState;
+        }
+
+        void OnHandlerCreated(HierarchyNodeTypeHandlerBase handler)
+        {
+            Reset();
+            Initialize();
         }
 
         HierarchyViewItem GetHierarchyViewItemFromIndex(int index)

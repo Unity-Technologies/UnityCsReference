@@ -52,6 +52,7 @@ namespace UnityEditor.Build.Profile
         Label m_SelectedDescriptionLabel;
         Label m_ConfigLabel;
         Label m_AddtionalInfoLabel;
+        Label m_BuildProfileNameLabel;
 
         TextField m_BuildProfileNameTextField;
 
@@ -187,6 +188,10 @@ namespace UnityEditor.Build.Profile
 
             m_PlatformConfigs = rootVisualElement.Q<VisualElement>("platform-configs");
             m_BuildProfileNameTextField = rootVisualElement.Q<TextField>("build-profile-name");
+
+            m_BuildProfileNameLabel = rootVisualElement.Q<Label>("build-profile-name-label");
+            m_BuildProfileNameLabel.text = TrText.buildProfileNameLabel;
+
             m_RenameOverlay = new BuildProfileRenameOverlay(m_BuildProfileNameTextField);
 
             m_BuildProfileNameTextField.RegisterValueChangedCallback(changeEvent =>

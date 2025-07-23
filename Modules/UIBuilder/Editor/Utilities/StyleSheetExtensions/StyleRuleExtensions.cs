@@ -12,21 +12,6 @@ namespace Unity.UI.Builder
 {
     internal static class StyleRuleExtensions
     {
-        public static StyleProperty FindLastProperty(this StyleSheet styleSheet, StyleRule rule, string propertyName)
-        {
-            if (rule == null)
-                return null;
-
-            for (var i = rule.properties.Length - 1; i >= 0; --i)
-            {
-                var property = rule.properties[i];
-                if (property.name == propertyName)
-                    return property;
-            }
-
-            return null;
-        }
-
         public static StyleProperty AddProperty(
             this StyleSheet styleSheet, StyleRule rule, string name,
             string undoMessage = null)
@@ -36,17 +21,7 @@ namespace Unity.UI.Builder
                 undoMessage = "Change UI Style Value";
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            var newProperty = new StyleProperty
-            {
-                name = name
-            };
-
-            // Add property to selector's rule's properties.
-            var properties = rule.properties.ToList();
-            properties.Add(newProperty);
-            rule.properties = properties.ToArray();
-
-            styleSheet.SetTemporaryContentHash();
+            var newProperty = rule.AddProperty(styleSheet, name);
             StyleSheetCache.ClearCaches();
 
             return newProperty;
@@ -60,16 +35,13 @@ namespace Unity.UI.Builder
                 undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            var properties = rule.properties.ToList();
-            properties.Remove(property);
-            rule.properties = properties.ToArray();
-            styleSheet.SetTemporaryContentHash();
+            rule.RemoveProperty(styleSheet, property);
         }
 
         public static void RemoveProperty(this StyleSheet styleSheet, StyleRule rule,
             string name, string undoMessage = null)
         {
-            var property = styleSheet.FindLastProperty(rule, name);
+            var property = rule.FindLastProperty(name);
             if (property == null)
                 return;
 

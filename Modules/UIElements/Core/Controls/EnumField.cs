@@ -47,6 +47,7 @@ namespace UnityEngine.UIElements
     /// Makes a dropdown for switching between enum values. For more information, refer to [[wiki:UIE-uxml-element-EnumField|UXML element EnumField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/EnumField.png")]
     public class EnumField : BaseField<Enum>
     {
         internal static readonly BindingId textProperty = nameof(text);

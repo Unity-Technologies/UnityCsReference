@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering an integer. For more information, refer to [[wiki:UIE-uxml-element-LongField|UXML element LongField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/IntegerField.png")]
     public class IntegerField : TextValueField<int>
     {
         // This property to alleviate the fact we have to cast all the time

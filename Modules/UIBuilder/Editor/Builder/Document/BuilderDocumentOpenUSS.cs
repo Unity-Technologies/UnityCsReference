@@ -90,11 +90,6 @@ namespace Unity.UI.Builder
             //AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
         }
 
-        public void FixRuleReferences()
-        {
-            m_StyleSheet.FixRuleReferences();
-        }
-
         public void GeneratePreview()
         {
             m_UssPreview = m_StyleSheet.GenerateUSS();

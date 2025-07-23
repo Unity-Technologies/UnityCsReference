@@ -43,6 +43,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, Align value) => throw new System.InvalidOperationException();
         }
 
+        class AspectRatioProperty : ResolvedRatioProperty
+        {
+            public override string Name => nameof(IResolvedStyle.aspectRatio);
+            public override string ussName => "aspect-ratio";
+            public override bool IsReadOnly => true;
+            public override Ratio GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).aspectRatio;
+            public override void SetValue(ref ResolvedStyleAccess container, Ratio value) => throw new System.InvalidOperationException();
+        }
+
         class BackgroundColorProperty : ResolvedColorProperty
         {
             public override string Name => nameof(IResolvedStyle.backgroundColor);
@@ -747,11 +756,12 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(81);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(243);
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(82);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(246);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
+            AddProperty(new AspectRatioProperty());
             AddProperty(new BackgroundColorProperty());
             AddProperty(new BackgroundImageProperty());
             AddProperty(new BackgroundPositionXProperty());

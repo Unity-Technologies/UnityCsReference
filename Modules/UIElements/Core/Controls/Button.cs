@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// SA: [[Clickable]], [[Image]], [[ManipulatorActivationFilter]]
     /// </remarks>
-
+    [Icon("UIToolkit/Icons/Button.png")]
     public class Button : TextElement
     {
         internal static readonly BindingId iconImageProperty = nameof(iconImage);

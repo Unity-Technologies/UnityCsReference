@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Transactions;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -62,12 +65,238 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
+    internal class StyleRatioField : TextValueField<StyleRatio>
+    {
+        // This property to alleviate the fact we have to cast all the time
+        RatioInput lengthInput => (RatioInput)textInputBase;
+
+        record struct CommonOption(string Name, float w, float h);
+
+
+        static readonly List<CommonOption> commonOptions = new()
+     {
+         new CommonOption("auto", 0, 0),
+         new CommonOption("1/1", 1, 1),
+         new CommonOption("3/2", 3, 2), // Ipads
+         new CommonOption("4/3", 4, 3), // Common 35mm film/TV 
+         new CommonOption("5/4", 5, 4), // Old SVGA monitors
+         new CommonOption("16/9", 16, 9),  // common widescreen video
+     };
+
+        PopupField<CommonOption> commonField = new(commonOptions, commonOptions[0], FormatItemForUITK, FormatItemForOs) { style = { marginLeft = 0 } };
+        static string FormatItemForOs(CommonOption myData)
+        {
+            //To not display the / as a sub-menu in the contextMenu
+            return myData.Name.Replace("/", "\u200A\u2044\u200A");
+        }
+
+        static string FormatItemForUITK(CommonOption myData)
+        {
+            return myData.Name;
+        }
+
+        public StyleRatioField() : this((string)null) { }
+
+        public StyleRatioField(int maxLength)
+            : this(null, maxLength) { }
+
+        public StyleRatioField(string label, int maxLength = kMaxValueFieldLength)
+            : base(label, maxLength, new RatioInput())
+        {
+            value = Ratio.Auto();
+            AddToClassList(ussClassName);
+            labelElement.AddToClassList(labelUssClassName);
+            visualInput.AddToClassList(inputUssClassName);
+            AddLabelDragger<StyleRatio>();
+            commonField.RegisterValueChangedCallback(e => {
+                text = e.newValue.Name;
+                SetValueWithoutNotify((e.newValue.w == 0 || e.newValue.h == 0) ? Ratio.Auto() : new Ratio(e.newValue.w / e.newValue.h));
+            });
+            Insert(childCount-1, commonField);
+        }
+
+        public override void SetValueWithoutNotify(StyleRatio t)
+        {
+            base.SetValueWithoutNotify(t);
+
+            if (t.keyword == StyleKeyword.Auto || t.value.IsAuto())
+            {
+                commonField.SetValueWithoutNotify(commonOptions[0]);
+                return;
+            }
+            else
+            {
+                const float epsilon = 0.0015f;
+
+                foreach (var option in commonOptions)
+                {
+                    if (Math.Abs(option.w / option.h - t.value) < epsilon)
+                    {
+                        commonField.SetValueWithoutNotify(option);
+                        return;
+                    }
+
+                }
+            }
+            commonField.SetValueWithoutNotify(new("Custorm", 0, 0));
+        }
+
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, StyleRatio startValue)
+        {
+            lengthInput.ApplyInputDeviceDelta(delta, speed, startValue);
+        }
+
+        protected override StyleRatio StringToValue(string str)
+        {
+            return ParseString(str, value);
+        }
+
+        protected override string ValueToString(StyleRatio value)
+        {
+            // When what is in the text box is equivalent, don't change anything
+            // Explicitly handle auto to remove any leftover like "autoooo" => auto
+            if (value.keyword == StyleKeyword.Auto || value.value.IsAuto() || (!value.value.IsAuto() && StringToValue(text) != value))
+                return ValueToNiceString(value.value); ;
+
+            return text;
+        }
+
+        internal override void UpdateTextFromValue()
+        {
+            if (value.keyword == StyleKeyword.Auto || value.value.IsAuto())
+            {
+                base.UpdateTextFromValue();
+                return;
+            }
+
+            if (StringToValue(text) == value)
+            return;
+
+            base.UpdateTextFromValue();
+        }
+
+        private static StyleRatio ParseString(string str, StyleRatio defaultValue)
+        {
+            if(str.StartsWith("auto", StringComparison.OrdinalIgnoreCase))
+            {
+                return StyleRatio.Auto();
+            }
+
+            if (str.Contains("/") || str.Contains(":"))
+            {
+                var parts = str.Split('/', ':');
+                if (parts.Length == 2)
+                {
+                    if (double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double w) && double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double h))
+                    {
+                        if(h <=  0 || w <=0 || double.IsNaN(h) || double.IsNaN(w) )
+                        {
+                            return defaultValue;
+                        }
+
+                        return new StyleRatio(new Ratio((float)(w/ h)));
+                    }
+                }
+            }
+
+            if( double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+            {
+                if ( value == 0 || double.IsNaN(value) )
+                {
+                    return defaultValue;
+                }
+                return new StyleRatio(new Ratio((float)value));
+            }
+
+            return defaultValue;
+        }
+
+        static string ValueToNiceString(StyleRatio v)
+        {
+            if (v.keyword == StyleKeyword.Auto || v.value.IsAuto())
+            {
+                return "auto";
+            }
+
+            if (GetIntegerAspectRatioFromFloat(v.value.value, out int w, out int h))
+            {
+                return $"{w}/{h}";
+            }
+
+            return v.ToString();
+        }
+
+        public static bool GetIntegerAspectRatioFromFloat(float aspect, out int w, out int h)
+        {
+            w = h = 1;
+            const float epsilon = 0.00015f;
+
+            for (h = 1; h < 16; ++h)
+            {
+                w = Mathf.RoundToInt(aspect * h);
+                {
+                    if (Mathf.Abs(aspect - (float)w / h) < epsilon)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            //can't find a good one
+            return false;
+        }
+
+        class RatioInput : TextValueInput
+        {
+            StyleRatioField parentLengthField => (StyleRatioField)parent;
+
+            protected override string allowedCharacters
+            {
+                get { return "0123456789autone.,/:"; }
+            }
+
+            public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, StyleRatio _)
+            {
+
+                var sensitivity = 1f/300f;//300 pixels to go form one end to to the other.
+                float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+
+
+                var currentValue = StringToValue(text);
+                float v = currentValue.value.IsAuto() ? 1 : currentValue.value.value;
+
+
+                var linearDelta = Mathf.Clamp( NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity, -0.5f, 0.5f);
+
+                v *= (1 + linearDelta) / (1 - linearDelta);
+
+                v = Mathf.Clamp(v, 0.01f, 100);
+
+                // Assumes the field is not delayed
+                // By setting the value directly, we have no control over the end result of the toString and fractions may pop while dragging. We might neeed something more specific
+                parentLengthField.value = v;
+
+            }
+
+            protected override string ValueToString(StyleRatio value)
+            {
+                return ValueToNiceString(value);
+            }
+
+            protected override StyleRatio StringToValue(string str)
+            {
+                return ParseString(str, parentLengthField.value);
+            }
+        }
+    }
+
+
     internal class RotateField : BaseField<Rotate>
     {
         AngleField m_angleField = new();
         Vector3Field m_axisField = new("Axis");
 
-        public RotateField() : this(null) { }
+         public RotateField() : this(null) { }
         public RotateField(string label) : this(label, Rotate.None()) { }
 
         public RotateField(string label, Rotate rotate) : base(label)

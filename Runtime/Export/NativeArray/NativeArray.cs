@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
@@ -68,7 +69,15 @@ namespace Unity.Collections
 
         public NativeArray(int length, Allocator allocator, NativeArrayOptions options = NativeArrayOptions.ClearMemory)
         {
-            Allocate(length, allocator, out this);
+            Allocate(length, allocator, default, out this);
+            if ((options & NativeArrayOptions.ClearMemory) == NativeArrayOptions.ClearMemory)
+                UnsafeUtility.MemClear(m_Buffer, (long)Length * UnsafeUtility.SizeOf<T>());
+        }
+
+        internal NativeArray(int length, UnsafeAllocLabel allocLabel, NativeArrayOptions options = NativeArrayOptions.ClearMemory)
+        {
+            allocLabel.CheckArgument();
+            Allocate(length, allocLabel.allocator, allocLabel, out this);
             if ((options & NativeArrayOptions.ClearMemory) == NativeArrayOptions.ClearMemory)
                 UnsafeUtility.MemClear(m_Buffer, (long)Length * UnsafeUtility.SizeOf<T>());
         }
@@ -78,14 +87,34 @@ namespace Unity.Collections
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
 
-            Allocate(array.Length, allocator, out this);
+            Allocate(array.Length, allocator, default, out this);
+            Copy(array, this);
+        }
+
+        internal NativeArray(T[] array, UnsafeAllocLabel allocLabel)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+
+            allocLabel.CheckArgument();
+
+            Allocate(array.Length, allocLabel.allocator, allocLabel, out this);
             Copy(array, this);
         }
 
         public NativeArray(NativeArray<T> array, Allocator allocator)
         {
             AtomicSafetyHandle.CheckReadAndThrow(array.m_Safety);
-            Allocate(array.Length, allocator, out this);
+            Allocate(array.Length, allocator, default, out this);
+            Copy(array, 0, this, 0, array.Length);
+        }
+
+        internal NativeArray(NativeArray<T> array, UnsafeAllocLabel allocLabel)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(array.m_Safety);
+
+            allocLabel.CheckArgument();
+            Allocate(array.Length, allocLabel.allocator, allocLabel, out this);
             Copy(array, 0, this, 0, array.Length);
         }
 
@@ -104,7 +133,7 @@ namespace Unity.Collections
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
         }
 
-        static void Allocate(int length, Allocator allocator, out NativeArray<T> array)
+        static void Allocate(int length, Allocator allocator, UnsafeAllocLabel allocLabel, out NativeArray<T> array)
         {
             long totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
             CheckAllocateArguments(length, allocator);
@@ -113,7 +142,7 @@ namespace Unity.Collections
 
             IsUnmanagedAndThrow();
 
-            array.m_Buffer = UnsafeUtility.MallocTracked(totalSize, UnsafeUtility.AlignOf<T>(), allocator, 0);
+            array.m_Buffer = UnsafeUtility.MallocTracked(totalSize, UnsafeUtility.AlignOf<T>(), allocator, 0, allocLabel.pointer);
             array.m_Length = length;
             array.m_AllocatorLabel = allocator;
 

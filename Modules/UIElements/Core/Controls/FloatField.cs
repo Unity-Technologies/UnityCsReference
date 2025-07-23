@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering a float. For more information, refer to [[wiki:UIE-uxml-element-FloatField|UXML element FloatField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/FloatField.png")]
     public class FloatField : TextValueField<float>
     {
         // This property to alleviate the fact we have to cast all the time
@@ -61,6 +62,26 @@ namespace UnityEngine.UIElements
             var success = UINumericFieldsUtils.TryConvertStringToFloat(str, textInputBase.originalText, out var v, out var expression);
             expressionEvaluated?.Invoke(expression);
             return success ? v : rawValue;
+        }
+
+        internal override void UpdateValueFromText()
+        {
+            // When working with floats, the text representation is generated using the format string "G7",
+            // which applies the general format with a precision of 7 significant digits.
+            // Due to the limitations of floating-point precision, converting the float to a string
+            // and then parsing it back may not yield the exact original value.
+            // Therefore, before converting the string back to a float, we compare the current generated
+            // text representation against the current text value to determine if the value has changed.
+            // This helps avoid losing precision and incorrect change events when the value was not actually changed. (UUM-100527)
+            // For example, the float value 112.038414 is converted to the string "112.0384" using "G7",
+            // parsing this string back into a float results in a slightly different value, as the original
+            // precision is lost during the conversion process.
+            // So if the text is "112.0384" then we know nothing changed and we can avoid replacing 112.038414 with 112.0484.
+            var currentValueAsString = ValueToString(rawValue);
+            if (currentValueAsString != text)
+            {
+                base.UpdateValueFromText();
+            }
         }
 
         /// <summary>

@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A tree view with multi column support. For more information, refer to [[wiki:UIE-uxml-element-MultiColumnTreeView|MultiColumnTreeView]].
     /// </summary>
+    [Icon("UIToolkit/Icons/MultiColumnTreeView.png")]
     public class MultiColumnTreeView : BaseTreeView
     {
         static readonly BindingId columnsProperty = nameof(columns);

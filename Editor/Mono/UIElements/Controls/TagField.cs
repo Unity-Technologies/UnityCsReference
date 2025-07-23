@@ -15,6 +15,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/TagField.png")]
     public class TagField : PopupField<string>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

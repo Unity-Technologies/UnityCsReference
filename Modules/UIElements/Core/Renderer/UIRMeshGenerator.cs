@@ -641,13 +641,15 @@ namespace UnityEngine.UIElements.UIR
 
         void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)
         {
-            for (int i = 0, meshInfoCount = isNative ? nativeTextInfo.meshInfos.Length : textInfo.meshInfo.Length; i < meshInfoCount; i++)
+            for (int i = 0, meshInfoCount = isNative ? nativeTextInfo.meshInfoCount : textInfo.meshInfo.Length; i < meshInfoCount; i++)
             {
                 MeshInfo meshInfo = new();
                 FontAsset fa = null;
                 SpriteAsset sa = null;
                 bool isSprite = false;
-                
+                Span<ATGMeshInfo> meshInfosMarshalSpan = default;
+                ATGMeshInfo nativeMeshInfo = default;
+
                 int remainingVertexCount;
                 if (!isNative)
                 {
@@ -657,11 +659,15 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
-                    int glyphAmount = nativeTextInfo.meshInfos[i].textElementInfos.Length;
+                    meshInfosMarshalSpan = nativeTextInfo.meshInfos;
+                    nativeMeshInfo = meshInfosMarshalSpan[i];
+                    int glyphAmount = nativeMeshInfo.textElementInfos.Length;
                     remainingVertexCount = glyphAmount * 4;
-                    var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(nativeTextInfo.meshInfos[i].textAssetId);
+                    var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(nativeMeshInfo.textAssetId);
+
                     if (textAsset == null)
                         continue;
+
                     if (textAsset is FontAsset)
                     {
                         fa = textAsset as FontAsset;
@@ -721,11 +727,12 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (isNative)
                         {
+                            Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
                             var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
                         }
                         else
                         {

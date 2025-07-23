@@ -22,6 +22,7 @@ namespace UnityEditor.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-EnumFlagsField|UXML element EnumFlagsField]].
     /// </remarks>
+    [Icon("UIToolkit/Icons/EnumFlagsField.png")]
     public class EnumFlagsField : BaseMaskField<Enum>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

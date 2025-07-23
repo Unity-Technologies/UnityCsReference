@@ -349,6 +349,90 @@ namespace UnityEngine.TextCore.Text
             return allGlyphsAddedToTexture && !isMissingCharacters;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool TryAddGlyphs(List<uint> glyphsToAdd)
+        {
+            // Load font face.
+            if (LoadFontFace() != FontEngineError.Success)
+            {
+                return false;
+            }
+
+            // Make sure font asset has been initialized
+            if (m_CharacterLookupDictionary == null || m_GlyphLookupDictionary == null)
+            {
+                ReadFontAssetDefinition();
+
+                // In theory we know glyphsToAdd are missing, but they might not be if our lookups are simply not initialized.
+                // We need to clean the list here.
+                glyphsToAdd.RemoveAll(glyphId => m_GlyphLookupDictionary.ContainsKey(glyphId));
+
+                if (glyphsToAdd.Count == 0)
+                    return true;
+            }
+
+            // Resize the Atlas Texture to the appropriate size
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
+            {
+                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
+                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
+            }
+
+            bool allGlyphsAddedToTexture = false;
+            while (!allGlyphsAddedToTexture)
+            {
+                Glyph[] glyphs;
+                allGlyphsAddedToTexture = FontEngine.TryAddGlyphsToTexture(glyphsToAdd, m_AtlasPadding, GlyphPackingMode.BestShortSideFit, m_FreeGlyphRects, m_UsedGlyphRects, m_AtlasRenderMode, m_AtlasTextures[m_AtlasTextureIndex], out glyphs);
+
+                // Add new glyphs to relevant font asset data structure
+                {
+                    var additionalCapacity = glyphs.Length;
+                    EnsureAdditionalCapacity(m_GlyphTable, additionalCapacity);
+                    EnsureAdditionalCapacity(m_GlyphLookupDictionary, additionalCapacity);
+                    EnsureAdditionalCapacity(m_GlyphIndexListNewlyAdded, additionalCapacity);
+                    EnsureAdditionalCapacity(m_GlyphIndexList, additionalCapacity);
+                }
+
+                var successfullyAddedGlyphIndices = new HashSet<uint>();
+                for (int i = 0; i < glyphs.Length && glyphs[i] != null; i++)
+                {
+                    Glyph glyph = glyphs[i];
+
+                    var glyphIndex = glyph.index;
+
+                    glyph.atlasIndex = m_AtlasTextureIndex;
+
+                    // Add new glyph to glyph table.
+                    m_GlyphTable.Add(glyph);
+                    m_GlyphLookupDictionary.Add(glyphIndex, glyph);
+                    m_GlyphIndexListNewlyAdded.Add(glyphIndex);
+                    m_GlyphIndexList.Add(glyphIndex);
+
+                    successfullyAddedGlyphIndices.Add(glyphIndex);
+                }
+
+                if (successfullyAddedGlyphIndices.Count > 0)
+                {
+                    glyphsToAdd.RemoveAll(id => successfullyAddedGlyphIndices.Contains(id));
+                }
+
+                RegisterAtlasTextureForApply(m_AtlasTextures[m_AtlasTextureIndex]);
+
+                if (!m_IsMultiAtlasTexturesEnabled && !allGlyphsAddedToTexture)
+                {
+                    Debug.Log($"Atlas is full, consider enabling multi-atlas textures in the Font Asset: {name}");
+                    break;
+                }
+                else if (!allGlyphsAddedToTexture)
+                {
+                    SetupNewAtlasTexture();
+                }
+            }
+
+            FontEngine.SetTextureUploadMode(true);
+            return allGlyphsAddedToTexture;
+        }
+
         /// <summary>
         /// Try adding the characters from the provided string to the font asset.
         /// </summary>

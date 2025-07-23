@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
     /// The following example creates a scroller independently from a ScrollView:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Scroller_Example.cs"/>
     /// </example>
+    [Icon("UIToolkit/Icons/Scroller.png")]
     public class Scroller : VisualElement
     {
         internal static readonly BindingId valueProperty = nameof(value);

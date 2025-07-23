@@ -203,33 +203,33 @@ namespace Unity.UI.Builder
 
             if (!IsNoneOrAuto(oppositeStyle) && !IsNoneOrAuto(primaryStyle))
             {
-                SetStyleSheetValue(primaryStyle, onStartDragPrimary - delta);
+                SetInlineFloatAsDimensionValue(primaryStyle, onStartDragPrimary - delta);
                 changeList.Add(GetStyleName(primaryStyle));
             }
             else if (IsNoneOrAuto(oppositeStyle) && !IsNoneOrAuto(primaryStyle))
             {
-                SetStyleSheetValue(lengthStyle, onStartDragLength + delta);
-                SetStyleSheetValue(primaryStyle, onStartDragPrimary - delta);
+                SetInlineFloatAsDimensionValue(lengthStyle, onStartDragLength + delta);
+                SetInlineFloatAsDimensionValue(primaryStyle, onStartDragPrimary - delta);
                 changeList.Add(GetStyleName(primaryStyle));
                 changeList.Add(GetStyleName(lengthStyle));
             }
             else if (!IsNoneOrAuto(oppositeStyle) && IsNoneOrAuto(primaryStyle))
             {
-                SetStyleSheetValue(lengthStyle, onStartDragLength + delta);
+                SetInlineFloatAsDimensionValue(lengthStyle, onStartDragLength + delta);
                 changeList.Add(GetStyleName(lengthStyle));
             }
             else
             {
                 if (primaryStyle == TrackedStyles.Top || primaryStyle == TrackedStyles.Left)
                 {
-                    SetStyleSheetValue(lengthStyle, onStartDragLength + delta);
-                    SetStyleSheetValue(primaryStyle, onStartDragPrimary - delta);
+                    SetInlineFloatAsDimensionValue(lengthStyle, onStartDragLength + delta);
+                    SetInlineFloatAsDimensionValue(primaryStyle, onStartDragPrimary - delta);
                     changeList.Add(GetStyleName(primaryStyle));
                     changeList.Add(GetStyleName(lengthStyle));
                 }
                 else
                 {
-                    SetStyleSheetValue(lengthStyle, onStartDragLength + delta);
+                    SetInlineFloatAsDimensionValue(lengthStyle, onStartDragLength + delta);
                     changeList.Add(GetStyleName(lengthStyle));
                 }
             }

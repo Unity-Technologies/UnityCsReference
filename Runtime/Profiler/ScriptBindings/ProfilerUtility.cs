@@ -25,6 +25,18 @@ namespace Unity.Profiling.LowLevel
         Counter = 1 << 7,
 
         SampleGPU = 1 << 8,
+
+        // Bits 10-12 for verbosity levels. Allows to filter markers during visualization.
+        // Set only ONE of these levels for a given marker or their bits will conflict.
+        VerbosityDebug =    1 << 10,    // Internal debug markers - e.g. JobSystem Idle.
+        VerbosityInternal = 2 << 10,    // Internal markers - e.g. Mutex/semaphore waits.
+        VerbosityExternal = 3 << 10,    // Marker should be echoed to any attached external profilers (such as Superluminal) even if they normally wouldn't capture it. This is usually applied to markers which have additional context that might be useful in those tools
+        VerbosityAdvanced = 4 << 10,    // Markers which are useful for advanced users - e.g. Loading.
+
+        // Marker which was created with a recorder to make an early binding.
+        // If we create marker with the same name later, we just pick and initialized this one.
+        // In this way we can setup callback pointers for dynamic markers.
+        // Precreated = 1 << 15
     }
 
     // Supported profiler metadata types.

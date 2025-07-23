@@ -239,6 +239,7 @@ namespace UnityEngine.UIElements
         /// Sets Unity Objects associated with the current drag-and-drop operation.
         /// </summary>
         /// <param name="references">The Unity Object references.</param>
+        [System.Obsolete("Use SetEntityIds instead, and call Object.GetEntityId() if you really need to convert from a Unity object to an EntityId.")]
         public void SetUnityObjectReferences(IEnumerable<Object> references)
         {
             SetEntityIds(references.Select(x => x.GetEntityId()).ToList());

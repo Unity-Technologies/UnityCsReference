@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering an unsigned integer. For more information, refer to [[wiki:UIE-uxml-element-UnsignedIntegerField|UXML element UnsignedIntegerField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/UnsignedIntegerField.png")]
     public class UnsignedIntegerField : TextValueField<uint>
     {
         // This property to alleviate the fact we have to cast all the time

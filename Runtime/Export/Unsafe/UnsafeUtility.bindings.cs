@@ -94,23 +94,33 @@ namespace Unity.Collections.LowLevel.Unsafe
         [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakErase(IntPtr handle, LeakCategory category);
 
+        unsafe public static void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip)
+        {
+            // Preserve existing public API signature for MallocTracked
+            // However we do not need to have two binding functions doing exactly the same job
+            return MallocTracked(size, alignment, allocator, callstacksToSkip + 1, IntPtr.Zero);
+        }
+
         [ThreadSafe(ThrowsException = true)]
-        unsafe public static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip);
+        unsafe internal static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip, IntPtr label);
 
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void FreeTracked(void* memory, Allocator allocator);
 
-        [ThreadSafe(ThrowsException = true)]
-        unsafe public static extern void* Malloc(long size, int alignment, Allocator allocator);
+        unsafe public static void* Malloc(long size, int alignment, Allocator allocator)
+        {
+            return Malloc(size, alignment, allocator, IntPtr.Zero);
+        }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         unsafe internal static void* Malloc(long size, int alignment, UnsafeAllocLabel label)
         {
-            return MallocWithCustomLabel(size, alignment, label.allocator, label.pointer);
+            label.CheckArgument();
+            return Malloc(size, alignment, label.allocator, label.pointer);
         }
 
         [ThreadSafe(ThrowsException = true)]
-        unsafe static extern void* MallocWithCustomLabel(long size, int alignment, Allocator allocator, IntPtr label);
+        unsafe static extern void* Malloc(long size, int alignment, Allocator allocator, IntPtr label);
 
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
@@ -118,6 +128,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         unsafe internal static void Free(void* memory, UnsafeAllocLabel label)
         {
+            label.CheckArgument();
             Free(memory, label.allocator);
         }
 

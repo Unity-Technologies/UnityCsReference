@@ -71,6 +71,8 @@ namespace UnityEngine.UIElements
             PropertyBag.RegisterList<StyleList<TimeValue>, TimeValue>();
             PropertyBag.Register(new StyleValuePropertyBag<StyleRotate, Rotate>());
             PropertyBag.Register(new Rotate.PropertyBag());
+            PropertyBag.Register(new StyleValuePropertyBag<StyleRatio, Ratio>());
+            PropertyBag.Register(new Ratio.PropertyBag());
             PropertyBag.Register(new Angle.PropertyBag());
             PropertyBag.Register(new StyleValuePropertyBag<StyleScale, Scale>());
             PropertyBag.Register(new Scale.PropertyBag());

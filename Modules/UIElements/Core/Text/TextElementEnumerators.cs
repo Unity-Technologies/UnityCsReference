@@ -58,7 +58,7 @@ namespace UnityEngine.UIElements
                 Count = ComputeCount(vertices);
             }
 
-            internal GlyphsEnumerable(TextElement te, List<NativeSlice<Vertex>> vertices, ATGMeshInfo[] meshInfos)
+            internal GlyphsEnumerable(TextElement te, List<NativeSlice<Vertex>> vertices, Span<ATGMeshInfo> meshInfos)
             {
                 m_TextElement = te;
                 m_Vertices = vertices;
@@ -66,7 +66,8 @@ namespace UnityEngine.UIElements
 
                 foreach (var meshInfo in meshInfos)
                 {
-                    if (meshInfo.textElementInfoIndicesByAtlas.Count > 1)
+                    var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                    if (textAsset is FontAsset fa && fa.atlasTextureCount > 1)
                         Debug.LogWarning("PostProcessTextVertices with ATG does not support this Multi-Atlas.");
                 }
             }

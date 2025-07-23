@@ -221,7 +221,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void AssignTreeItemIcon(VisualElement itemRoot, Texture2D icon)
+        void AssignTreeItemIcon(VisualElement itemRoot, Background icon)
         {
             var iconElement = itemRoot.ElementAt(0);
             if (icon == null)
@@ -232,7 +232,7 @@ namespace Unity.UI.Builder
             {
                 iconElement.style.display = DisplayStyle.Flex;
                 var styleBackgroundImage = iconElement.style.backgroundImage;
-                styleBackgroundImage.value = new Background { texture = icon };
+                styleBackgroundImage.value = icon;
                 iconElement.style.backgroundImage = styleBackgroundImage;
             }
         }

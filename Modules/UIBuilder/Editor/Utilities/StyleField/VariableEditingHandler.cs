@@ -259,7 +259,7 @@ namespace Unity.UI.Builder
                 for (var i = matchedRules.Count - 1; i >= 0; --i)
                 {
                     var matchRecord = matchedRules.ElementAt(i).matchRecord;
-                    var ruleProperty = matchRecord.sheet.FindLastProperty(matchRecord.complexSelector.rule, styleName);
+                    var ruleProperty = matchRecord.complexSelector.rule?.FindLastProperty(styleName);
 
                     if (ruleProperty != null)
                     {

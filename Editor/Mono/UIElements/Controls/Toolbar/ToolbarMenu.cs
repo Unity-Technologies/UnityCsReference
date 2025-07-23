@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -12,6 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A drop-down menu for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarMenu|UXML element ToolbarMenu]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ToolbarMenu.png")]
     public class ToolbarMenu : TextElement, IToolbarMenuElement
     {
         internal static readonly BindingId menuProperty = nameof(menu);

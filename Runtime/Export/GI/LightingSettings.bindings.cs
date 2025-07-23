@@ -23,6 +23,11 @@ namespace UnityEngine
 
         private extern static void Internal_Create([Writable] LightingSettings self);
 
+        // Returns the active lighting settings for the currently active scene.
+        // Note: This doesn't seem to populate until the frame after the scene was loaded.
+        [FreeFunction("GetLightingSettingsPtr")]
+        internal static extern LightingSettings GetActiveSettings();
+
         [NativeName("EnableBakedLightmaps")]
         public extern bool bakedGI { get; set; }
 
@@ -31,6 +36,8 @@ namespace UnityEngine
 
         [NativeName("RealtimeEnvironmentLighting")]
         public extern bool realtimeEnvironmentLighting { get; set; }
+
+        internal extern bool usingShadowmask { get; set; }
 
         #region Editor Only
         // Which baking backend is used.

@@ -61,7 +61,7 @@ namespace Unity.UI.Builder
             {
                 var child = newParent[i];
                 // Ignore children that are not part of a visual tree asset.
-                if (child.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) == null ||
+                if (child.visualElementAsset == null ||
                     !child.IsPartOfActiveVisualTreeAsset(viewport.paneWindow.document))
                     --index;
             }

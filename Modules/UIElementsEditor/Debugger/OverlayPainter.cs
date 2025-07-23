@@ -143,11 +143,12 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class HighlightOverlayPainter : BaseOverlayPainter
     {
+        internal static readonly PrefColor kHighlightContentColor = new PrefColor("UI Toolkit Debugger/Highlight Content", 0.1f, 0.6f, 0.9f, 0.4f, 0.1f, 0.6f, 0.9f, 0.4f);
+        internal static readonly PrefColor kHighlightPaddingColor = new PrefColor("UI Toolkit Debugger/Highlight Padding", 0.1f, 0.9f, 0.1f, 0.4f, 0.1f, 0.9f, 0.1f, 0.4f);
+        internal static readonly PrefColor kHighlightBorderColor = new PrefColor("UI Toolkit Debugger/Highlight Border", 1.0f, 1.0f, 0.4f, 0.4f, 1.0f, 1.0f, 0.4f, 0.4f);
+        internal static readonly PrefColor kHighlightMarginColor = new PrefColor("UI Toolkit Debugger/Highlight Margin", 1.0f, 0.6f, 0.0f, 0.4f, 1.0f, 0.6f, 0.0f, 0.4f);
+
         private const float kDefaultHighlightAlpha = 0.4f;
-        private static readonly Color kHighlightContentColor = new Color(0.1f, 0.6f, 0.9f);
-        private static readonly Color kHighlightPaddingColor = new Color(0.1f, 0.9f, 0.1f);
-        private static readonly Color kHighlightBorderColor = new Color(1.0f, 1.0f, 0.4f);
-        private static readonly Color kHighlightMarginColor = new Color(1.0f, 0.6f, 0.0f);
 
         private Rect[] m_MarginRects = new Rect[4];
         private Rect[] m_BorderRects = new Rect[4];
@@ -180,14 +181,14 @@ namespace UnityEditor.UIElements.Debugger
             var contentFlag = od.content;
             if ((contentFlag & OverlayContent.Content) == OverlayContent.Content)
             {
-                DrawRect(mgc, contentRect, kHighlightContentColor, od.alpha);
+                DrawRect(mgc, contentRect, kHighlightContentColor.Color, kHighlightContentColor.Color.a);
             }
 
             if ((contentFlag & OverlayContent.Padding) == OverlayContent.Padding)
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(mgc, m_PaddingRects[i], kHighlightPaddingColor, od.alpha);
+                    DrawRect(mgc, m_PaddingRects[i], kHighlightPaddingColor.Color, kHighlightPaddingColor.Color.a);
                 }
             }
 
@@ -195,7 +196,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(mgc, m_BorderRects[i], kHighlightBorderColor, od.alpha);
+                    DrawRect(mgc, m_BorderRects[i], kHighlightBorderColor.Color, kHighlightBorderColor.Color.a);
                 }
             }
 
@@ -203,7 +204,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(mgc, m_MarginRects[i], kHighlightMarginColor, od.alpha);
+                    DrawRect(mgc, m_MarginRects[i], kHighlightMarginColor.Color, kHighlightMarginColor.Color.a);
                 }
             }
         }
@@ -301,7 +302,8 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class RepaintOverlayPainter : BaseOverlayPainter
     {
-        private static readonly Color kRepaintColor = Color.green;
+        internal static readonly PrefColor kRepaintColor = new PrefColor("UI Toolkit Debugger/Repaint Overlay", 0f, 1f, 0f, 1f, 0f, 1f, 0f, 1f);
+        internal static readonly PrefColor kRepaintOutlineColor = new PrefColor("UI Toolkit Debugger/Repaint Overlay Outline", 0f, 1f, 0f, 1f, 0f, 1f, 0f, 1f);
         private static readonly float kDefaultAlpha = 1.0f;
         private static readonly int kOverlayFadeOutDuration = 500;
 
@@ -323,16 +325,17 @@ namespace UnityEditor.UIElements.Debugger
 
         protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawRect(mgc, od.element.worldBound, kRepaintColor, od.alpha);
-            DrawBorder(mgc, od.element.worldBound, kRepaintColor, od.alpha * 4);
+            DrawRect(mgc, od.element.worldBound, kRepaintColor.Color, kRepaintColor.Color.a);
+            DrawBorder(mgc, od.element.worldBound, kRepaintOutlineColor.Color, kRepaintOutlineColor.Color.a * 4);
         }
     }
 
     internal class LayoutOverlayPainter : BaseOverlayPainter
     {
+        internal static PrefColor kBoundColor = new PrefColor("UI Toolkit Debugger/Layout Overlay Outline", 0.5f, 0.5f, 0.5f, 1f, 0.5f, 0.5f, 0.5f, 1f);
+        internal static PrefColor kSelectedBoundColor = new PrefColor("UI Toolkit Debugger/Layout Overlay Outline Selected", 0f, 1f, 0f, 1f, 0f, 1f, 0f, 1f);
+
         private static readonly float kDefaultAlpha = 1.0f;
-        private static readonly Color kBoundColor = Color.gray;
-        private static readonly Color kSelectedBoundColor = Color.green;
 
         public VisualElement selectedElement;
 
@@ -353,21 +356,25 @@ namespace UnityEditor.UIElements.Debugger
         {
             base.Draw(mgc);
 
-            if (selectedElement != null)
-                DrawBorder(mgc, selectedElement.worldBound, kSelectedBoundColor, kDefaultAlpha);
+            if (selectedElement == null)
+                return;
+
+            var color = kSelectedBoundColor.Color;
+            DrawBorder(mgc, selectedElement.worldBound, color, color.a);
         }
 
         protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawBorder(mgc, od.element.worldBound, kBoundColor, od.alpha);
+            var color = kBoundColor.Color;
+            DrawBorder(mgc, od.element.worldBound, color, color.a);
         }
     }
 
     internal class WireframeOverlayPainter : BaseOverlayPainter
     {
         private static readonly float kDefaultAlpha = 1.0f;
-        private static readonly Color kUnselectedColor = Color.gray;
-        private static readonly Color kSelectedColor = new Color(1.0f, 1.0f, 0.0f, 1.0f);
+        private static readonly PrefColor kUnselectedColor = new PrefColor("UI Toolkit Debugger/Wireframe", 0.5f, 0.5f, 0.5f, 1f, 0.5f, 0.5f, 0.5f, 1f);
+        private static readonly PrefColor kSelectedColor = new PrefColor("UI Toolkit Debugger/Wireframe Selected", 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f);
 
         public VisualElement selectedElement;
 
@@ -389,12 +396,12 @@ namespace UnityEditor.UIElements.Debugger
             base.Draw(mgc);
 
             if (selectedElement != null)
-                DrawWireframe(mgc, selectedElement, kSelectedColor, kDefaultAlpha);
+                DrawWireframe(mgc, selectedElement, kSelectedColor.Color, kSelectedColor.Color.a);
         }
 
         protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawWireframe(mgc, od.element, kUnselectedColor, od.alpha);
+            DrawWireframe(mgc, od.element, kUnselectedColor.Color, kUnselectedColor.Color.a);
         }
 
         void DrawWireframe(MeshGenerationContext mgc, VisualElement ve, Color wireColor, float alpha)

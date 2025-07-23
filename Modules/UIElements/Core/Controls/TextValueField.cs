@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -218,6 +219,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal override void UpdateTextFromValue()
         {
             if (m_UpdateTextFromValue)

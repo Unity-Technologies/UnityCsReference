@@ -11,7 +11,7 @@ using UnityEngine.Pool;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class TemplateAsset : VisualElementAsset //<TemplateContainer>
     {
         public static readonly string UxmlInstanceTypeName = "UnityEngine.UIElements.Instance";
@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
 
             var veaIdsPath = cc.veaIdsPath != null ? new List<int>(cc.veaIdsPath) : new List<int>();
             var newCC = new CreationContext(cc.slotInsertionPoints, traitsOverrideRanges, serializedDataOverrideRanges,
-                null, null, veaIdsPath, null);
+                null, null, veaIdsPath, null, this);
 
             tc.templateSource.CloneTree(tc, newCC);
 

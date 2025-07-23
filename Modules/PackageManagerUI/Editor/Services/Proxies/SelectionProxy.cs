@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -11,8 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         event Action onSelectionChanged;
 
-        UnityEngine.Object[] objects { get; set; }
-        UnityEngine.Object activeObject { get; set; }
+        Object[] objects { get; set; }
+        Object activeObject { get; set; }
     }
 
     [ExcludeFromCodeCoverage]
@@ -25,13 +26,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             Selection.selectionChanged += OnSelectionChanged;
         }
 
-        public UnityEngine.Object[] objects
+        public Object[] objects
         {
             get { return Selection.objects; }
             set { Selection.objects = value; }
         }
 
-        public UnityEngine.Object activeObject
+        public Object activeObject
         {
             get { return Selection.activeObject; }
             set { Selection.activeObject = value; }

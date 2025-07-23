@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements.UIR
 
         public TextureId quadTextureId;
         public RectInt quadRect;
+        public Rect quadUVRect;
 
         internal RenderTreeManager renderTreeManager => m_RenderTreeManager;
         internal RenderData rootRenderData => m_RootRenderData;

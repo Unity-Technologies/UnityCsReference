@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
     /// This is a base class for the Slider fields.
     /// </summary>
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
-        where TValueType : System.IComparable<TValueType>
+        where TValueType : IComparable<TValueType>
     {
         internal static readonly BindingId lowValueProperty = nameof(lowValue);
         internal static readonly BindingId highValueProperty = nameof(highValue);
@@ -47,12 +47,22 @@ namespace UnityEngine.UIElements
                 BaseField<TValueType>.UxmlSerializedData.Register();
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
+                    new (nameof(valueOverride), "value"),
+                    new (nameof(lowValue), "low-value"),
+                    new (nameof(highValue), "high-value"),
                     new (nameof(fill), "fill"),
                 }, false);
             }
 
             #pragma warning disable 649
+            [UxmlAttributeBindingPath("value")]
+            [SerializeField, Delayed, UxmlAttribute("value")] TValueType valueOverride;
+            [SerializeField, Delayed] TValueType lowValue;
+            [SerializeField, Delayed] TValueType highValue;
             [SerializeField] bool fill;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueOverride_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fill_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -61,6 +71,12 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (BaseSlider<TValueType>)obj;
+                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
+                    e.lowValue = lowValue;
+                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
+                    e.highValue = highValue;
+                if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
+                    e.valueOverride = valueOverride;
                 if (ShouldWriteAttributeValue(fill_UxmlAttributeFlags))
                     e.fill = fill;
             }
@@ -115,6 +131,9 @@ namespace UnityEngine.UIElements
                 m_PickingMode.defaultValue = PickingMode.Ignore;
             }
         }
+
+        // Placeholder required to prevent issues syncing UxmlSerializedData.
+        internal TValueType valueOverride { get => value; set => SetValueWithoutNotify(value); }
 
         /// <summary>
         /// This is the minimum value that the slider encodes.

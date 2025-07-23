@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -14,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted Package");
 
         private static readonly Vector2 k_DefaultWindowSize = new(320, 72);
-        private static readonly Vector2 k_WindowSizeWithError = new(320, 110);
+        private static readonly Vector2 k_WindowSizeWithError = new(320, 114);
         internal override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
         private EditorWindow m_AnchorWindow;
@@ -247,7 +246,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
         private VisualElement inputForm => cache.Get<VisualElement>("inputForm");
         internal TextField packageNameField => cache.Get<TextField>("packageName");
         internal TextField packageVersionField => cache.Get<TextField>("packageVersion");

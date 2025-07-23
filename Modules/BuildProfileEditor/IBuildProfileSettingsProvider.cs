@@ -26,8 +26,19 @@ namespace UnityEditor.Build.Profile
         public string GetTooltip();
 
         /// <summary>
-        /// Returns true if the given profile contains the settings
+        /// Return true if the given profile can contain the settings
         /// described by this provider.
+        /// </summary>
+        /// <remarks>
+        ///     Dropdown item visibility is based on being able to
+        ///     add settings and settings not already existing.
+        /// </remarks>
+        public bool CanAddSettings(BuildProfile profile) => true;
+
+        /// <summary>
+        /// Returns true if the given profile contains the settings
+        /// described by this provider. Determines if a settings
+        /// foldout should be shown for the profile editor.
         /// </summary>
         public bool HasSettings(BuildProfile profile);
 

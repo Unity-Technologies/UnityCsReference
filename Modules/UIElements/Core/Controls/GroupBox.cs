@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     /// Default options are <see cref="RadioButton"/>, but users can provide other implementations.
     /// If no <see cref="IGroupBox"/> is found in the hierarchy, the default container will be the panel.
     /// </summary>
+    [Icon("UIToolkit/Icons/GroupBox.png")]
     public class GroupBox : BindableElement, IGroupBox
     {
         internal static readonly BindingId textProperty = nameof(text);

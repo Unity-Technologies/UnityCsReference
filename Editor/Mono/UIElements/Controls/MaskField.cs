@@ -499,6 +499,7 @@ namespace UnityEditor.UIElements
     /// The MaskField is an Editor-only control that lets users select one or more options from a list of options.
     /// For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/MaskField.png")]
     public class MaskField : BaseMaskField<int>
     {
         internal override int MaskToValue(int newMask) => newMask;

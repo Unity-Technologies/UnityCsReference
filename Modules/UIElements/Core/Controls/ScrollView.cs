@@ -109,6 +109,7 @@ namespace UnityEngine.UIElements
     /// This example creates a ScrollView that contains multiple labels and uses a Button to scroll to a selected label.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_ScrollTo.cs"/>
     /// </example>
+    [Icon("UIToolkit/Icons/ScrollView.png")]
     public class ScrollView : VisualElement
     {
         internal static readonly BindingId horizontalScrollerVisibilityProperty = nameof(horizontalScrollerVisibility);

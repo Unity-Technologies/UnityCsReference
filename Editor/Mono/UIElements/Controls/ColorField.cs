@@ -14,6 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for selecting a color. For more information, refer to [[wiki:UIE-uxml-element-ColorField|UXML element ColorField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ColorField.png")]
     public class ColorField : BaseField<Color>
     {
         internal static readonly BindingId showEyeDropperProperty = nameof(showEyeDropper);

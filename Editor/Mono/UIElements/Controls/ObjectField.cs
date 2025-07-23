@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field to receive any object type. For more information, refer to [[wiki:UIE-uxml-element-ObjectField|UXML element ObjectField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ObjectField.png")]
     public class ObjectField : BaseField<Object>
     {
         internal static readonly BindingId objectTypeProperty = nameof(objectType);

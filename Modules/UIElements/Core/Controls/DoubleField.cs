@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering doubles.
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/DoubleField.png")]
     public class DoubleField : TextValueField<double>
     {
         // This property to alleviate the fact we have to cast all the time

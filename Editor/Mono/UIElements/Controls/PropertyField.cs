@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A SerializedProperty wrapper VisualElement that, on [[BindingExtensions.Bind|Bind()]], will generate the correct field elements with the correct binding paths. For more information, refer to [[wiki:UIE-uxml-element-PropertyField|UXML element PropertyField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/PropertyField.png")]
     public class PropertyField : VisualElement, IBindable
     {
         static readonly BindingId labelProperty = nameof(label);

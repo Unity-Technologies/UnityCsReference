@@ -171,6 +171,7 @@ partial struct LayoutNode : IEquatable<LayoutNode>
         JustifyContent = (LayoutJustify)style.justifyContent;
         Wrap = (LayoutWrap)style.flexWrap;
         Display = (LayoutDisplay)style.display;
+        AspectRatio = style.aspectRatio.value;
     }
 
     /// <summary>

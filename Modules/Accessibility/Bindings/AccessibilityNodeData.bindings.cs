@@ -10,81 +10,623 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Accessibility
 {
     /// <summary>
-    /// Options for defining the role of an <see cref="AccessibilityNode"/> to
-    /// assistive technologies.
+    /// Options for defining the role of an <see cref="AccessibilityNode"/> to screen readers.
     /// </summary>
     /// <remarks>
-    /// You can use values from this enum to set the
-    /// <see cref="AccessibilityNode.role"/>. This property helps inform
-    /// assistive technologies how to interact with your
-    /// <see cref="AccessibilityNode"/>. Setting accurate roles improves the
-    /// usability and user experience of your UI by enabling assistive
-    /// technologies to set clear expectations for users. A missing role can
-    /// block a user from interacting with your UI, and an incorrect role can
-    /// cause confusion and frustration. You can use the default value,
-    /// <see cref="AccessibilityRole.None"/>, for nodes whose role is not
-    /// described by any of the enum options. Some examples are container
-    /// elements and highly customized controls.
+    /// <para>
+    /// You can use the values in this enumeration to set the <see cref="AccessibilityNode.role"/>. This property
+    /// assigns a semantic meaning to the accessibility node, which informs screen readers how to interact with it and
+    /// announce its purpose appropriately.
+    /// </para>
+    /// <para>
+    /// Setting accurate roles improves the usability and user experience of your user interface by enabling the screen
+    /// reader to set clear expectations for the user. A missing role can block the user from interacting with your
+    /// application, and an incorrect role can cause confusion and frustration.
+    /// </para>
+    /// <para>
+    /// If the visual element that the node represents has a role that is not covered by any of the enumeration options,
+    /// use the default value, <see cref="AccessibilityRole.None"/>, and provide information about the node's purpose
+    /// and behavior in properties such as the <see cref="AccessibilityNode.label"/> and
+    /// <see cref="AccessibilityNode.hint"/>.
+    /// </para>
+    /// <para>
+    /// SA:
+    ///
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    /// </para>
     /// </remarks>
     /// <example>
-    /// The following example demonstrates assigning an [[AccessibilityRole]] to a
-    /// UI element based on its [[UIElements.VisualElement]] type.
+    /// The following example demonstrates assigning an [[AccessibilityRole]] to a UI element based on its
+    /// [[UIElements.VisualElement]] type.
     /// <code source="../Tests/AccessibilityExamples/Assets/Examples/AccessibilityManager.cs"/>
     /// </example>
+    [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
+    public enum AccessibilityRole : byte
+    {
+        /// <summary>
+        /// The accessibility node has none of the predefined roles.
+        /// </summary>
+        /// <remarks>
+        /// Use this role if the visual element that the node represents does not fit any of the predefined roles in
+        /// this enumeration. Provide information about the node's purpose and behavior in properties such as the
+        /// <see cref="AccessibilityNode.label"/> and <see cref="AccessibilityNode.hint"/>.
+        /// </remarks>
+        None,
+
+        /// <summary>
+        /// The accessibility node behaves like a button.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If this role is set on a node, the screen reader announces the node as a "button". On Android and macOS,
+        /// after a short pause, it also provides instructions on how to activate the node.
+        /// </para>
+        /// <para>
+        /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
+        /// be activated, and perform an appropriate action when the user activates it, such as invoking the button
+        /// represented by the node.
+        /// </para>
+        /// </remarks>
+        Button,
+
+        /// <summary>
+        /// The accessibility node behaves like an image.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If this role is set on a node, the screen reader announces the node as an "image".
+        /// </para>
+        /// <para>
+        /// On Windows, if the node represents a clickable image, then it should have a role that supports
+        /// <see cref="AccessibilityNode.invoked"/>, such as <see cref="AccessibilityRole.Button"/>, instead of this
+        /// role.
+        /// </para>
+        /// </remarks>
+        Image,
+
+        /// <summary>
+        /// The accessibility node behaves like static text that can't change.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// On macOS, if this role is set on a node that has a <see cref="AccessibilityNode.label"/> assigned, the
+        /// screen reader announces the node as a "text". On other platforms, this role does not affect the node's
+        /// announcement but provides the screen reader with semantic information about the node.
+        /// </para>
+        /// <para>
+        /// On Windows and macOS, if this role is set on a node without a label, the screen reader ignores the node.
+        /// </para>
+        /// </remarks>
+        StaticText,
+
+        /// <summary>
+        /// The accessibility node behaves like a search field.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: This role does not affect the node's announcement but provides the screen reader with semantic
+        /// information about the node.
+        ///- **iOS**: If this role is set on a node, the screen reader announces the node as a "search field".
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "search text field".
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as "edit". The resulting
+        /// behavior of this role is identical to that of <see cref="AccessibilityRole.TextField"/>.
+        /// </para>
+        /// <para>
+        /// On Windows and macOS, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the
+        /// search field represented by the node when the user navigates to it, so that it can receive keyboard input.
+        /// </para>
+        /// </remarks>
+        SearchField,
+
+        /// <summary>
+        /// The accessibility node behaves like a keyboard key.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// On mobile platforms, this role enables touch typing, which allows the user to activate the node by
+        /// performing a single-tap gesture instead of the standard double-tap gesture.
+        /// </para>
+        /// <para>
+        /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
+        /// be activated, and perform an appropriate action when the user activates it, such as invoking the key
+        /// represented by the node.
+        /// </para>
+        /// <para>
+        /// **Platform support**
+        ///
+        ///- On Android, this role is only supported starting with Android 10 (API level 29).
+        ///- This role has no effect on desktop platforms.
+        /// </para>
+        /// <para>
+        /// SA:
+        ///
+        ///- [Touch typing on Android](https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Edit%20text%20with%20Gboard)
+        ///- [Touch typing on iOS](https://support.apple.com/en-us/guide/iphone/iph3e2e3d1d/ios#:~:text=Touch%20typing)
+        /// </para>
+        /// </remarks>
+        KeyboardKey,
+
+        /// <summary>
+        /// The accessibility node behaves like a heading that divides content into sections, such as the title of a
+        /// navigation bar.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// On Windows, if this role is set on a node without a <see cref="AccessibilityNode.label"/>, the screen reader
+        /// announces the node as a "header". On other platforms, if this role is set on a node, the screen reader
+        /// announces the node as a "heading" regardless of whether the node has a label set.
+        /// </para>
+        /// <para>
+        /// On mobile platforms, this role enables heading navigation, which allows users to more efficiently navigate
+        /// an application by moving from one heading to the next without having to navigate through all the nodes in
+        /// between. On Android, this navigation mode can be activated through the "Headings"
+        /// [reading control](https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls)
+        /// in TalkBack. On iOS, it can be accessed through the "Headings" control in the
+        /// [VoiceOver rotor](https://support.apple.com/en-us/111796).
+        /// </para>
+        /// <para>
+        /// On macOS, accessibility nodes with this role may be listed in the "Window Spots" menu of the
+        /// [VoiceOver rotor](https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac).
+        /// </para>
+        /// <para>
+        /// **Platform support**: On Android, this role is only supported starting with Android 9 (API level 28).
+        /// </para>
+        /// </remarks>
+        Header,
+
+        /// <summary>
+        /// The accessibility node behaves like an ordered list of tabs.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Tab bar nodes are specialized container nodes. See <see cref="AccessibilityRole.Container"/> for
+        /// platform-specific screen reader behavior that is common to both container and tab bar nodes.
+        /// </para>
+        /// <para>
+        /// **Platform behavior specific to this role**
+        ///
+        ///- **Android**: This role does not affect the node's announcement but provides the screen reader with semantic
+        /// information about the node.
+        ///- **iOS**: If this role is set on a node, the screen reader announces the node's children as "tabs". It also
+        /// announces a tab's position in the tab bar and the total number of tabs in it.
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "tab group". If the
+        /// node's children have <see cref="AccessibilityRole.TabButton"/> set, the screen reader also announces their
+        /// position in the tab bar and the total number of tabs in it.
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "tab".
+        /// </para>
+        /// <para>
+        /// For proper functionality, tab bar nodes must have a <see cref="AccessibilityNode.label"/> set, and their
+        /// child nodes must have <see cref="AccessibilityRole.TabButton"/> assigned.
+        /// </para>
+        /// <para>
+        /// Set <see cref="AccessibilityState.Selected"/> on the child node representing the selected tab to inform the
+        /// screen reader of which tab is currently selected.
+        /// </para>
+        /// </remarks>
+        TabBar,
+
+        /// <summary>
+        /// The accessibility node behaves like a slider that allows continuous adjustment through a range of values.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as a "slider". After a
+        /// short pause, it provides instructions on how to adjust its value.
+        ///- **iOS**: If this role is set on a node, the screen reader announces the node as "adjustable". After a short
+        /// pause, it provides instructions on how to adjust its value.
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "slider". After a short
+        /// pause, it provides instructions on how to interact with it.
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "slider".
+        /// </para>
+        /// <para>
+        /// Subscribe to the <see cref="AccessibilityNode.incremented"/> and
+        /// <see cref="AccessibilityNode.decremented"/> events to perform an appropriate action when the user increases
+        /// or decreases the node's value, such as changing the value of the slider represented by the node. On Windows,
+        /// these events are only triggered for nodes whose <see cref="AccessibilityNode.value"/> contains a number.
+        /// </para>
+        /// </remarks>
+        Slider,
+
+        /// <summary>
+        /// The accessibility node behaves like a toggle.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as a "switch". After a
+        /// short pause, it provides instructions on how to toggle it. If the node has
+        /// <see cref="AccessibilityState.Selected"/> set, the screen reader reads "on" before announcing the node's
+        /// label. Otherwise, it reads "off".
+        ///- **iOS**: If this role is set on a node, the screen reader announces the node as a "switch button". After a
+        /// short pause, it provides instructions on how to toggle it. If the node has
+        /// <see cref="AccessibilityState.Selected"/> set, the screen reader reads "selected" before announcing the
+        /// node's label. Otherwise, it does not read the node's state.
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "checkbox". After a
+        /// short pause, it provides instructions on how to toggle it. If the node has
+        /// <see cref="AccessibilityState.Selected"/> set, the screen reader reads "checked" after announcing the node's
+        /// label. Otherwise, it reads "unchecked".
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "checkbox". If the
+        /// node has <see cref="AccessibilityState.Selected"/> set, the screen reader reads "checked" after announcing
+        /// the node's label. Otherwise, it reads "unchecked".
+        /// </para>
+        /// <para>
+        /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
+        /// be activated, and perform an appropriate action when the user activates it, such as changing the value of
+        /// the toggle represented by the node.
+        /// </para>
+        /// <para>
+        /// **Platform support**: On iOS, this role is only supported starting with iOS 17.
+        /// </para>
+        /// </remarks>
+        Toggle,
+
+        /// <summary>
+        /// The accessibility node is a container of other nodes (examples of containers include tab bars and scroll
+        /// views).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Apply this role to parent <see cref="AccessibilityNode"/> elements to enable smoother and more efficient
+        /// screen reader navigation.
+        /// </para>
+        /// <para>
+        /// **When to use**
+        /// </para>
+        /// <para>
+        /// You can use this role to organize complex interfaces. For example, you can represent a tab bar as a
+        /// container node with multiple tabs as child nodes. This allows users to navigate between tabs without having
+        /// to navigate through all the other elements on the screen.
+        /// </para>
+        /// <para>
+        /// This role is especially useful in:
+        ///
+        ///- Tab groups or sections of a user interface that need distinct boundaries.
+        ///- Navigation bars or toolbars that contain buttons or other controls.
+        ///- Popups, dialogs, or other temporary views.
+        ///- Forms or panels that contain related input fields or controls.
+        ///- Scroll views or other containers that contain a large amount of content.
+        /// </para>
+        /// <para>
+        /// **Android behavior**
+        /// </para>
+        /// <para>
+        /// Container nodes themselves are not directly focusable, but they do provide the screen reader with key
+        /// information that enhances navigation:
+        ///
+        ///- They enable container navigation, which can be activated through the "Containers"
+        /// [reading control](https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls)
+        /// in TalkBack. In this navigation mode, users can move from one container to the next without having to
+        /// navigate through all the nodes in between.
+        ///- Starting with Android 14 (API level 34), the screen reader may announce when the user enters or exits a
+        /// container.
+        /// </para>
+        /// <para>
+        /// To ensure proper announcements, container nodes must have a <see cref="AccessibilityNode.label"/> set.
+        /// </para>
+        /// <para>
+        /// Setting <see cref="AccessibilityNode.isActive"/> on a container node has no effect.
+        /// </para>
+        /// <para>
+        /// **iOS behavior**
+        /// </para>
+        /// <para>
+        /// Container nodes are not directly focusable during standard screen reader navigation (called flat navigation
+        /// on iOS), but they provide essential context for the screen reader:
+        ///
+        ///- They enable container navigation, which can be activated through the "Containers" control in the
+        /// [VoiceOver rotor](https://support.apple.com/en-us/111796). As on Android, this navigation mode allows users
+        /// to navigate efficiently between containers.
+        ///- They enable [grouped navigation](https://support.apple.com/en-us/guide/iphone/iphfa3d32c50/ios#:~:text=Use%20flat%20or%20grouped%20navigation),
+        /// which can be accessed through the "Navigation Style" control in the VoiceOver rotor. In grouped navigation,
+        /// container nodes are focusable. When navigating sequentially, the screen reader focuses on the container
+        /// node directly instead of focusing on its child nodes. To navigate through the container's child nodes, the
+        /// user must move into the container by performing a dedicated gesture. Once in a container, the user must
+        /// first move out of it to navigate to nodes outside of the container. This navigation style is partcularly
+        /// useful in complex interfaces, where it simplifies and speeds up navigation.
+        ///- In flat navigation, the screen reader announces the container node's label when the user enters the
+        /// container by focusing on any of its child nodes. In grouped navigation, the screen reader announces the
+        /// container node both when entering and when exiting it.
+        /// </para>
+        /// <para>
+        /// Container nodes must have a <see cref="AccessibilityNode.label"/> set to ensure proper functionality in all
+        /// of the cases presented above.
+        /// </para>
+        /// <para>
+        /// Setting <see cref="AccessibilityNode.isActive"/> on a container node has no effect.
+        /// </para>
+        /// <para>
+        /// **macOS behavior**
+        /// </para>
+        /// <para>
+        /// As opposed to Android and iOS, container nodes are focusable in standard screen reader navigation on macOS.
+        /// </para>
+        /// <para>
+        /// As in the grouped navigation style on iOS, the screen reader focuses on the container node directly instead
+        /// of focusing on its child nodes. To access the container's child nodes, the user must move into the container
+        /// by using a dedicated VoiceOver command. Once in a container, the user must first move out of it to navigate
+        /// to sibling nodes or other parts of the hierarchy. This navigation style is useful for the user because it
+        /// streamlines navigation in complex interfaces specific to desktop applications.
+        /// </para>
+        /// <para>
+        /// This navigation style is available for any parent nodes, even if they do not have this role set. However,
+        /// setting this role allows the screen reader to announce the node as a "group" and provide instructions on how
+        /// to interact with its child nodes.
+        /// </para>
+        /// <para>
+        /// The screen reader announces when the user enters or exits any kind of parent node. When moving into it, the
+        /// screen reader also announces the number of its child nodes.
+        /// </para>
+        /// <para>
+        /// Container nodes may be listed in the "Window Spots" menu of the
+        /// [VoiceOver rotor](https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac).
+        /// </para>
+        /// <para>
+        /// Setting other roles on a parent node may result in unintended screen reader behavior.
+        /// </para>
+        /// <para>
+        /// For proper functionality, container nodes must have a <see cref="AccessibilityNode.label"/> set.
+        /// </para>
+        /// <para>
+        /// Unlike on Android and iOS, setting <see cref="AccessibilityNode.isActive"/> to @@false@@ on a container node
+        /// deactivates both the node itself and its child nodes.
+        /// </para>
+        /// <para>
+        /// **Windows behavior**
+        /// </para>
+        /// <para>
+        /// Container nodes are not directly focusable, but they do provide the screen reader with key information that
+        /// enhances navigation.
+        /// </para>
+        /// <para>
+        /// If a container node has <see cref="AccessibilityNode.isActive"/> set to @@true@@ and has a
+        /// <see cref="AccessibilityNode.label"/> set, the screen reader announces its label and role (as a "group")
+        /// when the user enters the container by focusing on any of its child nodes.
+        /// </para>
+        /// <para>
+        /// Setting <see cref="AccessibilityNode.isActive"/> on a container node has no effect on its child nodes.
+        /// </para>
+        /// </remarks>
+        Container,
+
+        /// <summary>
+        /// The accessibility node behaves like a text field.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as an "edit box".
+        ///- **iOS**: This role has no effect.
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "text".
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as "edit".
+        /// </para>
+        /// <para>
+        /// On Windows and macOS, subscribe to the <see cref="AccessibilityNode.focusChanged"/> event to select the text
+        /// field represented by the node when the user navigates to it, so that it can receive keyboard input.
+        /// </para>
+        /// </remarks>
+        TextField,
+
+        /// <summary>
+        /// The accessibility node behaves like a dropdown list.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as a "dropdown list".
+        /// After a short pause, it provides instructions on how to open it.
+        ///- **iOS**: This role has no effect.
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "pop up button". After
+        /// a short pause, it provides instructions on how to open it. If the node has
+        /// <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing the
+        /// node's label. Otherwise, it reads "collapsed".
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "combo box". If the
+        /// node has <see cref="AccessibilityState.Expanded"/> set, the screen reader reads "expanded" after announcing
+        /// the node's label. Otherwise, it reads "collapsed".
+        /// </para>
+        /// <para>
+        /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
+        /// be activated, and perform an appropriate action when the user activates it, such as opening the dropdown
+        /// represented by the node.
+        /// </para>
+        /// <para>
+        /// For proper functionality, a dropdown's child nodes must have <see cref="AccessibilityRole.Button"/> or
+        /// <see cref="AccessibilityRole.Toggle"/> assigned.
+        /// </para>
+        /// <para>
+        /// Set <see cref="AccessibilityState.Selected"/> on the child node representing the selected option to inform
+        /// the screen reader of which option is currently selected.
+        /// </para>
+        /// </remarks>
+        Dropdown,
+
+        /// <summary>
+        /// The accessibility node behaves like an item in an ordered list of tabs.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as a "button". After a
+        /// short pause, it provides instructions on how to activate the node.
+        ///- **iOS**: If this role is set on a node and the node's parent has <see cref="AccessibilityRole.TabBar"/>
+        /// set, the screen reader announces the node as a "tab". Otherwise, it announces the node as a "button".
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "tab". After a short
+        /// pause, it provides instructions on how to select the node. If the node's parent has
+        /// <see cref="AccessibilityRole.TabBar"/> set, the screen reader also announces the tab's position in the tab
+        /// bar and the total number of tabs in it.
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as a "tab item".
+        /// </para>
+        /// <para>
+        /// For proper functionality, the parent node of tab button nodes must have
+        /// <see cref="AccessibilityRole.TabBar"/> assigned.
+        /// </para>
+        /// <para>
+        /// If the tab represented by the tab button node is selected, assign <see cref="AccessibilityState.Selected"/>
+        /// to the node to inform the screen reader of which tab is currently selected.
+        /// </para>
+        /// <para>
+        /// Subscribe to the <see cref="AccessibilityNode.invoked"/> event to inform the screen reader that the node can
+        /// be activated, and perform an appropriate action when the user activates it, such as selecting the tab
+        /// represented by the node.
+        /// </para>
+        /// </remarks>
+        TabButton,
+    }
+
+    /// <summary>
+    /// Options for defining the state of an <see cref="AccessibilityNode"/> to screen readers.
+    /// </summary>
     /// <remarks>
-    /// SA: [[wiki:mobile-accessibility]].
+    /// <para>
+    /// You can use the values in this enumeration to set the <see cref="AccessibilityNode.state"/>. This property
+    /// enables screen readers to describe the state of interactive elements, such as whether a checkbox is checked or
+    /// whether a button is disabled.
+    /// </para>
+    /// <para>
+    /// If the visual element that the node represents has a state that is not represented by an enumeration option, use
+    /// the default value, <see cref="AccessibilityState.None"/>, and provide information about the node's current state
+    /// in properties such as the <see cref="AccessibilityNode.value"/> and <see cref="AccessibilityNode.hint"/>.
+    /// </para>
+    /// <para>
+    /// SA:
+    ///
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    /// </para>
     /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     [Flags]
-    public enum AccessibilityRole : ushort
+    public enum AccessibilityState : byte
     {
-        /// <summary>The accessibility node has no roles.</summary>
-        None                    = 0,
-
-        /// <summary>The accessibility node behaves like a button.</summary>
-        Button                  = 1 << 0,
-
-        /// <summary>The accessibility node behaves like an image.</summary>
-        Image                   = 1 << 1,
-
-        /// <summary>The accessibility node behaves like static text that can't change.</summary>
-        StaticText              = 1 << 2,
-
-        /// <summary>The accessibility node behaves like a search field.</summary>
-        SearchField             = 1 << 3,
-
-        /// <summary>The accessibility node behaves like a keyboard key.</summary>
-        /// <remarks>For Android, this requires at least API level 29.</remarks>
-        KeyboardKey             = 1 << 4,
-
-        /// <summary>The accessibility node behaves like a header that divides content into sections (for example, the title of a navigation bar).</summary>
-        /// <remarks>For Android, this requires at least API level 28.</remarks>
-        Header                  = 1 << 5,
-
-        /// <summary>The accessibility node behaves like an ordered list of tabs.</summary>
-        TabBar                  = 1 << 6,
-
-        /// <summary>The accessibility node behaves like a slider. The value of this node can be continuously adjusted through a range.</summary>
-        Slider                  = 1 << 7,
-
-        /// <summary>The accessibility node behaves like a toggle.</summary>
-        /// <remarks>For iOS, this requires at least iOS 17.</remarks>
-        Toggle                  = 1 << 8,
-    }
-
-    /// <summary>Describes the state of an accessibility node.</summary>
-    [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
-    [Flags]
-    public enum AccessibilityState : ushort
-    {
-        /// <summary>The accessibility node is in none of the other states.</summary>
+        /// <summary>
+        /// The accessibility node is not in a predefined state.
+        /// </summary>
+        /// <remarks>
+        /// Use this state if the visual element that the node represents does not have any of the predefined states in
+        /// this enumeration. Provide information about the node's current state (for example, whether a collapsible
+        /// section is expanded or collapsed) in properties such as the <see cref="AccessibilityNode.value"/> and
+        /// <see cref="AccessibilityNode.hint"/>.
+        /// </remarks>
         None            = 0,
 
-        /// <summary>The accessibility node is currently in a disabled state and does not respond to user interaction.</summary>
+        /// <summary>
+        /// The visual element represented by the accessibility node is currently disabled and does not respond to user
+        /// interaction.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This state is purely informative. It indicates the status of the visual element that the node represents.
+        /// Setting this state does not prevent the user from interacting with the node (for example, the
+        /// <see cref="AccessibilityNode.invoked"/> event is still triggered if the user wants to activate the node).
+        /// To prevent user interaction with the visual element represented by the node, make sure it is disabled and
+        /// restrict its actions in your accessibility event handlers (for example, return @@false@@ in your event
+        /// handler for <see cref="AccessibilityNode.invoked"/>).
+        /// </para>
+        /// <para>
+        /// **Platform-specific behavior**
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as "disabled".
+        ///- **iOS**: If this role is set on a node, the screen reader announces the node as "dimmed".
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as "dimmed".
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as "disabled".
+        /// </para>
+        /// </remarks>
         Disabled        = 1 << 0,
 
-        /// <summary>The accessibility node is currently in a selected state (for example, a selected row in a table or a selected button within a segmented control).</summary>
+        /// <summary>
+        /// The visual element represented by the accessibility node is currently selected, such as a selected table row
+        /// or a selected button in a segmented control.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **Platform-specific behavior**
+        /// </para>
+        /// <para>
+        /// For nodes with a role other than <see cref="AccessibilityRole.Toggle"/>:
+        ///
+        ///- **Android**: If this role is set on a node, the screen reader announces the node as "selected".
+        ///- **iOS**: If this role is set on a node, the screen reader announces the node as "selected".
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as "selected".
+        ///- **Windows**: If this role is set on a node, the screen reader announces the node as "on".
+        /// </para>
+        /// <para>
+        /// For nodes with the role <see cref="AccessibilityRole.Toggle"/>, see that role's documentation.
+        /// </para>
+        /// <para>
+        /// **Notes**
+        ///
+        ///- On macOS, this state is only supported for nodes with the role <see cref="AccessibilityRole.Button"/>,
+        /// <see cref="AccessibilityRole.Toggle"/> or <see cref="AccessibilityRole.Dropdown"/>.
+        ///- On Windows, this state is only supported for nodes with the role <see cref="AccessibilityRole.Button"/> or
+        /// <see cref="AccessibilityRole.Toggle"/>
+        /// </para>
+        /// </remarks>
         Selected        = 1 << 1,
+
+        /// <summary>
+        /// The visual element represented by the accessibility node is currently expanded, such as an expanded dropdown
+        /// list or menu.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If this role is set on a node with the role <see cref="AccessibilityRole.Dropdown"/>, the screen reader
+        /// announces the node as "expanded". Otherwise, it announces the node as "collapsed".
+        /// </para>
+        /// <para>
+        /// **Notes**
+        ///
+        ///- This state is only supported for nodes with the role <see cref="AccessibilityRole.Dropdown"/>.
+        ///- On macOS, if the role <see cref="AccessibilityRole.Dropdown"/> is unset from a node, the screen reader
+        /// continues to announce the expanded/collapsed state of the node if its new role is compatible with this
+        /// state. This is a platform limitation.
+        /// </para>
+        /// <para>
+        /// **Platform support**: This state has no effect on mobile platforms.
+        /// </para>
+        /// </remarks>
+        Expanded        = 1 << 2,
+    }
+
+    /// <summary>
+    /// Describes the direction of a scrolling action.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The values in this enumeration are used by the <see cref="AccessibilityNode.scrolled"/> event, which is sent
+    /// when a screen reader user performs a scrolling action.
+    /// </para>
+    /// <para>
+    /// SA:
+    ///
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    /// </para>
+    /// </remarks>
+    [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
+    public enum AccessibilityScrollDirection : byte
+    {
+        /// <summary>
+        /// The direction of the scrolling action is unknown.
+        /// </summary>
+        Unknown,
+
+        /// <summary>
+        /// The user is scrolling forward.
+        /// </summary>
+        Forward,
+
+        /// <summary>
+        /// The user is scrolling backward.
+        /// </summary>
+        Backward,
     }
 
     /// <summary>
@@ -97,16 +639,36 @@ namespace UnityEngine.Accessibility
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     internal struct AccessibilityNodeData
     {
-        /// <summary>
-        /// The ID of the accessibility node.
-        /// </summary>
-        public int id { get; set; }
+        public AccessibilityNodeData()
+        {
+            nodeId = AccessibilityNodeManager.k_InvalidNodeId;
+            parentId = AccessibilityNodeManager.k_InvalidNodeId;
+            childIds = new int[] { };
+
+            isActive = true;
+
+            frame = default;
+
+            label = null;
+            value = null;
+            hint = null;
+
+            role = AccessibilityRole.None;
+            state = AccessibilityState.None;
+
+            language = SystemLanguage.Unknown;
+
+            allowsDirectInteraction = false;
+
+            implementsInvoked = false;
+            implementsScrolled = false;
+            implementsDismissed = false;
+        }
 
         /// <summary>
-        /// Whether the node fires accessibility events and can be accessed by
-        /// assistive technology.
+        /// The IDs of the nodes contained by the accessibility node.
         /// </summary>
-        public bool isActive { get; set; }
+        public int[] childIds { get; set; }
 
         /// <summary>
         /// A succinct description of the accessibility node.
@@ -119,15 +681,46 @@ namespace UnityEngine.Accessibility
         public string value { get; set; }
 
         /// <summary>
-        /// Additional information about the accessibility node.
-        /// For example, the result of performing an action on the node.
+        /// Additional information about the accessibility node. For example, the result of performing an action on the
+        /// node.
         /// </summary>
         public string hint { get; set; }
+
+        /// <summary>
+        /// The frame of the accessibility node in screen coordinates.
+        /// </summary>
+        public Rect frame { get; set; }
+
+        /// <summary>
+        /// The ID of the accessibility node.
+        /// </summary>
+        public int nodeId { get; set; }
+
+        /// <summary>
+        /// The ID of the node that contains the accessibility node.
+        /// </summary>
+        public int parentId { get; set; }
 
         /// <summary>
         /// The role of the accessibility node.
         /// </summary>
         public AccessibilityRole role { get; set; }
+
+        /// <summary>
+        /// The state of the accessibility node.
+        /// </summary>
+        public AccessibilityState state { get; set; }
+
+        /// <summary>
+        /// The language to use when voicing the accessibility node's label, value, and hint (can differ from the system
+        /// or application language).
+        /// </summary>
+        internal SystemLanguage language { get; set; }
+
+        /// <summary>
+        /// Whether the node fires accessibility events and can be accessed by assistive technology.
+        /// </summary>
+        public bool isActive { get; set; }
 
         /// <summary>
         /// Whether the accessibility node allows direct touch interaction.
@@ -138,53 +731,26 @@ namespace UnityEngine.Accessibility
         public bool allowsDirectInteraction { get; set; }
 
         /// <summary>
-        /// The state of the accessibility node.
-        /// </summary>
-        public AccessibilityState state { get; set; }
-
-        /// <summary>
-        /// The frame of the accessibility node in screen coordinates.
-        /// </summary>
-        public Rect frame { get; set; }
-
-        /// <summary>
-        /// The ID of the node that contains the accessibility node.
-        /// </summary>
-        public int parentId { get; set; }
-
-        /// <summary>
-        /// The IDs of the nodes contained by the accessibility node.
-        /// </summary>
-        public int[] childIds { get; set; }
-
-        /// <summary>
-        /// Whether an assistive technology is focused on the accessibility
-        /// node.
-        /// </summary>
-        public bool isFocused { get; }
-
-        /// <summary>
-        /// The language to use when voicing the accessibility node's label,
-        /// value, and hint (can differ from the system or application
-        /// language).
-        /// </summary>
-        internal SystemLanguage language { get; set; }
-
-        /// <summary>
-        /// Whether the accessibility node implements the
-        /// <see cref="AccessibilityNode.selected"/> callback.
+        /// Whether the accessibility node's <see cref="AccessibilityNode.invoked"/> event has subscribers.
         /// </summary>
         /// <remarks>
-        /// Adds the Click action to nodes on Android.
+        /// This is needed to enable the <see cref="AccessibilityNode.invoked"/> event on Android.
         /// </remarks>
-        public bool implementsSelected { get; set; }
+        public bool implementsInvoked { get; set; }
 
         /// <summary>
-        /// Whether the accessibility node implements the
-        /// <see cref="AccessibilityNode.dismissed"/> callback.
+        /// Whether the accessibility node's <see cref="AccessibilityNode.scrolled"/> event has subscribers.
         /// </summary>
         /// <remarks>
-        /// Adds the Dismiss action to nodes on Android.
+        /// This is needed to enable the <see cref="AccessibilityNode.scrolled"/> event on Android.
+        /// </remarks>
+        public bool implementsScrolled { get; set; }
+
+        /// <summary>
+        /// Whether the accessibility node's <see cref="AccessibilityNode.dismissed"/> event has subscribers.
+        /// </summary>
+        /// <remarks>
+        /// This is needed to enable the <see cref="AccessibilityNode.dismissed"/> event on Android.
         /// </remarks>
         public bool implementsDismissed { get; set; }
     }

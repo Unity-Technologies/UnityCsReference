@@ -5,24 +5,64 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
 {
     /// <summary>
-    /// An instance of a node in the <see cref="AccessibilityHierarchy"/>, representing an element in the UI that the screen reader
-    /// can read, focus, and execute actions on.
+    /// A node in the <see cref="AccessibilityHierarchy"/> representing a visual element, such as a UI element or an
+    /// element that is part of your game, that needs to be accessible to the screen reader.
     /// </summary>
-    public class AccessibilityNode
+    /// <remarks>
+    /// <para>
+    /// Accessibility nodes are data structures that enable screen readers to focus, announce and execute user actions
+    /// on them. They represent visual elements in the application, but they exist and function independently of their
+    /// corresponding visual elements. Changes to the visual representation of an element, such as its visibility,
+    /// layering order or screen coordinates, do not affect the accessibility node that represents it.
+    /// </para>
+    /// <para>
+    /// To create an accessibility node, call <see cref="AccessibilityHierarchy.AddNode"/> on the hierarchy you want to
+    /// add the node to. When calling this method, you can optionally specify the node's label and parent in the
+    /// hierarchy. This method returns the created node. Use it to set different attributes and define the node's
+    /// identity and functionality.
+    /// </para>
+    /// <para>
+    /// When a screen reader is active, users can navigate and interact with an application using specific gestures or
+    /// commands that are easier to perform and prevent accidental actions. For this purpose, on mobile platforms,
+    /// standard gestures, such as tap or swipe, do not work, or they perform different actions while the screen reader
+    /// is on. Screen reader gestures and commands can vary across platforms, but they trigger the same accessibility
+    /// events. For examples of gestures and commands on different platforms, refer to the **Events** section on this
+    /// page. Subscribe to these events to detect user actions and to respond accordingly.
+    /// </para>
+    /// <para>
+    /// These APIs are currently supported on the following platforms:
+    ///
+    ///- <see cref="RuntimePlatform.Android"/> - starting with Android 8.0 (API level 26)
+    ///- <see cref="RuntimePlatform.IPhonePlayer"/>
+    ///- <see cref="RuntimePlatform.OSXPlayer"/>
+    ///- <see cref="RuntimePlatform.WindowsPlayer"/>
+    /// </para>
+    /// <para>
+    /// SA:
+    ///
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    ///- [TalkBack gestures on Android](https://support.google.com/accessibility/android/answer/6151827)
+    ///- [VoiceOver gestures on iPhone](https://support.apple.com/en-us/guide/iphone/iph3e2e2281/ios)
+    ///- [Narrator commands on Windows](https://support.microsoft.com/en-us/windows/chapter-2-narrator-basics-5ff4591e-7b6d-245e-c95d-ce83c0a1a8d4)
+    ///- [VoiceOver commands on Mac](https://support.apple.com/en-us/guide/voiceover/vo14111/mac)
+    /// </para>
+    /// </remarks>
+    public partial class AccessibilityNode
     {
         private class ObservableList<T> : IList<T>, IReadOnlyList<T>, IList
         {
             readonly List<T> m_Items;
 
+            public object SyncRoot => (m_Items as IList)?.SyncRoot ?? false;
             public int Count => m_Items.Count;
             public bool IsSynchronized => (m_Items as IList)?.IsSynchronized ?? false;
-            public object SyncRoot => (m_Items as IList)?.SyncRoot ?? false;
             public bool IsReadOnly => (m_Items as IList)?.IsReadOnly ?? false;
+
             object IList.this[int index]
             {
                 get => m_Items[index];
@@ -124,113 +164,240 @@ namespace UnityEngine.Accessibility
             public event Action listChanged;
         }
 
-        internal AccessibilityNode(int id, AccessibilityHierarchy hierarchy)
+        /// <summary>
+        /// Event invoked on the main thread when the accessibility node gains or loses screen reader focus.
+        /// </summary>
+        /// <remarks>
+        /// Subscribe to this event if you need to know when the node gains or loses screen reader focus. For example,
+        /// to select a text field when the user navigates to it, so that it can receive keyboard input.
+        /// </remarks>
+        // TODO: A11Y-829
+        public event Action<AccessibilityNode, bool> focusChanged;
+
+        /// <summary>
+        /// Event invoked when the user performs an "activate" action when focused on the accessibility node.
+        /// </summary>
+        /// <returns>@@true@@ if the action succeeds and @@false@@ otherwise.</returns>
+        /// <remarks>
+        /// <para>
+        /// Subscribe to this event to inform the screen reader that the node can be activated and to respond
+        /// appropriately when the user performs this action. For example, activating a button, toggling a checkbox, or
+        /// opening a dropdown.
+        /// </para>
+        /// <para>
+        /// Your callback should activate the visual element represented by the node and perform any other appropriate
+        /// tasks. For example, you might use this event to activate a control that requires a gesture which would be
+        /// difficult for screen reader users to perform, or has a different meaning when the screen reader is on.
+        /// </para>
+        /// <para>
+        /// After performing any tasks, return an appropriate value to indicate success or failure.
+        /// </para>
+        /// <para>
+        /// On mobile platforms, the "activate" action always sends a tap gesture in the center of the node's
+        /// <see cref="AccessibilityNode.frame"/>, making the use of this event optional. However, if the visual element
+        /// that the node represents does not intersect the center of the node's frame (for example, the node's frame
+        /// covers a toggle as well as its label), it does not receive the tap gesture. Subscribing to this event allows
+        /// you to activate the element regardless of its position relative to the node's frame. **Note**: Subscribing
+        /// to this event does not prevent the tap gesture from being sent, so make sure the node's frame does not
+        /// overlap with other interactive elements.
+        /// </para>
+        /// <para>
+        /// On Android, subscribing to this event also prompts the screen reader to provide instructions on how to
+        /// activate the node.
+        /// </para>
+        /// <para>
+        /// On Windows and macOS, this event is required for screen reader users to be able to activate the node.
+        /// </para>
+        /// <para>
+        /// **Note**: On Windows, this event is not triggered for nodes with the role
+        /// <see cref="AccessibilityRole.Image"/>.
+        /// </para>
+        /// </remarks>
+        public event Func<bool> invoked;
+
+        /// <summary>
+        /// Event invoked when the user performs an "increment" action when focused on the accessibility node.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Subscribe to this event if the node has the role <see cref="AccessibilityRole.Slider"/>.
+        /// </para>
+        /// <para>
+        /// Your callback should increment the value of the visual element represented by the node as well as the node's
+        /// <see cref="AccessibilityNode.value"/> by an appropriate amount.
+        /// </para>
+        /// <para>
+        /// On iOS and macOS, if your callback does not change the node's value (which might happen, for example, if the
+        /// slider represented by the node is already at its maximum value), the screen reader indicates to the user
+        /// that value adjustment cannot continue due to a border or boundary.
+        /// </para>
+        /// <para>
+        /// **Notes**
+        ///
+        ///- On macOS, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>.
+        ///- On Windows, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>
+        /// whose <see cref="AccessibilityNode.value"/> contains a number.
+        /// </para>
+        /// </remarks>
+        public event Action incremented;
+
+        /// <summary>
+        /// Event invoked when the user performs a "decrement" action when focused on the accessibility node.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Subscribe to this event if the node has the role <see cref="AccessibilityRole.Slider"/>.
+        /// </para>
+        /// <para>
+        /// Your callback should decrement the value of the visual element represented by the node as well as the node's
+        /// <see cref="AccessibilityNode.value"/> by an appropriate amount.
+        /// </para>
+        /// <para>
+        /// On iOS and macOS, if your callback does not change the node's value (which might happen, for example, if the
+        /// slider represented by the node is already at its minimum value), the screen reader indicates to the user
+        /// that value adjustment cannot continue due to a border or boundary.
+        /// </para>
+        /// <para>
+        /// **Notes**
+        ///
+        ///- On macOS, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>.
+        ///- On Windows, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>
+        /// whose <see cref="AccessibilityNode.value"/> contains a number.
+        /// </para>
+        /// </remarks>
+        public event Action decremented;
+
+        /// <summary>
+        /// Event invoked when the user performs a "scroll" action when focused on the accessibility node.
+        /// </summary>
+        /// <returns>@@true@@ if the action succeeds and @@false@@ otherwise.</returns>
+        /// <remarks>
+        /// <para>
+        /// Subscribe to this event to support scrolling in an application-specific way, such as a scroll by page
+        /// action. This is not the same as standard scrolling, which is supported by default and does not trigger an
+        /// accessibility event.
+        /// </para>
+        /// <para>
+        /// Your callback should scroll the content of the scroll view containing the visual element represented by the
+        /// node by an appropriate amount based on the direction provided. For example, if the scrolling direction is
+        /// <see cref="AccessibilityScrollDirection.Forward"/>, scroll the content up or to the left (depending on the
+        /// scroll view's orientation) by one page.
+        /// </para>
+        /// <para>
+        /// If the scrolling succeeds for the specified direction, return @@true@@ and call
+        /// <see cref="IAccessibilityNotificationDispatcher.SendPageScrolledAnnouncement"/> to provide the user with
+        /// information about the new content of the screen, and to update the screen reader focus accordingly. For
+        /// example, to move it off an accessibility node that may have been scrolled out of the screen.
+        /// </para>
+        /// <para>
+        /// If the scrolling fails for the specified direction (which might happen, for example, if the scroll view's
+        /// content is already at the top, and the user tries to scroll up), return @@false@@.
+        /// </para>
+        /// <para>
+        /// On Android, if the node has the role <see cref="AccessibilityRole.Slider"/>, then when the user performs a
+        /// "scroll" action, the events <see cref="AccessibilityNode.incremented"/> or
+        /// <see cref="AccessibilityNode.decremented"/> are triggered instead of this one.
+        /// </para>
+        /// <para>
+        /// **Platform support**: This event is not triggered on macOS.
+        /// </para>
+        /// </remarks>
+        public event Func<AccessibilityScrollDirection, bool> scrolled;
+
+        /// <summary>
+        /// Event invoked when the user performs a "dismiss" action when focused on the accessibility node.
+        /// </summary>
+        /// <returns>@@true@@ if the action succeeds and @@false@@ otherwise.</returns>
+        /// <remarks>
+        /// <para>
+        /// Subscribe to this event if the visual element that the node represents can be revealed modally or in a
+        /// hierarchy. For example, you might subscribe to this event if the node represents a dialog box to give users
+        /// a deliberate dismiss action that closes it.
+        /// </para>
+        /// <para>
+        /// Your callback should dismiss the visual element represented by the node. After performing any tasks, return
+        /// an appropriate value to indicate success or failure.
+        /// </para>
+        /// <para>
+        /// On Android, subscribing to this event enables the "dismiss" action and prompt screen reader to provide
+        /// instructions on how to activate it. This action is available in the TalkBack local context menu and is
+        /// different from the "back" system gesture, which activates the Back button of the device.
+        /// </para>
+        /// <para>
+        /// **Platform support**: This event is not triggered on Windows. To dismiss a view on Windows, bind your
+        /// "dismiss" code to the **Escape** key.
+        /// </para>
+        /// </remarks>
+        public event Func<bool> dismissed;
+
+        AccessibilityHierarchy m_Hierarchy;
+
+        ObservableList<AccessibilityNode> m_Children = new();
+
+        internal IList<AccessibilityNode> childList
         {
-            this.id = id;
-            m_Hierarchy = hierarchy;
-            m_Children = new ObservableList<AccessibilityNode>();
-            m_Actions = new ObservableList<AccessibilityAction>();
-
-            if (!IsInActiveHierarchy())
-            {
-                return;
-            }
-
-            var nodeData = new AccessibilityNodeData
-            {
-                id = id,
-                isActive = isActive,
-                parentId = AccessibilityNodeManager.k_InvalidNodeId
-            };
-            CreateNativeNodeWithData(ref nodeData);
-
-            m_Actions.listChanged += ActionsChanged;
-            m_Children.listChanged += ChildrenChanged;
-        }
-
-        void CreateNativeNodeWithData(ref AccessibilityNodeData nodeData)
-        {
-            // Ignore unsupported platforms because AccessibilityNodeManager.CreateNativeNodeWithData returns false.
-            if (AccessibilityManager.isSupportedPlatform)
-            {
-                while (AccessibilityNodeManager.CreateNativeNodeWithData(nodeData) == false)
-                {
-                    Debug.LogWarning($"AccessibilityNode.CreateNativeNodeWithData: id '{nodeData.id}' is already used");
-
-                    nodeData.id++;
-                }
-            }
-
-            id = nodeData.id;
-        }
-
-        internal void AllocateNative()
-        {
-            if (!IsInActiveHierarchy())
-            {
-                return;
-            }
-
-            var nodeData = new AccessibilityNodeData
-            {
-                id = id,
-                label = label,
-                value = value,
-                hint = hint,
-                isActive = isActive,
-                role = role,
-                allowsDirectInteraction = allowsDirectInteraction,
-                state = state,
-                parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId,
-                frame = frame,
-                language = language,
-                implementsSelected = selected != null,
-                implementsDismissed = dismissed != null,
-            };
-
-            CreateNativeNodeWithData(ref nodeData);
-
-            ActionsChanged();
-            m_Actions.listChanged += ActionsChanged;
-
-            foreach (var child in m_Children)
-            {
-                child.AllocateNative();
-            }
-
-            ChildrenChanged();
-            m_Children.listChanged += ChildrenChanged;
-        }
-
-        internal void FreeNative(bool freeChildren)
-        {
-            if (freeChildren)
-            {
-                foreach (var child in m_Children)
-                {
-                    child.FreeNative(true);
-                }
-            }
-
-            m_Children.listChanged -= ChildrenChanged;
-            m_Actions.listChanged -= ActionsChanged;
-
-            if (IsInActiveHierarchy())
-            {
-                var parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
-                AccessibilityNodeManager.DestroyNativeNode(id, parentId);
-            }
+            get => m_Children;
+            set => m_Children = new ObservableList<AccessibilityNode>(value);
         }
 
         /// <summary>
-        /// The ID of this node.
+        /// The node's children in the accessibility hierarchy.
         /// </summary>
-        public int id { get; private set; }
+        /// <remarks>
+        /// To add a new child, call <see cref="AccessibilityHierarchy.AddNode"/> or
+        /// <see cref="AccessibilityHierarchy.InsertNode"/> on the hierarchy that the node belongs to, passing the node
+        /// as the parent. To make an existing node a child of this node, or move a child to a different node, call
+        /// <see cref="AccessibilityHierarchy.MoveNode"/>. To remove a child, call
+        /// <see cref="AccessibilityHierarchy.RemoveNode"/>.
+        /// </remarks>
+        public IReadOnlyList<AccessibilityNode> children => m_Children;
 
         /// <summary>
-        /// A string value that succinctly describes this node.
-        /// The <see cref="label"/> is the first thing read by the screen reader when a node is focused.
+        /// The node's parent in the accessibility hierarchy.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If the node is at the root level of the hierarchy, the value of this property is @@null@@.
+        /// </para>
+        /// <para>
+        /// To change the node's parent, call <see cref="AccessibilityHierarchy.MoveNode"/> on the hierarchy that the
+        /// node belongs to.
+        /// </para>
+        /// </remarks>
+        public AccessibilityNode parent { get; private set; }
+
+        string m_Label;
+
+        /// <summary>
+        /// A short description of the accessibility node.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The node's label should provide a concise, human-readable description of the visual element represented by
+        /// the node.
+        /// </para>
+        /// <para>
+        /// The label is essential to screen reader users because it provides the text that the screen reader announces
+        /// when a user focuses on the node to communicate the purpose or content of the visual element that the node
+        /// represents.
+        /// <para>
+        /// </para>
+        /// Generally, all accessibility nodes should have an appropriate label. Nodes with an empty label can cause
+        /// unwanted screen reader behavior.
+        /// <para>
+        /// </para>
+        /// A good label is short, informative, and does not include the node's type. For example, the label for a Save
+        /// button should be "Save", not "Save button". To ensure proper screen reader intonation, start the label with
+        /// a capital letter and avoid ending it with a period.
+        /// </para>
+        /// <para>
+        /// The label works in tandem with other node properties to provide a comprehensive experience to the user.
+        /// While the label provides the main identifier of the accessibility node, additional information can be
+        /// supplied through properties such as the <see cref="AccessibilityNode.value"/>,
+        /// <see cref="AccessibilityNode.hint"/>, <see cref="AccessibilityNode.role"/> and
+        /// <see cref="AccessibilityNode.state"/>.
+        /// </para>
+        /// </remarks>
         public string label
         {
             get => m_Label;
@@ -250,9 +417,50 @@ namespace UnityEngine.Accessibility
             }
         }
 
+        string m_Value;
+
         /// <summary>
-        /// The value of this node.
+        /// The value of the visual element that the accessibility node represents.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The node's value can be used to provide dynamic feedback about the node's content or input, such as the text
+        /// within a text field, the position of a slider, or the progress of a task.
+        /// </para>
+        /// <para>
+        /// Set this property only for nodes whose content cannot be fully conveyed by their label. For example, the
+        /// label of a node that represents a slider might be "Volume", but its value is "50%", which indicates the
+        /// current volume level. In this case, users need to know not just the slider's identity but also its current
+        /// value. Conversely, for a node representing a Save button, the label alone provides all the necessary
+        /// information, and setting a value would be redundant and confusing.
+        /// </para>
+        /// <para>
+        /// If the value is set, the screen reader announces it when the user focuses on the node, before or after
+        /// reading the node's label (depending on the platform).
+        /// </para>
+        /// <para>
+        /// To ensure users receive accurate and up-to-date information, update this property whenever the state of the
+        /// node changes. For example, update the value of a node representing a text field whenever the user enters new
+        /// text.
+        /// </para>
+        /// <para>
+        /// **Notes**
+        ///
+        ///- On macOS, this property has **no** effect on nodes with the following roles:
+        ///
+        ///  - <see cref="AccessibilityRole.Toggle"/>
+        ///  - <see cref="AccessibilityRole.TabButton"/>
+        ///
+        ///- On Windows, this property has effect only on nodes with the following roles:
+        ///
+        ///  - <see cref="AccessibilityRole.Button"/>
+        ///  - <see cref="AccessibilityRole.Image"/>
+        ///  - <see cref="AccessibilityRole.SearchField"/>
+        ///  - <see cref="AccessibilityRole.Slider"/>
+        ///  - <see cref="AccessibilityRole.TextField"/>
+        ///  - <see cref="AccessibilityRole.Dropdown"/>
+        /// </para>
+        /// </remarks>
         public string value
         {
             get => m_Value;
@@ -272,12 +480,46 @@ namespace UnityEngine.Accessibility
             }
         }
 
+        string m_Hint;
+
         /// <summary>
-        /// Provides additional information about the accessibility node.
-        /// For example, the result of performing an action on the node.
+        /// Additional guidance or context for interacting with the accessibility node.
         /// </summary>
         /// <remarks>
-        /// For Android, this requires at least API level 26.
+        /// <para>
+        /// The node's hint supplements the other node attributes by offering concise instructions or clarifications to
+        /// screen reader users, especially when they are not immediately obvious. For example, input requirements,
+        /// instructions for interacting with custom controls, or the results of performing an action on the node.
+        /// </para>
+        /// <para>
+        /// Set this property only when additional context or instructions are needed beyond what the label and other
+        /// node attributes provide. For example, a node representing a Save button with the label "Save" does not need
+        /// a hint like "Double-tap to save your changes". However, a node representing a Username text field might
+        /// include a hint like "Use only letters and numbers."
+        /// </para>
+        /// <para>
+        /// Some accessibility roles or events provide built-in hints. For example, when focusing on a node with the
+        /// role <see cref="AccessibilityRole.Toggle"/>, the screen reader may automatically say "Double-tap to toggle."
+        /// after announcing the node. In such cases, setting this property is unnecessary.
+        /// </para>
+        /// <para>
+        /// When the user focuses on the node, the screen reader first announces the node's label and any other set node
+        /// attributes. If the hint is set, the screen reader says it last. On some platforms, the hint functions as a
+        /// tooltip, so the screen reader says it when the user pauses over the node.
+        /// </para>
+        /// <para>
+        /// To ensure proper screen reader intonation, begin the hint with a verb, capitalize the first letter, and end
+        /// the hint with a period.
+        /// </para>
+        /// <para>
+        /// **Note**: On Windows, this property has no effect on nodes with the following roles:
+        ///
+        ///- <see cref="AccessibilityRole.StaticText"/>
+        ///- <see cref="AccessibilityRole.Header"/>
+        /// </para>
+        /// <para>
+        /// **Platform support**: On Android, this property is only supported starting with Android 8.0 (API level 26).
+        /// </para>
         /// </remarks>
         public string hint
         {
@@ -298,10 +540,241 @@ namespace UnityEngine.Accessibility
             }
         }
 
+        Rect m_Frame;
+
         /// <summary>
-        /// Whether this node is active in the hierarchy. The default value is @@true@@.
+        /// The bounding rectangle of the accessibility node in screen coordinates.
         /// </summary>
-        /// <remarks>Non active nodes are ignored by the screen reader.</remarks>
+        /// <remarks>
+        /// <para>
+        /// The node's frame defines the position and size of the node in screen coordinates. It is essential to screen
+        /// reader users, as it provides the coordinates where the screen reader draws its cursor when focused on the
+        /// node.
+        /// </para>
+        /// <para>
+        /// If the visual element represented by the node is in world space, convert its world coordinates to screen
+        /// coordinates in order to set the frame.
+        /// </para>
+        /// <para>
+        /// Update the node's frame whenever the position or size of the visual element it represents changes. For
+        /// example, when the element is moved, resized, or animated, when the user scrolls the application's interface,
+        /// or when the orientation of the screen changes. Ensure that the coordinates of the visual element are
+        /// up-to-date before updating the frame by waiting until its layout is finalized. For example, at the end of
+        /// the frame in which the layout change occurred.
+        /// </para>
+        /// <para>
+        /// The node's frame can be set either through this property or through the
+        /// <see cref="AccessibilityNode.frameGetter"/> delegate. Using the delegate should simplify the update of the
+        /// node's frame by automatically keeping it in sync with the coordinates of the visual element represented by
+        /// the node.
+        /// </para>
+        /// <para>
+        /// If this property is not set, it gets its value from the <see cref="AccessibilityNode.frameGetter"/>.
+        /// </para>
+        /// <para>
+        /// If the <see cref="AccessibilityNode.frameGetter"/> is not set,
+        /// calling <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> sets the value of this property to
+        /// <see cref="Rect.zero"/>.
+        /// </para>
+        /// </remarks>
+        public Rect frame
+        {
+            get => m_Frame == default ? m_Frame = frameGetter?.Invoke() ?? Rect.zero : m_Frame;
+            set
+            {
+                // Set the frame even if it is the same, because it needs to be converted to screen coordinates on the
+                // native side, which could be different if the app window was moved, for example.
+                m_Frame = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetFrame(id, value);
+                }
+            }
+        }
+
+        Func<Rect> m_FrameGetter;
+
+        /// <summary>
+        /// Delegate that calculates the frame of the accessibility node, automatically keeping it up-to-date.
+        /// </summary>
+        /// <returns>The calculated frame of the accessibility node, in screen coordinates.</returns>
+        /// <remarks>
+        /// <para>
+        /// The node's frame can be set either through this delegate or through the
+        /// <see cref="AccessibilityNode.frame"/> property. Using this delegate should simplify the update of the node's
+        /// frame by automatically keeping it in sync with the coordinates of the visual element represented by the
+        /// node.
+        /// </para>
+        /// <para>
+        /// If the <see cref="AccessibilityNode.frame"/> is not set, it gets its value from this delegate.
+        /// </para>
+        /// <para>
+        /// If this delegate is not set, calling <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> sets the
+        /// <see cref="AccessibilityNode.frame"/> to <see cref="Rect.zero"/>.
+        /// </para>
+        /// </remarks>
+        public Func<Rect> frameGetter
+        {
+            get => m_FrameGetter;
+            set
+            {
+                // Set the frame even if it is the same, because it needs to be converted to screen coordinates on the
+                // native side, which could be different if the app window was moved, for example.
+                m_FrameGetter = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetFrame(id, frame);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The unique identifier of the accessibility node.
+        /// </summary>
+        /// <remarks>
+        /// The node's identifier is unique within the application and is assigned by Unity.
+        /// </remarks>
+        public int id { get; private set; }
+
+        AccessibilityRole m_Role;
+
+        /// <summary>
+        /// The type of user interface element that the accessibility node represents.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The node's role defines the type or purpose of the visual element represented by the node. It assigns a
+        /// semantic meaning to the node, such as a heading, a button, or a toggle, that informs screen readers how to
+        /// interact with the node and announce its purpose appropriately.
+        /// </para>
+        /// <para>
+        /// For example, on mobile platforms, a node with the role <see cref="AccessibilityRole.Button"/> can be
+        /// interacted with by performing a double-tap gesture, while a node with the role
+        /// <see cref="AccessibilityRole.Slider"/> can be interacted with by performing a swipe gesture. Alternatively,
+        /// a node with the role <see cref="AccessibilityRole.Header"/> can be used in heading navigation, which allows
+        /// users to more efficiently navigate an application by moving from one heading to the next without having to
+        /// navigate through all the content in between.
+        /// </para>
+        /// <para>
+        /// Setting accurate roles improves the usability and user experience of your user interface by enabling the
+        /// screen reader to set clear expectations for the user. A missing role can block the user from interacting
+        /// with your application, and an incorrect role can cause confusion and frustration.
+        /// </para>
+        /// <para>
+        /// If the role is set, the screen reader might announce it when the user focuses on the node, usually after
+        /// reading the node's label and value.
+        /// </para>
+        /// <para>
+        /// If the visual element that the node represents has a role that is not covered by any of the predefined
+        /// <see cref="AccessibilityRole"/>s, use the default value of this property,
+        /// <see cref="AccessibilityRole.None"/>, and provide information about the node's purpose and behavior in
+        /// properties such as the <see cref="AccessibilityNode.label"/> and <see cref="AccessibilityNode.hint"/>.
+        /// </para>
+        /// </remarks>
+        public AccessibilityRole role
+        {
+            get => m_Role;
+            set
+            {
+                if (m_Role == value)
+                {
+                    return;
+                }
+
+                m_Role = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetRole(id, value);
+                }
+            }
+        }
+
+        AccessibilityState m_State;
+
+        /// <summary>
+        /// The status of the visual element that the accessibility node represents.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The node's state represents the current status or condition of the visual element represented by the node.
+        /// It allows screen readers to provide users with dynamic feedback about the state of interactive elements,
+        /// such as whether a checkbox is checked or whether a button is disabled.
+        /// </para>
+        /// <para>
+        /// If the state is set, the screen reader announces it when the user focuses on the node, before or after
+        /// reading the node's label and value (depending on the platform).
+        /// </para>
+        /// <para>
+        /// To ensure users receive accurate and up-to-date information, update this property whenever the state of the
+        /// node changes. For example, update the state of a node representing a checkbox whenever the user toggles it.
+        /// </para>
+        /// <para>
+        /// If the visual element that the node represents has a state that is not covered by any of the predefined
+        /// <see cref="AccessibilityState"/>s, use the default value of this property,
+        /// <see cref="AccessibilityState.None"/>, and provide information about the node's current state in properties
+        /// such as the <see cref="AccessibilityNode.value"/> and <see cref="AccessibilityNode.hint"/>.
+        /// </para>
+        /// </remarks>
+        public AccessibilityState state
+        {
+            get => m_State;
+            set
+            {
+                if (m_State == value)
+                {
+                    return;
+                }
+
+                m_State = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetState(id, value);
+                }
+            }
+        }
+
+        SystemLanguage m_Language = SystemLanguage.Unknown;
+
+        // TODO: A11Y-242
+        internal SystemLanguage language
+        {
+            get => m_Language;
+            set
+            {
+                if (m_Language == value)
+                {
+                    return;
+                }
+
+                m_Language = value;
+
+                if (IsInActiveHierarchy())
+                {
+                    AccessibilityNodeManager.SetLanguage(id, value);
+                }
+            }
+        }
+
+        bool m_IsActive = true;
+
+        /// <summary>
+        /// Whether the accessibility node is exposed to screen readers. The default value is @@true@@.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property controls the visibility of the node to screen readers, ensuring that only relevant elements
+        /// are accessible to the user. For example, elements that are covered by a modal view should not be
+        /// accessible.
+        /// </para>
+        /// <para>
+        /// If this property is set to @@false@@, the screen reader ignores the node and prevents the user from focusing
+        /// on it. This is useful when temporarily disabling the node is preferred over removing it from the hierarchy.
+        /// </para>
+        /// </remarks>
         public bool isActive
         {
             get => m_IsActive;
@@ -322,32 +795,45 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// The role for the node.
+        /// Whether the accessibility node is currently focused by the screen reader.
         /// </summary>
-        public AccessibilityRole role
-        {
-            get => m_Role;
-            set
-            {
-                if (m_Role == value)
-                {
-                    return;
-                }
+        // TODO: A11Y-829
+        public bool isFocused => IsInActiveHierarchy() && AccessibilityNodeManager.GetIsFocused(id);
 
-                m_Role = value;
-
-                if (IsInActiveHierarchy())
-                {
-                    AccessibilityNodeManager.SetRole(id, value);
-                }
-            }
-        }
+        bool m_AllowsDirectInteraction;
 
         /// <summary>
-        /// Whether this node allows direct touch interaction for users.
+        /// Whether the accessibility node allows direct touch interaction while the screen reader is active.
         /// </summary>
         /// <remarks>
-        /// This is only supported on iOS.
+        /// <para>
+        /// This property controls whether the node can be interacted with using standard gestures, bypassing the screen
+        /// reader. This is useful for elements such as a piano keyboard, a drawing canvas, or gameplay that requires
+        /// quick or complex gestures.
+        /// </para>
+        /// <para>
+        /// If this property is set to @@true@@, the screen reader provides instructions on how to enable direct touch.
+        /// The user can then directly interact with the user interface area corresponding to the node's
+        /// <see cref="AccessibilityNode.frame"/> without the screen reader interfering.
+        /// </para>
+        /// <para>
+        /// If this property is set to @@true@@ and the node does not have a <see cref="AccessibilityNode.label"/>, the
+        /// screen reader announces the node as a "direct touch area".
+        /// </para>
+        /// <para>
+        /// Generally, accessibility nodes should have this property set to @@false@@ to ensure that the screen reader
+        /// can provide the necessary context and instructions to the user. Only set this property to @@true@@ in cases
+        /// where the user experience would be significantly impaired by the screen reader's interference, and where the
+        /// user can still understand and interact with the content of the direct touch area without the screen reader's
+        /// assistance.
+        /// </para>
+        /// <para>
+        /// If necessary, use the <see cref="AccessibilityNode.hint"/> property to provide users with instructions on
+        /// how to interact with the content of the node when direct interaction is enabled.
+        /// </para>
+        /// <para>
+        /// **Platform support**: This property is only supported on iOS.
+        /// </para>
         /// </remarks>
         public bool allowsDirectInteraction
         {
@@ -355,11 +841,6 @@ namespace UnityEngine.Accessibility
 
             set
             {
-                if (value && !(Application.isEditor || Application.platform == RuntimePlatform.IPhonePlayer))
-                {
-                    throw new PlatformNotSupportedException($"allowsDirectInteraction is only supported on iOS.");
-                }
-
                 if (m_AllowsDirectInteraction == value)
                 {
                     return;
@@ -374,240 +855,42 @@ namespace UnityEngine.Accessibility
             }
         }
 
-        /// <summary>
-        /// The state for the node.
-        /// </summary>
-        public AccessibilityState state
+        internal AccessibilityNode(int nodeId, AccessibilityHierarchy hierarchy)
         {
-            get => m_State;
-            set
-            {
-                if (m_State == value)
-                {
-                    return;
-                }
+            id = nodeId;
+            m_Hierarchy = hierarchy;
 
-                m_State = value;
-
-                if (IsInActiveHierarchy())
-                {
-                    AccessibilityNodeManager.SetState(id, value);
-                }
-            }
-        }
-
-        /// <summary>
-        /// The parent of the node. If the node is at the root level, the <see cref="parent"/> value is @@null@@.
-        /// </summary>
-        public AccessibilityNode parent => m_Parent;
-
-        internal void SetParent(AccessibilityNode parent, int index = -1)
-        {
-            // Even if parent is not changing, the index may have changed so
-            // update the native node.
-            m_Parent = parent;
-
-            if (IsInActiveHierarchy())
-            {
-                var parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
-                AccessibilityNodeManager.SetParent(id, parentId, index);
-            }
-        }
-
-        internal IList<AccessibilityNode> childList
-        {
-            get => m_Children;
-            set
-            {
-                if (m_Children != null)
-                {
-                    m_Children.listChanged -= ChildrenChanged;
-                }
-
-                m_Children = new ObservableList<AccessibilityNode>(value);
-
-                ChildrenChanged();
-                m_Children.listChanged += ChildrenChanged;
-            }
-        }
-
-        /// <summary>
-        /// The children nodes of the node.
-        /// </summary>
-        public IReadOnlyList<AccessibilityNode> children => m_Children;
-
-        internal IList<AccessibilityAction> actions
-        {
-            get => m_Actions;
-            set
-            {
-                if (m_Actions != null)
-                {
-                    m_Actions.listChanged -= ActionsChanged;
-                }
-
-                m_Actions = new ObservableList<AccessibilityAction>(value);
-
-                ActionsChanged();
-                m_Actions.listChanged += ActionsChanged;
-            }
-        }
-
-        /// <summary>
-        /// The <see cref="Rect"/> represents the position in screen coordinates of the node in the UI. This can be set
-        /// directly but it is recommended that <see cref="frameGetter"/> is set instead, so that the value can be
-        /// recalculated when necessary.
-        /// </summary>
-        /// <remarks>If <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> is called, the value of the
-        /// <see cref="frame"/> is set to <see cref="Rect.zero"/> if <see cref="frameGetter"/> is not set.</remarks>
-        public Rect frame
-        {
-            get
-            {
-                if (m_Frame == default)
-                {
-                    CalculateFrame();
-                }
-
-                return m_Frame;
-            }
-            set => SetFrame(value);
-        }
-
-        void SetFrame(Rect frame)
-        {
-            if (m_Frame == frame)
+            if (!IsInActiveHierarchy())
             {
                 return;
             }
 
-            m_Frame = frame;
-
-            if (IsInActiveHierarchy())
+            var nodeData = new AccessibilityNodeData
             {
-                AccessibilityNodeManager.SetFrame(id, frame);
-            }
+                nodeId = nodeId
+            };
+
+            CreateNativeNodeWithData(ref nodeData);
         }
 
-        private Func<Rect> m_FrameGetter;
-
-        /// <summary>
-        /// Optional delegate that can be set to calculate the <see cref="frame"/> for the node instead of setting a flat value.
-        /// If the frame of the node may change over time, this delegate should be set instead of giving a one time value for
-        /// the <see cref="frame"/>.
-        /// </summary>
-        /// <remarks>If <see cref="AccessibilityHierarchy.RefreshNodeFrames"/> is called, the value of the
-        /// <see cref="frame"/> is set to <see cref="Rect.zero"/> if <see cref="frameGetter"/> is not set.</remarks>
-        public Func<Rect> frameGetter
+        void CreateNativeNodeWithData(ref AccessibilityNodeData nodeData)
         {
-            get => m_FrameGetter;
-            set
+            // Ignore unsupported platforms because AccessibilityNodeManager.CreateNativeNodeWithData returns false.
+            if (AccessibilityManager.isSupportedPlatform)
             {
-                if (m_FrameGetter == value)
+                while (AccessibilityNodeManager.CreateNativeNodeWithData(nodeData) == false)
                 {
-                    return;
-                }
+                    Debug.LogWarning($"AccessibilityNode.CreateNativeNodeWithData: id '{nodeData.nodeId}' is already used");
 
-                m_FrameGetter = value;
-
-                if (IsInActiveHierarchy())
-                {
-                    AccessibilityNodeManager.SetFrame(id, frame);
+                    nodeData.nodeId++;
                 }
             }
+
+            id = nodeData.nodeId;
         }
-
-        internal void CalculateFrame()
-        {
-            SetFrame(frameGetter?.Invoke() ?? Rect.zero);
-        }
-
-        // TODO: A11Y-346 Change to string type
-        internal SystemLanguage language
-        {
-            get => m_Language;
-            set
-            {
-                if (m_Language == value)
-                {
-                    return;
-                }
-
-                m_Language = value;
-
-                if (IsInActiveHierarchy())
-                {
-                    AccessibilityNodeManager.SetLanguage(id, value);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Whether the node is focused by the screen reader.
-        /// </summary>
-        public bool isFocused => IsInActiveHierarchy() && AccessibilityNodeManager.GetIsFocused(id);
-
-        /// <summary>
-        /// Called when the node gains or loses screen reader focus.
-        /// </summary>
-        public event Action<AccessibilityNode, bool> focusChanged;
-
-        /// <summary>
-        /// Called when the user of the screen reader selects this node.
-        /// </summary>
-        /// <remarks>
-        /// Return an appropriate @@bool@@ value to indicate if the node was successfully selected.
-        /// </remarks>
-        public event Func<bool> selected;
-
-        /// <summary>
-        /// Called when the user of the screen reader increments the content of the node.
-        /// </summary>
-        public event Action incremented;
-
-        /// <summary>
-        /// Called when the user of the screen reader decrements the content of the node.
-        /// </summary>
-        public event Action decremented;
-
-        /// <summary>
-        /// Called when the user of the screen reader dismisses this node.
-        /// </summary>
-        /// <remarks>
-        /// Return an appropriate @@bool@@ value to indicate if the node was successfully dismissed.
-        ///
-        /// On Android, subscribing to this event enables the Dismiss custom action, which is available in the TalkBack
-        /// local context menu. This is not the same as the Back system gesture, which activates the Back button.
-        /// </remarks>
-        public event Func<bool> dismissed;
-
-        string m_Label;
-        string m_Value;
-        string m_Hint;
-        bool m_IsActive = true;
-        AccessibilityRole m_Role;
-        bool m_AllowsDirectInteraction;
-        AccessibilityState m_State;
-        AccessibilityNode m_Parent;
-        ObservableList<AccessibilityNode> m_Children;
-        ObservableList<AccessibilityAction> m_Actions;
-        Rect m_Frame;
-        SystemLanguage m_Language = SystemLanguage.Unknown;
-        AccessibilityHierarchy m_Hierarchy;
 
         internal void GetNodeData(ref AccessibilityNodeData nodeData)
         {
-            nodeData.id = id;
-            nodeData.isActive = isActive;
-            nodeData.label = label;
-            nodeData.value = value;
-            nodeData.hint = hint;
-            nodeData.role = role;
-            nodeData.allowsDirectInteraction = allowsDirectInteraction;
-            nodeData.state = state;
-            nodeData.frame = frame;
-            nodeData.parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
-
             var nodeChildIds = new int[m_Children.Count];
             for (var i = 0; i < m_Children.Count; ++i)
             {
@@ -615,9 +898,82 @@ namespace UnityEngine.Accessibility
             }
 
             nodeData.childIds = nodeChildIds;
+
+            nodeData.label = label;
+            nodeData.value = value;
+            nodeData.hint = hint;
+
+            nodeData.frame = frame;
+
+            nodeData.nodeId = id;
+            nodeData.parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
+
+            nodeData.role = role;
+            nodeData.state = state;
+
             nodeData.language = language;
-            nodeData.implementsSelected = selected != null;
+
+            nodeData.isActive = isActive;
+            nodeData.allowsDirectInteraction = allowsDirectInteraction;
+
+            nodeData.implementsInvoked = invoked != null;
+            nodeData.implementsScrolled = scrolled != null;
             nodeData.implementsDismissed = dismissed != null;
+        }
+
+        internal void AllocateNative()
+        {
+            if (!IsInActiveHierarchy())
+            {
+                return;
+            }
+
+            var nodeData = new AccessibilityNodeData
+            {
+                label = label,
+                value = value,
+                hint = hint,
+
+                frame = frame,
+
+                nodeId = id,
+                parentId = parent?.id ?? AccessibilityNodeManager.k_InvalidNodeId,
+
+                role = role,
+                state = state,
+
+                language = language,
+
+                isActive = isActive,
+                allowsDirectInteraction = allowsDirectInteraction,
+
+                implementsInvoked = invoked != null,
+                implementsScrolled = scrolled != null,
+                implementsDismissed = dismissed != null,
+            };
+
+            CreateNativeNodeWithData(ref nodeData);
+
+            foreach (var child in m_Children)
+            {
+                child.AllocateNative();
+            }
+        }
+
+        internal void FreeNative(bool freeChildren)
+        {
+            if (freeChildren)
+            {
+                foreach (var child in m_Children)
+                {
+                    child.FreeNative(true);
+                }
+            }
+
+            if (IsInActiveHierarchy())
+            {
+                AccessibilityNodeManager.DestroyNativeNode(id);
+            }
         }
 
         internal void Destroy(bool destroyChildren)
@@ -639,9 +995,10 @@ namespace UnityEngine.Accessibility
             {
                 foreach (var child in childList)
                 {
-                    // Even if parent is null (i.e. node is a root) we need to assign it as the children's parent because
-                    // that happens when this method is called by AccessibilityHierarchy.RemoveNode and that can happen
-                    // with a root node with destroyChildren being false (therefore the children became roots themselves).
+                    // Even if the parent is null (i.e. the node is a root) we need to assign it as the children's
+                    // parent because that happens when this method is called by AccessibilityHierarchy.RemoveNode and
+                    // that can happen with a root node with destroyChildren being false (therefore, the children became
+                    // roots themselves).
                     child.SetParent(parent);
                     parent?.childList.Add(child);
                 }
@@ -649,6 +1006,23 @@ namespace UnityEngine.Accessibility
             childList.Clear();
 
             m_Hierarchy = null;
+        }
+
+        bool IsInActiveHierarchy()
+        {
+            return m_Hierarchy != null && AssistiveSupport.activeHierarchy == m_Hierarchy;
+        }
+
+        internal void SetParent(AccessibilityNode nodeParent, int index = -1)
+        {
+            // Even if the parent is not changing, the index may have changed, so update the native node.
+            parent = nodeParent;
+
+            if (IsInActiveHierarchy())
+            {
+                var parentId = nodeParent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
+                AccessibilityNodeManager.SetParent(id, parentId, index);
+            }
         }
 
         /// <summary>
@@ -669,49 +1043,12 @@ namespace UnityEngine.Accessibility
             return $"AccessibilityNode(ID: {id}, Label: {label})";
         }
 
-        void ChildrenChanged()
-        {
-            if (!IsInActiveHierarchy())
-            {
-                return;
-            }
-
-            var nodeChildIds = new int[m_Children.Count];
-            for (var i = 0; i < m_Children.Count; ++i)
-            {
-                nodeChildIds[i] = m_Children[i].id;
-            }
-
-            AccessibilityNodeManager.SetChildren(id, nodeChildIds);
-        }
-
-        void ActionsChanged()
-        {
-            if (!IsInActiveHierarchy())
-            {
-                return;
-            }
-
-            var nodeActions = new AccessibilityAction[m_Actions.Count];
-            for (var i = 0; i < m_Actions.Count; ++i)
-            {
-                nodeActions[i] = m_Actions[i];
-            }
-
-            AccessibilityNodeManager.SetActions(id, nodeActions);
-        }
-
-        bool IsInActiveHierarchy()
-        {
-            return m_Hierarchy != null && AssistiveSupport.activeHierarchy == m_Hierarchy;
-        }
-
         internal void NotifyFocusChanged(bool isNodeFocused)
         {
             AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
             {
-                notification = isNodeFocused ? AccessibilityNotification.ElementFocused : AccessibilityNotification.ElementUnfocused,
-                currentNode = this,
+                notification = isNodeFocused ? AccessibilityManager.Notification.ElementFocused : AccessibilityManager.Notification.ElementUnfocused,
+                focusedNode = this,
             });
         }
 
@@ -720,21 +1057,40 @@ namespace UnityEngine.Accessibility
             focusChanged?.Invoke(this, isNodeFocused);
         }
 
-        internal bool InvokeSelected()
+        internal bool InvokeNodeInvoked()
         {
-            return selected?.Invoke() ?? false;
+            return invoked?.Invoke() ?? false;
         }
-        internal void InvokeIncremented()
+        internal bool InvokeIncremented()
         {
-            incremented?.Invoke();
+            if (incremented == null)
+            {
+                return false;
+            }
+
+            incremented.Invoke();
+
+            return true;
         }
 
-        internal void InvokeDecremented()
+        internal bool InvokeDecremented()
         {
+            if (decremented == null)
+            {
+                return false;
+            }
+
             decremented?.Invoke();
+
+            return true;
         }
 
-        internal bool Dismissed()
+        internal bool InvokeScrolled(AccessibilityScrollDirection direction)
+        {
+            return scrolled?.Invoke(direction) ?? false;
+        }
+
+        internal bool InvokeDismissed()
         {
             return dismissed?.Invoke() ?? false;
         }

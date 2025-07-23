@@ -964,6 +964,12 @@ namespace UnityEditor
                                     if (type != typeof(Texture2D))
                                     {
                                         typeIcon = filterItem.icon;
+                                        if (selected)
+                                        {
+                                            var activeIcon = EditorUtility.GetIconInActiveState(typeIcon) as Texture2D;
+                                            if (activeIcon)
+                                                typeIcon = activeIcon;
+                                        }
                                     }
                                 }
 

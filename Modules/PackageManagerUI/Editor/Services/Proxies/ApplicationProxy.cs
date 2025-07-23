@@ -7,6 +7,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Networking;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -27,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         string shortUnityVersion { get; }
         string docsUrlWithShortUnityVersion { get; }
         bool isDeveloperBuild { get; }
+        string systemCopyBuffer { get; set; }
 
         void OpenURL(string url);
         void RevealInFinder(string path);
@@ -35,6 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "");
         int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt);
         void CheckUrlValidity(string uri, Action success, Action failure);
+        bool PingObjectInProjectBrowser(string path);
     }
 
     [Serializable]
@@ -93,6 +96,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string docsUrlWithShortUnityVersion => $"{k_UnityDocsUrl}{shortUnityVersion}/";
 
         public bool isDeveloperBuild => Unsupported.IsDeveloperBuild();
+
+        public string systemCopyBuffer
+        {
+            get => EditorGUIUtility.systemCopyBuffer;
+            set => EditorGUIUtility.systemCopyBuffer = value;
+        }
 
         public override void OnEnable()
         {
@@ -198,6 +207,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (e.Message != "Insecure connection not allowed")
                     throw e;
             }
+        }
+
+        public bool PingObjectInProjectBrowser(string path)
+        {
+            var window = EditorWindow.GetWindow<ProjectBrowser>();
+            window.Show(true);
+            var folderObject = AssetDatabase.LoadAssetAtPath<Object>(path);
+            if (folderObject == null)
+                return false;
+            var instanceID = folderObject.GetInstanceID();
+            // We need the delayCall to make sure the Project Browser window is open before pinging the manifest, otherwise we use the request
+            EditorApplication.delayCall += () => window.FrameObject(instanceID, true);
+            return true;
         }
     }
 }

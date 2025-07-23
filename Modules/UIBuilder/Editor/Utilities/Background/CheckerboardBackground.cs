@@ -69,17 +69,35 @@ namespace Unity.UI.Builder
                 GenerateResources();
             }
 
-            var veSize = m_CellSize * k_TextureSize;
-            var quadSize = new Vector2(veSize, veSize);
+            // Use worldClip to only render visible area
+            var visibleArea = worldClip;
+            if (visibleArea.width <= 0 || visibleArea.height <= 0) return;
 
-            int dimX = (int)(resolvedStyle.width / quadSize.x) + 1;
-            int dimY = (int)(resolvedStyle.height / quadSize.x) + 1;
+            var checkerSize = m_CellSize * k_TextureSize;
+            var quadSize = new Vector2(checkerSize, checkerSize);
 
-            int dim = dimX * dimY;
-            var mesh = context.Allocate(4 * dim, 6 * dim, m_Texture);
+            // Convert world clip coordinates to element-local coordinates
+            var elementBounds = worldBound;
+            var localVisibleArea = new Rect(
+                visibleArea.x - elementBounds.x,
+                visibleArea.y - elementBounds.y,
+                visibleArea.width,
+                visibleArea.height
+            );
 
-            for (var x = 0; x < dimX; x++)
-                for (var y = 0; y < dimY; y++)
+            // Calculate which quads are actually visible
+            var startX = (int) (localVisibleArea.xMin / quadSize.x);
+            var endX = (int) (localVisibleArea.xMax / quadSize.x) + 1;
+            var startY = (int) (localVisibleArea.yMin / quadSize.y);
+            var endY = (int) (localVisibleArea.yMax / quadSize.y) + 1;
+
+            var visibleQuads = (endX - startX) * (endY - startY);
+            if (visibleQuads <= 0 || visibleQuads * 4 > UInt16.MaxValue-1) return;
+
+            var mesh = context.Allocate(4 * visibleQuads, 6 * visibleQuads, m_Texture);
+
+            for (var x = startX; x < endX; x++)
+                for (var y = startY; y < endY; y++)
                 {
                     Quad(mesh, new Vector2(x * quadSize.x, y * quadSize.y), quadSize, Color.white);
                 }

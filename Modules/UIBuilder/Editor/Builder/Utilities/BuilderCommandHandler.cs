@@ -275,7 +275,7 @@ namespace Unity.UI.Builder
             // Select all pasted elements.
             foreach (var vea in pasteVta.DepthFirstTraversalOfType<VisualElementAsset>())
                 if (pasteVta.IsRootElement(vea))
-                    vea.Select();
+                    SelectionUtility.AddToSelection(vea);
 
             BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, parent, pasteVta);
             m_PaneWindow.document.AddStyleSheetsToAllRootElements();
@@ -297,7 +297,7 @@ namespace Unity.UI.Builder
             // Select all pasted selectors.
             m_Selection.ClearSelection(null);
             foreach (var selector in pasteStyleSheet.complexSelectors)
-                BuilderAssetUtilities.AddStyleComplexSelectorToSelection(pasteStyleSheet, selector);
+                SelectionUtility.AddToSelection(pasteStyleSheet, selector);
 
             BuilderAssetUtilities.TransferAssetToAsset(mainStyleSheet, pasteStyleSheet);
 
@@ -357,7 +357,7 @@ namespace Unity.UI.Builder
                 Undo.RegisterCompleteObjectUndo(
                     styleSheet, BuilderConstants.DeleteSelectorUndoMessage);
 
-                var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+                var complexSelector = BuilderSharedStyles.GetSelectorProperty(element);
                 styleSheet.RemoveSelector(complexSelector);
 
                 // Selection changes on delete, we need to update preview here
@@ -616,7 +616,7 @@ namespace Unity.UI.Builder
             templateContainer.RemoveFromHierarchy();
 
             m_Selection.ClearSelection(null);
-            rootUnpackedVEA.Select();
+            SelectionUtility.AddToSelection(rootUnpackedVEA);
 
             m_Selection.NotifyOfHierarchyChange();
             m_PaneWindow.OnEnableAfterAllSerialization();

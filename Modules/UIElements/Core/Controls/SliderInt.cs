@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A slider containing Integer discrete values. For more information, refer to [[wiki:UIE-uxml-element-sliderInt|UXML element SliderInt]].
     /// </summary>
+    [Icon("UIToolkit/Icons/SliderInt.png")]
     public class SliderInt : BaseSlider<int>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
@@ -21,8 +22,6 @@ namespace UnityEngine.UIElements
                 BaseSlider<int>.UxmlSerializedData.Register();
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
-                    new(nameof(lowValue), "low-value"),
-                    new(nameof(highValue), "high-value"),
                     new(nameof(pageSize), "page-size"),
                     new(nameof(showInputField), "show-input-field"),
                     new(nameof(direction), "direction"),
@@ -31,14 +30,10 @@ namespace UnityEngine.UIElements
             }
 
             #pragma warning disable 649
-            [SerializeField] int lowValue;
-            [SerializeField] int highValue;
             [SerializeField] float pageSize;
             [SerializeField] SliderDirection direction;
             [SerializeField] bool showInputField;
             [SerializeField] bool inverted;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pageSize_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showInputField_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
@@ -49,11 +44,9 @@ namespace UnityEngine.UIElements
 
             public override void Deserialize(object obj)
             {
+                base.Deserialize(obj);
+
                 var e = (SliderInt)obj;
-                if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
-                    e.lowValue = lowValue;
-                if (ShouldWriteAttributeValue(highValue_UxmlAttributeFlags))
-                    e.highValue = highValue;
                 if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
                     e.direction = direction;
                 if (ShouldWriteAttributeValue(pageSize_UxmlAttributeFlags))
@@ -62,9 +55,6 @@ namespace UnityEngine.UIElements
                     e.showInputField = showInputField;
                 if (ShouldWriteAttributeValue(inverted_UxmlAttributeFlags))
                     e.inverted = inverted;
-
-                // We need to apply the lowValue and highValue before the value to avoid incorrect clamping.
-                base.Deserialize(obj);
             }
         }
 

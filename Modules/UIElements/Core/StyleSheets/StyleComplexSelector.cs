@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.StyleSheets;
 using System.Linq;
 
 namespace UnityEngine.UIElements
@@ -26,8 +27,10 @@ namespace UnityEngine.UIElements
 
     [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class StyleComplexSelector : ISerializationCallbackReceiver
+    internal class StyleComplexSelector
     {
+        private const string k_DescendantSymbol = ">";
+
         // Hash keys for the most relevant parts of a complex selector to use against the style sheet's Bloom filter.
         [NonSerialized] public Hashes ancestorHashes;
 
@@ -37,15 +40,8 @@ namespace UnityEngine.UIElements
         // This "score" is calculated according to the enclosing complex selector specificity
         public int specificity
         {
-            get
-            {
-                return m_Specificity;
-            }
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal set
-            {
-                m_Specificity = value;
-            }
+            get => m_Specificity;
+            internal set => m_Specificity = value;
         }
 
         // This reference is set at runtime as convenience, but is not serialized
@@ -56,40 +52,76 @@ namespace UnityEngine.UIElements
             internal set;
         }
 
-        // A complex selector can be considered simple if it's made of only one selector
-        [NonSerialized]
-        private bool m_isSimple;
-
-        public bool isSimple
-        {
-            get
-            {
-                return m_isSimple;
-            }
-        }
+        public bool isSimple => selectors?.Length == 1;
 
         [SerializeField]
         StyleSelector[] m_Selectors;
 
         public StyleSelector[] selectors
         {
-            get
-            {
-                return m_Selectors;
-            }
+            get => m_Selectors;
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal set
-            {
-                m_Selectors = value;
-                m_isSimple = m_Selectors.Length == 1;
-            }
+            internal set => m_Selectors = value;
         }
 
-        public void OnBeforeSerialize() {}
-
-        public virtual void OnAfterDeserialize()
+        public bool TrySetSelectorsFromString(string complexSelectorStr, out string error)
         {
-            m_isSimple = m_Selectors.Length == 1;
+            var selectorSplit = complexSelectorStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            var fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelectorStr);
+            if (fullSpecificity == 0)
+            {
+                error = $"Selector '{complexSelectorStr}' is invalid: failed to calculate selector specificity.";
+                return false;
+            }
+
+            var simpleSelectors = new List<StyleSelector>();
+            var previousRelationship = StyleSelectorRelationship.None;
+            foreach (var simpleSelectorStr in selectorSplit)
+            {
+                if (simpleSelectorStr == k_DescendantSymbol)
+                {
+                    previousRelationship = StyleSelectorRelationship.Child;
+                    continue;
+                }
+
+                if (!CSSSpec.ParseSelector(simpleSelectorStr, out var parts))
+                {
+                    error = $"Selector '{complexSelectorStr}' is invalid: the selector could not be parsed.";
+                    return false;
+                }
+
+                for (var i = 0; i < parts.Length; ++i)
+                {
+                    var part = parts[i];
+                    switch (part.type)
+                    {
+                        case StyleSelectorType.Unknown:
+                            error = $"Selector '{complexSelectorStr}' is invalid: the selector contains unknown parts.";
+                            return false;
+                        case StyleSelectorType.RecursivePseudoClass:
+                            error = $"Selector '{complexSelectorStr}' is invalid: the selector contains recursive parts.";
+                            return false;
+                        default:
+                            break;
+                    }
+                }
+
+                var simpleSelector = new StyleSelector
+                {
+                    parts = parts,
+                    previousRelationship = previousRelationship
+                };
+                simpleSelectors.Add(simpleSelector);
+
+                // This is the default (if no > came before).
+                previousRelationship = StyleSelectorRelationship.Descendent;
+            }
+
+            selectors = simpleSelectors.ToArray();
+            specificity = fullSpecificity;
+            error = null;
+            return true;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -193,9 +225,9 @@ namespace UnityEngine.UIElements
                 return y.value.CompareTo(x.value);
         }
 
-        static List<StyleSelectorPart> m_HashList = new List<StyleSelectorPart>();
+        static readonly List<StyleSelectorPart> s_HashList = new ();
 
-        unsafe internal void CalculateHashes()
+        internal unsafe void CalculateHashes()
         {
             if (isSimple)
                 return;
@@ -204,10 +236,10 @@ namespace UnityEngine.UIElements
             // matched against the last selector when the time comes to query the Bloom filter.
             for (int i = selectors.Length - 2; i > -1; i--)
             {
-                m_HashList.AddRange(selectors[i].parts);
+                s_HashList.AddRange(selectors[i].parts);
             }
 
-            m_HashList.RemoveAll(p =>
+            s_HashList.RemoveAll(p =>
                 p.type != StyleSelectorType.Class
                 && p.type != StyleSelectorType.ID
                 && p.type != StyleSelectorType.Type);
@@ -220,7 +252,7 @@ namespace UnityEngine.UIElements
             // rejections.
 
             // Sort parts in decreasing type order, then value order, i.e. in ID, Class, Type order.
-            m_HashList.Sort(StyleSelectorPartCompare);
+            s_HashList.Sort(StyleSelectorPartCompare);
 
             // Add unique parts from left to right.
             bool isFirstEntry = true;
@@ -230,7 +262,7 @@ namespace UnityEngine.UIElements
 
             int partIndex = 0;
 
-            int max = Math.Min(Hashes.kSize, m_HashList.Count);
+            int max = Math.Min(Hashes.kSize, s_HashList.Count);
             for (int i = 0; i < max; i++)
             {
                 if (isFirstEntry)
@@ -240,17 +272,17 @@ namespace UnityEngine.UIElements
                 else
                 {
                     // Skip duplicate parts
-                    while ((partIndex < m_HashList.Count) && m_HashList[partIndex].type == lastType && m_HashList[partIndex].value == lastValue)
+                    while ((partIndex < s_HashList.Count) && s_HashList[partIndex].type == lastType && s_HashList[partIndex].value == lastValue)
                     {
                         partIndex++;
                     }
 
-                    if (partIndex == m_HashList.Count)
+                    if (partIndex == s_HashList.Count)
                         break;
                 }
 
-                lastType = m_HashList[partIndex].type;
-                lastValue = m_HashList[partIndex].value;
+                lastType = s_HashList[partIndex].type;
+                lastValue = s_HashList[partIndex].value;
 
                 Salt salt;
                 if (lastType == StyleSelectorType.ID)
@@ -268,7 +300,7 @@ namespace UnityEngine.UIElements
                 ancestorHashes.hashes[i] = lastValue.GetHashCode() * (int)salt;
             }
 
-            m_HashList.Clear();
+            s_HashList.Clear();
         }
     }
 }

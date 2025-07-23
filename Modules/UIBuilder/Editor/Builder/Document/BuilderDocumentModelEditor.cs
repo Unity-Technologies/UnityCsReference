@@ -404,7 +404,7 @@ namespace Unity.UI.Builder
 
             VisualElement sourceField = null;
 
-            if (element.element.IsSelected())
+            if (SelectionUtility.IsSelected(element.element))
             {
                 sourceField = builder.inspector.FindFieldAtPath(property);
             }

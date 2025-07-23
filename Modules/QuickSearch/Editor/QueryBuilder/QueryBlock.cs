@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -234,6 +235,7 @@ namespace UnityEditor.Search
             UpdateGUI();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void ApplyChanges()
         {
             source.Apply();

@@ -841,7 +841,7 @@ namespace UnityEditor.UIElements
                 if (desc == null)
                     continue;
 
-                var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy);
+                var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy, cc.templateAsset);
                 var serializedDataOverride = Serialize(desc, vea, templateContext, true);
                 rootTemplate.serializedDataOverrides.Add(new TemplateAsset.UxmlSerializedDataOverride()
                 {
@@ -864,7 +864,7 @@ namespace UnityEditor.UIElements
 
                 idsCopy.Add(ta.id);
 
-                var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy);
+                var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy, cc.templateAsset);
 
                 CreateSerializedDataOverride(rootTemplate, templateVta, ta, templateContext, namesCopy, idsCopy);
             }

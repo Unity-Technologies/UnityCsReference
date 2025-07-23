@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -26,35 +27,35 @@ namespace Unity.UI.Builder
             bool isRight = !isLeft;
 
             // Set Absolute position.
-            BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "position", Position.Absolute);
+            BuilderStyleUtilities.SetInlineEnumValue(vta, absoluteIslandContainer, "position", Position.Absolute);
 
             if (isTop && isLeft)
             {
                 var left = localMousePosition.x;
                 var top = localMousePosition.y;
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "left", left);
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "top", top);
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "left", new Dimension(left, Dimension.Unit.Pixel));
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "top", new Dimension(top, Dimension.Unit.Pixel));
             }
             else if (isTop && isRight)
             {
                 var right = documentRootElement.resolvedStyle.width - localMousePosition.x;
                 var top = localMousePosition.y;
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "right", right);
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "top", top);
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "right", new Dimension(right, Dimension.Unit.Pixel));
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "top", new Dimension(top, Dimension.Unit.Pixel));
             }
             else if (isBottom && isLeft)
             {
                 var left = localMousePosition.x;
                 var bottom = documentRootElement.resolvedStyle.height - localMousePosition.y;
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "left", left);
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "bottom", bottom);
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "left", new Dimension(left, Dimension.Unit.Pixel));
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "bottom", new Dimension(bottom, Dimension.Unit.Pixel));
             }
             else if (isBottom && isRight)
             {
                 var right = documentRootElement.resolvedStyle.width - localMousePosition.x;
                 var bottom = documentRootElement.resolvedStyle.height - localMousePosition.y;
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "right", right);
-                BuilderStyleUtilities.SetInlineStyleValue(vta, absoluteIslandContainer, "bottom", bottom);
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "right", new Dimension(right, Dimension.Unit.Pixel));
+                BuilderStyleUtilities.SetInlineDimensionValue(vta, absoluteIslandContainer, "bottom", new Dimension(bottom, Dimension.Unit.Pixel));
             }
 
             // Need to explicitly update inline styles from asset.

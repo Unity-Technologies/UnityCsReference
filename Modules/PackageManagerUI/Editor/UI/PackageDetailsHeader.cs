@@ -57,6 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Git, L10n.Tr("Git")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Local, L10n.Tr("Local")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Tarball, L10n.Tr("Tarball")));
             versionContainer.Add(new PackageAssetStoreTagLabel());
             versionContainer.Add(new PackageDeprecatedTagLabel());
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("Disabled")));
@@ -85,8 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Version);
             versionInfoIcon.Refresh(m_Package);
-
-            RefreshName();
+            
             RefreshDependency();
             RefreshFeatureSetElements();
             RefreshTags();
@@ -94,13 +94,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshVersionLabel();
             RefreshRegistryAndAuthor();
             RefreshEntitlement();
-        }
-
-        private void RefreshName()
-        {
-            // We use package.name instead of version.name because `version.name` would be empty for a PlaceholderPackageVersion
-            detailName.SetValueWithoutNotify(m_Package.name);
-            UIUtils.SetElementDisplay(detailName, !string.IsNullOrEmpty(m_Package.name));
         }
 
         private void RefreshFeatureSetElements(VisualState visualState = null)
@@ -270,7 +263,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var isByUnity = m_Version.availableRegistry == RegistryType.UnityRegistry && !m_Version.HasTag(PackageTag.InstalledFromPath);
-            var author = isByUnity ? L10n.Tr("Unity Technologies Inc.") : m_Version?.author;
+            var author = isByUnity ? L10n.Tr("Unity Technologies Inc.") : m_Version?.author?.name;
             registryAndAuthorLabel.tooltip = string.Empty;
 
             if (m_Version is { availableRegistry: RegistryType.UnityRegistry or RegistryType.MyRegistries })
@@ -299,9 +292,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label detailEntitlement => cache.Get<Label>("detailEntitlement");
         private SelectableLabel detailVersion => cache.Get<SelectableLabel>("detailVersion");
         private VersionInfoIcon versionInfoIcon => cache.Get<VersionInfoIcon>("versionInfoIcon");
-
-        private SelectableLabel detailName => cache.Get<SelectableLabel>("detailName");
-
         private VisualElement authorContainer => cache.Get<VisualElement>("detailAuthorContainer");
 
         private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");

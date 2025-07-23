@@ -933,9 +933,6 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::FixCacheServerIntegrityErrors")]
         extern public static UInt64 FixCacheServerIntegrityErrors();
 
-        [FreeFunction]
-        extern public static int DetermineDepthOrder(Transform lhs, Transform rhs);
-
 
         internal static PrecompiledAssembly[] GetUnityAssemblies(bool buildingForEditor, BuildTarget target)
         {

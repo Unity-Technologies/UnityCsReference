@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UIError[] m_Errors;
         public override IEnumerable<UIError> errors => m_Errors;
 
-        public override string author => string.Empty;
+        public override AuthorInfo author => null;
 
         public override string category => string.Empty;
 

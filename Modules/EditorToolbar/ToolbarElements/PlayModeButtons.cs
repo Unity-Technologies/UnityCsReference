@@ -8,9 +8,11 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Overlays;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Toolbars
 {
+    [VisibleToOtherModules("UnityEditor.PlayModeModule")]
     sealed partial class PlayModeButtons : ScriptableSingleton<PlayModeButtons>
     {
         const string k_ElementId = "Editor Utility/Play Mode";
@@ -19,6 +21,7 @@ namespace UnityEditor.Toolbars
         bool m_IsAvailable = true;
         bool m_HasImguiOverride = false;
 
+        [VisibleToOtherModules("UnityEditor.PlayModeModule")]
         [AutoStaticsCleanupOnCodeReload] internal static event Action<VisualElement> onPlayModeButtonsCreated;
 
         [UnityOnlyMainToolbarPreset]
@@ -42,6 +45,7 @@ namespace UnityEditor.Toolbars
                 if (MainToolbar.TryGetOverlay(k_ElementId, out var overlay) && overlay is MainToolbarOverlay mtOverlay)
                 {
                     mtOverlay.afterContentRebuilt += OnElementRebuilt;
+                    OnElementRebuilt(mtOverlay.rootVisualElement.Q<OverlayToolbar>());
                 }
             };
         }

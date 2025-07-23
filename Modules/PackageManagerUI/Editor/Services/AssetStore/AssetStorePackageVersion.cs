@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // We want to distinguish version.author to the package.publisherName since publisher name is related to a product
         // but author here refers to the author data in the PackageInfo, which is empty for an asset store package version
-        public override string author => string.Empty;
+        public override AuthorInfo author => null;
 
         public override string category => m_Category;
 

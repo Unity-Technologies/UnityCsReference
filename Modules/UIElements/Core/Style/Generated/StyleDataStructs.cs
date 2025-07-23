@@ -117,6 +117,7 @@ namespace UnityEngine.UIElements
         public Align alignContent;
         public Align alignItems;
         public Align alignSelf;
+        public Ratio aspectRatio;
         public float borderBottomWidth;
         public float borderLeftWidth;
         public float borderRightWidth;
@@ -163,6 +164,7 @@ namespace UnityEngine.UIElements
             return lhs.alignContent == rhs.alignContent &&
                 lhs.alignItems == rhs.alignItems &&
                 lhs.alignSelf == rhs.alignSelf &&
+                lhs.aspectRatio == rhs.aspectRatio &&
                 lhs.borderBottomWidth == rhs.borderBottomWidth &&
                 lhs.borderLeftWidth == rhs.borderLeftWidth &&
                 lhs.borderRightWidth == rhs.borderRightWidth &&
@@ -220,6 +222,7 @@ namespace UnityEngine.UIElements
                 var hashCode = (int)alignContent;
                 hashCode = (hashCode * 397) ^ (int)alignItems;
                 hashCode = (hashCode * 397) ^ (int)alignSelf;
+                hashCode = (hashCode * 397) ^ aspectRatio.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderBottomWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderLeftWidth.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderRightWidth.GetHashCode();

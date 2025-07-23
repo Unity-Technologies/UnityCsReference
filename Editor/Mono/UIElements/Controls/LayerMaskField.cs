@@ -14,6 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A LayerMaskField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerMaskField|UXML element LayerMaskField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/LayerMaskField.png")]
     public class LayerMaskField : MaskField
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

@@ -14,17 +14,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IProjectSettingsProxy m_SettingsProxy;
+        private readonly IPackageCreator m_PackageCreator;
         public UpmPackageFactory(IUpmCache upmCache,
             IUpmClient upmClient,
             IBackgroundFetchHandler backgroundFetchHandler,
             IPackageDatabase packageDatabase,
-            IProjectSettingsProxy settingsProxy)
+            IProjectSettingsProxy settingsProxy,
+            IPackageCreator packageCreator)
         {
             m_UpmCache = RegisterDependency(upmCache);
             m_UpmClient = RegisterDependency(upmClient);
             m_BackgroundFetchHandler = RegisterDependency(backgroundFetchHandler);
             m_PackageDatabase = RegisterDependency(packageDatabase);
             m_SettingsProxy = RegisterDependency(settingsProxy);
+            m_PackageCreator = RegisterDependency(packageCreator);
         }
 
         public override void OnEnable()
@@ -38,6 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
+
+            m_PackageCreator.onPackageCreated += OnPackageCreated;
         }
 
         public override void OnDisable()
@@ -51,6 +56,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmClient.onPackagesProgressChange -= OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError -= OnPackageOperationError;
+
+            m_PackageCreator.onPackageCreated -= OnPackageCreated;
         }
 
         private void OnPackageOperationError(string packageIdOrName, UIError error)
@@ -73,6 +80,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.OnPackagesModified(new[] { package });
         }
 
+        private void OnPackageCreated(string packageName)
+        {
+            HandleSpecialInstall(packageName, L10n.Tr("Creating a new package"), PackageTag.Custom);
+        }
+
         private void OnPackagesProgressChange(IEnumerable<(string packageIdOrName, PackageProgress progress)> progressUpdates)
         {
             var packagesUpdated = new List<IPackage>();
@@ -84,10 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // when a user adds a git or local package through the special add package UI.
                 if (package == null && item.progress == PackageProgress.Installing)
                 {
-                    var version = new PlaceholderPackageVersion(item.packageIdOrName, L10n.Tr("Installing a new package"), tag: PackageTag.UpmFormat | PackageTag.SpecialInstall);
-                    var placeholderPackage = CreatePackage(item.packageIdOrName, new PlaceholderVersionList(version));
-                    SetProgress(placeholderPackage, PackageProgress.Installing);
-                    m_PackageDatabase.UpdatePackages(new[] { placeholderPackage });
+                    HandleSpecialInstall(item.packageIdOrName, L10n.Tr("Installing a new package"));
                     continue;
                 }
 
@@ -105,6 +114,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             if (packagesUpdated.Any())
                 m_PackageDatabase.OnPackagesModified(packagesUpdated, true);
+        }
+
+        private void HandleSpecialInstall(string packageIdOrName, string displayName, PackageTag additionalTags = PackageTag.None)
+        {
+            var version = new PlaceholderPackageVersion(packageIdOrName, displayName, tag: PackageTag.UpmFormat | PackageTag.SpecialInstall | additionalTags);
+            var placeholderPackage = CreatePackage(packageIdOrName, new PlaceholderVersionList(version));
+            SetProgress(placeholderPackage, PackageProgress.Installing);
+            m_PackageDatabase.UpdatePackages(new[] { placeholderPackage });
         }
 
         private void OnExtraPackageInfoFetched(PackageInfo packageInfo)

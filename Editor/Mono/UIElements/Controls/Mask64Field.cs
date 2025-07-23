@@ -494,6 +494,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Make a field for 64-bit masks.
     /// </summary>
+    [Icon("UIToolkit/Icons/Mask64Field.png")]
     public class Mask64Field : BaseMask64Field
     {
         internal override UInt64 MaskToValue(UInt64 newMask) => newMask;

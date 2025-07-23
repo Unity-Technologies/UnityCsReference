@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -141,6 +142,7 @@ namespace UnityEngine.UIElements
             return new Background { vectorImage = vi };
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Background FromObject(object obj)
         {
             var texture = obj as Texture2D;

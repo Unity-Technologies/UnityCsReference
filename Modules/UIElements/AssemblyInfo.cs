@@ -21,6 +21,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.StyleSheets")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.UXML")]
+[assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
 
@@ -29,6 +30,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.StyleSheetsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents.Editor")]

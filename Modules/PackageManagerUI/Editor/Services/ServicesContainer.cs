@@ -160,13 +160,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
             var inspectorSelectionHandler = Register(new InspectorSelectionHandler(selectionProxy, packageDatabase, pageManager));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
+            var packageCreator = Register(new PackageCreator(upmClient, packageDatabase, unityConnectProxy, ioProxy, dateTimeProxy));
 
             Register(new EditorAnalyticsProxy());
             Register(new CustomDisplayDialog(applicationProxy, resourceLoader));
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient));
             Register(new AssetStorePackageFactory(upmCache, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
-            Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy));
+            Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator));
             Register(new UpmOnAssetStorePackageFactory(unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmRegistryClient, settingsProxy));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
 

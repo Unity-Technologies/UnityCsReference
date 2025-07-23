@@ -8,143 +8,270 @@ using UnityEngine.Bindings;
 namespace UnityEngine.Accessibility
 {
     /// <summary>
-    /// Access point to assistive technology support APIs.
+    /// Access point to APIs that enable applications made with Unity to support assistive technologies.
     /// </summary>
     /// <remarks>
-    /// The currently supported platforms are:
+    /// <para>
+    /// By default, applications made with Unity are incompatible with screen readers because they use Unityʼs own UI
+    /// systems, which are not accessible to assistive technologies. This means that while the screen reader is on, it
+    /// is impossible to interact with a Unity application.
+    /// </para>
+    /// <para>
+    /// You can use this class, along with <see cref="AccessibilityHierarchy"/> and <see cref="AccessibilityNode"/>, to
+    /// make your Unity application natively communicate with and send necessary information to screen readers.
+    /// </para>
+    /// <para>
+    /// These APIs are currently supported on the following platforms:
     ///
-    ///- <see cref="RuntimePlatform.Android"/> (requires at least API level 26)
+    ///- <see cref="RuntimePlatform.Android"/> - starting with Android 8.0 (API level 26)
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
+    ///- <see cref="RuntimePlatform.OSXPlayer"/>
+    ///- <see cref="RuntimePlatform.WindowsPlayer"/>
+    /// </para>
+    /// <para>
+    /// **Note**: These APIs might result in slight behavior differences across platforms. However, they are consistent
+    /// with the behavior of native user interfaces on each platform and conform to user expectations. Their behavior
+    /// might not be identical to native user interfaces, but it is a close replica. APIs that behave differently across
+    /// platforms have those differences described in their documentation.
+    /// </para>
+    /// <para>
+    /// SA:
     ///
-    /// This class contains static methods that allow users to support assistive technologies in the operating
-    /// system (for example, the screen reader).
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    ///- [TalkBack user guide for Android](https://support.google.com/accessibility/android/topic/3529932?ref_topic=9078845)
+    ///- [VoiceOver user guide for iOS](https://support.apple.com/en-us/guide/iphone/iph3e2e415f/ios)
+    ///- [Narrator user guide for Windows](https://support.microsoft.com/en-us/windows/complete-guide-to-narrator-e4397a0d-ef4f-b386-d8ae-c172f109bdb1)
+    ///- [VoiceOver user guide for macOS](https://support.apple.com/en-us/guide/voiceover/welcome/mac)
+    /// </para>
     /// </remarks>
     public static class AssistiveSupport
     {
         internal class NotificationDispatcher : IAccessibilityNotificationDispatcher
         {
-            /// <summary>
-            /// Sends the given notification to the operating system.
-            /// </summary>
-            /// <param name="context">The accessibility notification to be sent.</param>
-            static void Send(in AccessibilityNotificationContext context)
-            {
-                AccessibilityManager.SendAccessibilityNotification(context);
-            }
-
             public void SendAnnouncement(string announcement)
             {
-                var notification = new AccessibilityNotificationContext
-                {
-                    notification = AccessibilityNotification.Announcement,
-                    announcement = announcement
-                };
-                Send(notification);
+                AccessibilityManager.SendAnnouncementNotification(announcement);
             }
 
-            /// <summary>
-            /// Sends a notification to the screen reader conveying that a page was scrolled.
-            /// </summary>
-            /// <param name="announcement">The string containing a description of the new scroll position (for example,
-            /// @@"Tab 3 of 5"@@ or @@"Page 19 of 27"@@).</param>
-            public void SendPageScrolledAnnouncement(string announcement)
+            public void SendPageScrolledAnnouncement(string announcement, AccessibilityNode nodeToFocus = null)
             {
-                var notification = new AccessibilityNotificationContext
-                {
-                    notification = AccessibilityNotification.PageScrolled,
-                    announcement = announcement
-                };
-                Send(notification);
+                AccessibilityManager.SendPageScrolledNotification(announcement, nodeToFocus?.id ?? AccessibilityNodeManager.k_InvalidNodeId);
             }
 
             public void SendScreenChanged(AccessibilityNode nodeToFocus = null)
             {
-                var notification = new AccessibilityNotificationContext
-                {
-                    notification = AccessibilityNotification.ScreenChanged,
-                    nextNodeId = nodeToFocus == null ? -1 : nodeToFocus.id
-                };
-                Send(notification);
+                AccessibilityManager.SendScreenChangedNotification(nodeToFocus?.id ?? AccessibilityNodeManager.k_InvalidNodeId);
             }
 
             public void SendLayoutChanged(AccessibilityNode nodeToFocus = null)
             {
-                var notification = new AccessibilityNotificationContext
-                {
-                    notification = AccessibilityNotification.LayoutChanged,
-                    nextNodeId = nodeToFocus == null ? -1 : nodeToFocus.id
-                };
-                Send(notification);
+                AccessibilityManager.SendLayoutChangedNotification(nodeToFocus?.id ?? AccessibilityNodeManager.k_InvalidNodeId);
             }
         }
 
         /// <summary>
-        /// Event that is invoked on the main thread when the screen reader focus changes.
-        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
+        /// Options to determine the status of the screen reader.
         /// </summary>
-        public static event Action<AccessibilityNode> nodeFocusChanged;
+        /// <remarks>
+        /// You can use the values in this enumeration to set <see cref="AssistiveSupport.screenReaderStatusOverride"/>
+        /// and force <see cref="AssistiveSupport.isScreenReaderEnabled"/> to return a specific value.
+        /// </remarks>
+        public enum ScreenReaderStatusOverride : byte
+        {
+            /// <summary>
+            /// The screen reader status is determined by the operating system.
+            /// </summary>
+            OSDriven,
 
-        /// <summary>
-        /// Event that is invoked on the main thread when the screen reader is enabled or disabled.
-        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
-        /// </summary>
-        public static event Action<bool> screenReaderStatusChanged;
+            /// <summary>
+            /// The screen reader is considered enabled, regardless of the status given by the operating system.
+            /// </summary>
+            ForceEnabled,
 
-        /// <summary>
-        /// Whether the screen reader is enabled on the operating system.
-        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
-        /// </summary>
-        public static bool isScreenReaderEnabled { get; private set; }
+            /// <summary>
+            /// The screen reader is considered disabled, regardless of the status given by the operating system.
+            /// </summary>
+            ForceDisabled,
+        }
 
         /// <summary>
         /// Service used to send accessibility notifications to the screen reader.
-        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
         /// </summary>
         public static IAccessibilityNotificationDispatcher notificationDispatcher { get; } = new NotificationDispatcher();
 
-        static ServiceManager s_ServiceManager;
+        /// <summary>
+        /// Event invoked on the main thread when the user turns the screen reader on or off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Subscribe to this event to activate your <see cref="AccessibilityHierarchy"/> (see
+        /// <see cref="AssistiveSupport.activeHierarchy"/>) and if you need to customize your application’s interface
+        /// for screen reader users.
+        /// </para>
+        /// <para>
+        /// You can also use <see cref="AssistiveSupport.isScreenReaderEnabled"/> to determine whether the screen reader
+        /// is turned on or off.
+        /// </para>
+        /// <para>
+        /// **Platform support**: This event is not supported by Narrator, the Windows built-in screen reader.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The following example demonstrates a potential workaround for polling the status of Narrator and sending a
+        /// custom event.
+        /// <code source="../Tests/AccessibilityExamples/Assets/Examples/NarratorStatusManager.cs"/>
+        /// </example>
+        public static event Action<bool> screenReaderStatusChanged;
+
+        static event Action<AccessibilityHierarchy> s_ActiveHierarchyChanged;
+
+        /// <summary>
+        /// Event invoked when the active accessibility hierarchy is changed.
+        /// </summary>
+        internal static event Action<AccessibilityHierarchy> activeHierarchyChanged
+        {
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            add => s_ActiveHierarchyChanged += value;
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            remove => s_ActiveHierarchyChanged -= value;
+        }
+
+        /// <summary>
+        /// Event invoked on the main thread when the user changes the screen reader focus by navigating to a different
+        /// accessibility node.
+        /// </summary>
+        /// <remarks>
+        /// Subscribe to this event if you need to know when the screen reader focus changes. For example, to scroll the
+        /// visual element represented by the focused node into view if it is not currently visible.
+        /// </remarks>
+        public static event Action<AccessibilityNode> nodeFocusChanged;
+
+        /// <summary>
+        /// The accessibility hierarchy that is currently accessible to screen readers.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// An active <see cref="AccessibilityHierarchy"/> is required to make the content of an application accessible
+        /// to screen reader users.
+        /// </para>
+        /// <para>
+        /// To manage system resources efficiently, setting this property only takes effect if the screen reader is on,
+        /// where the value of <see cref="AssistiveSupport.isScreenReaderEnabled"/> is @@true@@. Similarly, when the
+        /// screen reader is turned off, so when the <see cref="AssistiveSupport.screenReaderStatusChanged"/> event is
+        /// sent with a @@false@@ parameter or when <see cref="AssistiveSupport.screenReaderStatusOverride"/> is set to
+        /// <see cref="AssistiveSupport.ScreenReaderStatusOverride.ForceDisabled"/>, this property is automatically set
+        /// to @@null@@. You must set it each time the screen reader is turned on.
+        /// </para>
+        /// <para>
+        /// When this property is set, Unity notifies the screen reader of the new hierarchy by calling
+        /// <see cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
+        /// </para>
+        /// <para>
+        /// **Note**: Setting this property on unsupported runtime platforms throws @@PlatformNotSupportedException@@.
+        /// </para>
+        /// </remarks>
+        public static AccessibilityHierarchy activeHierarchy
+        {
+            get => AccessibilityHierarchyService.activeHierarchy;
+            set
+            {
+                // In the Editor context, we always accept an active hierarchy in order to allow users to debug it
+                // (using the Accessibility Hierarchy Viewer, for instance) in play mode even if the Editor platform is
+                // not supported or the screen reader is off.
+
+                if (!Application.isEditor && !AccessibilityManager.isSupportedPlatform)
+                {
+                    throw new PlatformNotSupportedException($"This API is not supported on platform {Application.platform}");
+                }
+
+                if (isScreenReaderEnabled || Application.isEditor)
+                {
+                    using var amlock = AccessibilityManager.GetExclusiveLock();
+
+                    AccessibilityHierarchyService.activeHierarchy = value;
+                    s_ActiveHierarchyChanged?.Invoke(value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether the screen reader is turned on or off on the user's device.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// You can use this property to customize your application’s interface for screen reader users. For example,
+        /// you might want visual elements that usually disappear quickly to persist onscreen for screen reader users.
+        /// </para>
+        /// <para>
+        /// You can also subscribe to the <see cref="AssistiveSupport.screenReaderStatusChanged"/> event to determine
+        /// when the user turns the screen reader on or off.
+        /// </para>
+        /// <para>
+        /// To manage system resources efficiently, setting <see cref="AssistiveSupport.activeHierarchy"/> only takes
+        /// effect if the value of this property is @@true@@.
+        /// </para>
+        /// </remarks>
+        public static bool isScreenReaderEnabled => screenReaderStatusOverride switch
+        {
+            ScreenReaderStatusOverride.ForceEnabled => true,
+            ScreenReaderStatusOverride.ForceDisabled => false,
+            _ => AccessibilityManager.IsScreenReaderEnabled()
+        };
+
+        static ScreenReaderStatusOverride s_ScreenReaderStatusOverride;
+
+        /// <summary>
+        /// Whether to override the screen reader status given by the operating system.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Set this property if you need to override the value returned by
+        /// <see cref="AssistiveSupport.isScreenReaderEnabled"/>.
+        /// </para>
+        /// <para>
+        /// If this property is set to <see cref="AssistiveSupport.ScreenReaderStatusOverride.OSDriven"/>, its default
+        /// value, <see cref="AssistiveSupport.isScreenReaderEnabled"/> returns the actual screen reader status given by
+        /// the operating system. Otherwise, this property forces <see cref="AssistiveSupport.isScreenReaderEnabled"/>
+        /// to return a specific value, regardless of the status given by the operating system.
+        /// </para>
+        /// <para>
+        /// **Note**: This property does not affect the actual status of the screen reader on the user's device.
+        /// </para>
+        /// </remarks>
+        public static ScreenReaderStatusOverride screenReaderStatusOverride
+        {
+            get => s_ScreenReaderStatusOverride;
+            set
+            {
+                if (s_ScreenReaderStatusOverride == value)
+                {
+                    return;
+                }
+
+                s_ScreenReaderStatusOverride = value;
+
+                if (!isScreenReaderEnabled && !Application.isEditor)
+                {
+                    AccessibilityHierarchyService.activeHierarchy = null;
+                }
+            }
+        }
 
         internal static void Initialize()
         {
-            isScreenReaderEnabled = AccessibilityManager.IsScreenReaderEnabled();
-
             AccessibilityManager.screenReaderStatusChanged += ScreenReaderStatusChanged;
             AccessibilityManager.nodeFocusChanged += NodeFocusChanged;
-
-            s_ServiceManager = new ServiceManager();
         }
 
-        internal static T GetService<T>() where T : IService
+        internal static void ScreenReaderStatusChanged(bool enabled)
         {
-            if (s_ServiceManager == null)
+            if (!isScreenReaderEnabled && !Application.isEditor)
             {
-                return default;
+                AccessibilityHierarchyService.activeHierarchy = null;
             }
 
-            return s_ServiceManager.GetService<T>();
-        }
-
-        internal static bool IsServiceRunning<T>() where T : IService
-        {
-            IService service = GetService<T>();
-
-            return service != null;
-        }
-
-        internal static void SetApplicationAccessibilityLanguage(SystemLanguage language)
-        {
-            AccessibilityManager.SetApplicationAccessibilityLanguage(language);
-        }
-
-        static void ScreenReaderStatusChanged(bool screenReaderEnabled)
-        {
-            if (isScreenReaderEnabled == screenReaderEnabled)
-            {
-                return;
-            }
-
-            isScreenReaderEnabled = screenReaderEnabled;
-            screenReaderStatusChanged?.Invoke(isScreenReaderEnabled);
+            screenReaderStatusChanged?.Invoke(enabled);
         }
 
         static void NodeFocusChanged(AccessibilityNode currentNode)
@@ -152,68 +279,9 @@ namespace UnityEngine.Accessibility
             nodeFocusChanged?.Invoke(currentNode);
         }
 
-        /// <summary>
-        /// The active AccessibilityHierarchy for the screen reader. May be @@null@@ if no hierarchy is active.
-        /// <para>You need an active accessibility hierarchy to present any content to the user through the screen reader.</para>
-        /// <para>If the screen reader is off, there is no active hierarchy. If the screen reader is turned off on the device
-        /// while an active hierarchy is set, the active hierarchy is automatically set to @@null@@.</para>
-        /// <para>For all the supported platforms, refer to <see cref="AssistiveSupport"/>.</para>
-        /// </summary>
-        /// <remarks>
-        /// Throws @@PlatformNotSupportedException@@ if the screen reader support is not implemented for the
-        /// platform and the code is not running in the Unity Editor.
-        /// </remarks>
-        /// <remarks>
-        /// When the active hierarchy is assigned, a notification is sent to the operating system that the screen changed
-        /// considerably. The notification is sent by calling <see
-        /// cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
-        /// </remarks>
-        public static AccessibilityHierarchy activeHierarchy
+        internal static void SetApplicationAccessibilityLanguage(SystemLanguage language)
         {
-            set
-            {
-                CheckPlatformSupported();
-
-                using var amlock = AccessibilityManager.GetExclusiveLock();
-                var hierarchyService = GetService<AccessibilityHierarchyService>();
-                if (hierarchyService != null)
-                {
-                    hierarchyService.hierarchy = value;
-                    s_ActiveHierarchyChanged?.Invoke(value);
-                }
-            }
-            get => GetService<AccessibilityHierarchyService>()?.hierarchy;
-        }
-
-        private static event Action<AccessibilityHierarchy> s_ActiveHierarchyChanged;
-
-        /// <summary>
-        /// Event sent when the active hierarchy is changed.
-        /// </summary>
-        internal static event Action<AccessibilityHierarchy> activeHierarchyChanged
-        {
-            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
-            add { s_ActiveHierarchyChanged += value; }
-            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
-            remove { s_ActiveHierarchyChanged -= value; }
-        }
-
-        internal static void OnHierarchyNodeFramesRefreshed(AccessibilityHierarchy hierarchy)
-        {
-            if (activeHierarchy == hierarchy)
-            {
-                notificationDispatcher.SendLayoutChanged();
-            }
-        }
-
-        static void CheckPlatformSupported()
-        {
-            // We accept Editor platform even though it is not actually supported yet in order to be able to debug
-            // Accessibility hierarchy using the Accessibility Hierarchy Viewer.
-            if (!Application.isEditor && !AccessibilityManager.isSupportedPlatform)
-            {
-                throw new PlatformNotSupportedException($"This API is not supported for platform {Application.platform}");
-            }
+            AccessibilityManager.SetApplicationAccessibilityLanguage(language);
         }
     }
 }

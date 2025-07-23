@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// SA: [[Slider]]
     /// </remarks>
+    [Icon("UIToolkit/Icons/MinMaxSlider.png")]
     public class MinMaxSlider : BaseField<Vector2>
     {
         internal static readonly BindingId minValueProperty = nameof(minValue);
@@ -43,14 +44,18 @@ namespace UnityEngine.UIElements
                 BaseField<Vector2>.UxmlSerializedData.Register();
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
+                    new (nameof(valueOverride), "value"),
                     new (nameof(lowLimit), "low-limit"),
                     new (nameof(highLimit), "high-limit"),
                 }, false);
             }
 
             #pragma warning disable 649
-            [SerializeField] float lowLimit;
-            [SerializeField] float highLimit;
+            [UxmlAttributeBindingPath("value")]
+            [SerializeField, Delayed, UxmlAttribute("value")] Vector2 valueOverride;
+            [SerializeField, Delayed] float lowLimit;
+            [SerializeField, Delayed] float highLimit;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueOverride_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowLimit_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highLimit_UxmlAttributeFlags;
             #pragma warning restore 649
@@ -63,7 +68,7 @@ namespace UnityEngine.UIElements
 
                 if (foundAttributeCounter > 0)
                 {
-                    Value = new Vector2(minV, maxV);
+                    valueOverride = new Vector2(minV, maxV);
                     handledAttributes.Add("value");
 
                     if (bag is UxmlAsset uxmlAsset)
@@ -86,6 +91,8 @@ namespace UnityEngine.UIElements
                     e.lowLimit = lowLimit;
                 if (ShouldWriteAttributeValue(highLimit_UxmlAttributeFlags))
                     e.highLimit = highLimit;
+                if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
+                    e.valueOverride = valueOverride;
             }
         }
 
@@ -151,6 +158,9 @@ namespace UnityEngine.UIElements
         Vector2 m_DragElementStartPos;
         Vector2 m_ValueStartPos;
         DragState m_DragState;
+
+        // Placeholder required to prevent issues syncing UxmlSerializedData.
+        internal Vector2 valueOverride { get => value; set => SetValueWithoutNotify(value); }
 
         // Minimum value of the current position of the slider
         /// <summary>

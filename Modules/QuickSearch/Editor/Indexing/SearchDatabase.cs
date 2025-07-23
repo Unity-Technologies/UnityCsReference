@@ -279,7 +279,7 @@ namespace UnityEditor.Search
                 var adbPath = AssetDatabase.GetAssetPath(this);
                 if (!string.IsNullOrEmpty(adbPath))
                     return adbPath;
-                return defaultSearchDatabaseIndexPath;
+                return null;
             }
         }
 

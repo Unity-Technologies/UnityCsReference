@@ -113,6 +113,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (installedVersion.HasTag(PackageTag.Local))
                 return L10n.Tr("(local)");
+            
+            if (installedVersion.HasTag(PackageTag.Tarball))
+                return L10n.Tr("(tarball)");
 
             var statusText = installedVersion.HasTag(PackageTag.BuiltIn)
                 ? L10n.Tr("enabled") : L10n.Tr("installed");

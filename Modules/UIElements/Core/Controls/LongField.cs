@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering long integers. For more information, refer to [[wiki:UIE-uxml-element-LongField|UXML element LongField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/LongField.png")]
     public class LongField : TextValueField<long>
     {
         // This property to alleviate the fact we have to cast all the time

@@ -327,6 +327,7 @@ namespace UnityEngine.UIElements
     /// </code>
     /// </example>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/ProgressBar.png")]
     public class ProgressBar : AbstractProgressBar
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

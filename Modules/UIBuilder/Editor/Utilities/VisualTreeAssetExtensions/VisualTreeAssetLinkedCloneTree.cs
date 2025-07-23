@@ -32,7 +32,7 @@ namespace Unity.UI.Builder
 
             // Save reference to the visualElementAsset so elements can be reinitialized when
             // we set their attributes in the editor
-            ve.SetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName, root);
+            ve.visualElementAsset = root;
 
             // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
             // tracked for live reloading on changes, and also accessible for users that need to keep track
@@ -113,7 +113,7 @@ namespace Unity.UI.Builder
 
                 // Save reference to the visualElementAsset so elements can be reinitialized when
                 // we set their attributes in the editor
-                childVe.SetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName, childVea);
+                childVe.visualElementAsset = childVea;
 
                 var index = templateAsset?.slotUsages?.FindIndex(u => u.assetId == childVea.id) ?? -1;
                 if (index != -1)
@@ -173,7 +173,7 @@ namespace Unity.UI.Builder
 
                 var veaIds = new List<int>();
 
-                var childElement = CloneSetupRecursively(vta, child, new CreationContext(slotInsertionPoints, attributeOverridesRanges, null, vta, target, veaIds, null));
+                var childElement = CloneSetupRecursively(vta, child, new CreationContext(slotInsertionPoints, attributeOverridesRanges, null, vta, target, veaIds, null, null));
 
                 if (childElement == null)
                     continue;

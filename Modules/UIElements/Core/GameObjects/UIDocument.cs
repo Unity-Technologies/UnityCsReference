@@ -101,6 +101,8 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [Icon("UIToolkit/Icons/TemplateContainer.png")]
     internal class UIDocumentRootElement : TemplateContainer
     {
         public readonly UIDocument document;
@@ -478,7 +480,7 @@ namespace UnityEngine.UIElements
                 doc = doc.parentUI;
             return doc;
         }
-            
+
 
         internal static Func<UIDocument, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
@@ -1318,7 +1320,7 @@ namespace UnityEngine.UIElements
                 panelSettings = tempPanelSettings;
             }
 
-            if (m_OldUxml != sourceAsset)
+            if (m_OldUxml != sourceAsset || !m_OldUxml)
             {
                 visualTreeAsset = sourceAsset;
                 m_OldUxml = sourceAsset;

@@ -5,14 +5,17 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     static class UIElementsRuntimeUtility
     {
         public static event Action<BaseRuntimePanel> onCreatePanel;
+        public static event Action<BaseRuntimePanel> onWillDestroyPanel;
 
         static UIElementsRuntimeUtility()
         {
@@ -49,9 +52,9 @@ namespace UnityEngine.UIElements
 
         public static void DisposeRuntimePanel(ScriptableObject ownerObject)
         {
-            Panel panel;
-            if (UIElementsUtility.TryGetPanel(ownerObject.GetInstanceID(), out panel))
+            if (UIElementsUtility.TryGetPanel(ownerObject.GetInstanceID(), out var panel))
             {
+                onWillDestroyPanel?.Invoke((BaseRuntimePanel)panel);
                 panel.Dispose();
                 RemoveCachedPanelInternal(ownerObject.GetInstanceID());
             }

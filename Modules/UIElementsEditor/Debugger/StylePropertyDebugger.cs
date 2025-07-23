@@ -492,6 +492,12 @@ namespace UnityEditor.UIElements.Debugger
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(filterString.ToString());
             }
+            else if (val is Ratio ratio)
+            {
+                StyleRatioField field = GetOrCreateField<StyleRatioField, StyleRatio>();
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(ratio.value);
+            }
             else
             {
                 var type = val.GetType();

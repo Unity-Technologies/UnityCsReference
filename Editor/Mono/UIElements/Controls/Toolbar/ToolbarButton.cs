@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -21,6 +22,7 @@ namespace UnityEditor.UIElements
     /// <remarks>
     /// SA: [[Button]], [[Toolbar]]
     /// </remarks>
+    [Icon("UIToolkit/Icons/ToolbarButton.png")]
     public class ToolbarButton : Button
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

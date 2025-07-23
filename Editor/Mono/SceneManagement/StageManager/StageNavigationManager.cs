@@ -10,9 +10,11 @@ using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using System.Collections.ObjectModel;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.SceneManagement
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class StageNavigationManager : ScriptableSingleton<StageNavigationManager>
     {
         StageNavigationHistory m_NavigationHistory;                                 // Not marked with SerializeField since it should be reset on every restart of Unity

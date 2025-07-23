@@ -14,14 +14,19 @@ namespace UnityEngine.TextCore.Text
     [NativeHeader("Modules/TextCoreTextEngine/Native/ATGMeshInfo.h")]
     internal struct ATGMeshInfo
     {
-        public NativeTextElementInfo[] textElementInfos;
+        private IntPtr m_TextElementInfosPtr;
+        private int m_TextElementCount;
         public int textAssetId;
-        public int textElementCount;
 
-        [Ignore]
-        public List<List<int>> textElementInfoIndicesByAtlas;
+        public unsafe Span<NativeTextElementInfo> textElementInfos
+        {
+            get
+            {
+                if (m_TextElementInfosPtr == IntPtr.Zero || m_TextElementCount == 0)
+                    return default;
 
-        [Ignore]
-        public bool hasMultipleColors;
+                return new Span<NativeTextElementInfo>(m_TextElementInfosPtr.ToPointer(), m_TextElementCount);
+            }
+        }
     }
 }

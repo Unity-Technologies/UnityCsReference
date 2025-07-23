@@ -613,15 +613,12 @@ namespace UnityEditor.Modules
 
         void ReportBuildOutputFiles(BuildPostProcessArgs args)
         {
-            // Remove any previous file entries in the build report.
+            // Replace any previous file entries in the build report.
             // We can track any file written by the backend ourselves.
             // Once all platforms use the Bee backend, we can remove a lot
             // of code to add file entries in the native build pipeline.
-            args.report.DeleteAllFileEntries();
-
             var filesOutput = BeeDriverResult.DataFromBuildProgram.Get<BuiltFilesOutput>();
-            foreach (var outputfile in filesOutput.Files.ToNPaths().Where(f => f.FileExists() && !f.IsSymbolicLink))
-                args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
+            args.report.ReplaceAllFileEntries(filesOutput.Files.ToNPaths().Where(f => f.FileExists() && !f.IsSymbolicLink));
 
             var config = filesOutput.BootConfigArtifact.ToNPath().ReadAllLines();
             var guidKey = "build-guid=";

@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -25,18 +27,66 @@ namespace UnityEngine.TextCore.Text
 
         private static extern IntPtr GetInstance(byte[] icuData);
 
-        public NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo)
+        public NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo, ref bool uvsAreGenerated)
         {
             Debug.Assert((settings.fontStyle & FontStyles.Bold) == 0);// Bold need to be set by the fontWeight only.
-            var textInfo = GenerateTextInternal(settings, textGenerationInfo);
+            var textInfo = GenerateTextInternal(settings, textGenerationInfo, ref uvsAreGenerated);
 
             return textInfo;
         }
 
-        // The rasterization of glyph was extracted to its own method to ensure it is called on the main thread.
-        public void ProcessMeshInfos(NativeTextInfo textInfo, NativeTextGenerationSettings settings)
+        public bool HasMissingGlyphs(NativeTextInfo textInfo, NativeTextGenerationSettings settings, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
         {
-            foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
+            Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
+            bool hasMissingGlyphs = false;
+            foreach (ref var meshInfo in meshInfosSpan)
+            {
+                var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                HashSet<uint> missingUnicodes = null;
+
+                if (textAsset is SpriteAsset spriteAsset || textAsset == null)
+                {
+                    // Sprite is never populated during text generation.
+                    // If it's missing, we won't add it to the atlas anyway.
+                    continue;
+                }
+
+                Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
+
+                for (int i = 0; i < textElementInfosSpan.Length; i++)
+                {
+                    ref var textElementInfo = ref textElementInfosSpan[i];
+                    var glyphID = textElementInfo.glyphID;
+                    Glyph glyph = null;
+
+                    glyph = ((FontAsset)textAsset).GetGlyphInCache((uint)glyphID);
+                    if (glyph == null)
+                    {
+                        hasMissingGlyphs = true;
+                        if (missingUnicodes == null)
+                        {
+                            // The HashSet for this FontAsset might already be in our Dictionary. If not, create it.
+                            if (!missingGlyphsPerFontAsset.TryGetValue(meshInfo.textAssetId, out missingUnicodes))
+                            {
+                                missingUnicodes = new HashSet<uint>();
+                                missingGlyphsPerFontAsset.Add(meshInfo.textAssetId, missingUnicodes);
+                            }
+                        }
+                        missingUnicodes.Add((uint)glyphID);
+                    }
+                }
+            }
+            return hasMissingGlyphs;
+        }
+
+        // The rasterization of glyph was extracted to its own method to ensure it is called on the main thread.
+        public void ProcessMeshInfos(NativeTextInfo textInfo, NativeTextGenerationSettings settings, ref List<List<List<int>>> textElementIndicesByMesh, ref List<bool> hasMultipleColorsByMesh, bool uvsAreGenerated)
+        {
+            Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
+
+            int meshInfoIndex = 0;
+
+            foreach (ref var meshInfo in meshInfosSpan)
             {
                 var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
                 if (textAsset == null)
@@ -45,12 +95,24 @@ namespace UnityEngine.TextCore.Text
                 float inverseAtlasHeight = 0f;
                 bool isSprite = false;
 
+                // Note that textElementIndicesByMesh is not empty since we reuse it to avoid allocations.
+                // This is why we sometimes need to grow it, or refer to an existing index.
+                List<List<int>> atlasList;
+                int requiredAtlasCount = 1;
+                if (meshInfoIndex < textElementIndicesByMesh.Count)
+                {
+                    atlasList = textElementIndicesByMesh[meshInfoIndex];
+                }
+                else
+                {
+                    atlasList = new List<List<int>>();
+                    textElementIndicesByMesh.Add(atlasList);
+                }
+
                 if (textAsset is FontAsset fontAsset)
                 {
                     isSprite = false;
-                    meshInfo.textElementInfoIndicesByAtlas = new List<List<int>>(fontAsset.atlasTextures.Length);
-                    for (int i = 0; i < fontAsset.atlasTextures.Length; i++)
-                        meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
+                    requiredAtlasCount = fontAsset.atlasTextures.Length;
 
                     inverseAtlasWidth = 1.0f / fontAsset.atlasWidth;
                     inverseAtlasHeight = 1.0f / fontAsset.atlasHeight;
@@ -58,11 +120,15 @@ namespace UnityEngine.TextCore.Text
                 else if (textAsset is SpriteAsset spriteAsset)
                 {
                     isSprite = true;
-                    meshInfo.textElementInfoIndicesByAtlas = new List<List<int>>();
-                    meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
+                    requiredAtlasCount = 1;
 
                     inverseAtlasWidth = 1.0f / spriteAsset.m_SpriteAtlasTexture.width;
                     inverseAtlasHeight = 1.0f / spriteAsset.m_SpriteAtlasTexture.height;
+                }
+
+                while (atlasList.Count < requiredAtlasCount)
+                {
+                    atlasList.Add(new List<int>());
                 }
 
                 var padding = settings.vertexPadding / 64.0f;
@@ -70,27 +136,29 @@ namespace UnityEngine.TextCore.Text
                 bool hasMultipleColors = false;
                 Color? previousColor = null;
 
-                // TODO we should add glyphs in batch instead
-                for (int i = 0; i < meshInfo.textElementInfos.Length; i++)
+                Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
+
+                for (int i = 0; i < textElementInfosSpan.Length; i++)
                 {
-                    ref var textElementInfo = ref meshInfo.textElementInfos[i];
+                    ref var textElementInfo = ref textElementInfosSpan[i];
                     var glyphID = textElementInfo.glyphID;
                     Glyph glyph = null;
-                    bool success = true;
                     int spriteIndex = 0;
+                    
                     if (isSprite)
                     {
                         spriteIndex = glyphID - '\uE000';
                         padding = 0;
                         glyph = ((SpriteAsset)textAsset).spriteCharacterTable[spriteIndex].glyph;
                         if (spriteIndex == -1)
-                            success = false;
+                            continue;
                     }
                     else
-                        success = ((FontAsset)textAsset).TryAddGlyphInternal((uint)glyphID, out glyph);
-
-                    if (!success)
-                        continue;
+                    {
+                        glyph = ((FontAsset)textAsset).GetGlyphInCache((uint)glyphID);
+                        if (glyph == null)
+                            continue;
+                    }
 
                     var currentColor = textElementInfo.topLeft.color;
                     if (previousColor.HasValue && previousColor.Value != currentColor)
@@ -101,14 +169,12 @@ namespace UnityEngine.TextCore.Text
 
                     var glyphRect = glyph.glyphRect;
 
-                    if (!isSprite)
-                    {
-                        while (meshInfo.textElementInfoIndicesByAtlas.Count < ((FontAsset)textAsset).atlasTextures.Length)
-                            meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
-                    }
+                    textElementIndicesByMesh[meshInfoIndex][glyph.atlasIndex].Add(i);
 
-                    meshInfo.textElementInfoIndicesByAtlas[glyph.atlasIndex].Add(i);
+                    if (uvsAreGenerated)
+                        continue;
 
+                    // This is false for special characters like Underline
                     bool allUVsAreZeroOrOne =
                         (textElementInfo.bottomLeft.uv0.x == 0f || textElementInfo.bottomLeft.uv0.x == 1f) &&
                         (textElementInfo.bottomLeft.uv0.y == 0f || textElementInfo.bottomLeft.uv0.y == 1f) &&
@@ -127,31 +193,33 @@ namespace UnityEngine.TextCore.Text
                         float yMax = (glyphRect.y + glyphRect.height + padding) * inverseAtlasHeight;
 
                         textElementInfo.bottomLeft.uv0 = new Vector2(xMin, yMin);
-                        textElementInfo.topLeft.uv0    = new Vector2(xMin, yMax);
-                        textElementInfo.topRight.uv0   = new Vector2(xMax, yMax);
-                        textElementInfo.bottomRight.uv0= new Vector2(xMax, yMin);
+                        textElementInfo.topLeft.uv0 = new Vector2(xMin, yMax);
+                        textElementInfo.topRight.uv0 = new Vector2(xMax, yMax);
+                        textElementInfo.bottomRight.uv0 = new Vector2(xMax, yMin);
                     }
                     else
                     {
                         Vector2 bottomLeftUV = new Vector2((glyphRect.x - padding) * inverseAtlasWidth,
-                                                            (glyphRect.y - padding) * inverseAtlasHeight);
+                                                           (glyphRect.y - padding) * inverseAtlasHeight);
                         Vector2 topLeftUV = new Vector2(bottomLeftUV.x,
                                                         (glyphRect.y + glyphRect.height + padding) * inverseAtlasHeight);
                         Vector2 topRightUV = new Vector2((glyphRect.x + glyphRect.width + padding) * inverseAtlasWidth,
                                                          topLeftUV.y);
 
                         textElementInfo.bottomLeft.uv0 = topRightUV * textElementInfo.bottomLeft.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.bottomLeft.uv0);
-                        textElementInfo.topLeft.uv0    = topRightUV * textElementInfo.topLeft.uv0    + bottomLeftUV * (Vector2.one - textElementInfo.topLeft.uv0);
-                        textElementInfo.topRight.uv0   = topRightUV * textElementInfo.topRight.uv0   + bottomLeftUV * (Vector2.one - textElementInfo.topRight.uv0);
-                        textElementInfo.bottomRight.uv0= topRightUV * textElementInfo.bottomRight.uv0+ bottomLeftUV * (Vector2.one - textElementInfo.bottomRight.uv0);
+                        textElementInfo.topLeft.uv0 = topRightUV * textElementInfo.topLeft.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.topLeft.uv0);
+                        textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.topRight.uv0);
+                        textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.bottomRight.uv0);
                     }
+                    
                 }
-                meshInfo.hasMultipleColors = hasMultipleColors;
+                hasMultipleColorsByMesh.Add(hasMultipleColors);
+                meshInfoIndex++;
             }
         }
 
         [NativeMethod(Name = "TextLib::GenerateTextMesh", IsThreadSafe = true)]
-        private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
+        private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo, ref bool uvsAreGenerated);
 
         [NativeMethod(Name = "TextLib::MeasureText")]
         public extern Vector2 MeasureText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
@@ -173,6 +241,7 @@ namespace UnityEngine.TextCore.Text
         [ThreadSafe]
         public static extern IntPtr Create();
 
+        [ThreadSafe]
         public static extern void Destroy(IntPtr ptr);
 
         [ThreadSafe]

@@ -61,10 +61,11 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
 
         foreach (var asset in assetsList.OrderBy(a => a.importedPath))
         {
+            var normalizedPath = asset.importedPath.Replace('\\', '/');
             // We don't support removing assets that are outside of the "Assets" folder.
             // The only known case of that is when a .unitypackage injects a UPM package in the "Packages" folder.
             // In that case, it will be handle as an embedded package.
-            if (!asset.importedPath.StartsWith("Assets/"))
+            if (!normalizedPath.StartsWith("Assets/"))
             {
                 Debug.Log($"[Package Manager Window] Cannot remove the asset at {asset.importedPath}: This asset is outside of the Assets folder.");
                 continue;
@@ -72,7 +73,7 @@ internal class SelectionWindowData : ISerializationCallbackReceiver
 
             // Every imported assets with an AssetOrigin should be in the "Assets/" folder.
             // We skip 1 because we don't want to show "Assets/" as the root node in the selection window.
-            var pathParts = asset.importedPath.Split('/').Skip(1).ToArray();
+            var pathParts = normalizedPath.Split('/').Skip(1).ToArray();
 
             var currentNode = hiddenRootNode;
             for (var i = 0; i < pathParts.Length; ++i)

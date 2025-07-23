@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-Toggle|UXML element Toggle]].
     /// </remarks>
+    [Icon("UIToolkit/Icons/Toggle.png")]
     public class Toggle : BaseBoolField
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

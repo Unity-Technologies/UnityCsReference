@@ -416,12 +416,6 @@ namespace Unity.UI.Builder
             }
         }
 
-        public static bool IsSelected(this VisualTreeAsset vta)
-        {
-            var foundElement = vta.FindElementByType(BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
-            return foundElement != null;
-        }
-
         public static void ClearUndo(this VisualTreeAsset vta)
         {
             if (vta == null)

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
@@ -73,6 +74,7 @@ namespace UnityEditor.Search
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static IEnumerable<SearchProposition> GetPropositions(Type type)
         {
             var block = CreateBlock(type, null, null);

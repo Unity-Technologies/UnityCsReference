@@ -353,7 +353,7 @@ namespace UnityEngine.UIElements.UIR
                     clearSettings.clearColor, clearColor, UIRUtility.k_ClearZ);
             }
 
-            RenderSingleTree(m_RootRenderTree, null, RectInt.zero);
+            RenderSingleTree(m_RootRenderTree, null, RectInt.zero, Rect.zero);
 
             if (drawStats)
                 DrawStats();
@@ -364,7 +364,7 @@ namespace UnityEngine.UIElements.UIR
             m_Compositor.RenderNestedPasses();
         }
 
-        public void RenderSingleTree(RenderTree renderTree, RenderTexture nestedTreeRT, RectInt nestedTreeViewport)
+        public void RenderSingleTree(RenderTree renderTree, RenderTexture nestedTreeRT, RectInt nestedTreeViewport, Rect bounds)
         {
             // This function is not supposed to be used to draw the root render tree of a panel that draws in cameras.
             Debug.Assert(!drawInCameras || renderTree != m_RootRenderTree);
@@ -377,31 +377,34 @@ namespace UnityEngine.UIElements.UIR
             bool shouldResetRT = false;
             RenderTexture oldRT = null;
 
-            Rect viewport;
+            Rect scissor;
             if (renderTree == m_RootRenderTree)
             {
                 Debug.Assert(nestedTreeRT == null);
-                viewport = panel.visualTree.layout;
+                var viewport = panel.visualTree.layout;
+                scissor = new Rect(0, 0, viewport.width, viewport.height);
+                bounds = viewport;
             }
             else
             {
                 Debug.Assert(nestedTreeRT != null);
-                viewport = UIRUtility.CastToRect(nestedTreeViewport);
                 oldRT = RenderTexture.active;
                 Camera.SetupCurrent(null);
                 RenderTexture.active = nestedTreeRT;
                 shouldResetRT = true;
 
-                GL.Viewport(new Rect(0, 0, viewport.width, viewport.height));
-                // TODO: When we introduce atlas support, we should only clear the viewport area
-                GL.Clear(true, true, Color.clear, UIRUtility.k_ClearZ);
+                var viewport = UIRUtility.CastToRect(nestedTreeViewport);
+
+                // Flip the scissor rectangle to match the UI Toolkit coordinate system
+                scissor = viewport;
+                scissor.y = scissor.height - scissor.yMax;
+
+                GL.Viewport(viewport);
             }
 
-            var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
+            var projection = ProjectionUtils.Ortho(bounds.xMin, bounds.xMax, bounds.yMax, bounds.yMin, -0.001f, 1.001f);
             GL.LoadProjectionMatrix(projection);
             GL.modelview = Matrix4x4.identity;
-
-            Rect scissor = new Rect(0, 0, viewport.width, viewport.height);
 
             //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
             m_BlockDirtyRegistration = drawInCameras; // For now, we only enable it for drawInCameras

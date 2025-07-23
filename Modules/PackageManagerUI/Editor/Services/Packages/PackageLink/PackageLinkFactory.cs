@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         PackageLink CreateUpmLicenseLink(IPackageVersion version);
         PackageLink CreateUpmQuickStartLink(IPackageVersion version);
         PackageLink CreateProductLink(IPackageVersion version);
+        PackageLink CreateReviewLink(IPackageVersion version);
         PackageLink CreateAuthorLink(IPackageVersion version);
         PackageLink CreatePublisherSupportLink(IPackageVersion version);
         PackageLink CreatePublisherWebsiteLink(IPackageVersion version);
@@ -254,6 +255,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 offlinePath = string.Empty,
                 analyticsEventName = "viewProductInAssetStore",
                 displayName = L10n.Tr("View in Asset Store")
+            };
+        }
+
+        public PackageLink CreateReviewLink(IPackageVersion version)
+        {
+            var productUrl = m_AssetStoreCache.GetProductInfo(version.package.product?.id)?.assetStoreProductUrl;
+            var reviewUrl = !string.IsNullOrEmpty(productUrl) ? $"{productUrl}#reviews" : string.Empty;
+
+            return new PackageLink(version)
+            {
+                url = reviewUrl,
+                offlinePath = string.Empty,
+                analyticsEventName = "leaveReview",
+                displayName = L10n.Tr("Leave a Review")
             };
         }
 

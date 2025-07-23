@@ -43,6 +43,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<Align> value) => ((IStyle)container).alignSelf = value;
         }
 
+        class AspectRatioProperty : InlineStyleRatioProperty
+        {
+            public override string Name => nameof(IStyle.aspectRatio);
+            public override string ussName => "aspect-ratio";
+            public override bool IsReadOnly => false;
+            public override StyleRatio GetValue(ref InlineStyleAccess container) => ((IStyle)container).aspectRatio;
+            public override void SetValue(ref InlineStyleAccess container, StyleRatio value) => ((IStyle)container).aspectRatio = value;
+        }
+
         class BackgroundColorProperty : InlineStyleColorProperty
         {
             public override string Name => nameof(IStyle.backgroundColor);
@@ -792,11 +801,12 @@ namespace UnityEngine.UIElements
 
         public InlineStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(85);
-            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(255);
+            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(87);
+            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(261);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
+            AddProperty(new AspectRatioProperty());
             AddProperty(new BackgroundColorProperty());
             AddProperty(new BackgroundImageProperty());
             AddProperty(new BackgroundPositionXProperty());

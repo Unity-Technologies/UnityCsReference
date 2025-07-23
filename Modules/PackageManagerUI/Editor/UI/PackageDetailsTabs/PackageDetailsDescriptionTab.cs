@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = packageManagerPrefs;
 
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Description");
+            m_DisplayName = L10n.Tr("Details");
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsDescriptionTab.uxml");
             m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
@@ -43,6 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshDescription(version);
             RefreshSourcePath(version);
             RefreshOverviewFoldout(version);
+            RefreshTechnicalName(version);
+            RefreshMinimumUnityVersion(version);
         }
 
         private void RefreshDescription(IPackageVersion version)
@@ -62,6 +64,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!string.IsNullOrEmpty(sourcePath))
                 detailSourcePath.SetValueWithoutNotify(sourcePath.EscapeBackslashes());
+        }
+
+        void RefreshTechnicalName(IPackageVersion version)
+        {
+            // We use package.name instead of version.name because `version.name` would be empty for a PlaceholderPackageVersion
+            var technicalName = version?.package?.name ?? string.Empty;
+            detailTechnicalName.SetValueWithoutNotify(technicalName);
+            copyIcon.SetTextToCopy(technicalName);
+        }
+
+        private void RefreshMinimumUnityVersion(IPackageVersion version)
+        {
+            var isVisible = !version.HasTag(PackageTag.Feature | PackageTag.BuiltIn);
+            UIUtils.SetElementDisplay(detailMinimumUnityVersionTitle, isVisible);
+            UIUtils.SetElementDisplay(detailMinimumUnityVersion, isVisible);
+
+            if (!isVisible)
+                return;
+
+            var minimumUnityVersion = !string.IsNullOrEmpty(version.minimumUnityVersion) ? version.minimumUnityVersion : L10n.Tr("Not set");
+            detailMinimumUnityVersion.SetValueWithoutNotify(minimumUnityVersion);
         }
 
         private void RefreshOverviewFoldout(IPackageVersion version)
@@ -104,5 +127,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SelectableLabel detailDescription => m_Cache.Get<SelectableLabel>("detailDescription");
         private VisualElement detailSourcePathContainer => m_Cache.Get<VisualElement>("detailSourcePathContainer");
         private SelectableLabel detailSourcePath => m_Cache.Get<SelectableLabel>("detailSourcePath");
+        private SelectableLabel detailTechnicalName => m_Cache.Get<SelectableLabel>("detailTechnicalName");
+        private Label detailMinimumUnityVersionTitle => m_Cache.Get<Label>("detailMinimumUnityVersionTitle");
+        private SelectableLabel detailMinimumUnityVersion => m_Cache.Get<SelectableLabel>("detailMinimumUnityVersion");
+        private CopyIconButton copyIcon => m_Cache.Get<CopyIconButton>("copyIcon");
     }
 }

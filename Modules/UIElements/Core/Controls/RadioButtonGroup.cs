@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A control that allows single selection out of a logical group of <see cref="RadioButton"/> elements. Selecting one will deselect the others. For more information, refer to [[wiki:UIE-uxml-element-RadioButtonGroup|UXML element RadioButtonGroup]].
     /// </summary>
+    [Icon("UIToolkit/Icons/RadioButtonGroup.png")]
     public class RadioButtonGroup : BaseField<int>, IGroupBox
     {
         internal static readonly BindingId choicesProperty = nameof(choices);
@@ -306,7 +307,6 @@ namespace UnityEngine.UIElements
             using var _ = ListPool<RadioButton>.Get(out var radioButtons);
             GetAllRadioButtons(radioButtons);
 
-            m_SelectedRadioButton = null;
             if (value >= 0 && value < radioButtons.Count)
             {
                 m_SelectedRadioButton = radioButtons[value];
@@ -379,7 +379,7 @@ namespace UnityEngine.UIElements
                 return;
             m_RegisteredRadioButtons.Remove(radioButton);
             radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-            ScheduleRadioButtons();
+            UpdateRadioButtons(false);
         }
 
         void IGroupBox.OnOptionAdded(IGroupBoxOption option)

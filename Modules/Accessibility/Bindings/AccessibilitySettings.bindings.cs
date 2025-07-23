@@ -17,13 +17,12 @@ public static partial class AccessibilitySettings
     static extern float GetFontScale();
 
     /// <summary>
-    /// Checks whether or not bold text is enabled in the system settings.
+    /// Checks whether bold text is enabled in the system settings.
     /// </summary>
     static extern bool IsBoldTextEnabled();
 
     /// <summary>
-    /// Checks whether or not closed captioning is enabled in the system
-    /// settings.
+    /// Checks whether closed captioning is enabled in the system settings.
     /// </summary>
     static extern bool IsClosedCaptioningEnabled();
 
@@ -32,7 +31,7 @@ public static partial class AccessibilitySettings
     {
         AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
         {
-            notification = AccessibilityNotification.FontScaleChanged,
+            notification = AccessibilityManager.Notification.FontScaleChanged,
             fontScale = newFontScale,
         });
     }
@@ -42,7 +41,7 @@ public static partial class AccessibilitySettings
     {
         AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
         {
-            notification = AccessibilityNotification.BoldTextStatusChanged,
+            notification = AccessibilityManager.Notification.BoldTextStatusChanged,
             isBoldTextEnabled = enabled,
         });
     }
@@ -52,7 +51,7 @@ public static partial class AccessibilitySettings
     {
         AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
         {
-            notification = AccessibilityNotification.ClosedCaptioningStatusChanged,
+            notification = AccessibilityManager.Notification.ClosedCaptioningStatusChanged,
             isClosedCaptioningEnabled = enabled,
         });
     }

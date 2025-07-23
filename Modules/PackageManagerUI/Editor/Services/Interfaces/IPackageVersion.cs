@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         new IPackage package { get; set; }
 
-        string author { get; }
+        AuthorInfo author { get; }
 
         // Note that localReleaseNotes here is different from IPackage.latestReleaseNotes
         // localReleaseNotes is always from the locally downloaded .unitypackage, while
@@ -47,6 +47,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         // description here is the description for this specific package version (from PackageInfo)
         // productDescription is the product description we fetch from the Asset Store server
         string description { get; }
+
+        string minimumUnityVersion { get; }
 
         string category { get; }
 

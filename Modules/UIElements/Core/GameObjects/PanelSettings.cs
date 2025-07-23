@@ -292,18 +292,6 @@ namespace UnityEngine.UIElements
             set => m_RenderMode = value;
         }
 
-        [SerializeField]
-        private int m_WorldSpaceLayer = 0;
-
-        /// <summary>
-        /// The layer into which the world space panel will render.
-        /// </summary>
-        internal int worldSpaceLayer
-        {
-            get => m_WorldSpaceLayer;
-            set => m_WorldSpaceLayer = value;
-        }
-
         [SerializeField, FormerlySerializedAs("m_WorldInputMode")]
         private ColliderUpdateMode m_ColliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
 
@@ -878,23 +866,23 @@ namespace UnityEngine.UIElements
         {
             if (m_AtlasBlitShader == null)
             {
-                m_AtlasBlitShader = Shader.Find(Shaders.k_AtlasBlit);
+                m_AtlasBlitShader = Shader.Find(UIR.Shaders.k_AtlasBlit);
             }
             if (m_RuntimeShader == null)
             {
-                m_RuntimeShader = Shader.Find(Shaders.k_Runtime);
+                m_RuntimeShader = Shader.Find(UIR.Shaders.k_Runtime);
             }
             if (m_RuntimeWorldShader == null)
             {
-                m_RuntimeWorldShader = Shader.Find(Shaders.k_RuntimeWorld);
+                m_RuntimeWorldShader = Shader.Find(UIR.Shaders.k_RuntimeWorld);
             }
             if (m_RuntimeGaussianBlurShader == null)
             {
-                m_RuntimeGaussianBlurShader = Shader.Find(Shaders.k_RuntimeGaussianBlur);
+                m_RuntimeGaussianBlurShader = Shader.Find(UIR.Shaders.k_RuntimeGaussianBlur);
             }
             if (m_RuntimeColorEffectShader == null)
             {
-                m_RuntimeColorEffectShader = Shader.Find(Shaders.k_RuntimeColorEffect);
+                m_RuntimeColorEffectShader = Shader.Find(UIR.Shaders.k_RuntimeColorEffect);
             }
             if (m_SDFShader == null)
             {
@@ -947,7 +935,6 @@ namespace UnityEngine.UIElements
             p.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
             p.pixelsPerUnit = pixelsPerUnit;
             p.isFlat = renderMode != PanelRenderMode.WorldSpace;
-            p.worldSpaceLayer = worldSpaceLayer;
             p.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
             p.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
             p.panelRenderer.vertexBudget = m_VertexBudget;

@@ -873,11 +873,12 @@ namespace UnityEditor
         }
 
         [UsedByNativeCode]
-        internal static string GetIconPathFromAttribute(Type type)
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static string GetIconPathFromAttribute(Type type, bool inherit = true)
         {
             if (Attribute.IsDefined(type, typeof(IconAttribute)))
             {
-                var attributes = type.GetCustomAttributes(typeof(IconAttribute), true);
+                var attributes = type.GetCustomAttributes(typeof(IconAttribute), inherit);
                 for (int i = 0, c = attributes.Length; i < c; i++)
                     if (attributes[i] is IconAttribute)
                         return ((IconAttribute)attributes[i]).path;
@@ -1847,7 +1848,9 @@ namespace UnityEditor
 
         public static int GetObjectPickerControlID()
         {
-            return ObjectSelector.get.objectSelectorID;
+            // To avoid creating an `ObjectSelector` instance just to get the control ID,
+            // we return 0 directly if `ObjectSelector` is not visible.
+            return !ObjectSelector.isVisible ? 0 : ObjectSelector.get.objectSelectorID;
         }
 
         internal static string GetHyperlinkColorForSkin()

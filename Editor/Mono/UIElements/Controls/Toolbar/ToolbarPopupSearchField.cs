@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -12,6 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// The pop-up search field for the toolbar. The search field includes a menu button. For more information, refer to [[wiki:UIE-uxml-element-ToolbarPopupSearchField|UXML element ToolbarPopupSearchField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ToolbarPopupSearchField.png")]
     public class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
         internal static readonly BindingId menuProperty = nameof(menu);

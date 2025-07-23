@@ -149,7 +149,7 @@ namespace Unity.UI.Builder
             s_ProjectUxmlPathsHash = default;
         }
 
-        public static Texture2D GetTypeLibraryIcon(Type type)
+        public static Background GetTypeLibraryIcon(Type type)
         {
             if (s_ControlsTypeCache.TryGetValue(type, out var builderLibraryTreeItem))
                 return builderLibraryTreeItem.icon;
@@ -161,7 +161,7 @@ namespace Unity.UI.Builder
             return null;
         }
 
-        public static Texture2D GetTypeLibraryLargeIcon(Type type)
+        public static Background GetTypeLibraryLargeIcon(Type type)
         {
             if (s_ControlsTypeCache.TryGetValue(type, out var builderLibraryTreeItem))
             {
@@ -185,7 +185,7 @@ namespace Unity.UI.Builder
                 : null;
         }
 
-        public static Texture2D GetTypeDarkSkinLibraryIcon(Type type)
+        public static Background GetTypeDarkSkinLibraryIcon(Type type)
         {
             if (s_ControlsTypeCache.TryGetValue(type, out var builderLibraryTreeItem))
                 return builderLibraryTreeItem.darkSkinIcon;
@@ -193,12 +193,12 @@ namespace Unity.UI.Builder
             return null;
         }
 
-        public static Texture2D GetUXMLAssetIcon(string uxmlAssetPath)
+        public static Background GetUXMLAssetIcon(string uxmlAssetPath)
         {
             return GetUXMLAssetIcon(projectContentTree, uxmlAssetPath);
         }
 
-        static Texture2D GetUXMLAssetIcon(IEnumerable<TreeViewItem> items, string uxmlAssetPath)
+        static Background GetUXMLAssetIcon(IEnumerable<TreeViewItem> items, string uxmlAssetPath)
         {
             foreach (var item in items)
             {
@@ -270,8 +270,7 @@ namespace Unity.UI.Builder
                         const int visualElementStyled = (int)BuilderLibrary.DefaultVisualElementType.Styled;
                         if (EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, visualElementStyled) == visualElementStyled)
                         {
-                            BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow",
-                                k_DefaultVisualElementFlexGrow);
+                            BuilderStyleUtilities.SetInlineFloatValue(inVta, ve, "flex-grow", k_DefaultVisualElementFlexGrow);
                         }
 
                         return vea;

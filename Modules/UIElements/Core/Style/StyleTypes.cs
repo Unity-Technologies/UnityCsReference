@@ -159,6 +159,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static StyleRatio ToStyleRatio(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.Auto:
+                    return StyleRatio.Auto();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new StyleRatio();
+            }
+        }
+
         internal static void CopyFrom<T>(this List<T> list, List<T> other)
         {
             list.Clear();

@@ -45,6 +45,14 @@ namespace UnityEditor
             UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 
+        private void OnEnable()
+        {
+            // We cannot rely on lazy initialization since they might be called on a thread, which isn't valid
+            GetEditorTextRenderingMode();
+            GetEditorTextSharpness();
+            GetEditorTextGeneratorType();
+        }
+
         internal static void SetEditorTextRenderingMode(EditorTextRenderingMode textRenderingMode)
         {
             currentEditorTextRenderingMode = textRenderingMode;

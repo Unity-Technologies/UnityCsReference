@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -16,6 +17,7 @@ namespace UnityEngine.UIElements
     ///
     /// If no changes occured in the frame, the notifications are not sent.
     /// </remarks>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IVisualElementChangeProcessor
     {
         /// <summary>
@@ -40,12 +42,13 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="panel">The panel the change processor is unregistering from.</param>
         /// <param name="changes">The changes that occurred during that frame.</param>
-        void EndProcessing(BaseVisualElementPanel panel, AuthoringChanges changes);
+        void EndProcessing(BaseVisualElementPanel panel);
     }
 
     /// <summary>
     /// Utility class containing the list of changes that occurred during a given frame.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class AuthoringChanges
     {
         /// <summary>
@@ -239,7 +242,7 @@ namespace UnityEngine.UIElements
             {
                 var processor = m_ProcessorUnregistrationList[i];
                 m_RegisteredProcessors.Remove(processor);
-                processor.EndProcessing(panel, changes);
+                processor.EndProcessing(panel);
             }
             m_ProcessorUnregistrationList.Clear();
 
@@ -276,7 +279,8 @@ namespace UnityEngine.UIElements
             for (var i = 0; i < m_RegisteredProcessors.Count; ++i)
             {
                 var processor = m_RegisteredProcessors[i];
-                processor.EndProcessing(panel, changes);
+                processor.ProcessChanges(panel, changes);
+                processor.EndProcessing(panel);
             }
 
             m_ProcessorRegistrationList.Clear();

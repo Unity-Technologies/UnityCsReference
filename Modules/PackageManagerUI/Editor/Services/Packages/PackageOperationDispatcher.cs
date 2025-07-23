@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IPackageOperationDispatcher : IService
     {
         bool isInstallOrUninstallInProgress { get; }
+        bool isEmbedInProgress { get; }
         bool IsUninstallInProgress(IPackage package);
         bool IsInstallInProgress(IPackageVersion version);
 
@@ -26,6 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void InstallAndResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset);
         void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset);
 
+        bool Embed(IPackage package);
         void RemoveEmbedded(IPackage package);
 
         void FetchExtraInfo(IPackageVersion version);
@@ -58,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public bool isInstallOrUninstallInProgress => m_UpmClient.isAddOrRemoveInProgress;
+        public bool isEmbedInProgress => m_UpmClient.isEmbedInProgress;
 
         private string InstallOrRemoveInProgressWarningMessage(string installSource) => string.Format(L10n.Tr("[Package Manager Window] The request to install {0} will be canceled due to an ongoing Install/Remove operation. Please retry your request once the current operation has completed."), installSource);
         public bool IsUninstallInProgress(IPackage package)
@@ -74,7 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (version == null || version.isInstalled)
                 return false;
-           
+
             m_UpmClient.AddById(version.packageId);
             return true;
         }
@@ -143,6 +146,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ResetDependencies(IPackageVersion version, IEnumerable<IPackage> dependenciesToReset)
         {
             m_UpmClient.ResetDependencies(version.packageId, dependenciesToReset?.Select(package => package.name) ?? Enumerable.Empty<string>());
+        }
+
+        public bool Embed(IPackage package)
+        {
+            if (package?.versions.installed == null)
+                return false;
+
+            try
+            {
+                m_UpmClient.Embed(package.name);
+            }
+            catch (Exception e)
+            {
+                Debug.Log($"[Package Manager Window] Cannot embed package {package.name}: {e.Message}");
+                return false;
+            }
+
+            return true;
         }
 
         public void RemoveEmbedded(IPackage package)

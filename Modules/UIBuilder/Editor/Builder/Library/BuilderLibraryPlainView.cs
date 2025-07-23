@@ -47,11 +47,9 @@ namespace Unity.UI.Builder
             public void SwitchToDarkSkinIcon() => SetIcon(m_TreeItem.data.darkSkinLargeIcon);
             public void SwitchToLightSkinIcon() => SetIcon(m_TreeItem.data.lightSkinLargeIcon);
 
-            void SetIcon(Texture2D icon)
+            void SetIcon(Background icon)
             {
-                var styleBackgroundImage = m_Icon.style.backgroundImage;
-                styleBackgroundImage.value = new Background { texture = icon };
-                m_Icon.style.backgroundImage = styleBackgroundImage;
+                m_Icon.style.backgroundImage = icon;
             }
         }
 

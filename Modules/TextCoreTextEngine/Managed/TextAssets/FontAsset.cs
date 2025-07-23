@@ -1834,6 +1834,24 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// Get the glyph stored in the cache.
+        /// This does not attempt to add the glyph to the atlas or to check in the FontEngine.
+        /// This method is thread safe as long as no addition to the dictionary is made at the same time.
+        /// </summary>
+        /// <param name="glyphID">The glyph index.</param>
+        /// <returns>The glyph stored in the cache.</returns>
+        internal Glyph GetGlyphInCache(uint glyphID)
+        {
+            if (m_GlyphLookupDictionary == null)
+                return null;
+
+            if (!glyphLookupTable.TryGetValue(glyphID, out Glyph glyph))
+                return null;
+
+            return glyph;
+        }
+
+        /// <summary>
         /// Internal function used to get the glyph index for the given Unicode.
         /// </summary>
         /// <param name="unicode"></param>

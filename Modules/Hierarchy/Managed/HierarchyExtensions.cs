@@ -2,11 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
+
 namespace Unity.Hierarchy
 {
     /// <summary>
     /// Extensions for <see cref="Hierarchy"/>.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class HierarchyExtensions
     {
         /// <summary>

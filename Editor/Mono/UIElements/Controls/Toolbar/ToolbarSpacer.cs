@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -12,6 +13,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toolbar spacer of static size. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSpacer|UXML element ToolbarSpacer]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ToolbarSpacer.png")]
     public class ToolbarSpacer : VisualElement
     {
         internal static readonly BindingId flexProperty = nameof(flex);

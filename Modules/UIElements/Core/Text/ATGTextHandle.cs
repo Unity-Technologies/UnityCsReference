@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
             nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
             nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
 
-            if (m_TextElement.enableRichText && !String.IsNullOrEmpty(nativeSettings.text))
+            if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {
                 CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
             }
@@ -44,26 +44,34 @@ namespace UnityEngine.UIElements
             pixelPreferedSize = textLib.MeasureText(nativeSettings, IntPtr.Zero);
         }
 
-        public (NativeTextInfo, bool) UpdateNative(bool generateNativeSettings = true)
+        public (NativeTextInfo, bool, bool) UpdateNative(bool generateNativeSettings = true)
         {
             if (generateNativeSettings && !ConvertUssToNativeTextGenerationSettings())
-                return (default, false);
+                return (default, false, false);
 
-            if (m_TextElement.enableRichText && !String.IsNullOrEmpty(nativeSettings.text))
+            if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {
                 CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
             }
             else
                 nativeSettings.textSpans = null;
 
-            if ((nativeSettings.hasLink) && textGenerationInfo == IntPtr.Zero)
+            if (nativeSettings.hasLink)
             {
-                textGenerationInfo = TextGenerationInfo.Create();
+                m_TextElement.uitkTextHandle.CacheTextGenerationInfo();
                 m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
             }
-            var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo);
+
+            // This needs to be set for each textElement because we might need to come back on the main thread and reuse the informations after.
+            // We clear it as soon as possible to avoid persistent native allocations.
+            if (textGenerationInfo == IntPtr.Zero)
+            {
+                textGenerationInfo = TextGenerationInfo.Create();
+            }
+            bool uvsAreGenerated = false;
+            var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref uvsAreGenerated);
             m_IsElided = textInfo.isElided;
-            return (textInfo, true);
+            return (textInfo, true, uvsAreGenerated);
         }
 
         public void CacheTextGenerationInfo()
@@ -77,11 +85,17 @@ namespace UnityEngine.UIElements
 
             if (textGenerationInfo == IntPtr.Zero)
                 textGenerationInfo = TextGenerationInfo.Create();
+            IsCachedPermanent = true;
         }
 
-        public void ProcessMeshInfos(NativeTextInfo textInfo)
+        public void ProcessMeshInfos(NativeTextInfo textInfo, ref List<List<List<int>>> textElementIndicesByMesh, ref List<bool> hasMultipleColorsByMesh, bool uvsAreGenerated)
         {
-            textLib.ProcessMeshInfos(textInfo, nativeSettings);
+            textLib.ProcessMeshInfos(textInfo, nativeSettings, ref textElementIndicesByMesh, ref hasMultipleColorsByMesh, uvsAreGenerated);
+        }
+
+        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
+        {
+            return textLib.HasMissingGlyphs(textInfo, nativeSettings, ref missingGlyphsPerFontAsset);
         }
 
         private (bool, bool) hasLinkAndHyperlink()
@@ -264,4 +278,6 @@ namespace UnityEngine.UIElements
             s_TextLib ??= new TextLib(GetICUAsset().bytes);
         }
     }
+
+    
 }

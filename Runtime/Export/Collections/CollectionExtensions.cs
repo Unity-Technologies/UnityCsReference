@@ -33,11 +33,11 @@ namespace Unity.Collections
         /// <param name="array">The array.</param>
         /// <param name="item">The item to remove from the array.</param>
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
-        internal static void RemoveFromArray<T>(ref T[] array, T item)
+        internal static bool RemoveFromArray<T>(ref T[] array, T item)
         {
             var removeIndex = Array.IndexOf(array, item);
             if (removeIndex == -1)
-                return;
+                return false;
 
             for (int i = 0, j = 0; i < array.Length; i++)
             {
@@ -45,6 +45,7 @@ namespace Unity.Collections
                     array[j++] = array[i];
             }
             Array.Resize(ref array, array.Length - 1);
+            return true;
         }
 
         /// <summary>

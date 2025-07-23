@@ -31,6 +31,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         Align alignSelf { get; }
         /// <summary>
+        /// Sets a preferred aspect ratio for the box, which will be used in the calculation of auto sizes and some other layout functions.
+        /// </summary>
+        Ratio aspectRatio { get; }
+        /// <summary>
         /// Background color to paint in the element's box.
         /// </summary>
         Color backgroundColor { get; }

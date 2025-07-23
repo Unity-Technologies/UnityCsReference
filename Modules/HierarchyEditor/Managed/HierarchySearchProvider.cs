@@ -8,9 +8,11 @@ using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.Search.Providers;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy.Editor
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     interface IHierarchySearchPropositionProvider
     {
         IEnumerable<SearchProposition> FetchPropositions(HierarchyViewModel viewModel, SearchContext context, SearchPropositionOptions options);

@@ -209,7 +209,6 @@ namespace UnityEngine.UIElements
         }
 
         // Used in the UI Builder
-        [UxmlAttributeBindingPath("dataSource")]
         internal Object dataSourceUnityObject
         {
             get => dataSource as Object;

@@ -28,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IAssetStoreCache m_AssetStoreCache;
         private IBackgroundFetchHandler m_BackgroundFetchHandler;
         private IUnityConnectProxy m_UnityConnect;
+        private IIOProxy m_IOProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -42,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache = container.Resolve<IAssetStoreCache>();
             m_BackgroundFetchHandler = container.Resolve<IBackgroundFetchHandler>();
             m_UnityConnect = container.Resolve<IUnityConnectProxy>();
+            m_IOProxy = container.Resolve<IOProxy>();
         }
 
         private UnlockFoldout m_UnlockFoldout;
@@ -53,6 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private InstallFoldoutGroup m_InstallFoldoutGroup;
         private UpdateFoldoutGroup m_UpdateFoldoutGroup;
         private RemoveFoldoutGroup m_RemoveFoldoutGroup;
+        private OpenManifestExternallyFoldoutGroup m_OpenManifestExternallyFoldoutGroup;
 
         private DownloadFoldoutGroup m_DownloadFoldoutGroup;
         private DownloadUpdateFoldoutGroup m_DownloadUpdateFoldoutGroup;
@@ -102,11 +105,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
+            m_OpenManifestExternallyFoldoutGroup = new OpenManifestExternallyFoldoutGroup(m_IOProxy);
 
             m_FoldoutGroups = new MultiSelectFoldoutGroup[]
             {
                 m_DownloadFoldoutGroup,
                 m_DownloadUpdateFoldoutGroup,
+                m_OpenManifestExternallyFoldoutGroup,
                 m_RemoveImportedFoldoutGroup,
                 m_InstallFoldoutGroup,
                 m_RemoveFoldoutGroup,
@@ -125,6 +130,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             foldoutsContainer.Add(m_DownloadFoldoutGroup.inProgressFoldout);
             foldoutsContainer.Add(m_DownloadUpdateFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_DownloadUpdateFoldoutGroup.inProgressFoldout);
+
+            foldoutsContainer.Add(m_OpenManifestExternallyFoldoutGroup.mainFoldout);
+            foldoutsContainer.Add(m_OpenManifestExternallyFoldoutGroup.inProgressFoldout);
 
             foldoutsContainer.Add(m_RemoveFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_RemoveFoldoutGroup.inProgressFoldout);

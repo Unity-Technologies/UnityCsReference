@@ -116,7 +116,7 @@ namespace Unity.UI.Builder
             if (primaryIsUnset)
             {
                 var newPrimaryValue = parentLength - opposite - length - totalAxisMargin - parentBorderOpposite - parentBorderPrimary;
-                SetStyleSheetValue(primaryStyle, newPrimaryValue);
+                SetInlineFloatAsDimensionValue(primaryStyle, newPrimaryValue);
                 RemoveStyleSheetValue(lengthName);
 
                 SetAnchorHandleState(primaryStyle, true);
@@ -127,7 +127,7 @@ namespace Unity.UI.Builder
             else if (oppositeIsSet)
             {
                 var newLengthValue = parentLength - opposite - primary - totalAxisMargin - parentBorderOpposite - parentBorderPrimary;
-                SetStyleSheetValue(lengthStyle, newLengthValue);
+                SetInlineFloatAsDimensionValue(lengthStyle, newLengthValue);
                 RemoveStyleSheetValue(primaryName);
 
                 SetAnchorHandleState(primaryStyle, false);

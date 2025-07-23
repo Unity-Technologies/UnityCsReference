@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         None                = 0,
 
         InDevelopment       = Custom, // Used by UPM develop package
-        InstalledFromPath   = Local | Git | Custom,
+        InstalledFromPath   = Local | Git | Custom | Tarball,
 
         Custom              = 1 << 0,
         Local               = 1 << 1,
@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         Feature             = 1 << 4,
         Placeholder         = 1 << 5,
         SpecialInstall      = 1 << 6,
+        Tarball             = 1 << 7,
 
         LegacyFormat        = 1 << 10,   // legacy .unitypackage format
         UpmFormat           = 1 << 11,

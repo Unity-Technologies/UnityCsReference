@@ -4,14 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using UnityEditor.UIElements;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using static Unity.UI.Builder.BuilderUxmlAttributesView;
 
 namespace Unity.UI.Builder
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal static class VisualElementExtensions
     {
         public static bool HasLinkedAttributeDescription(this VisualElement ve)
@@ -109,7 +109,7 @@ namespace Unity.UI.Builder
             if (element == null)
                 return null;
 
-            var obj = element.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName);
+            var obj = element.visualElementAsset;
 
             if (obj == null)
                 return null;
@@ -125,28 +125,12 @@ namespace Unity.UI.Builder
 
         public static StyleSheet GetStyleSheet(this VisualElement element)
         {
-            if (element == null)
-                return null;
-
-            var obj = element.GetProperty(BuilderConstants.ElementLinkedStyleSheetVEPropertyName);
-            if (obj == null)
-                return null;
-
-            var styleSheet = obj as StyleSheet;
-            return styleSheet;
+            return BuilderSharedStyles.GetStyleSheetElementProperty(element);
         }
 
         public static StyleComplexSelector GetStyleComplexSelector(this VisualElement element)
         {
-            if (element == null)
-                return null;
-
-            var obj = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName);
-            if (obj == null)
-                return null;
-
-            var scs = obj as StyleComplexSelector;
-            return scs;
+            return BuilderSharedStyles.GetSelectorProperty(element);
         }
 
         public static bool IsLinkedToAsset(this VisualElement element)
@@ -166,31 +150,6 @@ namespace Unity.UI.Builder
             var scs = element.GetStyleComplexSelector();
             if (scs != null)
                 return true;
-
-            return false;
-        }
-
-        public static bool IsSelected(this VisualElement element)
-        {
-            var vta = element.GetVisualTreeAsset();
-            if (vta != null)
-                return vta.IsSelected();
-
-            var vea = element.GetVisualElementAsset();
-            if (vea != null)
-                return vea.IsSelected();
-
-            var veaInTemplate = element.GetVisualElementAssetInTemplate();
-            if (veaInTemplate != null)
-                return veaInTemplate.IsSelected();
-
-            var styleSheet = element.GetStyleSheet();
-            if (styleSheet != null)
-                return styleSheet.IsSelected();
-
-            var scs = element.GetStyleComplexSelector();
-            if (scs != null)
-                return scs.IsSelected();
 
             return false;
         }
@@ -311,7 +270,7 @@ namespace Unity.UI.Builder
 
         static void FindSelectedElementsRecursive(VisualElement parent, List<VisualElement> selected)
         {
-            if (parent.IsSelected())
+            if (SelectionUtility.IsSelected(parent))
                 selected.Add(parent);
 
             foreach (var child in parent.Children())

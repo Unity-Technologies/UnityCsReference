@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A TextField accepts and displays text input. For more information, refer to [[wiki:UIE-uxml-element-TextField|UXML element TextField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/TextField.png")]
     public class TextField : TextInputBaseField<string>
     {
         internal static readonly BindingId multilineProperty = nameof(multiline);

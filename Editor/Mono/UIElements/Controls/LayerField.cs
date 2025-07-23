@@ -15,6 +15,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A LayerField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerField|UXML element LayerField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/LayerField.png")]
     public class LayerField : PopupField<int>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

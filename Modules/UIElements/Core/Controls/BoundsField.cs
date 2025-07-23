@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Bounds"/> editor field. For more information, refer to [[wiki:UIE-uxml-element-BoundsField|UXML element BoundsField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/BoundsField.png")]
     public class BoundsField : BaseField<Bounds>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

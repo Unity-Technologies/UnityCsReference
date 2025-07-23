@@ -50,6 +50,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreateProductLink(version));
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreatePublisherSupportLink(version));
             AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreatePublisherWebsiteLink(version));
+            AddToParentWithSeparatorIfVisible(assetStoreLinks, m_PackageLinkFactory.CreateReviewLink(version));
 
             if (assetStoreLinks.Children().Any())
                 Add(assetStoreLinks);

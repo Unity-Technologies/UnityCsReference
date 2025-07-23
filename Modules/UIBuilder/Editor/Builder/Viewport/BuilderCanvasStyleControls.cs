@@ -274,7 +274,7 @@ namespace Unity.UI.Builder
                 case FlexDirection.RowReverse: result = FlexDirection.Column; break;
             }
             FlexDirectionUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_FlexDirectionName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_FlexDirectionName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_FlexDirectionName });
         }
@@ -320,7 +320,7 @@ namespace Unity.UI.Builder
                 case Align.Stretch: result = Align.Auto; break;
             }
             AlignItemsUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_AlignItemsName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_AlignItemsName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_AlignItemsName });
         }
@@ -369,7 +369,7 @@ namespace Unity.UI.Builder
                 case Justify.SpaceEvenly: result = Justify.FlexStart; break;
             }
             JustifyContentUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_JustifyContentName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_JustifyContentName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_JustifyContentName });
         }
@@ -421,7 +421,7 @@ namespace Unity.UI.Builder
                 case TextAnchor.LowerRight: result = TextAnchor.LowerLeft; break;
             }
             HorizontalTextAlignUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextAlignName });
         }
@@ -473,7 +473,7 @@ namespace Unity.UI.Builder
                 case TextAnchor.LowerRight: result = TextAnchor.UpperRight; break;
             }
             VerticalTextAlignUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextAlignName });
         }
@@ -525,7 +525,7 @@ namespace Unity.UI.Builder
                 case TextOverflow.Ellipsis: result = TextOverflow.Clip; break;
             }
             TextOverflowUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextOverflowName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_TextOverflowName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextOverflowName });
         }
@@ -545,7 +545,7 @@ namespace Unity.UI.Builder
                     result = WhiteSpace.Normal; break;
             }
             TextWrapUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextWrapName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_TextWrapName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextWrapName });
         }
@@ -582,7 +582,7 @@ namespace Unity.UI.Builder
                 case Align.Stretch: result = Align.Auto; break;
             }
             AlignSelfUpdateToggleIcon(result);
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_AlignSelfName, result);
+            BuilderStyleUtilities.SetInlineEnumValue(m_VisualTreeAsset, m_Target, k_AlignSelfName, result);
             m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_AlignSelfName });
         }

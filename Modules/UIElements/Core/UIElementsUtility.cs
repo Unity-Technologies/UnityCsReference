@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UIElementsUtility : IUIElementsUtility
     {
         private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
@@ -238,7 +238,7 @@ namespace UnityEngine.UIElements
                         eventHandled = true;
                         return true;
                     }
-					
+
                     using var scope = new UITKScope();
                     eventHandled = DoDispatch(panel);
 
@@ -549,6 +549,7 @@ namespace UnityEngine.UIElements
             return usesEvent;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void GetAllPanels(List<Panel> panels, ContextType contextType)
         {
             var iterator = GetPanelsIterator();

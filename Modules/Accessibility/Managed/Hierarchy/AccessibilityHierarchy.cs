@@ -9,15 +9,42 @@ using UnityEngine.Bindings;
 namespace UnityEngine.Accessibility
 {
     /// <summary>
-    /// Represents the hierarchy data model that the screen reader uses for reading and navigating the UI.
+    /// The hierarchy data model that the screen reader uses to navigate and interact with a Unity application.
     /// </summary>
     /// <remarks>
-    /// A hierarchy must be set to active through <see cref="AssistiveSupport.activeHierarchy"/> when the screen
-    /// reader is on for the screen reader to function. If a hierarchy is not set active, the screen reader cannot read and
-    /// navigate through the UI. Once an active hierarchy is set, if the hierarchy is modified, the screen reader must
-    /// be notified by calling <see cref="AssistiveSupport.NotificationDispatcher.SendLayoutChanged"/> or
-    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending if the changes are only at
-    /// the layout level, or a more considerable screen change). Modifications in the hierarchy consist of calls to:
+    /// <para>
+    /// For a screen reader to navigate an application, it must receive information like what the accessible elements
+    /// are, where they are placed on the screen, what role they have, and how the user can interact with them. This
+    /// information needs to be organized in a hierarchy of data structures called the @@AccessibilityHierarchy@@.
+    /// </para>
+    /// <para>
+    /// The accessibility hierarchy operates independently of the UI hierarchy. You can use these APIs with any UI
+    /// system and even with non-UI elements, such as elements that are part of your game.
+    /// </para>
+    /// <para>
+    /// The data structures that form the accessibility hierarchy are called <see cref="AccessibilityNode"/>s. Each node
+    /// represents a visual element that needs to be accessible to the screen reader. A node can have zero or more
+    /// <see cref="AccessibilityNode.children"/> and one <see cref="AccessibilityNode.parent"/>.
+    /// <see cref="AccessibilityHierarchy.rootNodes"/> are the top-level nodes in the hierarchy, having no parent.
+    /// </para>
+    /// <para>
+    /// Users can navigate the accessibility hierarchy sequentially by moving the screen reader focus from one node to
+    /// another in a depth-first traversal order, so they navigate to a node's children before moving to the node's
+    /// siblings. The position of the nodes on the screen (given by their <see cref="AccessibilityNode.frame"/>) does
+    /// not affect navigation order.
+    /// </para>
+    /// <para>
+    /// To enable the screen reader to navigate an accessibility hierarchy, you must assign the hierarchy to
+    /// <see cref="AssistiveSupport.activeHierarchy"/> to activate it. To manage system resources efficiently, Unity
+    /// does not save the active hierarchy while the screen reader is off. You must activate the hierarchy each time the
+    /// screen reader is turned on (see <see cref="AssistiveSupport.screenReaderStatusChanged"/> and
+    /// <see cref="AssistiveSupport.isScreenReaderEnabled"/>).
+    /// </para>
+    /// <para>
+    /// If you modify the active hierarchy, then you must notify the screen reader by calling
+    /// <see cref="AssistiveSupport.NotificationDispatcher.SendLayoutChanged"/> or
+    /// <see cref="AssistiveSupport.NotificationDispatcher.SendScreenChanged"/> (depending on the scale of the changes).
+    /// Modifications in the accessibility hierarchy consist of calls to:
     ///
     ///- <see cref="AccessibilityHierarchy.AddNode"/>
     ///- <see cref="AccessibilityHierarchy.Clear"/>
@@ -25,11 +52,43 @@ namespace UnityEngine.Accessibility
     ///- <see cref="AccessibilityHierarchy.MoveNode"/>
     ///- <see cref="AccessibilityHierarchy.RemoveNode"/>
     ///- Modifications to node <see cref="AccessibilityNode.frame"/> values.
+    /// </para>
+    /// <para>
+    /// These APIs are currently supported on the following platforms:
     ///
+    ///- <see cref="RuntimePlatform.Android"/> - starting with Android 8.0 (API level 26)
+    ///- <see cref="RuntimePlatform.IPhonePlayer"/>
+    ///- <see cref="RuntimePlatform.OSXPlayer"/>
+    ///- <see cref="RuntimePlatform.WindowsPlayer"/>
+    /// </para>
+    /// <para>
+    /// SA:
+    ///
+    ///- [[wiki:accessibility|Accessibility for mobile applications]]
+    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    /// </para>
     /// </remarks>
     public class AccessibilityHierarchy
     {
-        internal List<AccessibilityNode> m_RootNodes;
+        event Action<AccessibilityHierarchy> m_Changed;
+
+        /// <summary>
+        /// Event sent when the hierarchy changes.
+        /// </summary>
+        internal event Action<AccessibilityHierarchy> changed
+        {
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            add => m_Changed += value;
+            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+            remove => m_Changed -= value;
+        }
+
+        /// <summary>
+        /// The collection of nodes and associated data in the hierarchy that can be accessed by the node ID as a key.
+        /// </summary>
+        readonly IDictionary<int, AccessibilityNode> m_Nodes;
+
+        List<AccessibilityNode> m_RootNodes;
 
         /// <summary>
         /// The root nodes of the hierarchy.
@@ -52,45 +111,27 @@ namespace UnityEngine.Accessibility
         /// avoid confusion of looking for an ID in a hierarchy that does not contain the node that ID originally
         /// belonged to.
         /// </summary>
-        static int m_NextUniqueNodeId;
+        internal static int nextUniqueNodeId;
 
         /// <summary>
-        /// The collection of nodes and associated data in the hierarchy that can be accessed by the node ID as a key.
-        /// </summary>
-        readonly IDictionary<int, AccessibilityNode> m_Nodes;
-
-        event Action<AccessibilityHierarchy> m_Changed;
-
-        /// <summary>
-        /// Event sent when the hierarchy changes.
-        /// </summary>
-        internal event Action<AccessibilityHierarchy> changed
-        {
-            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
-            add => m_Changed += value;
-            [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
-            remove => m_Changed -= value;
-        }
-
-        /// <summary>
-        /// Initializes and returns an instance of an AccessibilityHierarchy.
+        /// Initializes and returns an empty <see cref="AccessibilityHierarchy"/>.
         /// </summary>
         public AccessibilityHierarchy()
         {
-            // Initialize the collections
+            // Initialize the collections.
             m_FirstLowestCommonAncestorChain = new Stack<AccessibilityNode>();
             m_SecondLowestCommonAncestorChain = new Stack<AccessibilityNode>();
             m_Nodes = new Dictionary<int, AccessibilityNode>();
             m_RootNodes = new List<AccessibilityNode>();
         }
 
-        internal void NotifyHierarchyChanged()
+        void NotifyHierarchyChanged()
         {
             m_Changed?.Invoke(this);
         }
 
         /// <summary>
-        /// Resets the hierarchy to an empty state, removing all the nodes and removing focus.
+        /// Resets the hierarchy to an empty state, removing all nodes and the screen reader focus.
         /// </summary>
         public void Clear()
         {
@@ -101,48 +142,48 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Tries to get the node in this hierarchy that has the given ID.
+        /// Tries to retrieve the <see cref="AccessibilityNode"/> with the given ID in the hierarchy.
         /// </summary>
         /// <param name="id">The ID of the node to retrieve.</param>
-        /// <param name="node">The valid node with the associated ID, or @@null@@ if no such node exists in this hierarchy.</param>
-        /// <returns>Returns true if a node is found and false otherwise.</returns>
+        /// <param name="node">The valid node with the associated ID, or @@null@@ if no such node exists in this
+        /// hierarchy.</param>
+        /// <returns>@@true@@ if a node is found and @@false@@ otherwise.</returns>
         public bool TryGetNode(int id, out AccessibilityNode node)
         {
             return m_Nodes.TryGetValue(id, out node);
         }
 
         /// <summary>
-        /// Creates and adds a new node with the given label in this hierarchy under the given parent node. If no parent is
-        /// provided, the new node is added as a root in the hierarchy.
+        /// Creates a new <see cref="AccessibilityNode"/> with the given label and adds it to the hierarchy under the
+        /// given parent.
         /// </summary>
-        /// <param name="label">A label that succinctly describes the accessibility node.</param>
-        /// <param name="parent">The parent of the node being added. When the value given is @@null@@, the created node
-        /// is placed at the root level.</param>
-        /// <returns>The node created and added.</returns>
+        /// <param name="label">A label that succinctly describes the node.</param>
+        /// <param name="parent">The parent of the new node, or @@null@@ if the node should be placed at the root level.
+        /// </param>
+        /// <returns>The node created and added to the accessibility hierarchy.</returns>
         public AccessibilityNode AddNode(string label = null, AccessibilityNode parent = null)
         {
             return InsertNode(-1, label, parent);
         }
 
-
         /// <summary>
-        /// Creates and inserts a new node with the given label at the given index in this hierarchy under the given parent node.
-        /// If no parent is provided, the new node is inserted at the given index as a root in the hierarchy.
+        /// Creates a new <see cref="AccessibilityNode"/> with the given label and inserts it at the given index in the
+        /// hierarchy, under the given parent.
         /// </summary>
-        /// <param name="childIndex">A zero-based index for positioning the inserted node in the parent's children list,
-        /// or in the list of roots if the node is a root node. If the index is invalid, the inserted node will be the
-        /// last child of its parent (or the last root node).</param>
-        /// <param name="label">A label that succinctly describes the accessibility node.</param>
-        /// <param name="parent">The parent of the node being added. When the value given is @@null@@, the created node
-        /// is placed at the root level.</param>
-        /// <returns>The node created and inserted.</returns>
+        /// <param name="childIndex">A zero-based index which provides the position of the new node in the parent's
+        /// child list or in the list of root nodes if the node should be a root. If the index is invalid, then the node
+        /// is added to the end of the parent's child list.</param>
+        /// <param name="label">A label that succinctly describes the node.</param>
+        /// <param name="parent">The parent of the new node, or @@null@@ if you want the node to be at the root level.
+        /// </param>
+        /// <returns>The node created and inserted into the accessibility hierarchy.</returns>
         public AccessibilityNode InsertNode(int childIndex, string label = null, AccessibilityNode parent = null)
         {
             // Only nodes intended as roots may have an invalid parent.
             if (parent != null)
                 ValidateNodeInHierarchy(parent);
 
-            // Generate a new node to return, then add it to the manager under it's parent
+            // Generate a new node to return, then add it to the manager under its parent.
             var node = GenerateNewNode();
             m_Nodes[node.id] = node;
 
@@ -158,19 +199,20 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Moves the node elsewhere in the hierarchy, which causes the given node to be parented by a different node
-        /// in the hierarchy. An optional index can be supplied for specifying the position within the list of children the
-        /// moved node should take (zero-based). If no index is supplied, the node is added as the last child of the new parent by default.
-        /// <para>Root nodes can be moved elsewhere in the hierarchy, therefore ceasing to be a root.
-        /// Non-root nodes can be moved to become a root node by providing @@null@@ as the new parent node.</para>
-        /// <para>__Warning:__ The moving operation is costly as many checks have to be executed to guarantee the integrity of
-        /// the hierarchy. Therefore this operation should not be done excessively as it may affect performance.</para>
+        /// Moves the node elsewhere in the accessibility hierarchy. For example, under a different parent or at a
+        /// different position in the parent's child list.
         /// </summary>
+        /// <remarks>
+        /// **Warning**: The moving operation is costly because many checks have to be executed to guarantee the
+        /// integrity of the hierarchy. If this method is called excessively, it might negatively affect performance.
+        /// </remarks>
         /// <param name="node">The node to move.</param>
-        /// <param name="newParent">The new parent of the moved node, or @@null@@ if the moved node should be made into a root node.</param>
-        /// <param name="newChildIndex">An optional zero-based index for positioning the moved node in the new parent's children list, or in the list of
-        /// roots if the node is becoming a root node. If the index is not provided or is invalid, the moved node will be the last child of its parent.</param>
-        /// <returns>Whether the node was successfully moved.</returns>
+        /// <param name="newParent">The new parent of the node, or @@null@@ if the node should be placed at the root
+        /// level.</param>
+        /// <param name="newChildIndex">An optional zero-based index which provides the position of the moved node in
+        /// the new parent's child list or in the list of root nodes if the node should be a root. If the index is not
+        /// provided or is invalid, then the node is moved at the end of the new parent's child list.</param>
+        /// <returns>@@true@@ if the node was successfully moved and @@false@@ otherwise.</returns>
         public bool MoveNode(AccessibilityNode node, AccessibilityNode newParent, int newChildIndex = -1)
         {
             ValidateNodeInHierarchy(node);
@@ -218,28 +260,28 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Removes the node from the hierarchy. Can also optionally remove nodes under the given node depending on the value of
-        /// the <paramref name="removeChildren"/> parameter.
+        /// Removes the node from the accessibility hierarchy and removes or re-parents its descendants.
         /// </summary>
         /// <param name="node">The node to remove.</param>
-        /// <param name="removeChildren">Default value is @@true@@. If removeChildren is @@false@@, Unity grafts the child nodes to the parent.</param>
+        /// <param name="removeChildren">@@true@@ if the node's descendants should also be removed, or @@false@@ if they
+        /// should be moved under the node's parent. Defaults to @@true@@.</param>
         public void RemoveNode(AccessibilityNode node, bool removeChildren = true)
         {
             ValidateNodeInHierarchy(node);
 
             if (removeChildren)
             {
-                void removeFromNodes(AccessibilityNode child)
+                void RemoveFromNodes(AccessibilityNode child)
                 {
                     m_Nodes.Remove(child.id);
 
                     for (var i = 0; i < child.childList.Count; i++)
                     {
-                        removeFromNodes(child.childList[i]);
+                        RemoveFromNodes(child.childList[i]);
                     }
-                };
+                }
 
-                removeFromNodes(node);
+                RemoveFromNodes(node);
             }
             else
             {
@@ -250,7 +292,8 @@ namespace UnityEngine.Accessibility
             {
                 m_RootNodes.Remove(node);
 
-                // If we aren't removing the children, add them as roots (AccessibilityNode.Destroy will handle updating the parent value).
+                // If we aren't removing the children, add them as roots (AccessibilityNode.Destroy will handle updating
+                // the parent value).
                 if (!removeChildren)
                 {
                     m_RootNodes.AddRange(node.childList);
@@ -262,19 +305,19 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Returns whether a given node exists in the hierarchy.
+        /// Verifies whether the given node exists in the accessibility hierarchy.
         /// </summary>
         /// <param name="node">The node to search for in the hierarchy.</param>
-        /// <returns>Whether the node exists in this hierarchy.</returns>
+        /// <returns>@@true@@ if the node exists in this hierarchy and @@false@@ otherwise.</returns>
         public bool ContainsNode(AccessibilityNode node)
         {
             return node != null && m_Nodes.ContainsKey(node.id) && m_Nodes[node.id] == node;
         }
 
-        private void CheckForLoopsAndSetParent(AccessibilityNode node, AccessibilityNode parent, int newChildIndex = -1)
+        void CheckForLoopsAndSetParent(AccessibilityNode node, AccessibilityNode parent, int newChildIndex = -1)
         {
-            // We don't validate the nodes are in the hierarchy here as this is a private method and we guarantee this is
-            // only called when we're sure both given parameters are valid.
+            // We don't validate the nodes are in the hierarchy here as this is a private method, and we guarantee this
+            // is only called when we're sure both given parameters are valid.
 
             // Edge case: moving the node to be a root, so no need to check for loops
             if (parent == null)
@@ -299,7 +342,8 @@ namespace UnityEngine.Accessibility
 
             var ancestor = parent.parent;
 
-            // If the node exists in any of the ancestral nodes of the parent, then we are creating a loop, which is invalid.
+            // If the node exists in any of the ancestral nodes of the parent, then we are creating a loop, which is
+            // invalid.
             while (ancestor != null)
             {
                 if (ancestor == node)
@@ -313,7 +357,7 @@ namespace UnityEngine.Accessibility
             SetParent(node, parent, node.parent?.childList ?? m_RootNodes, parent.childList, newChildIndex);
         }
 
-        private void SetParent(AccessibilityNode node, AccessibilityNode parent, IList<AccessibilityNode> previousParentChildren, IList<AccessibilityNode> newParentChildren, int newChildIndex = -1)
+        void SetParent(AccessibilityNode node, AccessibilityNode parent, IList<AccessibilityNode> previousParentChildren, IList<AccessibilityNode> newParentChildren, int newChildIndex = -1)
         {
             // Update references for both old and new parents and child
             previousParentChildren?.Remove(node);
@@ -347,38 +391,49 @@ namespace UnityEngine.Accessibility
         }
 
         /// <summary>
-        /// Refreshes all the node frames (i.e. the screen elements' positions) for the hierarchy.
+        /// Refreshes the <see cref="AccessibilityNode.frame"/> of all nodes in the accessibility hierarchy.
         /// </summary>
         /// <remarks>
-        /// Calling this method sends a notification to the operating system that the layout has changed, by
-        /// calling <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/> (with a @@null@@ parameter).
+        /// <para>
+        /// This is a convenience method that updates the <see cref="AccessibilityNode.frame"/> of all nodes in the
+        /// accessibility hierarchy (based on <see cref="AccessibilityNode.frameGetter"/>) and notifies the screen
+        /// reader of these updates by calling <see cref="IAccessibilityNotificationDispatcher.SendLayoutChanged"/>
+        /// (with a @@null@@ parameter).
+        /// </para>
+        /// <para>
+        /// Call this method when most or all of the nodes on the screen require a layout update. For example, when the
+        /// user scrolls the application's interface, or when the orientation of the screen changes.
+        /// </para>
         /// </remarks>
-        /// <seealso cref="AccessibilityNode.frame"/>
-        /// <seealso cref="AccessibilityNode.frameGetter"/>
         public void RefreshNodeFrames()
         {
             foreach (var node in m_Nodes.Values)
             {
-                node.CalculateFrame();
+                node.frame = node.frameGetter?.Invoke() ?? Rect.zero;
             }
 
-            AssistiveSupport.OnHierarchyNodeFramesRefreshed(this);
+            if (AssistiveSupport.activeHierarchy == this)
+            {
+                AssistiveSupport.notificationDispatcher.SendLayoutChanged();
+            }
         }
 
         /// <summary>
-        /// Tries to retrieve the node at the given position on the screen.
+        /// Tries to retrieve the <see cref="AccessibilityNode"/> at the given screen coordinates.
         /// </summary>
         /// <param name="horizontalPosition">The horizontal position on the screen.</param>
         /// <param name="verticalPosition">The vertical position on the screen.</param>
-        /// <param name="node">The node found at that screen position, or @@null@@ if there are no nodes at that position.</param>
-        /// <returns>Returns true if a node is found and false otherwise.</returns>
+        /// <param name="node">The node found at the given screen coordinates, or @@null@@ if there is no node at that
+        /// position.</param>
+        /// <returns>@@true@@ if the node is found and @@false@@ otherwise.</returns>
         public bool TryGetNodeAt(float horizontalPosition, float verticalPosition, out AccessibilityNode node)
         {
             var position = new Vector2(horizontalPosition, verticalPosition);
 
             AccessibilityNode FindNodeContainingPoint(IList<AccessibilityNode> nodes, Vector2 pos)
             {
-                // Perform BFS (Breadth First Search) PostOrder Traversal in reverse order to find the last (at the top) node containing the specified point.
+                // Perform BFS (Breadth First Search) PostOrder Traversal in reverse order to find the last (at the top)
+                // node containing the specified point.
                 for (var i = nodes.Count - 1; i >= 0; --i)
                 {
                     var curNode = nodes[i];
@@ -386,26 +441,35 @@ namespace UnityEngine.Accessibility
                     var childNodeContainingPoint = FindNodeContainingPoint(curNode.childList, pos);
 
                     if (childNodeContainingPoint != null)
+                    {
                         return childNodeContainingPoint;
+                    }
 
-                    // Ignore inactive node
+                    // Ignore inactive node.
                     if (curNode.isActive && curNode.frame.Contains(pos))
+                    {
                         return curNode;
+                    }
                 }
+
                 return null;
             }
+
             node = FindNodeContainingPoint(m_RootNodes, position);
             return node != null;
         }
 
         /// <summary>
-        /// Retrieves the lowest common ancestor of two nodes in the hierarchy.<br/>
-        /// The lowest common ancestor is the node that is the common node that both nodes share in their path to the root node
-        /// of their branch in the hierarchy.
+        /// Retrieves the lowest common ancestor of two nodes in the accessibility hierarchy.
         /// </summary>
+        /// <remarks>
+        /// The lowest common ancestor is the node that both nodes share in their path to the root node of their branch
+        /// in the hierarchy.
+        /// </remarks>
         /// <param name="firstNode">The first node to find the lowest common ancestor of.</param>
         /// <param name="secondNode">The second node to find the lowest common ancestor of.</param>
-        /// <returns>The lowest common ancestor of the two given nodes, or @@null@@ if there is no common ancestor.</returns>
+        /// <returns>The lowest common ancestor of the two given nodes, or @@null@@ if they don't have a common
+        /// ancestor.</returns>
         public AccessibilityNode GetLowestCommonAncestor(AccessibilityNode firstNode, AccessibilityNode secondNode)
         {
             // Edge case: one of the given parameters is null.
@@ -426,22 +490,12 @@ namespace UnityEngine.Accessibility
                 return null;
             }
 
-            // Use local function to build the ID chains for both nodes
-            void buildNodeIdStack(AccessibilityNode node, ref Stack<AccessibilityNode> nodeStack)
-            {
-                // Traverse up the hierarchy until we reach the root of the current node
-                while (node != null)
-                {
-                    nodeStack.Push(node);
-                    node = m_Nodes[node.id].parent;
-                }
-            }
-
             // Set up the ID stacks
             m_FirstLowestCommonAncestorChain.Clear();
             m_SecondLowestCommonAncestorChain.Clear();
-            buildNodeIdStack(firstNode, ref m_FirstLowestCommonAncestorChain);
-            buildNodeIdStack(secondNode, ref m_SecondLowestCommonAncestorChain);
+
+            BuildNodeIdStack(firstNode, ref m_FirstLowestCommonAncestorChain);
+            BuildNodeIdStack(secondNode, ref m_SecondLowestCommonAncestorChain);
 
             // Start with no common ancestor, as nodes might not be in the same branch of the hierarchy
             AccessibilityNode commonAncestor = null;
@@ -466,33 +520,45 @@ namespace UnityEngine.Accessibility
             }
 
             return commonAncestor;
+
+            // Use local function to build the ID chains for both nodes
+            void BuildNodeIdStack(AccessibilityNode node, ref Stack<AccessibilityNode> nodeStack)
+            {
+                // Traverse up the hierarchy until we reach the root of the current node
+                while (node != null)
+                {
+                    nodeStack.Push(node);
+                    node = m_Nodes[node.id].parent;
+                }
+            }
         }
 
         /// <summary>
-        /// Generates a new node that is unique for the hierarchy.
+        /// Generates a new <see cref="AccessibilityNode"/> with a unique ID in the hierarchy.
         /// </summary>
-        /// <returns>The node created.</returns>
-        internal AccessibilityNode GenerateNewNode()
+        /// <returns>The new node.</returns>
+        AccessibilityNode GenerateNewNode()
         {
-            // Validate we can actually generate new nodes, meaning we still have a valid ID value to set to a node
-            if (m_NextUniqueNodeId >= int.MaxValue)
+            // Validate we can actually generate new nodes, meaning we still have a valid ID value to set to a node.
+            if (nextUniqueNodeId >= int.MaxValue)
             {
                 throw new Exception($"Could not generate unique node for hierarchy. A hierarchy may only have up to {int.MaxValue} nodes.");
             }
 
-            // Create new instance of a node and increment the control for the ID so the next node created gets a new and valid value
-            var node = new AccessibilityNode(m_NextUniqueNodeId, this);
+            // Create new instance of a node and increment the control for the ID so the next node created gets a new
+            // and valid value.
+            var node = new AccessibilityNode(nextUniqueNodeId, this);
 
-            m_NextUniqueNodeId = node.id + 1;
+            nextUniqueNodeId = node.id + 1;
             return node;
         }
 
         /// <summary>
-        /// Validates the given node is not @@null@@ and part of this hierarchy.
+        /// Validates that the given node is not @@null@@ and is part of the hierarchy.
         /// </summary>
-        /// <param name="node">The AccessibilityNode instance to be validated as part of this hierarchy.</param>
+        /// <param name="node">The node to validate as part of this hierarchy.</param>
         /// <exception cref="ArgumentException">If the node is not part of this hierarchy.</exception>
-        private void ValidateNodeInHierarchy(AccessibilityNode node)
+        void ValidateNodeInHierarchy(AccessibilityNode node)
         {
             if (node != null)
             {

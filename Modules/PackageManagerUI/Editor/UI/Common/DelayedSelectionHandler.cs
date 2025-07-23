@@ -107,6 +107,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageToSelectAfterRefresh = packageToSelect;
                 m_PageIdToSelectAfterRefresh = pageId ?? string.Empty;
             }
+            else
+            {
+                Debug.Log(string.Format(L10n.Tr("Unable to find the package {0} in the Package Manager Window."), packageToSelect));
+            }
         }
 
         // For now, we don't do any delays when we select a page, as this function is internal and only used a few times

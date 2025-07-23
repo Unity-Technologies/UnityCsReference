@@ -25,6 +25,7 @@ namespace Unity.Hierarchy.Editor
     [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchyGameObjectHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchyGameObjectHandlerBindings.h")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyGameObjectHandler : HierarchyNodeTypeHandler, IHierarchySearchPropositionProvider, IHierarchyEntityIdConverter, IHierarchyExtendCreateMenu
     {
         const string k_GameObjectUssClass = "hierarchy-item__gameobject-node";

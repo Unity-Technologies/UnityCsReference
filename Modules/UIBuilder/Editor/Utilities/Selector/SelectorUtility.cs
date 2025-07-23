@@ -25,7 +25,7 @@ namespace Unity.UI.Builder
                 rule = rule
             };
 
-            var initResult = StyleComplexSelectorExtensions.InitializeSelector(selector, complexSelectorStr, out error);
+            var initResult = selector.TrySetSelectorsFromString(complexSelectorStr, out error);
             return initResult;
         }
 

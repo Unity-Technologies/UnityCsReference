@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
     /// an arrow sprite instead of the <see cref="Toggle"/> control's usual checkbox. The arrow points right when the toggle is
     /// collapsed and down when it is expanded.
     /// </remarks>
+    [Icon("UIToolkit/Icons/Foldout.png")]
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
         internal static readonly BindingId textProperty = nameof(text);

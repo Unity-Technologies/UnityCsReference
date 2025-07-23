@@ -11,67 +11,149 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Accessibility
 {
     /// <summary>
-    /// Requests and makes updates to the accessibility settings for each
-    /// platform.
+    /// Requests and makes updates to the accessibility settings for each platform.
     /// </summary>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityManager.h")]
     [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
-    internal static class AccessibilityManager
+    internal class AccessibilityManager
     {
-        public struct NotificationContext
+        /// <summary>
+        /// Notifications that the operating system can send.
+        /// </summary>
+        public enum Notification : byte
         {
-            public AccessibilityNotification notification { get; set; }
-            public bool isScreenReaderEnabled { get; set; }
-            public string announcement { get; set; }
-            public bool wasAnnouncementSuccessful { get; set; }
-            public AccessibilityNode currentNode { get; set; }
-            public AccessibilityNode nextNode { get; set; }
-            public float fontScale { get; set; }
-            public bool isBoldTextEnabled { get; set; }
-            public bool isClosedCaptioningEnabled { get; set; }
+            /// <summary>
+            /// Default notification value.
+            /// </summary>
+            None,
 
-            public AccessibilityNotificationContext nativeContext { get; set; }
+            /// <summary>
+            /// A notification that the operating system sends when the user enables or disables the screen reader.
+            /// </summary>
+            ScreenReaderStatusChanged,
 
-            public NotificationContext(ref AccessibilityNotificationContext nativeNotification)
-            {
-                nativeContext = nativeNotification;
-                notification = nativeNotification.notification;
-                isScreenReaderEnabled = nativeNotification.isScreenReaderEnabled;
-                announcement = nativeNotification.announcement;
-                wasAnnouncementSuccessful = nativeNotification.wasAnnouncementSuccessful;
+            /// <summary>
+            /// A notification that the operating system sends when an assistive technology focuses on an accessibility
+            /// node.
+            /// </summary>
+            ElementFocused,
 
-                AccessibilityNode node = null;
+            /// <summary>
+            /// A notification that the operating system sends when an assistive technology removes its focus from an
+            /// accessibility node.
+            /// </summary>
+            ElementUnfocused,
 
-                AssistiveSupport.activeHierarchy?.TryGetNode(nativeNotification.currentNodeId, out node);
-                currentNode = node;
-                AssistiveSupport.activeHierarchy?.TryGetNode(nativeNotification.nextNodeId, out node);
-                nextNode = node;
+            /// <summary>
+            /// A notification that the operating system sends when the user changes the font scale in the system
+            /// settings.
+            /// </summary>
+            FontScaleChanged,
 
-                fontScale = 1;
-                isBoldTextEnabled = false;
-                isClosedCaptioningEnabled = false;
-            }
+            /// <summary>
+            /// A notification that the operating system sends when the user changes the bold text setting in the system
+            /// settings.
+            /// </summary>
+            BoldTextStatusChanged,
+
+            /// <summary>
+            /// A notification that the operating system sends when the user changes the closed captioning setting in
+            /// the system settings.
+            /// </summary>
+            ClosedCaptioningStatusChanged,
         }
 
+        public struct NotificationContext
+        {
+            /// <summary>
+            /// The accessibility node that is currently focused.
+            /// </summary>
+            /// <remarks>
+            /// Present for the <see cref="Notification.ElementFocused"/> and
+            /// <see cref="Notification.ElementUnfocused"/> notifications.
+            /// </remarks>
+            public AccessibilityNode focusedNode { get; set; }
+
+            /// <summary>
+            /// The new font scale set by the user in the system settings.
+            /// </summary>
+            /// <remarks>
+            /// Present for the <see cref="Notification.FontScaleChanged"/> notification.
+            /// </remarks>
+            public float fontScale { get; set; }
+
+            /// <summary>
+            /// Whether the user enabled or disabled the bold text system setting.
+            /// </summary>
+            /// <remarks>
+            /// Present for the <see cref="Notification.BoldTextStatusChanged"/> notification.
+            /// </remarks>
+            public bool isBoldTextEnabled { get; set; }
+
+            /// <summary>
+            /// Whether the user enabled or disabled the closed captioning system setting.
+            /// </summary>
+            /// <remarks>
+            /// Present for the <see cref="Notification.ClosedCaptioningStatusChanged"/> notification.
+            /// </remarks>
+            public bool isClosedCaptioningEnabled { get; set; }
+
+            /// <summary>
+            /// Whether the user enabled or disabled the screen reader.
+            /// </summary>
+            /// <remarks>
+            /// Present for the <see cref="Notification.ScreenReaderStatusChanged"/> notification.
+            /// </remarks>
+            public bool isScreenReaderEnabled { get; set; }
+
+            /// <summary>
+            /// The accessibility notification that the operating system sent.
+            /// </summary>
+            public Notification notification { get; set; }
+        }
+
+        // The private constructor ensures that the object is not instantiated from outside the class.
+        AccessibilityManager()
+        {
+        }
+
+        public static AccessibilityManager instance => Nested.s_Instance;
+
+        // Nested class to take advantage of .NET's lazy initialization and thread safety.
+        class Nested
+        {
+            // The explicit static constructor ensures that the C# compiler doesn't mark the type as beforefieldinit.
+            static Nested()
+            {
+            }
+
+            // Read-only property that holds the singleton instance, created the first time it is accessed.
+            internal static readonly AccessibilityManager s_Instance = new();
+        }
+
+        /// <summary>
+        /// Event that is invoked on the main thread when the screen reader is enabled or disabled.
+        /// </summary>
+        public static event Action<bool> screenReaderStatusChanged;
+
+        /// <summary>
+        /// Event that is invoked on the main thread when the screen reader focus changes.
+        /// </summary>
+        public static event Action<AccessibilityNode> nodeFocusChanged;
+
         internal static Queue<NotificationContext> asyncNotificationContexts = new();
+
+        bool m_RefreshNodeFramesRequested;
 
         /// <summary>
         /// Indicates whether our Accessibility support is implemented for the current platform.
         /// </summary>
         public static bool isSupportedPlatform =>
-            Application.platform is RuntimePlatform.Android or RuntimePlatform.IPhonePlayer;
-
-        /// <summary>
-        /// Event that is invoked on the main thread when the screen reader is
-        /// enabled or disabled.
-        /// </summary>
-        public static event Action<bool> screenReaderStatusChanged;
-
-        /// <summary>
-        /// Event that is invoked on the main thread when the screen reader
-        /// focus changes.
-        /// </summary>
-        public static event Action<AccessibilityNode> nodeFocusChanged;
+            Application.platform is
+                RuntimePlatform.Android or
+                RuntimePlatform.IPhonePlayer or
+                RuntimePlatform.OSXPlayer or
+                RuntimePlatform.WindowsPlayer;
 
         /// <summary>
         /// Indicates whether a screen reader is enabled.
@@ -79,20 +161,32 @@ namespace UnityEngine.Accessibility
         internal static extern bool IsScreenReaderEnabled();
 
         /// <summary>
-        /// Handles the request for sending an accessibility notification to the
-        /// assistive technology.
+        /// Handles the request for sending an announcement notification to the assistive technology.
         /// </summary>
-        internal static extern void SendAccessibilityNotification(in AccessibilityNotificationContext context);
+        internal static extern void SendAnnouncementNotification(string announcement);
 
         /// <summary>
-        /// Retrieves the current accessibility language that assistive technologies
-        /// use for the application.
+        /// Handles the request for sending a page scrolled notification to the assistive technology.
+        /// </summary>
+        internal static extern void SendPageScrolledNotification(string announcement, int nodeId = AccessibilityNodeManager.k_InvalidNodeId);
+
+        /// <summary>
+        /// Handles the request for sending a screen changed notification to the assistive technology.
+        /// </summary>
+        internal static extern void SendScreenChangedNotification(int nodeId = AccessibilityNodeManager.k_InvalidNodeId);
+
+        /// <summary>
+        /// Handles the request for sending a layout changed notification to the assistive technology.
+        /// </summary>
+        internal static extern void SendLayoutChangedNotification(int nodeId = AccessibilityNodeManager.k_InvalidNodeId);
+
+        /// <summary>
+        /// Retrieves the current accessibility language that assistive technologies use for the application.
         /// </summary>
         internal static extern SystemLanguage GetApplicationAccessibilityLanguage();
 
         /// <summary>
-        /// Sets the accessibility language that assistive technologies use for
-        /// the application.
+        /// Sets the accessibility language that assistive technologies use for the application.
         /// </summary>
         internal static extern void SetApplicationAccessibilityLanguage(SystemLanguage languageCode);
 
@@ -106,16 +200,25 @@ namespace UnityEngine.Accessibility
         [RequiredByNativeCode]
         static void Internal_Update()
         {
+            instance.Internal_Update_Impl();
+        }
+
+        void Internal_Update_Impl()
+        {
             // Prevent lock if empty.
             if (asyncNotificationContexts.Count == 0)
+            {
                 return;
+            }
 
             NotificationContext[] contexts;
 
             lock (asyncNotificationContexts)
             {
                 if (asyncNotificationContexts.Count == 0)
+                {
                     return;
+                }
 
                 contexts = asyncNotificationContexts.ToArray();
                 asyncNotificationContexts.Clear();
@@ -127,33 +230,33 @@ namespace UnityEngine.Accessibility
             {
                 switch (context.notification)
                 {
-                    case AccessibilityNotification.ScreenReaderStatusChanged:
+                    case Notification.ScreenReaderStatusChanged:
                     {
                         screenReaderStatusChanged?.Invoke(context.isScreenReaderEnabled);
                         break;
                     }
-                    case AccessibilityNotification.ElementFocused:
+                    case Notification.ElementFocused:
                     {
-                        context.currentNode.InvokeFocusChanged(true);
-                        nodeFocusChanged?.Invoke(context.currentNode);
+                        context.focusedNode.InvokeFocusChanged(true);
+                        nodeFocusChanged?.Invoke(context.focusedNode);
                         break;
                     }
-                    case AccessibilityNotification.ElementUnfocused:
+                    case Notification.ElementUnfocused:
                     {
-                        context.currentNode.InvokeFocusChanged(false);
+                        context.focusedNode.InvokeFocusChanged(false);
                         break;
                     }
-                    case AccessibilityNotification.FontScaleChanged:
+                    case Notification.FontScaleChanged:
                     {
                         AccessibilitySettings.InvokeFontScaleChanged(context.fontScale);
                         break;
                     }
-                    case AccessibilityNotification.BoldTextStatusChanged:
+                    case Notification.BoldTextStatusChanged:
                     {
                         AccessibilitySettings.InvokeBoldTextStatusChanged(context.isBoldTextEnabled);
                         break;
                     }
-                    case AccessibilityNotification.ClosedCaptioningStatusChanged:
+                    case Notification.ClosedCaptioningStatusChanged:
                     {
                         AccessibilitySettings.InvokeClosedCaptionStatusChanged(context.isClosedCaptioningEnabled);
                         break;
@@ -163,10 +266,19 @@ namespace UnityEngine.Accessibility
         }
 
         [RequiredByNativeCode]
+        static void Internal_LateUpdate()
+        {
+            if (instance.m_RefreshNodeFramesRequested)
+            {
+                instance.m_RefreshNodeFramesRequested = false;
+                AssistiveSupport.activeHierarchy?.RefreshNodeFrames();
+            }
+        }
+
+        [RequiredByNativeCode]
         internal static int[] Internal_GetRootNodeIds()
         {
-            var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
-            var rootNodes = service?.GetRootNodes();
+            var rootNodes = AccessibilityHierarchyService.GetRootNodes();
 
             if (rootNodes == null || rootNodes.Count == 0)
             {
@@ -175,53 +287,163 @@ namespace UnityEngine.Accessibility
 
             using (ListPool<int>.Get(out var rootNodeIds))
             {
-                for (var i = 0; i < rootNodes.Count; i++)
-                    rootNodeIds.Add(rootNodes[i].id);
+                foreach (var rootNode in rootNodes)
+                {
+                    rootNodeIds.Add(rootNode.id);
+                }
 
                 return rootNodeIds.Count == 0 ? null : rootNodeIds.ToArray();
             }
         }
 
-        // Returns a struct with information from the managed AccessibilityNode.
+        /// <summary>
+        /// Returns a struct with information from the managed AccessibilityNode.
+        /// </summary>
         [RequiredByNativeCode]
-        internal static bool Internal_GetNode(int id, ref AccessibilityNodeData nodeData)
+        internal static bool Internal_GetNode(int nodeId, ref AccessibilityNodeData nodeData)
         {
-            var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
-
-            if (service == null)
+            if (!AccessibilityHierarchyService.TryGetNode(nodeId, out var node))
             {
                 return false;
             }
 
-            if (service.TryGetNode(id, out var node))
-            {
-                node.GetNodeData(ref nodeData);
-                return true;
-            }
+            nodeData = new AccessibilityNodeData();
+            node.GetNodeData(ref nodeData);
 
-            return false;
+            return true;
         }
 
         [RequiredByNativeCode]
         internal static int Internal_GetNodeIdAt(float x, float y)
         {
-            var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
-
-            return service != null && service.TryGetNodeAt(x, y, out var node) ?
+            return AccessibilityHierarchyService.TryGetNodeAt(x, y, out var node) ?
                 node.id : AccessibilityNodeManager.k_InvalidNodeId;
         }
 
+        /// <summary>
+        /// Retrieves the ID of the first or last root node in the hierarchy.
+        /// </summary>
         [RequiredByNativeCode]
-        internal static void Internal_OnAccessibilityNotificationReceived(ref AccessibilityNotificationContext context)
+        internal static bool Internal_GetFirstOrLastRootNodeId(bool first, out int managedRootId)
         {
-            // Ignore the global notification and only rely on the per-node notification.
-            if (context.notification == AccessibilityNotification.ElementFocused)
-                return;
+            managedRootId = AccessibilityNodeManager.k_InvalidNodeId;
 
-            QueueNotification(new NotificationContext(ref context));
+            var rootNodes = AccessibilityHierarchyService.GetRootNodes();
+
+            if (rootNodes == null)
+            {
+                return false;
+            }
+
+            if (rootNodes.Count != 0)
+            {
+                managedRootId = first ? rootNodes[0].id : rootNodes[^1].id;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieves the ID of the first or last child of the managed AccessibilityNode.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static bool Internal_GetFirstOrLastChildId(int nodeId, bool first, out int childId)
+        {
+            childId = AccessibilityNodeManager.k_InvalidNodeId;
+
+            if (!AccessibilityHierarchyService.TryGetNode(nodeId, out var node))
+            {
+                return false;
+            }
+
+            if (node.children.Count != 0)
+            {
+                childId = first ? node.children[0].id : node.children[^1].id;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieves the ID of the next or previous sibling of the managed AccessibilityNode.
+        /// </summary>
+        [RequiredByNativeCode]
+        internal static bool Internal_GetNextOrPreviousSiblingId(int nodeId, bool next, out int siblingId)
+        {
+            siblingId = AccessibilityNodeManager.k_InvalidNodeId;
+
+            if (!AccessibilityHierarchyService.TryGetNode(nodeId, out var node))
+            {
+                return false;
+            }
+
+            // If this node has no parent, check for siblings in the root node list.
+            var siblingList = node.parent?.children ?? AccessibilityHierarchyService.GetRootNodes();
+
+            if (siblingList == null || siblingList.Count == 0)
+            {
+                throw new ArgumentException(node.parent == null ?
+                    $"Node with ID {nodeId} without parent is not tracked as a root." :
+                    $"Node with ID {nodeId} is not a child of its parent.");
+            }
+
+            // This node has no siblings.
+            if (siblingList.Count == 1)
+            {
+                return true;
+            }
+
+            var index = IndexOf(node, siblingList);
+            var siblingIndex = next ? index + 1 : index - 1;
+
+            siblingId = siblingIndex >= 0 && siblingIndex < siblingList.Count ?
+                siblingList[siblingIndex].id : AccessibilityNodeManager.k_InvalidNodeId;
+
+            return true;
+
+            static int IndexOf<T>(T elementToFind, IReadOnlyList<T> list)
+            {
+                var index = 0;
+
+                foreach (var element in list)
+                {
+                    if (Equals(element, elementToFind))
+                    {
+                        return index;
+                    }
+
+                    index++;
+                }
+
+                return -1;
+            }
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_OnScreenReaderStatusChanged(bool enabled)
+        {
+            QueueNotification(new NotificationContext
+            {
+                notification = Notification.ScreenReaderStatusChanged,
+                isScreenReaderEnabled = enabled,
+            });
+        }
+
+        /// <summary>
+        /// Called when the player window is moved or resized either programmatically or by the user.
+        /// </summary>
+        [RequiredByNativeCode]
+        static void Internal_OnWindowGeometryChanged()
+        {
+            instance.m_RefreshNodeFramesRequested = true;
         }
 
         internal static void QueueNotification(NotificationContext notification)
+        {
+            instance.QueueNotification_Impl(notification);
+        }
+
+        internal void QueueNotification_Impl(NotificationContext notification)
         {
             lock (asyncNotificationContexts)
             {

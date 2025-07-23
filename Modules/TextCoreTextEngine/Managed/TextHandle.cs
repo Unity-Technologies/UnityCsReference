@@ -144,6 +144,7 @@ namespace UnityEngine.TextCore.Text
         internal IntPtr textGenerationInfo = IntPtr.Zero;
 
         internal LinkedListNode<TextCacheEntry> TextInfoNode { get; set; }
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool IsCachedPermanent { get; set; }
         internal bool IsCachedTemporary { get; set; }
 
@@ -192,6 +193,7 @@ namespace UnityEngine.TextCore.Text
             {
                 TextGenerationInfo.Destroy(textGenerationInfo);
                 textGenerationInfo = IntPtr.Zero;
+                IsCachedPermanent = false;
             }
             else
             {

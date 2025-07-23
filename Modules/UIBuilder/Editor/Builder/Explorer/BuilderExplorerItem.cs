@@ -221,7 +221,7 @@ namespace Unity.UI.Builder
                     Undo.RegisterCompleteObjectUndo(
                         styleSheet, BuilderConstants.RenameSelectorUndoMessage);
 
-                    if (!BuilderSharedStyles.SetSelectorString(documentElement, stylesheet, value, out var error))
+                    if (!BuilderSharedStyles.SetSelectorString(documentElement, styleSheet, value, out var error))
                     {
                         Builder.ShowWarning(error);
                         m_RenameTextField.schedule.Execute(() =>

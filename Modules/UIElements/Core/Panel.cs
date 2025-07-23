@@ -434,7 +434,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -876,7 +876,7 @@ namespace UnityEngine.UIElements
     internal delegate void SavePersistentViewData();
 
     // Default panel implementation
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class Panel : BaseVisualElementPanel
     {
         internal const int k_DefaultPixelsPerUnit = 100;
@@ -1528,6 +1528,7 @@ namespace UnityEngine.UIElements
         internal virtual Color HyperlinkColor => Color.blue;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class BaseRuntimePanel : Panel
     {
         private GameObject m_SelectableGameObject;
@@ -1615,7 +1616,6 @@ namespace UnityEngine.UIElements
         }
 
         internal RenderTexture targetTexture = null; // Render panel to a texture
-        internal int worldSpaceLayer = 0;
 
         internal int targetDisplay { get; set;}
 
@@ -1751,6 +1751,7 @@ namespace UnityEngine.UIElements
         IPanel panel { get; set; }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class PanelRootElement : VisualElement
     {
         public PanelRootElement()

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -11,6 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toggle for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarToggle|UXML element ToolbarToggle]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ToolbarToggle.png")]
     public class ToolbarToggle : Toggle
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

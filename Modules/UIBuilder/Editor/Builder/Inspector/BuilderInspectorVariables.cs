@@ -237,7 +237,7 @@ namespace Unity.UI.Builder
 
             var name = GenerateDefaultName();
 
-            var property = styleSheet.AddProperty(currentVisualElement.GetStyleComplexSelector(), name);
+            var property = styleSheet.AddProperty(currentVisualElement.GetStyleComplexSelector().rule, name);
 
             switch (type)
             {
@@ -334,7 +334,7 @@ namespace Unity.UI.Builder
                 var prop = m_VariablesItemsSource[index];
                 if (prop != null)
                 {
-                    styleSheet.RemoveProperty(currentVisualElement.GetStyleComplexSelector(), prop);
+                    styleSheet.RemoveProperty(currentVisualElement.GetStyleComplexSelector().rule, prop);
                 }
             }
             else
@@ -347,7 +347,7 @@ namespace Unity.UI.Builder
                     var prop = m_VariablesItemsSource[selectedIndex];
                     if (prop != null)
                     {
-                        styleSheet.RemoveProperty(currentVisualElement.GetStyleComplexSelector(), prop);
+                        styleSheet.RemoveProperty(currentVisualElement.GetStyleComplexSelector().rule, prop);
                     }
                 }
             }

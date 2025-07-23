@@ -14,6 +14,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<bool, bool> onUserLoginStateChange;
         bool isUserInfoReady { get; }
         bool isUserLoggedIn { get; }
+        string userPrimaryOrg { get; }
+        string displayName { get; }
 
         string GetConfigurationURL(CloudConfigUrl config);
         void ShowLogin();
@@ -33,20 +35,36 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_UserId = string.Empty;
 
+        [SerializeField]
+        private string m_DisplayName = string.Empty;
+
+        [SerializeField]
+        private string m_UserPrimaryOrg = string.Empty;
+
         public event Action<bool, bool> onUserLoginStateChange = delegate {};
         public bool isUserInfoReady => m_IsUserInfoReady;
         public bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
+        public string userPrimaryOrg => m_UserPrimaryOrg;
+        public string displayName => m_DisplayName;
 
         public override void OnEnable()
         {
-            m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
-            m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+            RefreshUserData();
             UnityConnect.instance.UserStateChanged += OnUserStateChanged;
         }
 
         public override void OnDisable()
         {
             UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
+        }
+
+        private void RefreshUserData()
+        {
+            m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
+            m_UserPrimaryOrg = UnityConnect.instance.userInfo.valid ? UnityConnect.instance.userInfo.primaryOrg : string.Empty;
+            m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+            m_UserId = UnityConnect.instance.userInfo.userId;
+            m_DisplayName = UnityConnect.instance.userInfo.displayName;
         }
 
         public string GetConfigurationURL(CloudConfigUrl config)
@@ -68,14 +86,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var prevIsUserInfoReady = isUserInfoReady;
             var prevIsUserLoggedIn = isUserLoggedIn;
+            var prevUserId = m_UserId;
+            var prevDisplayName = m_DisplayName;
 
-            m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
-            m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+            RefreshUserData();
 
-            if (isUserInfoReady != prevIsUserInfoReady || isUserLoggedIn != prevIsUserLoggedIn || newInfo.userId != m_UserId)
+            if (isUserInfoReady != prevIsUserInfoReady || isUserLoggedIn != prevIsUserLoggedIn || prevUserId != m_UserId || prevDisplayName != m_DisplayName)
                 onUserLoginStateChange?.Invoke(isUserInfoReady, isUserLoggedIn);
-
-            m_UserId = newInfo.userId;
         }
     }
 }

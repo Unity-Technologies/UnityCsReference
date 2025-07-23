@@ -22,10 +22,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected void ShowWithNewWindowSize()
         {
             // There's no direct `resize` function for a dropdown window but setting min/max size does the same trick.
-            if (container != null)
+            if (container is not null)
             {
                 container.minSize = windowSize;
                 container.maxSize = windowSize;
+                container.RepaintImmediately();
             }
             OnDropdownShown();
         }

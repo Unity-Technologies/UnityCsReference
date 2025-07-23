@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"align-items", "flex-start | flex-end | center | stretch | auto"},
             {"align-self", "flex-start | flex-end | center | stretch | auto"},
             {"all", "initial"},
+            {"aspect-ratio", "auto | <ratio>"},
             {"background-color", "<color>"},
             {"background-image", "<resource> | <url> | none"},
             {"background-position", "[ [ left | center | right | top | bottom | <length-percentage> ] | [ left | center | right | <length-percentage> ] [ top | center | bottom | <length-percentage> ] | [ center | [ left | right ] <length-percentage>? ] && [ center | [ top | bottom ] <length-percentage>? ] ]"},
@@ -123,7 +124,8 @@ namespace UnityEngine.UIElements.StyleSheets
             {"length-percentage", "<length> | <percentage>"},
             {"single-transition", "[ none | <single-transition-property> ] || <time> || <easing-function> || <time>"},
             {"single-transition-property", "all | <custom-ident>"},
-            {"timing-function", "ease | ease-in | ease-out | ease-in-out | ease-in-sine | ease-out-sine | ease-in-out-sine | ease-in-cubic | ease-out-cubic | ease-in-out-cubic | ease-in-circ | ease-out-circ | ease-in-out-circ | ease-in-elastic | ease-out-elastic | ease-in-out-elastic | ease-in-back | ease-out-back | ease-in-out-back | ease-in-bounce | ease-out-bounce | ease-in-out-bounce"}
+            {"timing-function", "ease | ease-in | ease-out | ease-in-out | ease-in-sine | ease-out-sine | ease-in-out-sine | ease-in-cubic | ease-out-cubic | ease-in-out-cubic | ease-in-circ | ease-out-circ | ease-in-out-circ | ease-in-elastic | ease-out-elastic | ease-in-out-elastic | ease-in-back | ease-out-back | ease-in-out-back | ease-in-bounce | ease-out-bounce | ease-in-out-bounce"},
+            {"ratio", "<number [0,∞]>"}
         };
     }
 }

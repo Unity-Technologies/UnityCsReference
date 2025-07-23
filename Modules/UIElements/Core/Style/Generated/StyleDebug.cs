@@ -27,6 +27,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.alignItems;
                 case StylePropertyId.AlignSelf:
                     return computedStyle.alignSelf;
+                case StylePropertyId.AspectRatio:
+                    return computedStyle.aspectRatio;
                 case StylePropertyId.BackgroundColor:
                     return computedStyle.backgroundColor;
                 case StylePropertyId.BackgroundImage:
@@ -211,6 +213,8 @@ namespace UnityEngine.UIElements
                     return typeof(Align);
                 case StylePropertyId.AlignSelf:
                     return typeof(Align);
+                case StylePropertyId.AspectRatio:
+                    return typeof(Ratio);
                 case StylePropertyId.BackgroundColor:
                     return typeof(Color);
                 case StylePropertyId.BackgroundImage:
@@ -419,6 +423,8 @@ namespace UnityEngine.UIElements
                     return style.alignItems;
                 case StylePropertyId.AlignSelf:
                     return style.alignSelf;
+                case StylePropertyId.AspectRatio:
+                    return style.aspectRatio;
                 case StylePropertyId.BackgroundColor:
                     return style.backgroundColor;
                 case StylePropertyId.BackgroundImage:
@@ -605,6 +611,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AlignSelf:
                     style.alignSelf = (StyleEnum<Align>)value;
+                    break;
+                case StylePropertyId.AspectRatio:
+                    style.aspectRatio = (StyleRatio)value;
                     break;
                 case StylePropertyId.BackgroundColor:
                     style.backgroundColor = (StyleColor)value;
@@ -874,6 +883,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.AlignSelf:
                     style.alignSelf = keyword;
                     break;
+                case StylePropertyId.AspectRatio:
+                    style.aspectRatio = keyword;
+                    break;
                 case StylePropertyId.BackgroundColor:
                     style.backgroundColor = keyword;
                     break;
@@ -1142,6 +1154,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.AlignSelf:
                     return new()
                     {StyleKeyword.Auto};
+                case StylePropertyId.AspectRatio:
+                    return new()
+                    {StyleKeyword.Auto};
                 case StylePropertyId.BackgroundColor:
                     return new()
                     {};
@@ -1406,6 +1421,8 @@ namespace UnityEngine.UIElements
                     return (StyleEnum<Align>)(Align)value;
                 case StylePropertyId.AlignSelf:
                     return (StyleEnum<Align>)(Align)value;
+                case StylePropertyId.AspectRatio:
+                    return (StyleRatio)(Ratio)value;
                 case StylePropertyId.BackgroundColor:
                     return (StyleColor)(Color)value;
                 case StylePropertyId.BackgroundImage:
@@ -1590,6 +1607,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleEnum<Align>);
                 case StylePropertyId.AlignSelf:
                     return typeof(StyleEnum<Align>);
+                case StylePropertyId.AspectRatio:
+                    return typeof(StyleRatio);
                 case StylePropertyId.BackgroundColor:
                     return typeof(StyleColor);
                 case StylePropertyId.BackgroundImage:

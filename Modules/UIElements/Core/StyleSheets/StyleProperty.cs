@@ -753,6 +753,44 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Sets a <see cref="Ratio"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetRatio(StyleSheet styleSheet, Ratio value)
+        {
+            if (value.IsAuto())
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteKeyword(ref m_Values[0], StyleValueKeyword.Auto);
+            }
+            else
+                SetFloat(styleSheet, value.value);
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="Ratio"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetRatio(StyleSheet styleSheet, out Ratio value)
+        {
+            if (TryGetFloat(styleSheet, out var floatValue))
+            {
+                if(floatValue != 0.0f )
+                {
+                    value = floatValue;
+                    return true;
+                }
+              
+            }
+
+            value = Ratio.Auto();
+            return false;
+        }
+
+        /// <summary>
         /// Sets a <see cref="Rotate"/> as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>

@@ -11,6 +11,9 @@ namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
+        private const string k_VisualElementAssetPropertyName = "--unity-visual-element-asset-property";
+        private const string k_LinkedTemplateAssetOwnerPropertyName = "--unity-linked-template-asset-owner";
+
         internal const string k_RootVisualContainerName = "rootVisualContainer";
 
         /// <summary>
@@ -143,6 +146,20 @@ namespace UnityEngine.UIElements
             get => m_VisualTreeAssetSource;
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set => m_VisualTreeAssetSource = value;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal VisualElementAsset visualElementAsset
+        {
+            get => (VisualElementAsset)GetProperty(k_VisualElementAssetPropertyName);
+            set => SetProperty(k_VisualElementAssetPropertyName, value);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal TemplateAsset templateAsset
+        {
+            get => (TemplateAsset)GetProperty(k_LinkedTemplateAssetOwnerPropertyName);
+            set => SetProperty(k_LinkedTemplateAssetOwnerPropertyName, value);
         }
 
         /// <summary>
@@ -1005,7 +1022,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="predicate">The predicate to be satisfied by the ancestor to find.</param>
         /// <returns>The first ancestor satisfying the predicate or null otherwise.</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement GetFirstAncestorWhere(Predicate<VisualElement> predicate)
         {
             VisualElement ancestor = hierarchy.parent;

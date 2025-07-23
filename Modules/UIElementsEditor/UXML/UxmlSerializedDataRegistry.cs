@@ -14,7 +14,7 @@ using HelpBox = UnityEngine.UIElements.HelpBox;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UxmlSerializedDataRegistry
     {
         private static bool s_Initialized = false;

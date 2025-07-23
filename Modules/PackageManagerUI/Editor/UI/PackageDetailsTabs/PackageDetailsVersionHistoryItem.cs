@@ -242,7 +242,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var hasDisplayNameChange = string.Compare(m_Version.displayName, primary.displayName, StringComparison.InvariantCultureIgnoreCase) != 0;
-            var hasAuthorChange = string.Compare(m_Version.author, primary.author, StringComparison.InvariantCultureIgnoreCase) != 0;
+            var hasAuthorChange = string.Compare(m_Version.author?.name, primary.author?.name, StringComparison.InvariantCultureIgnoreCase) != 0;
             var hasDescriptionChange = string.Compare(m_Version.description, primary.description, StringComparison.InvariantCultureIgnoreCase) != 0;
 
             UIUtils.SetElementDisplay(versionHistoryItemMetaDataContainer, hasDisplayNameChange || hasDescriptionChange || hasAuthorChange);
@@ -252,7 +252,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionHistoryItemMetaDataTitle.text = $"<b>{L10n.Tr("Title")}:</b> {m_Version.displayName}";
 
                 UIUtils.SetElementDisplay(versionHistoryItemMetaDataAuthor, hasAuthorChange);
-                versionHistoryItemMetaDataAuthor.text = $"<b>{L10n.Tr("Author")}:</b> {m_Version.author}";
+                versionHistoryItemMetaDataAuthor.text = $"<b>{L10n.Tr("Author")}:</b> {m_Version.author?.name}";
 
                 UIUtils.SetElementDisplay(versionHistoryItemMetaDataDescription, hasDescriptionChange);
                 versionHistoryItemMetaDataDescription.text = $"<b>{L10n.Tr("Description")}:</b>\n{m_Version.description}";

@@ -151,7 +151,25 @@ namespace Unity.Hierarchy
         /// If a hierarchy node type handler with that type is already created, the same instance is returned.
         /// </remarks>
         /// <returns>The hierarchy node type handler instance for that type.</returns>
-        public T GetOrCreateNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T)));
+        public T GetOrCreateNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase
+        {
+            var handler = (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T), out var created));
+            if (created)
+                HandlerCreated?.Invoke(handler);
+            return handler;
+        }
+
+        /// <summary>
+        /// Event that is invoked when a new hierarchy node type handler is created.
+        /// </summary>
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal event HandlerCreatedEventHandler HandlerCreated;
+
+        /// <summary>
+        /// Delegate for the <see cref="HandlerCreated"/> event.
+        /// </summary>
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal delegate void HandlerCreatedEventHandler(HierarchyNodeTypeHandlerBase handler);
 
         /// <summary>
         /// Gets a hierarchy node type handler instance from this hierarchy.
@@ -179,7 +197,7 @@ namespace Unity.Hierarchy
         public HierarchyNodeTypeHandlerBaseEnumerable EnumerateNodeTypeHandlersBase() => new HierarchyNodeTypeHandlerBaseEnumerable(this);
 
         /// <summary>
-        /// Gets the type of the specified hierarchy node.  
+        /// Gets the type of the specified hierarchy node.
         /// </summary>
         /// <returns>The hierarchy node type.</returns>
         public HierarchyNodeType GetNodeType<T>() where T : HierarchyNodeTypeHandlerBase => GetNodeTypeFromType(typeof(T));
@@ -516,7 +534,7 @@ namespace Unity.Hierarchy
         static extern void Destroy(IntPtr nativePtr);
 
         [FreeFunction("HierarchyBindings::GetOrCreateNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
-        extern IntPtr GetOrCreateNodeTypeHandler(Type type);
+        extern IntPtr GetOrCreateNodeTypeHandler(Type type, out bool created);
 
         [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromType", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern IntPtr GetNodeTypeHandlerFromType(Type type);
@@ -583,7 +601,7 @@ namespace Unity.Hierarchy
         /// <returns>The hierarchy node type handler instance for that type.</returns>
         [Obsolete("RegisterNodeTypeHandler has been renamed GetOrCreateNodeTypeHandler (UnityUpgradable) -> GetOrCreateNodeTypeHandler<T>()")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T)));
+        public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T), out _));
 
         /// <summary>
         /// Removes a hierarchy node type handler from this hierarchy.

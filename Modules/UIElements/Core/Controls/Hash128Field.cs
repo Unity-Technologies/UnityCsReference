@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// Makes a field for editing an <see cref="Hash128"/>. For more information, refer to [[wiki:UIE-uxml-element-Hash128Field|UXML element Hash128Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/Hash128Field.png")]
     public class Hash128Field : TextInputBaseField<Hash128>
     {
         // This property to alleviate the fact we have to cast all the time

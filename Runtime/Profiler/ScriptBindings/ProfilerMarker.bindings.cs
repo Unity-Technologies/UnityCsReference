@@ -53,6 +53,18 @@ namespace Unity.Profiling
         }
 
         [MethodImpl(256)]
+        public ProfilerMarker(string name, MarkerFlags flags)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, ProfilerUnsafeUtility.CategoryScripts, flags, 0);
+        }
+
+        [MethodImpl(256)]
+        public unsafe ProfilerMarker(char* name, int nameLen, MarkerFlags flags)
+        {
+            m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, nameLen, ProfilerUnsafeUtility.CategoryScripts, flags, 0);
+        }
+
+        [MethodImpl(256)]
         public ProfilerMarker(ProfilerCategory category, string name, MarkerFlags flags)
         {
             m_Ptr = ProfilerUnsafeUtility.CreateMarker(name, category, flags, 0);
@@ -106,6 +118,29 @@ namespace Unity.Profiling
                 m_Ptr = markerPtr;
                 if (m_Ptr != IntPtr.Zero)
                     ProfilerUnsafeUtility.BeginSample(markerPtr);
+            }
+
+            [MethodImpl(256)]
+            internal unsafe AutoScope(IntPtr markerPtr, string metadata)
+            {
+                m_Ptr = markerPtr;
+                if (m_Ptr != IntPtr.Zero)
+                {
+                    if (String.IsNullOrEmpty(metadata))
+                    {
+                        ProfilerUnsafeUtility.BeginSample(markerPtr);
+                    }
+                    else
+                    {
+                        ProfilerMarkerData data = new ProfilerMarkerData { Type = (byte)ProfilerMarkerDataType.String16 };
+                        fixed (char* metadataChars = metadata)
+                        {
+                            data.Size = ((uint)metadata.Length + 1) * 2;
+                            data.Ptr = metadataChars;
+                            ProfilerUnsafeUtility.BeginSampleWithMetadata(markerPtr, 1, &data);
+                        }
+                    }
+                }
             }
 
             [MethodImpl(256)]

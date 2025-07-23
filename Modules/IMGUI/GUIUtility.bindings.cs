@@ -21,8 +21,7 @@ namespace UnityEngine
         [NativeProperty("GetGUIState().m_PixelsPerPoint", true, TargetType.Field)]
         internal static extern float pixelsPerPoint
         {
-
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIToolkitAuthoringModule")]
             get;
 
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]

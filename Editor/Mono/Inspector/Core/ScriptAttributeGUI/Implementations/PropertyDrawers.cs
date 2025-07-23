@@ -463,7 +463,8 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(DelayedAttribute))]
     internal sealed class DelayedDrawer : PropertyDrawer
     {
-        private static string s_InvalidTypeMessage = L10n.Tr("Use Delayed with float, int, or string.");
+        static string s_InvalidTypeMessageIMGUI = L10n.Tr("Use Delayed with float, int or string when using IMGUI.");
+        static string s_InvalidTypeMessageUITK = L10n.Tr("Use Delayed with float, int, string, Vector or Rect when using UI Toolkit.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -474,42 +475,60 @@ namespace UnityEditor
             else if (property.propertyType == SerializedPropertyType.String)
                 EditorGUI.DelayedTextField(position, property, label);
             else
-                EditorGUI.LabelField(position, label.text, s_InvalidTypeMessage);
+                EditorGUI.LabelField(position, label.text, s_InvalidTypeMessageIMGUI);
         }
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             BindableElement newField = null;
-            if (property.propertyType == SerializedPropertyType.Float)
+
+            switch(property.propertyType)
             {
-                if (property.type == "float")
-                {
-                    newField = new FloatField(preferredLabel);
-                    ((TextInputBaseField<float>)newField).isDelayed = true;
-                }
-                else if (property.type == "double")
-                {
-                    newField = new DoubleField(preferredLabel);
-                    ((TextInputBaseField<double>)newField).isDelayed = true;
-                }
-            }
-            else if (property.propertyType == SerializedPropertyType.Integer)
-            {
-                if (property.type == "int")
-                {
-                    newField = new IntegerField(preferredLabel);
-                    ((TextInputBaseField<int>)newField).isDelayed = true;
-                }
-                else if (property.type == "long")
-                {
-                    newField = new LongField(preferredLabel);
-                    ((TextInputBaseField<long>)newField).isDelayed = true;
-                }
-            }
-            else if (property.propertyType == SerializedPropertyType.String)
-            {
-                newField = new TextField(preferredLabel);
-                ((TextInputBaseField<string>)newField).isDelayed = true;
+                case SerializedPropertyType.Float:
+                    if (property.type == "float")
+                        newField = new FloatField(preferredLabel) { isDelayed = true };
+                    else if (property.type == "double")
+                        newField = new DoubleField(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Integer:
+                    if (property.type == "int")
+                        newField = new IntegerField(preferredLabel) { isDelayed = true };
+                    else if (property.type == "long")
+                        newField = new LongField(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.String:
+                    newField = new TextField(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Vector2:
+                    newField = new Vector2Field(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Vector2Int:
+                    newField = new Vector2IntField(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Vector3:
+                    newField = new Vector3Field(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Vector3Int:
+                    newField = new Vector3IntField(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Vector4:
+                    newField = new Vector4Field(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.Rect:
+                    newField = new RectField(preferredLabel) { isDelayed = true };
+                    break;
+
+                case SerializedPropertyType.RectInt:
+                    newField = new RectIntField(preferredLabel) { isDelayed = true };
+                    break;
             }
 
             if (newField != null)
@@ -519,7 +538,7 @@ namespace UnityEditor
                 return newField;
             }
 
-            return new Label(s_InvalidTypeMessage);
+            return new Label(s_InvalidTypeMessageUITK);
         }
     }
 

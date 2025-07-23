@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering unsigned long integers. For more information, refer to [[wiki:UIE-uxml-element-UnsignedLongField|UXML element UnsignedLongField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/UnsignedLongField.png")]
     public class UnsignedLongField : TextValueField<ulong>
     {
         // This property to alleviate the fact we have to cast all the time

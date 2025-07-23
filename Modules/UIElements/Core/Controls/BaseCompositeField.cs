@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using Unity.Properties;
 using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -13,9 +15,11 @@ namespace UnityEngine.UIElements
     /// This is the base class for the composite fields.
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public abstract class BaseCompositeField<TValueType, TField, TFieldValue> : BaseField<TValueType>
+    public abstract class BaseCompositeField<TValueType, TField, TFieldValue> : BaseField<TValueType>, IDelayedField
         where TField : TextValueField<TFieldValue>, new()
     {
+        internal static readonly BindingId isDelayedProperty = nameof(isDelayed);
+
         internal struct FieldDescription
         {
             public delegate void WriteDelegate(ref TValueType val, TFieldValue fieldValue);
@@ -37,9 +41,28 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
         {
+            #pragma warning disable 649
+            [SerializeField] bool isDelayed;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isDelayed_UxmlAttributeFlags;
+            #pragma warning restore 649
+
+            [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
                 BaseField<TValueType>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(isDelayed), "is-delayed"),
+                }, false);
+            }
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (BaseCompositeField<TValueType, TField, TFieldValue>)obj;
+                if (ShouldWriteAttributeValue(isDelayed_UxmlAttributeFlags))
+                    e.isDelayed = isDelayed;
             }
         }
 
@@ -58,6 +81,7 @@ namespace UnityEngine.UIElements
         internal abstract FieldDescription[] DescribeFields();
         bool m_ShouldUpdateDisplay;
         bool m_ForceUpdateDisplay;
+        bool m_IsDelayed;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -96,6 +120,28 @@ namespace UnityEngine.UIElements
         /// USS class name of elements of this type when the fields are displayed on two lines.
         /// </summary>
         public static readonly string twoLinesVariantUssClassName = ussClassName + "--two-lines";
+
+        /// <summary>
+        /// If set to true, the value property only updates after either the user presses Enter or moves focus away from one of the value fields.
+        /// </summary>
+        [CreateProperty]
+        public bool isDelayed
+        {
+            get => m_IsDelayed;
+            set 
+            {
+                if (m_IsDelayed == value)
+                    return;
+
+                m_IsDelayed = value;
+                foreach (var f in fields)
+                {
+                    f.isDelayed = m_IsDelayed;
+                }
+
+                NotifyPropertyChanged(isDelayedProperty);
+            }
+        }
 
         protected BaseCompositeField(string label, int fieldsByLine)
             : base(label, null)

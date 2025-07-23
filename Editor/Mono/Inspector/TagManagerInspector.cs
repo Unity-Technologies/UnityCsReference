@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Presets;
 using UnityEditor.Rendering;
@@ -485,7 +486,7 @@ namespace UnityEditor
             string m_NewTagName = "New tag";
             bool m_NeedsFocus = true;
             readonly List<string> m_ExistingTagNames = new ();
-            private bool m_IsExistingTag;
+            bool m_IsExistingTag;
 
             public EnterTagNamePopup(SerializedProperty tags, EnterDelegate callback)
             {
@@ -503,8 +504,18 @@ namespace UnityEditor
             }
 
             // One line for text field, one for the button, and two for HelpBox
-            public override Vector2 GetWindowSize() =>
-                new(400, EditorGUI.kSingleLineHeight * (m_IsExistingTag? 4 : 2) + EditorGUI.kControlVerticalSpacing + 14);
+            public override Vector2 GetWindowSize()
+            {
+                const int width = 400;
+                var minHeight = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + 14;
+
+                if (!m_IsExistingTag)
+                    return new Vector2(width, minHeight);
+
+                // Additional dynamic height for the HelpBox (if m_IsExistingTag is true)
+                var helpBoxHeight = Math.Max(EditorGUI.kSingleLineHeight * 2, EditorStyles.helpBox.CalcHeight(new GUIContent(string.Format(Styles.existingTagMessage.text, m_NewTagName)), width));
+                return new Vector2(width, minHeight + helpBoxHeight);
+            }
 
             public override void OnGUI(Rect windowRect)
             {

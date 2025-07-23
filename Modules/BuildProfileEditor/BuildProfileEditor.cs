@@ -19,8 +19,8 @@ namespace UnityEditor.Build.Profile
         const string k_Uxml = "BuildProfile/UXML/BuildProfileEditor.uxml";
         const string k_PlatformSettingPropertyName = "m_PlatformBuildProfile";
         const string k_PlatformWarningHelpBox = "platform-warning-help-box";
-        const string k_BuildSettingsLabel = "build-settings-label";
         const string k_PlatformSettingsBaseRoot = "platform-settings-base-root";
+
         const string k_GlobalSceneLabel = "global-scene-label";
         const string k_SharedSettingsInfoHelpbox = "shared-settings-info-helpbox";
         const string k_SharedSettingsInfoHelpboxButton = "shared-settings-info-helpbox-button";
@@ -58,8 +58,6 @@ namespace UnityEditor.Build.Profile
         internal BuildProfile buildProfile => m_Profile;
 
         IBuildProfileExtension m_PlatformExtension = null;
-
-        BuildProfilePlayerSettingsEditor m_ProfilePlayerSettingsEditor = null;
 
         public BuildProfileEditor()
         {
@@ -111,12 +109,11 @@ namespace UnityEditor.Build.Profile
             root.styleSheets.Add(windowUss);
 
             var noModuleFoundHelpBox = root.Q<HelpBox>(k_PlatformWarningHelpBox);
-            var platformSettingsLabel = root.Q<Label>(k_BuildSettingsLabel);
-            var platformSettingsBaseRoot = root.Q<VisualElement>(k_PlatformSettingsBaseRoot);
             var platformBuildWarningsRoot = root.Q<VisualElement>(k_PlatformBuildWarningsRoot);
             var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
-            var buildSettingsFoldout = root.Q<Foldout>(k_BuildSettingsFoldout);
             var additionalSettingsWrapper = root.Q<VisualElement>(k_AdditionalSettingsWrapper);
+            var platformSettingsBaseRoot = root.Q<VisualElement>(k_PlatformSettingsBaseRoot);
+            var buildSettingsFoldout = root.Q<Foldout>(k_BuildSettingsFoldout);
             m_VirtualTexturingHelpBox = root.Q<HelpBox>(k_VirtualTextureWarningHelpBox);
             m_CompilingWarningHelpBox = root.Q<HelpBox>(k_CompilingWarningHelpBox);
             m_SettingsFoldoutRoot = root.Q<VisualElement>(k_SettingsFoldoutRoot);
@@ -127,7 +124,6 @@ namespace UnityEditor.Build.Profile
             m_VirtualTexturingHelpBox.text = TrText.invalidVirtualTexturingSettingMessage;
             m_CompilingWarningHelpBox.text = TrText.compilingMessage;
 
-            platformSettingsLabel.text = TrText.platformSettings;
             sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
             buildSettingsFoldout.text = TrText.GetSettingsSectionName(BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid));
 
@@ -149,9 +145,6 @@ namespace UnityEditor.Build.Profile
             if (!isClassic)
             {
                 sharedSettingsInfoHelpBox.Hide();
-                m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor
-                    .CreatePlayerSettingsUI(root, hasErrors ? null : serializedObject);
-                ShowGraphicsSettingsSection(profile, root);
 
                 var buildAutomationEditor = BuildAutomationSettingsEditor.CreateBuildAutomationUI(profile);
                 additionalSettingsWrapper.Add(buildAutomationEditor);
@@ -206,7 +199,6 @@ namespace UnityEditor.Build.Profile
             root.styleSheets.Add(windowUss);
 
             root.Q<HelpBox>(k_PlatformWarningHelpBox).Hide();
-            root.Q<Label>(k_BuildSettingsLabel).Hide();
             root.Q<VisualElement>(k_PlatformSettingsBaseRoot).Hide();
             root.Q<HelpBox>(k_VirtualTextureWarningHelpBox).Hide();
             root.Q<HelpBox>(k_CompilingWarningHelpBox).Hide();
@@ -231,10 +223,6 @@ namespace UnityEditor.Build.Profile
 
             if (m_PlatformExtension != null)
                 m_PlatformExtension.OnDisable();
-
-            // To prevent errors when entering play mode with the the build profile
-            // window open, we need to remove the player settings inspector.
-            m_ProfilePlayerSettingsEditor?.RemovePlayerSettingsInspector();
         }
 
         internal void OnActivateClicked()
@@ -258,8 +246,6 @@ namespace UnityEditor.Build.Profile
         void EditorUpdate()
         {
             UpdateWarningsAndButtonStatesForActiveProfile();
-
-            m_ProfilePlayerSettingsEditor?.EditorUpdate();
         }
 
         void ShowSettingsFoldouts()
@@ -267,7 +253,11 @@ namespace UnityEditor.Build.Profile
             m_SettingsFoldoutRoot.Clear();
             foreach (var settings in m_AddSettingsDataSource.GetSettingsInProfile())
             {
-                m_SettingsFoldoutRoot.Add(new BuildProfileSettingsFoldout(serializedObject, m_Profile, settings));
+                m_SettingsFoldoutRoot.Add(new BuildProfileSettingsFoldout(
+                    serializedObject,
+                    m_Profile,
+                    settings,
+                    this.ShowSettingsFoldouts));
             }
         }
 
@@ -397,6 +387,9 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        /// <summary>
+        /// Callback for updating the settings view after the editor has been initialized.
+        /// </summary>
         void OnUpdateEditorView(BuildProfile profile)
         {
             if (profile != m_Profile)
@@ -418,18 +411,6 @@ namespace UnityEditor.Build.Profile
                 Undo.undoRedoEvent -= m_SceneList.OnUndoRedo;
 
             EditorApplication.update -= EditorUpdate;
-        }
-
-        void ShowGraphicsSettingsSection(BuildProfile profile, VisualElement root)
-        {
-            var graphicsSettingsSection = root.Q<VisualElement>("editor-graphics-settings");
-            graphicsSettingsSection.Show();
-
-            var graphicsSettingsTitle = root.Q<Label>("graphics-settings-label");
-            graphicsSettingsTitle.text = TrText.graphicsSettings;
-
-            BuildProfileGraphicsSettingsOverridesView.CreateGUI(profile, root);
-            BuildProfileQualitySettingsOverridesView.CreateGUI(profile, root);
         }
 
         void ShowAddSettingsDropdown()

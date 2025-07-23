@@ -400,7 +400,7 @@ namespace Unity.UI.Builder
                         {
                             var matchedRule = matchedRules.ElementAt(i);
                             var matchRecord = matchedRule.matchRecord;
-                            var ruleProperty = matchRecord.sheet.FindProperty(matchRecord.complexSelector, propName);
+                            var ruleProperty = matchRecord.complexSelector.rule?.FindLastProperty(propName);
 
                             // If propName has a short hand then try to find the matching selector using the shorthand
                             if (ruleProperty == null)
@@ -412,7 +412,7 @@ namespace Unity.UI.Builder
                                 {
                                     if (StylePropertyUtil.stylePropertyIdToPropertyName.TryGetValue(shorthandId, out var shorthandName))
                                     {
-                                        ruleProperty = matchRecord.sheet.FindProperty(matchRecord.complexSelector, shorthandName);
+                                        ruleProperty = matchRecord.complexSelector.rule.FindLastProperty(shorthandName);
                                     }
                                 }
                             }

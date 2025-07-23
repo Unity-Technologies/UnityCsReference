@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="BoundsInt"/> field. For more information, refer to [[wiki:UIE-uxml-element-BoundsIntField|UXML element BoundsIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/BoundsIntField.png")]
     public class BoundsIntField : BaseField<BoundsInt>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

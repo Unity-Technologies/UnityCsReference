@@ -31,9 +31,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string s_LocalizedMultipleTitle = L10n.Tr("{0} Package Manifests");
         private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest");
 
-        private const float kMinHeightDescriptionScrollView = 96f;
-        private const long kMaxVersion = 999999999L;
-        private const long kRecommendedMaxVersion = 999999L;
+        private const float k_MinHeightDescriptionScrollView = 96f;
+        private const long k_MaxVersion = 999999999L;
+        private const long k_RecommendedMaxVersion = 999999L;
+
+        private const string k_ManifestFieldName = "name";
+        private const string k_ManifestFieldPackageName = "packageName";
+        private const string k_ManifestFieldVersion = "version";
+        private const string k_ManifestFieldDisplayName = "displayName";
+        private const string k_ManifestFieldDescription = "description";
+        private const string k_ManifestFieldType = "type";
+        private const string k_ManifestFieldDependencies = "dependencies";
+        private const string k_ManifestFieldHideEditor = "hideInEditor";
+        private const string k_ManifestFieldUnity = "unity";
+        private const string k_ManifestFieldUnityRelease = "unityRelease";
+        private const string k_ManifestFieldDocumentationUrl = "documentationUrl";
+        private const string k_ManifestFieldLicensesUrl = "licensesUrl";
+        private const string k_ManifestFieldChangelogUrl = "changelogUrl";
+        private const string k_ManifestFieldAuthor = "author";
+        private const string k_ManifestFieldUrl = "url";
+        private const string k_ManifestFieldEmail = "email";
+
 
         private static List<string> s_MajorUnityVersions;
         private static List<string> MajorUnityVersions
@@ -69,10 +87,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         class PackageUnityVersion
         {
-            public bool isEnable;
+            public bool enabled;
             public string major;
             public string minor;
             public string release;
+        }
+
+        [Serializable]
+        class PackageAuthor
+        {
+            public bool enabled;
+            public string name;
+            public string url;
+            public string email;
         }
 
         [Serializable]
@@ -93,7 +120,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             public string description;
             public string type;
             public AdvancedSettings settings = new AdvancedSettings();
-            public PackageUnityVersion unity = new PackageUnityVersion();
+            public PackageAuthor author = new PackageAuthor();
+            public PackageUnityVersion unityVersion = new PackageUnityVersion();
+            public string documentationUrl;
+            public string licensesUrl;
+            public string changelogUrl;
         }
 
         [Serializable]
@@ -119,12 +150,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public static readonly GUIContent visibility = EditorGUIUtility.TrTextContent("Visibility in Editor");
 
-            public static readonly GUIContent unity = EditorGUIUtility.TrTextContent("Minimal Unity Version");
+            public static readonly GUIContent author = EditorGUIUtility.TrTextContent("Author", "Author information.");
+            public static readonly GUIContent authorName = EditorGUIUtility.TrTextContent("Name", "Author name.");
+            public static readonly GUIContent authorUrl = EditorGUIUtility.TrTextContent("URL", "Author's website.");
+            public static readonly GUIContent authorEmail = EditorGUIUtility.TrTextContent("Email", "Author's email address.");
+
+            public static readonly GUIContent unityVersion = EditorGUIUtility.TrTextContent("Minimum Unity version");
             public static readonly GUIContent unityMajor = EditorGUIUtility.TrTextContent("Major", "Major version of Unity");
             public static readonly GUIContent unityMinor = EditorGUIUtility.TrTextContent("Minor", "Minor version of Unity");
             public static readonly GUIContent unityRelease = EditorGUIUtility.TrTextContent("Release", "Specific release (ex: 0a9)");
 
-            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Brief Description");
+            public static readonly GUIContent documentationUrl = EditorGUIUtility.TrTextContent("Documentation URL", "Documentation URL.");
+            public static readonly GUIContent licensesUrl = EditorGUIUtility.TrTextContent("Licenses URL", "Licenses URL.");
+            public static readonly GUIContent changelogUrl = EditorGUIUtility.TrTextContent("Changelog URL", "Changelog URL.");
+
+            public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Brief description");
 
             public static readonly GUIContent dependencies = EditorGUIUtility.TrTextContent("Dependencies");
             public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Must be lowercase");
@@ -154,6 +194,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SerializedProperty m_OrganizationName;
         private SerializedProperty m_DisplayName;
         private SerializedProperty m_Version;
+        private SerializedProperty m_AuthorEnabled;
+        private SerializedProperty m_AuthorName;
+        private SerializedProperty m_AuthorUrl;
+        private SerializedProperty m_AuthorEmail;
         private SerializedProperty m_UnityVersionEnabled;
         private SerializedProperty m_UnityMajor;
         private SerializedProperty m_UnityMinor;
@@ -162,6 +206,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SerializedProperty m_Type;
         private SerializedProperty m_Advanced;
         private SerializedProperty m_Visibility;
+        private SerializedProperty m_DocumentationUrl;
+        private SerializedProperty m_LicensesUrl;
+        private SerializedProperty m_ChangelogUrl;
 
         private bool isFeatureSet => m_Type?.stringValue == "feature";
 
@@ -209,15 +256,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OrganizationName = extraDataSerializedObject.FindProperty("info.packageName.organizationName");
             m_DisplayName = extraDataSerializedObject.FindProperty("info.displayName");
             m_Version = extraDataSerializedObject.FindProperty("info.version");
-            m_UnityVersionEnabled = extraDataSerializedObject.FindProperty("info.unity.isEnable");
-            m_UnityMajor = extraDataSerializedObject.FindProperty("info.unity.major");
-            m_UnityMinor = extraDataSerializedObject.FindProperty("info.unity.minor");
-            m_UnityRelease = extraDataSerializedObject.FindProperty("info.unity.release");
+            m_AuthorEnabled = extraDataSerializedObject.FindProperty("info.author.enabled");
+            m_AuthorName = extraDataSerializedObject.FindProperty("info.author.name");
+            m_AuthorUrl = extraDataSerializedObject.FindProperty("info.author.url");
+            m_AuthorEmail = extraDataSerializedObject.FindProperty("info.author.email");
+            m_UnityVersionEnabled = extraDataSerializedObject.FindProperty("info.unityVersion.enabled");
+            m_UnityMajor = extraDataSerializedObject.FindProperty("info.unityVersion.major");
+            m_UnityMinor = extraDataSerializedObject.FindProperty("info.unityVersion.minor");
+            m_UnityRelease = extraDataSerializedObject.FindProperty("info.unityVersion.release");
             m_Description = extraDataSerializedObject.FindProperty("info.description");
+            m_DocumentationUrl = extraDataSerializedObject.FindProperty("info.documentationUrl");
+            m_LicensesUrl = extraDataSerializedObject.FindProperty("info.licensesUrl");
+            m_ChangelogUrl = extraDataSerializedObject.FindProperty("info.changelogUrl");
             m_Type = extraDataSerializedObject.FindProperty("info.type");
             m_Advanced = extraDataSerializedObject.FindProperty("info.settings");
             m_Visibility = extraDataSerializedObject.FindProperty("info.settings.visibility");
-
             m_DependenciesList = new ReorderableList(extraDataSerializedObject,
                 extraDataSerializedObject.FindProperty("dependencies"), true, false, true, true)
             {
@@ -254,8 +307,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var list = m_DependenciesList.serializedProperty;
             var dependency = list.GetArrayElementAtIndex(index);
-            var packageName = dependency.FindPropertyRelative("packageName");
-            var version = dependency.FindPropertyRelative("version");
+            var packageName = dependency.FindPropertyRelative(k_ManifestFieldPackageName);
+            var version = dependency.FindPropertyRelative(k_ManifestFieldVersion);
 
             var w = rect.width;
             if (!isFeatureSet)
@@ -315,14 +368,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 EditorGUILayout.PropertyField(m_Name, Styles.name);
-                m_OrganizationName.stringValue = SanitizePackageName(EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames));
+                m_OrganizationName.stringValue = PackageSanitizer.SanitizePackageName(EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames));
                 EditorGUILayout.PropertyField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.PropertyField(m_Version, Styles.version);
+                EditorGUILayout.PropertyField(m_DocumentationUrl, Styles.documentationUrl);
+                EditorGUILayout.PropertyField(m_LicensesUrl, Styles.licensesUrl);
+                EditorGUILayout.PropertyField(m_ChangelogUrl, Styles.changelogUrl);
 
+                // Add a space separator
+                GUILayout.Space(10);
+                EditorGUILayout.PropertyField(m_AuthorEnabled, Styles.author);
+                if (m_AuthorEnabled.boolValue)
+                {
+                    EditorGUILayout.PropertyField(m_AuthorName, Styles.authorName);
+                    EditorGUILayout.PropertyField(m_AuthorUrl, Styles.authorUrl);
+                    EditorGUILayout.PropertyField(m_AuthorEmail, Styles.authorEmail);
+                }
                 if (isFeatureSet)
                     return;
 
-                EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
+                // Add a space separator
+                GUILayout.Space(10);
+                EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unityVersion);
                 if (m_UnityVersionEnabled.boolValue)
                 {
                     EditorGUI.showMixedValue = m_UnityMajor.hasMultipleDifferentValues;
@@ -338,6 +405,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         EditorGUILayout.TextField(Styles.unityRelease, m_UnityRelease.stringValue);
                     EditorGUI.showMixedValue = false;
                 }
+                // Add a space separator
+                GUILayout.Space(10);
             }
         }
 
@@ -356,7 +425,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition, GUILayout.MinHeight(kMinHeightDescriptionScrollView)))
+                using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(descriptionScrollViewPosition, GUILayout.MinHeight(k_MinHeightDescriptionScrollView)))
                 {
                     descriptionScrollViewPosition = scrollView.scrollPosition;
 
@@ -367,6 +436,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                         DoPackageDescriptionLabel();
                 }
+                // Add a space separator
+                GUILayout.Space(10);
             }
 
             GUI.enabled = previousEnabled;
@@ -515,16 +586,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageState.dependencies = new List<PackageDependency>();
                 packageState.info = new PackageInformation();
                 packageState.isValidFile = info != null &&
-                    info.ContainsKey("name") && info["name"] is string &&
-                    info.ContainsKey("version") && info["version"] is string;
+                    info.TryGetValue(k_ManifestFieldName, out var pkgName) && pkgName is string &&
+                    info.TryGetValue(k_ManifestFieldVersion, out var version) && version is string;
 
 
                 if (packageState.isValidFile)
                 {
-                    if (info.ContainsKey("displayName") && info["displayName"] is string)
-                        packageState.info.displayName = (string)info["displayName"];
+                    if (info.TryGetValue(k_ManifestFieldDisplayName, out var displayName) && displayName is string displayNameString)
+                        packageState.info.displayName = displayNameString;
 
-                    packageState.info.packageName.completeName = info["name"] as string;
+                    packageState.info.packageName.completeName = info[k_ManifestFieldName] as string;
 
                     var packageNameSplit = packageState.info.packageName.completeName.Split('.');
                     var packageNameSplitCount = packageNameSplit.Count();
@@ -546,53 +617,75 @@ namespace UnityEditor.PackageManager.UI.Internal
                         packageState.info.packageName.name = packageState.info.packageName.completeName;
 
 
-                    packageState.info.version = info["version"] as string;
+                    packageState.info.version = info[k_ManifestFieldVersion] as string;
 
-                    if (info.ContainsKey("description") && info["description"] is string)
-                        packageState.info.description = (string)info["description"];
+                    if (info.TryGetValue(k_ManifestFieldDescription, out var description) && description is string descriptionString)
+                        packageState.info.description = descriptionString;
 
-                    if (info.ContainsKey("type") && info["type"] is string)
-                        packageState.info.type = (string)info["type"];
+                    if (info.TryGetValue(k_ManifestFieldType, out var type) && type is string typeString)
+                        packageState.info.type = typeString;
 
-                    if (info.ContainsKey("hideInEditor") && info["hideInEditor"] is bool)
-                        packageState.info.settings.visibility = (bool)info["hideInEditor"] ? PackageVisibility.AlwaysHidden : PackageVisibility.AlwaysVisible;
+                    if (info.TryGetValue(k_ManifestFieldHideEditor, out var hideInEditor) && hideInEditor is bool hideInEditorValue)
+                        packageState.info.settings.visibility = hideInEditorValue ? PackageVisibility.AlwaysHidden : PackageVisibility.AlwaysVisible;
                     else
                         packageState.info.settings.visibility = PackageVisibility.DefaultVisibility;
 
-                    if (info.ContainsKey("unity") && info["unity"] is string)
+                    if (info.TryGetValue(k_ManifestFieldAuthor, out var value))
                     {
-                        var splitVersions = ((string)info["unity"]).Split('.');
-                        packageState.info.unity = new PackageUnityVersion
+                        var authorInfo = value as Dictionary<string, object>;
+                        packageState.info.author = new PackageAuthor
                         {
-                            isEnable = true,
+                            enabled = true,
+                            name = authorInfo.TryGetValue(k_ManifestFieldName, out var name) ? name as string : string.Empty,
+                            url = authorInfo.TryGetValue(k_ManifestFieldUrl, out var url) ? url as string : string.Empty,
+                            email = authorInfo.TryGetValue(k_ManifestFieldEmail, out var email) ? email as string : string.Empty
+                        };
+                    }
+                    else
+                    {
+                        packageState.info.author = new PackageAuthor
+                        {
+                            enabled = false,
+                            name = string.Empty,
+                            url = string.Empty,
+                            email = string.Empty
+                        };
+                    }
+
+                    if (info.TryGetValue(k_ManifestFieldUnity, out var unity) && unity is string unityString)
+                    {
+                        var splitVersions = unityString.Split('.');
+                        packageState.info.unityVersion = new PackageUnityVersion
+                        {
+                            enabled = true,
                             major = splitVersions[0],
                             minor = splitVersions.Length > 1 ? splitVersions[1] : "",
                             release = ""
                         };
 
-                        if (info.ContainsKey("unityRelease") && info["unityRelease"] is string)
-                            packageState.info.unity.release = (string)info["unityRelease"];
+                        if (info.TryGetValue(k_ManifestFieldUnityRelease, out var unityRelease) && unityRelease is string unityReleaseString)
+                            packageState.info.unityVersion.release = unityReleaseString;
                     }
                     else
                     {
                         var unityVersion = InternalEditorUtility.GetUnityVersion();
-                        packageState.info.unity = new PackageUnityVersion
+                        packageState.info.unityVersion = new PackageUnityVersion
                         {
-                            isEnable = false,
+                            enabled = false,
                             major = unityVersion.Major.ToString(),
                             minor = unityVersion.Minor.ToString(),
                             release = ""
                         };
                     }
 
-                    if (info.ContainsKey("dependencies"))
+                    if (info.TryGetValue(k_ManifestFieldDependencies, out var dependencies))
                     {
-                        if (!(info["dependencies"] is IDictionary))
+                        if (dependencies is not IDictionary)
                         {
                             packageState.isValidFile = false;
                             return;
                         }
-                        var dependenciesDictionary = (IDictionary)info["dependencies"];
+                        var dependenciesDictionary = (IDictionary) dependencies;
                         foreach (var packageName in dependenciesDictionary.Keys)
                         {
                             var dependency = new PackageDependency
@@ -603,6 +696,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                             packageState.dependencies.Add(dependency);
                         }
                     }
+
+                    if (info.TryGetValue(k_ManifestFieldDocumentationUrl, out var docUrl) && docUrl is string docUrlString)
+                        packageState.info.documentationUrl = docUrlString;
+
+                    if (info.TryGetValue(k_ManifestFieldLicensesUrl, out var licenseUrl) && licenseUrl is string licenseUrlString)
+                        packageState.info.licensesUrl = licenseUrlString;
+
+                    if (info.TryGetValue(k_ManifestFieldChangelogUrl, out var changelogUrl) && changelogUrl is string changelogUrlString)
+                        packageState.info.changelogUrl = changelogUrlString;
+
                 }
             }
             catch (System.IO.IOException)
@@ -637,48 +740,70 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var completePackageName = BuildCompletePackageName(packageState.info.packageName);
             if (!string.IsNullOrWhiteSpace(completePackageName))
-                json["name"] = completePackageName;
+                json[k_ManifestFieldName] = completePackageName;
 
             if (!string.IsNullOrWhiteSpace(packageState.info.displayName))
-                json["displayName"] = packageState.info.displayName.Trim();
+                json[k_ManifestFieldDisplayName] = packageState.info.displayName.Trim();
             else
-                json.Remove("displayName");
+                json.Remove(k_ManifestFieldDisplayName);
 
-            json["version"] = packageState.info.version;
+            json[k_ManifestFieldVersion] = packageState.info.version;
 
             if (!string.IsNullOrWhiteSpace(packageState.info.description))
-                json["description"] = packageState.info.description.Trim();
+                json[k_ManifestFieldDescription] = packageState.info.description.Trim();
             else
-                json.Remove("description");
+                json.Remove(k_ManifestFieldDescription);
 
             if (!string.IsNullOrWhiteSpace(packageState.info.type))
-                json["type"] = packageState.info.type.Trim();
+                json[k_ManifestFieldType] = packageState.info.type.Trim();
             else
-                json.Remove("type");
+                json.Remove(k_ManifestFieldType);
 
             if (packageState.info.settings.visibility == PackageVisibility.DefaultVisibility)
-                json.Remove("hideInEditor");
+                json.Remove(k_ManifestFieldHideEditor);
             else
-                json["hideInEditor"] = packageState.info.settings.visibility == PackageVisibility.AlwaysHidden;
+                json[k_ManifestFieldHideEditor] = packageState.info.settings.visibility == PackageVisibility.AlwaysHidden;
 
-            if (packageState.info.unity.isEnable)
+            if (packageState.info.author.enabled)
             {
-                if (!string.IsNullOrWhiteSpace(packageState.info.unity.major) &&
-                    !string.IsNullOrWhiteSpace(packageState.info.unity.minor))
-                {
-                    json["unity"] = string.Join(".",
-                        new[] { packageState.info.unity.major.Trim(), packageState.info.unity.minor.Trim() });
+                var authorInfo = new Dictionary<string, object>();
+                if (!string.IsNullOrWhiteSpace(packageState.info.author.name))
+                    authorInfo[k_ManifestFieldName] = packageState.info.author.name.Trim();
+                else
+                    authorInfo.Remove(k_ManifestFieldName);
+                if (!string.IsNullOrWhiteSpace(packageState.info.author.url))
+                    authorInfo[k_ManifestFieldUrl] = packageState.info.author.url.Trim();
+                else
+                    authorInfo.Remove(k_ManifestFieldUrl);
+                if (!string.IsNullOrWhiteSpace(packageState.info.author.email))
+                    authorInfo[k_ManifestFieldEmail] = packageState.info.author.email.Trim();
+                else
+                    authorInfo.Remove(k_ManifestFieldEmail);
+                json[k_ManifestFieldAuthor] = authorInfo;
+            }
+            else
+            {
+                json.Remove(k_ManifestFieldAuthor);
+            }
 
-                    if (!string.IsNullOrWhiteSpace(packageState.info.unity.release))
-                        json["unityRelease"] = packageState.info.unity.release.Trim();
+            if (packageState.info.unityVersion.enabled)
+            {
+                if (!string.IsNullOrWhiteSpace(packageState.info.unityVersion.major) &&
+                    !string.IsNullOrWhiteSpace(packageState.info.unityVersion.minor))
+                {
+                    json[k_ManifestFieldUnity] = string.Join(".",
+                        new[] { packageState.info.unityVersion.major.Trim(), packageState.info.unityVersion.minor.Trim() });
+
+                    if (!string.IsNullOrWhiteSpace(packageState.info.unityVersion.release))
+                        json[k_ManifestFieldUnityRelease] = packageState.info.unityVersion.release.Trim();
                     else
-                        json.Remove("unityRelease");
+                        json.Remove(k_ManifestFieldUnityRelease);
                 }
             }
             else
             {
-                json.Remove("unity");
-                json.Remove("unityRelease");
+                json.Remove(k_ManifestFieldUnity);
+                json.Remove(k_ManifestFieldUnityRelease);
             }
 
             if (packageState.dependencies.Count > 0)
@@ -690,10 +815,25 @@ namespace UnityEditor.PackageManager.UI.Internal
                         dependencies.Add(dependency.packageName.Trim(), isFeatureSet ? "default" : dependency.version);
                 }
 
-                json["dependencies"] = dependencies;
+                json[k_ManifestFieldDependencies] = dependencies;
             }
             else
-                json.Remove("dependencies");
+                json.Remove(k_ManifestFieldDependencies);
+
+            if (!string.IsNullOrWhiteSpace(packageState.info.documentationUrl))
+                json[k_ManifestFieldDocumentationUrl] = packageState.info.documentationUrl.Trim();
+            else
+                json.Remove(k_ManifestFieldDocumentationUrl);
+
+            if (!string.IsNullOrWhiteSpace(packageState.info.licensesUrl))
+                json[k_ManifestFieldLicensesUrl] = packageState.info.licensesUrl.Trim();
+            else
+                json.Remove(k_ManifestFieldLicensesUrl);
+
+            if (!string.IsNullOrWhiteSpace(packageState.info.changelogUrl))
+                json[k_ManifestFieldChangelogUrl] = packageState.info.changelogUrl.Trim();
+            else
+                json.Remove(k_ManifestFieldChangelogUrl);
 
             try
             {
@@ -703,6 +843,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             catch (System.IO.IOException)
             {
                 Debug.Log($"Couldn't write package manifest file {assetPath}.");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Debug.LogError($"Access denied when accessing package manifest file {assetPath}. Please make sure the file is not read-only.");
             }
         }
 
@@ -771,28 +915,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                if (!long.TryParse(majorStr, out var major) || major > kMaxVersion ||
-                    !long.TryParse(minorStr, out var minor) || minor > kMaxVersion ||
-                    !long.TryParse(patchStr, out var patch) || patch > kMaxVersion)
+                if (!long.TryParse(majorStr, out var major) || major > k_MaxVersion ||
+                    !long.TryParse(minorStr, out var minor) || minor > k_MaxVersion ||
+                    !long.TryParse(patchStr, out var patch) || patch > k_MaxVersion)
                 {
                     if (string.IsNullOrEmpty(packageName))
-                        errorMessages.Add($"Each component of version '{version}' must be an integer less than or equal to {kMaxVersion}.");
+                        errorMessages.Add($"Each component of version '{version}' must be an integer less than or equal to {k_MaxVersion}.");
                     else
-                        errorMessages.Add($"Each component of version '{version}' for dependency '{packageName}' must be an integer less than or equal to {kMaxVersion}.");
+                        errorMessages.Add($"Each component of version '{version}' for dependency '{packageName}' must be an integer less than or equal to {k_MaxVersion}.");
                 }
-                else if (major > kRecommendedMaxVersion || minor > kRecommendedMaxVersion || patch > kRecommendedMaxVersion)
+                else if (major > k_RecommendedMaxVersion || minor > k_RecommendedMaxVersion || patch > k_RecommendedMaxVersion)
                 {
                     if (string.IsNullOrEmpty(packageName))
-                        warningMessages.Add($"Consider to use an integer less than or equal to {kRecommendedMaxVersion} for each component of version '{version}'.");
+                        warningMessages.Add($"Consider to use an integer less than or equal to {k_RecommendedMaxVersion} for each component of version '{version}'.");
                     else
-                        warningMessages.Add($"Consider to use an integer less than or equal to {kRecommendedMaxVersion} for each component of version '{version}' for dependency '{packageName}'.");
+                        warningMessages.Add($"Consider to use an integer less than or equal to {k_RecommendedMaxVersion} for each component of version '{version}' for dependency '{packageName}'.");
                 }
             }
-        }
-
-        public static string SanitizePackageName(string value)
-        {
-            return Regex.Replace(value ?? string.Empty, @"[^a-zA-Z\-_.\d]", "").TrimEnd('.').ToLower(CultureInfo.InvariantCulture);
         }
     }
 }

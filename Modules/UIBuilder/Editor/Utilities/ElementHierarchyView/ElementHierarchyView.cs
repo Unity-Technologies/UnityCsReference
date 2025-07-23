@@ -577,7 +577,7 @@ namespace Unity.UI.Builder
 
             // Show name of uxml file if this element is a TemplateContainer.
             var path = documentElement.GetProperty(BuilderConstants.LibraryItemLinkedTemplateContainerPathVEPropertyName) as string;
-            Texture2D itemIcon;
+            Background itemIcon;
             if (documentElement is TemplateContainer && !string.IsNullOrEmpty(path))
             {
                 var pathStr = Path.GetFileName(path);
@@ -596,9 +596,7 @@ namespace Unity.UI.Builder
             // Element icon.
             var icon = new VisualElement();
             icon.AddToClassList(BuilderConstants.ExplorerItemIconClassName);
-            var styleBackgroundImage = icon.style.backgroundImage;
-            styleBackgroundImage.value = new Background { texture = itemIcon };
-            icon.style.backgroundImage = styleBackgroundImage;
+            icon.style.backgroundImage = itemIcon;
             labelCont.Insert(0, icon);
 
             // Register right-click events for context menu actions.
@@ -823,7 +821,7 @@ namespace Unity.UI.Builder
 
         void HighlightAllElementsMatchingSelectorElement(VisualElement selectorElement)
         {
-            var selector = selectorElement.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+            var selector = BuilderSharedStyles.GetSelectorProperty(selectorElement);
             if (selector == null)
                 return;
 
@@ -887,9 +885,7 @@ namespace Unity.UI.Builder
                     libraryIcon = BuilderLibraryContent.GetTypeDarkSkinLibraryIcon(documentElement.GetType());
                 }
 
-                var styleBackgroundImage = icon.style.backgroundImage;
-                styleBackgroundImage.value = new Background { texture = libraryIcon };
-                icon.style.backgroundImage = styleBackgroundImage;
+                icon.style.backgroundImage = libraryIcon;
             });
 
             element.RegisterCallback<ClickEvent>(evt =>

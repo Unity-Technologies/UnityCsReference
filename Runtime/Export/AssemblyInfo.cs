@@ -73,6 +73,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.DrivenProperties.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.ColorPicker")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.TreeViewControl")]
 
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")]

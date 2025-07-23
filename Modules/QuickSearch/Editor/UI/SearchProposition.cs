@@ -92,6 +92,7 @@ namespace UnityEditor.Search
 
     public readonly struct SearchProposition : IEquatable<SearchProposition>, IComparable<SearchProposition>
     {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal readonly string label;
         internal readonly string replacement;
         internal readonly string help;

@@ -26,6 +26,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string description => m_Description ?? string.Empty;
 
         [SerializeField]
+        protected string m_MinimumUnityVersion;
+        public string minimumUnityVersion => m_MinimumUnityVersion ?? string.Empty;
+
+        [SerializeField]
         protected string m_VersionString;
         protected SemVersion? m_Version;
         public virtual SemVersion? version => m_Version;
@@ -95,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract string uniqueId { get; }
         public abstract string packageId { get; }
         public abstract string category { get; }
-        public abstract string author { get; }
+        public abstract AuthorInfo author { get; }
         public abstract bool isInstalled { get; }
         public abstract bool isFullyFetched { get; }
         public abstract bool isDirectDependency { get; }
@@ -104,7 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract long uploadId { get; }
 
         public bool IsDifferentVersionThanRequested
-            => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
+            => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Tarball | PackageTag.Custom) &&
                 versionInManifest != versionString;
 
         // Request but overridden could happen because other packages/features depend on this version of the package,

@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId alignContentProperty = "style." + nameof(IStyle.alignContent);
             internal static readonly BindingId alignItemsProperty = "style." + nameof(IStyle.alignItems);
             internal static readonly BindingId alignSelfProperty = "style." + nameof(IStyle.alignSelf);
+            internal static readonly BindingId aspectRatioProperty = "style." + nameof(IStyle.aspectRatio);
             internal static readonly BindingId backgroundColorProperty = "style." + nameof(IStyle.backgroundColor);
             internal static readonly BindingId backgroundImageProperty = "style." + nameof(IStyle.backgroundImage);
             internal static readonly BindingId backgroundPositionXProperty = "style." + nameof(IStyle.backgroundPositionX);

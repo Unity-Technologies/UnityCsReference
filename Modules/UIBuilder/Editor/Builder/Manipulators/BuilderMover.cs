@@ -87,7 +87,7 @@ namespace Unity.UI.Builder
             // Make sure our delta is a whole number so we don't end up with non-whole pixel values.
             delta = Mathf.Ceil(delta / canvas.zoomScale);
 
-            SetStyleSheetValue(trackedStyle, onStartDragPrimary + delta);
+            SetInlineFloatAsDimensionValue(trackedStyle, onStartDragPrimary + delta);
 
             var styleName = GetStyleName(trackedStyle);
             m_ScratchChangeList.Add(styleName);

@@ -236,14 +236,19 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void SetupReferences()
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void SetupReferences()
         {
             if (complexSelectors == null || rules == null || (complexSelectors.Length == 0 && rules.Length == 0))
                 return;
 
+            foreach (var selector in complexSelectors)
+                selector.nextInTable = null;
+
             // Setup rules and properties for var
             foreach (var rule in rules)
             {
+                rule.customPropertiesCount = 0;
                 foreach (var property in rule.properties)
                 {
                     if (StringUtils.StartsWith(property.name, kCustomPropertyMarker))

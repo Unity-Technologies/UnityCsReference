@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -22,9 +23,39 @@ internal class ATGTextJobSystem
         public NativeTextInfo textInfo;
         public bool success;
 
+        public List<Texture2D> atlases;
+        public List<float> sdfScales;
+        public List<NativeSlice<Vertex>> vertices;
+        public List<NativeSlice<ushort>> indices;
+        public List<GlyphRenderMode> renderModes;
+        public List<List<List<int>>> textElementIndicesByMesh;
+        public List<bool> hasMultipleColorsByMesh;
+        public Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset;
+        public bool hasMissingGlyphs;
+
+        public void AcquirePooledData()
+        {
+            missingGlyphsPerFontAsset = s_MissingGlyphsPool.Get();
+            textElementIndicesByMesh = s_TextElementIndicesByMeshPool.Get();
+            hasMultipleColorsByMesh = s_HasMultipleColorsByMeshPool.Get();
+            atlases = s_AtlasesPool.Get();
+            vertices = s_VerticesPool.Get();
+            indices = s_IndicesPool.Get();
+            renderModes = s_RenderModesPool.Get();
+            sdfScales = s_SdfScalesPool.Get();
+        }
+
         public void Release()
         {
             s_JobDataPool.Release(this);
+            s_AtlasesPool.Release(atlases);
+            s_SdfScalesPool.Release(sdfScales);
+            s_VerticesPool.Release(vertices);
+            s_IndicesPool.Release(indices);
+            s_RenderModesPool.Release(renderModes);
+            s_MissingGlyphsPool.Release(missingGlyphsPerFontAsset);
+            s_TextElementIndicesByMeshPool.Release(textElementIndicesByMesh);
+            s_HasMultipleColorsByMeshPool.Release(hasMultipleColorsByMesh);
         }
     }
     GCHandle textJobDatasHandle;
@@ -34,7 +65,86 @@ internal class ATGTextJobSystem
     static UnityEngine.Pool.ObjectPool<ManagedJobData> s_JobDataPool =
         new(() => new ManagedJobData(), null, inst => inst.textElement = null, null, false);
 
+    static UnityEngine.Pool.ObjectPool<List<Texture2D>> s_AtlasesPool = new(() =>
+    {
+        var inst = new List<Texture2D>();
+        return inst;
+    }, null, list => list.Clear(), null, false);
+
+    static UnityEngine.Pool.ObjectPool<List<float>> s_SdfScalesPool = new(() =>
+    {
+        var inst = new List<float>();
+        return inst;
+    }, null, list => list.Clear(), null, false);
+
+    static UnityEngine.Pool.ObjectPool<List<GlyphRenderMode>> s_RenderModesPool = new(() =>
+    {
+        var inst = new List<GlyphRenderMode>();
+        return inst;
+    }, null, list => list.Clear(), null, false);
+
+    static UnityEngine.Pool.ObjectPool<List<NativeSlice<Vertex>>> s_VerticesPool = new(() =>
+    {
+        var inst = new List<NativeSlice<Vertex>>();
+        return inst;
+    }, null, list => list.Clear(), null, false);
+
+    static UnityEngine.Pool.ObjectPool<List<NativeSlice<ushort>>> s_IndicesPool = new(() =>
+    {
+        var inst = new List<NativeSlice<ushort>>();
+        return inst;
+    }, null, list => list.Clear(), null, false);
+
+    static UnityEngine.Pool.ObjectPool<List<List<List<int>>>> s_TextElementIndicesByMeshPool = new(() =>
+    {
+        var inst = new List<List<List<int>>>();
+        return inst;
+    },  null,
+        (listOfMeshes) =>
+        {
+            foreach (var listOfAtlases in listOfMeshes)
+            {
+                foreach (var listOfIndices in listOfAtlases)
+                {
+                    listOfIndices.Clear();
+                }
+            }
+        }, null, false);
+
+    static UnityEngine.Pool.ObjectPool<List<bool>> s_HasMultipleColorsByMeshPool = new(() =>
+    {
+        var inst = new List<bool> ();
+        return inst;
+    }, null, list => list.Clear(), null, false);
+
+    static UnityEngine.Pool.ObjectPool<Dictionary<int, HashSet<uint>>> s_MissingGlyphsPool = new(() =>
+    {
+        var inst = new Dictionary<int, HashSet<uint>>();
+        return inst;
+    },  null,
+        (dict) =>
+        {
+            foreach (var hashSet in dict.Values)
+            {
+                hashSet.Clear();
+            }
+    },  null, false);
+
+    static UnityEngine.Pool.ObjectPool<Dictionary<int, HashSet<uint>>> s_AggregatedMissingGlyphsPool = new(() =>
+    {
+        var inst = new Dictionary<int, HashSet<uint>>();
+        return inst;
+    }, null,
+        (dict) =>
+        {
+            foreach (var hashSet in dict.Values)
+            {
+                hashSet.Clear();
+            }
+        }, null, false);
+
     internal MeshGenerationCallback m_GenerateTextJobifiedCallback;
+    internal MeshGenerationCallback m_PopulateGlyphsCallback;
     internal MeshGenerationCallback m_AddDrawEntriesCallback;
 
     static readonly ProfilerMarker k_GenerateTextMarker = new("ATGTextJob.GenerateText");
@@ -45,6 +155,7 @@ internal class ATGTextJobSystem
     public ATGTextJobSystem()
     {
         m_GenerateTextJobifiedCallback = GenerateTextJobified;
+        m_PopulateGlyphsCallback = PopulateGlyphs;
         m_AddDrawEntriesCallback = AddDrawEntries;
     }
 
@@ -71,19 +182,49 @@ internal class ATGTextJobSystem
     struct GenerateTextJobData : IJobParallelFor
     {
         public GCHandle managedJobDataHandle;
+        [ReadOnly] public TempMeshAllocator alloc;
 
         public void Execute(int index)
         {
             k_GenerateTextMarker.Begin();
             var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
             ManagedJobData managedJobData = managedJobDatas[index];
-            var te = managedJobData.textElement;
-            var shouldGenerateNativeTextSettings = te.computedStyle.unityFontDefinition.fontAsset != null;
-            if (te.PostProcessTextVertices != null)
-                te.uitkTextHandle.CacheTextGenerationInfo();
+            var ve = managedJobData.textElement;
+            var shouldGenerateNativeTextSettings = ve.computedStyle.unityFontDefinition.fontAsset != null;
+            if (ve.PostProcessTextVertices != null)
+                ve.uitkTextHandle.CacheTextGenerationInfo();
+                
+            (managedJobData.textInfo, managedJobData.success, bool uvsAreGenerated) = ve.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
 
-            (managedJobData.textInfo, managedJobData.success) = te.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
+            managedJobData.hasMissingGlyphs = managedJobData.textElement.uitkTextHandle.HasMissingGlyphs(managedJobData.textInfo, ref managedJobData.missingGlyphsPerFontAsset);
+
+            // No missing glyphs means we do not need to return to main thread before converting to UIR
+            if (!managedJobData.hasMissingGlyphs)
+            {
+                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh, uvsAreGenerated);
+                ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
+            }   
+
             k_GenerateTextMarker.End();
+        }
+    }
+
+    struct ConvertToUIRVertexJobData : IJobParallelFor
+    {
+        public GCHandle managedJobDataHandle;
+        [ReadOnly] public TempMeshAllocator alloc;
+
+        public void Execute(int index)
+        {
+            var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
+            ManagedJobData managedJobData = managedJobDatas[index];
+            var ve = managedJobData.textElement;
+
+            if (managedJobData.hasMissingGlyphs)
+            {
+                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh, false);
+                ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
+            }
         }
     }
 
@@ -91,9 +232,11 @@ internal class ATGTextJobSystem
     {
         k_ATGTextJobMarker.Begin();
 
+        mgc.GetTempMeshAllocator(out var alloc);
         var textJob = new GenerateTextJobData
         {
             managedJobDataHandle = textJobDatasHandle,
+            alloc = alloc
         };
 
         if (textJobDatas.Count > 0)
@@ -101,7 +244,7 @@ internal class ATGTextJobSystem
 
         FontAsset.CreateHbFaceIfNeeded();
 
-        for(int i = 0; i < textJobDatas.Count; i++)
+        for (int i = 0; i < textJobDatas.Count; i++)
         {
             var textData = textJobDatas[i];
             var textElement = textData.textElement;
@@ -111,30 +254,88 @@ internal class ATGTextJobSystem
             // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
             if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
                 textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+            textData.AcquirePooledData();
         }
 
         if (k_IsMultiThreaded)
         {
             var jobHandle = textJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
-            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
+            mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, true);
         }
         else
         {
             for (int i = 0; i < textJobDatas.Count; i++)
                 textJob.Execute(i);
-            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, false);
+            mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, false);
         }
 
         k_ATGTextJobMarker.End();
     }
 
+    static List<uint> s_GlyphsToAddBuffer = new List<uint>();
+    void PopulateGlyphs(MeshGenerationContext mgc, object _)
+    {
+        Dictionary<int, HashSet<uint>> allUniqueMissingGlyphs = s_AggregatedMissingGlyphsPool.Get();
+        bool hasMissingGlyphs = false;
+        foreach (var managedJobData in textJobDatas)
+        {
+            if (!managedJobData.hasMissingGlyphs)
+                continue;
 
-    List<Texture2D> atlases = new List<Texture2D>();
-    List<float> sdfScalesArray = new List<float>();
-    List<NativeSlice<Vertex>> verticesArray = new List<NativeSlice<Vertex>>();
-    List<NativeSlice<ushort>> indicesArray = new List<NativeSlice<ushort>>();
-    List<GlyphRenderMode> renderModes = new List<GlyphRenderMode>();
+            foreach (var pair in managedJobData.missingGlyphsPerFontAsset)
+            {
+                if (pair.Value.Count == 0)
+                    continue;
+
+                hasMissingGlyphs = true;
+
+                if (!allUniqueMissingGlyphs.TryGetValue(pair.Key, out var unicodeSet))
+                {
+                    unicodeSet = new HashSet<uint>();
+                    allUniqueMissingGlyphs[pair.Key] = unicodeSet;
+                }
+
+                unicodeSet.UnionWith(pair.Value);
+            }
+        }
+
+        // No missing unicodes means we already converted our mesh to UIR
+        if (!hasMissingGlyphs)
+        {
+            s_AggregatedMissingGlyphsPool.Release(allUniqueMissingGlyphs);
+            AddDrawEntries(mgc, _);
+            return;
+        }
+            
+
+        foreach (var entry in allUniqueMissingGlyphs)
+        {
+            var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(entry.Key);
+            if (textAsset == null || textAsset is not FontAsset fa || entry.Value.Count == 0)
+                continue;
+
+            s_GlyphsToAddBuffer.Clear();
+            s_GlyphsToAddBuffer.AddRange(entry.Value);
+
+            fa.TryAddGlyphs(s_GlyphsToAddBuffer);
+        }
+
+        s_AggregatedMissingGlyphsPool.Release(allUniqueMissingGlyphs);
+        FontAsset.UpdateFontAssetsInUpdateQueue();
+
+        mgc.GetTempMeshAllocator(out var alloc);
+        var textJob = new ConvertToUIRVertexJobData
+        {
+            managedJobDataHandle = textJobDatasHandle,
+            alloc = alloc
+        };
+
+        JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
+        mgc.AddMeshGenerationJob(jobHandle);
+        mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
+    }
+
     void AddDrawEntries(MeshGenerationContext mgc, object _)
     {
         foreach (var managedJobData in textJobDatas)
@@ -142,56 +343,40 @@ internal class ATGTextJobSystem
             if (managedJobData.success)
             {
                 var textInfo = managedJobData.textInfo;
-                var te = managedJobData.textElement;
-                te.uitkTextHandle.ProcessMeshInfos(textInfo);
-                te.uitkTextHandle.UpdateATGTextEventHandler();
 
-                // Call Texture.Apply for all texture still dirty
-                // There are no other place where we are calling this to export the texture to the gpu
-                // for the ATG. This is as late as it could be right now.
+                mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
+				managedJobData.textElement.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, textInfo.meshInfos));
+                mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.atlases, managedJobData.renderModes, managedJobData.sdfScales);
+                managedJobData.textElement.OnGenerateTextOverNative(mgc);
+                managedJobData.textElement.uitkTextHandle.UpdateATGTextEventHandler();
 
-                // I am putting it here as this will only be call if an ATG-text has been modified
-                // and it will not be called when non-atg text only are modified
-                // Trying to keep the codepath separated for now.
-
-                // Finally, calling this once per text element is not optimal but the code underneath
-                // should simply return if there is nothing to apply
-                FontAsset.UpdateFontAssetsInUpdateQueue();
-
-                mgc.GetTempMeshAllocator(out var alloc);
-                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, te, atlases, verticesArray, indicesArray, renderModes, sdfScalesArray);
-
-                te.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(te, verticesArray, textInfo.meshInfos));
-
-                mgc.Begin(managedJobData.node.GetParentEntry(), te, te.renderData);
-
-                mgc.meshGenerator.DrawText(verticesArray, indicesArray, atlases, renderModes, sdfScalesArray);
-                te.OnGenerateTextOverNative(mgc);
-
-                atlases.Clear();
-                verticesArray.Clear();
-                indicesArray.Clear();
-                renderModes.Clear();
-                sdfScalesArray.Clear();
                 mgc.End();
+            }
+
+            // We don't need native informations anymore, clear the memory.
+            if (!managedJobData.textElement.uitkTextHandle.IsCachedPermanent)
+            {
+                TextGenerationInfo.Destroy(managedJobData.textElement.uitkTextHandle.textGenerationInfo);
+                managedJobData.textElement.uitkTextHandle.textGenerationInfo = IntPtr.Zero;
             }
 
             managedJobData.Release();
         }
 
         // get ready for next batch
-        hasPendingTextWork = false;
         textJobDatas.Clear();
         textJobDatasHandle.Free();
+        hasPendingTextWork = false;
     }
 
-    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, List<Texture2D> atlases, List<NativeSlice<Vertex>> verticesArray, List<NativeSlice<ushort>> indicesArray, List<GlyphRenderMode> renderModes, List<float> sdfScales)
+    static void ConvertMeshInfoToUIRVertex(Span<ATGMeshInfo> meshInfos, TempMeshAllocator alloc, TextElement visualElement, List<List<List<int>>> textElementIndicesByMesh, List<bool> hasMultipleColorsByMesh, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
     {
         float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 
         for (int i = 0; i < meshInfos.Length; i++)
         {
-            var meshInfo = meshInfos[i];
+            int atlasCount = 0;
+            ATGMeshInfo meshInfo = meshInfos[i];
             FontAsset fa = null;
             SpriteAsset sa = null;
             var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
@@ -201,11 +386,13 @@ internal class ATGTextJobSystem
             if (textAsset is FontAsset)
             {
                 fa = textAsset as FontAsset;
+                atlasCount = fa.atlasTextures.Length;
             }
             else
             {
                 isSprite = true;
                 sa = textAsset as SpriteAsset;
+                atlasCount = 1;
             }
 
             //Debug.Assert((meshInfo.textElementInfos.Length & 0b11) == 0); // Quads only
@@ -213,15 +400,15 @@ internal class ATGTextJobSystem
 
             // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
             // since we cannot store multiple colors for a given text element.
-            bool hasMultipleColors = meshInfo.hasMultipleColors;
+            bool hasMultipleColors = hasMultipleColorsByMesh[i];
             if (hasMultipleColors)
                 visualElement.renderData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
             else
                 visualElement.renderData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
 
-            for (int j = 0; j < meshInfo.textElementInfoIndicesByAtlas.Count; ++j)
+            for (int j = 0; j < atlasCount; ++j)
             {
-                var textElementInfoInAtlas = meshInfo.textElementInfoIndicesByAtlas[j];
+                var textElementInfoInAtlas = textElementIndicesByMesh[i][j];
                 int remainingVertexCount = textElementInfoInAtlas.Count * 4;
                 while (remainingVertexCount > 0)
                 {
@@ -242,7 +429,7 @@ internal class ATGTextJobSystem
 
 
                     float sdfScale = 0;
-                    if (!isSprite && !TextGeneratorUtilities.IsBitmapRendering(renderModes[^1]) && atlases[^1].format == TextureFormat.Alpha8)
+                    if (!isSprite && !TextGeneratorUtilities.IsBitmapRendering(renderModes[^1]))
                         sdfScale = fa.atlasPadding + 1;
                     sdfScales.Add(sdfScale);
 
@@ -256,7 +443,8 @@ internal class ATGTextJobSystem
                     for (int vDst = 0,vSrc = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
                     {
                         var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
-                        var tei = meshInfo.textElementInfos[textElementInfoInAtlas[vSrc]];
+                        Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
+                        var tei = textElementInfosSpan[textElementInfoInAtlas[vSrc]];
                         vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
                         vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);
                         vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont);

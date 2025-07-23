@@ -31,12 +31,12 @@ internal class DisableIfNoNetwork : DisableCondition
     }
 }
 
-internal class DisableIfInstallOrUninstallInProgress : DisableCondition
+internal class DisableIfInstallOrEmbedOrUninstallInProgress : DisableCondition
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action.");
-    public DisableIfInstallOrUninstallInProgress(IPackageOperationDispatcher operationDispatcher)
+    private static readonly string k_Tooltip = L10n.Tr("You need to wait until other install, embed or uninstall operations are finished to perform this action.");
+    public DisableIfInstallOrEmbedOrUninstallInProgress(IPackageOperationDispatcher operationDispatcher)
     {
-        active = operationDispatcher.isInstallOrUninstallInProgress;
+        active = operationDispatcher.isInstallOrUninstallInProgress || operationDispatcher.isEmbedInProgress;
         tooltip = k_Tooltip;
     }
 }

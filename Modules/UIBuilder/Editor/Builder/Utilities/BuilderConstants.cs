@@ -106,9 +106,7 @@ namespace Unity.UI.Builder
         public static readonly string StyleSelectorElementName = "__unity-selector-element";
 
         // Element Linked VE Property Names
-        public static readonly string ElementLinkedStyleSheetVEPropertyName = "__unity-ui-builder-linked-stylesheet";
         public static readonly string ElementLinkedStyleSheetIndexVEPropertyName = "__unity-ui-builder-linked-stylesheet-index";
-        public static readonly string ElementLinkedStyleSelectorVEPropertyName = "__unity-ui-builder-linked-style-selector";
         public static readonly string ElementLinkedFakeStyleSelectorVEPropertyName = "__unity-ui-builder-linked-fake-style-selector";
         public static readonly string ElementLinkedVisualTreeAssetVEPropertyName = "__unity-ui-builder-linked-visual-tree-asset";
         public static readonly string ElementLinkedVisualElementAssetVEPropertyName = "__unity-ui-builder-linked-visual-element-asset";
@@ -268,6 +266,7 @@ namespace Unity.UI.Builder
             {"align-items", "Alignment of children on the cross axis of this container."},
             {"align-self", "Similar to align-items, but only for this specific element."},
             {"all", "Allows resetting all properties with the initial keyword. Does not apply to custom USS properties."},
+            {"aspect-ratio", "Define the element’s width-to-height ratio using a preset or custom value; only applied if the element has either width or height set, not both" },
             {"background-color", "Background color to paint in the element's box."},
             {"background-image", "Background image to paint in the element's box."},
             {"background-position", "Background image position value."},

@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A SplitView that contains two resizable panes. One pane is fixed-size while the other pane has flex-grow style set to 1 to take all remaining space. The border between the panes is draggable to resize both panes. Both horizontal and vertical modes are supported. Requires exactly two child elements to operate.
     /// </summary>
+    [Icon("UIToolkit/Icons/TwoPaneSplitView.png")]
     public class TwoPaneSplitView : VisualElement
     {
         internal static readonly BindingId fixedPaneIndexProperty = nameof(fixedPaneIndex);

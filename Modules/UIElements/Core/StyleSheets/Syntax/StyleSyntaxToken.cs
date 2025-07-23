@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
     {
         public StyleSyntaxTokenType type;
         public string text;
-        public int number;
+        public float number;
 
         public StyleSyntaxToken(StyleSyntaxTokenType t)
         {
@@ -51,7 +51,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
             this.number = 0;
         }
 
-        public StyleSyntaxToken(StyleSyntaxTokenType type, int number)
+        public StyleSyntaxToken(StyleSyntaxTokenType type, float number)
         {
             this.type = type;
             this.text = null;
@@ -178,6 +178,12 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
                         break;
                     case '>':
                         m_Tokens.Add(new StyleSyntaxToken(StyleSyntaxTokenType.GreaterThan));
+                        break;
+                    case '∞':
+                        m_Tokens.Add(new StyleSyntaxToken(StyleSyntaxTokenType.Number, Mathf.Infinity));
+                        break;
+                    case '/':
+                        m_Tokens.Add(new StyleSyntaxToken(StyleSyntaxTokenType.String, syntax.Substring(i, 1)));
                         break;
                     default:
                         if (char.IsNumber(c))

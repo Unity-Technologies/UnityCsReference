@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -280,7 +281,7 @@ namespace Unity.UI.Builder
             var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(vea);
             var styleSheet = m_VisualTreeAsset.inlineSheet;
 
-            var styleProperty = styleSheet.FindLastProperty(rule, styleName);
+            var styleProperty = rule?.FindLastProperty(styleName);
             if (styleProperty == null)
                 styleProperty = styleSheet.AddProperty(rule, styleName);
 
@@ -290,18 +291,13 @@ namespace Unity.UI.Builder
                 return styleSheet.ReadFloat(styleProperty.values[0]);
         }
 
-        protected void SetStyleSheetValue(TrackedStyles trackedStyles, float value)
+        protected void SetInlineFloatAsDimensionValue(TrackedStyles trackedStyles, float value)
         {
             if (AreStylesBound(trackedStyles))
                 return;
 
-            var name = GetStyleName(trackedStyles);
-            SetStyleSheetValue(name, value);
-        }
-
-        void SetStyleSheetValue(string styleName, float value)
-        {
-            BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, styleName, Mathf.Round(value));
+            var styleName = GetStyleName(trackedStyles);
+            BuilderStyleUtilities.SetInlineDimensionValue(m_VisualTreeAsset, m_Target, styleName, new Dimension(Mathf.Round(value), Dimension.Unit.Pixel));
         }
 
         protected void RemoveStyleSheetValue(string styleName)
@@ -310,7 +306,7 @@ namespace Unity.UI.Builder
             var rule = m_VisualTreeAsset.GetOrCreateInlineStyleRule(vea);
             var styleSheet = m_VisualTreeAsset.inlineSheet;
 
-            var styleProperty = styleSheet.FindLastProperty(rule, styleName);
+            var styleProperty = rule?.FindLastProperty(styleName);
             if (styleProperty == null)
                 return;
 

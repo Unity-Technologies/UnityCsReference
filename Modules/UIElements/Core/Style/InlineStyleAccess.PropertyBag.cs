@@ -45,6 +45,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        abstract class InlineStyleRatioProperty : InlineStyleProperty<StyleRatio, Ratio>
+        {
+            protected InlineStyleRatioProperty()
+            {
+                ConverterGroups.RegisterGlobal((ref float v) => new StyleRatio(v));
+                ConverterGroups.RegisterGlobal((ref StyleRatio sv) => (float) sv.value);
+            }
+        }
+
         abstract class InlineStyleBackgroundProperty : InlineStyleProperty<StyleBackground, Background>
         {
             protected InlineStyleBackgroundProperty()

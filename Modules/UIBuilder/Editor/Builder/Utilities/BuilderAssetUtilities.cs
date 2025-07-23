@@ -446,12 +446,7 @@ namespace Unity.UI.Builder
                     visualTreeAsset, BuilderConstants.DeleteUIElementUndoMessage);
             }
 
-            foreach (var child in ve.Children())
-            {
-                DeleteElementFromAsset(visualTreeAsset, child, false);
-            }
-
-            visualTreeAsset.RemoveElementAndDependencies(vea);
+            vea.RemoveFromHierarchy();
         }
 
         public static void TransferAssetToAsset(
@@ -490,111 +485,6 @@ namespace Unity.UI.Builder
 
             var vea = ve.GetVisualElementAsset();
             vea.RemoveStyleClass(className);
-        }
-
-        public static void AddStyleComplexSelectorToSelection(StyleSheet styleSheet, StyleComplexSelector scs)
-        {
-            var selectionProp = styleSheet.AddProperty(
-                scs,
-                BuilderConstants.SelectedStyleRulePropertyName,
-                BuilderConstants.ChangeSelectionUndoMessage);
-
-            // Need to add at least one dummy value because lots of code will die
-            // if it encounters a style property with no values.
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeSelectionUndoMessage);
-            selectionProp.SetFloat(styleSheet, 42.0f);
-        }
-
-        public static void AddElementToSelectionInAsset(BuilderDocument document, VisualElement ve)
-        {
-            if (BuilderSharedStyles.IsStyleSheetElement(ve))
-            {
-                var styleSheet = ve.GetStyleSheet();
-                styleSheet.AddSelector(
-                    BuilderConstants.SelectedStyleSheetSelectorName,
-                    BuilderConstants.ChangeSelectionUndoMessage);
-            }
-            else if (BuilderSharedStyles.IsSelectorElement(ve))
-            {
-                var styleSheet = ve.GetClosestStyleSheet();
-                var scs = ve.GetStyleComplexSelector();
-                AddStyleComplexSelectorToSelection(styleSheet, scs);
-            }
-            else if (BuilderSharedStyles.IsDocumentElement(ve))
-            {
-                Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
-
-                var vta = ve.GetVisualTreeAsset();
-                var vtaRoot = vta.visualTree;
-                var vea = vta.AddElementOfType(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
-                // We don't want this element to be cloned.
-                vea.skipClone = true;
-            }
-            else if (ve.GetVisualElementAsset() != null)
-            {
-                Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
-
-                var vea = ve.GetVisualElementAsset();
-                vea.Select();
-            }
-            else if (ve.GetVisualElementAssetInTemplate() != null)
-            {
-                Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
-
-                var vea = ve.GetVisualElementAssetInTemplate();
-                vea.Select();
-            }
-        }
-
-        public static void RemoveElementFromSelectionInAsset(BuilderDocument document, VisualElement ve)
-        {
-            if (BuilderSharedStyles.IsStyleSheetElement(ve))
-            {
-                var styleSheet = ve.GetStyleSheet();
-                styleSheet.RemoveSelector(
-                    BuilderConstants.SelectedStyleSheetSelectorName,
-                    BuilderConstants.ChangeSelectionUndoMessage);
-            }
-            else if (BuilderSharedStyles.IsSelectorElement(ve))
-            {
-                var styleSheet = ve.GetClosestStyleSheet();
-                var scs = ve.GetStyleComplexSelector();
-                styleSheet.RemoveProperty(
-                    scs,
-                    BuilderConstants.SelectedStyleRulePropertyName,
-                    BuilderConstants.ChangeSelectionUndoMessage);
-            }
-            else if (BuilderSharedStyles.IsDocumentElement(ve))
-            {
-                Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
-
-                var vta = ve.GetVisualTreeAsset();
-                var selectedElement = vta.FindElementByType(BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
-                if (selectedElement != null)
-                {
-                    vta.RemoveElementAndDependencies(selectedElement);
-                }
-            }
-            else if (ve.GetVisualElementAsset() != null)
-            {
-                Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
-
-                var vea = ve.GetVisualElementAsset();
-                vea.Deselect();
-            }
-            else if (ve.GetVisualElementAssetInTemplate() != null)
-            {
-                Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
-
-                var vea = ve.GetVisualElementAssetInTemplate();
-                vea.Deselect();
-            }
         }
 
         public static string GetVisualTreeAssetAssetName(VisualTreeAsset visualTreeAsset, bool hasUnsavedChanges) =>
@@ -655,7 +545,7 @@ namespace Unity.UI.Builder
                 }
 
                 if (parent is TemplateContainer
-                    && !parent.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName)
+                    && parent.visualElementAsset == null
                     && parent.GetVisualElementAsset() == null)
                 {
                     return true;
@@ -686,9 +576,9 @@ namespace Unity.UI.Builder
                 if (parent is TemplateContainer)
                 {
                     TemplateAsset templateAsset;
-                    if (parent.HasProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName))
+                    if (parent.visualElementAsset != null)
                     {
-                        templateAsset = parent.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) as TemplateAsset;
+                        templateAsset = parent.visualElementAsset as TemplateAsset;
                     }
                     else
                     {

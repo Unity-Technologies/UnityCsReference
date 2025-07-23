@@ -58,12 +58,19 @@ namespace Unity.Profiling.LowLevel.Unsafe
                 throw new ArgumentException("Only Allocator.Persistent and Allocator.Domain support allocating with a label");
 
             this.allocator = allocator;
+            // Important: this returns a null pointer in non-development builds.
             this.pointer = ProfilerUnsafeUtility.GetOrCreateMemLabel(areaName, objectName);
         }
 
         internal long RelatedMemorySize => ProfilerUnsafeUtility.GetMemLabelRelatedMemorySize(pointer);
 
-        public bool Created => pointer != IntPtr.Zero;
+        public bool Created => allocator != Allocator.Invalid;
+
+        internal void CheckArgument()
+        {
+            if (!Created)
+                throw new ArgumentException("UnsafeAllocLabel has not been created. Use the constructor to create it.");
+        }
     }
 
     [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerUnsafeUtility.bindings.h")]
@@ -256,5 +263,6 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [ThreadSafe(ThrowsException = true)]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         internal static extern long GetMemLabelRelatedMemorySize(IntPtr label);
+
     }
 }

@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-tab|UXML element Tab]].
     /// </remarks>
+    [Icon("UIToolkit/Icons/Tab.png")]
     public class Tab : VisualElement
     {
         internal static readonly BindingId labelProperty = nameof(label);

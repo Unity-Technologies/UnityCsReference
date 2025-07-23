@@ -41,7 +41,7 @@ internal class InProjectPage : SimplePage
         var version = package.versions.primary;
         if (version.HasTag(PackageTag.Unity))
             return version.HasTag(PackageTag.Feature) ? L10n.Tr("Features") : L10n.Tr("Packages - Unity");
-        return string.IsNullOrEmpty(version.author) ? L10n.Tr("Packages - Other") : string.Format(L10n.Tr("Packages - {0}"), version.author);
+        return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Packages - Other") : string.Format(L10n.Tr("Packages - {0}"), version.author.name);
     }
 
     public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()

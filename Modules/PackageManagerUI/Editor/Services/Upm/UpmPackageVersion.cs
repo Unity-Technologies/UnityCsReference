@@ -16,7 +16,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class UpmPackageVersion : BasePackageVersion
     {
         private const string k_UnityPrefix = "com.unity.";
-        private const string k_UnityAuthor = "Unity Technologies";
 
         [SerializeField]
         private string m_Category;
@@ -40,8 +39,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string uniqueId => m_PackageId;
 
         [SerializeField]
-        private string m_Author;
-        public override string author => m_Author;
+        private AuthorInfo m_Author;
+        public override AuthorInfo author => m_Author;
 
         [SerializeField]
         private RegistryType m_AvailableRegistry;
@@ -65,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (HasTag(PackageTag.Local))
+                if (HasTag(PackageTag.Local | PackageTag.Tarball))
                     return m_PackageId.Substring(m_PackageId.IndexOf("@file:") + 6);
                 if (HasTag(PackageTag.Git))
                     return m_PackageId.Split(new[] { '@' }, 2)[1];
@@ -121,7 +120,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
             packageVersion.UpdateTags(packageData);
             packageVersion.m_PackageId = FormatPackageId(packageVersion.m_Name, packageVersion.m_VersionString);
-            packageVersion.m_Author = packageVersion.HasTag(PackageTag.Unity) ? k_UnityAuthor : string.Empty;
             return packageVersion;
         }
 
@@ -142,12 +140,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_DeprecationMessage = packageInfo.deprecationMessage,
                 m_Description = packageInfo.ExtractBuiltinDescription(out var result) ? result : packageInfo.description,
                 m_PublishedDateTicks = GetPublishDateTicks(packageInfo),
+                m_MinimumUnityVersion = packageInfo.editorCompatibility?.minimumUnityVersion,
+                m_Author = packageInfo.author,
                 m_SignatureInfo = packageInfo.signature
             };
 
             packageVersion.UpdateTags(packageData, packageInfo);
             packageVersion.m_PackageId = packageVersion.HasTag(PackageTag.InstalledFromPath) ? packageInfo.packageId.Replace("\\", "/") : packageInfo.packageId;
-            packageVersion.m_Author = packageVersion.HasTag(PackageTag.Unity) ? k_UnityAuthor : packageInfo.author?.name ?? string.Empty;
             packageVersion.ProcessErrors(packageInfo);
             return packageVersion;
         }
@@ -180,8 +179,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 case PackageSource.Embedded:
                     return PackageTag.Custom;
                 case PackageSource.Local:
-                case PackageSource.LocalTarball:
                     return PackageTag.Local;
+                case PackageSource.LocalTarball:
+                    return PackageTag.Tarball;
                 case PackageSource.Git:
                     return PackageTag.Git;
                 case PackageSource.BuiltIn:

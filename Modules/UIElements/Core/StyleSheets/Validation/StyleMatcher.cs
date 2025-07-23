@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine.UIElements.StyleSheets.Syntax;
@@ -39,7 +40,7 @@ namespace UnityEngine.UIElements.StyleSheets
         private MatchContext m_CurrentContext;
 
         protected abstract bool MatchKeyword(string keyword);
-        protected abstract bool MatchNumber();
+        protected abstract bool MatchNumber(Expression exp);
         protected abstract bool MatchInteger();
         protected abstract bool MatchLength();
         protected abstract bool MatchPercentage();
@@ -383,7 +384,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 switch (exp.dataType)
                 {
                     case DataType.Number:
-                        result = MatchNumber();
+                        result = MatchNumber(exp);
                         break;
                     case DataType.Integer:
                         result = MatchInteger();
@@ -484,11 +485,16 @@ namespace UnityEngine.UIElements.StyleSheets
             return String.Compare(current, keyword, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
-        protected override bool MatchNumber()
+        protected override bool MatchNumber(Expression exp)
         {
             var value = current;
             Match match = s_NumberRegex.Match(value);
-            return match.Success;
+            if (match.Success)
+            {
+                if(  float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f))
+                return exp.min <= f && f <= exp.max;
+            }
+            return false;
         }
 
         static readonly Regex s_IntegerRegex = new Regex(@"^[+-]?\d+$", RegexOptions.Compiled);
@@ -687,9 +693,15 @@ namespace UnityEngine.UIElements.StyleSheets
             return false;
         }
 
-        protected override bool MatchNumber()
+        protected override bool MatchNumber(Expression exp)
         {
-            return current.handle.valueType == StyleValueType.Float;
+            var value = current;
+            if (value.handle.valueType == StyleValueType.Float)
+            {
+                var f = value.sheet.ReadFloat(value.handle);
+                return exp.min <= f && f <= exp.max;
+            }
+            return false;
         }
 
         protected override bool MatchInteger()

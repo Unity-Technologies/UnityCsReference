@@ -12,7 +12,6 @@ namespace Unity.UI.Builder
         BorderColor,
         BorderWidth,
         BorderRadius,
-        Radius,
         Content
     }
 }

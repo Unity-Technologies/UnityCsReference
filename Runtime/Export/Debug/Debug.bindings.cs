@@ -329,7 +329,7 @@ namespace UnityEngine
             public string message;
         }
 
-        [FreeFunction("RetrieveStartupLogs")]
+        [FreeFunction("RetrieveStartupLogs_Internal")]
         extern public static StartupLog[] RetrieveStartupLogs();
 
         [FreeFunction("CheckApplicationIntegrity")]

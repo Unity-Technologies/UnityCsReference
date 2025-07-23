@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         // Only set for combinator
         public ExpressionCombinator combinator;
         public Expression[] subExpressions;
+        public float min;
+        public float max;
 
         public string keyword;
 
@@ -52,7 +54,8 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Time, // <time>
         FilterFunction, // <filter-function>
         Angle, //<angle>
-        CustomIdent // <custom-ident>
+        CustomIdent, // <custom-ident>
+        Ratio, // <ratio>
     }
 
     // In order of precedence

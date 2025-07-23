@@ -88,6 +88,11 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class ResolvedRatioProperty : ResolvedStyleProperty<Ratio>
+        {
+        }
+
+
         void AddProperty<TValue>(ResolvedStyleProperty<TValue> property)
         {
             m_PropertiesList.Add(property);

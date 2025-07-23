@@ -21,6 +21,7 @@ namespace UnityEngine.UIElements
     /// When using UXML templates, a TemplateContainer is generated for the template instance and inserted into the hierarchy of the parent UXML file.
     /// </remarks>
     [UxmlElement("Instance"), HideInInspector]
+    [Icon("UIToolkit/Icons/TemplateContainer.png")]
     public class TemplateContainer : BindableElement
     {
         internal static readonly BindingId templateIdProperty = nameof(templateId);

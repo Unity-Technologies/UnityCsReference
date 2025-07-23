@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Element that draws IMGUI content. For more information, refer to [[wiki:UIE-uxml-element-IMGUIContainer|UXML element IMGUIContainer]].
     /// </summary>
+    [Icon("UIToolkit/Icons/IMGUIContainer.png")]
     public class IMGUIContainer : VisualElement, IDisposable
     {
         internal static readonly BindingId cullingEnabledProperty = nameof(cullingEnabled);

@@ -28,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private IProjectSettingsProxy m_SettingsProxy;
         private IIOProxy m_IOProxy;
+        private IPackageCreator m_PackageCreator;
         private ICustomDisplayDialog m_CustomDisplayDialog;
 
         private void ResolveDependencies()
@@ -43,6 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
             m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IIOProxy>();
+            m_PackageCreator = container.Resolve<IPackageCreator>();
             m_CustomDisplayDialog = container.Resolve<ICustomDisplayDialog>();
         }
 
@@ -353,6 +355,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
                 var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, PackageManagerWindow.instance) { position = position };
+                DropdownContainer.ShowDropdown(dropdown);
+            };
+
+            dropdownItem = addMenu.AddBuiltInDropdownItem();
+            dropdownItem.text = L10n.Tr("Create package");
+            dropdownItem.userData = "CreatePackage";
+            dropdownItem.insertSeparatorBefore = true;
+            dropdownItem.action = () =>
+            {
+                var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
+                var dropdown = new CreatePackageDropdown(m_ResourceLoader, m_PackageCreator, PackageManagerWindow.instance) { position = position };
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }

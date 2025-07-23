@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// UI element control that displays a hierarchy item.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+    [VisibleToOtherModules("UnityEditor.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyViewItem : VisualElement
     {
         const string k_UnityListViewItem = "unity-list-view__item";

@@ -535,6 +535,12 @@ namespace Unity.UI.Builder
                     return;
                 }
             }
+            else if (IsComputedStyleRatio(val) && fieldElement is RatioStyleField aspectRatioField)
+            {
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, aspectRatioField.typeName, ""), out var styleValueTooltip))
+                    aspectRatioField.visualInput.tooltip = styleValueTooltip;
+                aspectRatioField.RegisterValueChangedCallback(e => OnFieldValueChangeRatio(e, styleName));
+            }
             else if (fieldElement is BoxModel)
             {
                 // Nothing to do here.
@@ -1322,6 +1328,16 @@ namespace Unity.UI.Builder
                 return true;
             }
 
+            if(IsComputedStyleRatio(val) && fieldElement is RatioStyleField ratioStyleField)
+            {
+                var value = GetComputedStyleRatioValue(val);
+                if (useStyleProperty && styleProperty.TryGetRatio(styleSheet, out var propertyValue))
+                    value = propertyValue;
+
+                ratioStyleField.SetValueWithoutNotify(value);
+                return true;
+            }
+
             return false;
         }
 
@@ -1481,6 +1497,10 @@ namespace Unity.UI.Builder
                         DispatchChangeEvent(toggleButtonGroup);
                         break;
                 }
+            }
+            else if (IsComputedStyleRatio(val) && fieldElement is RatioStyleField aspectRatioStyleField)
+            {
+                DispatchChangeEvent(aspectRatioStyleField);
             }
         }
 
@@ -1993,7 +2013,7 @@ namespace Unity.UI.Builder
                     {
                         foreach (var path in foldout.bindingPathArray)
                         {
-                            styleProperty = styleSheet.FindLastProperty(currentRule, path);
+                            styleProperty = currentRule?.FindLastProperty(path);
                             if (normalStatusCondition(styleProperty))
                             {
                                 return DropdownMenuAction.Status.Normal;
@@ -2005,7 +2025,7 @@ namespace Unity.UI.Builder
                 var styleName = fieldElement.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
                 if (!string.IsNullOrEmpty(styleName))
                 {
-                    styleProperty = styleSheet.FindLastProperty(currentRule, styleName);
+                    styleProperty = currentRule?.FindLastProperty(styleName);
                     if (normalStatusCondition(styleProperty))
                         return DropdownMenuAction.Status.Normal;
                 }
@@ -2277,7 +2297,7 @@ namespace Unity.UI.Builder
 
         StyleProperty GetOrCreateStylePropertyByStyleName(string styleName)
         {
-            var styleProperty = styleSheet.FindLastProperty(currentRule, styleName);
+            var styleProperty = currentRule?.FindLastProperty(styleName);
             if (styleProperty == null)
                 styleProperty = styleSheet.AddProperty(currentRule, styleName);
 
@@ -2826,6 +2846,16 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeRatio(ChangeEvent<Ratio> e, string styleName)
+        {
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = !styleProperty.HasValue();
+
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleProperty.SetRatio(styleSheet, e.newValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
+        }
+
         private void SetXAndYSubFieldsTooltips(VisualElement parentField, string xFieldName, string xTooltip, string yFieldName, string yTooltip)
         {
             var xField =
@@ -2989,6 +3019,11 @@ namespace Unity.UI.Builder
                 return true;
 
             return valType.IsGenericType && valType.GetGenericArguments()[0].IsEnum;
+        }
+
+        static public bool IsComputedStyleRatio(object val)
+        {
+            return val is StyleRatio || val is Ratio;
         }
 
         // Getters
@@ -3169,6 +3204,15 @@ namespace Unity.UI.Builder
             var propInfo = valType.GetProperty("value");
             var enumValue = propInfo.GetValue(val, null) as Enum;
             return enumValue;
+        }
+
+        static public Ratio GetComputedStyleRatioValue(object val)
+        {
+            if (val is Ratio ratio)
+                return ratio;
+
+            var style = (StyleRatio)val;
+            return style.value;
         }
     }
 }

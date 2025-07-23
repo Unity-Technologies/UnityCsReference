@@ -125,7 +125,7 @@ namespace Unity.UI.Builder
             for (var i = 0; i < index; ++i)
             {
                 var child = m_DragPreviewLastParent[i];
-                if (child.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) == null)
+                if (child.visualElementAsset == null)
                     --index;
             }
 

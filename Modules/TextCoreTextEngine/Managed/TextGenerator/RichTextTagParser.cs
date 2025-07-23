@@ -1147,5 +1147,29 @@ namespace UnityEngine.TextCore
 
             tgs.text = parsedTextBuilder.ToString();
         }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool MayNeedParsing(string text)
+        {
+            if (String.IsNullOrEmpty(text))
+                return false;
+
+            // If the string contains a '<' followed later by a '>', there might be a valid tag.
+            int length = text.Length;
+            for (int i = 0; i < length; i++)
+            {
+                if (text[i] == '<')
+                {
+                    for (int j = i + 1; j < length; j++)
+                    {
+                        if (text[j] == '>')
+                            return true;
+                    }
+                    return false;
+                }
+            }
+
+            return false;
+        }
     }
 }

@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
         public Align alignContent => ve.computedStyle.alignContent;
         public Align alignItems => ve.computedStyle.alignItems;
         public Align alignSelf => ve.computedStyle.alignSelf;
+        public Ratio aspectRatio => ve.computedStyle.aspectRatio;
         public Color backgroundColor => ve.computedStyle.backgroundColor;
         public Background backgroundImage => ve.computedStyle.backgroundImage;
         public BackgroundPosition backgroundPositionX => ve.computedStyle.backgroundPositionX;
@@ -103,6 +104,7 @@ namespace UnityEngine.UIElements
         Align IResolvedStyle.alignContent => resolvedStyle.alignContent;
         Align IResolvedStyle.alignItems => resolvedStyle.alignItems;
         Align IResolvedStyle.alignSelf => resolvedStyle.alignSelf;
+        Ratio IResolvedStyle.aspectRatio => resolvedStyle.aspectRatio;
         Color IResolvedStyle.backgroundColor => resolvedStyle.backgroundColor;
         Background IResolvedStyle.backgroundImage => resolvedStyle.backgroundImage;
         BackgroundPosition IResolvedStyle.backgroundPositionX => resolvedStyle.backgroundPositionX;

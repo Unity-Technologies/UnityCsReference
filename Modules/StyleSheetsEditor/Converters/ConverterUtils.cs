@@ -474,14 +474,9 @@ namespace UnityEditor.StyleSheets
             return typeof(GUIStyle).GetProperties().Where(p => p.PropertyType == typeof(GUIStyleState));
         }
 
-        public static StyleProperty FindProperty(this StyleComplexSelector selector, string propertyName)
-        {
-            return Array.Find(selector.rule.properties, p => p.name == propertyName);
-        }
-
         public static string FindStyleName(this StyleComplexSelector selector, string selectorStr, StyleSheet sheet)
         {
-            var property = FindProperty(selector, k_Name);
+            var property = selector.rule?.FindLastProperty(k_Name);
             if (property == null)
             {
                 return ToStyleName(selectorStr);
@@ -491,7 +486,7 @@ namespace UnityEditor.StyleSheets
 
         public static string FindExtend(this StyleComplexSelector selector, StyleSheet sheet)
         {
-            var property = FindProperty(selector, k_Extend);
+            var property = selector.rule?.FindLastProperty(k_Extend);
             if (property == null)
             {
                 return null;

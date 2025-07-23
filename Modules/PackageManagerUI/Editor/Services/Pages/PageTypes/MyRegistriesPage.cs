@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string GetGroupName(IPackage package)
         {
             var version = package.versions.primary;
-            return string.IsNullOrEmpty(version.author) ? L10n.Tr("Other") : version.author;
+            return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Other") : version.author.name;
         }
     }
 }

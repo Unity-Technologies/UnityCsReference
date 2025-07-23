@@ -119,6 +119,14 @@ namespace UnityEditorInternal
                 if (buildFiles.All(file => !BuildFileMatchesAssembly(file, filename)))
                     continue;
 
+                if (assemblyTypePair.Value.Length == 0)
+                {
+                    // There should always be items if an assembly is in the dictionary, but there is/was a bug that could lead to this happen https://jira.unity3d.com/browse/UUM-92357
+                    // If there are no items, then we don't want to write out the assembly element.  An assembly element with no types
+                    // will result in preserving the entire assembly which is not what we ever want to do.
+                    continue;
+                }
+
                 sb.AppendLine($"\t<assembly fullname=\"{filename}\">");
                 foreach (var type in assemblyTypePair.Value.OrderBy(s => s))
                 {

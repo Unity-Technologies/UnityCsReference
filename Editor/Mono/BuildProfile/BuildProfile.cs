@@ -153,26 +153,17 @@ namespace UnityEditor.Build.Profile
             set { m_PlayerSettings = value; }
         }
 
-        [VisibleToOtherModules]
-        internal Action OnPlayerSettingsUpdatedFromYAML;
-
         /// <summary>
         /// Cross-pipeline graphics settings overrides in build profile
         /// </summary>
         [VisibleToOtherModules]
         internal BuildProfileGraphicsSettings graphicsSettings;
 
-        [VisibleToOtherModules]
-        internal Action OnGraphicsSettingsSubAssetRemoved;
-
         /// <summary>
         /// Quality settings overrides in build profile
         /// </summary>
         [VisibleToOtherModules]
         internal BuildProfileQualitySettings qualitySettings;
-
-        [VisibleToOtherModules]
-        internal Action OnQualitySettingsSubAssetRemoved;
 
         // TODO: Return server IBuildTargets for server build profiles. (https://jira.unity3d.com/browse/PLAT-6612)
         /// <summary>
@@ -388,8 +379,8 @@ namespace UnityEditor.Build.Profile
             targetBuildProfile.scriptingDefines = Array.Empty<string>();
 
             BuildProfileModuleUtil.RemovePlayerSettings(targetBuildProfile);
-            targetBuildProfile.RemoveQualitySettings();
-            targetBuildProfile.RemoveGraphicsSettings();
+            BuildProfileModuleUtil.RemoveGraphicsSettings(targetBuildProfile);
+            BuildProfileModuleUtil.RemoveQualitySettings(targetBuildProfile);
 
             AssetDatabase.SaveAssetIfDirty(targetBuildProfile);
             BuildProfileModuleUtil.UpdateActiveEditors(targetBuildProfile);

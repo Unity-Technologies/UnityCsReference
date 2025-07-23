@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Rect"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectField|UXML element RectField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/RectField.png")]
     public class RectField : BaseCompositeField<Rect, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -132,6 +133,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="RectInt"/> field. For more information, refer to [[wiki:UIE-uxm-element-RectIntField|UXML element RectIntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/RectIntField.png")]
     public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
@@ -251,6 +253,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector2"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2Field|UXML element Vector2Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/Vector2Field.png")]
     public class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -361,6 +364,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector3"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3Field|UXML element Vector3Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/Vector3Field.png")]
     public class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -476,6 +480,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector4"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector4Field|UXML element Vector4Field]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/Vector4Field.png")]
     public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
@@ -594,6 +599,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxml-element-Vector2IntField|UXML element Vector2IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/Vector2IntField.png")]
     public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
@@ -705,6 +711,7 @@ namespace UnityEngine.UIElements
     /// A <see cref="Vector3Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector3IntField|UXML element Vector3IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
+    [Icon("UIToolkit/Icons/Vector3IntField.png")]
     public class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()

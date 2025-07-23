@@ -69,6 +69,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
+    [Icon("UIToolkit/Icons/ListView.png")]
     public class ListView : BaseListView
     {
         internal static readonly BindingId itemTemplateProperty = nameof(itemTemplate);

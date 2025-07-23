@@ -26,8 +26,6 @@ namespace UnityEditor.Build.Profile
         public static readonly string build = L10n.Tr("Build");
         public static readonly string cloudBuild = L10n.Tr("Cloud Build");
         public static readonly string buildAndRun = L10n.Tr("Build And Run");
-        public static readonly string platformSettings = L10n.Tr("Platform Settings");
-        public static readonly string buildData = L10n.Tr("Build Data");
         public static readonly string sharedSettingsInfo =
             L10n.Tr("Platform builds use the shared scene list. To change the scene list or other settings independently, create a Build Profile for this platform.");
         public static readonly string sharedSettingsSectionInfo =
@@ -56,38 +54,16 @@ namespace UnityEditor.Build.Profile
         public static readonly string removeSettings = L10n.Tr("Remove Settings");
         public static readonly string resetMessage = L10n.Tr("Are you sure you want to reset these settings? This operation cannot be undone.");
         public static readonly string removeMessage = L10n.Tr("Are you sure you want to remove these settings? This operation cannot be undone.");
-        public static readonly GUIContent resetToGlobals = EditorGUIUtility.TrTextContent("Reset to Globals");
 
         // Build Profile Player Settings
-        public static readonly string playerSettingsLabelText = L10n.Tr("Player Settings Overrides");
         public static readonly string playerSettingsInfo =
             L10n.Tr("Build Profiles can have custom player settings");
-        public static readonly string playerSettingsClassicInfo =
-            L10n.Tr("Platforms use the global player settings. To customize player settings, create a Build Profile for this platform.");
-        public static readonly string customizePlayerSettingsButton = "Customize Player Settings";
-        public static readonly string removePlayerSettingsDialogTitle = L10n.Tr("Remove Player Settings Overrides");
-        public static readonly string removePlayerSettingsDialogMessage = L10n.Tr("This will remove all Player Settings overrides");
-        public static readonly string resetPlayerSettingsDialogTitle = L10n.Tr("Reset Player Settings to Globals");
-        public static readonly string resetPlayerSettingsDialogMessage = L10n.Tr("This will reset all Player Settings overrides and restore all global Player Settings.");
-        public static readonly GUIContent playerSettingsReset = EditorGUIUtility.TrTextContent("Reset to Globals");
-        public static readonly GUIContent playerSettingsRemove = EditorGUIUtility.TrTextContent("Remove Overrides");
 
         // Build Profile Graphics Settings
         public static readonly string graphicsSettings = L10n.Tr("Graphics Settings");
-        public static readonly string overrideGraphicsSettingsToggleLabel = L10n.Tr("Override Global Graphics Settings");
-        public static readonly string overrideFoldoutLabel = L10n.Tr("Override Options");
-        public static readonly string removeGraphicsSettingsDialogTitle = L10n.Tr("Remove Graphics Settings Overrides");
-        public static readonly string removeGraphicsSettingsDialogMessage = L10n.Tr("This will remove all Graphics Settings overrides");
-        public static readonly string resetGraphicsSettingsDialogTitle = L10n.Tr("Reset Graphics Settings to Globals");
-        public static readonly string resetGraphicsSettingsDialogMessage = L10n.Tr("This will reset all Graphics Settings overrides to the original globals.");
 
         // Build Profile Quality Settings
-        public static readonly string overrideQualitySettingsToggleLabel = L10n.Tr("Override Global Quality Settings");
-        public static readonly string overrideQualitySettingsFoldoutLabel = L10n.Tr("Included Quality Levels");
-        public static readonly string removeQualitySettingsDialogTitle = L10n.Tr("Remove Quality Settings Overrides");
-        public static readonly string removeQualitySettingsDialogMessage = L10n.Tr("This will remove all Quality Settings overrides");
-        public static readonly string resetQualitySettingsDialogTitle = L10n.Tr("Reset Quality Settings to Globals");
-        public static readonly string resetQualitySettingsDialogMessage = L10n.Tr("This will reset all Quality Settings overrides to the original globals.");
+        public static readonly string qualitySettings = L10n.Tr("Quality Settings");
 
         // Build Profile Bootstrap View
         public static readonly string buildProfileConfiguration = L10n.Tr("Configuring Build Profile...");
@@ -118,6 +94,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string publisherLabel = L10n.Tr("Publisher: {0}");
         public static readonly string selectAll = L10n.Tr("Select All");
         public static readonly string deselectAll = L10n.Tr("Deselect All");
+        public static readonly string buildProfileNameLabel = L10n.Tr("Name");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");
@@ -127,6 +104,6 @@ namespace UnityEditor.Build.Profile
         public static readonly string assetImportOverrideDescription =
             L10n.Tr("These settings allow you to override the compression\nand max resolution for textures in your project. This is\nuseful for local development, to speed up texture\nimporting or build target switching.");
 
-        public static string GetSettingsSectionName(string platform) => L10n.Tr($"{platform} Settings");
+        public static string GetSettingsSectionName(string platform) => L10n.Tr($"Platform Settings ({platform})");
     }
 }

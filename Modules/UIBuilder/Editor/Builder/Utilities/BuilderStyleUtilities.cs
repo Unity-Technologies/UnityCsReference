@@ -13,16 +13,7 @@ namespace Unity.UI.Builder
     internal class BuilderStyleUtilities
     {
         // Private Utilities
-
-        static void GetInlineStyleSheetAndRule(VisualTreeAsset vta, VisualElement element, out StyleSheet styleSheet, out StyleRule styleRule)
-        {
-            var vea = element.GetVisualElementAsset();
-            styleSheet = vta.GetOrCreateInlineStyleSheet();
-            styleRule = vta.GetOrCreateInlineStyleRule(vea);
-        }
-
-        static void GetInlineStyleSheetAndRule(VisualTreeAsset vta, VisualElementAsset vea,
-            out StyleSheet styleSheet, out StyleRule styleRule)
+        static void GetInlineStyleSheetAndRule(VisualTreeAsset vta, VisualElementAsset vea, out StyleSheet styleSheet, out StyleRule styleRule)
         {
             styleSheet = vta.GetOrCreateInlineStyleSheet();
             styleRule = vta.GetOrCreateInlineStyleRule(vea);
@@ -30,71 +21,48 @@ namespace Unity.UI.Builder
 
         static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName)
         {
-            var styleProperty = styleSheet.FindLastProperty(styleRule, styleName);
+            var styleProperty = styleRule.FindLastProperty(styleName);
             if (styleProperty == null)
                 styleProperty = styleSheet.AddProperty(styleRule, styleName);
 
             return styleProperty;
         }
 
+        static void SetInlineValue<T>(
+            VisualTreeAsset vta,
+            VisualElementAsset vea,
+            VisualElement element,
+            string styleName,
+            T value,
+            Action<StyleProperty, StyleSheet, T> setter)
+        {
+            GetInlineStyleSheetAndRule(vta, vea, out var styleSheet, out var styleRule);
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
+            setter(styleProperty, styleSheet, value);
+            element?.UpdateInlineRule(styleSheet, styleRule);
+        }
+
         // Inline StyleSheet Value Setters
 
-        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElement element, string styleName, float value)
+        public static void SetInlineDimensionValue(VisualTreeAsset vta, VisualElement element, string styleName, Dimension value)
         {
-            GetInlineStyleSheetAndRule(vta, element, out StyleSheet styleSheet, out StyleRule styleRule);
-            SetStyleSheetRuleValueAsDimension(styleSheet, styleRule, styleName, value);
-            element?.UpdateInlineRule(styleSheet, styleRule);
+            SetInlineValue(vta, element.GetVisualElementAsset(), element, styleName, value, (p, s, v) => p.SetDimension(s, v));
         }
 
-        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, float value)
+        public static void SetInlineFloatValue(VisualTreeAsset vta, VisualElement element, string styleName, float value)
         {
-            GetInlineStyleSheetAndRule(vta, vea, out StyleSheet styleSheet, out StyleRule styleRule);
-            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
-            element?.UpdateInlineRule(styleSheet, styleRule);
+            SetInlineValue(vta, element.GetVisualElementAsset(), element, styleName, value, (p, s, v) => p.SetFloat(s, v));
         }
 
-        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElement element, string styleName, Enum value)
+        public static void SetInlineEnumValue(VisualTreeAsset vta, VisualElement element, string styleName, Enum value)
         {
-            GetInlineStyleSheetAndRule(vta, element, out StyleSheet styleSheet, out StyleRule styleRule);
-            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
-            element?.UpdateInlineRule(styleSheet, styleRule);
+            SetInlineValue(vta, element.GetVisualElementAsset(), element, styleName, value, (p, s, v) => p.SetEnum(s, v));
         }
 
-        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, Color value)
+        public static void SetInlineColorValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, Color value)
         {
-            GetInlineStyleSheetAndRule(vta, vea, out StyleSheet styleSheet, out StyleRule styleRule);
-            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
-            element?.UpdateInlineRule(styleSheet, styleRule);
-        }
-
-        // StyleSheet Value Setters
-
-        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value)
-        {
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleProperty.SetFloat(styleSheet, value);
-        }
-
-        static void SetStyleSheetRuleValueAsDimension(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value)
-        {
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleProperty.SetDimension(styleSheet, new Dimension { unit = Dimension.Unit.Pixel, value = value });
-        }
-
-        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, Enum value)
-        {
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleProperty.SetEnum(styleSheet, value);
-        }
-
-        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, Color value)
-        {
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleProperty.SetColor(styleSheet, value);
+            SetInlineValue(vta, vea, element, styleName, value, (p, s, v) => p.SetColor(s, v));
         }
 
         public static string GenerateElementTargetedSelector(VisualElement documentElement)

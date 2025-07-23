@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides an Element displaying text. For more information, refer to [[wiki:UIE-uxml-element-Label|UXML element Label]].
     /// </summary>
+    [Icon("UIToolkit/Icons/Label.png")]
     public class Label : TextElement
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

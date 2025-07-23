@@ -70,6 +70,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleRatio IStyle.aspectRatio
+        {
+            get
+            {
+                return GetStyleRatio(StylePropertyId.AspectRatio);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.AspectRatio, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
+                    ve.layoutNode.AspectRatio = ve.computedStyle.aspectRatio;
+                }
+            }
+        }
+
         StyleColor IStyle.backgroundColor
         {
             get

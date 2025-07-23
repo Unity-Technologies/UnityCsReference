@@ -113,7 +113,7 @@ namespace UnityEditor.Build.Profile
                 return;
 
             PlayerSettings.UpdatePlayerSettingsObjectFromYAML(playerSettings, m_PlayerSettingsYaml.GetYamlString());
-            OnPlayerSettingsUpdatedFromYAML?.Invoke();
+            BuildProfileModuleUtil.UpdateActiveEditors(this);
         }
 
         internal void CreatePlayerSettingsFromGlobal()
@@ -148,7 +148,7 @@ namespace UnityEditor.Build.Profile
                     m_PlayerSettingsYaml.Clear();
             }
 
-            OnPlayerSettingsUpdatedFromYAML?.Invoke();
+            BuildProfileModuleUtil.UpdateActiveEditors(this);
         }
 
         internal static void CleanUpPlayerSettingsForDeletedBuildProfiles(IList<BuildProfile> currentBuildProfiles)

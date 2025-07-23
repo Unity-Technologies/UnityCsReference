@@ -36,6 +36,7 @@ namespace UnityEngine.UIElements
     ///
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
+    [Icon("UIToolkit/Icons/TreeView.png")]
     public class TreeView : BaseTreeView
     {
         internal static readonly BindingId itemTemplateProperty = nameof(itemTemplate);

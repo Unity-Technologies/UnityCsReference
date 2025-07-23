@@ -354,15 +354,6 @@ namespace UnityEditor
             m_DragState.draggingIndex = -1;
         }
 
-        void DrawHoverEffect(Rect itemRect, bool drawAsSelection)
-        {
-            Color orgColor = GUI.color;
-            GUI.color = new Color(0, 0, 0.4f, drawAsSelection ? 0.8f : 0.3f);
-            Rect hoverRect = new RectOffset(3, 3, 3, 3).Add(itemRect);
-            GUI.Label(hoverRect, GUIContent.none, EditorStyles.helpBox);
-            GUI.color = orgColor;
-        }
-
         private string pathWithExtension
         {
             get { return currentLibraryWithoutExtension + "." + m_SaveLoadHelper.fileExtensionWithoutDot; }
@@ -493,9 +484,6 @@ namespace UnityEditor
                                     else
                                         m_State.m_HoverIndex = -1;
                                 }
-
-                                if (m_DragState.draggingIndex == i || GUIUtility.hotControl == itemControlID)
-                                    DrawHoverEffect(itemRect, false);
 
                                 DrawPreset(lib, previewRect, lib.GetPreset(i));
 

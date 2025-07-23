@@ -119,6 +119,14 @@ namespace UnityEngine.UIElements
         // }
 
 
+        public StyleRatio GetStyleRatio(StylePropertyId id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+                return new StyleRatio(inline.number);
+            return StyleKeyword.Null;
+        }
+
         public bool TryGetStyleValue(StylePropertyId id, ref StyleValue value)
         {
             value.id = StylePropertyId.Unknown;
@@ -895,6 +903,33 @@ namespace UnityEngine.UIElements
             }
 
             SetStyleValueManaged(sv);
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+                return RemoveInlineStyle(id);
+
+            ApplyStyleValue(sv);
+            return true;
+        }
+
+
+        private bool SetStyleValue(StylePropertyId id, StyleRatio inlineValue)
+        {
+            var sv = new StyleValue();
+            if (TryGetStyleValue(id, ref sv))
+            {
+                if (sv.number == inlineValue.value && sv.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            sv.id = id;
+            sv.keyword = inlineValue.keyword;
+            sv.number = inlineValue.value;
+
+            SetStyleValue(sv);
 
             if (inlineValue.keyword == StyleKeyword.Null)
                 return RemoveInlineStyle(id);

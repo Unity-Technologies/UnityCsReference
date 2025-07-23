@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,7 @@ namespace Unity.Hierarchy
     /// Base class for hierarchy node type handlers.
     /// </summary>
     [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class HierarchyNodeTypeHandler : HierarchyNodeTypeHandlerBase
     {
         readonly Lazy<UnityEngine.Pool.ObjectPool<HierarchyViewItem>> m_ViewItemPool;
@@ -297,11 +299,10 @@ namespace Unity.Hierarchy
         protected virtual DragVisualMode OnDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
 
         /// <summary>
-        /// Callback to update <see cref="HierarchyView"/>'s container styles. Typically to add stylesheets or classes that are going to be used by nodes.
+        /// Callback to initialize <see cref="HierarchyView"/>'s. Typically to add stylesheets or classes to <see cref="HierarchyView.StyleContainer"/> that are going to be used by nodes.
         /// </summary>
         /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="container"><see cref="VisualElement"/> container holding styles.</param>
-        protected virtual void UpdateContainerStyles(HierarchyView view, VisualElement container) { }
+        protected virtual void OnInitializingView(HierarchyView view) { }
 
         /// <summary>
         /// Called when a hierarchy view item is bound to a hierarchy view, allowing customization of the view item.
@@ -345,7 +346,7 @@ namespace Unity.Hierarchy
         internal bool Internal_CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => CanStartDrag(view, nodes);
         internal void Internal_OnStartDrag(in HierarchyViewDragAndDropSetupData data) => OnStartDrag(data);
         internal DragVisualMode Internal_OnDrop(in HierarchyViewDragAndDropHandlingData data) => OnDrop(data);
-        internal void Internal_UpdateContainerStyles(HierarchyView view, VisualElement container) => UpdateContainerStyles(view, container);
+        internal void Internal_OnInitializingView(HierarchyView view) => OnInitializingView(view);
         internal void Internal_PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu) => PopulateContextMenu(view, item, menu);
         internal void Internal_Bind(HierarchyViewItem item) => Bind(item);
         internal void Internal_Unbind(HierarchyViewItem item) => Unbind(item);

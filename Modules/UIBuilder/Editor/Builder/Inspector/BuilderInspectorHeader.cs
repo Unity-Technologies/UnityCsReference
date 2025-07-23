@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Profiling;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -197,16 +198,17 @@ namespace Unity.UI.Builder
         {
             string typeName;
 
+            var scaledPixelsPerPoint = currentVisualElement?.panel?.scaledPixelsPerPoint ?? 1.0f;
+
             if (currentVisualElement.typeName == nameof(TemplateContainer))
             {
                 typeName = BuilderConstants.BuilderInspectorTemplateInstance;
-                m_Icon.style.backgroundImage = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
+                m_Icon.style.backgroundImage = UIResources.GetIconForType(typeof(TemplateContainer), UIResources.RequestSize.Px32, scaledPixelsPerPoint);
             }
             else
             {
                 typeName = currentVisualElement.typeName;
-                m_Icon.style.backgroundImage =
-                    BuilderLibraryContent.GetTypeLibraryLargeIcon(currentVisualElement.GetType());
+                m_Icon.style.backgroundImage = UIResources.GetIconForElement(currentVisualElement, UIResources.RequestSize.Px32, scaledPixelsPerPoint);
             }
 
             (m_TextField.labelElement as INotifyValueChanged<string>).SetValueWithoutNotify(typeName);

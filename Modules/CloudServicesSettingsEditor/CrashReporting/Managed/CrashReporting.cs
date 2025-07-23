@@ -68,6 +68,7 @@ namespace UnityEditor.CrashReporting
                 string environmentValue = Environment.GetEnvironmentVariable("USYM_UPLOAD_AUTH_TOKEN");
                 if (!string.IsNullOrEmpty(environmentValue))
                 {
+                    Debug.LogWarning("Could not retrieve required environment variable. Native symbols will not be uploaded for this build. Make sure this user has the correct permissions for starting processes from the terminal.");
                     return environmentValue;
                 }
 
@@ -76,6 +77,7 @@ namespace UnityEditor.CrashReporting
                 string accessToken = UnityConnect.instance.GetAccessToken();
                 if (string.IsNullOrEmpty(accessToken))
                 {
+                    Debug.LogWarning("Access token is empty. Native symbols will not be uploaded for this build. Please make sure you are signed in to the Unity Cloud.");
                     return string.Empty;
                 }
 

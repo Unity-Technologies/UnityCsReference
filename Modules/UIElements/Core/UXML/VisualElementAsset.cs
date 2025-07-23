@@ -10,7 +10,7 @@ using CollectionExtensions = Unity.Collections.CollectionExtensions;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class VisualElementAsset : UxmlAsset
     {
         internal const string k_LostInlineStyles = $"{nameof(VisualElementAsset)} previously had inline styles that were lost.";
@@ -109,6 +109,11 @@ namespace UnityEngine.UIElements
         {
             var ve = (VisualElement) serializedData.CreateInstance();
             serializedData.Deserialize(ve);
+
+            if (cc.templateAsset != null)
+            {
+                ve.templateAsset = cc.templateAsset;
+            }
 
             if (cc.hasOverrides)
             {
@@ -209,10 +214,7 @@ namespace UnityEngine.UIElements
         {
             if (m_Classes == null)
                 return;
-            if (Array.IndexOf(m_Classes, className) != -1)
-            {
-                CollectionExtensions.RemoveFromArray(ref m_Classes, className);
-            }
+            CollectionExtensions.RemoveFromArray(ref m_Classes, className);
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

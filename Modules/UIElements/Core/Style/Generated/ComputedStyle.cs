@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
         public Align alignContent => layoutData.Read().alignContent;
         public Align alignItems => layoutData.Read().alignItems;
         public Align alignSelf => layoutData.Read().alignSelf;
+        public Ratio aspectRatio => layoutData.Read().aspectRatio;
         public Color backgroundColor => visualData.Read().backgroundColor;
         public Background backgroundImage => visualData.Read().backgroundImage;
         public BackgroundPosition backgroundPositionX => visualData.Read().backgroundPositionX;
@@ -196,6 +197,9 @@ namespace UnityEngine.UIElements
                         layoutData.Write().alignSelf = (Align)reader.ReadEnum(StyleEnumType.Align, 0);
                         break;
                     case StylePropertyId.All:
+                        break;
+                    case StylePropertyId.AspectRatio:
+                        layoutData.Write().aspectRatio = reader.ReadRatio(0);
                         break;
                     case StylePropertyId.BackgroundColor:
                         visualData.Write().backgroundColor = reader.ReadColor(0);
@@ -513,6 +517,9 @@ namespace UnityEngine.UIElements
                     if (sv.keyword == StyleKeyword.Auto)
                         layoutData.Write().alignSelf = Align.Auto;
                     break;
+                case StylePropertyId.AspectRatio:
+                    layoutData.Write().aspectRatio = (Ratio)sv.number;
+                    break;
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = sv.color;
                     break;
@@ -804,6 +811,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.AlignSelf:
                     layoutData.Write().alignSelf = other.layoutData.Read().alignSelf;
+                    break;
+                case StylePropertyId.AspectRatio:
+                    layoutData.Write().aspectRatio = other.layoutData.Read().aspectRatio;
                     break;
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = other.visualData.Read().backgroundColor;
@@ -1637,6 +1647,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Ratio newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AspectRatio:
+                    layoutData.Write().aspectRatio = newValue;
+                    ve.layoutNode.AspectRatio = newValue;
+                    ve.IncrementVersion(VersionChangeType.Layout);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Ratio' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
         public static bool StartAnimation(VisualElement element, StylePropertyId id, ref ComputedStyle oldStyle, ref ComputedStyle newStyle, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             switch (id)
@@ -1649,6 +1673,8 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)oldStyle.layoutData.Read().alignSelf, (int)newStyle.layoutData.Read().alignSelf, durationMs, delayMs, easingCurve);
                 case StylePropertyId.All:
                     return StartAnimationAllProperty(element, ref oldStyle, ref newStyle, durationMs, delayMs, easingCurve);
+                case StylePropertyId.AspectRatio:
+                    return element.styleAnimation.Start(StylePropertyId.AspectRatio, oldStyle.layoutData.Read().aspectRatio, newStyle.layoutData.Read().aspectRatio, durationMs, delayMs, easingCurve);
                 case StylePropertyId.BackgroundColor:
                 {
                     var result = element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldStyle.visualData.Read().backgroundColor, newStyle.visualData.Read().backgroundColor, durationMs, delayMs, easingCurve);
@@ -2129,6 +2155,12 @@ namespace UnityEngine.UIElements
                 }
 
                 if (hasRunningAnimation ||
+                    oldData.aspectRatio != newData.aspectRatio)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.AspectRatio, oldData.aspectRatio, newData.aspectRatio, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
                     oldData.borderBottomWidth != newData.borderBottomWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderBottomWidth, oldData.borderBottomWidth, newData.borderBottomWidth, durationMs, delayMs, easingCurve);
@@ -2601,6 +2633,12 @@ namespace UnityEngine.UIElements
                     if (sv.keyword == StyleKeyword.Auto)
                         to = Align.Auto;
                     return element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)computedStyle.layoutData.Read().alignSelf, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.AspectRatio:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.aspectRatio : (Ratio)sv.number;
+                    return element.styleAnimation.Start(StylePropertyId.AspectRatio, computedStyle.layoutData.Read().aspectRatio, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.BackgroundColor:
@@ -3113,6 +3151,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.All:
                     break;
+                case StylePropertyId.AspectRatio:
+                    layoutData.Write().aspectRatio = InitialStyle.aspectRatio;
+                    break;
                 case StylePropertyId.BackgroundColor:
                     visualData.Write().backgroundColor = InitialStyle.backgroundColor;
                     break;
@@ -3510,7 +3551,8 @@ namespace UnityEngine.UIElements
             VersionChangeType changes = VersionChangeType.Styles;
             if (!x.layoutData.ReferenceEquals(y.layoutData))
             {
-                if (x.display != y.display ||
+                if (x.aspectRatio != y.aspectRatio ||
+                    x.display != y.display ||
                     x.flexGrow != y.flexGrow ||
                     x.flexShrink != y.flexShrink ||
                     x.flexWrap != y.flexWrap ||

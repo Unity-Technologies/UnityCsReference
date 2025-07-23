@@ -42,28 +42,9 @@ namespace Unity.UI.Builder
             var json = JsonUtility.ToJson(styleSheet);
             JsonUtility.FromJsonOverwrite(json, other);
 
-            other.FixRuleReferences();
+            other.SetupReferences();
 
             other.name = styleSheet.name;
-        }
-
-        public static void FixRuleReferences(this StyleSheet styleSheet)
-        {
-            // This is very important. When moving selectors around via drag/drop in
-            // the StyleSheets pane, the nextInTable references can become corrupt.
-            // Most corruption is corrected in the StyleSheet.SetupReferences() call
-            // made below. However, the ends of each chain are not set in
-            // SetupReferences() because it assumes always starting with a clean
-            // StyleSheets. Therefore, you can have these end selectors point to an
-            // existing selector and style resolution entering a infinite loop.
-            //
-            // Case 1274584
-            if (styleSheet.complexSelectors != null)
-                foreach (var selector in styleSheet.complexSelectors)
-                    selector.nextInTable = null;
-
-            // Force call to StyleSheet.SetupReferences().
-            styleSheet.rules = styleSheet.rules;
         }
 
         internal static string GenerateUSS(this StyleSheet styleSheet)
@@ -210,7 +191,7 @@ namespace Unity.UI.Builder
             // remove the property if it exists in the destination
             toStyleSheet.RemoveProperty(toSelector.rule, property.name);
 
-            var toProperty = toStyleSheet.AddProperty(toSelector, property.name);
+            var toProperty = toStyleSheet.AddProperty(toSelector.rule, property.name);
             StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, property, toStyleSheet, toProperty);
 
             fromStyleSheet.RemoveProperty(fromRule, property);
@@ -218,21 +199,15 @@ namespace Unity.UI.Builder
 
         public static void TransferPropertyToSelector(this StyleSheet styleSheet, StyleComplexSelector toSelector, StyleRule fromRule, StyleProperty property)
         {
-            var toProperty = styleSheet.AddProperty(toSelector, property.name);
+            var toProperty = styleSheet.AddProperty(toSelector.rule, property.name);
             StyleSheetUtility.TransferStylePropertyHandles(styleSheet, property, styleSheet, toProperty);
             styleSheet.RemoveProperty(fromRule, property);
         }
 
         public static void DuplicatePropertyInSelector(this StyleSheet styleSheet, StyleComplexSelector selector, StyleProperty property, string name)
         {
-            var toProperty = styleSheet.AddProperty(selector, name);
+            var toProperty = styleSheet.AddProperty(selector.rule, name);
             StyleSheetUtility.TransferStylePropertyHandles(styleSheet, property, styleSheet, toProperty);
-        }
-
-        public static bool IsSelected(this StyleSheet styleSheet)
-        {
-            var selector = styleSheet.FindSelector(BuilderConstants.SelectedStyleSheetSelectorName);
-            return selector != null;
         }
 
         static void SwallowStyleRule(

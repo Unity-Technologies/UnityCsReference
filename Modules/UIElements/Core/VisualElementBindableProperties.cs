@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
+
 namespace UnityEngine.UIElements
 {
     public partial class VisualElement
@@ -12,10 +14,12 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId dataSourceProperty = nameof(dataSource);
         internal static readonly BindingId disablePlayModeTintProperty = nameof(disablePlayModeTint);
         internal static readonly BindingId enabledInHierarchyProperty = nameof(enabledInHierarchy);
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly BindingId enabledSelfProperty = nameof(enabledSelf);
         internal static readonly BindingId layoutProperty = nameof(layout);
         internal static readonly BindingId languageDirectionProperty = nameof(languageDirection);
         internal static readonly BindingId localBoundProperty = nameof(localBound);
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly BindingId nameProperty = nameof(name);
         internal static readonly BindingId panelProperty = nameof(panel);
         internal static readonly BindingId pickingModeProperty = nameof(pickingMode);

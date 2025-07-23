@@ -25,7 +25,6 @@ namespace UnityEngine.UIElements
     public class VisualTreeAsset : ScriptableObject
     {
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static string LinkedVEAInTemplatePropertyName = "--unity-linked-vea-in-template";
         internal static string NoRegisteredFactoryErrorMessage = "Element '{0}' is missing a UxmlElementAttribute and has no registered factory method. Please ensure that you have the correct namespace imported.";
         internal const string TemplateAliasExistsError = $"{nameof(VisualTreeAsset)}: could not register a template alias for asset `{{0}}`, alias is already defined for asset '{{1}}'";
 
@@ -310,30 +309,6 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void RemoveElementAndDependencies(VisualElementAsset asset)
-        {
-            if (asset == null)
-                return;
-
-            if (null == asset.parentAsset)
-            {
-                // Removing the root
-                if (asset == m_VisualTree)
-                {
-                    m_VisualTree = null;
-                }
-                else
-                {
-                    throw new InvalidOperationException("Trying to remove an asset that is not part of this VisualTreeAsset");
-                }
-            }
-            else
-            {
-                asset.parentAsset.Remove(asset);
-            }
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
             if (string.IsNullOrEmpty(fieldUxmlName))
@@ -524,7 +499,7 @@ namespace UnityEngine.UIElements
             TemplateContainer target = new TemplateContainer(name, this);
             try
             {
-                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null);
+                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null, null);
                 CloneTree(target, cc);
             }
             finally
@@ -586,7 +561,7 @@ namespace UnityEngine.UIElements
             firstElementIndex = target.childCount;
             try
             {
-                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null);
+                var cc = new CreationContext(s_TemporarySlotInsertionPoints, null, null, null, null, s_VeaIdsPath, null, null);
                 CloneTree(target, cc);
             }
             finally
@@ -623,7 +598,7 @@ namespace UnityEngine.UIElements
                 }
 
                 var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
-                    this, target, cc.veaIdsPath, null);
+                    this, target, cc.veaIdsPath, null, cc.templateAsset);
 
                 var childElement = CloneSetupRecursively(child, newCc);
 
@@ -653,7 +628,7 @@ namespace UnityEngine.UIElements
 
             // Save reference to the visualElementAsset so elements can be reinitialized when
             // we set their attributes in the editor
-            ve.SetProperty(LinkedVEAInTemplatePropertyName, asset);
+            ve.visualElementAsset = asset;
 
             // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
             // tracked for live reloading on changes, and also accessible for users that need to keep track
@@ -720,7 +695,7 @@ namespace UnityEngine.UIElements
 
                 // Save reference to the visualElementAsset so elements can be reinitialized when
                 // we set their attributes in the editor
-                childVe.SetProperty(LinkedVEAInTemplatePropertyName, childVea);
+                childVe.visualElementAsset = childVea;
 
                 var index = templateAsset?.slotUsages?.FindIndex(u => u.assetId == childVea.id) ?? -1;
                 if (index != -1)
@@ -1294,6 +1269,8 @@ namespace UnityEngine.UIElements
             private set;
         }
 
+        internal TemplateAsset templateAsset { get; private set; }
+
         /// <summary>
         /// The target UXML file to clone or instantiate.
         /// </summary>
@@ -1338,7 +1315,7 @@ namespace UnityEngine.UIElements
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,
             VisualTreeAsset vta, VisualElement target)
-            : this(slotInsertionPoints, attributeOverrides, null, vta, target, null, null)
+            : this(slotInsertionPoints, attributeOverrides, null, vta, target, null, null, null)
         { }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -1346,7 +1323,8 @@ namespace UnityEngine.UIElements
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides,
             List<SerializedDataOverrideRange> serializedDataOverrides,
-            VisualTreeAsset vta, VisualElement target, List<int> veaIdsPath, List<string> namesPath)
+            VisualTreeAsset vta, VisualElement target, List<int> veaIdsPath, List<string> namesPath,
+            TemplateAsset ta)
         {
             this.target = target;
             this.slotInsertionPoints = slotInsertionPoints;
@@ -1355,6 +1333,7 @@ namespace UnityEngine.UIElements
             visualTreeAsset = vta;
             this.namesPath = namesPath;
             this.veaIdsPath = veaIdsPath;
+            this.templateAsset = ta;
         }
 
         public override bool Equals(object obj)

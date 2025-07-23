@@ -42,6 +42,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     text = L10n.Tr("Local");
                     tooltip = string.Empty;
                     break;
+                case PackageTag.Tarball:
+                    text = L10n.Tr("Tarball");
+                    tooltip = string.Empty;
+                    break;
                 case PackageTag.Git:
                     text = L10n.Tr("Git");
                     tooltip = string.Empty;
@@ -79,6 +83,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UpdateTag(PackageTag.Custom);
             else if (version.HasTag(PackageTag.Local))
                 UpdateTag(PackageTag.Local);
+            else if (version.HasTag(PackageTag.Tarball))
+                UpdateTag(PackageTag.Tarball);
             else if (version.HasTag(PackageTag.Git))
                 UpdateTag(PackageTag.Git);
             else if (version.HasTag(PackageTag.Deprecated))

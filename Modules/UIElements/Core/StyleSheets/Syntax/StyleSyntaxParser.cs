@@ -156,7 +156,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
             {
                 // Keyword
                 exp = new Expression(ExpressionType.Keyword);
-                exp.keyword = token.text.ToLower();
+                exp.keyword = token.text.ToLowerInvariant();
 
                 tokenizer.MoveNext();
             }
@@ -280,7 +280,21 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
                     throw new Exception($"Unexpected token '{token.type}' in data type expression");
             }
 
+            EatSpace(tokenizer);
+
             token = tokenizer.current;
+            if (token.type == StyleSyntaxTokenType.OpenBracket)
+            {   // Range specification
+                tokenizer.MoveNext();
+                ParseLimits(tokenizer, out exp.min, out exp.max);
+                token = tokenizer.current;
+            }
+            else
+            {
+                exp.min = float.NegativeInfinity;
+                exp.max = float.PositiveInfinity;
+            }
+
             if (token.type != StyleSyntaxTokenType.GreaterThan)
                 throw new Exception($"Unexpected token '{token.type}' in data type expression. Expected '>' token");
 
@@ -390,6 +404,33 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
                 ParseRanges(tokenizer, out multiplier.min, out multiplier.max);
         }
 
+        private void ParseLimits(StyleSyntaxTokenizer tokenizer, out float min, out float max)
+        {
+            var token = tokenizer.current;
+
+            if( token.type != StyleSyntaxTokenType.Number)
+                throw new Exception($"Unexpected token '{token.type}' in expression. Expected number token");
+
+            min = token.number;
+            token = tokenizer.MoveNext();
+
+            if (token.type != StyleSyntaxTokenType.Comma)
+                throw new Exception($"Unexpected token '{token.type}' in expression. Expected coma");
+
+            token = tokenizer.MoveNext();
+
+            if (token.type != StyleSyntaxTokenType.Number)
+                throw new Exception($"Unexpected token '{token.type}' in expression. Expected number token");
+            max = token.number;
+
+            token = tokenizer.MoveNext();
+
+            if (token.type != StyleSyntaxTokenType.CloseBracket)
+                throw new Exception($"Unexpected token '{token.type}' in expression. Expected ']' ");
+
+            tokenizer.MoveNext();
+        }
+
         private void ParseRanges(StyleSyntaxTokenizer tokenizer, out int min, out int max)
         {
             min = -1;
@@ -405,11 +446,11 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
                     case StyleSyntaxTokenType.Number:
                         if (!foundComma)
                         {
-                            min = token.number;
+                            min = (int)token.number;
                         }
                         else
                         {
-                            max = token.number;
+                            max = (int)token.number;
                         }
 
                         break;

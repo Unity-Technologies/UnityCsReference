@@ -17,7 +17,10 @@ namespace UnityEditor.Build.Profile.Handlers
         static readonly IList<IBuildProfileSettingsProvider> s_InternalSettings = new List<IBuildProfileSettingsProvider>
         {
             new SceneListProvider(),
-            new ScriptingDefinesSettings()
+            new ScriptingDefinesSettings(),
+            new PlayerSettingsProvider(),
+            new QualitySettingsProvider(),
+            new Elements.GraphicsSettingsProvider()
         };
 
         readonly BuildProfile m_BuildProfile;
@@ -44,7 +47,7 @@ namespace UnityEditor.Build.Profile.Handlers
             for (int i = 0; i < s_InternalSettings.Count; ++i)
             {
                 var provider = s_InternalSettings[i];
-                if (!provider.HasSettings(m_BuildProfile))
+                if (provider.CanAddSettings(m_BuildProfile) && !provider.HasSettings(m_BuildProfile))
                     yield return (i, provider.GetDisplayName());
             }
         }

@@ -35,14 +35,14 @@ class AIDropdownContent : PopupWindowContent
 
     internal Data data = new()
     {
-        text = "Use of Unity AI is governed by the <link=terms><color=#7BAEFA>Unity Terms of Service</color></link>."
-            + "\n\nBy proceeding, I acknowledge and understand that Unity AI integrates third-party services, and I " +
-            "confirm that I have reviewed and agreed to the respective terms of use for these services, as outlined " +
-            "in the <link=thirdparty><color=#7BAEFA>Unity AI Models and Partners</color></link> page.",
+        text = "I have read and agree to the <link=terms><color=#7BAEFA>Unity Terms of Service</color></link>." +
+            "\n\nWhen using Unity AI, including third-party models, you are responsible for ensuring your use of Unity AI" +
+            " and any generated assets do not infringe on third-party rights and are appropriate for your use." +
+            "\n\nSee <link=thirdparty><color=#7BAEFA>Unity AI Models and Partners</color></link> for more information.",
         links = new()
         {
             new() {id = "terms", url = "https://unity.com/legal/terms-of-service"},
-            new() {id = "supplemental", url = "https://unity.com/legal/supplemental-privacy-statement-unity-muse"},
+            new() {id = "supplemental", url = "https://unity.com/legal/supplemental-privacy-statement-unity"},
             new() {id = "thirdparty", url = "https://unity.com/legal/unityai-models-partners"}
         },
         noInternet = "You need an internet connection to be able to use the AI features.",

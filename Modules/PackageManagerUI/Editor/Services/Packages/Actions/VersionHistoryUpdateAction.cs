@@ -33,7 +33,7 @@ internal class VersionHistoryUpdateAction : UpdateActionBase
         {
             // This allows Users to switch from their shadowed version to the official registry version
             // to gain updates or support provided by the official package.
-            return version.version == installed.version && installed.HasTag(PackageTag.Local | PackageTag.Git);
+            return version.version == installed.version && installed.HasTag(PackageTag.Local | PackageTag.Tarball | PackageTag.Git);
         }
 
         return m_PageManager.activePage.visualStates.Get(version.package?.uniqueId)?.isLocked != true;

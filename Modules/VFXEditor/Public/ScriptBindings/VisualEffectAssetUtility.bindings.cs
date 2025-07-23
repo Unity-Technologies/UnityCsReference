@@ -63,6 +63,7 @@ namespace UnityEditor.VFX
                 eventDesc = desc.eventDesc,
                 gpuBufferDesc = desc.gpuBufferDesc,
                 cpuBufferDesc = desc.cpuBufferDesc,
+                temporaryBufferDesc = desc.temporaryBufferDesc,
                 shaderSourceDesc = desc.shaderSourceDesc,
                 rendererSettings = desc.rendererSettings,
                 instancingDisabledReason = desc.instancingDisabledReason,

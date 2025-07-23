@@ -103,6 +103,12 @@ namespace UnityEditorInternal
             SessionState.SetInt(kEditModeStringKey, (int)s_EditMode);
         }
 
+        public static void SetEditModeToNone()
+        {
+            SetEditMode(SceneViewEditMode.None);
+            ownerID = k_OwnerIdNone;
+        }
+
         static void OnActiveToolWillChange()
         {
             if (ownerID != k_OwnerIdNone)

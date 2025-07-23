@@ -40,6 +40,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         string FileReadAllText(string filePath);
         void FileWriteAllBytes(string filePath, byte[] bytes);
         void FileWriteAllText(string filePath, string contents);
+        string GetUniqueTempPathInProject();
+        NPath[] GetFiles(string tempFolder, string searchPattern, bool recurse);
+        void SetFileAttributes(string file, FileAttributes attributes);
+        FileAttributes GetFileAttributes(string file);
+        void Move(string sourceDirName, string destinationDirName);
     }
 
     [ExcludeFromCodeCoverage]
@@ -190,5 +195,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void FileWriteAllBytes(string filePath, byte[] bytes) => new NPath(filePath).WriteAllBytes(bytes);
 
         public void FileWriteAllText(string filePath, string contents) => new NPath(filePath).WriteAllText(contents);
+        public string GetUniqueTempPathInProject() => FileUtil.GetUniqueTempPathInProject();
+
+        public NPath[] GetFiles(string path, string searchPattern, bool recurse) => new NPath(path).Files(searchPattern, recurse);
+        public void SetFileAttributes(string file, FileAttributes attributes) => new NPath(file).Attributes = attributes;
+        public FileAttributes GetFileAttributes(string file) => new NPath(file).Attributes;
+        public void Move(string sourceDirName, string destinationDirName) => new NPath(sourceDirName).Move(destinationDirName);
     }
 }

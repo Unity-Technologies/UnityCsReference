@@ -46,6 +46,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return s_IdToName.Keys;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         public static string ToDisplayString(this LengthUnit unit)
         {
             return unit switch

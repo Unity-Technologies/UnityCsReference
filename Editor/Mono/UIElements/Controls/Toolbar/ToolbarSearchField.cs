@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A search field for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSearchField|UXML element ToolbarSearchField]].
     /// </summary>
+    [Icon("UIToolkit/Icons/ToolbarSearchField.png")]
     public class ToolbarSearchField : SearchFieldBase<TextField, string>
     {
         // KEEP BELOW CODE TO BE BACKWARD COMPATIBLE WITH 2019.1 ToolbarSearchField

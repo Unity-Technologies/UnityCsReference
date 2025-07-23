@@ -141,7 +141,7 @@ internal class RemoveAction : PackageAction
 
     protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
     {
-        yield return new DisableIfInstallOrUninstallInProgress(m_OperationDispatcher);
+        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
         yield return new DisableIfCompiling(m_Application);
     }
 

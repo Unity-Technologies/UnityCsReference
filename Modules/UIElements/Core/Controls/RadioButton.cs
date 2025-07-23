@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A control that allows users to select a single option inside a <see cref="RadioButtonGroup"/>. For more information, refer to [[wiki:UIE-uxml-element-RadioButton|UXML element RadioButton]].
     /// </summary>
+    [Icon("UIToolkit/Icons/RadioButton.png")]
     public class RadioButton : BaseBoolField, IGroupBoxOption
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

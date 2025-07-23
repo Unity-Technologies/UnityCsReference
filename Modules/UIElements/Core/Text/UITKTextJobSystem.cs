@@ -172,6 +172,7 @@ namespace UnityEngine.UIElements
                 // Loading line breaking rules is done here because it requires the main thread
                 var settings = TextUtilities.GetTextSettingsFrom(textData.visualElement);
                 settings?.lineBreakingRules?.LoadLineBreakingRules();
+                _ = settings?.fallbackOSFontAssets;
 
                 if (textData.prepareSuccess)
                     continue;

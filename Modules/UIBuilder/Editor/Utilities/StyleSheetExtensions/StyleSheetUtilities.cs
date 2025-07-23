@@ -26,7 +26,7 @@ namespace Unity.UI.Builder
             if (styleSheet == null)
                 return;
 
-            StyleComplexSelector complexSelector = selectorElement.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+            StyleComplexSelector complexSelector = BuilderSharedStyles.GetSelectorProperty(selectorElement);
             var fakeSelectorString = BuilderConstants.UssSelectorNameSymbol + selectorElement.name;
 
             var fakeSelector = styleSheet.FindSelector(fakeSelectorString); // May already exist because of Undo/Redo

@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal class TypeData
         {
             public Type type { get; }
@@ -55,6 +57,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static TypeData GetOrCreateTypeData(Type t)
         {
             if (!s_TypeData.TryGetValue(t, out var data))

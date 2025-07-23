@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class UxmlSerializedDataDescription
     {
         private readonly List<UxmlSerializedAttributeDescription> m_SerializedAttributes = new();

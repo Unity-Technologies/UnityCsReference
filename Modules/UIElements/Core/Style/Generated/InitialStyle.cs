@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().alignContent = Align.FlexStart;
             s_InitialStyle.layoutData.Write().alignItems = Align.Stretch;
             s_InitialStyle.layoutData.Write().alignSelf = Align.Auto;
+            s_InitialStyle.layoutData.Write().aspectRatio = StyleKeyword.Auto.ToStyleRatio();
             s_InitialStyle.visualData.Write().backgroundColor = Color.clear;
             s_InitialStyle.visualData.Write().backgroundImage = default(Background);
             s_InitialStyle.visualData.Write().backgroundPositionX = BackgroundPosition.Initial();
@@ -121,6 +122,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Align alignContent => s_InitialStyle.layoutData.Read().alignContent;
         public static Align alignItems => s_InitialStyle.layoutData.Read().alignItems;
         public static Align alignSelf => s_InitialStyle.layoutData.Read().alignSelf;
+        public static Ratio aspectRatio => s_InitialStyle.layoutData.Read().aspectRatio;
         public static Color backgroundColor => s_InitialStyle.visualData.Read().backgroundColor;
         public static Background backgroundImage => s_InitialStyle.visualData.Read().backgroundImage;
         public static BackgroundPosition backgroundPositionX => s_InitialStyle.visualData.Read().backgroundPositionX;

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -59,17 +58,6 @@ namespace UnityEditor.Snap
             Insert(IndexOf(this.Q(classes: inputUssClassName)), m_LinkedToggle);
             m_LinkedToggle.AddManipulator(new Clickable(() => linked = !linked));
             UpdateLinkedState();
-        }
-
-        public bool isDelayed
-        {
-            get => m_XField.isDelayed;
-            set
-            {
-                m_XField.isDelayed = value;
-                m_YField.isDelayed = value;
-                m_ZField.isDelayed = value;
-            }
         }
 
         void UpdateLinkedState()

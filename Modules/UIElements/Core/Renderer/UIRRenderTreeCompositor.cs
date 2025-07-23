@@ -45,7 +45,7 @@ namespace UnityEngine.UIElements.UIR
             public Vector4 drawSourceTexOffsets;
 
             // Only assigned after the operation has been drawn. Only used by Effect draw operations.
-            public RenderTexture dstTexture;
+            public RenderTreeAtlas.AtlasBlock dstAtlasBlock;
 
             // Only assigned on operations that are direct children of RenderTree draw operations.
             public TextureId dstTextureId;
@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements.UIR
                 m_Effect = new PostProcessingPass();
                 m_Filter = new FilterFunction();
 
-                dstTexture = null;
+                dstAtlasBlock = default;
                 dstTextureId = TextureId.invalid;
             }
 
@@ -121,7 +121,7 @@ namespace UnityEngine.UIElements.UIR
 
         readonly RenderTreeManager m_RenderTreeManager;
         DrawOperation m_RootOperation;
-        List<RenderTexture> m_AllocatedRenderTextures = new();
+        List<RenderTreeAtlas.AtlasBlock> m_AllocatedTextureEntries = new();
         MaterialPropertyBlock m_Block = new();
         ObjectPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation());
 
@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements.UIR
             return effect.writeMargins;
         }
 
-        static void UpdateDrawBounds_PostOrder(DrawOperation op)
+        void UpdateDrawBounds_PostOrder(DrawOperation op)
         {
             Rect? bounds = null;
 
@@ -302,21 +302,9 @@ namespace UnityEngine.UIElements.UIR
 
                     op.parent.drawSourceBounds = UIRUtility.CastToRectInt(sourceBounds);
 
-                    var texOffsets = new Vector4(readMargins.left, readMargins.top, readMargins.right, readMargins.bottom);
-                    if (rectInt.width > 0 && rectInt.height > 0)
-                    {
-                        float oneOverWidth = 1.0f / rectInt.width;
-                        float oneOverHeight = 1.0f / rectInt.height;
-
-                        texOffsets.x *= oneOverWidth;
-                        texOffsets.y *= oneOverHeight;
-                        texOffsets.z *= oneOverWidth;
-                        texOffsets.w *= oneOverHeight;
-                    }
-                    else
-                        texOffsets = Vector4.zero;
-
-                    op.parent.drawSourceTexOffsets = texOffsets;
+                    // Store the texel offsets in "pixels" since we do not know the texture size yet.
+                    // They will be converted to UVs once rendered.
+                    op.parent.drawSourceTexOffsets = new Vector4(readMargins.left, readMargins.top, readMargins.right, readMargins.bottom);
                 }
 
                 op.bounds = rectInt;
@@ -324,8 +312,21 @@ namespace UnityEngine.UIElements.UIR
             else
                 op.bounds = RectInt.zero;
 
-            if (op.parent?.type == DrawOperationType.RenderTree)
-                op.renderTree.quadRect = op.bounds;
+            if (op.parent != null)
+            {
+                RenderTreeAtlas.AtlasBlock block;
+                if (RenderTreeAtlas.ReserveSize(op.bounds.width, op.bounds.height, out block))
+                {
+                    m_AllocatedTextureEntries.Add(block);
+                    op.dstAtlasBlock = block;
+
+                    if (op.parent.type == DrawOperationType.RenderTree)
+                    {
+                        op.renderTree.quadRect = op.bounds;
+                        op.renderTree.quadUVRect = block.uvRect;
+                    }
+                }
+            }
         }
 
         // In the future, we could reuse textures, but for now we simply allocate one TextureId for each renderTree.
@@ -357,6 +358,9 @@ namespace UnityEngine.UIElements.UIR
             ExecuteDrawOperation_PostOrder(m_RootOperation);
         }
 
+
+        static Vector4[] s_UVRects = new Vector4[1];
+
         void ExecuteDrawOperation_PostOrder(DrawOperation op)
         {
             var child = op.firstChild;
@@ -375,13 +379,26 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(bounds.height > 0); // Otherwise, the width should have been set to 0 as well.
 
-            // TODO: Format may change depending on color space and context (editor vs runtime)
-            var graphicsFormat = (QualitySettings.activeColorSpace == ColorSpace.Linear) ? GraphicsFormat.R8G8B8A8_SRGB : GraphicsFormat.R8G8B8A8_UNorm;
-            var descriptor = new RenderTextureDescriptor(bounds.width, bounds.height, graphicsFormat, GraphicsFormat.D24_UNorm_S8_UInt);
-            op.dstTexture = RenderTexture.GetTemporary(descriptor);
-            m_AllocatedRenderTextures.Add(op.dstTexture);
-            if (op.dstTextureId.IsValid())
-                m_RenderTreeManager.textureRegistry.UpdateDynamic(op.dstTextureId, op.dstTexture);
+            bool forceGamma = m_RenderTreeManager.forceGammaRendering;
+            bool filterShouldOutputLinear = false;
+            if (forceGamma && op.parent?.type == DrawOperationType.RenderTree)
+            {
+                // When in force-gamma rendering, we need to keep an sRGB texture for the final textured quad
+                // since the shader will do an explicit linear-to-gamma conversion when sampling that texture.
+                forceGamma = false;
+                filterShouldOutputLinear = true;
+            }
+
+            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma))
+            {
+                if (op.dstTextureId.IsValid())
+                    m_RenderTreeManager.textureRegistry.UpdateDynamic(op.dstTextureId, op.dstAtlasBlock.texture);
+            }
+            else
+            {
+                Debug.LogError($"Failed to create a texture for draw operation with bounds {bounds}.");
+                return;
+            }
 
             switch (op.type)
             {
@@ -389,19 +406,31 @@ namespace UnityEngine.UIElements.UIR
                 {
                     try
                     {
+                        Debug.Assert(op.firstChild != null, "An effect draw operation must have at least one child operation to render from.");
+
                         // Set Uniforms: Conversion to visual element coordinates (relative, pixels, points)
                         var oldRT = RenderTexture.active;
-                        RenderTexture.active = op.dstTexture;
 
-                        // TODO: Replace the clear operation with a mesh that covers only the parts of the parent op
-                        // read margins that the post-processing effect isn't writing to (assuming it is opaque, which
-                        // is expected to be the case right now). Another reason to not clear is when we will introduce
-                        // atlases, in which case we would need to be careful not to clear previously rendered parts of
-                        // the atlas.
-                        GL.Clear(false, true, Color.clear);
+                        var dstTex = op.dstAtlasBlock.texture;
+                        RenderTexture.active = dstTex;
 
-                        op.effect.material.SetPass(op.effect.passIndex);
-                        m_Block.SetTexture("_MainTex", op.firstChild.dstTexture); // TODO: Use int instead of string
+                        var dstRect = op.dstAtlasBlock.rect;
+                        var srcTexEntry = op.firstChild.dstAtlasBlock;
+                        var srcUVRect = srcTexEntry.uvRect;
+
+                        var mat = op.effect.material;
+
+                        if (filterShouldOutputLinear)
+                            mat.EnableKeyword("UIE_OUTPUT_LINEAR");
+                        else
+                            mat.DisableKeyword("UIE_OUTPUT_LINEAR");
+
+                        mat.SetPass(op.effect.passIndex);
+
+                        m_Block.SetTexture("_MainTex", srcTexEntry.texture); // TODO: Use int instead of string
+
+                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
+                        m_Block.SetVectorArray("unity_uie_UVRect", s_UVRects);
 
                         if (op.effect.prepareMaterialPropertyBlockCallback != null)
                             op.effect.prepareMaterialPropertyBlockCallback(m_Block, op.filter);
@@ -418,15 +447,27 @@ namespace UnityEngine.UIElements.UIR
                         var drawRect = op.drawSourceBounds;
                         var texOffsets = op.drawSourceTexOffsets;
 
-                        GL.Viewport(new Rect(0, 0, bounds.width, bounds.height));
+                        float texWidth = srcTexEntry.texture.width;
+                        float texHeight = srcTexEntry.texture.height;
+
+                        var uvRect = new Rect(srcUVRect.x + texOffsets.x / texWidth,
+                                              srcUVRect.y + texOffsets.y / texHeight,
+                                              srcUVRect.width - (texOffsets.x + texOffsets.z) / texWidth,
+                                              srcUVRect.height - (texOffsets.y + texOffsets.w) / texHeight);
+
+                        GL.Viewport(new Rect(dstRect.xMin, dstRect.yMin, dstRect.width, dstRect.height));
                         GL.Begin(GL.QUADS);
-                        GL.TexCoord2(texOffsets.x, texOffsets.w);
+                        GL.TexCoord2(uvRect.xMin, uvRect.yMin);
+                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
                         GL.Vertex3(drawRect.xMin, drawRect.yMax, 0.5f); // BL
-                        GL.TexCoord2(texOffsets.x, 1 - texOffsets.y);
+                        GL.TexCoord2(uvRect.xMin, uvRect.yMax);
+                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
                         GL.Vertex3(drawRect.xMin, drawRect.yMin, 0.5f); // TL
-                        GL.TexCoord2(1 - texOffsets.z, 1 - texOffsets.y);
+                        GL.TexCoord2(uvRect.xMax, uvRect.yMax);
+                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
                         GL.Vertex3(drawRect.xMax, drawRect.yMin, 0.5f); // TR
-                        GL.TexCoord2(1 - texOffsets.z, texOffsets.w);
+                        GL.TexCoord2(uvRect.xMax, uvRect.yMin);
+                        GL.MultiTexCoord2(1, 0.0f, 0.0f);
                         GL.Vertex3(drawRect.xMax, drawRect.yMax, 0.5f); // BR
                         GL.End();
 
@@ -440,7 +481,7 @@ namespace UnityEngine.UIElements.UIR
                 }
                 case DrawOperationType.RenderTree:
                 {
-                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstTexture, bounds);
+                    m_RenderTreeManager.RenderSingleTree(op.renderTree, op.dstAtlasBlock.texture, op.dstAtlasBlock.rect, UIRUtility.CastToRect(bounds));
                     break;
                 }
                 default:
@@ -476,9 +517,9 @@ namespace UnityEngine.UIElements.UIR
                 m_RootOperation = null;
             }
 
-            for(int i = 0 ; i < m_AllocatedRenderTextures.Count ; ++i)
-                RenderTexture.ReleaseTemporary(m_AllocatedRenderTextures[i]);
-            m_AllocatedRenderTextures.Clear();
+            for(int i = 0 ; i < m_AllocatedTextureEntries.Count ; ++i)
+                RenderTreeAtlas.ReleaseTextureForAtlasBlock(m_AllocatedTextureEntries[i]);
+            m_AllocatedTextureEntries.Clear();
         }
 
         void CleanupOperation_PostOrder(DrawOperation op)

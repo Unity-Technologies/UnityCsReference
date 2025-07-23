@@ -2,18 +2,21 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Accessibility
+namespace Unity.PlayMode.Editor
 {
-    internal interface IService
+    /// <summary>
+    /// The play mode state.
+    /// </summary>
+    enum PlayModeState
     {
         /// <summary>
-        /// Sets up everything the service needs to work.
+        /// The editor is not in play mode.
         /// </summary>
-        void Start();
+        NotRunning,
 
         /// <summary>
-        /// Tears the service down without needing to create a new service.
+        /// The editor is in play mode.
         /// </summary>
-        void Stop();
+        Running,
     }
 }

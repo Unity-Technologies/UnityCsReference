@@ -113,8 +113,16 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Indicates the directionality of the element's text.
+    /// Indicates the directionality of the element's text. The value cascades to child elements.
     /// </summary>
+    /// <remarks>
+    /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
+    /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
+    /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
+    /// </remarks>
+    /// <remarks>
+    /// SA: [[wiki:ui-systems/language-direction|Language direction]]
+    /// </remarks>
     public enum LanguageDirection
     {
         // Keep in sync with LanguageDirection in Modules/UIElements/LanguageDirection.h
@@ -215,6 +223,7 @@ namespace UnityEngine.UIElements
     ///\\
     /// SA: [[wiki:UIE-uxml-element-VisualElement|UXML element VisualElement]], [[VisualElementExtensions]], [[UQueryExtensions]].
     /// </remarks>
+    [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
         internal static class Testing
@@ -267,6 +276,7 @@ namespace UnityEngine.UIElements
             [Tooltip(DataBinding.k_DataSourceTooltip)]
             [SerializeField, HideInInspector, UxmlTypeReference(typeof(object))] string dataSourceTypeString;
             [Tooltip(DataBinding.k_DataSourceTooltip)]
+            [UxmlAttributeBindingPath("dataSource")]
             [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
             [SerializeField] string viewDataKey;
             [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
@@ -1753,7 +1763,7 @@ namespace UnityEngine.UIElements
 
         internal string typeName
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => typeData.typeName;
         }
 
@@ -1803,6 +1813,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal readonly uint controlid;
 
         // IMGUIContainers are special snowflakes that need custom treatment regarding events.
@@ -2871,7 +2882,7 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal object GetProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
@@ -2883,20 +2894,21 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SetProperty(PropertyName key, object value)
         {
             CheckUserKeyArgument(key);
             SetPropertyInternal(key, value);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal bool HasProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);
             return m_PropertyBag?.ContainsKey(key) == true;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool ClearProperty(PropertyName key)
         {
             CheckUserKeyArgument(key);

@@ -2,11 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using JetBrains.Annotations;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    internal interface IUIToolkitSettingsProviderExtension
+    {
+        int order { get; }
+        bool HasSearchInterestHandler(string searchContext);
+        void OnActivate(string searchContext, VisualElement rootElement);
+        void OnDeactivate();
+    }
+
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UIToolkitSettingsProvider : SettingsProvider
     {
@@ -17,6 +30,28 @@ namespace UnityEditor.UIElements
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableTextAdvanced = "enable-text-advanced";
         const string k_enableDebuggerLowLevelName = "enable-debugger-low-level";
+
+        private static readonly List<Type> s_ExtensionTypes = new();
+
+        [InitializeOnLoadMethod, UsedImplicitly]
+        private static void GetExtensionTypes()
+        {
+            foreach (var extension in TypeCache.GetTypesDerivedFrom<IUIToolkitSettingsProviderExtension>())
+            {
+                if (extension.IsInterface)
+                    continue;
+
+                if (extension.IsAbstract || extension.IsGenericType)
+                    continue;
+
+                if (extension.GetConstructor(Type.EmptyTypes) == null)
+                    continue;
+
+                s_ExtensionTypes.Add(extension);
+            }
+        }
+
+        private readonly List<IUIToolkitSettingsProviderExtension> m_Extensions = new ();
 
         private VisualElement m_HelpVisualTree;
         private VisualTreeAsset m_UIToolkitTemplate;
@@ -48,12 +83,21 @@ namespace UnityEditor.UIElements
                     return true;
             }
 
+            foreach (var extension in m_Extensions)
+            {
+                if (extension.HasSearchInterestHandler(searchContext))
+                    return true;
+            }
+
             return false;
         }
 
         public UIToolkitSettingsProvider() : base(name, SettingsScope.Project)
         {
             hasSearchInterestHandler = HasSearchInterestHandler;
+            foreach (var extension in s_ExtensionTypes)
+                m_Extensions.Add((IUIToolkitSettingsProviderExtension)Activator.CreateInstance(extension));
+            m_Extensions.Sort((lhs, rhs) => lhs.order.CompareTo(rhs.order));
         }
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
@@ -118,7 +162,19 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.EnableLowLevelDebugger = e.newValue;
             });
 
+            var localRoot = rootElement.Q<VisualElement>(className: "uitoolkit-settings-container");
+
+            foreach(var extension in m_Extensions)
+                extension.OnActivate(searchContext, localRoot);
+
             base.OnActivate(searchContext, rootElement);
+        }
+
+        public override void OnDeactivate()
+        {
+            foreach(var extension in m_Extensions)
+                extension.OnDeactivate();
+            base.OnDeactivate();
         }
     }
 }

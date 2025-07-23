@@ -4,35 +4,20 @@
 
 using UnityEngine.UIElements;
 using System.Collections.Generic;
-using UnityEditor.UIElements.Debugger;
 using System;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
     internal class BuilderSharedStyles
     {
+        private static readonly string ElementLinkedStyleSelectorVEPropertyName = "__unity-ui-builder-linked-style-selector";
+        private static readonly string ElementLinkedStyleSheetVEPropertyName = "__unity-ui-builder-linked-stylesheet";
+
         internal static bool IsDocumentElement(VisualElement element)
         {
             return element.name == "document" && element.ClassListContains("unity-builder-viewport__document");
-        }
-
-        public static VisualElement GetDocumentRootLevelElement(VisualElement element, VisualElement documentRootElement)
-        {
-            if (element == null)
-                return null;
-
-            while (element.parent != null)
-            {
-                if (element.parent == documentRootElement || IsDocumentElement(element.parent))
-                    return element;
-
-                element = element.parent;
-            }
-
-            return null;
         }
 
         internal static bool IsSelectorsContainerElement(VisualElement element)
@@ -42,12 +27,22 @@ namespace Unity.UI.Builder
 
         internal static bool IsStyleSheetElement(VisualElement element)
         {
-            return element.GetProperty(BuilderConstants.ElementLinkedStyleSheetVEPropertyName) != null;
+            return element.GetProperty(ElementLinkedStyleSheetVEPropertyName) != null;
+        }
+
+        internal static void SetStyleSheetElementProperty(VisualElement element, StyleSheet styleSheet)
+        {
+            element.SetProperty(ElementLinkedStyleSheetVEPropertyName, styleSheet);
+        }
+
+        internal static StyleSheet GetStyleSheetElementProperty(VisualElement element)
+        {
+            return (StyleSheet)element?.GetProperty(ElementLinkedStyleSheetVEPropertyName);
         }
 
         internal static bool IsSelectorElement(VisualElement element)
         {
-            return element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) != null;
+            return GetSelectorProperty(element) != null;
         }
 
         internal static bool IsParentSelectorElement(VisualElement element)
@@ -62,25 +57,34 @@ namespace Unity.UI.Builder
 
         internal static string GetSelectorString(VisualElement element)
         {
-            var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+            var complexSelector = GetSelectorProperty(element);
             var selectorStr = BuilderStyleSheetExporter.GetSelectorString(complexSelector);
             return selectorStr;
         }
 
-        internal static StyleComplexSelector GetSelector(VisualElement element)
+        internal static StyleComplexSelector GetSelectorProperty(VisualElement element)
         {
-            return element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+            return (StyleComplexSelector) element?.GetProperty(ElementLinkedStyleSelectorVEPropertyName);
+        }
+
+        internal static void SetSelectorProperty(VisualElement element, StyleComplexSelector selector)
+        {
+            element.SetProperty(ElementLinkedStyleSelectorVEPropertyName, selector);
         }
 
         internal static bool SetSelectorString(VisualElement element, StyleSheet styleSheet, string newString, out string error)
         {
-            var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
-            return styleSheet.SetSelectorString(complexSelector, newString, out error);
+            var complexSelector = GetSelectorProperty(element);
+            if (!complexSelector.TrySetSelectorsFromString(newString, out error))
+                return false;
+            styleSheet.SetTemporaryContentHash();
+            return true;
+
         }
 
         internal static List<string> GetSelectorParts(VisualElement element)
         {
-            var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+            var complexSelector = GetSelectorProperty(element);
             if (complexSelector == null)
                 return null;
 
@@ -149,7 +153,7 @@ namespace Unity.UI.Builder
 
                 var styleSheetElement = new VisualElement();
                 styleSheetElement.name = styleSheet.name;
-                styleSheetElement.SetProperty(BuilderConstants.ElementLinkedStyleSheetVEPropertyName, styleSheet);
+                styleSheetElement.SetProperty(ElementLinkedStyleSheetVEPropertyName, styleSheet);
                 if (belongsToParent)
                     styleSheetElement.SetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName, associatedUXMLFileName);
                 styleSheetElement.SetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName, i + startInd);
@@ -241,7 +245,7 @@ namespace Unity.UI.Builder
             var toSelector = toStyleSheet.Swallow(fromStyleSheet, fromSelector);
             fromStyleSheet.RemoveSelector(fromSelector);
 
-            selectorElement.SetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName, toSelector);
+            SetSelectorProperty(selectorElement, toSelector);
         }
 
         public static VisualElement FindSelectorElement(VisualElement documentRootElement, string selectorStr)
@@ -251,7 +255,7 @@ namespace Unity.UI.Builder
 
             foreach (var selectorElement in allSelectorElements)
             {
-                var complexSelector = selectorElement.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+                var complexSelector = GetSelectorProperty(selectorElement);
                 if (complexSelector == null)
                     continue;
 
@@ -268,7 +272,7 @@ namespace Unity.UI.Builder
             var ssVE = new VisualElement();
             var ssVEName = BuilderConstants.StyleSelectorElementName + complexSelector.ruleIndex;
             ssVE.name = ssVEName;
-            ssVE.SetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName, complexSelector);
+            SetSelectorProperty(ssVE, complexSelector);
 
             return ssVE;
         }

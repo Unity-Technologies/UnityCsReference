@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignContent;
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignItems;
         private StylePropertyData<StyleEnum<Align>, Align> m_AlignSelf;
+        private StylePropertyData<StyleRatio, Ratio> m_AspectRatio;
         private StylePropertyData<StyleColor, Color> m_BackgroundColor;
         private StylePropertyData<StyleBackground, Background> m_BackgroundImage;
         private StylePropertyData<StyleBackgroundPosition, BackgroundPosition> m_BackgroundPositionX;
@@ -156,6 +157,25 @@ namespace UnityEngine.UIElements
 
                 m_AlignSelf.Dispose();
                 m_AlignSelf = value;
+                Notify();
+            }
+        }
+
+        [CreateProperty]
+        public StylePropertyData<StyleRatio, Ratio> aspectRatio
+        {
+            get => m_AspectRatio;
+            private set
+            {
+                m_AspectRatio.target = value.target;
+                if (m_AspectRatio == value)
+                {
+                    value.Dispose();
+                    return;
+                }
+
+                m_AspectRatio.Dispose();
+                m_AspectRatio = value;
                 Notify();
             }
         }
@@ -1742,6 +1762,7 @@ namespace UnityEngine.UIElements
             alignContent = ComputeStyleProperty(element, nameof(alignContent), element.style.alignContent, element.computedStyle.alignContent, in context);
             alignItems = ComputeStyleProperty(element, nameof(alignItems), element.style.alignItems, element.computedStyle.alignItems, in context);
             alignSelf = ComputeStyleProperty(element, nameof(alignSelf), element.style.alignSelf, element.computedStyle.alignSelf, in context);
+            aspectRatio = ComputeStyleProperty(element, nameof(aspectRatio), element.style.aspectRatio, element.computedStyle.aspectRatio, in context);
             backgroundColor = ComputeStyleProperty(element, nameof(backgroundColor), element.style.backgroundColor, element.computedStyle.backgroundColor, in context);
             backgroundImage = ComputeStyleProperty(element, nameof(backgroundImage), element.style.backgroundImage, element.computedStyle.backgroundImage, in context);
             backgroundPositionX = ComputeStyleProperty(element, nameof(backgroundPositionX), element.style.backgroundPositionX, element.computedStyle.backgroundPositionX, in context);
@@ -1832,6 +1853,7 @@ namespace UnityEngine.UIElements
             m_AlignContent.Dispose();
             m_AlignItems.Dispose();
             m_AlignSelf.Dispose();
+            m_AspectRatio.Dispose();
             m_BackgroundColor.Dispose();
             m_BackgroundImage.Dispose();
             m_BackgroundPositionX.Dispose();

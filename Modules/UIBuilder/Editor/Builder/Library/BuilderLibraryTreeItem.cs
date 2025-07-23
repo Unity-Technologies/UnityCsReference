@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,13 +21,13 @@ namespace Unity.UI.Builder
         public string sourceAssetPath { get; }
         public Func<VisualElement> makeVisualElementCallback { get; }
         public Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeElementAssetCallback { get; }
-        public Texture2D icon { get; private set; }
-        public Texture2D largeIcon { get; private set; }
+        public Background icon { get; private set; }
+        public Background largeIcon { get; private set; }
         public bool isEditorOnly { get; set; }
-        public Texture2D darkSkinIcon { get; private set; }
-        public Texture2D lightSkinIcon { get; private set; }
-        public Texture2D darkSkinLargeIcon { get; private set; }
-        public Texture2D lightSkinLargeIcon { get; private set; }
+        public Background darkSkinIcon { get; private set; }
+        public Background lightSkinIcon { get; private set; }
+        public Background darkSkinLargeIcon { get; private set; }
+        public Background lightSkinLargeIcon { get; private set; }
 
         public BuilderLibraryTreeItem(
             string name, string iconName, Type type, Func<VisualElement> makeVisualElementCallback,
@@ -61,14 +62,11 @@ namespace Unity.UI.Builder
 
         void AssignIcon(string iconName)
         {
-            var darkSkinResourceBasePath = $"{BuilderConstants.IconsResourcesPath}/Dark/Library/";
-            var lightSkinResourceBasePath = $"{BuilderConstants.IconsResourcesPath}/Light/Library/";
+            darkSkinLargeIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px32, 1.0f, UIResources.EditorTheme.Dark);
+            lightSkinLargeIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px32, 1.0f, UIResources.EditorTheme.Light);
 
-            darkSkinLargeIcon = LoadLargeIcon(darkSkinResourceBasePath, iconName);
-            lightSkinLargeIcon = LoadLargeIcon(lightSkinResourceBasePath, iconName);
-
-            darkSkinIcon = LoadIcon(darkSkinResourceBasePath, iconName);
-            lightSkinIcon = LoadIcon(lightSkinResourceBasePath, iconName);
+            darkSkinIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px16, 1.0f, UIResources.EditorTheme.Dark);
+            lightSkinIcon = UIResources.GetIconForType(type, UIResources.RequestSize.Px16, 1.0f, UIResources.EditorTheme.Light);
 
             if (EditorGUIUtility.isProSkin)
             {

@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<IOperation> onAddOperation;
 
         bool isAddOrRemoveInProgress { get; }
+        bool isEmbedInProgress { get; }
         IEnumerable<string> packageIdsOrNamesInstalling { get; }
 
         bool IsAnyExperimentalPackagesInUse();
@@ -35,10 +36,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         void List(bool offlineMode = false);
         void RemoveByName(string packageName);
         void RemoveEmbeddedByName(string packageName);
+        void Embed(string packageName);
         void SearchAll(bool offlineMode = false);
         void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null);
         void ClearCache();
-        void Resolve();
+        void Resolve(bool delayCall = false);
     }
 
     [Serializable]
@@ -73,6 +75,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UpmRemoveOperation m_RemoveOperation;
         private UpmRemoveOperation removeOperation => CreateOperation(ref m_RemoveOperation);
+        [SerializeField]
+        private UpmEmbedOperation m_EmbedOperation;
+        private UpmEmbedOperation embedOperation => CreateOperation(ref m_EmbedOperation);
 
         [SerializeField]
         private UpmSearchOperation[] m_SerializedInProgressExtraFetchOperations = Array.Empty<UpmSearchOperation>();
@@ -120,6 +125,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isAddOrRemoveInProgress => m_AddOperation?.isInProgress == true ||
             m_RemoveOperation?.isInProgress == true || m_AddAndRemoveOperation?.isInProgress == true;
+
+        public bool isEmbedInProgress => m_EmbedOperation?.isInProgress == true;
 
         public IEnumerable<string> packageIdsOrNamesInstalling
         {
@@ -195,7 +202,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 tempPackageId = GetTempPackageIdFromPath(path);
-                addOperation.AddByUrlOrPath(tempPackageId, PackageTag.Local);
+                var packageTag = path.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase)
+                    ? PackageTag.Tarball
+                    : PackageTag.Local;
+                addOperation.AddByUrlOrPath(tempPackageId, packageTag);
                 SetupAddOperation();
                 return true;
             }
@@ -363,6 +373,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public void Embed(string packageName)
+        {
+            if (embedOperation.isInProgress)
+                return;
+            embedOperation.Embed(packageName);
+        }
+
         private void SetupRemoveOperation()
         {
             onPackagesProgressChange?.Invoke(new[] { (removeOperation.packageName, progress: PackageProgress.Removing) });
@@ -502,9 +519,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.ClearCache();
         }
 
-        public void Resolve()
+        public void Resolve(bool delayCall = false)
         {
-            m_ClientProxy.Resolve();
+            if (delayCall)
+                EditorApplication.delayCall += () => m_ClientProxy.Resolve();
+            else
+                m_ClientProxy.Resolve();
         }
 
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()

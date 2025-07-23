@@ -13,6 +13,7 @@ using UnityEditor.Search;
 using UnityEditor.SearchService;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using static UnityEditor.SearchableEditorWindow;
@@ -22,7 +23,8 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The Unity editor Hierarchy window.
     /// </summary>
-    [EditorWindowTitle(title = "Hierarchy")]
+    [EditorWindowTitle(title = "Hierarchy", icon = "UnityEditor.SceneHierarchyWindow")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
     {
         [InitializeOnLoadMethod]
@@ -146,7 +148,7 @@ namespace Unity.Hierarchy.Editor
             foreach (var window in windows)
             {
                 HierarchyWindowManager.InstantiateNodeTypeHandlers(window.m_Hierarchy);
-                window.m_HierarchyView.ApplyStyles();
+                window.m_HierarchyView.Initialize();
             }
         }
 
@@ -193,6 +195,10 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
+        /// <inheritdoc cref="HierarchyView.Initializing"/>
+        [AutoStaticsCleanupOnCodeReload]
+        public static event Action<VisualElement> InitializingView;
+
         /// <inheritdoc cref="HierarchyView.BindViewItem"/>
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<HierarchyViewItem> BindViewItem;
@@ -233,15 +239,23 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView = new HierarchyView(m_Hierarchy);
             m_HierarchyView.ListView.showAlternatingRowBackgrounds = HierarchyPreferences.AlternatingRowBackground
                 ? AlternatingRowBackground.All : AlternatingRowBackground.None;
-            m_HierarchyView.ApplyStyles();
+            m_HierarchyView.Initializing += OnHierarchyViewInitializing;
             m_HierarchyView.OnFlagsChanged += OnHierarchyViewFlagsChanged;
             m_HierarchyView.ListView.headerContextMenuPopulateEvent += OnHeaderContextMenu;
+            m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
+            m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
+            m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
+            m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
+            m_HierarchyView.SourceHierarchyChanged += OnSourceHierarchyChanged;
+            m_HierarchyView.BindViewItem += OnBindViewItem;
+            m_HierarchyView.UnbindViewItem += OnUnbindViewItem;
+            m_HierarchyView.PopulateContextMenu += OnPopulateContextMenu;
+            m_HierarchyView.GetTooltip += OnGetTooltip;
+            m_HierarchyView.Initialize();
 
             m_HasSceneHandler =
                 m_Hierarchy.GetNodeTypeHandlerBase<HierarchyGameObjectHandler>() != null ||
                 m_Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>() != null;
-
-            m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
             var toolbar = new UnityEditor.UIElements.Toolbar();
             toolbar.AddToClassList(s_HierarchyToolbarUssClassName);
@@ -313,16 +327,6 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.AlternatingRowBackground.valueChanged += OnToggleBackgroundStyleChange;
             HierarchyPreferences.UseNewHierarchy.valueChanged += OnUseNewHierarchyChanged;
 
-            m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
-            m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
-            m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
-
-            m_HierarchyView.SourceHierarchyChanged += OnSourceHierarchyChanged;
-            m_HierarchyView.BindViewItem += OnBindViewItem;
-            m_HierarchyView.UnbindViewItem += OnUnbindViewItem;
-            m_HierarchyView.PopulateContextMenu += OnPopulateContextMenu;
-            m_HierarchyView.GetTooltip += OnGetTooltip;
-
             // Call source hierarchy changed event manually, since we cannot register the
             // event at the moment the hierarchy view sets its source hierarchy in the constructor.
             OnSourceHierarchyChanged(m_Hierarchy);
@@ -375,6 +379,7 @@ namespace Unity.Hierarchy.Editor
                 m_HierarchyView.ListView?.UnregisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
                 m_HierarchyView.SourceHierarchyChanged -= OnSourceHierarchyChanged;
+                m_HierarchyView.Initializing -= OnHierarchyViewInitializing;
                 m_HierarchyView.BindViewItem -= OnBindViewItem;
                 m_HierarchyView.UnbindViewItem -= OnUnbindViewItem;
                 m_HierarchyView.PopulateContextMenu -= OnPopulateContextMenu;
@@ -429,6 +434,8 @@ namespace Unity.Hierarchy.Editor
                 }
             }
         }
+
+        void OnHierarchyViewInitializing() => InitializingView?.Invoke(m_HierarchyView);
 
         void OnBindViewItem(HierarchyViewItem item) => BindViewItem?.Invoke(item);
 
@@ -627,24 +634,83 @@ namespace Unity.Hierarchy.Editor
                 case EventCommandNames.SelectPrefabRoot:
                 {
                     Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>()?.SelectPrefabRoot(m_HierarchyView);
-                    evt.StopPropagation();
                     break;
                 }
                 case EventCommandNames.FrameSelected:
                 case EventCommandNames.FrameSelectedWithLock:
                 {
-                    if (HandleFrameSelectedNodesCommand())
-                        evt.StopPropagation();
+                    HandleFrameSelectedNodesCommand();
                     break;
                 }
+                case EventCommandNames.Cut:
+                    m_HierarchyView.OnCut();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.Copy:
+                    m_HierarchyView.OnCopy();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.Paste:
+                    m_HierarchyView.OnPaste();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.Rename:
+                    var count = m_HierarchyView.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+                    if (count == 1)
+                    {
+                        Span<HierarchyNode> nodes = stackalloc HierarchyNode[1];
+                        m_HierarchyView.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, nodes);
+                        m_HierarchyView.OnSetName(nodes[0]);
+                    }
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.Duplicate:
+                    m_HierarchyView.OnDuplicate();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.Delete:
+                case EventCommandNames.SoftDelete:
+                    m_HierarchyView.OnDelete();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.SelectAll:
+                    m_HierarchyView.SelectAll();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.DeselectAll:
+                    m_HierarchyView.ClearSelection();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.InvertSelection:
+                    m_HierarchyView.InvertSelection();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.SelectChildren:
+                    m_HierarchyView.SelectChildrenForSelectedNodes();
+                    evt.StopPropagation();
+                    break;
+
+                case EventCommandNames.UndoRedoPerformed:
+                    m_Hierarchy.SetDirty();
+                    evt.StopPropagation();
+                    break;
             }
         }
 
-        bool HandleFrameSelectedNodesCommand()
+        void HandleFrameSelectedNodesCommand()
         {
             var count = m_HierarchyView.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
             if (count == 0)
-                return false;
+                return;
 
             if (count == 1)
             {
@@ -662,8 +728,6 @@ namespace Unity.Hierarchy.Editor
                 }
                 m_HierarchyView.FrameNode(in rentedNodes.Span[^1]);
             }
-
-            return true;
         }
 
         void OnValidateCommand(ValidateCommandEvent evt)
@@ -671,10 +735,19 @@ namespace Unity.Hierarchy.Editor
             switch (evt.commandName)
             {
                 case EventCommandNames.SelectPrefabRoot:
-                    evt.StopPropagation();
-                    break;
                 case EventCommandNames.FrameSelected:
                 case EventCommandNames.FrameSelectedWithLock:
+                case EventCommandNames.Cut:
+                case EventCommandNames.Copy:
+                case EventCommandNames.Paste:
+                case EventCommandNames.Rename:
+                case EventCommandNames.Duplicate:
+                case EventCommandNames.Delete:
+                case EventCommandNames.SoftDelete:
+                case EventCommandNames.SelectAll:
+                case EventCommandNames.DeselectAll:
+                case EventCommandNames.InvertSelection:
+                case EventCommandNames.SelectChildren:
                     evt.StopPropagation();
                     break;
             }

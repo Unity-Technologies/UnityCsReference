@@ -47,7 +47,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Spinner.Stop();
                 return;
             }
-            m_Title.text = L10n.Tr("Please wait, installing a package...");
+            m_Title.text = package.versions.primary.HasTag(PackageTag.Custom) ?
+                L10n.Tr("Please wait, creating a package...") : L10n.Tr("Please wait, installing a package...");
             m_Description.text = package.uniqueId;
             m_Spinner.Start();
         }

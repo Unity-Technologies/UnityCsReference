@@ -25,16 +25,18 @@ namespace UnityEngine.UIElements.UIR
             var ve = mgc.visualElement;
             RenderTree nestedRenderTree = ve.nestedRenderData.renderTree;
             RectInt quad = nestedRenderTree.quadRect;
+            var uvRect = nestedRenderTree.quadUVRect;
+
             if (quad != RectInt.zero)
             {
                 var color = Color.white;
 
                 mgc.AllocateTempMesh(4, 6, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
 
-                vertices[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(0, 0) }; // BL
-                vertices[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(0, 1) }; // TL
-                vertices[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(1, 1) }; // TR
-                vertices[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(1, 0) }; // BR
+                vertices[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMin) }; // BL
+                vertices[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMax) }; // TL
+                vertices[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMax) }; // TR
+                vertices[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMin) }; // BR
 
                 indices[0] = 0;
                 indices[1] = 1;
