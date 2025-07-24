@@ -1252,7 +1252,10 @@ namespace UnityEngine.UIElements
                 if (multilineContainer != null)
                 {
                     if (computedStyle.whiteSpace == WhiteSpace.Normal || computedStyle.whiteSpace == WhiteSpace.PreWrap)
+                    {
                         style.overflow = Overflow.Hidden;
+                        multilineContainer.style.alignSelf = Align.Auto;
+                    }
                     else
                         style.overflow = (Overflow)OverflowInternal.Scroll;
                 }

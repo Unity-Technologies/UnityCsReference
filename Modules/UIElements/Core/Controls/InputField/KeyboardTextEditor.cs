@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
 
         // Used by our automated tests.
         internal bool m_Changed;
+        internal bool m_ShouldInvokeUpdateValue;
 
         const int k_LineFeed = 10;
         const int k_Space = 32;
@@ -146,13 +147,7 @@ namespace UnityEngine.UIElements
 
                 if (!textElement.edition.multiline && (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return))
                 {
-                    string prevText = editingUtilities.text;
-                    textElement.edition.UpdateValueFromText?.Invoke();
-
-                    // Revert the text to its previous value when using a delayed textfield to fix a bug with IME inputs (e.g. Japanese).
-                    // Hitting enter with an IME could trigger multiple events, causing duplicated characters otherwise.
-                    if (textElement.edition.isDelayed)
-                        editingUtilities.text = prevText;
+                    m_ShouldInvokeUpdateValue = true;
                 }
 
                 evt.StopPropagation();
@@ -163,6 +158,7 @@ namespace UnityEngine.UIElements
                     ? c == '\n' && evt.shiftKey
                     : (c == '\n' || c == '\r' || c == k_LineFeed) && !evt.altKey)
                 {
+                    ApplyTextIfNeeded();
                     textElement.edition.MoveFocusToCompositeRoot?.Invoke();
                     return;
                 }
@@ -178,7 +174,10 @@ namespace UnityEngine.UIElements
                     c = '\t';
 
                 if (!textElement.edition.AcceptCharacter(c))
+                {
+                    ApplyTextIfNeeded();
                     return;
+                }
 
                 if (c >= k_Space || evt.keyCode == KeyCode.Tab || (textElement.edition.multiline && !evt.altKey && (c == '\n' || c == '\r' || c == k_LineFeed)))
                 {
@@ -194,11 +193,19 @@ namespace UnityEngine.UIElements
                         m_Changed = true;
                 }
             }
-            if (m_Changed)
+            if (m_Changed || m_ShouldInvokeUpdateValue)
                 UpdateLabel(generatePreview);
 
             // The selection indices might have changed.
             textElement.edition.UpdateScrollOffset?.Invoke(evt.keyCode == KeyCode.Backspace);
+        }
+        void ApplyTextIfNeeded()
+        {
+            if (m_ShouldInvokeUpdateValue)
+            {
+                textElement.edition.UpdateValueFromText?.Invoke();
+                m_ShouldInvokeUpdateValue = false;
+            }
         }
 
         void UpdateLabel(bool generatePreview)
@@ -214,9 +221,11 @@ namespace UnityEngine.UIElements
             //Note that UpdateText will update editingUtilities with the latest text if validations were made.
             textElement.edition.UpdateText(fullText);
 
-            if (!textElement.edition.isDelayed)
+            if (!textElement.edition.isDelayed || m_ShouldInvokeUpdateValue)
+            {
                 textElement.edition.UpdateValueFromText?.Invoke();
-
+                m_ShouldInvokeUpdateValue = false;
+            }
             if (imeEnabled)
             {
                 // Reset back to the original string. We need to do this after UpdateText as it sends a change event that will update editingUtilities.text.

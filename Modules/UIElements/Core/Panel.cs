@@ -1554,7 +1554,6 @@ namespace UnityEngine.UIElements
         }
 
         internal RenderTexture targetTexture = null; // Render panel to a texture
-        internal int worldSpaceLayer = 0;
 
         internal int targetDisplay { get; set;}
 

@@ -139,7 +139,7 @@ namespace UnityEngine.TextCore.Text
                 return null;
 
             // Search the source font asset for the requested character.
-            if (sourceFontAsset.GetCharacterInLookupCache(unicode, fontStyle, fontWeight, out character))
+            if (sourceFontAsset.GetCharacterInLookupCache(unicode, FontStyles.Normal, TextFontWeight.Regular, out character))
             {
                 if (character.textAsset != null)
                     return character;
@@ -147,7 +147,7 @@ namespace UnityEngine.TextCore.Text
                 if (!canWriteOnAsset)
                     return null;
 
-                sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
+                sourceFontAsset.RemoveCharacterInLookupCache(unicode, FontStyles.Normal, TextFontWeight.Regular);
             }
 
             if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
@@ -155,19 +155,8 @@ namespace UnityEngine.TextCore.Text
                 if (!canWriteOnAsset)
                     return null;
 
-                if (sourceFontAsset.TryAddCharacterInternal(unicode, fontStyle, fontWeight, out character, populateLigatures))
+                if (sourceFontAsset.TryAddCharacterInternal(unicode, FontStyles.Normal, TextFontWeight.Regular, out character, populateLigatures))
                     return character;
-            }
-            // Search the source font asset for the requested character, removing bold and italic status
-            else if (sourceFontAsset.GetCharacterInLookupCache(unicode, FontStyles.Normal, TextFontWeight.Regular, out character))
-            {
-                if (character.textAsset != null)
-                    return character;
-
-                if (!canWriteOnAsset)
-                    return null;
-
-                sourceFontAsset.RemoveCharacterInLookupCache(unicode, fontStyle, fontWeight);
             }
 
             if (character == null && !canWriteOnAsset)

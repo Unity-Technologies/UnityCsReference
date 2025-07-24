@@ -202,7 +202,8 @@ namespace UnityEditor.Build.Profile.Handlers
 
             var originalPath = AssetDatabase.GetAssetPath(buildProfile);
             var newPath = ReplaceFileNameInPath(originalPath, newName);
-            var uniqueAssetPath = AssetDatabase.GenerateUniqueAssetPath(newPath);
+            var onlyCaseChange = string.Equals(buildProfile?.name, newName, StringComparison.OrdinalIgnoreCase);
+            var uniqueAssetPath = onlyCaseChange ? newPath : AssetDatabase.GenerateUniqueAssetPath(newPath);
             var finalName = Path.GetFileNameWithoutExtension(uniqueAssetPath);
 
             if (!string.IsNullOrEmpty(originalPath))

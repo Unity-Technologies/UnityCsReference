@@ -113,8 +113,16 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Indicates the directionality of the element's text.
+    /// Indicates the directionality of the element's text. The value cascades to child elements.
     /// </summary>
+    /// <remarks>
+    /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
+    /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
+    /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
+    /// </remarks>
+    /// <remarks>
+    /// SA: [[wiki:ui-systems/language-direction|Language direction]]
+    /// </remarks>
     public enum LanguageDirection
     {
         // Keep in sync with LanguageDirection in Modules/UIElements/LanguageDirection.h

@@ -292,18 +292,6 @@ namespace UnityEngine.UIElements
             set => m_RenderMode = value;
         }
 
-        [SerializeField]
-        private int m_WorldSpaceLayer = 0;
-
-        /// <summary>
-        /// The layer into which the world space panel will render.
-        /// </summary>
-        internal int worldSpaceLayer
-        {
-            get => m_WorldSpaceLayer;
-            set => m_WorldSpaceLayer = value;
-        }
-
         [SerializeField, FormerlySerializedAs("m_WorldInputMode")]
         private ColliderUpdateMode m_ColliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
 
@@ -915,7 +903,6 @@ namespace UnityEngine.UIElements
             p.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
             p.pixelsPerUnit = pixelsPerUnit;
             p.isFlat = renderMode != PanelRenderMode.WorldSpace;
-            p.worldSpaceLayer = worldSpaceLayer;
             p.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
             p.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
             p.panelRenderer.vertexBudget = m_VertexBudget;

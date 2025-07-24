@@ -151,6 +151,15 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.Reset();
         }
 
+        public void Reset()
+        {
+            m_RenderTreeManager = null;
+            m_RootRenderData = null;
+            parent = null;
+            firstChild = null;
+            nextSibling = null;
+        }
+
         public void Dispose()
         {
             if (m_RootRenderData != null)

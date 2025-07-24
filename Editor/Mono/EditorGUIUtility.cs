@@ -1848,7 +1848,9 @@ namespace UnityEditor
 
         public static int GetObjectPickerControlID()
         {
-            return ObjectSelector.get.objectSelectorID;
+            // To avoid creating an `ObjectSelector` instance just to get the control ID,
+            // we return 0 directly if `ObjectSelector` is not visible.
+            return !ObjectSelector.isVisible ? 0 : ObjectSelector.get.objectSelectorID;
         }
 
         internal static string GetHyperlinkColorForSkin()

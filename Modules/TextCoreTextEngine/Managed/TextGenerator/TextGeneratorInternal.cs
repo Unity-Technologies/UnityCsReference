@@ -323,15 +323,17 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
 
+
+            int underlineMaterialIndex = m_Underline.materialIndex;
             const int k_VertexIncrease = 12;
-            int index = textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount;
+            int index = textInfo.meshInfo[underlineMaterialIndex].vertexCount;
             int newVerticesCount = index + k_VertexIncrease;
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
-            if (newVerticesCount > textInfo.meshInfo[m_CurrentMaterialIndex].vertexBufferSize)
+            if (newVerticesCount > textInfo.meshInfo[underlineMaterialIndex].vertexBufferSize)
             {
                 // Resize Mesh Buffers
-                textInfo.meshInfo[m_CurrentMaterialIndex].ResizeMeshInfo(newVerticesCount / 4, generationSettings.isIMGUI);
+                textInfo.meshInfo[underlineMaterialIndex].ResizeMeshInfo(newVerticesCount / 4, generationSettings.isIMGUI);
             }
 
             // Adjust the position of the underline based on the lowest character. This matters for subscript character.
@@ -369,7 +371,7 @@ namespace UnityEngine.TextCore.Text
 
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region UNDERLINE VERTICES
-            var vertexData = textInfo.meshInfo[m_CurrentMaterialIndex].vertexData;
+            var vertexData = textInfo.meshInfo[underlineMaterialIndex].vertexData;
 
             float posLeft = start.x;
             float posMidLeft = start.x + segmentWidth;
@@ -411,7 +413,7 @@ namespace UnityEngine.TextCore.Text
                     for (int i = 0; i < 12; i++)
                     {
                         //vertices[index + i].x += axisOffset.x;
-                        textInfo.meshInfo[m_CurrentMaterialIndex].vertexData[index + i].position.y = textInfo.meshInfo[m_CurrentMaterialIndex].vertexData[index + i].position.y * -1 + axisOffset.y;
+                        textInfo.meshInfo[underlineMaterialIndex].vertexData[index + i].position.y = textInfo.meshInfo[underlineMaterialIndex].vertexData[index + i].position.y * -1 + axisOffset.y;
                     }
                 }
             }
@@ -486,7 +488,7 @@ namespace UnityEngine.TextCore.Text
                 vertexData[10 + index].uv2 = new Vector2(1, 1);
                 vertexData[11 + index].uv2 = new Vector2(1, 0);
             }
-          
+
             #endregion
 
             // UNDERLINE VERTEX COLORS
@@ -503,7 +505,7 @@ namespace UnityEngine.TextCore.Text
 
             #endregion
 
-            textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount += k_VertexIncrease;
+            textInfo.meshInfo[underlineMaterialIndex].vertexCount += k_VertexIncrease;
         }
 
         void DrawTextHighlight(Vector3 start, Vector3 end, Color32 highlightColor, TextGenerationSettings generationSettings, TextInfo textInfo)

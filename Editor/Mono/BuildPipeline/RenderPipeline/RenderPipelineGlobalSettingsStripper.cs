@@ -24,7 +24,7 @@ namespace UnityEditor.Build.Rendering
 
             var renderPipelineAssets = ListPool<RenderPipelineAsset>.Get();
 
-            var buildTargetGroupName = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget).ToString();
+            var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(EditorUserBuildSettings.activeBuildTarget);
             QualitySettings.GetAllRenderPipelineAssetsForPlatform(buildTargetGroupName, ref renderPipelineAssets);
 
             if (renderPipelineAssets.Count > 0 && renderPipelineAssets[0] != null)

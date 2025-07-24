@@ -221,6 +221,14 @@ namespace UnityEditor.Search
 
             // Attach the empty window to the root element to trigger an attach to panel
             m_RootWindowElement.Add(this);
+
+            if (InitializeCustomStyleValues())
+            {
+                Init();
+                Show();
+            }
+            else
+                m_AttachedRoot.RegisterCallback<CustomStyleResolvedEvent>(HandleRootCustomStyleResolved);
         }
 
         void Show()
@@ -306,13 +314,6 @@ namespace UnityEditor.Search
             RegisterCallback<FocusInEvent>(HandleFocusInEvent);
 
             m_AttachedRoot = GetRootVisualContainer();
-            if (InitializeCustomStyleValues())
-            {
-                Init();
-                Show();
-            }
-            else
-                m_AttachedRoot.RegisterCallback<CustomStyleResolvedEvent>(HandleRootCustomStyleResolved);
         }
 
         void HandleFocusInEvent(FocusInEvent evt)

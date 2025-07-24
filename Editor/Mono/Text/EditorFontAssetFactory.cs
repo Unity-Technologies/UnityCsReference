@@ -47,6 +47,14 @@ namespace UnityEditor
                 "Italic",
                 "Semi Bold Italic"
             );
+
+            public static readonly FontFamilyConfig k_RobotoMonoFontConfig = new FontFamilyConfig(
+                "Roboto Mono",
+                "Regular",
+                "Bold",
+                "Italic",
+                "Bold Italic"
+            );
         }
 
         internal static FontAsset CreateFontFamilyAssets(FontFamilyConfig config)

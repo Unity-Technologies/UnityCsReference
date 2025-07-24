@@ -17,13 +17,13 @@ namespace Unity.UI.Builder
         public bool showUnit
         {
             get => m_ShowUnit;
-            set 
+            set
             {
                 m_ShowUnit = value;
                 UpdateLabel();
             }
         }
-        
+
         public BoxModelStyleField()
         {
             m_Label = new Label(ComposeValue());

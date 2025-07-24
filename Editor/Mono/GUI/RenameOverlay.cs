@@ -111,6 +111,7 @@ namespace UnityEditor
         public void EndRename(bool acceptChanges)
         {
             EditorGUIUtility.editingTextField = false;
+            EditorGUI.s_RecycledEditor.SelectNone(); // Reset selection so we dont break textFieldHasSelection.
             if (!m_IsRenaming)
                 return;
 

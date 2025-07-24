@@ -350,7 +350,7 @@ namespace UnityEngine.UIElements
         {
             unchecked
             {
-                return (m_Parameters.GetHashCode() * 397) ^ m_CustomDefinition.GetHashCode();
+                return (m_Parameters.GetHashCode() * 397) ^ (m_CustomDefinition != null ? m_CustomDefinition.GetHashCode() : 0);
             }
         }
 

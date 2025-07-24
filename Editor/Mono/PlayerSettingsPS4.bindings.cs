@@ -162,8 +162,13 @@ namespace UnityEditor
                         // when the editor was launched, which we recorded in the SCE_ORBIS_SDK_DIR_ORIGINAL env var.
                         newSDK = Environment.GetEnvironmentVariable("SCE_ORBIS_SDK_DIR_ORIGINAL");
                     }
-                    Environment.SetEnvironmentVariable("SCE_ORBIS_SDK_DIR", newSDK);
-                    UnityEditor.PlayerSettings.ReinitialiseShaderCompiler("SCE_ORBIS_SDK_DIR", newSDK);
+                    const string sceOrbisSdkDir = "SCE_ORBIS_SDK_DIR";
+                    Environment.SetEnvironmentVariable(sceOrbisSdkDir, newSDK);
+                    ShaderCompilerEnvironmentVariable[] envVars =
+                    {
+                        new ShaderCompilerEnvironmentVariable{Variable = sceOrbisSdkDir, Value = newSDK},
+                    };
+                    PlayerSettings.ReinitialiseShaderCompiler(envVars);
                 }
             }
 

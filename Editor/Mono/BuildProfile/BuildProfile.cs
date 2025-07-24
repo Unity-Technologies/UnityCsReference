@@ -247,7 +247,7 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal void ResetToGlobalQualitySettingsValues()
         {
-            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroupName(buildTarget);
             var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
 
             var newBuildProfileQualityLevels = new string[globalQualityLevels.Length];

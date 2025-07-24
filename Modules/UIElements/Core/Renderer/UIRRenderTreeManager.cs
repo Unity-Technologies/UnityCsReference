@@ -78,7 +78,10 @@ namespace UnityEngine.UIElements.UIR
         internal void ReturnPoolRenderData(RenderData data)
         {
             if (data != null)
+            {
+                data.Reset();
                 m_RenderDataPool.Release(data);
+            }
         }
 
         internal RenderTree GetPooledRenderTree(RenderTreeManager renderTreeManager, RenderData rootRenderData)
@@ -91,7 +94,10 @@ namespace UnityEngine.UIElements.UIR
         internal void ReturnPoolRenderTree(RenderTree tree)
         {
             if (tree != null)
+            {
+                tree.Reset();
                 m_RenderTreePool.Release(tree);
+            }
         }
 
         static EntryPool s_SharedEntryPool = new(10000);
@@ -654,12 +660,7 @@ namespace UnityEngine.UIElements.UIR
         internal bool isFlat { get; }
         public bool forceGammaRendering { get; } // This indicates the effective state, unlike Panel.forceGammaRendering.
 
-        internal RenderChainCommand AllocCommand()
-        {
-            var cmd = m_CommandPool.Get();
-            cmd.Reset();
-            return cmd;
-        }
+        internal RenderChainCommand AllocCommand() => m_CommandPool.Get();
 
         internal void FreeCommand(RenderChainCommand cmd)
         {

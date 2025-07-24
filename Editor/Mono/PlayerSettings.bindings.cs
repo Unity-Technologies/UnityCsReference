@@ -348,6 +348,14 @@ namespace UnityEditor
         WindowsGamepadBackendHintWindowsGamingInput = 2
     }
 
+    internal struct ShaderCompilerEnvironmentVariable
+    {
+        [NativeName("variable")]
+        public string Variable;
+        [NativeName("value")]
+        public string Value;
+    }
+
     // Set of player settings that require an editor restart
     // Keep in sync with PlayerSettingsRequiringRestart in PlayerSettings.h
     internal enum PlayerSettingsRequiringRestart
@@ -1585,7 +1593,7 @@ namespace UnityEditor
         public static extern StrippingLevel strippingLevel { get; set; }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        internal static extern void ReinitialiseShaderCompiler(string platformSDKEnvVar, string EnvVarValue);
+        internal static extern void ReinitialiseShaderCompiler(ShaderCompilerEnvironmentVariable[] envVars);
 
         // Strip Engine code
         public static extern bool stripEngineCode { get; set; }

@@ -149,6 +149,17 @@ namespace UnityEditor
         var interFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_InterFontConfig;
         FontAsset interRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(interFontConfig);
         EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, interRegularFontAsset, new[] { FontPaths.Inter.Regular });
+
+        var robotoMonoFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_RobotoMonoFontConfig;
+        FontAsset robotoMonoRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(robotoMonoFontConfig);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, robotoMonoRegularFontAsset,
+            new[]
+            {
+                FontPaths.RobotoMono.Regular,
+                FontPaths.RobotoMono.Bold,
+                FontPaths.RobotoMono.Italic,
+                FontPaths.RobotoMono.BoldItalic
+            });
     }
 
         const int k_MinSupportedPointSize = 5;
@@ -272,6 +283,14 @@ namespace UnityEditor
         public static class Inter
         {
             public const string Regular = "Fonts/Inter/Inter-Regular.ttf";
+        }
+
+        public static class RobotoMono
+        {
+            public const string Regular = "Fonts/RobotoMono/RobotoMono-Regular.ttf";
+            public const string Bold = "Fonts/RobotoMono/RobotoMono-Bold.ttf";
+            public const string Italic = "Fonts/RobotoMono/RobotoMono-Italic.ttf";
+            public const string BoldItalic = "Fonts/RobotoMono/RobotoMono-BoldItalic.ttf";
         }
     }
 }
