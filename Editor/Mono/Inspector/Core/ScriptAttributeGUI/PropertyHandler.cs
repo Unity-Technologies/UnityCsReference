@@ -452,17 +452,17 @@ namespace UnityEditor
             }
         }
 
-        private void SearchProperty(SerializedProperty property)
+        private static void SearchProperty(SerializedProperty property)
         {
             CommandService.Execute("OpenToSearchByProperty", CommandHint.Menu, property);
         }
 
-        private void FindReferences(UnityEngine.Object obj)
+        private static void FindReferences(UnityEngine.Object obj)
         {
             CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
         }
 
-        private bool CanSearchProperty(SerializedProperty property)
+        internal static bool CanSearchProperty(SerializedProperty property)
         {
             if (!CommandService.Exists("OpenToSearchByProperty") || !CommandService.Exists("IsPropertyValidForQuery"))
                 return false;

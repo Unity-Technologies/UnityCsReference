@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Samples
@@ -26,6 +27,22 @@ namespace UnityEditor.UIElements.Samples
 
         private static readonly string s_TextAssetsPath = "UIPackageResources/Snippets/Generated/";
         private static readonly string s_AssetsPath = "UIPackageResources/Snippets/";
+
+        // Dark Colors
+        private const string s_KeywordColorDark = "#569cd6";
+        private const string s_NameColorDark = "#92caf4";
+        private const string s_CommentColorDark = "#57a64a";
+        private const string s_MethodColorDark = "#b8d7a3";
+        private const string s_TypeColorDark = "#4ec9b0";
+        private const string s_StringColorDark = "#d69d85";
+
+        // Light Colors
+        private const string s_KeywordColorLight = "#1800ff";
+        private const string s_NameColorLight = "#ff2702";
+        private const string s_CommentColorLight = "#008000";
+        private const string s_MethodColorLight = "#74531f";
+        private const string s_TypeColorLight = "#008080";
+        private const string s_StringColorLight = "#a3152e";
 
         internal virtual void Apply(VisualElement container)
         {
@@ -92,7 +109,18 @@ namespace UnityEditor.UIElements.Samples
                 return null;
 
             if (path.EndsWith("_cs.asset")) // C#
+            {
                 text = ProcessCSharp(text);
+                text = addSyntaxColors_CSharp(text);
+            }
+            else if (path.EndsWith("_uxml.asset")) // UXML
+            {
+                text = addSyntaxColors_UXML(text);
+            }
+            else if (path.EndsWith("_uss.asset")) // USS
+            {
+                text = addSyntaxColors_USS(text);
+            }
 
             var lineCount = text.Count(x => x == '\n') + 1;
             string lineNumbersText = "";
@@ -105,19 +133,21 @@ namespace UnityEditor.UIElements.Samples
             }
 
             var lineNumbers = new Label(lineNumbersText);
-            lineNumbers.RemoveFromClassList(TextField.ussClassName);
             lineNumbers.AddToClassList(s_CodeClassName);
             lineNumbers.AddToClassList(s_CodeLineNumbersClassName);
             lineNumbers.AddToClassList(s_CodeInputClassName);
 
-            var code = new TextField(TextField.kMaxLengthNone, true, false, char.MinValue) { value = text };
-            code.isReadOnly = true;
-            code.RemoveFromClassList(TextField.ussClassName);
+            var code = new Label(text);
+            code.selection.isSelectable = true;
             code.AddToClassList(s_CodeClassName);
             code.AddToClassList(s_CodeTextClassName);
+            code.AddToClassList(s_CodeInputClassName);
 
-            var codeInput = code.Q(className: TextField.inputUssClassName);
-            codeInput.AddToClassList(s_CodeInputClassName);
+            var codeScrollView = new ScrollView(ScrollViewMode.Horizontal);
+            codeScrollView.mouseWheelScrollSize = 0; // We want the scroll wheel to only work on the root vertical scroll view.
+            codeScrollView.horizontalScroller.lowButton.focusable = true; // UUM-105775 - Prevents scroller clicks from focusing the code area.
+            codeScrollView.horizontalScroller.highButton.focusable = true;
+            codeScrollView.Add(code);
 
             var codeOuterContainer = new VisualElement();
             codeOuterContainer.AddToClassList(s_CodeCodeOuterContainerClassName);
@@ -128,7 +158,7 @@ namespace UnityEditor.UIElements.Samples
             codeOuterContainer.Add(codeContainer);
 
             codeContainer.Add(lineNumbers);
-            codeContainer.Add(code);
+            codeContainer.Add(codeScrollView);
 
             return container;
         }
@@ -176,6 +206,218 @@ namespace UnityEditor.UIElements.Samples
             panel.Add(scrollView);
 
             return panel;
+        }
+
+        static string addSyntaxColors_CSharp(string code)
+        {
+            // Define colors for each token type
+            string keywordColor = s_KeywordColorDark;
+            string typeColor = s_TypeColorDark;
+            string stringColor = s_StringColorDark;
+            string commentColor = s_CommentColorDark;
+            string methodColor = s_MethodColorDark;
+            string classColor = s_TypeColorDark;
+            if (EditorGUIUtility.isProSkin == false) // Light theme
+            {
+                keywordColor = s_KeywordColorLight;
+                typeColor = s_TypeColorLight;
+                stringColor = s_StringColorLight;
+                commentColor = s_CommentColorLight;
+                methodColor = s_MethodColorLight;
+                classColor = s_TypeColorLight;
+            }
+
+            // Handle multiline comments (/* ... */)
+            code = Regex.Replace(code, @"/\*.*?\*/", m => $"<color={commentColor}>{m.Value}</color>", RegexOptions.Singleline);
+
+            // Handle single-line comments (//...)
+            code = Regex.Replace(code, @"(//.*?$)", $"<color={commentColor}>$1</color>", RegexOptions.Multiline);
+
+            // Handle verbatim strings (@"...")
+            code = Regex.Replace(code, @"@""([^""]|"""")*""", m => $"<color={stringColor}>{m.Value}</color>");
+
+            // Handle interpolated strings ($"...")
+            code = Regex.Replace(code, @"\$""([^""\\]|\\.|"")*""", m => $"<color={stringColor}>{m.Value}</color>");
+
+            // Handle regular strings ("...")
+            code = Regex.Replace(code, @"""([^""\\]|\\.)*""", m => $"<color={stringColor}>{m.Value}</color>");
+
+            // Highlight class names after "class" keyword
+            code = Regex.Replace(code, @"\bclass\s+([A-Z][a-zA-Z0-9_]*)", m =>
+            {
+                var className = m.Groups[1].Value;
+                return $"class <color={classColor}>{className}</color>";
+            });
+
+            // Highlight keywords
+            string[] keywords = {
+                "using", "namespace", "class", "public", "private", "protected", "internal", "static", "void",
+                "int", "float", "string", "bool", "object", "var", "return", "new", "if", "else", "while", "for", "foreach",
+                "in", "break", "continue", "switch", "case", "default", "do", "try", "catch", "finally", "throw",
+                "true", "false", "null", "this", "base", "override", "abstract", "virtual", "sealed", "as",
+                "int", "float", "bool", "string", "object", "readonly", "enum", "typeof", "partial"
+            };
+
+            foreach (var keyword in keywords)
+            {
+                code = Regex.Replace(code, $@"\b{keyword}\b", $"<color={keywordColor}>{keyword}</color>");
+            }
+
+            // Highlight common types
+            string[] types = {
+                "AreaScope",
+                "Button",
+                "Color",
+                "CustomEditor",
+                "Editor",
+                "EditorGUI",
+                "EditorGUILayout",
+                "EditorGUIUtility",
+                "Event",
+                "GUIContent",
+                "GUILayout",
+                "GUILayoutUtility",
+                "GUIStyle",
+                "GUIStyleState",
+                "HorizontalScope",
+                "IMGUIContainer",
+                "Label",
+                "MouseEnterEvent",
+                "MouseLeaveEvent",
+                "MouseWheelEvent",
+                "PropertyField",
+                "Q",
+                "ChangeEvent",
+                "Object",
+                "ObjectField",
+                "Query",
+                "Rect",
+                "RectOffset",
+                "Regex",
+                "Texture2D",
+                "UxmlAttribute",
+                "UxmlElement",
+                "VerticalScope",
+                "VisualElement",
+                "VisualTreeAsset",
+            };
+            foreach (var type in types)
+            {
+                code = Regex.Replace(code, $@"\b{type}\b", $"<color={typeColor}>{type}</color>");
+            }
+
+            // Highlight method names - words followed by (
+            code = Regex.Replace(code, @"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()", m =>
+            {
+                var name = m.Groups[1].Value;
+                if (!types.Contains(name) && !keywords.Contains(name))
+                    return $"<color={methodColor}>{name}</color>";
+                else
+                    return name;
+            });
+
+            return code;
+        }
+
+        static string addSyntaxColors_UXML(string xml)
+        {
+            // Highlight colors
+            string tagColor = s_KeywordColorDark;
+            string attrNameColor = s_NameColorDark;
+            string attrValueColor = s_KeywordColorDark;
+            string commentColor = s_CommentColorDark;
+            if (EditorGUIUtility.isProSkin == false) // Light theme
+            {
+                tagColor = s_KeywordColorLight;
+                attrNameColor = s_NameColorLight;
+                attrValueColor = s_KeywordColorLight;
+                commentColor = s_CommentColorLight;
+            }
+
+            // Placeholder-safe color tag helper
+            string EncodeColorTag(string content, string color)
+            {
+                return $"[[LT]]color[[EQ]]{color}[[GT]]{content}[[LT]]/color[[GT]]";
+            }
+
+            // 1. Highlight comments: <!-- ... -->
+            xml = Regex.Replace(xml, @"<!--(.*?)-->", m =>
+                EncodeColorTag($"<!--{m.Groups[1].Value}-->", commentColor),
+                RegexOptions.Singleline);
+
+            // 2. Highlight tag names (without coloring angle brackets)
+            xml = Regex.Replace(xml, @"(<\/?)([\w:]+)", m =>
+                $"{m.Groups[1].Value}{EncodeColorTag(m.Groups[2].Value, tagColor)}");
+
+            // 3. Highlight attribute names before '='
+            xml = Regex.Replace(xml, @"\b(\w+)(=)", m =>
+                $"{EncodeColorTag(m.Groups[1].Value, attrNameColor)}{m.Groups[2].Value}");
+
+            // 4. Highlight attribute string values
+            xml = Regex.Replace(xml, @"""[^""]*""", m =>
+                EncodeColorTag(m.Value, attrValueColor));
+
+            // 5. Decode placeholder symbols
+            xml = xml.Replace("[[LT]]", "<")
+                    .Replace("[[GT]]", ">")
+                    .Replace("[[EQ]]", "=");
+
+            return xml;
+        }
+
+        static string addSyntaxColors_USS(string uss)
+        {
+            // Highlight colors
+            string selectorColor = s_KeywordColorDark;
+            string propertyColor = s_TypeColorDark;
+            string stringColor = s_StringColorDark;
+            string commentColor = s_CommentColorDark;
+            string numberColor = s_MethodColorDark;
+            if (EditorGUIUtility.isProSkin == false) // Light theme
+            {
+                selectorColor = s_KeywordColorLight;
+                propertyColor = s_TypeColorLight;
+                stringColor = s_StringColorLight;
+                commentColor = s_CommentColorLight;
+                numberColor = s_MethodColorLight;
+            }
+
+            // Placeholder-safe coloring
+            string EncodeColorTag(string content, string color)
+            {
+                return $"[[LT]]color[[EQ]]{color}[[GT]]{content}[[LT]]/color[[GT]]";
+            }
+
+            // 1. Highlight comments (protect early)
+            uss = Regex.Replace(uss, @"/\*.*?\*/", m =>
+                EncodeColorTag(m.Value, commentColor), RegexOptions.Singleline);
+
+            // 2. Highlight strings
+            uss = Regex.Replace(uss, @"""[^""]*""", m =>
+                EncodeColorTag(m.Value, stringColor));
+
+            // 4. Highlight selectors:
+            // - Class: .class
+            // - ID: #id
+            // - Pseudo: :hover
+            uss = Regex.Replace(uss, @"([.#:][a-zA-Z_][\w\-]*)", m =>
+                EncodeColorTag(m.Value, selectorColor));
+
+            // 3. Highlight numeric values (e.g., 16px, 100%, 1.5em)
+            uss = Regex.Replace(uss, @"\b\d+(\.\d+)?(px|em|rem|%|vh|vw|fr)?\b", m =>
+                EncodeColorTag(m.Value, numberColor));
+
+            // 5. Highlight property names before colon (e.g., color:)
+            // This runs after selector regex, so selectors inside properties won't match
+            uss = Regex.Replace(uss, @"(\b[a-zA-Z_-]+)(\s*:)", m =>
+                $"{EncodeColorTag(m.Groups[1].Value, propertyColor)}{m.Groups[2].Value}");
+
+            // Final: decode placeholder tags
+            uss = uss.Replace("[[LT]]", "<")
+                    .Replace("[[GT]]", ">")
+                    .Replace("[[EQ]]", "=");
+
+            return uss;
         }
     }
 }

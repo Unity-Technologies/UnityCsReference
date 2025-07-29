@@ -110,6 +110,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]

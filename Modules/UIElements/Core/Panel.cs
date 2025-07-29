@@ -812,6 +812,7 @@ namespace UnityEngine.UIElements
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
         private uint m_HierarchyVersion = 0;
+        private uint m_LastTickedHierarchyVersion = 0;
 
         ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
@@ -1335,6 +1336,7 @@ namespace UnityEngine.UIElements
             UpdateBindings();
             UpdateDataBinding();
             UpdateAnimations();
+            m_LastTickedHierarchyVersion = m_HierarchyVersion;
         }
 
 
@@ -1350,6 +1352,13 @@ namespace UnityEngine.UIElements
 
         public override void UpdateForRepaint()
         {
+            // Force the scheduling updaters to run if it wasn't run in the same frame as a hierarchy change.
+            // This is necessary because when an element is added to the panel, it may use the scheduler, register
+            // bindings or use animations. If the scheduling updaters are not ticked during the same frame, scheduled
+            // or bound elements may flicker.
+            if (m_LastTickedHierarchyVersion != m_HierarchyVersion)
+                TickSchedulingUpdaters();
+
             //Here we don't want to update animation and bindings which are ticked by the scheduler
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);  //To be removed
@@ -1562,8 +1571,21 @@ namespace UnityEngine.UIElements
 
         internal virtual void Update()
         {
-            TickSchedulingUpdaters();
+            using (m_MarkerTickScheduledActionsPreLayout.Auto())
+            {
+                scheduler.UpdateScheduledEvents();
+                // This call is already on UIElementsUtility.UpdateSchedulers() but it's also necessary here for Runtime UI
+                UpdateAssetTrackers();
+                ValidateFocus();
+
+            }
             ValidateLayout();
+
+            using (m_MarkerTickScheduledActionsPostLayout.Auto())
+            {
+                UpdateAnimations();
+                UpdateBindings();
+            }
         }
 
         // Expose common static method for getting the display/window resolution for calculation in the PanelSetting.

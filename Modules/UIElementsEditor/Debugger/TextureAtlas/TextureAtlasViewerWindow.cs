@@ -48,7 +48,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        TextElement m_ErrorDisplay;
+        HelpBox m_ErrorDisplay;
         VisualElement m_Display;
 
         RenderTexture m_Texture;
@@ -82,7 +82,9 @@ namespace UnityEditor.UIElements.Debugger
             });
             root.Add(displayField);
 
-            m_ErrorDisplay = new TextElement { text = "<b>No atlas to display. Make sure a panel is selected in the UI Toolkit debugger or try another atlas type.</b>" };
+            m_ErrorDisplay = new HelpBox(
+                "No atlas to display. Make sure a panel is selected in the UI Toolkit debugger or try another atlas type.",
+                HelpBoxMessageType.Info);
             root.Add(m_ErrorDisplay);
 
             var scroller = new ScrollView(ScrollViewMode.VerticalAndHorizontal);

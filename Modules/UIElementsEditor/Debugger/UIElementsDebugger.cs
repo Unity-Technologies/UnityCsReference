@@ -429,6 +429,7 @@ namespace UnityEditor.UIElements.Debugger
 
             m_TextureAtlasViewerButton = new ToolbarButton { name = "textureAtlasViewerButton", text = "Texture Atlas Viewer" };
             m_TextureAtlasViewerButton.clicked += () => { TextureAtlasViewerWindow.ShowWindow(); };
+            m_TextureAtlasViewerButton.style.flexShrink = 0;
             m_Toolbar.Add(m_TextureAtlasViewerButton);
 
             var splitter = new TwoPaneSplitView(0, 300, TwoPaneSplitViewOrientation.Horizontal);

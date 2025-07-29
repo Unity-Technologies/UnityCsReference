@@ -158,8 +158,12 @@ namespace UnityEditor
             var shaderPreloadPropertyField = root.MandatoryQ<IMGUIContainer>("PreloadedShaders");
             shaderPreloadPropertyField.onGUIHandler = () =>
             {
+                shaderPreloadProperty.serializedObject.Update();
+                EditorGUI.BeginChangeCheck();
                 //for some reason, converting the display of this native array to UITK make MacOS crash when domain reload after user add a new script
                 EditorGUILayout.PropertyField(shaderPreloadProperty, EditorGUIUtility.TrTextContent("Preload Shaders"));
+                if (EditorGUI.EndChangeCheck())
+                    shaderPreloadProperty.serializedObject.ApplyModifiedProperties();
             };
             
             var delayedShaderTimeLimitProperty = serializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");

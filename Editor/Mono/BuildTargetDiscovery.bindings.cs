@@ -140,10 +140,13 @@ namespace UnityEditor
 
         internal static bool TryGetBuildTarget(NamedBuildTarget named, out IBuildTarget outTarget)
         {
-            var direct = BuildPipeline.GetBuildTargetByName(named.TargetName);
-            // name.BuildTarget => enum.IBuildTarget
-            if (TryGetBuildTarget(direct, out outTarget))
-                return true;
+            // For standalone, skip direct lookup and go straight to the detailed search
+            if (named.TargetName != "Standalone")
+            {
+                var direct = BuildPipeline.GetBuildTargetByName(named.TargetName);
+                if (TryGetBuildTarget(direct, out outTarget) && outTarget.IconPlatformProperties != null)
+                    return true;
+            }
 
             // look through every known platform
             foreach (var info in BuildTargetDiscovery.GetBuildTargetInfoList())
