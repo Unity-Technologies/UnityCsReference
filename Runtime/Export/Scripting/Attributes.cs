@@ -94,6 +94,7 @@ namespace UnityEngine
     public sealed class HideInInspector : Attribute {}
 
     // Makes a method not show up in the detail view of the console.
+    [UsedByNativeCode]
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class HideInCallstackAttribute : Attribute {}
 

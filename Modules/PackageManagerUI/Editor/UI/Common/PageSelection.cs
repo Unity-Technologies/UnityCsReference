@@ -34,6 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds)
         {
+            packageAndVersionIds = packageAndVersionIds.Where(s => !string.IsNullOrEmpty(s.packageUniqueId)).ToArray();
+
             var newSelectionLookup = packageAndVersionIds.ToDictionary(s => s.packageUniqueId, s => s);
             var selectionUpdated = newSelectionLookup.Values.Any(s => !m_SelectionsLookup.TryGetValue(s.packageUniqueId, out var oldSelection) || oldSelection.versionUniqueId != s.versionUniqueId)
                 || m_SelectionsLookup.Values.Any(s => !newSelectionLookup.TryGetValue(s.packageUniqueId, out var newSelection) || newSelection.versionUniqueId != s.versionUniqueId);
@@ -120,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool TryGetValue(string packageUniqueId, out PackageAndVersionIdPair value)
         {
-            return m_SelectionsLookup.TryGetValue(packageUniqueId, out value);
+            return m_SelectionsLookup.TryGetValue(packageUniqueId ?? string.Empty, out value);
         }
 
         public IEnumerator<PackageAndVersionIdPair> GetEnumerator()

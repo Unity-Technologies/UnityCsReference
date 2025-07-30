@@ -36,6 +36,7 @@ namespace UnityEditor
             public static GUIContent tags = EditorGUIUtility.TrTextContent("Tags");
             public static GUIContent sortingLayers = EditorGUIUtility.TrTextContent("Sorting Layers");
             public static GUIContent layers = EditorGUIUtility.TrTextContent("Layers");
+            public static GUIContent existingTagMessage = EditorGUIUtility.TrTextContent("Tag with \"{0}\" name already exists.");
         }
 
         public TagManager tagManager
@@ -115,25 +116,28 @@ namespace UnityEditor
             readonly EnterDelegate EnterCB;
             private string m_NewTagName = "New tag";
             private bool m_NeedsFocus = true;
+            readonly List<string> m_ExistingTagNames = new ();
+            private bool m_IsExistingTag;
 
             public EnterNamePopup(SerializedProperty tags, EnterDelegate cb)
             {
                 EnterCB = cb;
 
 
-                List<string> existingTagNames = new List<string>();
+                m_ExistingTagNames.Clear();
                 for (int i = 0; i < tags.arraySize; i++)
                 {
                     string tagName = tags.GetArrayElementAtIndex(i).stringValue;
                     if (!string.IsNullOrEmpty(tagName))
-                        existingTagNames.Add(tagName);
+                        m_ExistingTagNames.Add(tagName);
                 }
-                m_NewTagName = ObjectNames.GetUniqueName(existingTagNames.ToArray(), m_NewTagName);
+                m_NewTagName = ObjectNames.GetUniqueName(m_ExistingTagNames.ToArray(), m_NewTagName);
             }
 
+            // One line for text field, one for the button, and two for HelpBox
             public override Vector2 GetWindowSize()
             {
-                return new Vector2(400, EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + 14);
+                return new Vector2(400, EditorGUI.kSingleLineHeight * (m_IsExistingTag? 4 : 2) + EditorGUI.kControlVerticalSpacing + 14);
             }
 
             public override void OnGUI(Rect windowRect)
@@ -142,7 +146,19 @@ namespace UnityEditor
                 Event evt = Event.current;
                 bool hitEnter = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter);
                 GUI.SetNextControlName("TagName");
+
+                // If on previous OnGUI there was attempt saving existing name, show error until name is changed
+                EditorGUI.BeginChangeCheck();
                 m_NewTagName = EditorGUILayout.TextField("New Tag Name", m_NewTagName);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_IsExistingTag = false;
+                }
+
+                if (m_IsExistingTag)
+                {
+                    EditorGUILayout.HelpBox(string.Format(Styles.existingTagMessage.text, m_NewTagName), MessageType.Error);
+                }
 
                 if (m_NeedsFocus)
                 {
@@ -153,9 +169,16 @@ namespace UnityEditor
                 GUI.enabled = m_NewTagName.Length != 0;
                 var savePressed = GUILayout.Button("Save");
                 if (!string.IsNullOrWhiteSpace(m_NewTagName) && (savePressed || hitEnter))
-                {
-                    EnterCB(m_NewTagName);
-                    editorWindow.Close();
+                { 
+                    if (m_ExistingTagNames.Contains(m_NewTagName))
+                    {
+                        m_IsExistingTag = true;
+                    }
+                    else
+                    {
+                        EnterCB(m_NewTagName);
+                        editorWindow.Close();
+                    }
                 }
             }
         }

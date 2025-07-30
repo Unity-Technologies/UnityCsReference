@@ -1316,7 +1316,7 @@ namespace UnityEditor
 
         public static bool textFieldHasSelection
         {
-            get { return EditorGUI.s_RecycledEditor.hasSelection; }
+            get { return EditorGUI.s_RecycledEditor.hasSelection || EditorGUI.s_DelayedTextEditor.hasSelection; }
         }
 
         // hierarchyMode changes how foldouts are drawn so the foldout triangle is drawn to the left,
@@ -1826,7 +1826,9 @@ namespace UnityEditor
 
         public static int GetObjectPickerControlID()
         {
-            return ObjectSelector.get.objectSelectorID;
+            // To avoid creating an `ObjectSelector` instance just to get the control ID,
+            // we return 0 directly if `ObjectSelector` is not visible.
+            return !ObjectSelector.isVisible ? 0 : ObjectSelector.get.objectSelectorID;
         }
 
         // Enum for tracking what styles the editor uses

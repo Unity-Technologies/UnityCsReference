@@ -534,11 +534,13 @@ namespace UnityEditor
                     switch (property.propertyType)
                     {
                         case SerializedPropertyType.Integer:
+                            s_OriginalDoubleValues = null; // Be sure to unset the double values so we don't confuse ourselves as to which one is active.
                             s_OriginalLongValues = new long[property.serializedObject.targetObjectsCount];
                             property.allLongValues.CopyTo(s_OriginalLongValues, 0);
                             break;
 
                         case SerializedPropertyType.Float:
+                            s_OriginalLongValues = null; // Be sure to unset the int values so we don't confuse ourselves as to which one is active.
                             s_OriginalDoubleValues = new double[property.serializedObject.targetObjectsCount];
                             property.allDoubleValues.CopyTo(s_OriginalDoubleValues, 0);
                             break;

@@ -416,7 +416,7 @@ namespace UnityEditor.Modules
 
         protected string GetDataFolderFor(BuildPostProcessArgs args)
         {
-            return $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
+            return $"{BuildPipeline.GetDataCacheForBuildTarget(args.target, args.subtarget)}/Data";
         }
 
         protected virtual string GetPlatformNameForBuildProgram(BuildPostProcessArgs args) => args.target.ToString();

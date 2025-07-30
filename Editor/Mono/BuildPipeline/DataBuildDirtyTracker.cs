@@ -198,5 +198,12 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
         }
+
+        [RequiredByNativeCode]
+        static public void ForceDirty(string buildDataPath)
+        {
+            NPath buildReportPath = buildDataPath;
+            buildReportPath.DeleteIfExists();
+        }
     }
 }

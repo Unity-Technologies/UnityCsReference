@@ -66,7 +66,9 @@ internal class SerializedObjectBindingContext
             {
                 return;
             }
+
             element.SetProperty(FindContextPropertyKey, null);
+            element.SetProperty(BaseField<string>.serializedPropertyCopyName, null);
         }
         RemoveBinding(element as IBindable, false);
 

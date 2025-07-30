@@ -698,6 +698,9 @@ namespace UnityEditor
         [NativeThrows]
         private static extern AssetBundleManifest BuildAssetBundlesWithInfoInternal(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget);
 
+        [FreeFunction("GetPlayerDataCache")]
+        internal static extern string GetDataCacheForBuildTarget(BuildTarget target, int subtarget);
+
         [FreeFunction("GetPlayerDataSessionId")]
         internal static extern string GetSessionIdForBuildTarget(BuildTarget target, int subtarget);
 
