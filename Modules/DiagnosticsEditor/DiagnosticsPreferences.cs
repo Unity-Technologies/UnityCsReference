@@ -43,6 +43,8 @@ namespace UnityEditor
         public DiagnosticSwitchPreferences()
             : base("Preferences/Diagnostics", SettingsScope.User, GetKeywords())
         {
+            var switches = Debug.diagnosticSwitches;
+            m_HasAcceptedWarning = switches.Any(s => !s.isSetToDefault);
         }
 
         public override bool HasSearchInterest(string searchContext)
@@ -57,13 +59,7 @@ namespace UnityEditor
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
-            var switches = Debug.diagnosticSwitches;
-
-            // If any switch has been configured, assume that the user already previously saw the warning, and don't get
-            // in their way if they are looking to reset it
-            m_HasAcceptedWarning = switches.Any(s => !s.isSetToDefault);
-
-            m_Switches = switches
+            m_Switches = Debug.diagnosticSwitches
                 .GroupBy(s => s.owningModule)
                 .Select(group => new SwitchGroup
                 {

@@ -938,7 +938,7 @@ namespace UnityEditor.Search
 
         internal static bool IsPropertyTypeSupported(SerializedProperty p, bool isOwnerAsset)
         {
-            var isSupported = isOwnerAsset ? ObjectIndexer.IsIndexableProperty(p.propertyType) : SearchValue.IsSearchableProperty(p.propertyType);
+            var isSupported = isOwnerAsset ? ObjectIndexer.IsIndexableProperty(p.propertyType) && SupportsFindByPropertiesInProject() : SearchValue.IsSearchableProperty(p.propertyType);
             return isSupported && (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
         }
 
@@ -1373,7 +1373,7 @@ namespace UnityEditor.Search
             var objPath = GetObjectPath(obj, pathAsGlobalObjectId: false);
             if (string.IsNullOrEmpty(objPath))
                 return null;
-            var query = $"ref=\"{objPath}\"";
+            var query = $"ref:\"{objPath}\"";
             return query;
         }
 
@@ -1429,15 +1429,17 @@ namespace UnityEditor.Search
             OpenToFindReferenceOnObject(obj);
         }
 
-        internal static ISearchView OpenToFindReferenceOnObject(UnityEngine.Object obj)
+        internal static ISearchView OpenToFindReferenceOnObject(UnityEngine.Object obj, string[] providers = null)
         {
             var query = CreateFindObjectReferenceQuery(obj);
             if (string.IsNullOrEmpty(query))
                 return OpenDefaultQuickSearch();
 
+            providers ??= new [] { AssetProvider.type, AdbProvider.type, BuiltInSceneObjectsProvider.type};
+
             return OpenWithContextualProviders(query,
-                new [] { Providers.AssetProvider.type, Providers.BuiltInSceneObjectsProvider.type },
-                contextualFlags: OpenWithContextualProvidersFlags.AddActiveProvidersToContext,
+                providers,
+                contextualFlags: OpenWithContextualProvidersFlags.UseExplicitProvidersAsNormalProviders,
                 eventContext: "FindReferences");
         }
 
@@ -1757,6 +1759,61 @@ namespace UnityEditor.Search
                     GetQueryParts(child, filters, searches);
                 }
             }
+        }
+        internal static string EscapeLiteralString(in string sv, bool explicitQuotes = false)
+        {
+            if (string.IsNullOrEmpty(sv))
+                return "\"\"";
+            if (sv[0] == '"' || sv[sv.Length - 1] == '"')
+                return sv;
+            if (explicitQuotes || sv.IndexOfAny(new[] { ' ', '/', '*' }) != -1)
+                return '"' + sv + '"';
+            return sv;
+        }
+
+        [CommandHandler("SupportsFindDependenciesInProject")]
+        internal static void SupportsFindDependenciesInProject(CommandExecuteContext c)
+        {
+            c.result = SupportsFindDependenciesInProject();
+        }
+
+        internal static bool SupportsFindDependenciesInProject()
+        {
+            return SupportsFindByInProject(null, db => db.settings.options.dependencies);
+        }
+
+        internal static bool SupportsFindByPropertiesInProject()
+        {
+            return SupportsFindByInProject(null, db => db.settings.options.properties);
+        }
+
+        internal static bool SupportsFindByInProject(IEnumerable<SearchDatabase> dbs, Func<SearchDatabase, bool> predicate)
+        {
+            dbs ??= SearchDatabase.EnumerateAll();
+            if (dbs == null)
+                return false;
+
+            if (dbs.Count() == 0)
+                return false;
+
+            if (dbs.Count() == 1)
+            {
+                return predicate(dbs.First());
+            }
+
+            var defaultDb = dbs.FirstOrDefault(db => db.path == "UserSettings/Search.index");
+            if (defaultDb != null && predicate(defaultDb))
+            {
+                return true;
+            }
+
+            foreach (var db in dbs)
+            {
+                if (predicate(db))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

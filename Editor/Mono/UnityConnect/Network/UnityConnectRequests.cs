@@ -67,10 +67,7 @@ namespace UnityEditor.Connect
 
             try
             {
-                await AsyncUtils.RunNextActionOnMainThread(async () =>
-                {
-                    serviceToken = await CloudProjectSettings.GetServiceTokenAsync(cancellationToken);
-                });
+                serviceToken = await CloudProjectSettings.GetServiceTokenAsync(cancellationToken);
             }
             catch (OperationCanceledException e)
             {

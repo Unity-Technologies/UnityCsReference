@@ -620,7 +620,7 @@ namespace UnityEditor.Search
 
             m_DebounceOff = null;
 
-            UpdateWindowTitle();
+            UpdateWindowTitle(asyncResultUpdate: true);
             SaveItemCountToPropertyDatabase(false);
         }
 
@@ -729,6 +729,7 @@ namespace UnityEditor.Search
             if (!IsPicker())
             {
                 menu.AddItem(new GUIContent(L10n.Tr("Preferences")), false, () => SearchUtils.OpenPreferences());
+                menu.AddItem(new GUIContent(L10n.Tr("Index Manager")), false, () => IndexManager.OpenWindow());
                 menu.AddSeparator("");
             }
 
@@ -826,7 +827,7 @@ namespace UnityEditor.Search
             Refresh();
         }
 
-        protected virtual void UpdateWindowTitle()
+        protected virtual void UpdateWindowTitle(bool asyncResultUpdate = false)
         {
             if (HasCustomTitle())
                 titleContent = viewState.windowTitle;
@@ -854,6 +855,9 @@ namespace UnityEditor.Search
                 if (Utils.IsRunningTests())
                     titleContent.text = $"[TEST] {titleContent.text}";
             }
+
+            if (asyncResultUpdate)
+                Repaint();
         }
 
         IEnumerable<SearchQueryError> ISearchView.GetAllVisibleErrors()
