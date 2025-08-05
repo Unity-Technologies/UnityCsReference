@@ -1213,7 +1213,9 @@ namespace UnityEditor
         private Object m_LastLockedObject;
 
         [SerializeField]
-        private CameraMode m_LastDebugDrawMode = new CameraMode() { drawMode = DrawCameraMode.GIContributorsReceivers };
+        private CameraMode m_LastDebugDrawMode = SceneRenderModeWindow.defaultCameraMode;
+        //internal for tests
+        internal CameraMode lastDebugDrawMode => m_LastDebugDrawMode;
 
         [SerializeField]
         bool m_ViewIsLockedToObject;

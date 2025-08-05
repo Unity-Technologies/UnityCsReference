@@ -257,14 +257,20 @@ namespace UnityEditor.Build
 
         //this variable is reinitialized on domain reload so any calls to Init after a domain reload will set things up correctly
         static BuildCallbacks previousFlags = BuildCallbacks.None;
+        static BuildTarget previousTargetPlatform = BuildTarget.NoTarget;
+
         [RequiredByNativeCode]
         internal static void InitializeBuildCallbacks(BuildCallbacks findFlags)
         {
-            if (findFlags == previousFlags)
+            if (findFlags == previousFlags
+                //Fix for UUM-109242 Some callback implementations may cache data tied to the active target in their constructor.
+                //This ensures that we rebuild the callback cache if we did not have a domain reload but the targets are different.
+                && EditorUserBuildSettings.activeBuildTarget == previousTargetPlatform)
                 return;
 
             CleanupBuildCallbacks();
             previousFlags = findFlags;
+            previousTargetPlatform = EditorUserBuildSettings.activeBuildTarget;
 
             bool findBuildProcessors = (findFlags & BuildCallbacks.BuildProcessors) == BuildCallbacks.BuildProcessors;
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;

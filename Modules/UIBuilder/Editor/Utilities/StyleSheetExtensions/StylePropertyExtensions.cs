@@ -55,12 +55,15 @@ namespace Unity.UI.Builder
         }
 
         internal static StyleValueHandle AddValue(
-            this StyleSheet styleSheet, StyleProperty property, float value, string undoMessage = null)
+            this StyleSheet styleSheet, StyleProperty property, float value, string undoMessage = null, bool undo = true)
         {
             // Undo/Redo
-            if (string.IsNullOrEmpty(undoMessage))
-                undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
-            Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
+            if (undo)
+            {
+                if (string.IsNullOrEmpty(undoMessage))
+                    undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
+                Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
+            }
 
             // Add value data to data array.
             var index = styleSheet.AddValueToArray(value);
