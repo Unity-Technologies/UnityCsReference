@@ -113,11 +113,7 @@ namespace UnityEditor.UIElements
             leftColumn.Add(listenerTarget);
             listenerTarget.RegisterCallback<ChangeEvent<UnityEngine.Object>>((e) =>
             {
-                if (UnityEventDrawer.ShouldClearMethodAfterTargetChanged(m_PropertyData.listener, e.newValue))
-                    functionDropdown.value = null;
-
                 functionDropdown.SetEnabled(e.newValue != null);
-
                 UpdateParameterField();
             });
 
@@ -152,11 +148,25 @@ namespace UnityEditor.UIElements
 
         internal void BindFields(PropertyData data)
         {
+            // As this is a reusable item in a ListView, we need to unbind as you can only TrackPropertyValue on one property at a time
+            listenerTarget.Unbind();
+
             m_PropertyData = data;
             callStateDropdown.BindProperty(m_PropertyData.callState);
             listenerTarget.BindProperty(m_PropertyData.listenerTarget);
             functionDropdown.BindProperty(m_PropertyData.methodName);
             objectParameter.BindProperty(m_PropertyData.objectArgument);
+
+            listenerTarget.TrackPropertyValue(m_PropertyData.listenerTarget, property =>
+            {
+                if (UnityEventDrawer.ShouldClearMethodAfterTargetChanged(m_PropertyData.listener, property.objectReferenceValue))
+                {
+                    m_PropertyData.methodName.stringValue = null;
+                    m_PropertyData.methodName.serializedObject.ApplyModifiedProperties();
+                }
+                // We want to trigger the formatSelectedValueCallback on the dropdown text as it changes with the target change.
+                functionDropdown.SetValueWithoutNotify(functionDropdown.value);
+            });
 
             UpdateParameterField();
         }

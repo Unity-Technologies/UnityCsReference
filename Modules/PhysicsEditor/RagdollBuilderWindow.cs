@@ -38,12 +38,12 @@ namespace UnityEditor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Ragdoll Builder", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(ragdollBuilder.helpString, MessageType.Info);
-            GUILayout.Space(10);
-
             if (ragdollBuilder != null)
             {
+                EditorGUILayout.LabelField("Ragdoll Builder", EditorStyles.boldLabel);
+                EditorGUILayout.HelpBox(ragdollBuilder.helpString, MessageType.Info);
+                GUILayout.Space(10);
+
                 ragdollBuilder.OnGUI();
 
                 GUILayout.Space(10);
@@ -54,6 +54,7 @@ namespace UnityEditor
                 {
                     ragdollBuilder.OnWizardCreate();
                     Close();
+                    return;
                 }
                 GUI.enabled = true;
 
@@ -67,6 +68,7 @@ namespace UnityEditor
                 if (GUILayout.Button("Cancel"))
                 {
                     Close();
+                    return;
                 }
                 GUILayout.EndHorizontal();
 

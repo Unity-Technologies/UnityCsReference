@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using PointerType = UnityEngine.UIElements.PointerType;
 
 namespace Unity.UI.Builder
 {
@@ -183,9 +184,9 @@ namespace Unity.UI.Builder
 
         public void RegisterCallbacksOnTarget(VisualElement target)
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
             target.RegisterCallback<KeyUpEvent>(OnEsc);
 
             target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
@@ -195,9 +196,9 @@ namespace Unity.UI.Builder
         {
             var target = evt.elementTarget;
 
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             target.UnregisterCallback<KeyUpEvent>(OnEsc);
 
             target.UnregisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
@@ -431,7 +432,7 @@ namespace Unity.UI.Builder
             m_PlacementIndicator?.Deactivate();
         }
 
-        void OnMouseDown(MouseDownEvent evt)
+        void OnPointerDown(PointerDownEvent evt)
         {
             if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this && s_CurrentlyActiveBuilderDragger.exclusive)
                 return;
@@ -444,7 +445,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            if (!CanStartManipulation(evt))
+            if (evt.pointerType != PointerType.mouse || !CanStartManipulation(evt))
                 return;
 
             if (target.HasMouseCapture())
@@ -455,13 +456,13 @@ namespace Unity.UI.Builder
             // Resetting state in mouse down in case mouse up did not get handled properly. (UUM-104962)
             m_Active = false;
 
-            m_Start = evt.mousePosition;
+            m_Start = evt.position;
             m_WeStartedTheDrag = true;
             if (s_CurrentlyActiveBuilderDragger == this)
                 target.CaptureMouse();
         }
 
-        void OnMouseMove(MouseMoveEvent evt)
+        void OnPointerMove(PointerMoveEvent evt)
         {
             var target = evt.currentTarget as VisualElement;
 
@@ -470,10 +471,10 @@ namespace Unity.UI.Builder
 
             if (!m_Active && m_WeStartedTheDrag)
             {
-                if (Mathf.Abs(m_Start.x - evt.mousePosition.x) > s_DistanceToActivation ||
-                    Mathf.Abs(m_Start.y - evt.mousePosition.y) > s_DistanceToActivation)
+                if (Mathf.Abs(m_Start.x - evt.position.x) > s_DistanceToActivation ||
+                    Mathf.Abs(m_Start.y - evt.position.y) > s_DistanceToActivation)
                 {
-                    var startSuccess = StartDrag(target, evt.mousePosition);
+                    var startSuccess = StartDrag(target, evt.position);
 
                     if (startSuccess)
                     {
@@ -495,7 +496,7 @@ namespace Unity.UI.Builder
 
             if (m_Active)
             {
-                PerformDragInner(target, evt.mousePosition);
+                PerformDragInner(target, evt.position);
             }
 
             evt.StopPropagation();
@@ -509,7 +510,7 @@ namespace Unity.UI.Builder
             return sibling;
         }
 
-        void SelectItemOnSingleClick(MouseUpEvent evt)
+        void SelectItemOnSingleClick(PointerUpEvent evt)
         {
             // TODO: ListView right now does not allow selecting a single
             // item that is already part of multi-selection, and having
@@ -543,7 +544,7 @@ namespace Unity.UI.Builder
             m_Selection.Select(null, documentElement);
         }
 
-        void OnMouseUp(MouseUpEvent evt)
+        void OnPointerUp(PointerUpEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse)
             {
@@ -568,7 +569,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var currentMouse = evt.mousePosition;
+            var currentMouse = evt.position;
             if (m_LastHoverElement != null)
             {
                 var localCanvasMouse = viewport != null ? m_Canvas.WorldToLocal(currentMouse) : Vector2.zero;
@@ -663,7 +664,7 @@ namespace Unity.UI.Builder
             FailAction(target);
         }
 
-        bool CanStartManipulation(IMouseEvent evt)
+        bool CanStartManipulation(IPointerEvent evt)
         {
             foreach (var activator in activators)
             {
@@ -677,7 +678,7 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        bool CanStopManipulation(IMouseEvent evt)
+        bool CanStopManipulation(IPointerEvent evt)
         {
             if (evt == null)
             {

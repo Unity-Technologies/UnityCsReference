@@ -20,7 +20,7 @@ namespace UnityEditor.ObjectPool
             switch (stateChange)
             {
                 case PlayModeStateChange.EnteredEditMode:
-                case PlayModeStateChange.EnteredPlayMode:
+                case PlayModeStateChange.ExitingEditMode:
                     UnityEngine.Pool.PoolManager.Reset();
                     break;
             }

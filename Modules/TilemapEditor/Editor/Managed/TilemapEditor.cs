@@ -36,6 +36,8 @@ namespace UnityEditor
             public static readonly GUIContent usedTilesLabel = EditorGUIUtility.TrTextContent("Tiles", "Tiles used in the Tilemap");
             public static readonly GUIContent usedSpritesLabel = EditorGUIUtility.TrTextContent("Sprites", "Sprites used in the Tilemap");
             public static readonly GUIContent noneUsedLabel = EditorGUIUtility.TrTextContent("None");
+
+            public static readonly GUIContent noGridAttachedLabel = EditorGUIUtility.TrTextContent("This Tilemap does not have an enabled Grid component attached to it. This will cause Tiles to be placed together and disable GameObject instantiation.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
         }
 
         private void OnEnable()
@@ -83,6 +85,11 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
 
             DrawInfoView();
+
+            if (targets.Length == 1 && tilemap.layoutGrid == null)
+            {
+                EditorGUILayout.HelpBox(Styles.noGridAttachedLabel);
+            }
         }
 
         private void DrawInfoView()

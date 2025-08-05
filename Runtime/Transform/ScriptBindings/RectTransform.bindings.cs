@@ -214,7 +214,7 @@ namespace UnityEngine
 
             GetLocalCorners(fourCornersArray);
 
-            Matrix4x4 mat = transform.localToWorldMatrix;
+            Matrix4x4 mat = localToWorldMatrix;
             for (int i = 0; i < 4; i++)
                 fourCornersArray[i] = mat.MultiplyPoint(fourCornersArray[i]);
         }
@@ -263,9 +263,9 @@ namespace UnityEngine
         {
             Rect rectResult = rect;
             Vector2 offset = offsetMin + Vector2.Scale(pivot, rectResult.size);
-            if (transform.parent)
+            if (parent)
             {
-                RectTransform parentRect = transform.parent.GetComponent<RectTransform>();
+                RectTransform parentRect = parent.GetComponent<RectTransform>();
                 if (parentRect)
                     offset += Vector2.Scale(anchorMin, parentRect.rect.size);
             }
