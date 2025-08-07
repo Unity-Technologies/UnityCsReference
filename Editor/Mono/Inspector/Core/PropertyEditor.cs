@@ -75,6 +75,7 @@ namespace UnityEditor
         const float m_PreviewMinHeight = 20;
 
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
+        bool m_IsPreviewPoppedOut = false;
 
         protected const long delayRepaintWhilePlayingAnimation = 150; // Delay between repaints in milliseconds while playing animation
         protected long m_LastUpdateWhilePlayingAnimation = 0;
@@ -426,6 +427,23 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             m_AllPropertyEditors.Remove(this);
+        }
+
+        internal void SetPreviewPopOutStateAndRebuild(bool poppedOut)
+        {
+            m_IsPreviewPoppedOut = poppedOut;
+
+            var draglineAnchor = m_SplitView?.Q(s_draglineAnchor);
+            var previewContainer = m_SplitView?.Q(s_PreviewContainer);
+
+            var displayStyle = m_IsPreviewPoppedOut ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (previewContainer != null)
+                previewContainer.style.display = displayStyle;
+            if (draglineAnchor != null)
+                draglineAnchor.style.display = displayStyle;
+
+            RebuildContentsContainers();
         }
 
         private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
@@ -1196,8 +1214,9 @@ namespace UnityEditor
                             InitUITKPreview();
                             preview.Add(previewWindow);
 
-                            preview.style.display = DisplayStyle.Flex;
-                            draglineAnchor.style.display = DisplayStyle.Flex;
+                            var displayStyle = m_IsPreviewPoppedOut ? DisplayStyle.None : DisplayStyle.Flex;
+                            preview.style.display = displayStyle;
+                            draglineAnchor.style.display = displayStyle;
                         }
                         else // IMGUI fallback if no UITK preview found
                         {

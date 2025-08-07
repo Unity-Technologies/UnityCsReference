@@ -102,9 +102,14 @@ namespace UnityEditor.Search
 
             public override int GetHashCode()
             {
-                return (types ? (int)IndexingOptions.Types        : 0) |
-                    (properties ? (int)IndexingOptions.Properties   : 0) |
-                    (extended ? (int)IndexingOptions.Extended     : 0) |
+                return GetHashCode(types, properties, extended, dependencies);
+            }
+
+            internal static int GetHashCode(bool types, bool properties, bool extended, bool dependencies)
+            {
+                return (types ? (int)IndexingOptions.Types : 0) |
+                    (properties ? (int)IndexingOptions.Properties : 0) |
+                    (extended ? (int)IndexingOptions.Extended : 0) |
                     (dependencies ? (int)IndexingOptions.Dependencies : 0);
             }
         }
@@ -305,6 +310,34 @@ namespace UnityEditor.Search
             name = settings.name;
             LoadAsync();
             return this;
+        }
+
+        // Used by performance tests
+        public SearchDatabase ReloadWithoutIndexing(Settings settings)
+        {
+            LoadingState = LoadState.Loading;
+            loaded = false;
+
+            using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
+            if (!writeLockScope.locked)
+            {
+                Dispatcher.Enqueue(() => Reload(settings));
+                return this;
+            }
+
+            this.settings = settings;
+            index?.Dispose();
+            index = CreateIndexer(settings);
+            name = settings.name;
+
+            return this;
+        }
+
+        internal static void MakeIndexImporterDirty(bool types, bool properties, bool extended, bool dependencies)
+        {
+            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(Options.GetHashCode(types, properties, extended, dependencies));
+            var customDependencyName = SearchIndexEntryImporter.GetCustomDependencyName(indexImporterType);
+            AssetDatabaseAPI.RegisterCustomDependency(customDependencyName, Hash128.Parse(Guid.NewGuid().ToString("N")));
         }
 
         private static string GetDbGuid(string settingsPath)
@@ -824,6 +857,9 @@ namespace UnityEditor.Search
             task.Report("Loading artifacts...", 0);
             var artifactDbs = EnumerateSearchArtifactsDirect(artifacts, task);
 
+            if (task.Canceled())
+                return;
+
             task.Report("Combining indexes...", -1f);
             task.total = artifacts.Length;
 
@@ -848,6 +884,9 @@ namespace UnityEditor.Search
             var total = artifacts.Length;
             for (var i = 0; i < total; ++i)
             {
+                if (task.Canceled())
+                    return results;
+
                 var a = artifacts[i];
                 if (a == null || a.path == null)
                     continue;
@@ -869,7 +908,7 @@ namespace UnityEditor.Search
             indexer.AddProperty("a", indexName, indexName.Length, indexName.Length, 0, documentIndex, saveKeyword: true, exact: true);
         }
 
-        private void Build()
+        internal void Build()
         {
             if (EditorApplication.isPlaying)
             {
@@ -1037,7 +1076,7 @@ namespace UnityEditor.Search
             IncrementalUpdate(changeset);
         }
 
-        private void IncrementalUpdate(AssetIndexChangeSet changeset)
+        internal void IncrementalUpdate(AssetIndexChangeSet changeset)
         {
             if (!this)
                 return;
@@ -1069,7 +1108,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
+        internal void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
         {
             var updates = CreateArtifacts(changeset.updated);
             var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
@@ -1115,7 +1154,7 @@ namespace UnityEditor.Search
                 index.Merge(changeset.removed, data.combinedIndex, baseScore,
                     (di, indexer, count) => OnDocumentMerged(indexer, indexName, di), task);
                 data.combinedIndex.Dispose();
-                if (saveIndexCache)
+                if (saveIndexCache && !task.Canceled())
                     SaveIndex(savePath);
             }, () => ResolveIncrementalUpdate(task));
         }

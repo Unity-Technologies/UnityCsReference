@@ -428,27 +428,13 @@ namespace UnityEditor
         {
             DetachPreview(exitGUI);
             previewWindow.parent?.Remove(previewWindow);
-
-            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-            var previewContainer = m_SplitView.Q(s_PreviewContainer);
-
-            if (previewContainer != null)
-                previewContainer.style.display = DisplayStyle.None;
-            if (draglineAnchor != null)
-                draglineAnchor.style.display = DisplayStyle.None;
+            SetPreviewPopOutStateAndRebuild(true);
         }
 
         void DockPreviewWindow()
         {
             m_PreviewWindow?.Close();
-
-            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-            var previewContainer = m_SplitView.Q(s_PreviewContainer);
-
-            if (previewContainer != null)
-                previewContainer.style.display = DisplayStyle.Flex;
-            if (draglineAnchor != null)
-                draglineAnchor.style.display = DisplayStyle.Flex;
+            SetPreviewPopOutStateAndRebuild(false);
         }
 
         private void DetachPreview(bool exitGUI = true)
