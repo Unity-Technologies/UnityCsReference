@@ -3204,6 +3204,9 @@
     <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\VRDeviceAnalytics.cs">
       <Link>Modules\UnityAnalyticsCommon\Public\Events\VRDeviceAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\Events\VersionControlAnalytics.cs">
+      <Link>Modules\UnityAnalyticsCommon\Public\Events\VersionControlAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.bindings.cs">
       <Link>Modules\UnityAnalyticsCommon\Public\UnityAnalyticsCommon.bindings.cs</Link>
     </Compile>
