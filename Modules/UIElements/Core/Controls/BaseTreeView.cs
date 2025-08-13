@@ -400,13 +400,7 @@ namespace UnityEngine.UIElements
         /// <returns>If the item was removed from the tree.</returns>
         public bool TryRemoveItem(int id, bool rebuildTree = true)
         {
-            if (viewController.TryRemoveItem(id, rebuildTree))
-            {
-                RefreshItems();
-                return true;
-            }
-
-            return false;
+            return viewController.TryRemoveItem(id, rebuildTree);
         }
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent evt)

@@ -6115,9 +6115,9 @@ namespace UnityEditor
             int enabled = -1;
             foreach (Object targetObj in targetObjs)
             {
-                if (comp is MonoBehaviour)
+                if (comp is MonoBehaviour mb)
                 {
-                    enabled = 1;
+                    enabled = mb.enabled ? 1 : 0;
                 }
                 else
                 {

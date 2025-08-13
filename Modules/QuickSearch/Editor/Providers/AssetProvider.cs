@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -161,6 +162,8 @@ namespace UnityEditor.Search.Providers
         }
 
         private const string k_NoResultsLimitToggle = "noResultsLimit";
+
+        static readonly TimeSpan k_MaxKillSearchWaitTime = TimeSpan.FromSeconds(5);
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
@@ -607,14 +610,27 @@ namespace UnityEditor.Search.Providers
             index.fetchDefaultFiler = PopulateDefaultFilters;
             var resultsLimit = GetResultLimit(query);
 
+            var indexerInThreadCancellationTokenSource = new CancellationTokenSource();
+            using var linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken, indexerInThreadCancellationTokenSource.Token);
             var results = new System.Collections.Concurrent.ConcurrentBag<SearchResult>();
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
                 // Search index
                 using var immutableScope = db.GetImmutableScope();
                 foreach (var r in index.Search(query, context, provider, patternMatchLimit: resultsLimit))
+                {
+                    if (linkedTokenSource.IsCancellationRequested)
+                        break;
                     results.Add(r);
-            }, context.sessions.cancelToken);
+                }
+            }, linkedTokenSource.Token);
+
+            // Listen to AssemblyReload events to cancel the search if the assembly is reloaded
+            using var indexInThreadScope = new SearchIndexer.IndexerThreadScope(() =>
+            {
+                indexerInThreadCancellationTokenSource.Cancel();
+                searchTask.Wait(k_MaxKillSearchWaitTime);
+            });
 
             while (results.Count > 0 || !searchTask.IsCompleted || results.Count > 0)
             {

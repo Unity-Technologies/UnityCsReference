@@ -22,7 +22,5 @@ sealed class OkButton : TemplateEventsButton
     protected override void Click()
     {
         m_CloseAction?.Invoke();
-
-        m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
     }
 }

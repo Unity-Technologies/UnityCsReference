@@ -5,6 +5,7 @@
 //#define DEBUG_PROGRESS
 // #define DEBUG_SEARCHTASK_DISPOSE
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 
@@ -24,17 +25,20 @@ namespace UnityEditor.Search
         private const int k_NoProgress = -1;
         private const int k_BlockingProgress = -2;
 
+        static readonly TimeSpan k_MaxCancelImmediateWaitTime = TimeSpan.FromSeconds(5);
+
         public readonly string name;
         public readonly string title;
         private int progressId = k_NoProgress;
         private volatile float lastProgress = -1f;
-        private EventWaitHandle cancelEvent;
+        private CancellationTokenSource m_CancelEvent;
         private readonly ResolveHandler resolver;
         private readonly System.Diagnostics.Stopwatch sw;
         private string status = null;
         private volatile bool disposed = false;
         private readonly ITaskReporter reporter;
         int m_ProgressThrottleCounter;
+        List<Thread> m_Threads = new ();
 
         public int total { get; set; }
         public bool throttleProgressReport { get; set; } = false;
@@ -45,6 +49,8 @@ namespace UnityEditor.Search
         public bool async => resolver != null;
         public long elapsedTime => sw.ElapsedMilliseconds;
 
+        public CancellationToken cancellationToken => m_CancelEvent?.Token ?? CancellationToken.None;
+
         private SearchTask(string name, string title, ITaskReporter reporter)
         {
             this.name = name;
@@ -52,7 +58,18 @@ namespace UnityEditor.Search
             this.reporter = reporter;
             sw = new System.Diagnostics.Stopwatch();
             sw.Start();
+
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
         }
+
+        private void OnBeforeAssemblyReload()
+        {
+            CancelImmediate();
+        }
+
+        public SearchTask(string name)
+            : this(name, string.Empty, null)
+        {}
 
         /// <summary>
         /// Create blocking task
@@ -73,12 +90,18 @@ namespace UnityEditor.Search
             this.total = total;
             this.resolver = resolver;
             progressId = StartReport(title);
-            cancelEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
+            m_CancelEvent = new CancellationTokenSource();
 
             if (IsProgressRunning(progressId))
             {
                 LogProgress("RegisterCallback");
-                Progress.RegisterCancelCallback(progressId, () => cancelEvent != null && cancelEvent.Set());
+                Progress.RegisterCancelCallback(progressId, () =>
+                {
+                    if (m_CancelEvent == null)
+                        return false;
+                    m_CancelEvent.Cancel();
+                    return true;
+                });
             }
         }
 
@@ -100,19 +123,22 @@ namespace UnityEditor.Search
             if (disposed)
                 return;
 
-            cancelEvent?.Dispose();
-            cancelEvent = null;
+            m_CancelEvent?.Dispose();
+            m_CancelEvent = null;
+
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            foreach (var thread in m_Threads)
+            {
+                if (thread.IsAlive)
+                {
+                    thread.Abort();
+                }
+            }
 
             if (disposing)
                 Resolve();
 
-            LogProgress("Exists");
-            if (Progress.Exists(progressId))
-            {
-                LogProgress("Remove");
-                Progress.Remove(progressId);
-            }
-            progressId = k_NoProgress;
+            ClearReport();
             disposed = true;
         }
 
@@ -130,7 +156,11 @@ namespace UnityEditor.Search
             {
                 try
                 {
+                    if (m_CancelEvent.IsCancellationRequested)
+                        return;
                     routine();
+                    if (m_CancelEvent.IsCancellationRequested)
+                        return;
                     if (finalize != null)
                         Dispatcher.Enqueue(finalize);
                 }
@@ -147,6 +177,7 @@ namespace UnityEditor.Search
                 Name = name
             };
             t.Start();
+            m_Threads.Add(t);
             return t.ThreadState == ThreadState.Running;
         }
 
@@ -199,12 +230,12 @@ namespace UnityEditor.Search
 
             if (progressId == k_BlockingProgress)
             {
-                if (cancelEvent == null)
+                if (m_CancelEvent == null)
                     EditorUtility.DisplayProgressBar(title, status, current / (float)total);
                 else
                 {
                     if (EditorUtility.DisplayCancelableProgressBar(title, status, current / (float)total))
-                        cancelEvent.Set();
+                        m_CancelEvent.Cancel();
                 }
             }
             else
@@ -246,7 +277,24 @@ namespace UnityEditor.Search
 
         public void Cancel()
         {
-            cancelEvent?.Set();
+            m_CancelEvent?.Cancel();
+        }
+
+        public void CancelImmediate()
+        {
+            Cancel();
+            foreach (var thread in m_Threads)
+            {
+                if (thread.IsAlive)
+                {
+                    var stopped = thread.Join(k_MaxCancelImmediateWaitTime);
+                    if (!stopped)
+                    {
+                        Debug.LogWarning($"SearchTask '{name}' thread did not stop within {k_MaxCancelImmediateWaitTime.TotalSeconds} seconds.");
+                    }
+                }
+            }
+            m_Threads.Clear();
         }
 
         public bool Canceled()
@@ -254,17 +302,17 @@ namespace UnityEditor.Search
             if (!IsValid())
                 return true;
 
-            if (cancelEvent == null)
+            if (m_CancelEvent == null)
                 return false;
 
-            if (!cancelEvent.WaitOne(0))
+            if (!m_CancelEvent.IsCancellationRequested)
                 return false;
+
+            if (!canceled && resolver != null)
+                Dispatcher.Enqueue(() => resolver.Invoke(this, null));
 
             canceled = true;
-            ClearReport();
 
-            if (resolver != null)
-                Dispatcher.Enqueue(() => resolver.Invoke(this, null));
             return true;
         }
 
