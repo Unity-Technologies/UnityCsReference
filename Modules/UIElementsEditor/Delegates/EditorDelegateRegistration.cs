@@ -57,8 +57,7 @@ namespace UnityEditor.UIElements
                     UIElementsRuntimeUtility.OnExitingPlayMode();
             };
 
-            PanelInputConfiguration.IsPartOfPrefabAsset = gameObject =>
-                PrefabStageUtility.GetCurrentPrefabStage() != null;
+            UIElementsRuntimeUtility.IsEditingPrefab = () => PrefabStageUtility.GetCurrentPrefabStage() != null;
         }
 
         private static GenericOSMenu CreateGenericOSMenu()

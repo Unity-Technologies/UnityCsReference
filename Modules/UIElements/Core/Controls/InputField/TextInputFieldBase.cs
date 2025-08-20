@@ -638,7 +638,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Controls whether double clicking selects the word under the mouse pointer or not.
+        /// Controls whether double-clicking selects the word under the mouse pointer.
         /// </summary>
         [CreateProperty]
         public bool doubleClickSelectsWord
@@ -1403,7 +1403,7 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Controls whether double clicking selects the word under the mouse pointer or not.
+            /// Controls whether double-clicking selects the word under the mouse pointer.
             /// </summary>
             [Obsolete("doubleClickSelectsWord is deprecated. Use textSelection.doubleClickSelectsWord instead.")]
             public bool doubleClickSelectsWord

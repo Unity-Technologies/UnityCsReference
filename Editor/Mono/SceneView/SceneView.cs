@@ -590,7 +590,7 @@ namespace UnityEditor
         private bool m_2DMode;
         public bool in2DMode
         {
-            get => m_Viewpoint.hasActiveViewpoint ? m_Viewpoint.is2DViewpoint : m_2DMode;
+            get => m_2DMode;
             set
             {
                 if (m_2DMode != value)
@@ -601,8 +601,6 @@ namespace UnityEditor
                 }
             }
         }
-
-        bool m_WasIn2DMode;
 
         [SerializeField]
         bool m_isRotationLocked = false;
@@ -1025,13 +1023,13 @@ namespace UnityEditor
         internal bool showGlobalGrid { get { return showGrid; } set { showGrid = value; } }
 
         [SerializeField]
-        private Quaternion m_LastSceneViewRotation = Quaternion.identity;
+        private Quaternion m_LastSceneViewRotation;
 
         public Quaternion lastSceneViewRotation
         {
             get
             {
-                if (m_LastSceneViewRotation.Equals(new Quaternion(0f, 0f, 0f, 0f)))
+                if (m_LastSceneViewRotation == new Quaternion(0f, 0f, 0f, 0f))
                     m_LastSceneViewRotation = Quaternion.identity;
                 return m_LastSceneViewRotation;
             }
@@ -1377,7 +1375,6 @@ namespace UnityEditor
                 m_RectSelection.RegisterShortcutContext();
             }
 
-            m_Viewpoint.cameraLookThroughStateChanged += OnViewpointChanged;
             m_SceneViewMotion.CompleteSceneViewMotionTool();
             m_Viewpoint.AssignSceneView(this);
 
@@ -1433,8 +1430,7 @@ namespace UnityEditor
 
             CreateSceneCameraAndLights();
 
-            m_WasIn2DMode = in2DMode;
-            if (in2DMode)
+            if (m_2DMode)
                 LookAt(pivot, Quaternion.identity, size, true, true);
 
             if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !userDefinedModes.Contains(m_CameraMode))
@@ -1587,6 +1583,7 @@ namespace UnityEditor
                 }
             }
 
+
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
             {
                 m_LastSceneViewRotation = Quaternion.LookRotation(new Vector3(-1, -.7f, -1));
@@ -1657,9 +1654,6 @@ namespace UnityEditor
             sceneViewGrids.gridVisibilityChanged -= GridOnGridVisibilityChanged;
 
             sceneViewGrids.OnDisable(this);
-
-            if (viewpoint.hasActiveViewpoint)
-                viewpoint.ClearViewpoint();
 
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
@@ -2755,7 +2749,7 @@ namespace UnityEditor
             // Update active viewpoint if there's one.
             // Must happen after SceneViewMotion.DoViewTool() so it knows
             // it needs to reflect a motion to the viewpoint (regardless of their nature).
-            m_Viewpoint.UpdateViewpointMotion(m_Position.isAnimating || m_Rotation.isAnimating || m_Size.isAnimating);
+            m_Viewpoint.UpdateViewpointMotion(m_Position.isAnimating || m_Rotation.isAnimating);
 
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
@@ -3159,11 +3153,11 @@ namespace UnityEditor
         // The direction of the scene view.
         public Quaternion rotation
         {
-            get => in2DMode ? Quaternion.identity : m_Rotation.value;
+            get => m_2DMode ? Quaternion.identity : m_Rotation.value;
 
             set
             {
-                if (in2DMode)
+                if (m_2DMode)
                     Debug.LogWarning("SceneView rotation is fixed to identity when in 2D mode. This will be an error in future versions of Unity.");
                 else
                     m_Rotation.value = value;
@@ -3358,7 +3352,7 @@ namespace UnityEditor
                 ApplyDefaultCameraLens();
 
             // In 2D mode, camera position z should not go to positive value
-            if (in2DMode && m_Camera.transform.position.z >= 0)
+            if (m_2DMode && m_Camera.transform.position.z >= 0)
             {
                 var p = m_Camera.transform.position;
                 // when clamping the camera distance, choose a point far from origin to avoid obscuring objects with the
@@ -3530,7 +3524,7 @@ namespace UnityEditor
         /// <returns></returns>
         internal Quaternion GetTransformRotation()
         {
-            return in2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;
+            return m_2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;
         }
 
         /// <summary>
@@ -3949,7 +3943,7 @@ namespace UnityEditor
         {
             FixNegativeSize();
             Vector3 dif = pivot - Tools.handlePosition;
-            if (in2DMode) dif.z = 0f;
+            if (m_2DMode) dif.z = 0f;
 
             Undo.RecordObjects(Selection.transforms, "Move to view");
 
@@ -3962,7 +3956,7 @@ namespace UnityEditor
         public void MoveToView(Transform target)
         {
             var pos = pivot;
-            if (in2DMode) pos.z = target.position.z;
+            if (m_2DMode) pos.z = target.position.z;
             target.position = pos;
         }
 
@@ -4331,17 +4325,9 @@ namespace UnityEditor
             ResetToDefaults(EditorSettings.defaultBehaviorMode);
         }
 
-        void OnViewpointChanged(bool activeViewpoint)
-        {
-            On2DModeChange();
-        }
-
         void On2DModeChange()
         {
-            if (m_WasIn2DMode == in2DMode)
-                return;
-
-            if (in2DMode)
+            if (m_2DMode)
             {
                 lastSceneViewRotation = m_Rotation.target;
                 m_LastSceneViewOrtho = orthographic;
@@ -4360,9 +4346,6 @@ namespace UnityEditor
             HandleUtility.ignoreRaySnapObjects = null;
             Tools.vertexDragging = false;
             Tools.handleOffset = Vector3.zero;
-            UpdateOrientationGizmos();
-
-            m_WasIn2DMode = in2DMode;
         }
 
         public static CameraMode AddCameraMode(string name, string section)

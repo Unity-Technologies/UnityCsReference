@@ -105,11 +105,11 @@ namespace UnityEngine.UIElements
         /// If a child is added to this element, the child is added to this element's content container instead.
         /// </summary>
         /// <remarks>
-        /// When iterating over the  <see cref="VisualElement.Children">logical children</see> of an element, the
+        /// When iterating over the  <see cref="VisualElement.Children"/> of an element, the
         /// element's content container hierarchy is used instead of the element itself.
-        /// This can lead to unexpected results, such as <see cref="IFocusRing">elements being ignored by the navigation events</see>
-        /// if they are not directly in the content container's hierarchy.
-        ///\\
+        /// This can lead to unexpected results, such as elements being ignored by the navigation events
+        /// if they are not directly in the content container's hierarchy. Refer to <see cref="IFocusRing" /> for more information.
+        /// 
         /// If the content container is the same as the element itself, child elements are added directly to the element.
         /// This is true for most elements but can be overridden by more complex types.
         ///

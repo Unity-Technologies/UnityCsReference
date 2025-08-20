@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    internal class InspectorPreviewWindow : VisualElement
+    internal class PreviewRootElement : VisualElement
     {
         internal class Styles
         {
@@ -30,12 +30,12 @@ namespace UnityEditor
 
         VisualElement m_Container;
         VisualElement m_Toolbar;
-        ToolbarMenu m_EllipsisMenu;
+        internal ToolbarMenu m_EllipsisMenu;
 
         public VisualElement GetButtonPane() { return m_Toolbar; }
         public VisualElement GetPreviewPane() { return m_Container; }
 
-        public InspectorPreviewWindow()
+        public PreviewRootElement()
         {
             AddToClassList(Styles.ussClassName);
 

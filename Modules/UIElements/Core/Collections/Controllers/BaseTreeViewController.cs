@@ -288,7 +288,7 @@ namespace UnityEngine.UIElements
         /// Removes an item by id.
         /// </summary>
         /// <param name="id">The item id.</param>
-        /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to <c>false</c> when doing multiple operations and call <see cref="TreeViewController.RebuildTree()"/>.</param>
+        /// <param name="rebuildTree">Whether to refresh the tree data. Set to <c>false</c> when doing multiple operations and call <see cref="BaseVerticalCollectionView.RefreshItems()"/>.</param>
         /// <returns>Whether the item was successfully found and removed.</returns>
         public abstract bool TryRemoveItem(int id, bool rebuildTree = true);
 
@@ -850,6 +850,8 @@ namespace UnityEngine.UIElements
 
         internal void UpdateIdToNodeDictionary(int id, in HierarchyNode node, bool isAdd = true)
         {
+            m_HierarchyHasPendingChanged = true;
+
             if (isAdd)
             {
                 m_TreeViewDataProperty.SetValue(node, id);

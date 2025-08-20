@@ -1373,6 +1373,11 @@ namespace UnityEngine.UIElements
                     m_Selection.AddIndex(index, viewController.GetItemForIndex(index));
                 }
             }
+            else if (m_Selection.idCount == 0 && m_Selection.indexCount > 0)
+            {
+                m_Selection.ClearIndices();
+                selectedIndicesChanged = true;
+            }
 
             NotifyIfChanged();
             return;

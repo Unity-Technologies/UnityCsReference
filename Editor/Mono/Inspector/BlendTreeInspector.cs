@@ -396,7 +396,7 @@ namespace UnityEditor
                 max = (threshold.floatValue > max) ? threshold.floatValue : max;
             }
             m_MinThreshold.floatValue = m_Childs.arraySize > 0 ? min : 0;
-            m_MaxThreshold.floatValue = m_Childs.arraySize > 0 ? max : 1;
+            m_MaxThreshold.floatValue = m_Childs.arraySize == 0 ? 1 : max > min ? max : 1;
         }
 
         private void BoundBlendParameter(string paramName)

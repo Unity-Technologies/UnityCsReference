@@ -115,6 +115,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.PerformanceTests.RuntimeTestRunner.Tests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.AllIn1Runner")]
 [assembly: InternalsVisibleTo("Unity.Timeline")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.CoreTests.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEngine.SpatialTracking")]

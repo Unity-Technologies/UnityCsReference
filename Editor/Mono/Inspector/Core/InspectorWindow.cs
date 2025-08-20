@@ -4,15 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
 using Object = UnityEngine.Object;
-
-using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 
 namespace UnityEditor
 {
@@ -64,9 +60,9 @@ namespace UnityEditor
                 return inspector.m_PreviewWindow;
             }
 
-            public static InspectorPreviewWindow GetInspectorPreviewWindow(InspectorWindow inspector)
+            public static PreviewRootElement GetPreviewRootElement(InspectorWindow inspector)
             {
-                return inspector.previewWindow;
+                return inspector.m_PreviewRootElement;
             }
         }
 
@@ -389,11 +385,11 @@ namespace UnityEditor
         /// </summary>
         protected override void CreatePreviewEllipsisMenu()
         {
-            if (previewWindow == null)
+            if (m_PreviewRootElement == null)
                 return;
 
-            previewWindow.ClearEllipsisMenu();
-            previewWindow.AppendActionToEllipsisMenu(
+            m_PreviewRootElement.ClearEllipsisMenu();
+            m_PreviewRootElement.AppendActionToEllipsisMenu(
                 "Convert to Floating Window",
                 (e) =>
                 {
@@ -404,7 +400,7 @@ namespace UnityEditor
                 },
                 a => DropdownMenuAction.Status.Normal);
 
-            previewWindow.AppendActionToEllipsisMenu(
+            m_PreviewRootElement.AppendActionToEllipsisMenu(
                 "Minimize in Inspector",
                 (e) =>
                 {
@@ -427,7 +423,7 @@ namespace UnityEditor
         void PopupPreviewWindow(bool exitGUI = false)
         {
             DetachPreview(exitGUI);
-            previewWindow.parent?.Remove(previewWindow);
+            m_PreviewRootElement.parent?.Remove(m_PreviewRootElement);
             SetPreviewPopOutStateAndRebuild(true);
         }
 

@@ -207,6 +207,15 @@ namespace UnityEngine.UIElements
                 return true;
             }
 
+            // Special case where the source is null and of type object
+            if (!TypeTraits<TSource>.IsValueType
+                && source == null
+                && typeof(TSource) == typeof(object))
+            {
+                destination = default;
+                return true;
+            }
+
             destination = default;
             return false;
         }

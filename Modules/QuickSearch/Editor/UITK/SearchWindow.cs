@@ -587,8 +587,12 @@ namespace UnityEditor.Search
 
             SaveSessionSettings();
 
-            m_SearchView.syncSearch = false;
-            m_SearchView?.Dispose();
+            if (m_SearchView != null)
+            {
+                m_SearchView.syncSearch = false;
+                m_SearchView?.Dispose();
+            }
+
             guiCreated = false;
 
             m_SearchMonitorView.Dispose();

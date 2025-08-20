@@ -89,17 +89,19 @@ namespace UnityEditor.Search
                 m_HeaderElement.Add(new UIElements.PropertyField(m_ViewStateProperty, "Debug View State") { });
             m_HeaderElement.Add(new SearchGroupBar("", m_ResultView));
 
+            m_ResultView.RegisterCallback<AttachToPanelEvent>(OnBodyAttached);
+            m_ResultView.RegisterCallback<DetachFromPanelEvent>(OnBodyDetached);
+
             m_Body.Add(m_HeaderElement);
             m_Body.Add(m_ResultView);
 
-            m_ResultView.RegisterCallback<AttachToPanelEvent>(OnBodyAttached);
-            m_ResultView.RegisterCallback<DetachFromPanelEvent>(OnBodyDetached);
             return m_Body;
         }
 
         private void OnBodyAttached(AttachToPanelEvent evt)
         {
             var body = (VisualElement)evt.target;
+            m_ResultView?.Refresh();
 
             // We can get in a situation where 2 scrollbars appear in the inspector if
             // the result view has lots of results, because the listview has a maximum height
@@ -193,11 +195,11 @@ namespace UnityEditor.Search
             m_Body.Clear();
 
             m_ResultView?.Dispose();
-            m_DescriptionProperty.Dispose();
-            m_TextProperty.Dispose();
-            m_IsSearchTemplateProperty.Dispose();
-            m_IconProperty.Dispose();
-            m_ViewStateProperty.Dispose();
+            m_DescriptionProperty?.Dispose();
+            m_TextProperty?.Dispose();
+            m_IsSearchTemplateProperty?.Dispose();
+            m_IconProperty?.Dispose();
+            m_ViewStateProperty?.Dispose();
         }
     }
 }

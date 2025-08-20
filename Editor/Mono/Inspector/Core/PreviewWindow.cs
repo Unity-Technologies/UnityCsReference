@@ -84,17 +84,17 @@ namespace UnityEditor
             preview.Clear();
             CreatePreviewables();
 
-            previewWindow = new InspectorPreviewWindow();
+            m_PreviewRootElement = new PreviewRootElement();
             IPreviewable editor = GetEditorThatControlsPreview(tracker.activeEditors);
-            previewWindow = editor?.CreatePreview(previewWindow) as InspectorPreviewWindow;
+            m_PreviewRootElement = editor?.CreatePreview(m_PreviewRootElement) as PreviewRootElement;
 
-            if (m_ParentInspectorWindow != null && previewWindow != null)
+            if (m_ParentInspectorWindow != null && m_PreviewRootElement != null)
             {
-                if (previewWindow.childCount == 0)
+                if (m_PreviewRootElement.childCount == 0)
                 {
                     PrepareToolbar(true);
-                    UpdateLabel(previewWindow);
-                    VisualElement previewPane = previewWindow.GetPreviewPane();
+                    UpdateLabel(m_PreviewRootElement);
+                    VisualElement previewPane = m_PreviewRootElement.GetPreviewPane();
 
                     // IMGUI fallback
                     if (previewPane?.childCount == 0)
@@ -103,10 +103,10 @@ namespace UnityEditor
                     }
                 }
 
-                SetPreviewStyle(previewWindow);
+                SetPreviewStyle(m_PreviewRootElement);
 
                 if (preview.Q(k_PreviewName) == null)
-                    preview.Add(previewWindow);
+                    preview.Add(m_PreviewRootElement);
             }
             else
             {

@@ -372,7 +372,9 @@ namespace Unity.UI.Builder
             CenterCanvas();
         }
 
-        public void FitViewport(VisualElement target = null)
+        public void FitViewport() => FitViewport(selection.selection.FirstOrDefault());
+
+        public void FitViewport(VisualElement target)
         {
             float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
             float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
@@ -593,7 +595,7 @@ namespace Unity.UI.Builder
         static void OnFrameSelectedShortcut(ShortcutArguments args)
         {
             var builderViewPort = args.context as BuilderViewport;
-            builderViewPort.FitViewport(builderViewPort.selection.selection.FirstOrDefault());
+            builderViewPort.FitViewport();
         }
 
         public void SetPreviewMode(bool mode)
