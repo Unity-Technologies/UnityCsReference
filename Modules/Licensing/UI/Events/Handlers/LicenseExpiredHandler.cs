@@ -39,6 +39,8 @@ class LicenseExpiredHandler : INotificationHandler
         {
             m_ModalWrapper.ShowLicenseExpiredWindow(m_NativeApiWrapper, m_LicenseLogger, m_Notification);
         }
+
+        m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
     }
 
     public void HandleBatchmode()

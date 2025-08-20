@@ -437,6 +437,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The current scrolling position.
         /// </summary>
+        /// <remarks>
+        /// You can set this property to scroll the content to a specific position. For example, 
+        /// to scroll to the bottom of the ScrollView, set this property to the maximum value of the vertical scroller.
+        /// Refer to the [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]] user manual page for an example.
+        /// </remarks>
         [CreateProperty]
         public Vector2 scrollOffset
         {

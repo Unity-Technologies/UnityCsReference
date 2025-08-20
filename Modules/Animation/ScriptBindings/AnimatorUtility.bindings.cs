@@ -8,13 +8,13 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeHeader("Modules/Animation/OptimizeTransformHierarchy.h")]
+    [NativeHeader("Modules/Animation/ScriptBindings/AnimatorUtility.bindings.h")]
     public class AnimatorUtility
     {
-        [FreeFunction]
+        [FreeFunction("AnimatorUtilityBindings::OptimizeTransformHierarchy")]
         extern public static void OptimizeTransformHierarchy([NotNull] GameObject go, string[] exposedTransforms);
 
-        [FreeFunction]
+        [FreeFunction("AnimatorUtilityBindings::DeoptimizeTransformHierarchy")]
         extern public static void DeoptimizeTransformHierarchy([NotNull] GameObject go);
     }
 }

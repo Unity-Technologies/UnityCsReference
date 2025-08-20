@@ -113,6 +113,29 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Child elements are added to it, usually this is the same as the element itself.
         /// </summary>
+        /// <remarks>
+        /// When iterating over the  <see cref="VisualElement.Children"/> of an element, the
+        /// element's content container hierarchy is used instead of the element itself.
+        /// This can lead to unexpected results, such as elements being ignored by the navigation events
+        /// if they are not directly in the content container's hierarchy. Refer to <see cref="IFocusRing" /> for more information.
+        /// 
+        /// If the content container is the same as the element itself, child elements are added directly to the element.
+        /// This is true for most elements but can be overridden by more complex types.
+        ///
+        /// The <see cref="ScrollView"/>, for example, has a content container that is different from itself.
+        /// In that case, child elements added to the scroll view are added to its content container element instead.
+        /// While the physical parent (<see cref="VisualElement.Hierarchy.parent"/>) of the child elements is the
+        /// scroll view's content container element, their logical parent (<see cref="VisualElement.parent"/>)
+        /// still refers to the scroll view itself.
+        /// Since some of the scroll view's focusable children are not part of its logical hierarchy, like its
+        /// <see cref="Scroller"/> elements, these focusable children are not considered by default when using
+        /// sequential navigation.
+        /// Refer to
+        /// [[wiki:UIE-faq-event-and-input-system|How can I change what element is focused next]]
+        /// for an example of a workaround solution if the default navigation rules don't correspond to your needs.
+        /// </remarks>
+        /// <seealso cref="VisualElement.hierarchy"/>
+        /// <seealso cref="VisualElement.Children"/>
         public virtual VisualElement contentContainer
         {
             get { return this; }

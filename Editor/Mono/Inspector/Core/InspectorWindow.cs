@@ -5,14 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
 using Object = UnityEngine.Object;
-
-using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 
 namespace UnityEditor
 {
@@ -64,9 +61,9 @@ namespace UnityEditor
                 return inspector.m_PreviewWindow;
             }
 
-            public static InspectorPreviewWindow GetInspectorPreviewWindow(InspectorWindow inspector)
+            public static PreviewRootElement GetPreviewRootElement(InspectorWindow inspector)
             {
-                return inspector.previewWindow;
+                return inspector.previewRootElement;
             }
         }
 
@@ -187,7 +184,7 @@ namespace UnityEditor
         {
             if (isLocked)
                 return;
-        
+
             RebuildContentsContainers();
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
@@ -387,16 +384,16 @@ namespace UnityEditor
         /// <summary>
         /// Creates the ellipsis menu for UITK based inspectors.
         /// </summary>
-        protected override void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor)
+        protected override void CreatePreviewEllipsisMenu(PreviewRootElement previewRootElement, PropertyEditor editor)
         {
-            if (editor.previewWindow == null)
+            if (editor.previewRootElement == null)
                 return;
 
             var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
             var previewContainer = m_SplitView.Q(s_PreviewContainer);
 
-            window.ClearEllipsisMenu();
-            window.AppendActionToEllipsisMenu(
+            previewRootElement.ClearEllipsisMenu();
+            previewRootElement.AppendActionToEllipsisMenu(
                 "Convert to Floating Window",
                 (e) =>
                 {
@@ -417,7 +414,7 @@ namespace UnityEditor
                 },
                 a => DropdownMenuAction.Status.Normal);
 
-            window.AppendActionToEllipsisMenu(
+            previewRootElement.AppendActionToEllipsisMenu(
                 "Minimize in Inspector",
                 (e) =>
                 {
@@ -426,10 +423,10 @@ namespace UnityEditor
                 a => !editor.showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
             );
 
-            draglineAnchor.RegisterCallback<PointerUpEvent, InspectorPreviewWindow>(OnDraglineChange, window);
+            draglineAnchor.RegisterCallback<PointerUpEvent, PreviewRootElement>(OnDraglineChange, previewRootElement);
         }
 
-        void OnDraglineChange(PointerUpEvent evt, InspectorPreviewWindow window)
+        void OnDraglineChange(PointerUpEvent evt, PreviewRootElement rootElement)
         {
             if (m_PreviewWindow != null || evt.button != (int)MouseButton.RightMouse)
                 return;
@@ -440,7 +437,7 @@ namespace UnityEditor
         void PopupPreviewWindow(bool exitGUI = false)
         {
             DetachPreview(exitGUI);
-            previewWindow.parent?.Remove(previewWindow);
+            previewRootElement.parent?.Remove(previewRootElement);
         }
 
         void DockPreviewWindow()

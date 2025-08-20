@@ -2055,11 +2055,11 @@
     <Compile Include="..\..\Editor\Mono\Inspector\Core\GenericInspector.cs">
       <Link>Editor\Mono\Inspector\Core\GenericInspector.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\Core\InspectorPreviewWindow.cs">
-      <Link>Editor\Mono\Inspector\Core\InspectorPreviewWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Core\InspectorWindow.cs">
       <Link>Editor\Mono\Inspector\Core\InspectorWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\Core\PreviewRootElement.cs">
+      <Link>Editor\Mono\Inspector\Core\PreviewRootElement.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\Core\PreviewWindow.cs">
       <Link>Editor\Mono\Inspector\Core\PreviewWindow.cs</Link>

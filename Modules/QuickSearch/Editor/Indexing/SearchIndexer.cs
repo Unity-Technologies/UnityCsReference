@@ -1140,6 +1140,9 @@ namespace UnityEditor.Search
                 var totalEntries = 0;
                 foreach (var other in artifacts)
                 {
+                    if (task?.Canceled() ?? false)
+                        return;
+
                     if (other.documentCount == 0)
                         continue;
 
@@ -1150,6 +1153,9 @@ namespace UnityEditor.Search
                         if (currentDocIndex != -1)
                             updatedDocIndexes[od.Key] = currentDocIndex;
                     }
+
+                    if (task?.Canceled() ?? false)
+                        return;
 
                     foreach (var od in other.m_Documents)
                     {
@@ -1164,6 +1170,9 @@ namespace UnityEditor.Search
                         }
                     }
 
+                    if (task?.Canceled() ?? false)
+                        return;
+
                     // Remap entries and add them to the batch
                     other.m_DocumentListTable.RemapDocuments(updatedDocIndexes);
                     for (var ei = 0; ei < other.m_Indexes.Count; ++ei)
@@ -1175,6 +1184,9 @@ namespace UnityEditor.Search
                         entryEnumerables.Add(other.m_Indexes);
                     totalEntries += other.m_Indexes.Count;
 
+                    if (task?.Canceled() ?? false)
+                        return;
+
                     // This should be very fast since there is not a lot of entries added in batchIndexes
                     other.m_BatchIndexes.Sort(wiec);
                     for (var ei = 0; ei < other.m_BatchIndexes.Count; ++ei)
@@ -1182,6 +1194,9 @@ namespace UnityEditor.Search
                         var e = other.m_BatchIndexes[ei];
                         other.m_BatchIndexes[ei] = new SearchIndexEntry(e.key, e.crc, e.type, baseScore + e.score, e.docs.RemapDocuments(updatedDocIndexes));
                     }
+
+                    if (task?.Canceled() ?? false)
+                        return;
 
                     if (other.m_BatchIndexes.Count > 0)
                         entryEnumerables.Add(other.m_BatchIndexes);
@@ -1194,6 +1209,9 @@ namespace UnityEditor.Search
                         m_MetaInfo[mikvp.Key] = mikvp.Value;
 
                     updatedDocIndexes.Clear();
+
+                    if (task?.Canceled() ?? false)
+                        return;
                 }
 
                 // Once everything is finished, sort and build the document table
@@ -1202,8 +1220,11 @@ namespace UnityEditor.Search
                 task.throttleProgressReport = progressRate > 0;
                 task.throttleProgressRate = progressRate;
 
+                if (task?.Canceled() ?? false)
+                    return;
+
                 using var batchIndexes = new SearchNativeList<SearchIndexEntry>(artifactCount, Allocator.Persistent);
-                CompressEntriesFromEnumeratorAndGenerateDocumentListTable(new SearchIndexEntryHeapEnumerator(entryEnumerables, wiec), m_Documents.Count, batchIndexes, wiec, out var documentListTable, out var documentListTableHandle, progress: progress => task.Report(progress, totalEntries));
+                CompressEntriesFromEnumeratorAndGenerateDocumentListTable(new SearchIndexEntryHeapEnumerator(entryEnumerables, wiec), m_Documents.Count, batchIndexes, wiec, out var documentListTable, out var documentListTableHandle, task, progress: progress => task.Report(progress, totalEntries));
                 foreach (var enumerable in entryEnumerables)
                 {
                     if (enumerable is SearchNativeReadOnlyArray<SearchIndexEntry> { Allocator: Allocator.Temp } na)
@@ -1234,6 +1255,9 @@ namespace UnityEditor.Search
         internal void Merge(string[] removeDocuments, SearchIndexer other, int baseScore,
             Action<int, SearchIndexer, int> documentIndexing, SearchTask<TaskData> task)
         {
+            if (task?.Canceled() ?? false)
+                return;
+
             var indexes = new SearchNativeList<SearchIndexEntry>(m_Indexes.Count, Allocator.Persistent);
             var updatedDocIndexes = new Dictionary<int/*other*/, int/*current*/>();
             foreach (var od in other.m_Documents)
@@ -1245,6 +1269,20 @@ namespace UnityEditor.Search
 
             SearchDocumentListTable tempTable = null; // Keep this alive until the end of Merge.
             GCHandle tempTableHandle = default;
+            var enumerables = new List<IReadOnlyList<SearchIndexEntry>>(3);
+
+            void Cleanup()
+            {
+                if (tempTableHandle.IsAllocated)
+                    tempTableHandle.Free();
+                tempTable?.Dispose();
+
+                foreach (var enumerable in enumerables)
+                {
+                    if (enumerable is SearchNativeList<SearchIndexEntry> snl)
+                        snl.Dispose();
+                }
+            }
 
             // We concatenate other.m_SourceDocument here because we want to remove all documents in m_Document that come from other.m_SourceDocument but are
             // not in other.m_Document. This can happen when a modification on an asset makes it index less documents, so other.m_Documents would contain less documents
@@ -1269,13 +1307,19 @@ namespace UnityEditor.Search
                         var ie = m_Indexes[i];
                         m_Indexes[i] = new SearchIndexEntry(ie.key, ie.crc, ie.type, ie.score, ie.docs.RemoveDocuments(removeDocIndexes));
                     }
-                    CompressEntriesAndGenerateDocumentListTable(m_Indexes, indexes, new SearchIndexEntryExactComparer(), out tempTable, out tempTableHandle);
+                    CompressEntriesAndGenerateDocumentListTable(m_Indexes, indexes, new SearchIndexEntryExactComparer(), out tempTable, out tempTableHandle, task);
                 }
             }
             else
             {
                 lock (this)
                     indexes.AddRange(m_Indexes);
+            }
+
+            if (task?.Canceled() ?? false)
+            {
+                Cleanup();
+                return;
             }
 
             // Remove the removedDocuments from the source documents. It is possible for some assets to get removed and then added back with the same
@@ -1286,7 +1330,6 @@ namespace UnityEditor.Search
                 m_SourceDocuments.TryRemove(removedDocument, out _);
 
             var wiec = new SearchIndexComparer(SearchIndexOperator.DoNotCompareScore);
-            var enumerables = new List<IReadOnlyList<SearchIndexEntry>>(3);
             var totalEntries = m_Indexes.Count;
             if (indexes.Count > 0)
                 enumerables.Add(indexes);
@@ -1309,6 +1352,12 @@ namespace UnityEditor.Search
                     documentIndexing?.Invoke(od.Key, other, count);
                 }
 
+                if (task?.Canceled() ?? false)
+                {
+                    Cleanup();
+                    return;
+                }
+
                 var bi = 0;
                 count = other.m_Indexes.Count + other.m_BatchIndexes.Count;
                 if (task != null)
@@ -1326,9 +1375,15 @@ namespace UnityEditor.Search
                 // TODO: Optimize this
                 other.m_DocumentListTable.RemapDocuments(updatedDocIndexes);
                 var tmpList = new SearchNativeList<SearchIndexEntry>(other.m_Indexes.Count, Allocator.Persistent);
-                var tmpBatch = new SearchNativeList<SearchIndexEntry>(other.m_BatchIndexes.Count, Allocator.Persistent);
                 foreach (var sie in other.m_Indexes)
                 {
+                    if (task?.Canceled() ?? false)
+                    {
+                        tmpList.Dispose();
+                        Cleanup();
+                        return;
+                    }
+
                     var insertAt = indexes.BinarySearch(sie, wiec);
                     if (insertAt < 0)
                     {
@@ -1347,10 +1402,24 @@ namespace UnityEditor.Search
                     tmpList.Dispose();
                 totalEntries += tmpList.Count;
 
+                if (task?.Canceled() ?? false)
+                {
+                    Cleanup();
+                    return;
+                }
+
+                var tmpBatch = new SearchNativeList<SearchIndexEntry>(other.m_BatchIndexes.Count, Allocator.Persistent);
                 tmpBatch.AddRange(other.m_BatchIndexes);
                 tmpBatch.Sort(wiec);
                 for (var i = 0; i < tmpBatch.Count; i++)
                 {
+                    if (task?.Canceled() ?? false)
+                    {
+                        tmpBatch.Dispose();
+                        Cleanup();
+                        return;
+                    }
+
                     var sie = tmpBatch[i];
                     var insertAt = indexes.BinarySearch(sie, wiec);
                     if (insertAt < 0)
@@ -1373,6 +1442,12 @@ namespace UnityEditor.Search
 
             lock (this)
             {
+                if (task?.Canceled() ?? false)
+                {
+                    Cleanup();
+                    return;
+                }
+
                 if (task != null)
                 {
                     task.Report("Compressing entries...", 0f);
@@ -1384,7 +1459,7 @@ namespace UnityEditor.Search
                 m_IndexReady = false;
                 // Once everything is finished, sort and build the document table
                 using var compressedEntries = new SearchNativeList<SearchIndexEntry>(indexes.Count + other.indexCount, Allocator.Persistent);
-                CompressEntriesFromEnumeratorAndGenerateDocumentListTable(new SearchIndexEntryHeapEnumerator(enumerables, wiec), m_Documents.Count, compressedEntries, wiec, out var documentListTable, out var documentListTableHandle, progress: progress => task?.Report(progress, totalEntries));
+                CompressEntriesFromEnumeratorAndGenerateDocumentListTable(new SearchIndexEntryHeapEnumerator(enumerables, wiec), m_Documents.Count, compressedEntries, wiec, out var documentListTable, out var documentListTableHandle, task, progress: progress => task?.Report(progress, totalEntries));
                 m_Indexes.Dispose();
                 m_Indexes = new SearchNativeReadOnlyArray<SearchIndexEntry>(compressedEntries.ToReadOnly(), Allocator.Persistent);
                 if (m_DocumentListTableHandle.IsAllocated)
@@ -1401,15 +1476,7 @@ namespace UnityEditor.Search
                 BuildDocumentIndexTable();
                 m_IndexReady = true;
 
-                if (tempTableHandle.IsAllocated)
-                    tempTableHandle.Free();
-                tempTable?.Dispose();
-
-                foreach (var enumerable in enumerables)
-                {
-                    if (enumerable is SearchNativeList<SearchIndexEntry> snl)
-                        snl.Dispose();
-                }
+                Cleanup();
 
                 if (task != null)
                     task.throttleProgressReport = false;
@@ -2114,7 +2181,7 @@ namespace UnityEditor.Search
 
         // This method assumes entries are sorted.
         // Merge and Combine needs SearchIndexComparer with number compare to compress numbers that are similar.
-        static void CompressEntriesAndGenerateDocumentListTable(IReadOnlyList<SearchIndexEntry> sortedEntries, SearchNativeList<SearchIndexEntry> outCompressedEntries, IComparer<SearchIndexEntry> comparer, out SearchDocumentListTable documentListTable, out GCHandle documentListTableHandle, Action<int> progress = null)
+        static void CompressEntriesAndGenerateDocumentListTable(IReadOnlyList<SearchIndexEntry> sortedEntries, SearchNativeList<SearchIndexEntry> outCompressedEntries, IComparer<SearchIndexEntry> comparer, out SearchDocumentListTable documentListTable, out GCHandle documentListTableHandle, SearchTask<TaskData> task = null, Action<int> progress = null)
         {
             documentListTable = new SearchDocumentListTable(doCreate: false);
             documentListTableHandle = default;
@@ -2128,6 +2195,8 @@ namespace UnityEditor.Search
             var currentDocRefs = le.docs.Count;
             for (var i = 1; i < sortedEntries.Count; ++i)
             {
+                if (task?.Canceled() ?? false)
+                    return;
                 var e = sortedEntries[i];
                 currentDocRefs += e.docs.Count;
                 if (comparer.Compare(le, e) != 0)
@@ -2148,10 +2217,10 @@ namespace UnityEditor.Search
             documentListTableHandle = GCHandle.Alloc(documentListTable, GCHandleType.Pinned);
             var enumerator = sortedEntries.GetEnumerator();
             enumerator.MoveNext();
-            CompressEntriesFromEnumerator(enumerator, outCompressedEntries, comparer, documentListTable, documentListTableHandle, progress);
+            CompressEntriesFromEnumerator(enumerator, outCompressedEntries, comparer, documentListTable, documentListTableHandle, task, progress);
         }
 
-        static void CompressEntriesFromEnumeratorAndGenerateDocumentListTable(IEnumerator<SearchIndexEntry> sortedEntriesEnumerator, int nbDocuments, SearchNativeList<SearchIndexEntry> outCompressedEntries, IComparer<SearchIndexEntry> comparer, out SearchDocumentListTable documentListTable, out GCHandle documentListTableHandle, Action<int> progress = null)
+        static void CompressEntriesFromEnumeratorAndGenerateDocumentListTable(IEnumerator<SearchIndexEntry> sortedEntriesEnumerator, int nbDocuments, SearchNativeList<SearchIndexEntry> outCompressedEntries, IComparer<SearchIndexEntry> comparer, out SearchDocumentListTable documentListTable, out GCHandle documentListTableHandle, SearchTask<TaskData> task = null, Action<int> progress = null)
         {
             documentListTable = new SearchDocumentListTable(doCreate: false);
             documentListTableHandle = default;
@@ -2164,12 +2233,12 @@ namespace UnityEditor.Search
             // Using an average of 10 seems to give a good starting point.
             documentListTable.Create(nbDocuments, 10);
             documentListTableHandle = GCHandle.Alloc(documentListTable, GCHandleType.Pinned);
-            CompressEntriesFromEnumerator(sortedEntriesEnumerator, outCompressedEntries, comparer, documentListTable, documentListTableHandle, progress);
+            CompressEntriesFromEnumerator(sortedEntriesEnumerator, outCompressedEntries, comparer, documentListTable, documentListTableHandle, task, progress);
         }
 
         // If you call this anywhere else other than the other Compress methods, make sure that MoveNext is called once on the enumerator
         // to verify that it contains some values.
-        static void CompressEntriesFromEnumerator(IEnumerator<SearchIndexEntry> sortedEntriesEnumerator, SearchNativeList<SearchIndexEntry> outCompressedEntries, IComparer<SearchIndexEntry> comparer, SearchDocumentListTable documentListTable, GCHandle documentListTableHandle, Action<int> progress = null)
+        static void CompressEntriesFromEnumerator(IEnumerator<SearchIndexEntry> sortedEntriesEnumerator, SearchNativeList<SearchIndexEntry> outCompressedEntries, IComparer<SearchIndexEntry> comparer, SearchDocumentListTable documentListTable, GCHandle documentListTableHandle, SearchTask<TaskData> task = null, Action<int> progress = null)
         {
             var currentEntry = 1;
             var sortedSet = new SortedSet<int>();
@@ -2177,6 +2246,8 @@ namespace UnityEditor.Search
             le.docs.ToDocumentCollection(sortedSet);
             while (sortedEntriesEnumerator.MoveNext())
             {
+                if (task?.Canceled() ?? false)
+                    return;
                 progress?.Invoke(++currentEntry);
                 var e = sortedEntriesEnumerator.Current;
                 if (comparer.Compare(le, e) != 0)
@@ -2399,7 +2470,7 @@ namespace UnityEditor.Search
             public bool Equals(RangeSet other) => type == other.type && crc == other.crc;
         }
 
-        struct IndexerThreadScope : IDisposable
+        internal struct IndexerThreadScope : IDisposable
         {
             private bool m_Disposed;
             private readonly AssemblyReloadEvents.AssemblyReloadCallback m_AbortHandler;

@@ -193,11 +193,11 @@ namespace UnityEditor.Search
             m_Body.Clear();
 
             m_ResultView?.Dispose();
-            m_DescriptionProperty.Dispose();
-            m_TextProperty.Dispose();
-            m_IsSearchTemplateProperty.Dispose();
-            m_IconProperty.Dispose();
-            m_ViewStateProperty.Dispose();
+            m_DescriptionProperty?.Dispose();
+            m_TextProperty?.Dispose();
+            m_IsSearchTemplateProperty?.Dispose();
+            m_IconProperty?.Dispose();
+            m_ViewStateProperty?.Dispose();
         }
     }
 }

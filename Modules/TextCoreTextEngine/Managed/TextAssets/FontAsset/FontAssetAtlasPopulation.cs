@@ -568,9 +568,7 @@ namespace UnityEngine.TextCore.Text
                         RegisterFontAssetForFontFeatureUpdate(this);
                     }
                     else
-                    {
                         RegisterFontAssetForKerningUpdate(this);
-                    }
                 }
 
                 RegisterAtlasTextureForApply(m_AtlasTextures[m_AtlasTextureIndex]);

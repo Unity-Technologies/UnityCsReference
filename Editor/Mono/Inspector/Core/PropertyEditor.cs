@@ -458,14 +458,18 @@ namespace UnityEditor
         [UsedImplicitly]
         protected virtual void OnInspectorUpdate()
         {
+            // OnInspectorUpdate can get called before GUISkin.current is set
+            if (GUISkin.current == null)
+                return;
+
             if (CloseIfEmpty())
                 return;
 
             // Check if scripts have changed without calling set dirty
             tracker.VerifyModifiedMonoBehaviours();
             InspectorUtility.DirtyLivePropertyChanges(tracker);
-            if(previewWindow != null)
-                UpdateLabel(previewWindow);
+            if(previewRootElement != null)
+                UpdateLabel(previewRootElement);
 
             if (!tracker.isDirty || !ReadyToRepaint())
                 return;
@@ -1182,21 +1186,21 @@ namespace UnityEditor
 
                     if (m_cachedPreviewEditor != null && m_cachedPreviewEditor.HasPreviewGUI())
                     {
-                        previewWindow = new InspectorPreviewWindow();
+                        previewRootElement = new PreviewRootElement();
 
-                        preview = m_SplitView.Q(s_PreviewContainer);
-                        preview.style.minHeight = m_PreviewMinHeight;
+                        previewContainer = m_SplitView.Q(s_PreviewContainer);
+                        previewContainer.style.minHeight = m_PreviewMinHeight;
 
-                        previewItem = m_cachedPreviewEditor.CreatePreview(previewWindow);
+                        previewItem = m_cachedPreviewEditor.CreatePreview(previewRootElement);
                         var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
 
                         if (previewItem != null)
                         {
                             // Temporary naming while in transition to UITK
                             InitUITKPreview();
-                            preview.Add(previewWindow);
+                            previewContainer.Add(previewRootElement);
 
-                            preview.style.display = DisplayStyle.Flex;
+                            previewContainer.style.display = DisplayStyle.Flex;
                             draglineAnchor.style.display = DisplayStyle.Flex;
                         }
                         else // IMGUI fallback if no UITK preview found
@@ -1206,10 +1210,10 @@ namespace UnityEditor
                             m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
                             previewAndLabelElement.Add(previewAndLabelsContainer);
 
-                            preview.style.display = DisplayStyle.None;
+                            previewContainer.style.display = DisplayStyle.None;
                             draglineAnchor.style.display = DisplayStyle.None;
 
-                            if (preview == null)
+                            if (previewContainer == null)
                                 m_SplitView.Add(previewAndLabelElement);
                         }
 
@@ -1261,8 +1265,8 @@ namespace UnityEditor
 
                 m_cachedPreviewEditor = null;
 
-                if(preview?.childCount > 0 && previewWindow != null && preview.Q(previewWindow.name) != null)
-                    preview.Remove(previewWindow);
+                if(previewContainer?.childCount > 0 && previewRootElement != null && previewContainer.Q(previewRootElement.name) != null)
+                    previewContainer.Remove(previewRootElement);
 
                 var footer = previewAndLabelElement?.Q(s_Footer);
                 if(previewAndLabelElement?.childCount > 0 && footer != null)
@@ -1273,22 +1277,22 @@ namespace UnityEditor
         void InitUITKPreview()
         {
             // Toolbar
-            PrepareToolbar(previewWindow);
-            UpdateLabel(previewWindow);
+            PrepareToolbar(previewRootElement);
+            UpdateLabel(previewRootElement);
 
             // Dragline
-            m_SplitView.AddToClassList(InspectorPreviewWindow.Styles.ussClassName);
+            m_SplitView.AddToClassList(PreviewRootElement.Styles.ussClassName);
             var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
             var dragline = draglineAnchor.Q(s_dragline);
             dragline.style.height = m_PreviewMinHeight;
             dragline.RegisterCallback<GeometryChangedEvent>(e =>
-                OnDraglineGeometryChange(previewWindow, dragline));
+                OnDraglineGeometryChange(previewRootElement, dragline));
 
             draglineAnchor.RegisterCallback<PointerUpEvent>(OnDragLineChange);
             UpdatePreviewHeight(m_CachedPreviewHeight);
 
             // IMGUI Preview
-            VisualElement previewPane = previewWindow.GetPreviewPane();
+            VisualElement previewPane = previewRootElement.GetPreviewPane();
             if (previewPane.childCount == 0)
             {
                 var previewAndLabelsContainer =
@@ -1302,9 +1306,9 @@ namespace UnityEditor
             if (window == null)
                 return;
 
-            var header = window.Q(InspectorPreviewWindow.Styles.headerName);
-            var toolbar = header?.Q(InspectorPreviewWindow.Styles.toolbarName);
-            var ellipsisMenu = header?.Q(InspectorPreviewWindow.Styles.elipsisMenuName);
+            var header = window.Q(PreviewRootElement.Styles.headerName);
+            var toolbar = header?.Q(PreviewRootElement.Styles.toolbarName);
+            var ellipsisMenu = header?.Q(PreviewRootElement.Styles.elipsisMenuName);
             float margin = dragline.resolvedStyle.marginRight;
 
             if (header != null && toolbar != null && ellipsisMenu != null)
@@ -1315,13 +1319,20 @@ namespace UnityEditor
             dragline.style.marginRight = margin;
         }
 
-        internal void PrepareToolbar(InspectorPreviewWindow toolbar, bool isFloatingPreviewWindow = false)
+        internal void PrepareToolbar(PreviewRootElement toolbar, bool isFloatingPreviewWindow = false)
         {
-            if(!isFloatingPreviewWindow)
+            if (!isFloatingPreviewWindow)
+            {
+                toolbar.m_EllipsisMenu.style.display = DisplayStyle.Flex;
                 CreatePreviewEllipsisMenu(toolbar, this);
+            }
+            else
+            {
+                toolbar.m_EllipsisMenu.style.display = DisplayStyle.None;
+            }
         }
 
-        internal void UpdateLabel(InspectorPreviewWindow toolbar)
+        internal void UpdateLabel(PreviewRootElement toolbar)
         {
             IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
 
@@ -1336,8 +1347,8 @@ namespace UnityEditor
                 label = Styles.labelTitle.text;
             }
 
-            var header = toolbar?.Q(InspectorPreviewWindow.Styles.headerName);
-            if (header?.Q(InspectorPreviewWindow.Styles.titleName) is Label labelElement)
+            var header = toolbar?.Q(PreviewRootElement.Styles.headerName);
+            if (header?.Q(PreviewRootElement.Styles.titleName) is Label labelElement)
             {
                 labelElement.text = label;
             }
@@ -1609,11 +1620,11 @@ namespace UnityEditor
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }
         protected virtual void EndDrawPreviewAndLabels(Event evt, Rect rect, Rect dragRect) {}
-        protected virtual void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor) {}
+        protected virtual void CreatePreviewEllipsisMenu(PreviewRootElement previewRootElement, PropertyEditor editor) {}
 
         protected TwoPaneSplitView m_SplitView = null;
-        VisualElement preview = null;
-        internal InspectorPreviewWindow previewWindow = null;
+        VisualElement previewContainer = null;
+        internal PreviewRootElement previewRootElement = null;
         private void DrawPreviewAndLabels()
         {
             CreatePreviewables();

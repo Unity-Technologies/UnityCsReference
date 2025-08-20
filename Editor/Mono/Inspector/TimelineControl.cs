@@ -335,14 +335,14 @@ namespace UnityEditor
             if (loop && vectorList[vectorList.Count - 1].x <= rect.width)
             {
                 float pos = vectorList[vectorList.Count - 1].x;
-                int iterator = 0;
+                int iterator = 1;
                 int multiplier = 1;
                 List<Vector3> loopVectors = new List<Vector3>();
                 while (pos < rect.width)
                 {
                     if (iterator > vectorList.Count - 1)
                     {
-                        iterator = 0;
+                        iterator = 1;
                         multiplier++;
                     }
                     Vector3 point = vectorList[iterator];

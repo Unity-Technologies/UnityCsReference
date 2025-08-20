@@ -73,7 +73,7 @@ namespace UnityEditor
             if (Styles.UnityDude.image)
             {
                 Rect rect = GUILayoutUtility.GetRect(Styles.UnityDude, GUIStyle.none, GUILayout.MaxWidth(Styles.UnityDude.image.width));
-                rect.x += (GUIView.current.position.width - rect.width) / 2;
+                rect.x += (EditorGUIUtility.currentViewWidth - rect.width) / 2;
 
                 Color oldColor = GUI.color;
 
@@ -185,9 +185,13 @@ namespace UnityEditor
             public static GUIContent EnableName = EditorGUIUtility.TrTextContent("Use", "Maintain Alt/Option key to enable or disable all children");
         }
 
+        //Interpolation strings for foldout settings, both embedded and standalone.
+        static readonly string kFoldoutEmbeddedFormat = $"{typeof(ModelImporterEditor)}.{typeof(AvatarMaskInspector)}.{{0}}";
+        static readonly string kFoldoutStandaloneFormat = $"{typeof(AvatarMaskInspector)}.{{0}}";
+
         // Body mask data
         private bool m_ShowBodyMask = true;
-        private bool m_BodyMaskFoldout = false;
+        private SavedBool m_BodyMaskFoldout;
         private SerializedProperty m_BodyMask = null;
 
         // Transform data
@@ -223,11 +227,17 @@ namespace UnityEditor
 
                     ModelImporter modelImporter = (ModelImporter)so.targetObject;
                     m_TransformPaths = modelImporter.transformPaths;
+
+                    m_TransformMaskFoldout = new SavedBool(string.Format(kFoldoutEmbeddedFormat, "ShowTransformMaskFoldout"), false);
+                    m_BodyMaskFoldout = new SavedBool(string.Format(kFoldoutEmbeddedFormat, "ShowHumanoidMaskFoldout"), false);
                 }
                 else
                 {
                     m_TransformPaths = null;
                     m_AnimationType = null;
+                    //Initialize the foldouts for the mask asset inspector
+                    m_TransformMaskFoldout = new SavedBool(string.Format(kFoldoutStandaloneFormat, "ShowTransformMaskFoldout"), false);
+                    m_BodyMaskFoldout = new SavedBool(string.Format(kFoldoutStandaloneFormat, "ShowHumanoidMaskFoldout"), false);
                 }
 
                 InitializeSerializedProperties();
@@ -247,11 +257,18 @@ namespace UnityEditor
 
         private Avatar m_RefAvatar;
         private ModelImporter m_RefImporter;
-        private bool m_TransformMaskFoldout = false;
+        private SavedBool m_TransformMaskFoldout;
         private string[] m_HumanTransform = null;
 
         private void OnEnable()
         {
+            if (clipInfo == null)
+            {
+                //Initialize the foldouts for the mask asset inspector
+                m_TransformMaskFoldout = new SavedBool(string.Format(kFoldoutStandaloneFormat, "ShowTransformMaskFoldout"), false);
+                m_BodyMaskFoldout = new SavedBool(string.Format(kFoldoutStandaloneFormat, "ShowHumanoidMaskFoldout"), false);
+            }
+
             // The AvatarMaskInspector is instantiated in the ModelImporterClipEditor, which does not derive from the Editor class anymore.
             // All editors are added to a list so that OnEnable() and other methods can be called on them at certain times.
             // When going in game while having settings pending to be applied, at some point the target (ModelImporterClipEditor.m_Mask) becomes null,
@@ -480,9 +497,9 @@ namespace UnityEditor
             {
                 // Don't make toggling foldout cause GUI.changed to be true (shouldn't cause undoable action etc.)
                 bool wasChanged = GUI.changed;
-                m_BodyMaskFoldout = EditorGUILayout.Foldout(m_BodyMaskFoldout, Styles.BodyMask, true);
+                m_BodyMaskFoldout.value = EditorGUILayout.Foldout(m_BodyMaskFoldout.value, Styles.BodyMask, true);
                 GUI.changed = wasChanged;
-                if (m_BodyMaskFoldout)
+                if (m_BodyMaskFoldout.value)
                     BodyMaskEditor.Show(m_BodyMask, (int)AvatarMaskBodyPart.LastBodyPart);
             }
         }
@@ -491,7 +508,7 @@ namespace UnityEditor
         {
             // Don't make toggling foldout cause GUI.changed to be true (shouldn't cause undoable action etc.)
             bool wasChanged = GUI.changed;
-            m_TransformMaskFoldout = EditorGUILayout.Foldout(m_TransformMaskFoldout, Styles.TransformMask, true);
+            m_TransformMaskFoldout.value = EditorGUILayout.Foldout(m_TransformMaskFoldout.value, Styles.TransformMask, true);
             GUI.changed = wasChanged;
             if (m_TransformMaskFoldout)
             {

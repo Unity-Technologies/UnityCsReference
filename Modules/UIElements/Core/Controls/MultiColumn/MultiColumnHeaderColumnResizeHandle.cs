@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements.Internal
         {
             AddToClassList(ussClassName);
 
-            dragArea = new VisualElement() { focusable = true };
+            dragArea = new VisualElement() { focusable = true, tabIndex = -1  };
             dragArea.AddToClassList(dragAreaUssClassName);
             Add(dragArea);
         }

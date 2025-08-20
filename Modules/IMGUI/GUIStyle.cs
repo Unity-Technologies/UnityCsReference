@@ -415,7 +415,7 @@ namespace UnityEngine
             var cursorPos = handle.GetCursorPositionFromStringIndexUsingLineHeight(cursorStringIndex);
             cursorPos = new Vector2(Mathf.Max(0.0f, cursorPos.x), cursorPos.y);
             var rectOffset = Internal_GetTextRectOffset(position, content, new Vector2(handle.preferredSize.x, handle.preferredSize.y > 0 ? handle.preferredSize.y : lineHeight));
-            return cursorPos + rectOffset - contentOffset - new Vector2(0, lineHeight);
+            return cursorPos + rectOffset - new Vector2(0, lineHeight);
         }
 
         internal Rect[] GetHyperlinkRects(IMGUITextHandle handle, Rect content)
