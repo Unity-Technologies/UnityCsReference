@@ -41,6 +41,23 @@ namespace UnityEditor
             Lightmapping.lightingDataUpdated -= LightingDataUpdatedRepaint;
         }
 
+        public void OnSceneGUI()
+        {
+            if (!target)
+                return;
+
+            Renderer renderer = (Renderer)target;
+            MeshFilter mf = renderer.GetComponent<MeshFilter>();
+
+            if (mf == null || mf.sharedMesh == null)
+                return;
+
+            if (!mf.sharedMesh.isLodSelectionActive)
+                return;
+
+            DrawMeshLODLabel(renderer);
+        }
+
         private void LightingDataUpdatedRepaint()
         {
             if (m_Lighting.showLightmapSettings)

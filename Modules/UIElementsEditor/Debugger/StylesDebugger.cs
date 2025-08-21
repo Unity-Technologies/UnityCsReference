@@ -118,10 +118,16 @@ namespace UnityEditor.UIElements.Debugger
                 return;
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
             EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
-            EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());
+            EditorGUILayout.LabelField("Content Rect", m_SelectedElement.contentRect.ToString());
+
+
+            if(UIToolkitProjectSettings.EnableLowLevelDebugger)
+                EditorGUILayout.LabelField("Picking Bounding Box", m_SelectedElement.boundingBox.ToString());
 
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
-            EditorGUILayout.LabelField("LastLayout", m_SelectedElement.lastLayout.ToString());
+            if (UIToolkitProjectSettings.EnableLowLevelDebugger)
+                EditorGUILayout.LabelField("LastLayout", m_SelectedElement.lastLayout.ToString());
+
         }
 
         private void DrawProperties()

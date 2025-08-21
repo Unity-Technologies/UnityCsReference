@@ -47,7 +47,7 @@ namespace UnityEditor
                 DragAndDrop.StartDrag("<Multiple>");
             else
             {
-                string title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromInstanceID(draggedItem.id));
+                string title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedItem.id));
                 DragAndDrop.StartDrag(title);
             }
         }

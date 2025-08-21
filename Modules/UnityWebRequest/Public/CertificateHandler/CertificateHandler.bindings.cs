@@ -16,7 +16,7 @@ namespace UnityEngine.Networking
         [System.NonSerialized]
         internal IntPtr m_Ptr;
 
-        extern private static IntPtr Create([Unmarshalled] CertificateHandler obj);
+        extern private static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] CertificateHandler obj);
 
         [NativeMethod(IsThreadSafe = true)]
         extern private void ReleaseFromScripting();

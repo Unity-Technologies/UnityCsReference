@@ -75,6 +75,10 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     canDrop = true;
                 }
+                else if (evt.modifiers == EventModifiers.Shift && group.containedElements.Contains(selectedElement))
+                {
+                    group.RemoveElement(selectedGraphElement);
+                }
             }
 
             if (canDrop)
@@ -87,15 +91,6 @@ namespace UnityEditor.Experimental.GraphView
             }
 
             return true;
-        }
-
-        internal void OnStartDragging(IMouseEvent evt, IEnumerable<GraphElement> elements)
-        {
-            if (evt.shiftKey)
-            {
-                Group group = parent.GetFirstAncestorOfType<Group>();
-                group.RemoveElements(elements);
-            }
         }
     }
 }

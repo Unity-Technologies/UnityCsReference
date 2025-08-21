@@ -3,19 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Profiling.Editor.UI
 {
-    class BottlenecksChartViewController : ViewController, BlocksGraphView.IDataSource, BlocksGraphView.IResponder
+    class BottlenecksChartViewController : ViewController, BlocksGraphViewRender.IDataSource, BlocksGraphView.IResponder
     {
         const string k_UxmlResourceName = "BottlenecksChartView.uxml";
         const string k_UssClass_Dark = "bottlenecks-chart-view__dark";
         const string k_UssClass_Light = "bottlenecks-chart-view__light";
+
+        internal static readonly IReadOnlyList<int> k_FPSValues = new[] { 30, 60, 72, 90, 120 };
 
         // Model.
         readonly IProfilerCaptureDataService m_DataService;
@@ -69,6 +73,11 @@ namespace Unity.Profiling.Editor.UI
             m_BlocksGraphView.MarkDirtyRepaint();
         }
 
+        public void SaveBottleneckInfo(string filename)
+        {
+            m_Model.ToFile(filename, ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1);
+        }
+
         protected override VisualElement LoadView()
         {
             var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml(k_UxmlResourceName);
@@ -92,11 +101,10 @@ namespace Unity.Profiling.Editor.UI
             m_Model = modelBuilder.Build();
 
             m_TitleLabel.text = L10n.Tr("Highlights");
-            m_TargetMenu.menu.AppendAction("30 FPS", (action) => { SetTargetFramesPerSecondSetting(30); });
-            m_TargetMenu.menu.AppendAction("60 FPS", (action) => { SetTargetFramesPerSecondSetting(60); });
-            m_TargetMenu.menu.AppendAction("72 FPS", (action) => { SetTargetFramesPerSecondSetting(72); });
-            m_TargetMenu.menu.AppendAction("90 FPS", (action) => { SetTargetFramesPerSecondSetting(90); });
-            m_TargetMenu.menu.AppendAction("120 FPS", (action) => { SetTargetFramesPerSecondSetting(120); });
+            foreach (var fpsValue in k_FPSValues)
+            {
+                m_TargetMenu.menu.AppendAction($"{fpsValue} FPS", (action) => { SetTargetFramesPerSecondSetting(fpsValue); });
+            }
             m_TargetMenu.menu.AppendAction("Custom", OpenPreferencesFilteredToFpsSetting);
             m_BlocksGraphView.DataSource = this;
             m_BlocksGraphView.Responder = this;
@@ -276,34 +284,39 @@ namespace Unity.Profiling.Editor.UI
             }
         }
 
-        int BlocksGraphView.IDataSource.NumberOfDataSeriesForGraphView()
+        int BlocksGraphViewRender.IDataSource.NumberOfDataSeriesForGraphView()
         {
             return m_Model.NumberOfDataSeries;
         }
 
-        Color BlocksGraphView.IDataSource.ColorForDataSeriesInGraphView(int dataSeriesIndex)
+        Color BlocksGraphViewRender.IDataSource.ColorForDataSeriesInGraphView(int dataSeriesIndex)
         {
-            return m_Model.Colors[dataSeriesIndex];
+            return BottlenecksChartViewModel.Colors[dataSeriesIndex];
         }
 
-        Color BlocksGraphView.IDataSource.InvalidColorForDataSeriesInGraphView()
+        Color BlocksGraphViewRender.IDataSource.InvalidColorForDataSeriesInGraphView()
         {
-            return m_Model.InvalidColor;
+            return BottlenecksChartViewModel.InvalidColor;
         }
 
-        float BlocksGraphView.IDataSource.DataValueThresholdInGraphView()
+        float BlocksGraphViewRender.IDataSource.DataValueThresholdInGraphView()
         {
             return m_Model.BottleneckThreshold;
         }
 
-        int BlocksGraphView.IDataSource.LengthForEachDataSeriesInGraphView()
+        int BlocksGraphViewRender.IDataSource.LengthForEachDataSeriesInGraphView()
         {
             return m_Model.DataSeriesCapacity;
         }
 
-        NativeSlice<float> BlocksGraphView.IDataSource.ValuesForDataSeriesInGraphView(int dataSeriesIndex)
+        NativeSlice<float> BlocksGraphViewRender.IDataSource.ValuesForDataSeriesInGraphView(int dataSeriesIndex)
         {
             return m_Model.DataValueBuffers[dataSeriesIndex];
+        }
+
+        public float PercentageFramesOverTarget(int dataSeriesIndex)
+        {
+            return m_Model.PercentOverThreshold[dataSeriesIndex];
         }
 
         void BlocksGraphView.IResponder.GraphViewUpdatedPendingSelection(Range unitRange)

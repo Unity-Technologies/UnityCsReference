@@ -384,7 +384,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             if (m_Mode == GraphMode.MaxLayoutLoop)
             {
-                totalMaxItem = Math.Max(totalMaxItem, UIRLayoutUpdater.kMaxValidateLayoutCount + 1);
+                totalMaxItem = Math.Max(totalMaxItem, VisualTreeLayoutUpdater.kMaxValidateLayoutCount + 1);
             }
 
             int colorIndex = 0;
@@ -459,8 +459,8 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             {
                 mgc.painter2D.strokeColor = Color.red;
                 mgc.painter2D.BeginPath();
-                mgc.painter2D.MoveTo(new Vector2(0, y + h - h * UIRLayoutUpdater.kMaxValidateLayoutCount / totalMaxItem));
-                mgc.painter2D.LineTo(new Vector2(w, y + h - h * UIRLayoutUpdater.kMaxValidateLayoutCount / totalMaxItem));
+                mgc.painter2D.MoveTo(new Vector2(0, y + h - h * VisualTreeLayoutUpdater.kMaxValidateLayoutCount / totalMaxItem));
+                mgc.painter2D.LineTo(new Vector2(w, y + h - h * VisualTreeLayoutUpdater.kMaxValidateLayoutCount / totalMaxItem));
                 mgc.painter2D.Stroke();
             }
 

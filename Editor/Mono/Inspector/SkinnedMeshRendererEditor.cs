@@ -14,7 +14,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class SkinnedMeshRendererEditor : RendererEditorBase
     {
-        class Styles
+        protected class Styles
         {
             public static readonly GUIContent legacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
             public static readonly GUIContent meshNotSupportingSkinningInfo = EditorGUIUtility.TrTextContent("The assigned mesh is missing either bone weights with bind pose, or blend shapes. This might cause the mesh not to render in the Player. If your mesh does not have either bone weights with bind pose, or blend shapes, use a Mesh Renderer instead of Skinned Mesh Renderer.");
@@ -211,6 +211,11 @@ namespace UnityEditor
                         renderer.localBounds = new Bounds(m_BoundsHandle.center, m_BoundsHandle.size);
                     }
                 }
+            }
+
+            if (renderer.sharedMesh && renderer.sharedMesh.isLodSelectionActive)
+            {
+                DrawMeshLODLabel(renderer);
             }
         }
     }

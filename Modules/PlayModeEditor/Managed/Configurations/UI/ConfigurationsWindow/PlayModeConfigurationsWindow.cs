@@ -57,43 +57,43 @@ namespace Unity.PlayMode.Editor
                 SetHelpboxStatus();
             };
 
-            rootVisualElement.RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
-            rootVisualElement.RegisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
+            rootVisualElement.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+            rootVisualElement.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
         }
 
-        private void OnMouseDown(MouseDownEvent evt)
+        private void OnPointerDown(PointerDownEvent evt)
         {
             if (PlayModeManager.instance.CurrentState == PlayModeState.Running)
             {
+                rootVisualElement.focusController.IgnoreEvent(evt);
                 evt.StopPropagation();
-                // evt.PreventDefault();
             }
         }
 
-        private void OnMouseUp(MouseUpEvent evt)
+        private void OnPointerUp(PointerUpEvent evt)
         {
             if (PlayModeManager.instance.CurrentState == PlayModeState.Running)
             {
+                rootVisualElement.focusController.IgnoreEvent(evt);
                 evt.StopPropagation();
-                // evt.PreventDefault();
             }
         }
 
         private VisualElement CreateNewScenarioMenu()
         {
-            var configTypes = TypeCache.GetTypesWithAttribute<CreatePlayModeConfigurationMenuAttribute>();
+            var typesCount = PlayModeConfigurationUtils.ConfigurationTypesCount;
 
-            if (configTypes.Count == 0)
+            if (typesCount == 0)
                 return null;
 
-            if (configTypes.Count == 1)
-            {
-                var configType = configTypes[0];
-                if (!ValidatePlayModeConfigType(configType))
-                    throw new InvalidOperationException("Invalid PlayModeConfig type.");
+            var configTypes = PlayModeConfigurationUtils.GetPlayModeConfigurationTypes();
 
-                var attribute = CreatePlayModeConfigurationMenuAttribute.GetAttribute(configType);
-                var button = new ToolbarButton(() => NewScenarioAction(configType, attribute.NewItemName))
+            if (typesCount == 1)
+            {
+                var enumerator = configTypes.GetEnumerator();
+                enumerator.MoveNext();
+                var configTypeData = enumerator.Current;
+                var button = new ToolbarButton(() => NewScenarioAction(configTypeData.ConfigurationType, configTypeData.NewItemName))
                 {
                     name = k_NewConfigurationButtonName,
                     tooltip = k_NewConfigurationButtonTooltip,
@@ -107,11 +107,7 @@ namespace Unity.PlayMode.Editor
 
             foreach (var configType in configTypes)
             {
-                if (!ValidatePlayModeConfigType(configType))
-                    continue;
-
-                var attribute = CreatePlayModeConfigurationMenuAttribute.GetAttribute(configType);
-                toolbarMenu.menu.AppendAction(attribute.Label, _ => { NewScenarioAction(configType, attribute.NewItemName); });
+                toolbarMenu.menu.AppendAction(configType.Label, _ => { NewScenarioAction(configType.ConfigurationType, configType.NewItemName); });
             }
 
             return toolbarMenu;
@@ -119,23 +115,6 @@ namespace Unity.PlayMode.Editor
 
         private void NewScenarioAction(Type configType, string newItemName)
             => m_PlayModeListView.ShowAddTextField(configType, newItemName);
-
-        private static bool ValidatePlayModeConfigType(Type type)
-        {
-            if (!typeof(PlayModeConfiguration).IsAssignableFrom(type))
-            {
-                Debug.LogWarning($"Type {type} is not a PlayModeConfig. Only types that inherit from PlayModeConfig are allowed to have the CreatePlayModeConfigurationMenuAttribute.");
-                return false;
-            }
-
-            if (type.IsAbstract)
-            {
-                Debug.LogWarning($"Type {type} is abstract. Only concrete types are allowed to have the CreatePlayModeConfigurationMenuAttribute.");
-                return false;
-            }
-
-            return true;
-        }
 
         void SetHelpboxStatus()
         {

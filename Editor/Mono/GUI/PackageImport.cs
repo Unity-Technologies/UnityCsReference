@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Scripting;
+using static UnityEngine.UIElements.UIR.Allocator2D;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
@@ -118,6 +119,7 @@ namespace UnityEditor
 
             if (PackageImportWizard.AnyChangedAssets(m_ImportPackageItems))
             {
+                TopAssetRestrictedArea();
                 TopArea();
                 TopButtonsArea();
                 m_Tree.OnGUI(GUILayoutUtility.GetRect(1, 9999, 1, 99999));
@@ -143,6 +145,38 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
                 GUILayout.Space(5);
                 GUILayout.EndVertical();
+            }
+        }
+
+        void TopAssetRestrictedArea()
+        {
+            if (m_ImportPackageItems == null)
+                return;
+            var restrictedItems = m_ImportPackageItems.Where(i => i.isRestricted).ToArray();
+            if (restrictedItems.Length > 0)
+            {
+                Texture2D warningIcon = EditorGUIUtility.IconContent("console.erroricon").image as Texture2D;
+                GUILayout.BeginHorizontal(EditorStyles.helpBox); // Horizontal layout for icon and text
+                {
+                    GUILayout.Label(warningIcon, GUILayout.Width(32), GUILayout.Height(32));
+
+                    GUILayout.BeginVertical();
+                    {
+                        GUILayout.Label("Restricted assets were found in this package.", EditorStyles.boldLabel);
+                        
+                        string text =
+                            "These assets can not be imported,\n" +
+                            "as they do not comply with Unity’s guidelines,\n" +
+                            "which are designed to protect your project.\n" +
+                            "The provider must update them to restore normal usage.\n" +
+                            "As a result, some features may not work as expected.\n" +
+                            "Contact the package provider for support.";
+
+                        GUILayout.Label(text, EditorStyles.label);
+                    }
+                    GUILayout.EndVertical();
+                }
+                GUILayout.EndHorizontal();
             }
         }
 

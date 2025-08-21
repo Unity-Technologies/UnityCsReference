@@ -40,11 +40,9 @@ namespace UnityEditor.Search
         void AddTypeStructuralVersion(string sourceDocumentPath, Hash128 typeStructuralVersion);
         bool TryGetTypeStructuralVersion(string sourceDocumentPath, out Hash128 typeStructuralVersion);
         void RemoveDocuments(string[] documentsToRemove);
-        void AddWord(string word, int minVariations, int maxVariations, int score, int documentIndex);
-        void AddExactWord(string word, int score, int documentIndex);
+        void AddWord(string word, int score, int documentIndex);
         void AddProperty(string name, double value, int score, int documentIndex);
-        void AddProperty(string name, string value, int minVariations, int maxVariations, int score, int documentIndex, bool exact, bool saveKeyword);
-        void AddExactProperty(string name, string value, int score, int documentIndex, bool saveKeyword);
+        void AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword);
         void MapProperty(string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys);
         void Start(bool clear);
         void Finish(string[] removedDocuments);
@@ -52,7 +50,6 @@ namespace UnityEditor.Search
         // Merging
         void CombineIndexes(IReadOnlyList<SearchIndexer> indexes, int baseScore, string indexName, SearchTask<TaskData> task); // Combine is a Merge operation without removing any document.
         void Merge(string[] removedDocuments, SearchIndexer other, int baseScore, Action<int, SearchIndexer, int> documentIndexing, SearchTask<TaskData> task);
-        void ApplyFrom(SearchIndexer source);
 
         // IO
         void Write(Stream stream);

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
+using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -18,6 +20,8 @@ namespace UnityEditor.Profiling
     {
         // User setting keys. Don't localize!
         const string k_SettingsPrefix = "Profiler.";
+        const string k_DefaultPath = "./ProfilerCaptures";
+        public const string k_CapturePathSettingKey = k_SettingsPrefix + "CaptureStoragePath";
         public const string k_FrameCountSettingKey = k_SettingsPrefix + "FrameCount";
         public const string k_DropFramesOnMemoryPressureSettingKey = k_SettingsPrefix + "DropFramesOnMemoryPressure";
         public const string k_ProfilerOutOfProcessSettingKey = k_SettingsPrefix + "OutOfProcess";
@@ -27,6 +31,7 @@ namespace UnityEditor.Profiling
         public const string k_ShowStatsLabelsOnCurrentFrameSettingKey = k_SettingsPrefix + "ShowStatsLabelsOnCurrentFrame";
         public const string k_CustomConnectionID = k_SettingsPrefix + "CustomConnectionID";
         public const string k_TargetFramesPerSecond = k_SettingsPrefix + "TargetFramesPerSecond";
+        public const string k_LastImportPathPrefKey = k_SettingsPrefix + "LastImportPath";
 
         public const int kMinFrameCount = 600;
         public const int kDefaultFrameCount = 2000;
@@ -40,7 +45,73 @@ namespace UnityEditor.Profiling
         private static int m_FrameCount = 0;
 
         public static Action settingsChanged;
+        public static event Action CaptureStoragePathChanged;
         public static event Action targetFramesPerSecondChanged;
+
+        public static string ProfilerCaptureStoragePath
+        {
+            get
+            {
+                return EditorPrefs.GetString(k_CapturePathSettingKey, k_DefaultPath);
+            }
+            set
+            {
+                var notify = ProfilerCaptureStoragePath != value;
+                EditorPrefs.SetString(k_CapturePathSettingKey, value);
+                if (notify)
+                    CaptureStoragePathChanged?.Invoke();
+            }
+        }
+
+        public static bool UsingDefaultProfilerCaptureStoragePath() => ProfilerCaptureStoragePath.Equals(k_DefaultPath, StringComparison.Ordinal);
+        public static void ResetProfilerCaptureStoragePathToDefault()
+        {
+            EditorPrefs.SetString(k_CapturePathSettingKey, k_DefaultPath);
+        }
+
+        public static string AbsoluteProfilerCaptureStoragePath
+        {
+            get
+            {
+                string folderPath = ProfilerUserSettings.ProfilerCaptureStoragePath;
+                //split the string
+                var pathTokens = folderPath.Split(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                if (pathTokens.Length == 0)
+                    return null;
+
+                StringBuilder pathSb = new StringBuilder();
+                if (!pathTokens[0].StartsWith(".")) //ensure that we are a relative path
+                {
+                    Debug.LogError(folderPath + " Is not a valid relative path, as it doesn't start with './'. Please change the path for memory snapshots in the Preferences.");
+                    return null;
+                }
+
+                if (!pathTokens[0].StartsWith("..")) //relative path first set to start in ./
+                {
+                    pathSb.Append(Application.dataPath.Replace("/Assets", ""));
+                }
+
+                for (int i = 1; i < pathTokens.Length; ++i)
+                {
+                    pathSb.Append(Path.DirectorySeparatorChar);
+                    pathSb.Append(pathTokens[i]);
+                }
+
+                var res = pathSb.ToString();
+                try
+                {
+                    //will throw for invalid paths
+                    res = Path.GetFullPath(res);
+                }
+                catch (Exception)
+                {
+                    Debug.LogError(folderPath + " Is not a valid relative path, it has more instances of '../' than folders above the project folder. Please change the path for memory snapshots in the Preferences.");
+                    return null;
+                }
+
+                return res;
+            }
+        }
 
         public static int frameCount
         {
@@ -157,6 +228,18 @@ namespace UnityEditor.Profiling
         public static bool ValidCustomConnectionID(string id)
         {
             return !id.Contains("\"") && !id.Contains("*") && id.Length <= kMaxCustomIDLength;
+        }
+
+        public static string LastImportPath
+        {
+            get
+            {
+                return SessionState.GetString(k_LastImportPathPrefKey, Application.dataPath);
+            }
+            set
+            {
+                SessionState.SetString(k_LastImportPathPrefKey, value);
+            }
         }
     }
 }

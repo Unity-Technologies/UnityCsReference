@@ -14,6 +14,7 @@ namespace UnityEngine.UIElements.UIR
     // preserved: all excess pages and dedicated pages are pruned.
     class TempAllocator<T> : IDisposable where T : struct
     {
+        static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), "Renderer.TempAllocator");
         struct Page
         {
             public NativeArray<T> array;
@@ -49,7 +50,7 @@ namespace UnityEngine.UIElements.UIR
             m_NextExcessSize = m_ExcessMinCapacity;
 
             m_Pool = new Page();
-            m_Pool.array = new NativeArray<T>(poolCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_Pool.array = new NativeArray<T>(poolCapacity, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
             m_Excess = new List<Page>(8);
         }
 

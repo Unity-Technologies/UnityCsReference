@@ -191,28 +191,29 @@ namespace Unity.UI.Builder
 
         public int GetComplexSelectorsCount()
         {
-            if (m_StyleSheet == null || m_StyleSheet.complexSelectors == null)
+            if (m_StyleSheet == null || m_StyleSheet.rules == null)
                 return 0;
 
-            var nbComplexSelectorsCount = 0;
-            for (var complexSelectorIndex = 0;
-                 complexSelectorIndex < m_StyleSheet.complexSelectors.Length;
-                 ++complexSelectorIndex)
+            var count = 0;
+            foreach (var rule in m_StyleSheet.rules)
             {
-                var complexSelector = m_StyleSheet.complexSelectors[complexSelectorIndex];
-
-                // Omit special selection rule.
-                if (complexSelector.selectors.Length > 0 &&
-                    complexSelector.selectors[0].parts.Length > 0 &&
-                    (complexSelector.selectors[0].parts[0].value == BuilderConstants.SelectedStyleSheetSelectorName
-                     || complexSelector.selectors[0].parts[0].value
-                         .StartsWith(BuilderConstants.StyleSelectorElementName)))
-                    continue;
-
-                nbComplexSelectorsCount++;
+                if (rule.complexSelectors != null)
+                {
+                    foreach (var complexSelector in rule.complexSelectors)
+                    {
+                        // Omit special selection rule.
+                        if (complexSelector.selectors.Length > 0 &&
+                            complexSelector.selectors[0].parts.Length > 0 &&
+                            (complexSelector.selectors[0].parts[0].value == BuilderConstants.SelectedStyleSheetSelectorName
+                             || complexSelector.selectors[0].parts[0].value
+                                 .StartsWith(BuilderConstants.StyleSelectorElementName)))
+                            continue;
+                        ++count;
+                    }
+                }
             }
 
-            return nbComplexSelectorsCount;
+            return count;
         }
     }
 }

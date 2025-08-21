@@ -12,7 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Utility class to help with creating editor for HierarchyViewCell.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+    [VisibleToOtherModules("UnityEditor.HierarchyModule", "UnityEditor.UIToolkitAuthoringModule")]
     class HierarchyViewColumnUtility
     {
         /// <summary>
@@ -101,6 +101,7 @@ namespace Unity.Hierarchy
             return element;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static HierarchyViewCellValueEditor<TModel, TEditor, TValue> CreateCellValueEditor<TModel, TEditor, TValue>(
                 TModel model,
                 HierarchyViewCell cell,

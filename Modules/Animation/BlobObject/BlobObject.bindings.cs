@@ -162,5 +162,8 @@ namespace UnityEngine
 
         [NativeMethod(IsThreadSafe = false)]
         extern internal void            SetNestedReferenceValue(ref FixedBlobObjectReference blobObjectReference, BlobObject blobObject);
+
+        [NativeMethod(IsThreadSafe = false)]
+        extern internal void            ReinitializeNestedReferences();
     }
 }

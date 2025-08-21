@@ -204,6 +204,7 @@ namespace UnityEngine
         extern public int ComputeCRC();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNames", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public String[] GetTexturePropertyNames();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNameIDs", HasExplicitThis = true)]

@@ -3662,7 +3662,7 @@ namespace UnityEditor
                 if (dragAndDropEntityIds[i] == null)
                     continue;
 
-                EditorWrapper w = m_DragEditorCache[InternalEditorUtility.GetObjectFromInstanceID(dragAndDropEntityIds[i])];
+                EditorWrapper w = m_DragEditorCache[InternalEditorUtility.GetObjectFromEntityId(dragAndDropEntityIds[i])];
 
                 if (w == null)
                 {
@@ -3694,15 +3694,15 @@ namespace UnityEditor
             // drop the first material on the hovered material entry.
             foreach (var entityId in entityIds)
             {
-                var obj = InternalEditorUtility.GetObjectFromInstanceID(entityId);
-                if (obj.GetType() == typeof(GameObject))
+                var obj = InternalEditorUtility.GetObjectFromEntityId(entityId);
+                if (obj is GameObject)
                 {
                     gameObjectCount++;
                 }
                 else
                 {
                     assetCount++;
-                    if (obj.GetType() == typeof(Material))
+                    if (obj is Material)
                     {
                         materialCount++;
                     }

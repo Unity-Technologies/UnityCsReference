@@ -47,6 +47,8 @@ namespace UnityEngine.Device
 
         public static bool supportsAudio => ShimManager.systemInfoShim.supportsAudio;
 
+        public static bool supportsRendering => ShimManager.systemInfoShim.supportsRendering;
+
         public static DeviceType deviceType => ShimManager.systemInfoShim.deviceType;
 
         public static int graphicsMemorySize => ShimManager.systemInfoShim.graphicsMemorySize;
@@ -131,6 +133,8 @@ namespace UnityEngine.Device
         public static bool supportsMultisampledBackBuffer => ShimManager.systemInfoShim.supportsMultisampledBackBuffer;
 
         public static bool supportsMultisampleAutoResolve => ShimManager.systemInfoShim.supportsMultisampleAutoResolve;
+
+        public static bool supportsMultisampledShaderResolve => ShimManager.systemInfoShim.supportsMultisampledShaderResolve;
 
         public static int supportsTextureWrapMirrorOnce => ShimManager.systemInfoShim.supportsTextureWrapMirrorOnce;
 

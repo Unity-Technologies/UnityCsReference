@@ -14,15 +14,19 @@ namespace Unity.UI.Builder
     {
         public static StyleProperty AddProperty(
             this StyleSheet styleSheet, StyleRule rule, string name,
-            string undoMessage = null)
+            string undoMessage = null,
+            bool undo = true)
         {
             // Undo/Redo
-            if (string.IsNullOrEmpty(undoMessage))
-                undoMessage = "Change UI Style Value";
-            Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
+            if (undo)
+            {
+                if (string.IsNullOrEmpty(undoMessage))
+                    undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
 
-            var newProperty = rule.AddProperty(styleSheet, name);
-            StyleSheetCache.ClearCaches();
+                Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
+            }
+
+            var newProperty = rule.AddProperty(name);
 
             return newProperty;
         }
@@ -35,7 +39,7 @@ namespace Unity.UI.Builder
                 undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            rule.RemoveProperty(styleSheet, property);
+            rule.RemoveProperty(property);
         }
 
         public static void RemoveProperty(this StyleSheet styleSheet, StyleRule rule,

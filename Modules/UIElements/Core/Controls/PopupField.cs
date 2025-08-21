@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
         private int m_Index = kPopupFieldDefaultIndex;
         /// <summary>
         /// The currently selected index in the popup menu.
-        /// Setting the index will update the ::ref::value field and send a property change notification.
+        /// Setting the index updates the <see cref="value"/> field and sends a property change notification.
         /// </summary>
         [CreateProperty]
         public int index
@@ -185,7 +185,7 @@ namespace UnityEngine.UIElements
             this.formatSelectedValueCallback = formatSelectedValueCallback;
         }
 
-        internal override void AddMenuItems(IGenericMenu menu)
+        internal override void AddMenuItems(AbstractGenericMenu menu)
         {
             if (menu == null)
             {

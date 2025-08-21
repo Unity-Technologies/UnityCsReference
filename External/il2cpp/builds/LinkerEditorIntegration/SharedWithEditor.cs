@@ -28,6 +28,12 @@ namespace UnityEditorInternal
         [UnityEngine.SerializeField]
         public string[] forceExcludeModules;
 
+        /// <summary>
+        /// Dynamically generated module dependency information
+        /// </summary>
+        [UnityEngine.SerializeField]
+        public DynamicModuleDependencies[] dynamicModuleDependencies;
+
         [System.Serializable]
         public class SerializedTypeData
         {
@@ -96,6 +102,22 @@ namespace UnityEditorInternal
             public string baseName;
             [UnityEngine.SerializeField]
             public string baseModule;
+        }
+
+        [System.Serializable]
+        public class DynamicModuleDependencies
+        {
+            /// <summary>
+            /// The native name of the module with dynamic generated dependencies.
+            /// </summary>
+            [UnityEngine.SerializeField]
+            public string module;
+
+            /// <summary>
+            /// The native module names that should be treated as dependencies of the module
+            /// </summary>
+            [UnityEngine.SerializeField]
+            public string[] dependencies;
         }
     }
 

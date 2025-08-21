@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.AdaptivePerformance.UI.Editor;
 using UnityEditor.Modules;
 using UnityEditor.Build.Profile.Elements;
 using UnityEditor.UIElements;
@@ -14,7 +15,7 @@ using UnityEditor.Build.Profile.Handlers;
 namespace UnityEditor.Build.Profile
 {
     [CustomEditor(typeof(BuildProfile))]
-    internal class BuildProfileEditor : Editor
+    class BuildProfileEditor : Editor
     {
         const string k_Uxml = "BuildProfile/UXML/BuildProfileEditor.uxml";
         const string k_PlatformSettingPropertyName = "m_PlatformBuildProfile";
@@ -33,11 +34,11 @@ namespace UnityEditor.Build.Profile
         const string k_SceneListGlobalToggle = "scene-list-global-toggle";
         const string k_CompilingWarningHelpBox = "compiling-warning-help-box";
         const string k_VirtualTextureWarningHelpBox = "virtual-texture-warning-help-box";
-        const string k_PlatformBuildWarningsRoot = "platform-build-warning-root";
         const string k_BuildSettingsFoldout = "build-settings-foldout";
         const string k_AdditionalSettingsWrapper = "editor-additional-settings-wrapper";
         const string k_AddSettingsButton = "bp-add-settings-button";
         const string k_SettingsFoldoutRoot = "bp-editor-settings-container";
+        const string k_InsightSettingsFoldout = "insights-analytics-foldout";
         bool isClassic = false;
         BuildProfileSceneList m_SceneList;
         HelpBox m_CompilingWarningHelpBox;
@@ -109,7 +110,6 @@ namespace UnityEditor.Build.Profile
             root.styleSheets.Add(windowUss);
 
             var noModuleFoundHelpBox = root.Q<HelpBox>(k_PlatformWarningHelpBox);
-            var platformBuildWarningsRoot = root.Q<VisualElement>(k_PlatformBuildWarningsRoot);
             var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             var additionalSettingsWrapper = root.Q<VisualElement>(k_AdditionalSettingsWrapper);
             var platformSettingsBaseRoot = root.Q<VisualElement>(k_PlatformSettingsBaseRoot);
@@ -145,9 +145,6 @@ namespace UnityEditor.Build.Profile
             if (!isClassic)
             {
                 sharedSettingsInfoHelpBox.Hide();
-
-                var buildAutomationEditor = BuildAutomationSettingsEditor.CreateBuildAutomationUI(profile);
-                additionalSettingsWrapper.Add(buildAutomationEditor);
             }
             else
             {
@@ -164,7 +161,7 @@ namespace UnityEditor.Build.Profile
                 return root;
             }
 
-            ShowPlatformSettings(profile, platformSettingsBaseRoot, platformBuildWarningsRoot);
+            ShowPlatformSettings(profile, platformSettingsBaseRoot);
             ShowInsightsSettings(profile, root, isClassic);
 
             EditorApplication.update += EditorUpdate;
@@ -303,7 +300,7 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot, VisualElement platformBuildWarningsRoot)
+        void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
         {
             var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
             m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.platformGuid);
@@ -326,7 +323,15 @@ namespace UnityEditor.Build.Profile
 
         void ShowInsightsSettings(BuildProfile profile, VisualElement rootVisualElement, bool isClassic)
         {
-            BuildProfileInsightsSettingsView.CreateGUI(profile, rootVisualElement, isClassic);
+            var isSupported = BuildProfileInsightsSettingsView.CreateGUI(profile, rootVisualElement, isClassic);
+            if(!isSupported)
+            {
+                return;
+            }
+
+            var foldout = rootVisualElement.Q<Foldout>(k_InsightSettingsFoldout);
+            foldout.text = TrText.diagnostics;
+            foldout.Show();
         }
 
         void AddSceneList(VisualElement root, BuildProfile profile = null)

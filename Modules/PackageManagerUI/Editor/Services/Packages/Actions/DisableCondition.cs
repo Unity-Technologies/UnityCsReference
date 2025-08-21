@@ -41,6 +41,16 @@ internal class DisableIfInstallOrEmbedOrUninstallInProgress : DisableCondition
     }
 }
 
+internal class DisableIfExportingInProgress : DisableCondition
+{
+    private static readonly string k_Tooltip = L10n.Tr("You need to wait until the export operation is finished to perform this action.");
+    public DisableIfExportingInProgress(IPackage package)
+    {
+        active = package.progress == PackageProgress.Exporting;
+        tooltip = k_Tooltip;
+    }
+}
+
 internal class DisableIfVersionDeprecated : DisableCondition
 {
     private static readonly string k_Tooltip = L10n.Tr("This version is deprecated.");

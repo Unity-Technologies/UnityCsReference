@@ -76,6 +76,7 @@ namespace UnityEngine
         {
             [StaticAccessor("WebCamTextureBindings", StaticAccessorType.DoubleColon)]
             [NativeName("Internal_GetDevices")]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 
@@ -147,7 +148,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("WebCamTextureBindings::Internal_GetPixels", HasExplicitThis = true, ThrowsException = true)]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern Color[] GetPixels(int x, int y, int blockWidth, int blockHeight);
 
         [UnityEngine.Internal.ExcludeFromDocs]
@@ -157,8 +158,8 @@ namespace UnityEngine
         }
 
         [FreeFunction("WebCamTextureBindings::Internal_GetPixels32", HasExplicitThis = true, ThrowsException = true)]
-        [return:Unmarshalled]
-        public extern Color32[] GetPixels32([UnityEngine.Internal.DefaultValue("null"), Unmarshalled] Color32[] colors);
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        public extern Color32[] GetPixels32([UnityEngine.Internal.DefaultValue("null"), UnityMarshalAs(NativeType.ScriptingObjectPtr)] Color32[] colors);
 
         // Arbitrary focus point (relative x/y values in 0..1 range), null for automatic/continious focusing (default)
         public Vector2? autoFocusPoint

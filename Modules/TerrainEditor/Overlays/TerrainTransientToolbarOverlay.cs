@@ -35,7 +35,7 @@ namespace UnityEditor.TerrainTools
         }
     }
 
-    [Overlay(typeof(SceneView), "Terrain Tools", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.LeftToolbar, defaultDockIndex = -1)]
+    [Overlay(typeof(SceneView), "Terrain Tools", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.LeftToolbar, defaultDockIndex = -1, group = OverlayAttribute.unityGroup)]
     internal class TerrainTransientToolbarOverlay : ToolbarOverlay, ITransientOverlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         bool m_OverlaysPackageInstalled;

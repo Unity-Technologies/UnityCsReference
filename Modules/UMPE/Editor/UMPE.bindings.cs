@@ -251,7 +251,12 @@ namespace UnityEditor.MPE
         public static extern ProcessState GetProcessState(int pid);
         public static extern bool HasCapability(string capName);
         public static extern void ApplyPropertyModifications(PropertyModification[] modifications);
-        public static extern byte[] SerializeObject(int instanceId);
+
+        public static extern byte[] SerializeObject(UnityEngine.EntityId entityId);
+
+        [Obsolete("SerializeObject(int) is obsolete. Use SerializeObject(EntityId) instead.")]
+        public static byte[] SerializeObject(int instanceId) => SerializeObject((UnityEngine.EntityId)instanceId);
+
         public static extern UnityEngine.Object DeserializeObject(byte[] bytes);
         public static extern int EnableProfileConnection(string dataPath);
         public static extern void DisableProfileConnection();

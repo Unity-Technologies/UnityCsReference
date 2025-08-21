@@ -296,7 +296,8 @@ namespace Unity.UI.Builder
 
             // Select all pasted selectors.
             m_Selection.ClearSelection(null);
-            foreach (var selector in pasteStyleSheet.complexSelectors)
+            foreach(var rule in pasteStyleSheet.rules)
+            foreach (var selector in rule.complexSelectors)
                 SelectionUtility.AddToSelection(pasteStyleSheet, selector);
 
             BuilderAssetUtilities.TransferAssetToAsset(mainStyleSheet, pasteStyleSheet);

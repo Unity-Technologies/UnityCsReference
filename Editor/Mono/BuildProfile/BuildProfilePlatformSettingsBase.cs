@@ -46,6 +46,7 @@ namespace UnityEditor.Build.Profile
         [SerializeField] bool m_InstallInBuildFolder = false;
         [SerializeField] BuildProfileInsightsSettingsContainer m_InsightsSettingsContainer = new()
             { buildProfileEngineDiagnosticsState = BuildProfileEngineDiagnosticsState.ProjectSettings };
+        [SerializeField] bool m_AdaptivePerformanceEnabled = false;
 
         internal protected virtual bool development
         {
@@ -124,6 +125,11 @@ namespace UnityEditor.Build.Profile
         {
             get => m_InsightsSettingsContainer;
             set => m_InsightsSettingsContainer = value;
+        }
+        internal protected virtual bool adaptivePerformanceEnabled
+        {
+            get => m_AdaptivePerformanceEnabled;
+            set => m_AdaptivePerformanceEnabled = value;
         }
 
         /// <summary>

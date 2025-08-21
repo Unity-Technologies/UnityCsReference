@@ -54,6 +54,11 @@ internal class RemoveCustomAction : PackageAction
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsUninstallInProgress(version.package);
 
+    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
+    {
+        yield return new DisableIfExportingInProgress(version.package);
+    }
+
     protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
     {
         yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);

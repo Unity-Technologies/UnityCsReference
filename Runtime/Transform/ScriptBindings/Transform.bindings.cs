@@ -20,7 +20,7 @@ namespace UnityEngine
     [RequiredByNativeCode]
     public partial class Transform : Component, IEnumerable
     {
-        protected Transform() {}
+        protected Transform() { }
 
         // The position of the transform in world space.
         public extern Vector3 position { get; set; }
@@ -262,7 +262,7 @@ namespace UnityEngine
             if (directions.Length != transformedDirections.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.InverseTransformDirections() must be the same length");
 
-           InverseTransformDirectionsInternal(directions, transformedDirections);
+            InverseTransformDirectionsInternal(directions, transformedDirections);
         }
         public unsafe void InverseTransformDirections(Span<Vector3> directions)
         {
@@ -284,7 +284,7 @@ namespace UnityEngine
             if (vectors.Length != transformedVectors.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.TransformVectors() must be the same length");
 
-           TransformVectorsInternal(vectors, transformedVectors);
+            TransformVectorsInternal(vectors, transformedVectors);
         }
         public unsafe void TransformVectors(Span<Vector3> vectors)
         {
@@ -409,8 +409,8 @@ namespace UnityEngine
             get;
         }
 
-        // Is this transform a child of /parent/?
-        [FreeFunction("Internal_IsChildOrSameTransform", HasExplicitThis = true)]
+        // Is this transform a child of /other/?
+        [FreeFunction("Internal_IsChildOrSameAsOtherTransform", HasExplicitThis = true)]
         public extern bool IsChildOf([NotNull] Transform parent);
 
         // Has the transform changed since the last time the flag was set to 'false'?

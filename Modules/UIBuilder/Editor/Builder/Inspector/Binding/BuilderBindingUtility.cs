@@ -148,28 +148,18 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Deletes the binding instance that binds the specified property of the selected VisualElement.
         /// </summary>
-        /// <param name="sourceFieldElement">The element to unbind.</param>
+        /// <param name="context">The context in which uxml data of the document are edited</param>
         /// <param name="property">The property to unbind.</param>
-        /// <param name="builder">The UIBuilder window</param>
-        public static void DeleteBinding(VisualElement sourceFieldElement, string property, Builder builder)
-        {
-            DeleteBinding(sourceFieldElement, property, builder, builder.inspector.attributesSection);
-        }
-
-        /// <summary>
-        /// Deletes the binding instance that binds the specified property of the selected VisualElement.
-        /// </summary>
-        /// <param name="sourceFieldElement">The element to unbind.</param>
-        /// <param name="property">The property to unbind.</param>
-        /// <param name="builder">The UIBuilder window</param>
-        /// <param name="attributesView">The attribute view from where the deletion of binding is invoked</param>
-        public static void DeleteBinding(VisualElement sourceFieldElement, string property, Builder builder, BuilderUxmlAttributesView attributesView)
+        /// <param name="sourceFieldElement">The inspector field associated to the property to unbind, from where the action is invoked.</param>
+        public static void DeleteBinding(BuilderUxmlAttributesEditingContext context, string property, VisualElement sourceFieldElement)
         {
             if (!TryGetBinding(property, out _, out _))
                 return;
 
+            var builder = context.builder;
+
             // Remove binding from SerializedData.
-            attributesView.RemoveBindingFromSerializedData(sourceFieldElement, property);
+            RemoveBindingFromSerializedData(context, property, sourceFieldElement);
 
             builder.OnEnableAfterAllSerialization();
 
@@ -180,6 +170,28 @@ namespace Unity.UI.Builder
             }
             // Refresh the UXML preview
             builder.selection.NotifyOfHierarchyChange();
+        }
+
+        public static void RemoveBindingFromSerializedData(BuilderUxmlAttributesEditingContext context, string property, VisualElement fieldElement)
+        {
+            var serializedPath = $"{context.serializedBasePath}.bindings";
+            var bindingsSerializedProperty = context.rootSerializedObject.FindProperty(serializedPath);
+
+            Undo.RegisterCompleteObjectUndo(bindingsSerializedProperty.serializedObject.targetObject, BuilderAssetUtilities.GetUndoMessage(bindingsSerializedProperty));
+
+            for (var i = 0; i < bindingsSerializedProperty.arraySize; i++)
+            {
+                var item = bindingsSerializedProperty.GetArrayElementAtIndex(i);
+                if (item.FindPropertyRelative("property").stringValue == property)
+                {
+                    if (fieldElement != null)
+                        context.builder.inspector.attributeSection.SetInlineValue(fieldElement, property);
+                    bindingsSerializedProperty.DeleteArrayElementAtIndex(i);
+                    bindingsSerializedProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                    BuilderAssetUtilities.SyncUxmlObjectChanges(context, serializedPath);
+                    break;
+                }
+            }
         }
 
         /// <summary>

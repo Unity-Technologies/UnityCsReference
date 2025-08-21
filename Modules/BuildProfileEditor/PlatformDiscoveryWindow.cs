@@ -35,7 +35,7 @@ namespace UnityEditor.Build.Profile
         BuildProfileCard m_SelectedCard;
         Image m_SelectedCardImage;
         Label m_SelectedDisplayNameLabel;
-        Foldout m_SelectedDescriptionFoldout;
+        VisualElement m_SelectedDescription;
 
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
@@ -51,6 +51,8 @@ namespace UnityEditor.Build.Profile
 
         Label m_SelectedDescriptionLabel;
         Label m_ConfigLabel;
+        VisualElement m_ConfigPanel;
+        VisualElement m_ConfigHelpBox;
         Label m_AddtionalInfoLabel;
         Label m_BuildProfileNameLabel;
 
@@ -158,6 +160,7 @@ namespace UnityEditor.Build.Profile
 
         public void OnDisable()
         {
+            BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated -= OnPackageInfoUpdated;
             EditorAnalytics.SendAnalytic(m_CloseEvent);
         }
 
@@ -174,18 +177,21 @@ namespace UnityEditor.Build.Profile
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
-            m_SelectedDescriptionFoldout = rootVisualElement.Q<Foldout>("platform-description-foldout");
+            m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
             m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
             m_PackageContainer = rootVisualElement.Q<VisualElement>("package-container");
             m_InternalPackageListView = rootVisualElement.Q<ListView>("internal-package-list");
             m_PartnerPackageListView = rootVisualElement.Q<ListView>("partner-package-list");
-            m_ConfigLabel = rootVisualElement.Q<Label>("config-text");
+            m_ConfigHelpBox = rootVisualElement.Q<VisualElement>("platform-config-help-box");
             m_AddtionalInfoLabel = rootVisualElement.Q<Label>("additional-info");
             m_AddtionalInfoLabel.text = "";
 
             m_NameLinks = rootVisualElement.Q<VisualElement>("name-link-btn-container");
 
+            m_ConfigPanel = rootVisualElement.Q<VisualElement>("platform-config-panel");
+            m_ConfigLabel = rootVisualElement.Q<Label>("config-container-title");
+            m_ConfigLabel.text = TrText.buildProfileConfigurationLabel;
             m_PlatformConfigs = rootVisualElement.Q<VisualElement>("platform-configs");
             m_BuildProfileNameTextField = rootVisualElement.Q<TextField>("build-profile-name");
 
@@ -232,12 +238,14 @@ namespace UnityEditor.Build.Profile
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
-            m_SelectedDescriptionFoldout.text = TrText.description;
             m_AddBuildProfileButton.text = TrText.addBuildProfile;
 
             // Build dynamic visual elements.
             m_Cards = FindAllVisiblePlatforms();
             var cards = CreateCardListView();
+
+            if (BuildProfileContext.packageServiceInfoProvider.FetchInfo())
+                BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated += OnPackageInfoUpdated;
 
             // Register event handlers.
             m_AddBuildProfileButton.SetEnabled(true);
@@ -255,6 +263,11 @@ namespace UnityEditor.Build.Profile
 
             // First element should match standalone platform.
             cards.SetSelection(0);
+        }
+
+        void OnPackageInfoUpdated()
+        {
+            OnCardSelected(m_SelectedCard);
         }
 
         void SetUpPackageListView(ListView listView, Func<VisualElement> customHeader)
@@ -351,6 +364,7 @@ namespace UnityEditor.Build.Profile
         void ClearWindowData()
         {
             m_PlatformConfigs.Clear();
+            m_ConfigHelpBox.Clear();
             m_NameLinks.Clear();
             m_AddtionalInfoLabel.Clear();
             m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
@@ -368,7 +382,7 @@ namespace UnityEditor.Build.Profile
                 BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId));
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
-            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);
+            m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIconHero(card.platformId);
             m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
 
             if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
@@ -401,10 +415,10 @@ namespace UnityEditor.Build.Profile
             if (card.description.Length > 0)
             {
                 m_SelectedDescriptionLabel.text = card.description;
-                m_SelectedDescriptionFoldout.Show();
+                m_SelectedDescription.Show();
             }
             else
-                m_SelectedDescriptionFoldout.Hide();
+                m_SelectedDescription.Hide();
 
             if (card.preconfiguredSettingsVariants.Length > 0)
             {
@@ -413,14 +427,26 @@ namespace UnityEditor.Build.Profile
                 {
                     var preconfigItem = new PreconfiguredSettingsItem();
                     preconfigItem.Set(card.preconfiguredSettingsVariants[i], UpdateAddBuildProfileButton, card.preconfiguredSettingsVariants[i].Tooltip);
-                    preconfigItem.style.marginRight = 32;
                     m_PlatformConfigs.Insert(i, preconfigItem);
                 }
                 m_ConfigLabel.Show();
+                m_ConfigPanel.Show();
+
+                var preconfigDocLink = BuildProfileModuleUtil.GetPlatformSettingsDocsLink(card.platformId);
+                if (preconfigDocLink != null)
+                {
+                    Button btn = new Button();
+                    btn.iconImage = BuildProfileModuleUtil.GetHelpIcon();
+                    string link = preconfigDocLink;
+                    btn.clicked += () => { Application.OpenURL(link); };
+                    btn.AddToClassList("link-button");
+                    m_ConfigHelpBox.Add(btn);
+                }
             }
             else
             {
                 m_ConfigLabel.Hide();
+                m_ConfigPanel.Hide();
             }
 
             // Displays the buttons with url.

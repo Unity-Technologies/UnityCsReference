@@ -124,5 +124,6 @@ internal class AddAction : PackageAction
     {
         yield return new DisableIfVersionDeprecated(version);
         yield return new DisableIfEntitlementsError(version);
+        yield return new DisableIfExportingInProgress(version.package);
     }
 }

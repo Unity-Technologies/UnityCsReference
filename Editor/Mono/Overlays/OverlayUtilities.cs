@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor.EditorTools;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
@@ -26,6 +27,10 @@ namespace UnityEditor.Overlays
 
     static class OverlayUtilities
     {
+        internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
+        internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
+        internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
+        
         internal class OverlayEditorWindowAssociation
         {
             public Type overlay;
@@ -36,6 +41,9 @@ namespace UnityEditor.Overlays
         static OverlayEditorWindowAssociation[] s_Overlays;
         static readonly Dictionary<Type, List<Type>> s_OverlaysTypeAssociations = new Dictionary<Type, List<Type>>();
         internal const string nullWindowTypeErrorMsg = "{0} editor window type cannot be null.";
+        // used by tests
+        internal const string invalidWindowErrorMsg = "Overlay {0}'s window type {1} does not support overlays. The attribute's window must inherit from EditorWindow and implement ISupportsOverlays.";
+
         const float k_ClampOffset = 0.001f; //Used to make sure we're not clamping exactly on the bounds (which was causing issues)
 
         static OverlayEditorWindowAssociation[] overlays
@@ -58,6 +66,12 @@ namespace UnityEditor.Overlays
                         // Overlays that are implemented as instances don't need to define a target editor window.
                         if (overlayAttribute?.editorWindowType == null)
                             continue;
+
+                        if (!IsOverlayWindowValid(overlayAttribute))
+                        {
+                            Debug.LogErrorFormat(invalidWindowErrorMsg, overlayAttribute.displayName, overlayAttribute.editorWindowType);
+                            continue;
+                        }
 
                         overlayWindows.Add(new OverlayEditorWindowAssociation
                         {
@@ -266,6 +280,27 @@ namespace UnityEditor.Overlays
             }
 
             return null;
+        }
+        
+        internal static void AddStyleSheets(VisualElement ve)
+        {
+            StyleSheet sheet;
+            sheet = EditorGUIUtility.Load(k_StyleCommon) as StyleSheet;
+            ve.styleSheets.Add(sheet);
+
+            if (EditorGUIUtility.isProSkin)
+                sheet = EditorGUIUtility.Load(k_StyleDark) as StyleSheet;
+            else
+                sheet = EditorGUIUtility.Load(k_StyleLight) as StyleSheet;
+
+            ve.styleSheets.Add(sheet);   
+        }
+
+        public static bool IsOverlayWindowValid(OverlayAttribute attribute)
+        {
+            return !(!typeof(ISupportsOverlays).IsAssignableFrom(attribute.editorWindowType)
+                     && attribute.editorWindowType != typeof(EditorWindow)
+                     && !attribute.editorWindowType.IsInterface);
         }
 
         internal static OverlayDropZoneBase FindNearestValidDockZoneHorizontally(IEnumerable<OverlayDropZoneBase> dropZones, Overlay targetOverlay, Vector2 mousePosition)

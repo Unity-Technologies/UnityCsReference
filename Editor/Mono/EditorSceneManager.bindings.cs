@@ -108,14 +108,14 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("RemapAssetReferencesInSceneInternal")]
-        private extern static void RemapAssetReferencesInSceneInternal(UnityEngine.SceneManagement.Scene scene, string[] srcPaths, string[] dstPaths, int[] srcIds, int[] dstIds);
+        private extern static void RemapAssetReferencesInSceneInternal(UnityEngine.SceneManagement.Scene scene, string[] srcPaths, string[] dstPaths, EntityId[] srcIds, EntityId[] dstIds);
 
-        internal static void RemapAssetReferencesInScene(UnityEngine.SceneManagement.Scene scene, Dictionary<string, string> pathMap, Dictionary<int, int> idMap = null)
+        internal static void RemapAssetReferencesInScene(UnityEngine.SceneManagement.Scene scene, Dictionary<string, string> pathMap, Dictionary<EntityId, EntityId> idMap = null)
         {
             RemapAssetReferencesInSceneInternal(scene,
                 pathMap.Keys.ToArray(), pathMap.Values.ToArray(),
-                idMap == null ? new int[0] : idMap.Keys.ToArray(),
-                idMap == null ? new int[0] : idMap.Values.ToArray()
+                idMap == null ? new EntityId[0] : idMap.Keys.ToArray(),
+                idMap == null ? new EntityId[0] : idMap.Values.ToArray()
             );
         }
 
@@ -239,12 +239,13 @@ namespace UnityEditor.SceneManagement
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetSceneManagerSetup")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static SceneSetup[] GetSceneManagerSetup();
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("RestoreSceneManagerSetup")]
-        public extern static void RestoreSceneManagerSetup([Unmarshalled] SceneSetup[] value);
+        public extern static void RestoreSceneManagerSetup([UnityMarshalAs(NativeType.ScriptingObjectPtr)] SceneSetup[] value);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("LoadSceneManagerSetup")]

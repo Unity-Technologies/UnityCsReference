@@ -185,7 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (ShouldBlockDueToComplianceViolation(compliance))
             {
-                var displayDialogArgs = new CustomDisplayDialogArgs(k_NonCompliantDialogTitle, idForAnalytics: "addByNameNonCompliantPackage")
+                var displayDialogArgs = new CustomDisplayDialogArgs(k_NonCompliantDialogTitle, idForAnalytics: "addByNameNonCompliantPackage", L10n.Tr("OK"))
                 {
                     headerIcon = Icon.PackageErrorLarge,
                     headerMainText = packageDisplayName,

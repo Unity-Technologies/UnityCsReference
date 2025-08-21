@@ -75,7 +75,7 @@ namespace UnityEditor.TerrainTools
 
 
     // brush masks ----------------
-    [Overlay(typeof(SceneView), "Brush Masks", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.LeftToolbar, defaultDockIndex = 10)]
+    [Overlay(typeof(SceneView), "Brush Masks", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.LeftToolbar, defaultDockIndex = 10, group = OverlayAttribute.unityGroup)]
     [Icon("TerrainOverlays/BrushSettingIcons/BrushMask.png")]
     internal class BrushMaskOverlay : ToolbarOverlay, ITransientOverlay
     {

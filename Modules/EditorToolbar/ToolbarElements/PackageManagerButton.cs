@@ -13,7 +13,7 @@ namespace UnityEditor.Toolbars
     sealed class PackageManagerButton : ToolbarButton
     {
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement("Package Management/Package Manager", true, defaultDockIndex = 3, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement("Package Management/Package Manager", true, defaultDockIndex = 11, defaultDockPosition = MainToolbarDockPosition.Left)]
         static MainToolbarElement Create()
         {
             return new MainToolbarCustom(() => new PackageManagerButton());
@@ -57,25 +57,41 @@ namespace UnityEditor.Toolbars
 
         private void RefreshState()
         {
+            var state = m_PackageDatabase.GetPackagesInUseState();
             m_Icon.ClearClassList();
 
-            if (m_PackageDatabase.AnyNonCompliantPackagesInUse())
+            switch (state)
             {
-                m_Icon.AddToClassList("error");
-                tooltip = L10n.Tr("Restricted Packages In Use");
-                m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectNonCompliancePage.k_Id);
-            }
-            else if (m_PackageDatabase.AnyExperimentalPackagesInUse())
-            {
-                m_Icon.AddToClassList("warning");
-                tooltip = L10n.Tr("Experimental Packages In Use");
-                m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
-            }
-            else
-            {
-                m_Icon.AddToClassList("default");
-                tooltip = L10n.Tr("Package Manager");
-                m_ClickAction = () => PackageManagerWindow.OpenAndSelectPackage(null);
+                case PackageInUseState.NonCompliant:
+                    m_Icon.AddToClassList("error");
+                    tooltip = L10n.Tr("Restricted Packages In Use");
+                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectNonCompliancePage.k_Id);
+                    break;
+
+                case PackageInUseState.Error:
+                    m_Icon.AddToClassList("error");
+                    tooltip = L10n.Tr("Project contains packages with errors");
+                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
+                    break;
+
+                case PackageInUseState.Warning:
+                    m_Icon.AddToClassList("warning");
+                    tooltip = L10n.Tr("Project contains packages with warnings");
+                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
+                    break;
+
+                case PackageInUseState.Experimental:
+                    m_Icon.AddToClassList("warning");
+                    tooltip = L10n.Tr("Experimental Packages In Use");
+                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
+                    break;
+
+                case PackageInUseState.None:
+                default:
+                    m_Icon.AddToClassList("default");
+                    tooltip = L10n.Tr("Package Manager");
+                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPackage(null);
+                    break;
             }
         }
 

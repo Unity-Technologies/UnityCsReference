@@ -8,3 +8,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Multiplayer.PlayMode.Editor")]
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Playmode.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.IntegrationTests.PlayMode.Editor")]
+[assembly: InternalsVisibleTo("UnityEditor.MultiplayerModule")]
+[assembly: InternalsVisibleTo("Unity.PolySpatial.PlayToDevice.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.PlayMode.Tests.Editor")]

@@ -840,10 +840,17 @@ namespace UnityEditorInternal
                 m_FontStyle.wordWrap = true;
             }
 
+            var inactiveNodes = new HashSet<int>();
+
             foreach (var info in dspInfo)
             {
-                if (!showInactiveDSPChains && (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) == 0)
+
+                var isInactiveOrConnectedToInactive = (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) == 0 || inactiveNodes.Contains(info.target);
+                if (!showInactiveDSPChains && isInactiveOrConnectedToInactive)
+                {
+                    inactiveNodes.Add(info.id);
                     continue;
+                }
 
                 if (!nodeDictionary.ContainsKey(info.id))
                 {

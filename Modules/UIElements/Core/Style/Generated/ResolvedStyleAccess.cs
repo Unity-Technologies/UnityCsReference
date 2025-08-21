@@ -81,6 +81,7 @@ namespace UnityEngine.UIElements
         public Font unityFont => ve.computedStyle.unityFont;
         public FontDefinition unityFontDefinition => ve.computedStyle.unityFontDefinition;
         public FontStyle unityFontStyleAndWeight => ve.computedStyle.unityFontStyleAndWeight;
+        public MaterialDefinition unityMaterial => ve.computedStyle.unityMaterial;
         public float unityParagraphSpacing => ve.computedStyle.unityParagraphSpacing.value;
         public int unitySliceBottom => ve.computedStyle.unitySliceBottom;
         public int unitySliceLeft => ve.computedStyle.unitySliceLeft;
@@ -167,6 +168,7 @@ namespace UnityEngine.UIElements
         Font IResolvedStyle.unityFont => resolvedStyle.unityFont;
         FontDefinition IResolvedStyle.unityFontDefinition => resolvedStyle.unityFontDefinition;
         FontStyle IResolvedStyle.unityFontStyleAndWeight => resolvedStyle.unityFontStyleAndWeight;
+        MaterialDefinition IResolvedStyle.unityMaterial => resolvedStyle.unityMaterial;
         float IResolvedStyle.unityParagraphSpacing => resolvedStyle.unityParagraphSpacing;
         int IResolvedStyle.unitySliceBottom => resolvedStyle.unitySliceBottom;
         int IResolvedStyle.unitySliceLeft => resolvedStyle.unitySliceLeft;

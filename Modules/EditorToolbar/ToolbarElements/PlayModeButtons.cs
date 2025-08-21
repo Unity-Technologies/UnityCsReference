@@ -15,7 +15,7 @@ namespace UnityEditor.Toolbars
     [VisibleToOtherModules("UnityEditor.PlayModeModule")]
     sealed partial class PlayModeButtons : ScriptableSingleton<PlayModeButtons>
     {
-        const string k_ElementId = "Editor Utility/Play Mode";
+        const string k_ElementId = "Play Mode Controls";
         const float k_ImguiOverrideWidth = 240f;
 
         bool m_IsAvailable = true;
@@ -25,7 +25,8 @@ namespace UnityEditor.Toolbars
         [AutoStaticsCleanupOnCodeReload] internal static event Action<VisualElement> onPlayModeButtonsCreated;
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_ElementId, true, ussName = "PlayMode", defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Middle)]
+        [MainToolbarElement(k_ElementId, true, ussName = "PlayMode", defaultDockIndex = 0,
+                            defaultDockPosition = MainToolbarDockPosition.Middle, menuPriority = MainToolbarElementAttribute.defaultMenuPriority - 1)]
         static IEnumerable<MainToolbarElement> Create()
         {
             return instance.Build();

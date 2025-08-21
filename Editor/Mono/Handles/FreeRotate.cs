@@ -59,7 +59,10 @@ namespace UnityEditorInternal
                             {
                                 RaycastHit rh = (RaycastHit)hit;
                                 Quaternion newRotation = Quaternion.LookRotation(rh.point - position);
-                                if (Tools.pivotRotation == PivotRotation.Global)
+                                // Following conditional block is needed for cases where the handle may
+                                // not align with the transform's orientation. It ensures that the initial rotational
+                                // delta between transform and handle is applied on top of the new rotation.
+                                if (Tools.pivotRotation != PivotRotation.Local)
                                 {
                                     Transform t = Selection.activeTransform;
                                     if (t)

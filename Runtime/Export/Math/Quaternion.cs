@@ -28,7 +28,7 @@ namespace UnityEngine
         public float this[int index]
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get
+            readonly get
             {
                 switch (index)
                 {
@@ -76,15 +76,12 @@ namespace UnityEngine
         public static Quaternion identity
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get
-            {
-                return identityQuaternion;
-            }
+            get => identityQuaternion;
         }
 
         // Combines rotations /lhs/ and /rhs/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion operator*(Quaternion lhs, Quaternion rhs)
+        public static Quaternion operator*(in Quaternion lhs, in Quaternion rhs)
         {
             return new Quaternion(
                 lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
@@ -94,7 +91,7 @@ namespace UnityEngine
         }
 
         // Rotates the point /point/ with /rotation/.
-        public static Vector3 operator*(Quaternion rotation, Vector3 point)
+        public static Vector3 operator*(in Quaternion rotation, in Vector3 point)
         {
             float x = rotation.x * 2F;
             float y = rotation.y * 2F;
@@ -129,54 +126,59 @@ namespace UnityEngine
 
         // Are two quaternions equal to each other?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(Quaternion lhs, Quaternion rhs)
-        {
-            return IsEqualUsingDot(Dot(lhs, rhs));
-        }
+        public static bool operator==(in Quaternion lhs, in Quaternion rhs) => IsEqualUsingDot(Dot(in lhs, in rhs));
 
         // Are two quaternions different from each other?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Quaternion lhs, Quaternion rhs)
-        {
+        public static bool operator!=(in Quaternion lhs, in Quaternion rhs) =>
             // Returns true in the presence of NaN values.
-            return !(lhs == rhs);
-        }
+            !(lhs == rhs);
 
         // The dot product between two rotations.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Dot(Quaternion a, Quaternion b)
-        {
-            return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
-        }
+        public static float Dot(Quaternion a, Quaternion b) => Dot(in a, in b);
+
+        // The dot product between two rotations.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static float Dot(in Quaternion a, in Quaternion b) => a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
         [uei.ExcludeFromDocs]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetLookRotation(Vector3 view)
-        {
-            Vector3 up = Vector3.up;
-            SetLookRotation(view, up);
-        }
+        public void SetLookRotation(Vector3 view) => SetLookRotation(in view, Vector3.up);
+
+        [uei.ExcludeFromDocs]
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetLookRotation(in Vector3 view) => SetLookRotation(in view, Vector3.up);
 
         // Creates a rotation with the specified /forward/ and /upwards/ directions.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetLookRotation(Vector3 view, [uei.DefaultValue("Vector3.up")] Vector3 up)
-        {
-            this = LookRotation(view, up);
-        }
+        public void SetLookRotation(Vector3 view, [uei.DefaultValue("Vector3.up")] Vector3 up) => SetLookRotation(in view, in up);
+
+        // Creates a rotation with the specified /forward/ and /upwards/ directions.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetLookRotation(in Vector3 view, [uei.DefaultValue("Vector3.up")] in Vector3 up) => this = LookRotation(in view, in up);
 
         // Returns the angle in degrees between two rotations /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Angle(Quaternion a, Quaternion b)
+        public static float Angle(Quaternion a, Quaternion b) => Angle(in a, in b);
+
+        // Returns the angle in degrees between two rotations /a/ and /b/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static float Angle(in Quaternion a, in Quaternion b)
         {
-            float dot = Mathf.Min(Mathf.Abs(Dot(a, b)), 1.0F);
+            float dot = Mathf.Min(Mathf.Abs(Dot(in a, in b)), 1.0F);
             return IsEqualUsingDot(dot) ? 0.0f : Mathf.Acos(dot) * 2.0F * Mathf.Rad2Deg;
         }
 
         // Makes euler angles positive 0/360 with 0.0001 hacked to support old behaviour of QuaternionToEuler
-        private static Vector3 Internal_MakePositive(Vector3 euler)
+        private static Vector3 Internal_MakePositive(Vector3 eulerAngles) => Internal_MakePositive(in eulerAngles);
+
+        // Makes euler angles positive 0/360 with 0.0001 hacked to support old behaviour of QuaternionToEuler
+        private static Vector3 Internal_MakePositive(in Vector3 eulerAngles)
         {
             float negativeFlip = -0.0001f * Mathf.Rad2Deg;
             float positiveFlip = 360.0f + negativeFlip;
+            Vector3 euler = eulerAngles;
 
             if (euler.x < negativeFlip)
                 euler.x += 360.0f;
@@ -199,31 +201,41 @@ namespace UnityEngine
         public Vector3 eulerAngles
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get { return Internal_MakePositive(Internal_ToEulerRad(this) * Mathf.Rad2Deg); }
+            readonly get => Internal_MakePositive(Internal_ToEulerRad(in this) * Mathf.Rad2Deg);
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            set { this = Internal_FromEulerRad(value * Mathf.Deg2Rad); }
+            set => this = Internal_FromEulerRad(value * Mathf.Deg2Rad);
         }
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion Euler(float x, float y, float z) { return Internal_FromEulerRad(new Vector3(x, y, z) * Mathf.Deg2Rad); }
+        public static Quaternion Euler(float x, float y, float z) => Internal_FromEulerRad(new Vector3(x, y, z) * Mathf.Deg2Rad);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion Euler(Vector3 euler) { return Internal_FromEulerRad(euler * Mathf.Deg2Rad); }
+        public static Quaternion Euler(Vector3 euler) => Euler(in euler);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void ToAngleAxis(out float angle, out Vector3 axis) { Internal_ToAxisAngleRad(this, out axis, out angle); angle *= Mathf.Rad2Deg;  }
+        public static Quaternion Euler(in Vector3 euler) => Internal_FromEulerRad(euler * Mathf.Deg2Rad);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetFromToRotation(Vector3 fromDirection, Vector3 toDirection) { this = FromToRotation(fromDirection, toDirection); }
+        public void ToAngleAxis(out float angle, out Vector3 axis) { Internal_ToAxisAngleRad(this, out axis, out angle); angle *= Mathf.Rad2Deg; }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetFromToRotation(Vector3 fromDirection, Vector3 toDirection) => SetFromToRotation(in fromDirection, in toDirection);
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetFromToRotation(in Vector3 fromDirection, in Vector3 toDirection) => this = FromToRotation(fromDirection, toDirection);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion RotateTowards(Quaternion from, Quaternion to, float maxDegreesDelta)
+        public static Quaternion RotateTowards(Quaternion from, Quaternion to, float maxDegreesDelta) => RotateTowards(in from, in to, maxDegreesDelta);
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Quaternion RotateTowards(in Quaternion from, in Quaternion to, float maxDegreesDelta)
         {
-            float angle = Quaternion.Angle(from, to);
+            float angle = Quaternion.Angle(in from, in to);
             if (angle == 0.0f) return to;
-            return SlerpUnclamped(from, to, Mathf.Min(1.0f, maxDegreesDelta / angle));
+            return SlerpUnclamped(in from, in to, Mathf.Min(1.0f, maxDegreesDelta / angle));
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion Normalize(Quaternion q)
+        public static Quaternion Normalize(Quaternion q) => Normalize(in q);
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Quaternion Normalize(in Quaternion q)
         {
-            float mag = Mathf.Sqrt(Dot(q, q));
+            float mag = Mathf.Sqrt(Dot(in q, in q));
 
             if (mag < Mathf.Epsilon)
                 return Quaternion.identity;
@@ -232,27 +244,17 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Normalize()
-        {
-            this = Normalize(this);
-        }
+        public void Normalize() => this = Normalize(in this);
 
-        public Quaternion normalized
-        {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get { return Normalize(this); }
-        }
+        public readonly Quaternion normalized => Normalize(in this);
 
         // used to allow Quaternions to be used as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            return x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2) ^ (w.GetHashCode() >> 1);
-        }
+        public override readonly int GetHashCode() => x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2) ^ (w.GetHashCode() >> 1);
 
         // also required for being able to use Quaternions as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override bool Equals(object other)
+        public override readonly bool Equals(object other)
         {
             if (other is Quaternion q)
                 return Equals(q);
@@ -260,25 +262,16 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Equals(Quaternion other)
-        {
-            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
-        }
+        public readonly bool Equals(Quaternion other) => x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override readonly string ToString() => ToString(null, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F5";
@@ -289,45 +282,45 @@ namespace UnityEngine
 
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        static public Quaternion EulerRotation(float x, float y, float z) { return Internal_FromEulerRad(new Vector3(x, y, z)); }
+        static public Quaternion EulerRotation(float x, float y, float z) => Internal_FromEulerRad(new Vector3(x, y, z));
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion EulerRotation(Vector3 euler) { return Internal_FromEulerRad(euler); }
+        public static Quaternion EulerRotation(Vector3 euler) => Internal_FromEulerRad(in euler);
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetEulerRotation(float x, float y, float z) { this = Internal_FromEulerRad(new Vector3(x, y, z)); }
+        public void SetEulerRotation(float x, float y, float z) => this = Internal_FromEulerRad(new Vector3(x, y, z));
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetEulerRotation(Vector3 euler) { this = Internal_FromEulerRad(euler); }
+        public void SetEulerRotation(Vector3 euler) => this = Internal_FromEulerRad(in euler);
         [System.Obsolete("Use Quaternion.eulerAngles instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Vector3 ToEuler() { return Internal_ToEulerRad(this); }
+        public readonly Vector3 ToEuler() => Internal_ToEulerRad(in this);
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        static public Quaternion EulerAngles(float x, float y, float z) { return Internal_FromEulerRad(new Vector3(x, y, z)); }
+        static public Quaternion EulerAngles(float x, float y, float z) => Internal_FromEulerRad(new Vector3(x, y, z));
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion EulerAngles(Vector3 euler) {  return Internal_FromEulerRad(euler); }
+        public static Quaternion EulerAngles(Vector3 euler) => Internal_FromEulerRad(in euler);
         [System.Obsolete("Use Quaternion.ToAngleAxis instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void ToAxisAngle(out Vector3 axis, out float angle) { Internal_ToAxisAngleRad(this, out axis, out angle);  }
+        public readonly void ToAxisAngle(out Vector3 axis, out float angle) => Internal_ToAxisAngleRad(in this, out axis, out angle);
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetEulerAngles(float x, float y, float z) { SetEulerRotation(new Vector3(x, y, z)); }
+        public void SetEulerAngles(float x, float y, float z) => SetEulerRotation(new Vector3(x, y, z));
         [System.Obsolete("Use Quaternion.Euler instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetEulerAngles(Vector3 euler) { this = EulerRotation(euler); }
+        public void SetEulerAngles(Vector3 euler) => this = Internal_FromEulerRad(in euler);
         [System.Obsolete("Use Quaternion.eulerAngles instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3 ToEulerAngles(Quaternion rotation) { return Quaternion.Internal_ToEulerRad(rotation); }
+        public static Vector3 ToEulerAngles(Quaternion rotation) => Internal_ToEulerRad(in rotation);
         [System.Obsolete("Use Quaternion.eulerAngles instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Vector3 ToEulerAngles() { return Quaternion.Internal_ToEulerRad(this); }
+        public readonly Vector3 ToEulerAngles() => Internal_ToEulerRad(in this);
         [System.Obsolete("Use Quaternion.AngleAxis instead. This function was deprecated because it uses radians instead of degrees.")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetAxisAngle(Vector3 axis, float angle) { this = AxisAngle(axis, angle); }
+        public void SetAxisAngle(Vector3 axis, float angle) => this = Internal_AngleAxis(Mathf.Rad2Deg * angle, in axis);
         [System.Obsolete("Use Quaternion.AngleAxis instead. This function was deprecated because it uses radians instead of degrees")]
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion AxisAngle(Vector3 axis, float angle) { return AngleAxis(Mathf.Rad2Deg * angle, axis); }
+        public static Quaternion AxisAngle(Vector3 axis, float angle) => Internal_AngleAxis(Mathf.Rad2Deg * angle, in axis);
     }
 } //namespace

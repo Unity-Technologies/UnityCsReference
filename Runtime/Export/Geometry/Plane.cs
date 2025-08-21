@@ -24,54 +24,62 @@ namespace UnityEngine
         // Normal vector of the plane.
         public Vector3 normal
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Normal; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Normal = value; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Normal;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Normal = value;
         }
         // Distance from the origin to the plane.
         public float distance
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Distance; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Distance = value; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Distance;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Distance = value;
         }
 
         // Creates a plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Plane(Vector3 inNormal, Vector3 inPoint)
+        public Plane(in Vector3 inNormal, in Vector3 inPoint)
         {
-            m_Normal = Vector3.Normalize(inNormal);
-            m_Distance = -Vector3.Dot(m_Normal, inPoint);
+            m_Normal = Vector3.Normalize(in inNormal);
+            m_Distance = -Vector3.Dot(in m_Normal, in inPoint);
         }
 
         // Creates a plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Plane(Vector3 inNormal, float d)
+        public Plane(in Vector3 inNormal, float d)
         {
-            m_Normal = Vector3.Normalize(inNormal);
+            m_Normal = Vector3.Normalize(in inNormal);
             m_Distance = d;
         }
 
         // Creates a plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Plane(Vector3 a, Vector3 b, Vector3 c)
+        public Plane(in Vector3 a, in Vector3 b, in Vector3 c)
         {
             m_Normal = Vector3.Normalize(Vector3.Cross(b - a, c - a));
-            m_Distance = -Vector3.Dot(m_Normal, a);
+            m_Distance = -Vector3.Dot(in m_Normal, in a);
         }
 
         // Sets a plane using a point that lies within it plus a normal to orient it
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetNormalAndPosition(Vector3 inNormal, Vector3 inPoint)
+        public void SetNormalAndPosition(Vector3 inNormal, Vector3 inPoint) => SetNormalAndPosition(in inNormal, in inPoint);
+
+        // Sets a plane using a point that lies within it plus a normal to orient it
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetNormalAndPosition(in Vector3 inNormal, in Vector3 inPoint)
         {
-            m_Normal = Vector3.Normalize(inNormal);
-            m_Distance = -Vector3.Dot(m_Normal, inPoint);
+            m_Normal = Vector3.Normalize(in inNormal);
+            m_Distance = -Vector3.Dot(in m_Normal, in inPoint);
         }
 
         // Sets a plane using three points that lie within it.  The points go around clockwise as you look down on the top surface of the plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Set3Points(Vector3 a, Vector3 b, Vector3 c)
+        public void Set3Points(Vector3 a, Vector3 b, Vector3 c) => Set3Points(in a, in b, in c);
+
+        // Sets a plane using three points that lie within it.  The points go around clockwise as you look down on the top surface of the plane.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Set3Points(in Vector3 a, in Vector3 b, in Vector3 c)
         {
             m_Normal = Vector3.Normalize(Vector3.Cross(b - a, c - a));
-            m_Distance = -Vector3.Dot(m_Normal, a);
+            m_Distance = -Vector3.Dot(in m_Normal, in a);
         }
 
         // Make the plane face the opposite direction
@@ -79,52 +87,80 @@ namespace UnityEngine
         public void Flip() { m_Normal = -m_Normal; m_Distance = -m_Distance; }
 
         // Return a version of the plane that faces the opposite direction
-        public Plane flipped
+        public readonly Plane flipped
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get { return new Plane(-m_Normal, -m_Distance); }
+            get => new Plane(-m_Normal, -m_Distance);
         }
 
         // Translates the plane into a given direction
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Translate(Vector3 translation) { m_Distance += Vector3.Dot(m_Normal, translation); }
+        public void Translate(Vector3 translation) => Translate(in translation);
+
+        // Translates the plane into a given direction
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Translate(in Vector3 translation) { m_Distance += Vector3.Dot(in m_Normal, in translation); }
 
         // Creates a plane that's translated into a given direction
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Plane Translate(Plane plane, Vector3 translation) { return new Plane(plane.m_Normal, plane.m_Distance += Vector3.Dot(plane.m_Normal, translation)); }
+        public static Plane Translate(Plane plane, Vector3 translation) => Translate(in plane, in translation);
+
+        // Creates a plane that's translated into a given direction
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Plane Translate(in Plane plane, in Vector3 translation) => new Plane(in plane.m_Normal, plane.m_Distance + Vector3.Dot(in plane.m_Normal, in translation));
 
         // Calculates the closest point on the plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Vector3 ClosestPointOnPlane(Vector3 point)
+        public readonly Vector3 ClosestPointOnPlane(Vector3 point) => ClosestPointOnPlane(in point);
+
+        // Calculates the closest point on the plane.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 ClosestPointOnPlane(in Vector3 point)
         {
-            var pointToPlaneDistance = Vector3.Dot(m_Normal, point) + m_Distance;
+            var pointToPlaneDistance = Vector3.Dot(in m_Normal, in point) + m_Distance;
             return point - (m_Normal * pointToPlaneDistance);
         }
 
         // Returns a signed distance from plane to point.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public float GetDistanceToPoint(Vector3 point) { return Vector3.Dot(m_Normal, point) + m_Distance; }
+        public readonly float GetDistanceToPoint(Vector3 point) => GetDistanceToPoint(in point);
+
+        // Returns a signed distance from plane to point.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly float GetDistanceToPoint(in Vector3 point) => Vector3.Dot(in m_Normal, in point) + m_Distance;
 
         // Is a point on the positive side of the plane?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool GetSide(Vector3 point) { return Vector3.Dot(m_Normal, point) + m_Distance > 0.0F; }
+        public readonly bool GetSide(Vector3 point) => GetSide(in point);
+
+        // Is a point on the positive side of the plane?
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool GetSide(in Vector3 point) => Vector3.Dot(in m_Normal, in point) + m_Distance > 0.0F;
 
         // Are two points on the same side of the plane?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool SameSide(Vector3 inPt0, Vector3 inPt1)
+        public readonly bool SameSide(Vector3 inPt0, Vector3 inPt1) => SameSide(in inPt0, in inPt1);
+
+        // Are two points on the same side of the plane?
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool SameSide(in Vector3 inPt0, in Vector3 inPt1)
         {
-            float d0 = GetDistanceToPoint(inPt0);
-            float d1 = GetDistanceToPoint(inPt1);
+            float d0 = GetDistanceToPoint(in inPt0);
+            float d1 = GetDistanceToPoint(in inPt1);
             return (d0 >  0.0f && d1 >  0.0f) ||
                 (d0 <= 0.0f && d1 <= 0.0f);
         }
 
         // Intersects a ray with the plane.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Raycast(Ray ray, out float enter)
+        public readonly bool Raycast(Ray ray, out float enter) => Raycast(in ray, out enter);
+
+        // Intersects a ray with the plane.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Raycast(in Ray ray, out float enter)
         {
-            float vdot = Vector3.Dot(ray.direction, m_Normal);
-            float ndot = -Vector3.Dot(ray.origin, m_Normal) - m_Distance;
+            float vdot = Vector3.Dot(ray.direction, in m_Normal);
+            float ndot = -Vector3.Dot(ray.origin, in m_Normal) - m_Distance;
 
             if (Mathf.Approximately(vdot, 0.0f))
             {
@@ -138,19 +174,13 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override readonly string ToString() => ToString(null, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F2";

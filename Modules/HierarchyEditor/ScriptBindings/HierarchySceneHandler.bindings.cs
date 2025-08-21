@@ -239,7 +239,7 @@ namespace Unity.Hierarchy.Editor
             return SceneManager.SetActiveScene(scene);
         }
 
-        protected override void Bind(HierarchyViewItem item)
+        protected override void OnBindItem(HierarchyViewItem item)
         {
             item.RowContainer?.AddToClassList(k_SceneNodeContainerUssClass);
             item.AddToClassList(k_SceneNodeUssClass);
@@ -255,7 +255,7 @@ namespace Unity.Hierarchy.Editor
             item.EnableInClassList(k_SceneUnloadedUssClass, !scene.isLoaded);
         }
 
-        protected override void Unbind(HierarchyViewItem item)
+        protected override void OnUnbindItem(HierarchyViewItem item)
         {
             // We have no choice but to remove this class from the row container, since there is no guarantee
             // that the HierarchyViewItem will be reused in the same row container.

@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
             return StylePropertyId.Unknown;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StylePropertyName(StylePropertyId stylePropertyId)
         {
             id = stylePropertyId;

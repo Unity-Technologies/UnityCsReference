@@ -53,7 +53,7 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
-        public static void RemapAssetReferences(Dictionary<string, string> pathMap, Dictionary<int, int> idMap = null)
+        public static void RemapAssetReferences(Dictionary<string, string> pathMap, Dictionary<EntityId, EntityId> idMap = null)
         {
             var objects = new List<Object>();
             foreach (var dstPath in pathMap.Values)

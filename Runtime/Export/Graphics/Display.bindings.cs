@@ -220,3 +220,17 @@ namespace UnityEngine
         extern private static bool RequiresSrgbBlitToBackbufferImpl(IntPtr nativeDisplay);
     }
 }
+
+namespace UnityEngineInternal
+{
+    internal class DisplayInternal
+    {
+        [FreeFunction("UnityDisplayManager_PrimaryDisplayIndex")]
+        extern internal static int PrimaryDisplayIndex();
+
+        internal static bool IsASecondaryDisplayIndex(int displayIndex)
+        {
+            return displayIndex >= 0 && displayIndex < UnityEngine.Display.displays.Length && displayIndex != PrimaryDisplayIndex();
+        }
+    }
+}

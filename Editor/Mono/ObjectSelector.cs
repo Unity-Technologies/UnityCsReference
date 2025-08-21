@@ -71,8 +71,7 @@ namespace UnityEditor
         public const string ObjectSelectorSelectionDoneCommand = "ObjectSelectorSelectionDone";
 
         // Filters
-        string[]        m_RequiredTypes;
-        Type[]          m_RequiredRawTypes;
+        RequiredTypeList        m_RequiredTypes;
         string          m_SearchFilter;
 
         // Display state
@@ -193,7 +192,7 @@ namespace UnityEditor
 
         // used by AI-toolkit to set the allowed types for the current object selector (if any).
         [UsedImplicitly]
-        public static Type[] allowedTypes => s_SharedObjectSelector ? s_SharedObjectSelector.m_RequiredRawTypes : null;
+        public static Type[] allowedTypes => s_SharedObjectSelector ? s_SharedObjectSelector.m_RequiredTypes.types.ToArray() : null;
 
         // used by AI-toolkit to set the selection without user interaction.
         [UsedImplicitly]
@@ -367,7 +366,7 @@ namespace UnityEditor
             bool hasObject = false;
             var requiredTypes = new List<Type>();
             var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
-            foreach (var type in m_RequiredTypes)
+            foreach (var type in m_RequiredTypes.typeNames)
             {
                 foreach (var objectType in objectTypes)
                 {
@@ -405,8 +404,8 @@ namespace UnityEditor
                 filter.searchArea = SearchFilter.SearchArea.AllAssets;
 
             filter.SearchFieldStringToFilter(m_SearchFilter);
-            if (filter.classNames.Length == 0 && m_RequiredTypes.All(type => !string.IsNullOrEmpty(type)))
-                filter.classNames = m_RequiredTypes;
+            if (filter.classNames.Length == 0 && m_RequiredTypes.typeNames.All(type => !string.IsNullOrEmpty(type)))
+                filter.classNames = m_RequiredTypes.typeNames.ToArray();
 
             var hierarchyType = m_IsShowingAssets ? HierarchyType.Assets : HierarchyType.GameObjects;
 
@@ -439,7 +438,7 @@ namespace UnityEditor
             if (hierarchyType == HierarchyType.Assets)
             {
                 // When AssemblyDefinitionAsset is the required type, don't skip hidden packages
-                foreach (var type in m_RequiredTypes)
+                foreach (var type in m_RequiredTypes.typeNames)
                 {
                     if (!string.IsNullOrEmpty(type) && type == typeof(AssemblyDefinitionAsset).Name)
                     {
@@ -458,68 +457,21 @@ namespace UnityEditor
             return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
-        static Type GetUnityObjectType(string typeName)
-        {
-            var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
-            foreach (var objectType in objectTypes)
-            {
-                if (objectType.FullName == typeName || objectType.Name == typeName)
-                    return objectType;
-            }
-            return null;
-        }
-
-        private readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
-
         internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
-            if (property == null)
-                throw new ArgumentNullException(nameof(property));
-
-            if (requiredType == null)
-            {
-                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
-                // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
-                // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
-                if (requiredType == null)
-                    m_RequiredTypes = new string[] { s_MatchPPtrTypeName.Match(property.type).Groups[1].Value };
-            }
-
-            // Don't select anything on multi selection
-            UnityObject obj = property.hasMultipleDifferentValues ? null : property.objectReferenceValue;
-
-            UnityObject objectBeingEdited = property.serializedObject.targetObject;
-            m_EditedProperty = property;
-
-            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+            Show(new [] { requiredType }, property, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
         internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
             if (requiredTypes == null)
             {
-                Show((Type)null, property, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
-                return;
+                // Required type list handles null elements if a property exists.
+                requiredTypes = new Type [] { null };
             }
 
             if (property == null)
                 throw new ArgumentNullException(nameof(property));
-
-            m_RequiredTypes = new string[requiredTypes.Length];
-            for (int i = 0; i < requiredTypes.Length; i++)
-            {
-                var requiredType = requiredTypes[i];
-                if (requiredType == null)
-                {
-                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
-                    // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
-                    // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
-                    if (requiredType == null)
-                        m_RequiredTypes[i] = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
-                    else
-                        requiredTypes[i] = requiredType;
-                }
-            }
 
             // Don't select anything on multi selection
             UnityObject obj = property.hasMultipleDifferentValues ? null : property.objectReferenceValue;
@@ -527,7 +479,7 @@ namespace UnityEditor
             UnityObject objectBeingEdited = property.serializedObject.targetObject;
             m_EditedProperty = property;
 
-            Show(obj, requiredTypes, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
         internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
@@ -536,6 +488,20 @@ namespace UnityEditor
         }
 
         internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        {
+            SharedShow(
+                obj,
+                new RequiredTypeList(requiredTypes, null),
+                objectBeingEdited,
+                allowSceneObjects,
+                allowedInstanceIDs,
+                onObjectSelectorClosed,
+                onObjectSelectedUpdated,
+                showNoneItem
+            );
+        }
+
+        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
             // We can't rely on the fact that the window will always be closed when we call Show. For example,
             // if a user clicks on multiple object fields without closing the window first, there is no guarantee
@@ -555,6 +521,7 @@ namespace UnityEditor
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
             m_OnObjectSelectorUpdated = onObjectSelectedUpdated;
+            m_RequiredTypes = typeList;
 
             // Do not allow to show scene objects if the object being edited is persistent
             if (m_ObjectBeingEdited != null && EditorUtility.IsPersistent(m_ObjectBeingEdited))
@@ -574,7 +541,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    foreach (var requiredType in requiredTypes)
+                    foreach (var requiredType in typeList.types)
                         m_IsShowingAssets &= (requiredType != typeof(GameObject) && !typeof(Component).IsAssignableFrom(requiredType));
                 }
             }
@@ -585,22 +552,6 @@ namespace UnityEditor
 
             // Set member variables
             m_DelegateView = GUIView.current;
-            m_RequiredRawTypes = new Type[requiredTypes.Length];
-            // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
-            if (m_RequiredTypes == null || m_RequiredTypes.Length != requiredTypes.Length)
-                m_RequiredTypes = new string[requiredTypes.Length];
-            for (var i = 0; i < requiredTypes.Length; i++)
-            {
-                if (requiredTypes[i] != null)
-                {
-                    m_RequiredTypes[i] = typeof(ScriptableObject).IsAssignableFrom(requiredTypes[i]) || typeof(MonoBehaviour).IsAssignableFrom(requiredTypes[i]) ? requiredTypes[i].FullName : requiredTypes[i].Name;
-                    m_RequiredRawTypes[i] = requiredTypes[i];
-                }
-                else
-                {
-                    m_RequiredRawTypes[i] = GetUnityObjectType(m_RequiredTypes[i]);
-                }
-            }
             m_SearchFilter = "";
             m_OriginalSelection = obj;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
@@ -614,8 +565,8 @@ namespace UnityEditor
                     {
                         currentObject = obj,
                         editedObjects = m_EditedProperty != null ? m_EditedProperty.serializedObject.targetObjects : new[] { objectBeingEdited },
-                        requiredTypes = requiredTypes,
-                        requiredTypeNames = m_RequiredTypes,
+                        requiredTypes = m_RequiredTypes.types,
+                        requiredTypeNames = m_RequiredTypes.typeNames,
                         allowedInstanceIds = allowedInstanceIDs,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
                         searchFilter = GetSearchFilter()
@@ -669,15 +620,10 @@ namespace UnityEditor
                     m_SearchSessionHandler.EndSession();
             }
 
-            // Freeze to prevent flicker on OSX.
-            // Screen will be updated again when calling
-            // SetFreezeDisplay(false) further down.
-            ContainerWindow.SetFreezeDisplay(true);
-
             var shouldRepositionWindow = m_Parent != null;
             ShowWithMode(ShowMode.AuxWindow);
 
-            titleContent = EditorGUIUtility.TrTextContent(GenerateTitleContent(requiredTypes, m_RequiredTypes));
+            titleContent = EditorGUIUtility.TrTextContent(typeList.GenerateTitleContent());
 
             // Deal with window size
             if (shouldRepositionWindow)
@@ -695,7 +641,6 @@ namespace UnityEditor
 
             // Focus
             Focus();
-            ContainerWindow.SetFreezeDisplay(false);
 
             // Add after unfreezing display because AuxWindowManager.cpp assumes that aux windows are added after we get 'got/lost'- focus calls.
             if (m_Parent != null)
@@ -711,7 +656,7 @@ namespace UnityEditor
                     m_SkipHiddenPackagesToggle.value = false;
             }
 
-            if (m_RequiredTypes.All(t => ShouldTreeViewBeUsed(t)))
+            if (typeList.typeNames.All(t => ShouldTreeViewBeUsed(t)))
             {
                 m_ObjectTreeWithSearch.Init(position, this, CreateAndSetTreeView, TreeViewSelection, ItemWasDoubleClicked, initialSelection, 0);
             }
@@ -748,20 +693,6 @@ namespace UnityEditor
                     NotifySelectorClosed(false);
                 }
             }
-        }
-
-        internal static string GenerateTitleContent(Type[] requiredTypes, string[] requiredTypeStrings)
-        {
-            var typeName = requiredTypes[0] == null ? requiredTypeStrings[0] : requiredTypes[0].Name;
-            var text = "Select " + ObjectNames.NicifyVariableName(typeName);
-
-            for (int i = 1; i < requiredTypes.Length; i++)
-            {
-                typeName = requiredTypes[i] == null ? requiredTypeStrings[i] : requiredTypes[i].Name;
-                text += (i == requiredTypes.Length - 1 ? " or " : ", ") + ObjectNames.NicifyVariableName(typeName);
-            }
-
-            return text;
         }
 
         void ItemWasDoubleClicked()

@@ -27,6 +27,7 @@ namespace UnityEditor
         public bool   assetChanged;
         public bool   pathConflict;
         public bool   projectAsset;
+        public bool   isRestricted;
     }
 
     [StructLayout(LayoutKind.Sequential)]

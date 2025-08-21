@@ -103,6 +103,7 @@ namespace UnityEditor.Experimental.GraphView
             m_UserCallback = callback;
             m_CurrentMode = mode;
             m_TemplateHelper = templateHelper;
+            m_CustomTemplateIcon = EditorGUIUtility.LoadIcon(m_TemplateHelper.customTemplateIcon);
             SetCallBack();
             LoadTemplates();
 
@@ -117,8 +118,6 @@ namespace UnityEditor.Experimental.GraphView
             {
                 m_InstallButton.style.display = DisplayStyle.None;
             }
-
-            m_CustomTemplateIcon = EditorGUIUtility.LoadIcon(m_TemplateHelper.customTemplateIcon);
         }
 
         private void CreateGUI()

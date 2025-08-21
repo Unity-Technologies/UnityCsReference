@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy.Editor
 {
@@ -11,6 +12,7 @@ namespace Unity.Hierarchy.Editor
     /// Attribute used to register a new Cell Descriptor for a specific Column.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyViewCellDescriptorAttribute : Attribute
     {
         /// <summary>

@@ -20,6 +20,160 @@ namespace UnityEditor.EditorTools
         static EditorToolCache s_ToolCache = new EditorToolCache(typeof(EditorToolAttribute));
         static EditorToolCache s_ContextCache = new EditorToolCache(typeof(EditorToolContextAttribute));
         static Dictionary<Type, GUIContent> s_ToolbarIcons = new Dictionary<Type, GUIContent>();
+        
+        internal static IEnumerable<EditorTypeAssociation> availableGlobalToolContexts
+        {
+            get => s_ContextCache.GetEditorsForTargetType(null);
+        }
+
+        internal static IEnumerable<EditorTypeAssociation> registeredToolContexts
+        {
+            get => s_ContextCache.availableEditorTypeAssociations;
+        }
+        
+        internal static IEnumerable<EditorTypeAssociation> availailableEditorTools
+        {
+            get => s_ToolCache.availableEditorTypeAssociations;
+        }
+
+        internal static int toolContextsInProject => s_ContextCache.Count;
+
+        internal class SortedContextDataCache
+        {
+            List<EditorTypeAssociation> m_SortedGlobalContextAssociations = new();
+            List<EditorTypeAssociation> m_SortedAvailableCompContextAssoc = new();
+            List<EditorTypeAssociation> m_SortedUnavailableCompContextAssoc = new();
+            readonly List<EditorTypeAssociation> m_SortedAllAvailableContextAssoc = new();
+            
+            bool m_Dirty = true;
+            
+            internal IReadOnlyList<EditorTypeAssociation> allAvailableContextAssociations
+            {
+                get
+                {
+                    EnsureSorted();
+                    return m_SortedAllAvailableContextAssoc;
+                }
+            }
+            
+            internal IReadOnlyList<EditorTypeAssociation> globalContextAssociations
+            {
+                get
+                {
+                    EnsureSorted();
+                    return m_SortedGlobalContextAssociations;
+                }
+            }
+            
+            internal IReadOnlyList<EditorTypeAssociation> availableCompContextAssociations
+            {
+                get
+                {
+                    EnsureSorted();
+                    return m_SortedAvailableCompContextAssoc;
+                }
+            }
+            
+            internal IReadOnlyList<EditorTypeAssociation> unavailableCompContextAssociations
+            {
+                get
+                {
+                    EnsureSorted();
+                    return m_SortedUnavailableCompContextAssoc;
+                }
+            }
+
+            void EnsureSorted()
+            {
+                if (m_Dirty)
+                {
+                    SortContextAssociations();
+                    m_Dirty = false;
+                }
+            }
+
+            internal void SetDirty()
+            {
+                m_Dirty = true;
+            }
+            
+            void SortContextAssociations()
+            {
+                Comparison<EditorTypeAssociation> sortComp = (a, b) =>
+                {
+                    // Sort by priority
+                    int result = a.priority.CompareTo(b.priority);
+                    if (result != 0) 
+                        return result;
+                    
+                    // Then by name
+                    result = string.Compare(GetToolName(a.editor), GetToolName(b.editor), StringComparison.Ordinal);
+                    if (result != 0) 
+                        return result;
+                    
+                    // Then by hashcode
+                    return a.GetHashCode().CompareTo(b.GetHashCode());
+                };
+                
+                // Sort global contexts
+                var globalContexts = new List<EditorTypeAssociation>(availableGlobalToolContexts);
+                globalContexts.Sort(sortComp);
+
+                // Move GO context to front of globals
+                for (int i = globalContexts.Count - 1; i >= 0; --i)
+                {
+                    if (globalContexts[i].editor == typeof(GameObjectToolContext))
+                    {
+                        var goAssoc = globalContexts[i];
+                        globalContexts.RemoveAt(i);
+                        globalContexts.Insert(0, goAssoc);
+                        break;
+                    }
+                }
+                m_SortedGlobalContextAssociations = globalContexts;
+
+                // Collect all registered component contexts
+                var allRegisteredCompContexts = new List<EditorTypeAssociation>();
+                foreach (var assoc in registeredToolContexts)
+                {
+                    if (assoc.targetBehaviour != typeof(NullTargetKey))
+                        allRegisteredCompContexts.Add(assoc);
+                }
+
+                // Split into available and unavailable component contexts
+                m_SortedAvailableCompContextAssoc.Clear();
+                m_SortedUnavailableCompContextAssoc.Clear();
+
+                foreach (var compAssoc in allRegisteredCompContexts)
+                {
+                    bool isAvailableComp = false;
+                    foreach (var compEditor in EditorToolManager.componentContexts)
+                    {
+                        if (compEditor.editorType == compAssoc.editor)
+                        {
+                            isAvailableComp = true;
+                            break;
+                        }
+                    }
+
+                    if (isAvailableComp)
+                        m_SortedAvailableCompContextAssoc.Add(compAssoc);
+                    else
+                        m_SortedUnavailableCompContextAssoc.Add(compAssoc);
+                }
+
+                // Sort both lists
+                m_SortedAvailableCompContextAssoc.Sort(sortComp);
+                m_SortedUnavailableCompContextAssoc.Sort(sortComp);
+
+                // Combine globals and available component contexts
+                m_SortedAllAvailableContextAssoc.Clear();
+                m_SortedAllAvailableContextAssoc.AddRange(m_SortedGlobalContextAssociations);
+                m_SortedAllAvailableContextAssoc.AddRange(m_SortedAvailableCompContextAssoc);
+            }
+        }
+
+        internal static SortedContextDataCache sortedContextsDataCache { get; } = new();
 
         // Caution: Returns all types without filtering for EditorToolContext
         internal static IEnumerable<EditorTypeAssociation> GetCustomEditorToolsForType(Type type)
@@ -27,19 +181,21 @@ namespace UnityEditor.EditorTools
             return s_ToolCache.GetEditorsForTargetType(type);
         }
 
-        internal static IEnumerable<EditorTypeAssociation> availableGlobalToolContexts
-        {
-            get => s_ContextCache.GetEditorsForTargetType(null);
-        }
-
-        internal static int toolContextsInProject => s_ContextCache.Count;
-
         internal static string GetToolName(Type tool)
         {
             var path = GetToolMenuPath(tool);
             return GetNameFromToolPath(path);
         }
 
+        internal static string GetContextName(Type context, bool forTooltip)
+        {
+            var contextName = GetToolName(context);
+            if (forTooltip)
+                contextName += (context == typeof(GameObjectToolContext) ? " (Default)" : "");
+
+            return contextName;
+        }
+        
         internal static string GetNameFromToolPath(string path)
         {
             var index = path.LastIndexOf("/", StringComparison.Ordinal);
@@ -145,10 +301,10 @@ namespace UnityEditor.EditorTools
                             EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
                             return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
                         }
-                        else if (!instance.IsAvailable())
+                        else if (!instance.IsAvailable() || instance.isHidden)
                         {
                             Debug.LogError($"{context} resolved Tool.{type} to a Component tool of type `{resolved}`, but " +
-                                           $"the matching component tool is not Available with the active selection. The active tool " +
+                                           $"the matching component tool is not Available or is Hidden for the active selection. The active tool " +
                                            $"context will be set to the default.");
                             EditorToolManager.activeToolContext = EditorToolManager.GetSingleton<GameObjectToolContext>();
                             return (EditorTool)EditorToolManager.GetSingleton(EditorToolManager.activeToolContext.ResolveTool(type));
@@ -270,6 +426,20 @@ namespace UnityEditor.EditorTools
             s_ToolbarIcons.Add(editorToolType, res);
 
             return res;
+        }
+        
+        internal static GUIContent GetContextIcon(Type editorToolContextType, out bool isFallbackIcon)
+        {
+            GUIContent icon;
+            isFallbackIcon = false;
+            icon = GetIcon(editorToolContextType, true);
+            if (icon.image == null)
+            {
+                icon.image = EditorGUIUtility.IconContent("ToolContext").image;
+                isFallbackIcon = true;
+            }
+
+            return icon;
         }
 
         internal static EditorTypeAssociation GetMetaData(Type toolType) => s_ToolCache.GetMetaData(toolType);

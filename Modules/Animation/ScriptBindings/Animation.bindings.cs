@@ -111,13 +111,13 @@ namespace UnityEngine
         [uei.ExcludeFromDocs] public AnimationState CrossFadeQueued(string animation, float fadeLength) { return CrossFadeQueued(animation, fadeLength, QueueMode.CompleteOthers); }
         [uei.ExcludeFromDocs] public AnimationState CrossFadeQueued(string animation, float fadeLength, QueueMode queue) { return CrossFadeQueued(animation, fadeLength, queue, PlayMode.StopSameLayer); }
         [FreeFunction("AnimationBindings::CrossFadeQueuedImpl", HasExplicitThis = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public AnimationState CrossFadeQueued(string animation, [uei.DefaultValue("0.3F")] float fadeLength, [uei.DefaultValue("QueueMode.CompleteOthers")] QueueMode queue, [uei.DefaultValue("PlayMode.StopSameLayer")] PlayMode mode);
 
         [uei.ExcludeFromDocs] public AnimationState PlayQueued(string animation) { return PlayQueued(animation, QueueMode.CompleteOthers); }
         [uei.ExcludeFromDocs] public AnimationState PlayQueued(string animation, QueueMode queue) { return PlayQueued(animation, queue, PlayMode.StopSameLayer); }
         [FreeFunction("AnimationBindings::PlayQueuedImpl", HasExplicitThis = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public AnimationState PlayQueued(string animation, [uei.DefaultValue("QueueMode.CompleteOthers")] QueueMode queue, [uei.DefaultValue("PlayMode.StopSameLayer")] PlayMode mode);
 
         public void AddClip(AnimationClip clip, string newName) { AddClip(clip, newName, Int32.MinValue, Int32.MaxValue); }
@@ -161,11 +161,11 @@ namespace UnityEngine
         }
 
         [FreeFunction("AnimationBindings::GetState", HasExplicitThis = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal AnimationState GetState(string name);
 
         [FreeFunction("AnimationBindings::GetStateAtIndex", HasExplicitThis = true, ThrowsException = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal AnimationState GetStateAtIndex(int index);
 
         [NativeName("GetAnimationStateCount")] extern internal int GetStateCount();

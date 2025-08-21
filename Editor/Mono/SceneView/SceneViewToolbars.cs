@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -16,7 +16,7 @@ namespace UnityEditor
      // - UIServiceEditor/SceneView/SceneViewToolbarElements.cs
      // - UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
 
-    [Overlay(typeof(SceneView), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools, defaultDockZone = DockZone.LeftColumn, defaultDockPosition = DockPosition.Top, defaultLayout = Layout.VerticalToolbar, defaultDockIndex = 0)]
+    [Overlay(typeof(SceneView), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools, defaultDockZone = DockZone.LeftColumn, defaultDockPosition = DockPosition.Top, defaultLayout = Layout.VerticalToolbar, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/ToolsToggle.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
@@ -71,12 +71,16 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "View Options", true, priority = (int)OverlayPriority.ViewOptions, defaultDockIndex = 0, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom)]
+    [Overlay(typeof(SceneView), k_Id, "View Options", true, priority = (int)OverlayPriority.ViewOptions, defaultDockIndex = 0, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewToolBar : ToolbarOverlay
     {
         const string k_Id = "unity-scene-view-toolbar";
-        public SceneViewToolBar() : base(
+        
+        Editor m_ToolEditor, m_ContextEditor;
+        
+        static IReadOnlyList<string> builtinToolbarElements = new[] 
+        {
             "SceneView/2D",
             "SceneView/Audio",
             "SceneView/Fx",
@@ -85,10 +89,77 @@ namespace UnityEditor
             "SceneView/Metal Capture",
             "SceneView/Layers",
             "SceneView/Scene Camera",
-            "SceneView/Gizmos") {}
+            "SceneView/Gizmos"
+        };
+        
+        public override IEnumerable<string> toolbarElements
+        {
+            get
+            {
+                var elements = contextElements != null ? new List<string>(contextElements) : new List<string>();
+                elements.AddRange(toolElements);
+                return elements;
+            }
+        }
+        
+        IReadOnlyList<string> contextElements
+        {
+            get
+            {
+                if (m_ContextEditor is IOverrideToolbar)
+                {
+                    return EditorToolbarUtility.GetToolbarOverrideElementIds(m_ContextEditor, (IEnumerable<string>)null,
+                        OverridableToolbar.ViewOptions);
+                }
+
+                return null;
+            }
+        }
+
+        IReadOnlyList<string> toolElements
+        {
+            get
+            {
+                if (m_ToolEditor is IOverrideToolbar)
+                {
+                    return EditorToolbarUtility.GetToolbarOverrideElementIds(m_ToolEditor, builtinToolbarElements,
+                        OverridableToolbar.ViewOptions);
+                }
+                
+                return builtinToolbarElements;
+            }
+        }
+        
+        public SceneViewToolBar()
+        {
+            ToolManager.activeToolChanged += OnToolChanged;
+            ToolManager.activeContextChanged += OnToolChanged;
+            CreateEditor();
+        }
+
+        public override void OnWillBeDestroyed()
+        {
+            UnityObject.DestroyImmediate(m_ToolEditor);
+            UnityObject.DestroyImmediate(m_ContextEditor);
+        }
+
+        void CreateEditor()
+        {
+            UnityObject.DestroyImmediate(m_ContextEditor);
+            UnityObject.DestroyImmediate(m_ToolEditor);
+
+            m_ContextEditor = Editor.CreateEditor(EditorToolManager.activeToolContext);
+            m_ToolEditor = Editor.CreateEditor(EditorToolManager.activeTool);
+        }
+
+        void OnToolChanged()
+        {
+            CreateEditor();
+            RebuildContent();
+        }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, priority = (int)OverlayPriority.DrawModes, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultDockZone = DockZone.TopToolbar)]
+    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, priority = (int)OverlayPriority.DrawModes, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultDockZone = DockZone.TopToolbar, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewCameraModeToolbar : ToolbarOverlay
     {
@@ -134,7 +205,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Search", false, priority = (int)OverlayPriority.Search, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom, defaultDockIndex = 2)]
+    [Overlay(typeof(SceneView), k_Id, "Search", false, priority = (int)OverlayPriority.Search, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom, defaultDockIndex = 2, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/SearchOverlay.png")]
     class SearchToolBar : Overlay, ICreateHorizontalToolbar
     {
@@ -156,7 +227,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true, priority = (int)OverlayPriority.GridAndSnap, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 1)]
+    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true, priority = (int)OverlayPriority.GridAndSnap, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 1, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/GridAndSnap.png")]
     class GridAndSnapToolBar : ToolbarOverlay
     {

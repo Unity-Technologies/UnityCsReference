@@ -84,7 +84,7 @@ namespace UnityEngine.UIElements
         {
         }
 
-        abstract class ResolvedMaterialProperty : ResolvedStyleProperty<Material>
+        abstract class ResolvedMaterialDefinitionProperty : ResolvedStyleProperty<MaterialDefinition>
         {
         }
 

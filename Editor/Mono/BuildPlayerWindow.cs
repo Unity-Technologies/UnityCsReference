@@ -12,6 +12,7 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using UnityEditor.Modules;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
@@ -585,7 +586,18 @@ namespace UnityEditor
                 }
             }
 
-            return string.Format("https://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, downloadLinkName, shortVersion, extension);
+            var architectureLabel = "";
+
+            // WebGL uses a different artifact for arm64, so we need a separate url for it.
+            // This url should be kept in sync with the one built in Tools/Build/InstallerBuildRecipes/MacEditorInstaller.pm BuildMacEditorInstallerSet()
+            if (downloadLinkName == "WebGL"
+                && RuntimeInformation.OSArchitecture == Architecture.Arm64
+                && Application.platform == RuntimePlatform.OSXEditor)
+            {
+                architectureLabel = $"Arm64-";
+            }
+
+            return string.Format("https://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}{7}", prefix, suffix, revision, folder, downloadLinkName, architectureLabel, shortVersion, extension);
         }
 
         internal static string GetUnityHubModuleDownloadURL(GUID platformGuid)

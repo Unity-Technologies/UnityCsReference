@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-TabView|UXML element TabView]].
     /// </remarks>
+    [UxmlElement(null, typeof(Tab))]
     [Icon("UIToolkit/Icons/TabView.png")]
     public class TabView : VisualElement
     {
@@ -357,7 +358,7 @@ namespace UnityEngine.UIElements
             header.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.Add(m_HeaderContainer);
 
-            m_ContentContainer = new VisualElement() { name = contentContainerUssClassName, classList = { contentContainerUssClassName }};
+            m_ContentContainer = new TabViewContentContainer() { name = contentContainerUssClassName, classList = { contentContainerUssClassName }};
             hierarchy.Add(m_ContentContainer);
 
             nextButton = new RepeatButton(OnNextClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { nextButtonUssClassName } };
@@ -366,10 +367,13 @@ namespace UnityEngine.UIElements
             contentViewport.Add(nextButton);
             contentViewport.Add(previousButton);
 
-            m_ContentContainer.elementAdded += OnElementAdded;
-            m_ContentContainer.elementRemoved += OnElementRemoved;
-
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        class TabViewContentContainer : VisualElement
+        {
+            internal override void OnChildAdded(VisualElement ve) => ((TabView)parent).OnElementAdded(ve);
+            internal override void OnChildRemoved(VisualElement ve) => ((TabView)parent).OnElementRemoved(ve);
         }
 
         internal override void OnViewDataReady()
@@ -497,7 +501,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void OnElementAdded(VisualElement ve, int index)
+        void OnElementAdded(VisualElement ve)
         {
             if (ve is not Tab tab || m_Reordering)
                 return;
@@ -506,6 +510,7 @@ namespace UnityEngine.UIElements
             if (tabHeader != null)
             {
                 // Insert at specified index
+                var index = m_ContentContainer.IndexOf(tab);
                 m_HeaderContainer.Insert(index, tabHeader);
                 m_TabHeaders.Insert(index, tabHeader);
                 m_Tabs.Insert(index, tab);

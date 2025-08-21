@@ -92,12 +92,6 @@ namespace UnityEngine.Accessibility
         internal static extern bool GetIsFocused(int nodeId);
 
         /// <summary>
-        /// Sets the language to use when voicing the native accessibility node's label, value, and hint (can differ
-        /// from the system or application language).
-        /// </summary>
-        internal static extern void SetLanguage(int nodeId, SystemLanguage language);
-
-        /// <summary>
         /// Called after the native accessibility node with the given ID gains or loses accessibility focus.
         /// </summary>
         [RequiredByNativeCode]

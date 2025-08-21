@@ -17,5 +17,11 @@ namespace Unity.Profiling.Editor.UI
             element.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
             element.style.visibility = value ? Visibility.Visible : Visibility.Hidden;
         }
+
+        public static void SwitchVisibility(VisualElement first, VisualElement second, bool showFirst = true)
+        {
+            SetElementDisplay(first, showFirst);
+            SetElementDisplay(second, !showFirst);
+        }
     }
 }

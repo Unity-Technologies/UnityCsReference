@@ -512,7 +512,10 @@ namespace UnityEditor
             var sParam = param.scale;
 
             var isHot = ids.Has(GUIUtility.hotControl);
+            
             var cameraAligned = (isHot && s_IsHotInCameraAlignedMode || !isHot && Event.current.shift);
+            var isCustomPivotRotation = Tools.pivotRotation == PivotRotation.Custom;
+
             if (Tools.vertexDragging)
             {
                 pParam = param.vertexSnappingPosition;
@@ -533,6 +536,11 @@ namespace UnityEditor
                 rParam = param.localRotation;
                 sParam = param.localScale;
             }
+            else if (isCustomPivotRotation)
+            {
+                if (s_TransformHandle_RotationData.ContainsKey(ids.rotation))
+                    workingRotation = s_TransformHandle_RotationData[ids.rotation].initialRotation;
+            }
 
             // Draw only the hot control
             if (ids.Has(GUIUtility.hotControl))
@@ -544,10 +552,10 @@ namespace UnityEditor
                 else if (ids.rotation.Has(GUIUtility.hotControl))
                 {
                     var endRotation = DoRotationHandle(ids.rotation, workingRotation, position, rParam);
-
-                    if (cameraAligned)
+                    
+                    if (cameraAligned || isCustomPivotRotation)
                     {
-                        // For camera aligned axis rotation, we need to store the initial rotation to rotate only the delta
+                        // For camera aligned axis or custom pivot rotation, we need to store the initial rotation to rotate only the delta
                         if (!s_TransformHandle_RotationData.ContainsKey(ids.rotation))
                         {
                             s_TransformHandle_RotationData[ids.rotation] = new RotationHandleData
@@ -556,16 +564,26 @@ namespace UnityEditor
                                 initialRotation = rotation
                             };
                         }
+                    }
 
+                    if (cameraAligned)
+                    {
                         // For freemove rotation, we already have the delta rotation properly
                         var initialRotation = ids.rotation.xyz != GUIUtility.hotControl
                             ? s_TransformHandle_RotationData[ids.rotation].initialRotation
                             : rotation;
-                        var d = endRotation * Quaternion.Inverse(workingRotation);
-                        float angle;
-                        Vector3 axis;
-                        d.ToAngleAxis(out angle, out axis);
+                        var rotationDelta = endRotation * Quaternion.Inverse(workingRotation);
+                        rotationDelta.ToAngleAxis(out var angle, out var axis);
                         rotation = Quaternion.AngleAxis(angle, axis) * initialRotation;
+                    }
+                    else if (isCustomPivotRotation)
+                    {
+                        var rotationHandleData = s_TransformHandle_RotationData[ids.rotation];
+                        rotationHandleData.initialRotation = endRotation;
+                        s_TransformHandle_RotationData[ids.rotation] = rotationHandleData;
+                        
+                        var rotationDelta = endRotation * Quaternion.Inverse(workingRotation);
+                        rotation = rotationDelta * rotation;
                     }
                     else
                         rotation = endRotation;

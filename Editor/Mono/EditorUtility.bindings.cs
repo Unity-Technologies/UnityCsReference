@@ -52,26 +52,28 @@ namespace UnityEditor
         public static extern string SaveFilePanel(string title, string directory, string defaultName, string extension);
         [ThreadSafe]
         public static extern int NaturalCompare(string a, string b);
-        [Obsolete("InstanceIDToObject is obsolete. Use EditorUtility.EntityIdToObject instead.")]
-        public static extern Object InstanceIDToObject(int instanceID);
+
+        [Obsolete("InstanceIDToObject(int) is obsolete. Use EditorUtility.EntityIdToObject instead.")]
+        public static Object InstanceIDToObject(int instanceID) => EntityIdToObject((EntityId)instanceID);
+
         public static extern Object EntityIdToObject(EntityId entityId);
         public static extern void CompressTexture([NotNull] Texture2D texture, TextureFormat format, int quality);
         public static extern void CompressCubemapTexture([NotNull] Cubemap texture, TextureFormat format, int quality);
 
-        private extern static int[] RemapInstanceIds(UnityEngine.Object[] objects, int[] srcIds, int[] dstIds);
+        private extern static int[] RemapInstanceIds(UnityEngine.Object[] objects, EntityId[] srcIds, EntityId[] dstIds);
 
-        internal static int[] RemapInstanceIds(UnityEngine.Object[] objects, Dictionary<int, int> idMap)
+        internal static int[] RemapInstanceIds(UnityEngine.Object[] objects, Dictionary<EntityId, EntityId> idMap)
         {
             return RemapInstanceIds(objects, idMap.Keys.ToArray(), idMap.Values.ToArray());
         }
 
-        private extern static void RemapAssetReferences(UnityEngine.Object[] objects, string[] sourceAssetPaths, string[] dstAssetPaths, int[] srcIds, int[] dstIds);
+        private extern static void RemapAssetReferences(UnityEngine.Object[] objects, string[] sourceAssetPaths, string[] dstAssetPaths, EntityId[] srcIds, EntityId[] dstIds);
 
-        internal static void RemapAssetReferences(UnityEngine.Object[] objects, Dictionary<string, string> assetPathMap, Dictionary<int, int> idMap = null)
+        internal static void RemapAssetReferences(UnityEngine.Object[] objects, Dictionary<string, string> assetPathMap, Dictionary<EntityId, EntityId> idMap = null)
         {
             RemapAssetReferences(objects, assetPathMap.Keys.ToArray(), assetPathMap.Values.ToArray(),
-                idMap == null ? new int[0] : idMap.Keys.ToArray(),
-                idMap == null ? new int[0] : idMap.Values.ToArray()
+                idMap == null ? new EntityId[0] : idMap.Keys.ToArray(),
+                idMap == null ? new EntityId[0] : idMap.Values.ToArray()
             );
         }
 
@@ -93,9 +95,9 @@ namespace UnityEditor
         private static extern void InternalCopySerializedIfDifferent([NotNull] Object source, [NotNull] Object dest);
 
         [NativeThrows]
-        [return: Unmarshalled]
-        public static extern Object[] CollectDependencies([Unmarshalled] Object[] roots);
-        public static extern Object[] CollectDeepHierarchy([Unmarshalled] Object[] roots);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        public static extern Object[] CollectDependencies([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] roots);
+        public static extern Object[] CollectDeepHierarchy([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] roots);
 
         [FreeFunction("InstantiateObjectRemoveAllNonAnimationComponents")]
         private static extern Object Internal_InstantiateRemoveAllNonAnimationComponentsSingle([NotNull] Object data, Vector3 pos, Quaternion rot);
@@ -248,14 +250,21 @@ namespace UnityEditor
         [FreeFunction("ReloadPlatformSupportModuleNativeDll")]
         internal static extern void ReloadPlatformSupportModuleNativeDllInternal(string target);
 
+        [FreeFunction("PlatformSupportModuleSetCustomData")]
+        internal static extern void PlatformSupportModuleSetCustomData(string target, int customKey, int customValue);
+
         [FreeFunction("LoadPlatformSupportNativeLibrary")]
         internal static extern void LoadPlatformSupportNativeLibrary(string nativeLibrary);
 
+        [Obsolete("GetDirtyCount(int) is deprecated. Use GetDirtyCount(EntityId) instead.")]
+        public static int GetDirtyCount(int instanceID) => GetDirtyCount((EntityId)instanceID);
         [NativeMethod("GetDirtyIndex")]
-        public static extern int GetDirtyCount(int instanceID);
-        public static int GetDirtyCount(Object target) { return target != null ? GetDirtyCount(target.GetInstanceID()) : 0; }
-        public static extern bool IsDirty(int instanceID);
-        public static bool IsDirty(Object target) { return target != null ? IsDirty(target.GetInstanceID()) : false; }
+        public static extern int GetDirtyCount(EntityId entityId);
+        public static int GetDirtyCount(Object target) { return target != null ? GetDirtyCount(target.GetEntityId()) : 0; }
+        [Obsolete("IsDirty(int) is deprecated. Use IsDirty(EntityId) instead.")]
+        public static bool IsDirty(int instanceID) => IsDirty((EntityId)instanceID);
+        public static extern bool IsDirty(EntityId entityId);
+        public static bool IsDirty(Object target) => target != null && IsDirty(target.GetEntityId());
         internal static extern string SaveBuildPanel(BuildTarget target, string title, string directory, string defaultName, string extension, out bool updateExistingBuild);
         internal static extern int NaturalCompareObjectNames(Object a, Object b);
 

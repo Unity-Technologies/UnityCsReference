@@ -91,8 +91,6 @@ namespace UnityEngine.UIElements
 
         public void DirtyStyleSheets()
         {
-            // When a style sheet is re-imported, we must make sure to purge internal caches that are depending on it
-            StyleCache.ClearStyleCache();
             visualTree.IncrementVersion(VersionChangeType.StyleSheet); // dirty all styles
         }
 

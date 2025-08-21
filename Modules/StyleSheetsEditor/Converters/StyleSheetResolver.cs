@@ -318,6 +318,7 @@ namespace UnityEditor.StyleSheets
         {
             foreach (var sheet in Sheets)
             {
+                sheet.RebuildIfNecessary();
                 ResolveRules(sheet);
                 ResolveImports(sheet);
             }
@@ -765,7 +766,8 @@ namespace UnityEditor.StyleSheets
 
         private void ResolveRules(StyleSheet sheet)
         {
-            foreach (var complexSelector in sheet.complexSelectors)
+            foreach(var rule in sheet.rules)
+            foreach (var complexSelector in rule.complexSelectors)
             {
                 if (complexSelector.rule == null)
                     continue;

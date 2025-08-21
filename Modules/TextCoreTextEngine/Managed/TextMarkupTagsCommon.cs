@@ -231,5 +231,8 @@ namespace UnityEngine.TextCore.Text
         public const uint UNICODE_PLANE01_START = 0x10000;
         public const uint UNICODE_PLANE16_END = 0x10FFFF;
         public const uint LOWEST_10BITS_MASK = 0x3FF;
+
+        public const uint LINE_FEED = 0x0A;
+        public const uint CARRIAGE_RETURN = 0x0D;
     }
 }

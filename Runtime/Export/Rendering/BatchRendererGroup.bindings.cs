@@ -420,7 +420,7 @@ namespace UnityEngine.Rendering
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    unsafe public struct BatchCullingOutputDrawCommands
+    public unsafe struct BatchCullingOutputDrawCommands
     {
         // TempJob allocated by C#, released by C++
         public BatchDrawCommand* drawCommands;
@@ -437,7 +437,14 @@ namespace UnityEngine.Rendering
         // TempJob allocated by C#, released by C++
         public float* instanceSortingPositions;
         // TempJob allocated by C#, released by C++
-        public int* drawCommandPickingInstanceIDs;
+        public EntityId* drawCommandPickingEntityIds;
+
+        [Obsolete("drawCommandPickingInstanceIDs is deprecated. Use drawCommandPickingEntityIds instead.")]
+        public int* drawCommandPickingInstanceIDs
+        {
+            get => (int*)drawCommandPickingEntityIds;
+            set => drawCommandPickingEntityIds = (EntityId*)value;
+        }
         public int drawCommandCount;
         public int indirectDrawCommandCount;
         public int proceduralDrawCommandCount;
@@ -683,7 +690,7 @@ namespace UnityEngine.Rendering
         public extern static int GetConstantBufferMaxWindowSize();
         public extern static int GetConstantBufferOffsetAlignment();
 
-        static extern unsafe IntPtr Create([Unmarshalled] BatchRendererGroup group, void* userContext);
+        static extern unsafe IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] BatchRendererGroup group, void* userContext);
 
         static extern void Destroy(IntPtr groupHandle);
 

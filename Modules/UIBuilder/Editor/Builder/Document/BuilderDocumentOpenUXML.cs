@@ -321,9 +321,10 @@ namespace Unity.UI.Builder
                 m_CurrentDocumentRootElement = documentRootElement;
 
             StyleCache.ClearStyleCache();
-            UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
             foreach (var openUSS in m_OpenUSSFiles)
-                openUSS.styleSheet.SetupReferences();
+            {
+                openUSS.styleSheet.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
+            }
             m_CurrentDocumentRootElement.IncrementVersion(VersionChangeTypeUtility.StylingChanged());
         }
 
@@ -877,20 +878,11 @@ namespace Unity.UI.Builder
                 RemoveStyleSheetFromLists(lastIndex);
             }
 
-            // Fix unserialized rule references in Selectors in StyleSheets.
-            // VTA.inlineSheet only has Rules so it does not need this fix.
-            foreach (var openUSSFile in m_OpenUSSFiles)
-                openUSSFile.styleSheet.SetupReferences();
-
             ReloadDocumentToCanvas(documentRootElement);
         }
 
         public void OnAfterDeserialize()
         {
-            // Fix unserialized rule references in Selectors in StyleSheets.
-            // VTA.inlineSheet only has Rules so it does not need this fix.
-            foreach (var openUSSFile in m_OpenUSSFiles)
-                openUSSFile.styleSheet.SetupReferences();
         }
 
         public void OnAfterLoadFromDisk()

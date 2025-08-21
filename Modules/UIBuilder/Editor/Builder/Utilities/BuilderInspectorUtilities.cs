@@ -84,7 +84,7 @@ namespace Unity.UI.Builder
 
             var bindingProperty = GetBindingProperty(fieldElement);
 
-            return inspector.attributeSection.uxmlSerializedData is VisualElement.UxmlSerializedData serializedData &&
+            return inspector.attributeSection.context.uxmlSerializedData is VisualElement.UxmlSerializedData serializedData &&
                 serializedData.HasBindingInternal(bindingProperty);
         }
 

@@ -59,7 +59,8 @@ namespace UnityEditor
         public Editor[] activeEditors { get { return (Editor[])Internal_GetActiveEditors(this); } }
 
         [FreeFunction]
-        static extern Editor[] Internal_GetActiveEditorsNonAllocInternal(ActiveEditorTracker self, [Unmarshalled] Editor[] editors);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        static extern Editor[] Internal_GetActiveEditorsNonAllocInternal(ActiveEditorTracker self, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] Editor[] editors);
         internal static void Internal_GetActiveEditorsNonAlloc(ActiveEditorTracker self, ref Editor[] editors)
         {
             editors = Internal_GetActiveEditorsNonAllocInternal(self, editors);

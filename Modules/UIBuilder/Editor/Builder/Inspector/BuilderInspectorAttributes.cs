@@ -157,7 +157,7 @@ namespace Unity.UI.Builder
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
-                                (a) => { BuilderBindingUtility.DeleteBinding(fieldElement, bindingPath, inspector.paneWindow as Builder); },
+                                (a) => { BuilderBindingUtility.DeleteBinding(context, bindingPath, fieldElement); },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
 

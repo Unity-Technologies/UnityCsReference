@@ -15,20 +15,31 @@ namespace UnityEngine.UIElements
     internal partial class StyleProperty
     {
         [SerializeField]
-        string m_Name;
+        StylePropertyId m_Id;
+
+        internal StylePropertyId id
+        {
+            get => m_Id;
+        }
+
+        [SerializeField]
+        string m_CustomName;
 
         public string name
         {
             get
             {
-                return m_Name;
+                switch (id)
+                {
+                    case StylePropertyId.Unknown:
+                    case StylePropertyId.Custom:
+                        return m_CustomName;
+                }
+
+                return StylePropertyUtil.stylePropertyIdToPropertyName[id];
             }
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            internal set
-            {
-                m_Name = value;
-                isCustomProperty = !string.IsNullOrEmpty(m_Name) && StringUtils.StartsWith(m_Name, "--");
-            }
+            internal set => CacheId(value);
         }
 
         [SerializeField]
@@ -68,13 +79,38 @@ namespace UnityEngine.UIElements
             get => m_Values?.Length ?? 0;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        [NonSerialized]
-        internal bool isCustomProperty;
+        internal bool isCustomProperty
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => id == StylePropertyId.Custom;
+        }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal bool requireVariableResolve;
+
+        internal StyleProperty()
+        {
+        }
+
+        internal void CacheId(string value)
+        {
+            m_Id = StylePropertyId.Unknown;
+            m_CustomName = value;
+            if (string.IsNullOrEmpty(value))
+            {
+                m_Id = StylePropertyId.Unknown;
+            }
+            else if (StringUtils.StartsWith(value, "--"))
+            {
+                m_Id = StylePropertyId.Custom;
+            }
+            else if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(value, out var valueId))
+            {
+                m_Id = valueId;
+                m_CustomName = null;
+            }
+        }
 
         public bool ContainsVariable()
         {
@@ -783,7 +819,7 @@ namespace UnityEngine.UIElements
                     value = floatValue;
                     return true;
                 }
-              
+
             }
 
             value = Ratio.Auto();

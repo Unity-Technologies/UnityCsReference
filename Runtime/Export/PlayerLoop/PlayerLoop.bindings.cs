@@ -272,6 +272,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct ProcessWebSendMessages {}
         [RequiredByNativeCode]
+        public struct RenderAs2DUpdate { }
+        [RequiredByNativeCode]
         public struct SortingGroupsUpdate {}
         [RequiredByNativeCode]
         public struct UpdateVideoTextures {}

@@ -12,7 +12,7 @@ internal class InProjectErrorsAndWarningsPage : InProjectPage
     public new const string k_Id = "ErrorsAndWarnings";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("Errors & Warnings");
+    public override string displayName => L10n.Tr("Errors and Warnings");
     public override Icon icon
     {
         get
@@ -29,7 +29,6 @@ internal class InProjectErrorsAndWarningsPage : InProjectPage
     public override bool ShouldInclude(IPackage package)
     {
         return base.ShouldInclude(package)
-            && package.compliance.status == PackageComplianceStatus.Compliant
             && (package.state is PackageState.Error or PackageState.Warning);
     }
 }

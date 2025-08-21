@@ -103,7 +103,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.DragPerform)
             {
                 // Determine if any object references are component, which would mean we are reordering components in the inspector
-                var anyComponent = DragAndDrop.entityIds != null && DragAndDrop.entityIds.Any(id => InternalEditorUtility.GetObjectFromInstanceID(id) is Component);
+                var anyComponent = DragAndDrop.entityIds != null && DragAndDrop.entityIds.Any(id => InternalEditorUtility.GetObjectFromEntityId(id) is Component);
 
                 // None of the object references are component, cancel further processing to avoid adding component twice
                 if (!anyComponent)
@@ -133,12 +133,12 @@ namespace UnityEditor
                                 draggingMode = DraggingMode.NotApplicable;
                             else if (draggedIds.All(id =>
                                      {
-                                         var obj = InternalEditorUtility.GetObjectFromInstanceID(id);
+                                         var obj = InternalEditorUtility.GetObjectFromEntityId(id);
                                          return obj is Component &&
                                                 !(obj is Transform);
                                      }))
                                 draggingMode = DraggingMode.Component;
-                            else if (draggedIds.All(id => InternalEditorUtility.GetObjectFromInstanceID(id) is MonoScript))
+                            else if (draggedIds.All(id => InternalEditorUtility.GetObjectFromEntityId(id) is MonoScript))
                                 draggingMode = DraggingMode.Script;
                             else
                                 draggingMode = DraggingMode.NotApplicable;
@@ -202,7 +202,7 @@ namespace UnityEditor
                                     var targetComponents = objects.Cast<Component>().ToArray();
                                     var sourceComponents = new Component[ids.Length];
                                     for(int i = 0; i < ids.Length; ++i)
-                                        sourceComponents[i] = (Component)InternalEditorUtility.GetObjectFromInstanceID(ids[i]);
+                                        sourceComponents[i] = (Component)InternalEditorUtility.GetObjectFromEntityId(ids[i]);
 
                                     valid = MoveOrCopyComponents(sourceComponents, targetComponents, EditorUtility.EventHasDragCopyModifierPressed(evt), true);
                                 }
@@ -277,7 +277,7 @@ namespace UnityEditor
                     var ids = new ReadOnlySpan<EntityId>(DragAndDrop.entityIds);
                     var scripts = new MonoScript[ids.Length];
                     for (int i = 0; i < ids.Length; i++)
-                        scripts[i] = (MonoScript)InternalEditorUtility.GetObjectFromInstanceID(ids[i]);
+                        scripts[i] = (MonoScript)InternalEditorUtility.GetObjectFromEntityId(ids[i]);
 
                     // Ensure all script components can be added
                     var valid = true;
@@ -339,7 +339,7 @@ namespace UnityEditor
 
                     var sourceComponents = new Component[ids.Length];
                     for (int i = 0; i < ids.Length; i++)
-                        sourceComponents[i] = (Component)InternalEditorUtility.GetObjectFromInstanceID(ids[i]);
+                        sourceComponents[i] = (Component)InternalEditorUtility.GetObjectFromEntityId(ids[i]);
 
                     MoveOrCopyComponents(sourceComponents, targetComponents, EditorUtility.EventHasDragCopyModifierPressed(evt), false);
                 }

@@ -180,6 +180,7 @@ namespace UnityEditor
         static List<IPrefType> m_AddedPrefs = new List<IPrefType>();
         static SortedList<string, object> m_Prefs = new SortedList<string, object>();
         public static Action<string, Type> settingChanged;
+        public static Action settingsReverted;
 
         static internal void Add(IPrefType value)
         {
@@ -242,6 +243,7 @@ namespace UnityEditor
                 EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
                 settingChanged?.Invoke(kvp.Key, typeof(T));
             }
+            settingsReverted?.Invoke();
         }
 
         static void Load()

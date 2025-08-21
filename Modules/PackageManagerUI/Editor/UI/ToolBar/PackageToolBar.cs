@@ -28,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IIOProxy m_IOProxy;
         private ISelectionProxy m_SelectionProxy;
         private IAssetDatabaseProxy m_AssetDatabaseProxy;
+        private IModalManager m_ModalManager;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -42,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IOProxy = container.Resolve<IIOProxy>();
             m_SelectionProxy = container.Resolve<ISelectionProxy>();
             m_AssetDatabaseProxy = container.Resolve<IAssetDatabaseProxy>();
+            m_ModalManager = container.Resolve<IModalManager>();
         }
 
         private IPackage m_Package;
@@ -95,6 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 new PackageToolBarSimpleButton(new LocateAction(m_IOProxy, m_Application)),
                 new PackageToolBarSimpleButton(new SignInAction(m_UnityConnect, m_Application)),
+                new PackageToolBarSimpleButton(new ExportAction(m_ModalManager)),
                 new PackageToolBarSimpleButton(new AddAction(m_OperationDispatcher, m_Application, m_PackageDatabase)),
                 new LegacyFormatDropdownButton(m_OperationDispatcher, m_AssetStoreDownloadManager, m_UnityConnect, m_Application),
                 new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_IOProxy, m_SelectionProxy, m_AssetDatabaseProxy)

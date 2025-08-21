@@ -23,6 +23,7 @@ namespace UnityEngine.TextCore.Text
         public static void SetTextHandle(this LinkedListNode<TextCacheEntry> node, TextHandle newTextHandle)
         {
             var entry = node.Value;
+            Debug.Assert((entry.textHandle == null) ^ (newTextHandle ==null), "Internal Text Error : changing the TextCore caching node while the other is assigned. It might indicate the previous is still in cache");
             entry.textHandle = newTextHandle;
             node.Value = entry;
         }
@@ -36,6 +37,7 @@ namespace UnityEngine.TextCore.Text
 
         public TextCacheEntry(TextHandle handle, TextInfo info, float time = 0.0f)
         {
+            Debug.Assert(handle != null, "Internal Text Error : Creation of a not assigned to no handle");
             textHandle = handle;
             textInfo   = info;
             lastTimeInCache = time;
@@ -63,7 +65,7 @@ namespace UnityEngine.TextCore.Text
         {
             lock (syncRoot)
             {
-                if (textHandle.IsCachedPermanent)
+                if (textHandle.IsCachedPermanentTextCore)
                     return;
 
                 bool canWriteOnAsset = !TextGenerator.IsExecutingJob;

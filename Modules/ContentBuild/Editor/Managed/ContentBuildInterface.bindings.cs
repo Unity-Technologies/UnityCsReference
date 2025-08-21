@@ -35,6 +35,7 @@ namespace UnityEditor.Build.Content
 
         public static extern BuildUsageTagGlobal GetGlobalUsageFromGraphicsSettings();
 
+        [Obsolete("GetGlobalUsageFromActiveScene will be removed in a future version.", false)]
         public static extern BuildUsageTagGlobal GetGlobalUsageFromActiveScene(BuildTarget target);
 
         public static extern bool ObjectIsSupportedInBuild(UnityEngine.Object targetObject);
@@ -63,6 +64,7 @@ namespace UnityEditor.Build.Content
         [FreeFunction("CalculatePlayerDependenciesForScene")]
         static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
 
+        [Obsolete("CalculatePlayerDependenciesForGameManagers will be removed in a future version.", false)]
         public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
         {
             if (IsBuildInProgress())
@@ -70,6 +72,7 @@ namespace UnityEditor.Build.Content
             return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, null, DependencyType.DefaultDependencies);
         }
 
+        [Obsolete("CalculatePlayerDependenciesForGameManagers will be removed in a future version.", false)]
         public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache)
         {
             if (IsBuildInProgress())
@@ -77,6 +80,7 @@ namespace UnityEditor.Build.Content
             return CalculatePlayerDependenciesForGameManagersInternal(settings, globalUsage, usageSet, usageCache, DependencyType.DefaultDependencies);
         }
 
+        [Obsolete("CalculatePlayerDependenciesForGameManagers will be removed in a future version.", false)]
         public static GameManagerDependencyInfo CalculatePlayerDependenciesForGameManagers(BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode)
         {
             if (IsBuildInProgress())
@@ -89,6 +93,7 @@ namespace UnityEditor.Build.Content
 
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
+        [Obsolete("GetPlayerObjectIdentifiersInSerializedFile will be removed in a future version.", false)]
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInSerializedFile(string filePath, BuildTarget target);
 
 
@@ -157,10 +162,13 @@ namespace UnityEditor.Build.Content
 
         public static extern void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
+        [Obsolete("GetTypeForObject will be removed in a future version.", false)]
         public static extern Type GetTypeForObject(ObjectIdentifier objectID);
 
+        [Obsolete("GetTypesForObject will be removed in a future version.", false)]
         public static extern Type[] GetTypesForObject(ObjectIdentifier objectID);
 
+        [Obsolete("GetTypeForObjects will be removed in a future version.", false)]
         public static extern Type[] GetTypeForObjects(ObjectIdentifier[] objectIDs);
 
         internal static extern bool IsBuildInProgress();
@@ -229,6 +237,7 @@ namespace UnityEditor.Build.Content
         [NativeThrows]
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
 
+        [Obsolete("CalculatePlayerSerializationHashForType will be removed in a future version.", false)]
         public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType(Type type, TypeDB typeDB);
 
         // These APIs are used in the UCBP performance tests. Perhaps they should be exposed in the future

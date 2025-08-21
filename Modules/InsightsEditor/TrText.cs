@@ -14,7 +14,6 @@ internal class TrText
     internal const int k_InsightsLinkTagProjectSettingsInfoBoxEnabledLinkId = 5;
     internal const int k_InsightsLinkTagProjectSettingsInfoBoxDisabledLinkId = 6;
 
-    internal static readonly string k_BuildProfileSectionLabel = L10n.Tr("Diagnostics");
     internal static readonly string k_BuildProfileNoCloudLabel = L10n.Tr(
         $"Disabled (Requires <link={k_InsightsLinkTagNoCloudLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>Unity Cloud</u></color></link>)");
 

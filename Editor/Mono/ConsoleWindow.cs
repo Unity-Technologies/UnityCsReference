@@ -244,7 +244,7 @@ namespace UnityEditor
             VisualScriptingError = 1 << 22
         }
 
-        enum ConsoleFlags
+        internal enum ConsoleFlags
         {
             Collapse = 1 << 0,
             ClearOnPlay = 1 << 1,
@@ -352,7 +352,7 @@ namespace UnityEditor
         private int RowHeight => (Constants.LogStyleLineCount > 1 ? Mathf.Max(32, (Constants.LogStyleLineCount * m_LineHeight)) : m_LineHeight) + m_BorderHeight;
 
         private static bool HasMode(int mode, Mode modeToCheck) { return (mode & (int)modeToCheck) != 0; }
-        private static bool HasFlag(ConsoleFlags flags) { return (LogEntries.consoleFlags & (int)flags) != 0; }
+        internal static bool HasFlag(ConsoleFlags flags) { return (LogEntries.consoleFlags & (int)flags) != 0; }
         private static void SetFlag(ConsoleFlags flags, bool val) { LogEntries.SetConsoleFlag((int)flags, val); }
 
         static internal Texture2D GetIconForErrorMode(int mode, bool large)
@@ -566,6 +566,11 @@ namespace UnityEditor
                 PlayerConnectionGUILayout.ConnectionTargetSelectionDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown, (int)(position.width - k_HasSpaceForExtraButtonsCutoff) + 80 );
             }
 
+            if (HasSpaceForExtraButtons())
+            {
+                drawCustomToolbarGui?.Invoke();
+            }
+
             GUILayout.FlexibleSpace();
 
             // Search bar
@@ -638,6 +643,29 @@ namespace UnityEditor
                             if (e.clickCount == 2)
                                 openSelectedItem = true;
                             m_SyncAutoScroll = false;
+                        }
+                        else if (e.type == EventType.MouseDown && e.clickCount == 1 && e.button == 1 && el.position.Contains(e.mousePosition))
+                        {
+                            if (entryContextClicked != null && entryContextClicked.GetInvocationList().Length > 0)
+                            {
+                                LogEntry entry = new LogEntry();
+                                LogEntries.GetEntryInternal(el.row, entry);
+
+                                bool entryIsSelected = m_ListView.selectedItems != null &&
+                                    el.row < m_ListView.selectedItems.Length &&
+                                    m_ListView.selectedItems[el.row];
+
+                                if (!entryIsSelected)
+                                {
+                                    m_ListView.row = el.row;
+                                    m_ListView.selectedItems = new bool[el.row + 1];
+                                    m_ListView.selectedItems[el.row] = true;
+
+                                    DestroyLatestRestoreEntry();
+                                }
+
+                                entryContextClicked?.Invoke(entry);
+                            }
                         }
                         else if (e.type == EventType.Repaint)
                         {
@@ -1308,6 +1336,10 @@ namespace UnityEditor
         internal static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
 
         internal static event Action activeEntryChanged;
+
+        // Added two actions for AI Assistant team, extending console UI for their package (public channel: #ask-ai-assistant)
+        internal static event Action drawCustomToolbarGui;
+        internal static event Action<LogEntry> entryContextClicked;
 
         [UsedImplicitly, RequiredByNativeCode]
         private static void SendEntryDoubleClicked(LogEntry entry)

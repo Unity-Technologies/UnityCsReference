@@ -46,6 +46,9 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEngine.UI")] // com.unity.ugui
 [assembly: InternalsVisibleTo("UnityEngine.HierarchyModule")] // Unity.Hierarchy module, for HierarchyView control
+[assembly: InternalsVisibleTo("UnityEngine.VectorGraphicsModule")] // VectorImage
+[assembly: InternalsVisibleTo("Unity.Modules.VectorGraphics.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")] // com.unity.shadergraph
 
 // XR integration
 [assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit")]
@@ -70,9 +73,10 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.HierarchyModule")] // Unity.HierarchyEditor module, for HierarchyWindow
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")] // Hierarchy tests
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")] // Hierarchy performance tests
+[assembly: InternalsVisibleTo("UnityEditor.VectorGraphicsModule")] // VectorImage
 
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")] // com.unity.2d.sprite: VisualElement.styleSheetList, FocusController.IsFocused
-[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")] // com.unity.2d.tilemap: IGenericMenu
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")] // com.unity.2d.tilemap: AbstractGenericMenu
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")] // com.unity.2d.tilemap.tests: UIElementsUtility
 
 // NOT TOLERATED: assemblies distributed in packages not evolving in lockstep with this module

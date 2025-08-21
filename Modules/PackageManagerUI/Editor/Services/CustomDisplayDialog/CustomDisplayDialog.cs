@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface ICustomDisplayDialog : IService
     {
-        void Show(CustomDisplayDialogArgs args);
+        DialogResult Show(CustomDialogArgsBase args);
     }
 
     [ExcludeFromCodeCoverage]
@@ -20,17 +20,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public CustomDisplayDialog(IApplicationProxy applicationProxy, IResourceLoader resourceLoader)
         {
-            m_ApplicationProxy = applicationProxy;
-            m_ResourceLoader = resourceLoader;
+            m_ApplicationProxy = RegisterDependency(applicationProxy);
+            m_ResourceLoader = RegisterDependency(resourceLoader);
         }
 
-        public void Show(CustomDisplayDialogArgs args)
+        public DialogResult Show(CustomDialogArgsBase args)
         {
             if (args == null)
                 throw new ArgumentNullException(nameof(args));
             var content = new CustomDisplayDialogContent(m_ApplicationProxy, m_ResourceLoader, args);
             if (ModalWindowContainer.ShowModal(content))
                 PackageManagerDialogAnalytics.SendEvent(content.args.idForAnalytics, content.windowTitle, content.args.bodyText, content.result.ToString());
+            return content.result;
         }
     }
 }

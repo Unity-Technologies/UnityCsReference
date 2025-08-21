@@ -223,10 +223,10 @@ namespace UnityEditorInternal
 
         // This lets you add a MonoScript to a game object directly without any type checks or requiring the .NET representation to be loaded already.
         [FreeFunction("InternalEditorUtilityBindings::AddScriptComponentUncheckedUndoable")]
-        extern internal static int AddScriptComponentUncheckedUndoable([NotNull] GameObject gameObject, [NotNull] MonoScript script);
+        extern internal static EntityId AddScriptComponentUncheckedUndoable([NotNull] GameObject gameObject, [NotNull] MonoScript script);
 
         [FreeFunction("InternalEditorUtilityBindings::CreateScriptableObjectUnchecked")]
-        extern internal static int CreateScriptableObjectUnchecked(MonoScript script);
+        extern internal static EntityId CreateScriptableObjectUnchecked(MonoScript script);
 
         [Obsolete("RequestScriptReload has been deprecated. Use UnityEditor.EditorUtility.RequestScriptReload instead (UnityUpgradable) -> [UnityEditor] UnityEditor.EditorUtility.RequestScriptReload(*)")]
         public static void RequestScriptReload()
@@ -297,24 +297,25 @@ namespace UnityEditorInternal
         extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1, Scene destScene = default);
 
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
-        extern public static DragAndDropVisualMode ProjectWindowDragV2([Unmarshalled] HierarchyIterator iterator, bool perform);
+        extern public static DragAndDropVisualMode ProjectWindowDragV2([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyIterator iterator, bool perform);
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
         [Obsolete("ProjectWindowDrag is obsolete. Use ProjectWindowDragV2 instead")]
-        extern public static DragAndDropVisualMode ProjectWindowDrag([Unmarshalled] HierarchyProperty property, bool perform);
+        extern public static DragAndDropVisualMode ProjectWindowDrag([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        extern public static DragAndDropVisualMode HierarchyWindowDragV2([Unmarshalled] HierarchyIterator iterator, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern public static DragAndDropVisualMode HierarchyWindowDragV2([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyIterator iterator, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
         [Obsolete("HierarchyWindowDrag is obsolete. Use HierarchyWindowDragV2 instead")]
-        extern public static DragAndDropVisualMode HierarchyWindowDrag([Unmarshalled] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern public static DragAndDropVisualMode HierarchyWindowDrag([UnityMarshalAs(NativeType.ScriptingObjectPtr)] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
+        [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead")]
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
             => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
         public static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
             => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
-        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);
@@ -375,7 +376,7 @@ namespace UnityEditorInternal
         extern static internal string[] GetLayersWithId();
 
         [FreeFunction("InternalEditorUtilityBindings::CanRenameAssetInternal")]
-        extern internal static bool CanRenameAsset(int instanceID);
+        extern internal static bool CanRenameAsset(EntityId entityId);
 
         public static LayerMask ConcatenatedLayersMaskToLayerMask(int concatenatedLayersMask)
         {
@@ -447,14 +448,23 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetSpriteOuterUV")]
         extern public static Vector4 GetSpriteOuterUV([NotNull] Sprite sprite, bool getAtlasData);
 
-        [FreeFunction("PPtr<Object>::FromInstanceID")]
-        extern public static Object GetObjectFromInstanceID(int instanceID);
+        [FreeFunction("PPtr<Object>::FromEntityId")]
+        extern public static Object GetObjectFromEntityId(EntityId entityId);
+
+        [Obsolete("GetObjectFromInstanceID(int) is obsolete. Use GetObjectFromEntityId(EntityId) instead")]
+        public static Object GetObjectFromInstanceID(int instanceID) => GetObjectFromEntityId(instanceID);
 
         [FreeFunction("GetTypeWithoutLoadingObject")]
-        extern public static Type GetTypeWithoutLoadingObject(int instanceID);
+        extern public static Type GetTypeWithoutLoadingObject(EntityId entityId);
+
+        [Obsolete("GetTypeWithoutLoadingObject(int) is obsolete. Use GetTypeWithoutLoadingObject(EntityId) instead.")]
+        public static Type GetTypeWithoutLoadingObject(int instanceID) => GetTypeWithoutLoadingObject((EntityId)instanceID);
 
         [FreeFunction("Object::IDToPointer")]
-        extern public static Object GetLoadedObjectFromInstanceID(int instanceID);
+        extern public static Object GetLoadedObjectFromEntityId(EntityId entityId);
+
+        [System.Obsolete("GetLoadedObjectFromInstanceID(int) is obsolete. Use GetLoadedObjectFromEntityId(EntityId) instead.")]
+        public static Object GetLoadedObjectFromInstanceID(int instanceID) => GetLoadedObjectFromEntityId(instanceID);
 
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
         [NativeMethod("LayerToString")]
@@ -560,8 +570,10 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::OpenEditorConsole")]
         extern public static void OpenEditorConsole();
 
-        [FreeFunction("InternalEditorUtilityBindings::GetGameObjectInstanceIDFromComponent")]
-        extern public static int GetGameObjectInstanceIDFromComponent(int instanceID);
+        [FreeFunction("InternalEditorUtilityBindings::GetGameObjectEntityIdFromComponent")]
+        public static extern EntityId GetGameObjectEntityIdFromComponent(EntityId entityId);
+        [Obsolete("GetGameObjectInstanceIDFromComponent(int) is obsolete. Use GetGameObjectEntityIdFromComponent(EntityId) instead.")]
+        public static int GetGameObjectInstanceIDFromComponent(int instanceID) => GetGameObjectEntityIdFromComponent(instanceID);
 
         [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixel")]
         extern public static Color[] ReadScreenPixel(Vector2 pixelPos, int sizex, int sizey);
@@ -724,7 +736,7 @@ namespace UnityEditorInternal
 
         [StaticAccessor("CustomLighting::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SetCustomLighting")]
-        extern public static void SetCustomLightingInternal([Unmarshalled] Light[] lights, Color ambient);
+        extern public static void SetCustomLightingInternal([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Light[] lights, Color ambient);
 
         public static void SetCustomLighting(Light[] lights, Color ambient)
         {
@@ -940,9 +952,11 @@ namespace UnityEditorInternal
         }
 
         [FreeFunction("GetUnityAssembliesManaged")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static PrecompiledAssembly[] GetUnityAssembliesInternal(bool buildingForEditor, BuildTarget target);
 
         [FreeFunction("GetPrecompiledAssemblyPathsManaged")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal static string[] GetPrecompiledAssemblyPaths();
 
         [FreeFunction("GetEditorAssembliesPath")]
@@ -1019,7 +1033,7 @@ namespace UnityEditorInternal
 
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
-        internal static extern void RegisterSetDefaultParentObjectUndo(Scene scene, int instanceID, string undoName);
+        internal static extern void RegisterSetDefaultParentObjectUndo(Scene scene, EntityId entityId, string undoName);
 
         // Aux window functionality is quite brittle. It is strongly advised to avoid
         // using this method but if you really need it, consult Desktop team first.

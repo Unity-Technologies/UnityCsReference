@@ -63,7 +63,7 @@ namespace UnityEditorInternal
                             if (HandleUtility.PlaceObject(evt.mousePosition, out Vector3 point, out Vector3 normal))
                             {
                                 float offset = 0;
-                                if (Tools.pivotMode == PivotMode.Center && !Tools.vertexDragging)
+                                if (Tools.pivotMode != PivotMode.Pivot && !Tools.vertexDragging)
                                 {
                                     float geomOffset = HandleUtility.CalcRayPlaceOffset(HandleUtility.ignoreRaySnapObjects, normal);
                                     if (geomOffset != Mathf.Infinity)

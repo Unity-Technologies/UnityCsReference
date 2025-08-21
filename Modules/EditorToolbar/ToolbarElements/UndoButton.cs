@@ -6,7 +6,7 @@ namespace UnityEditor.Toolbars
 {
     static class UndoButton
     {
-        const string k_Path = "Editor Utility/Undo";
+        const string k_Path = "Editor Controls/Undo";
 
         static UndoButton()
         {

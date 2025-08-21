@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.Bindings;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.Layout;
 using static UnityEngine.UIElements.IMGUIContainer;
 
@@ -330,6 +331,7 @@ namespace UnityEngine.UIElements
                     repaintCallback(panel.ownerObject);
                 }
             }
+            TextGenerationInfo.OnRepaintEnd();
         }
 
         public static void RegisterCachedPanel(int instanceID, Panel panel)
@@ -612,5 +614,38 @@ namespace UnityEngine.UIElements
             m_InMemoryAssetsStyleVersion++;
         }
 
+        internal static readonly HashSet<StyleSheet> s_StyleSheetsRequiringRebuilding = new();
+        internal static readonly List<StyleSheet> s_StyleSheetsRebuildList = new();
+
+        internal static void MarkStyleSheetAsChanged(StyleSheet styleSheet)
+        {
+            s_StyleSheetsRequiringRebuilding.Add(styleSheet);
+        }
+
+        internal static void RebuildDirtyStyleSheets()
+        {
+            if (s_StyleSheetsRequiringRebuilding.Count == 0)
+                return;
+
+            try
+            {
+                InMemoryAssetsStyleHaveBeenChanged();
+
+                StyleCache.ClearStyleCache();
+
+                // Avoid any side-effects by copying the content before we iterate on it.
+                s_StyleSheetsRebuildList.AddRange(s_StyleSheetsRequiringRebuilding);
+
+                foreach (var styleSheet in s_StyleSheetsRebuildList)
+                {
+                    styleSheet.RebuildIfNecessary();
+                }
+            }
+            finally
+            {
+                s_StyleSheetsRebuildList.Clear();
+                s_StyleSheetsRequiringRebuilding.Clear();
+            }
+        }
     }
 }

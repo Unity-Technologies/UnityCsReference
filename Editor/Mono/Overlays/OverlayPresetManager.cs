@@ -338,9 +338,10 @@ namespace UnityEditor.Overlays
             return null;
         }
 
-        public static void GenerateMenu(IGenericMenu menu, string pathPrefix, EditorWindow window, params IOverlayPreset[] customPresets)
+        public static void GenerateMenu(AbstractGenericMenu menu, string pathPrefix, EditorWindow window, params IOverlayPreset[] customPresets)
         {
             var presets = GetAllPresets(window.GetType());
+            var overlayTargetType = window is MainToolbarWindow ? "Toolbar" : "Overlay";
 
             foreach (var customPreset in customPresets)
             {
@@ -382,7 +383,7 @@ namespace UnityEditor.Overlays
 
             menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset To File..."), false, () =>
             {
-                string path = EditorUtility.SaveFilePanel("Save window preset to disk...", "", "NewOverlayPreset", k_FileExtension);
+                string path = EditorUtility.SaveFilePanel("Save window preset to disk...", "", $"New{overlayTargetType}Preset", k_FileExtension);
                 if (!string.IsNullOrEmpty(path))
                 {
                     SaveOverlayStateToFile(path, window);
@@ -400,7 +401,7 @@ namespace UnityEditor.Overlays
                     if (preset == null)
                     {
                         EditorUtility.DisplayDialog(
-                            L10n.Tr("Load Overlay Preset From Disk"),
+                            L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
                             string.Format(L10n.Tr("Failed to load the chosen preset, the file may not be a .{0} or was corrupted."), k_FileExtension),
                             L10n.Tr("OK"));
                         failed = true;
@@ -408,8 +409,8 @@ namespace UnityEditor.Overlays
                     else if (!preset.CanApplyToWindow(window.GetType()))
                     {
                         EditorUtility.DisplayDialog(
-                            L10n.Tr("Load Overlay Preset From Disk"),
-                            string.Format(L10n.Tr("Trying to load an overlay preset with the name {0}. This preset targets the window type {0} which isn't valid for this window."), preset.targetWindowType),
+                            L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
+                            string.Format(L10n.Tr($"Trying to load an {0} preset with the name {1}. This preset targets the window type {1} which isn't valid for this window."), overlayTargetType.ToLower(), preset.targetWindowType),
                             L10n.Tr("OK"));
                         failed = true;
                     }
@@ -422,8 +423,8 @@ namespace UnityEditor.Overlays
                     if (!failed && Exists(preset.targetWindowType, preset.name))
                     {
                         if (!EditorUtility.DisplayDialog(
-                            L10n.Tr("Load Overlay Preset From Disk"),
-                            string.Format(L10n.Tr("Trying to load an overlay preset with the name {0}. This name is already in used in the window, do you want to overwrite it?"), preset.name),
+                            L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
+                            string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This name is already in used in the window, do you want to overwrite it?"), overlayTargetType.ToLower(), preset.name),
                             L10n.Tr("Yes"), L10n.Tr("No")))
                         {
                             failed = true;
@@ -460,7 +461,7 @@ namespace UnityEditor.Overlays
             {
                 if (EditorUtility.DisplayDialog(
                     L10n.Tr("Revert All Saved Presets"),
-                    L10n.Tr("Unity is about to delete all overlay presets that are not loaded from files in project and restore default settings."),
+                    L10n.Tr($"Unity is about to delete all {overlayTargetType.ToLower()} presets that are not loaded from files in project and restore default settings."),
                     L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 {
                     RevertPreferencesPresetsToDefault();

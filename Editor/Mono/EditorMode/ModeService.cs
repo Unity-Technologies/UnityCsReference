@@ -409,6 +409,12 @@ namespace UnityEditor
 
         private static void FillModeData(string path, Dictionary<string, object> modesData)
         {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                Debug.LogWarning($"[ModeService] Mode file {path} does not exist.");
+                return;
+            }
+
             try
             {
                 var json = SJSON.Load(path);
@@ -471,12 +477,28 @@ namespace UnityEditor
             }
             else
             {
-                var paths = modeFilePathCache.Split(";");
+                var paths = modeFilePathCache.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                var hasStaleCache = false;
+                
                 foreach(var path in paths)
                 {
-                    if (!File.Exists(path))
-                        continue;
-                    FillModeData(path, modesData);
+                    if (File.Exists(path))
+                    {
+                        FillModeData(path, modesData);
+                    }
+                    else
+                    {
+                        hasStaleCache = true;
+                    }
+                }
+                
+                // If we detected stale cache entries, clear the cache and rescan
+                if (hasStaleCache)
+                {
+                    SessionState.EraseString(k_ModePathsCache);
+                    Log("Detected stale mode file cache, rescanning...");
+                    ScanModes(); // Recursive call to rescan with fresh cache
+                    return;
                 }
             }
 

@@ -20,41 +20,32 @@ namespace UnityEngine.UIElements
         List<(int, TagType, string)> m_Links;//Not clearing links would result in a leak of strings and enum, but no class, so no consideration for clearing the list at the moment
         private List<(int, TagType, string)> Links => m_Links ??= new();
         internal Color atgHyperlinkColor = Color.blue;
+        bool uvsAreGenerated = false;
 
-        void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
+        void ComputeNativeTextSize(in string textToMeasure, float width, float height, float? fontsize = null)
         {
-            if (!ConvertUssToNativeTextGenerationSettings(fontsize))
+            if (!ConvertUssToNativeTextGenerationSettings(textToMeasure, fontsize))
                 return;
 
             // Insert zero width space to avoid TextField from collapsing when empty. UUM-90538
-            nativeSettings.text = textToMeasure.valueLength > 0 ? textToMeasure.CreateString() : "\u200B";
+            if (string.IsNullOrEmpty(nativeSettings.text) && m_TextElement.isInputField)
+                nativeSettings.text = "\u200B";
+
             nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
             nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
 
-            if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
+            if (textGenerationInfo == IntPtr.Zero)
             {
-                CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
+                textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
             }
-            else
-                nativeSettings.textSpans = null;
 
-            // Passing a zero pointer instead of the cached textGenerationInfo because it is possible that calling the measure will not
-            // change the size, there will therefore be no full layout of the glyph and the textGenerationInfo will not have the final
-            // glyph position populated and it breaks TextLib.FindIntersectingLink
-            pixelPreferedSize = textLib.MeasureText(nativeSettings, IntPtr.Zero);
+            pixelPreferedSize = textLib.MeasureText(nativeSettings, textGenerationInfo);
         }
 
-        public (NativeTextInfo, bool, bool) UpdateNative(bool generateNativeSettings = true)
+        public (NativeTextInfo, bool) UpdateNative(bool generateNativeSettings = true)
         {
             if (generateNativeSettings && !ConvertUssToNativeTextGenerationSettings())
-                return (default, false, false);
-
-            if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
-            {
-                CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
-            }
-            else
-                nativeSettings.textSpans = null;
+                return (default, false);
 
             if (nativeSettings.hasLink)
             {
@@ -66,12 +57,16 @@ namespace UnityEngine.UIElements
             // We clear it as soon as possible to avoid persistent native allocations.
             if (textGenerationInfo == IntPtr.Zero)
             {
-                textGenerationInfo = TextGenerationInfo.Create();
+                textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
             }
-            bool uvsAreGenerated = false;
-            var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref uvsAreGenerated);
+
+            bool wasCached = false;
+            var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo, ref wasCached);
+            if (!wasCached)
+                uvsAreGenerated = false;
+
             m_IsElided = textInfo.isElided;
-            return (textInfo, true, uvsAreGenerated);
+            return (textInfo, true);
         }
 
         public void CacheTextGenerationInfo()
@@ -83,19 +78,44 @@ namespace UnityEngine.UIElements
 
             }
 
-            if (textGenerationInfo == IntPtr.Zero)
-                textGenerationInfo = TextGenerationInfo.Create();
+            bool isCacheATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
+            if (isCacheATG)
+                return;
+
+            // We need to recreate it with the good memory labels
+            if (textGenerationInfo != IntPtr.Zero)
+            {
+                TextGenerationInfo.Destroy(textGenerationInfo);
+                textGenerationInfo = IntPtr.Zero;
+            }
+
+            IsCachedPermanentATG = true;
             IsCachedPermanent = true;
+            textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
         }
 
-        public void ProcessMeshInfos(NativeTextInfo textInfo, ref List<List<List<int>>> textElementIndicesByMesh, ref List<bool> hasMultipleColorsByMesh, bool uvsAreGenerated)
+        public void ShapeText()
+        {
+            if (!ConvertUssToNativeTextGenerationSettings())
+                return;
+
+            if (textGenerationInfo == IntPtr.Zero)
+            {
+                textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
+            }
+
+            textLib.ShapeText(nativeSettings, textGenerationInfo);
+        }
+
+        public void ProcessMeshInfos(NativeTextInfo textInfo, ref List<List<List<int>>> textElementIndicesByMesh, ref List<bool> hasMultipleColorsByMesh)
         {
             textLib.ProcessMeshInfos(textInfo, nativeSettings, ref textElementIndicesByMesh, ref hasMultipleColorsByMesh, uvsAreGenerated);
+            uvsAreGenerated = true;
         }
 
         public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
         {
-            return textLib.HasMissingGlyphs(textInfo, nativeSettings, ref missingGlyphsPerFontAsset);
+            return textLib.HasMissingGlyphs(textInfo, ref missingGlyphsPerFontAsset);
         }
 
         private (bool, bool) hasLinkAndHyperlink()
@@ -154,30 +174,41 @@ namespace UnityEngine.UIElements
                 m_ATGTextEventHandler.UnRegisterHyperlinkCallbacks();
         }
 
-        internal bool ConvertUssToNativeTextGenerationSettings(float? fontsize = null)
+        internal void EnsureIsReadyForJobs()
         {
+            InitTextLib();
             var fa = TextUtilities.GetFontAsset(m_TextElement);
-            if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
-            {
-                Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}");
-                return false;
-            }
-
-            var scale = GetPixelsPerPoint();
-
             var style = m_TextElement.computedStyle;
-            nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
-            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
-                new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
-            nativeSettings.text = renderedText.CreateString();
-            var effectiveFontsize = fontsize ?? style.fontSize.value;
-            nativeSettings.fontSize = (int)(effectiveFontsize * 64.0f *scale);
+            if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
+            {
+                var effectiveFontsize = (int)((style.fontSize.value) * GetPixelsPerPoint());
+                nativeSettings.fontSize = effectiveFontsize * 64;
+                fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
+            }
+               
+            TextUtilities.GetTextSettingsFrom(m_TextElement).UpdateNativeTextSettings();
+            fa.EnsureNativeFontAssetIsCreated();
+        }
+
+#nullable enable
+        internal bool ConvertUssToNativeTextGenerationSettings(string? textToMeasure = null, float? fontsize = null)
+        {
+            var scale = GetPixelsPerPoint();
+            var style = m_TextElement.computedStyle;
+
+            nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedTextString;
+            if (textToMeasure != null)
+                nativeSettings.text = textToMeasure;
+            if (nativeSettings.text == null)
+                nativeSettings.text = "";
+            var effectiveFontsize = (int)( ( fontsize ?? style.fontSize.value) * scale);
+            nativeSettings.fontSize = effectiveFontsize * 64;
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
             nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);
 
             nativeSettings.wordWrap = style.whiteSpace.toTextCore(m_TextElement.isInputField);
-            nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow);
+            nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow, style.unityTextOverflowPosition);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
             nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
             nativeSettings.characterSpacing = (int)(style.letterSpacing.value * 64.0f);
@@ -185,9 +216,9 @@ namespace UnityEngine.UIElements
             nativeSettings.paragraphSpacing = (int)(style.unityParagraphSpacing.value * 64.0f);
 
             nativeSettings.color = style.color;
-            nativeSettings.fontAsset = fa.nativeFontAsset;
+            nativeSettings.color *= m_TextElement.playModeTintColor;
+
             nativeSettings.languageDirection = m_TextElement.localLanguageDirection.toTextCore();
-            nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);
 
             //Bold is not part of the font style in css and in text native, but it is in textCore/Uitk
             var sourcefontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
@@ -199,21 +230,79 @@ namespace UnityEngine.UIElements
             var size = m_TextElement.contentRect.size;
 
             // If the size is the last rounded size, we use the cached size before the rounding that was calculated
-            if (Mathf.Abs(size.x - ATGRoundedSizes.x) < 0.01f && Mathf.Abs(size.y - ATGRoundedSizes.y) < 0.01f)
+            if (ATGMeasuredWidth.HasValue && Mathf.Abs(size.x - ATGRoundedWidth) < 0.01f && LastPixelPerPoint == scale)
             {
-                size = ATGMeasuredSizes;
+                size.x = ATGMeasuredWidth.Value;
             }
             else
             {
                 //the size has change, we need to save that information
-                ATGRoundedSizes = size;
-                ATGMeasuredSizes = size;
+                ATGRoundedWidth = size.x;
+                ATGMeasuredWidth = null;
             }
 
-            nativeSettings.screenWidth = (int)(size.x * 64.0f * scale);
-            nativeSettings.screenHeight = (int)(size.y * 64.0f * scale);
+            // The Value should already be aligned (to the nearest pixel if the value is from the layout, to 1/64 pixels if
+            // it is from a previous text measurement) but the float representation might be inexact with some scale factor.
+            // Doing an extra round prevent problems unlike truncating.
+            nativeSettings.screenWidth = Mathf.RoundToInt(size.x * 64.0f * scale);
+            nativeSettings.screenHeight =  Mathf.RoundToInt(size.y * 64.0f * scale);
+
+            var fa = TextUtilities.GetFontAsset(m_TextElement);
+
+            if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
+                fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
+
+            if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
+            {
+                Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}");
+                return false;
+            }
+
+            nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);
+            nativeSettings.fontAsset = fa.nativeFontAsset;
+            nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
+
+            if (m_TextElement.parseEscapeSequences)
+            {
+                RichTextTagParser.PreProcessString(ref nativeSettings.text);
+            }
+            if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
+            {
+                //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
+                CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
+            }
+            else
+                nativeSettings.textSpans = null;
 
             return true;
+        }
+#nullable restore
+
+        internal void EnsureFontAssetsAreCreatedOnTheMainThread()
+        {
+            var fa = TextUtilities.GetFontAsset(m_TextElement);
+            fa.EnsureNativeFontAssetIsCreated();
+            var style = m_TextElement.computedStyle;
+
+            if (fa == null || fa.atlasPopulationMode == AtlasPopulationMode.Static || style.unityEditorTextRenderingMode != EditorTextRenderingMode.Bitmap)
+                return;
+
+            var scale = GetPixelsPerPoint();
+            var effectiveFontsize = (int)(style.fontSize.value * scale);
+
+            GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
+            GenerateBitmapFallbackFontAssets(effectiveFontsize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
+        }
+
+        FontAsset GetCorrespondingBitmapFontAsset(FontAsset fa, int effectiveFontsize)
+        {
+            if (fa == null)
+                return null;
+
+            if (TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() && fa.IsEditorFont)
+                fa = GetBlurryFontAssetMapping(effectiveFontsize, fa, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
+
+            return fa;
         }
 
         TextAsset GetICUAsset()
@@ -263,6 +352,7 @@ namespace UnityEngine.UIElements
 
         static TextLib s_TextLib;
 
+
         internal protected TextLib textLib
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -279,5 +369,5 @@ namespace UnityEngine.UIElements
         }
     }
 
-    
+
 }

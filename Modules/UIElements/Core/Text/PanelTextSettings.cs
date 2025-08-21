@@ -15,6 +15,7 @@ namespace UnityEngine.UIElements
     /// Represents text rendering settings for a specific UI panel.
     /// <seealso cref="PanelSettings.textSettings"/>
     /// </summary>
+    [HelpURL("UIE-text-setting-asset")]
     public class PanelTextSettings : TextSettings
     {
         private static PanelTextSettings s_DefaultPanelTextSettings;

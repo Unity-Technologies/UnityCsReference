@@ -256,6 +256,10 @@ namespace UnityEditor.Toolbars
                 Tools.viewToolChanged += UpdateViewToolContent;
                 UpdateViewToolContent();
             }
+
+            EditorTool.stateChanged += OnEditorToolStateChanged;
+
+            EditorApplication.delayCall += UpdateState;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -269,6 +273,8 @@ namespace UnityEditor.Toolbars
 
             if (m_TargetTool == Tool.View)
                 Tools.viewToolChanged -= UpdateViewToolContent;
+            
+            EditorTool.stateChanged -= OnEditorToolStateChanged;
         }
 
         void UpdateViewToolContent()
@@ -372,7 +378,8 @@ namespace UnityEditor.Toolbars
         void UpdateAvailability()
         {
             var missing = EditorToolUtility.GetEditorToolWithEnum(m_TargetTool) is NoneTool;
-            var display = missing ? DisplayStyle.None : DisplayStyle.Flex;
+            var display = (missing || currentVariant.isHidden) ? DisplayStyle.None : DisplayStyle.Flex;
+
             if (style.display != display)
             {
                 style.display = display;
@@ -409,10 +416,16 @@ namespace UnityEditor.Toolbars
             if (meta.variantGroup == null)
                 return 0;
             var pref = EditorToolManager.instance.variantPrefs.GetPreferredVariant(meta.variantGroup);
-            for(int i = 0, c = m_Variants.Count; i < c; ++i)
+            for (int i = 0, c = m_Variants.Count; i < c; ++i)
                 if (m_Variants[i]?.GetType() == pref)
                     return i;
             return 0;
+        }
+
+        void OnEditorToolStateChanged(EditorTool tool)
+        {
+            if (tool == currentVariant)
+                UpdateState();
         }
     }
 }

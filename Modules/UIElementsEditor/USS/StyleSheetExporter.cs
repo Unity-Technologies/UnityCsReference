@@ -238,8 +238,14 @@ namespace UnityEditor.UIElements
         protected void WriteRule(ref ExportContext ctx, StyleRule rule)
         {
             using var selectorsHandle = ListPool<StyleComplexSelector>.Get(out var selectors);
-            StyleSheetUtility.GetRuleSelectors(ctx.styleSheet, rule, selectors);
-            selectors.RemoveAll(ctx.options.IsSelectorIgnored);
+
+            foreach (var selector in rule.complexSelectors)
+            {
+                if (ctx.options.IsSelectorIgnored(selector))
+                    continue;
+                selectors.Add(selector);
+            }
+
             if (selectors.Count > 0)
             {
                 WriteSelectorBlock(ref ctx, selectors.ToArray());

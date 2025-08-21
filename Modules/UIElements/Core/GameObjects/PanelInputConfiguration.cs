@@ -249,13 +249,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static Func<GameObject, bool> IsPartOfPrefabAsset;
         private void OnEnable()
         {
             s_ActiveInstances++;
 
             // UUM-108797: components should be left alone during prefab editing.
-            if (IsPartOfPrefabAsset?.Invoke(gameObject) == true)
+            if (UIElementsRuntimeUtility.IsEditingPrefab?.Invoke() == true)
                 return;
 
             if (current != null)

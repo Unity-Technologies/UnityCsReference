@@ -8,7 +8,9 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 namespace UnityEditor.Build.Profile
 {
     /// <summary>

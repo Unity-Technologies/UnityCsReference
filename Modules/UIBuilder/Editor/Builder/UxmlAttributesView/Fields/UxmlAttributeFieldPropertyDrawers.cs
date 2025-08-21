@@ -361,7 +361,9 @@ namespace UnityEditor.UIElements
     {
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            var imageField = new ImageStyleField("Icon Image");
+            var imageAttribute = (ImageFieldValueDecoratorAttribute)attribute;
+
+            var imageField = new ImageStyleField(imageAttribute.name);
             imageField.BindProperty(property);
             imageField.AddToClassList(ImageStyleField.alignedFieldUssClassName);
             return imageField;

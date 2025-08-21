@@ -29,11 +29,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<Sample> GetSamples(IPackageVersion version);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
+        void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId);
 
         void ClearSamplesCache();
 
-        bool AnyNonCompliantPackagesInUse();
-        bool AnyExperimentalPackagesInUse();
+        PackageInUseState GetPackagesInUseState();
     }
 
     internal class PackagesChangeArgs
@@ -42,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IList<IPackage> removed = Array.Empty<IPackage>();
         public IList<IPackage> updated = Array.Empty<IPackage>();
 
-        // To avoid unnecessary cloning of packages, preUpdate is now set to be optional, the list is either empty or the same size as the the postUpdate list
+        // To avoid unnecessary cloning of packages, preUpdate is now set to be optional, the list is either empty or the same size as the postUpdate list
         public IList<IPackage> preUpdate = Array.Empty<IPackage>();
         public IList<IPackage> progressUpdated = Array.Empty<IPackage>();
     }
@@ -67,16 +67,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private Package[] m_SerializedPackages = Array.Empty<Package>();
 
-        private readonly IUniqueIdMapper m_UniqueIdMapper;
         private readonly IAssetDatabaseProxy m_AssetDatabase;
         private readonly IUpmCache m_UpmCache;
         private readonly IIOProxy m_IOProxy;
-        public PackageDatabase(IUniqueIdMapper uniqueIdMapper,
-            IAssetDatabaseProxy assetDatabase,
+        public PackageDatabase(IAssetDatabaseProxy assetDatabase,
             IUpmCache upmCache,
             IIOProxy ioProxy)
         {
-            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
             m_AssetDatabase = RegisterDependency(assetDatabase);
             m_UpmCache = RegisterDependency(upmCache);
             m_IOProxy = RegisterDependency(ioProxy);
@@ -93,18 +90,56 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IPackage GetPackage(string uniqueId) => m_Packages.Get(uniqueId);
 
-        public bool AnyNonCompliantPackagesInUse()
+        public PackageInUseState GetPackagesInUseState()
         {
-            if (m_Packages.Count == 0)
-                return PackageInfo.GetAllRegisteredPackages().Any(info => info.compliance.status == PackageComplianceStatus.NonCompliant);
-            return m_Packages.Values.Any(p => p.compliance.status == PackageComplianceStatus.NonCompliant && p.versions.installed != null);
-        }
+            var hasError = false;
+            var hasWarning = false;
+            var hasExperimental = false;
 
-        public bool AnyExperimentalPackagesInUse()
-        {
-            if (m_Packages.Count == 0)
-                return PackageInfo.GetAllRegisteredPackages().Any(info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
-            return m_Packages.Values.Any(p => p.versions.installed?.HasTag(PackageTag.Experimental) == true);
+            if (m_Packages.Count > 0)
+            {
+                foreach (var package in m_Packages.Values)
+                {
+                    if (package.versions.installed == null && package.versions.imported == null)
+                        continue;
+
+                    switch (package.state)
+                    {
+                        case PackageState.Restricted:
+                            return PackageInUseState.NonCompliant;
+                        case PackageState.Error:
+                            hasError = true;
+                            break;
+                        case PackageState.Warning:
+                            hasWarning = true;
+                            break;
+                    }
+
+                    if (package.versions.installed?.HasTag(PackageTag.Experimental) == true)
+                        hasExperimental = true;
+                }
+            }
+            else
+            {
+                foreach (var info in PackageInfo.GetAllRegisteredPackages())
+                {
+                    if (info.compliance.status == PackageComplianceStatus.NonCompliant)
+                        return PackageInUseState.NonCompliant;
+
+                    if (SemVersionParser.TryParse(info.version, out var parsedVersion) &&
+                        parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental)
+                        hasExperimental = true;
+                }
+            }
+
+            if (hasError)
+                return PackageInUseState.Error;
+            if (hasWarning)
+                return PackageInUseState.Warning;
+            if (hasExperimental)
+                return PackageInUseState.Experimental;
+
+            return PackageInUseState.None;
         }
 
         // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
@@ -271,19 +306,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else
                     packagesAdded.Add(package);
-
-                var tempId = m_UniqueIdMapper.GetTempIdByFinalizedId(package.uniqueId);
-                if (!string.IsNullOrEmpty(tempId))
-                {
-                    var packageWithTempId = GetPackage(tempId);
-                    if (packageWithTempId != null)
-                    {
-                        packagesRemoved.Add(packageWithTempId);
-                        RemovePackage(tempId);
-                    }
-                    onPackageUniqueIdFinalize?.Invoke(tempId, package.uniqueId);
-                    m_UniqueIdMapper.RemoveTempId(package.uniqueId);
-                }
             }
 
             packagesUpdated.AddRange(featuresWithDependencyChange.Values.Where(p => !packagesUpdated.Contains(p)));
@@ -298,6 +320,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
             TriggerOnPackagesChanged(added: packagesAdded, removed: packagesRemoved, preUpdate: packagesPreUpdate, updated: packagesUpdated, progressUpdated: packageProgressUpdated);
+        }
+
+        public void FinalizePackageUniqueId(string tempUniqueId, string finalizedUniqueId)
+        {
+            var packageWithTempId = GetPackage(tempUniqueId);
+            if (packageWithTempId == null || !packageWithTempId.versions.primary.HasTag(PackageTag.SpecialInstall) || tempUniqueId == finalizedUniqueId)
+                return;
+
+            if (!string.IsNullOrEmpty(finalizedUniqueId))
+                onPackageUniqueIdFinalize?.Invoke(tempUniqueId, finalizedUniqueId);
+
+            RemovePackage(tempUniqueId);
+            TriggerOnPackagesChanged(removed: new [] { packageWithTempId });
         }
 
         private void RemovePackage(string packageUniqueId)

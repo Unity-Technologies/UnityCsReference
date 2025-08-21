@@ -319,27 +319,24 @@ namespace UnityEngine.UIElements
 
         void EditionHandleEvent(EventBase evt)
         {
-            if (selection.isSelectable)
+            var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;
+
+            if (!useTouchScreenKeyboard || edition.hideMobileInput)
+                selectingManipulator?.HandleEventBubbleUp(evt);
+            if (!edition.isReadOnly)
+                editingManipulator?.HandleEventBubbleUp(evt);
+
+            elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
+
+            if (evt.eventTypeId == ContextualMenuPopulateEvent.TypeId())
             {
-                var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;
+                ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
+                int count = e.menu.MenuItems().Count;
+                BuildContextualMenu(e);
 
-                if (!useTouchScreenKeyboard || edition.hideMobileInput)
-                    selectingManipulator?.HandleEventBubbleUp(evt);
-                if (!edition.isReadOnly)
-                    editingManipulator?.HandleEventBubbleUp(evt);
-
-                elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
-
-                if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())
+                if (count > 0 && e.menu.MenuItems().Count > count)
                 {
-                    ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
-                    int count = e.menu.MenuItems().Count;
-                    BuildContextualMenu(e);
-
-                    if (count > 0 && e.menu.MenuItems().Count > count)
-                    {
-                        e.menu.InsertSeparator(null, count);
-                    }
+                    e.menu.InsertSeparator(null, count);
                 }
             }
         }
@@ -558,6 +555,28 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        internal string renderedTextString
+        {
+            get
+            {
+                if (showPlaceholderText)
+                {
+                    return m_PlaceholderText;
+                }
+
+                if (effectiveMaskChar != char.MinValue) // Password
+                {
+                    return "".PadLeft(m_RenderedText?.Length ?? 0, effectiveMaskChar);
+                }
+
+                else
+                {
+                    return m_RenderedText;
+                }
+            }
+        }
+
 
         private void SetRenderedText(string value)
         {

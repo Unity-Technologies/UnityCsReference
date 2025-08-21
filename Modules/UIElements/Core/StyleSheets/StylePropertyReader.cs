@@ -47,7 +47,6 @@ namespace UnityEngine.UIElements.StyleSheets
         private StyleVariableResolver m_Resolver = new StyleVariableResolver();
         private StyleSheet m_Sheet;
         private StyleProperty[] m_Properties;
-        private StylePropertyId[] m_PropertyIds;
         private int m_CurrentValueIndex { get; set; }
         private int m_CurrentPropertyIndex;
 
@@ -61,7 +60,6 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             m_Sheet = sheet;
             m_Properties = selector.rule.properties;
-            m_PropertyIds = StyleSheetCache.GetPropertyIds(sheet, selector.ruleIndex);
             m_Resolver.variableContext = varContext;
 
             this.dpiScaling = dpiScaling;
@@ -69,11 +67,10 @@ namespace UnityEngine.UIElements.StyleSheets
         }
 
         // This is for UXML inline sheet
-        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, StylePropertyId[] propertyIds, float dpiScaling = 1.0f)
+        public void SetInlineContext(StyleSheet sheet, StyleProperty[] properties, float dpiScaling = 1.0f)
         {
             m_Sheet = sheet;
             m_Properties = properties;
-            m_PropertyIds = propertyIds;
 
             this.dpiScaling = dpiScaling;
             LoadProperties();
@@ -334,7 +331,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return font;
         }
 
-        public Material ReadMaterial(int index)
+        public MaterialDefinition ReadMaterialDefinition(int index)
         {
             Material material = null;
             var value = m_Values[m_CurrentValueIndex + index];
@@ -620,7 +617,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 var val2 = m_Values[m_CurrentValueIndex + index + 1];
                 var str = val2.sheet.ReadAsString(val2.handle);
-                
+
                 if(str == "/" )
                     return ReadFloat(index) / ReadFloat(index + 2);
 
@@ -698,10 +695,10 @@ namespace UnityEngine.UIElements.StyleSheets
 
         private void SetCurrentProperty()
         {
-            if (m_CurrentPropertyIndex < m_PropertyIds.Length)
+            if (m_CurrentPropertyIndex < m_Properties.Length)
             {
                 property = m_Properties[m_CurrentPropertyIndex];
-                propertyId = m_PropertyIds[m_CurrentPropertyIndex];
+                propertyId = property.id;
                 valueCount = m_ValueCount[m_CurrentPropertyIndex];
             }
             else

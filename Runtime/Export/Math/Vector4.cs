@@ -36,7 +36,7 @@ namespace UnityEngine
         public float this[int index]
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get
+            readonly get
             {
                 switch (index)
                 {
@@ -80,7 +80,11 @@ namespace UnityEngine
 
         // Linearly interpolates between two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 Lerp(Vector4 a, Vector4 b, float t)
+        public static Vector4 Lerp(Vector4 a, Vector4 b, float t) => Lerp(in a, in b, t);
+
+        // Linearly interpolates between two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 Lerp(in Vector4 a, in Vector4 b, float t)
         {
             t = Mathf.Clamp01(t);
             return new Vector4(
@@ -93,19 +97,24 @@ namespace UnityEngine
 
         // Linearly interpolates between two vectors without clamping the interpolant
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 LerpUnclamped(Vector4 a, Vector4 b, float t)
-        {
-            return new Vector4(
+        public static Vector4 LerpUnclamped(Vector4 a, Vector4 b, float t) => LerpUnclamped(in a, in b, t);
+
+        // Linearly interpolates between two vectors without clamping the interpolant
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 LerpUnclamped(in Vector4 a, in Vector4 b, float t) => new Vector4(
                 a.x + (b.x - a.x) * t,
                 a.y + (b.y - a.y) * t,
                 a.z + (b.z - a.z) * t,
                 a.w + (b.w - a.w) * t
             );
-        }
 
         // Moves a point /current/ towards /target/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 MoveTowards(Vector4 current, Vector4 target, float maxDistanceDelta)
+        public static Vector4 MoveTowards(Vector4 current, Vector4 target, float maxDistanceDelta) => MoveTowards(in current, in target, maxDistanceDelta);
+
+        // Moves a point /current/ towards /target/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 MoveTowards(in Vector4 current, in Vector4 target, float maxDistanceDelta)
         {
             float toVector_x = target.x - current.x;
             float toVector_y = target.y - current.y;
@@ -130,14 +139,19 @@ namespace UnityEngine
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 Scale(Vector4 a, Vector4 b)
-        {
-            return new Vector4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
-        }
+        public static Vector4 Scale(Vector4 a, Vector4 b) => Scale(in a, in b);
+
+        // Multiplies two vectors component-wise.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 Scale(in Vector4 a, in Vector4 b) => new Vector4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 
         // Multiplies every component of this vector by the same component of /scale/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Scale(Vector4 scale)
+        public void Scale(Vector4 scale) => Scale(in scale);
+
+        // Multiplies every component of this vector by the same component of /scale/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Scale(in Vector4 scale)
         {
             x *= scale.x;
             y *= scale.y;
@@ -147,14 +161,11 @@ namespace UnityEngine
 
         // used to allow Vector4s to be used as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            return x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2) ^ (w.GetHashCode() >> 1);
-        }
+        public override readonly int GetHashCode() => x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2) ^ (w.GetHashCode() >> 1);
 
         // also required for being able to use Vector4s as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override bool Equals(object other)
+        public override readonly bool Equals(object other)
         {
             if (other is Vector4 v)
                 return Equals(v);
@@ -162,14 +173,15 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Equals(Vector4 other)
-        {
-            return x == other.x && y == other.y && z == other.z && w == other.w;
-        }
+        public readonly bool Equals(Vector4 other) => x == other.x && y == other.y && z == other.z && w == other.w;
 
         // *undoc* --- we have normalized property now
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 Normalize(Vector4 a)
+        public static Vector4 Normalize(Vector4 a) => Normalize(in a);
+
+        // *undoc* --- we have normalized property now
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 Normalize(in Vector4 a)
         {
             float mag = Magnitude(a);
             if (mag > kEpsilon)
@@ -190,58 +202,73 @@ namespace UnityEngine
         }
 
         // Returns this vector with a ::ref::magnitude of 1 (RO).
-        public Vector4 normalized
+        public readonly Vector4 normalized
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get
-            {
-                return Vector4.Normalize(this);
-            }
+            get => Vector4.Normalize(in this);
         }
 
         // Dot Product of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Dot(Vector4 a, Vector4 b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+        public static float Dot(Vector4 a, Vector4 b) => Dot(in a, in b);
+
+        // Dot Product of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static float Dot(in Vector4 a, in Vector4 b) => a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
         // Projects a vector onto another vector.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 Project(Vector4 a, Vector4 b) { return b * (Dot(a, b) / Dot(b, b)); }
+        public static Vector4 Project(Vector4 a, Vector4 b) => Project(in a, in b);
+
+        // Projects a vector onto another vector.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 Project(in Vector4 a, in Vector4 b) => b * (Dot(in a, in b) / Dot(in b, in b));
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Distance(Vector4 a, Vector4 b) { return Magnitude(a - b); }
+        public static float Distance(Vector4 a, Vector4 b) => Distance(in a, in b);
+
+        // Returns the distance between /a/ and /b/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static float Distance(in Vector4 a, in Vector4 b) => Magnitude(a - b);
 
         // *undoc* --- there's a property now
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Magnitude(Vector4 a) { return (float)Math.Sqrt(Dot(a, a)); }
+        public static float Magnitude(Vector4 a) => Magnitude(in a);
+
+        // *undoc* --- there's a property now
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static float Magnitude(in Vector4 a) => (float)Math.Sqrt(Dot(in a, in a));
 
         // Returns the length of this vector (RO).
-        public float magnitude
+        public readonly float magnitude
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get { return (float)Math.Sqrt(Dot(this, this)); }
+            get => (float)Math.Sqrt(Dot(in this, in this));
         }
 
         // Returns the squared length of this vector (RO).
-        public float sqrMagnitude
+        public readonly float sqrMagnitude
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get { return Dot(this, this); }
+            get => Dot(in this, in this);
         }
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 Min(Vector4 lhs, Vector4 rhs)
-        {
-            return new Vector4(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y), Mathf.Min(lhs.z, rhs.z), Mathf.Min(lhs.w, rhs.w));
-        }
+        public static Vector4 Min(Vector4 lhs, Vector4 rhs) => Min(in lhs, in rhs);
+
+        // Returns a vector that is made from the smallest components of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 Min(in Vector4 lhs, in Vector4 rhs) => new Vector4(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y), Mathf.Min(lhs.z, rhs.z), Mathf.Min(lhs.w, rhs.w));
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 Max(Vector4 lhs, Vector4 rhs)
-        {
-            return new Vector4(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y), Mathf.Max(lhs.z, rhs.z), Mathf.Max(lhs.w, rhs.w));
-        }
+        public static Vector4 Max(Vector4 lhs, Vector4 rhs) => Max(in lhs, in rhs);
+
+        // Returns a vector that is made from the largest components of two vectors.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 Max(in Vector4 lhs, in Vector4 rhs) => new Vector4(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y), Mathf.Max(lhs.z, rhs.z), Mathf.Max(lhs.w, rhs.w));
 
         static readonly Vector4 zeroVector = new Vector4(0F, 0F, 0F, 0F);
         static readonly Vector4 oneVector = new Vector4(1F, 1F, 1F, 1F);
@@ -249,36 +276,58 @@ namespace UnityEngine
         static readonly Vector4 negativeInfinityVector = new Vector4(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
 
         // Shorthand for writing @@Vector4(0,0,0,0)@@
-        public static Vector4 zero { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return zeroVector; } }
+        public static Vector4 zero
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => zeroVector;
+        }
         // Shorthand for writing @@Vector4(1,1,1,1)@@
-        public static Vector4 one { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return oneVector; } }
+        public static Vector4 one
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => oneVector;
+        }
         // Shorthand for writing @@Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity)@@
-        public static Vector4 positiveInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return positiveInfinityVector; } }
+        public static Vector4 positiveInfinity
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => positiveInfinityVector;
+        }
         // Shorthand for writing @@Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity)@@
-        public static Vector4 negativeInfinity { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return negativeInfinityVector; } }
+        public static Vector4 negativeInfinity
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => negativeInfinityVector;
+        }
 
         // Adds two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator+(Vector4 a, Vector4 b) { return new Vector4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+        public static Vector4 operator+(in Vector4 a, in Vector4 b) => new Vector4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
         // Subtracts one vector from another.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator-(Vector4 a, Vector4 b) { return new Vector4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w); }
+        public static Vector4 operator-(in Vector4 a, in Vector4 b) => new Vector4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
         // Negates a vector.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator-(Vector4 a) { return new Vector4(-a.x, -a.y, -a.z, -a.w); }
+        public static Vector4 operator-(in Vector4 a) => new Vector4(-a.x, -a.y, -a.z, -a.w);
         // Multiplies a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator*(Vector4 a, float d) { return new Vector4(a.x * d, a.y * d, a.z * d, a.w * d); }
+        public static Vector4 operator*(in Vector4 a, float d) => new Vector4(a.x * d, a.y * d, a.z * d, a.w * d);
         // Multiplies a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator*(float d, Vector4 a) { return new Vector4(a.x * d, a.y * d, a.z * d, a.w * d); }
+        public static Vector4 operator*(float d, in Vector4 a) => new Vector4(a.x * d, a.y * d, a.z * d, a.w * d);
         // Divides a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator/(Vector4 a, float d) { return new Vector4(a.x / d, a.y / d, a.z / d, a.w / d); }
+        public static Vector4 operator/(in Vector4 a, float d) => new Vector4(a.x / d, a.y / d, a.z / d, a.w / d);
+        // Multiplies two vectors component-wise.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 operator*(in Vector4 a, in Vector4 b) => new Vector4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+        // Divides two vectors component-wise.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 operator/(in Vector4 a, in Vector4 b) => new Vector4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
 
         // Returns true if the vectors are equal.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(Vector4 lhs, Vector4 rhs)
+        public static bool operator==(in Vector4 lhs, in Vector4 rhs)
         {
             // Returns false in the presence of NaN values.
             float diffx = lhs.x - rhs.x;
@@ -291,54 +340,34 @@ namespace UnityEngine
 
         // Returns true if vectors are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Vector4 lhs, Vector4 rhs)
-        {
+        public static bool operator!=(in Vector4 lhs, in Vector4 rhs) =>
             // Returns true in the presence of NaN values.
-            return !(lhs == rhs);
-        }
+            !(lhs == rhs);
 
         // Converts a [[Vector3]] to a Vector4.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static implicit operator Vector4(Vector3 v)
-        {
-            return new Vector4(v.x, v.y, v.z, 0.0F);
-        }
+        public static implicit operator Vector4(in Vector3 v) => new Vector4(v.x, v.y, v.z, 0.0F);
 
         // Converts a Vector4 to a [[Vector3]].
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static implicit operator Vector3(Vector4 v)
-        {
-            return new Vector3(v.x, v.y, v.z);
-        }
+        public static implicit operator Vector3(in Vector4 v) => new Vector3(v.x, v.y, v.z);
 
         // Converts a [[Vector2]] to a Vector4.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static implicit operator Vector4(Vector2 v)
-        {
-            return new Vector4(v.x, v.y, 0.0F, 0.0F);
-        }
+        public static implicit operator Vector4(in Vector2 v) => new Vector4(v.x, v.y, 0.0F, 0.0F);
 
         // Converts a Vector4 to a [[Vector2]].
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static implicit operator Vector2(Vector4 v)
-        {
-            return new Vector2(v.x, v.y);
-        }
+        public static implicit operator Vector2(in Vector4 v) => new Vector2(v.x, v.y);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override readonly string ToString() => ToString(null, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F2";
@@ -349,9 +378,14 @@ namespace UnityEngine
 
         // *undoc* --- there's a property now
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float SqrMagnitude(Vector4 a) { return Vector4.Dot(a, a); }
+        public static float SqrMagnitude(Vector4 a) => a.sqrMagnitude;
+
         // *undoc* --- there's a property now
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public float SqrMagnitude() { return Dot(this, this); }
+        public static float SqrMagnitude(in Vector4 a) => a.sqrMagnitude;
+
+        // *undoc* --- there's a property now
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly float SqrMagnitude() => sqrMagnitude;
     }
 } // namespace

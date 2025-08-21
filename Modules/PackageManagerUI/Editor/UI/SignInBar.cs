@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             public override object CreateInstance() => new SignInBar();
         }
 
-        private static readonly string k_Message = L10n.Tr("Sign in to manage Asset Store packages");
+        private static readonly string k_Message = L10n.Tr("to manage Asset Store packages");
         private static readonly string k_ButtonText = L10n.Tr("Sign in");
 
         private IUnityConnectProxy m_UnityConnect;
@@ -32,8 +32,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public SignInBar()
         {
-            Add(new Label(k_Message));
             Add(new Button(OnSignInButtonClicked) { text = k_ButtonText });
+            Add(new Label(k_Message));
 
             ResolveDependencies();
         }

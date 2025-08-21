@@ -13,14 +13,43 @@ namespace Unity.PlayMode.Editor
 {
     static class PlayModeConfigurationUtils
     {
+        internal struct PlayModeConfigurationTypeData
+        {
+            public Type ConfigurationType;
+            public string Label;
+            public string NewItemName;
+        }
+
         internal const string k_ConfigAssetsPath = "Assets/Settings/PlayMode";
         internal const int k_MaxScenarioConfigName = 64;
+
         /// <summary>
         /// Will get invoked when a ScenarioConfig is added or removed.
         /// </summary>
         internal static event Action ConfigurationAddedOrRemoved;
 
+        private static Dictionary<Type, PlayModeConfigurationTypeData> s_ConfigurationTypes = new();
         private static List<PlayModeConfiguration> s_AllConfigs;
+
+        internal static void RegisterPlayModeConfigurationType<T>(string label, string newItemName = "NewPlayModeConfiguration") where T : PlayModeConfiguration
+        {
+            if (typeof(T).IsAbstract)
+            {
+                Debug.LogError($"Type '{typeof(T)}' is abstract. Only concrete types are allowed to have the CreatePlayModeConfigurationMenuAttribute.");
+                return;
+            }
+
+            s_ConfigurationTypes[typeof(T)] = new PlayModeConfigurationTypeData
+                {
+                    ConfigurationType = typeof(T),
+                    Label = label,
+                    NewItemName = newItemName
+                };
+
+            PlayModeButtonsExtension.Initialize(); // Refresh the buttons if needed
+        }
+        internal static IEnumerable<PlayModeConfigurationTypeData> GetPlayModeConfigurationTypes() => s_ConfigurationTypes.Values;
+        internal static int ConfigurationTypesCount => s_ConfigurationTypes.Count;
 
         internal static bool IsPlayModeConfigAsset(string assetPath)
         {
@@ -50,7 +79,7 @@ namespace Unity.PlayMode.Editor
 
         internal static PlayModeConfiguration CreatePlayModeConfig(string name, Type type)
         {
-            Assert.IsTrue(typeof(PlayModeConfiguration).IsAssignableFrom(type));
+            Assert.IsTrue(typeof(PlayModeConfiguration).IsAssignableFrom(type), $"Type '{type}' is not a PlayModeConfiguration");
 
             if (!Directory.Exists(k_ConfigAssetsPath))
                 Directory.CreateDirectory(k_ConfigAssetsPath);

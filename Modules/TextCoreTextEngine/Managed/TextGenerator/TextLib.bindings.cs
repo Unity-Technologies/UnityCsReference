@@ -27,15 +27,15 @@ namespace UnityEngine.TextCore.Text
 
         private static extern IntPtr GetInstance(byte[] icuData);
 
-        public NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo, ref bool uvsAreGenerated)
+        public NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo, ref bool wasCached)
         {
             Debug.Assert((settings.fontStyle & FontStyles.Bold) == 0);// Bold need to be set by the fontWeight only.
-            var textInfo = GenerateTextInternal(settings, textGenerationInfo, ref uvsAreGenerated);
+            var textInfo = GenerateTextInternal(settings, textGenerationInfo, ref wasCached);
 
             return textInfo;
         }
 
-        public bool HasMissingGlyphs(NativeTextInfo textInfo, NativeTextGenerationSettings settings, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
+        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
         {
             Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
             bool hasMissingGlyphs = false;
@@ -132,7 +132,7 @@ namespace UnityEngine.TextCore.Text
                 }
 
                 var padding = settings.vertexPadding / 64.0f;
-            
+
                 bool hasMultipleColors = false;
                 Color? previousColor = null;
 
@@ -218,6 +218,9 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void ShapeText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
+
         [NativeMethod(Name = "TextLib::GenerateTextMesh", IsThreadSafe = true)]
         private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo, ref bool uvsAreGenerated);
 
@@ -238,16 +241,28 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class TextGenerationInfo
     {
+        public static int CurrentGenerationIteration { get; private set; }
         [ThreadSafe]
-        public static extern IntPtr Create();
+        public static extern IntPtr Create(bool isPermanent);
 
         [ThreadSafe]
         public static extern void Destroy(IntPtr ptr);
+
+        public static void OnRepaintEnd()
+        {
+            CurrentGenerationIteration++;
+            DestroyAllTempAllocations();
+        }
+
+        private static extern void DestroyAllTempAllocations();
 
         [ThreadSafe]
         public static extern TextRenderingIndices GetTextRenderingIndices(IntPtr ptr, int glyphIndex);
 
         [ThreadSafe]
         public static extern int GetGlyphCount(IntPtr ptr);
+
+        // Used for testing purposes
+        public static extern NativeTextInfo GetTextInfo(IntPtr ptr);
     }
 }

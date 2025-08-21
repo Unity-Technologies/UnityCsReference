@@ -11,7 +11,14 @@ namespace UnityEngine.UIElements
 {
     static class UIElementsInitialization
     {
-        [RequiredByNativeCode(optional:false)]
+        public static void SoftPreserve()
+        {
+            // Intentionally left empty.
+            // This will prevent this class from being stripped if VisualElement is also not stripped.
+        }
+
+        [RequiredByNativeCode(optional:true)]
+        [RequiredMember]
         public static void InitializeUIElementsManaged()
         {
             RegisterBuiltInPropertyBags();
@@ -85,6 +92,8 @@ namespace UnityEngine.UIElements
             PropertyBag.Register(new StyleValuePropertyBag<StyleTextAutoSize, TextAutoSize>());
             PropertyBag.Register(new TextAutoSize.PropertyBag());
             PropertyBag.Register(new StyleValuePropertyBag<StyleList<FilterFunction>, List<FilterFunction>>());
+            PropertyBag.Register(new MaterialDefinition.PropertyBag());
+            PropertyBag.Register(new StyleValuePropertyBag<StyleMaterialDefinition, MaterialDefinition>());
         }
     }
 }

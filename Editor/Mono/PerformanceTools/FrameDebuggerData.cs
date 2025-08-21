@@ -209,6 +209,10 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public sbyte m_RenderTargetMemoryless;
         public bool m_RenderTargetIsBackBuffer;
         public RenderTexture m_RenderTargetRenderTexture;
+        public int m_ShadingRateFragmentSize;
+        public int m_ShadingRatePrimitiveCombiner;
+        public int m_ShadingRateFragmentCombiner;
+        public Texture m_ShadingRateImageTexture;
 
         // shader state
         public FrameDebuggerBlendState m_BlendState;

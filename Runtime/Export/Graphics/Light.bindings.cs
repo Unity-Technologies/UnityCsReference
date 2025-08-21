@@ -179,6 +179,7 @@ namespace UnityEngine
             return GetCommandBuffersInternal(evt);
         }
         [FreeFunction("Light_Bindings::GetCommandBuffers", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal UnityEngine.Rendering.CommandBuffer[] GetCommandBuffersInternal(UnityEngine.Rendering.LightEvent evt);
 
         extern public int commandBufferCount { get; }

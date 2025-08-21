@@ -33,6 +33,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
+                if (compliance.status == PackageComplianceStatus.NonCompliant)
+                    return PackageState.Restricted;
+
                 var numErrors = 0;
                 var numWarnings = 0;
                 foreach (var error in GetAllErrorsInPackageAndVersions())
@@ -50,12 +53,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return PackageState.Error;
                 }
 
-                if (compliance.status == PackageComplianceStatus.NonCompliant)
+                var primary = versions.primary;
+                if (primary.isInstalled && primary.HasTag(PackageTag.Deprecated))
                     return PackageState.Error;
 
-                var primary = versions.primary;
-                if (primary.isInstalled && (primary.HasTag(PackageTag.Deprecated) || primary.signatureInfo?.status == SignatureStatus.Invalid))
-                    return PackageState.Error;
+                if (primary.isInstalled && primary.trustLevel == TrustLevel.Untrusted)
+                {
+                    switch (primary.signature?.status)
+                    {
+                        case SignatureStatus.Invalid:
+                            return PackageState.Error;
+                        case SignatureStatus.Unsigned:
+                            return PackageState.Warning;
+                    }
+                }
 
                 if (numErrors > 0 && numWarnings == numErrors || isDeprecated)
                     return PackageState.Warning;
@@ -69,7 +80,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (versions.suggestedUpdate != null)
                     return PackageState.UpdateAvailable;
 
-                if (primary.importedAssets?.Any() == true)
+                if (versions.imported != null)
                     return PackageState.Imported;
 
                 if (versions.importAvailable != null)

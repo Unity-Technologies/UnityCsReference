@@ -51,14 +51,15 @@ namespace UnityEditor
         [NativeProperty("FontNameFromTTFData", false, TargetType.Function)] public extern string fontTTFName { get; }
         [NativeProperty("ForceTextureCase", false, TargetType.Function)] public extern FontTextureCase fontTextureCase { get; set; }
 
-        [NativeProperty("MarshalledFontReferences", false, TargetType.Function)] public extern Font[] fontReferences { [return:Unmarshalled] get; [param:Unmarshalled] set; }
-        [NativeProperty("MarshalledFontNames", false, TargetType.Function)] public extern string[] fontNames { [return:Unmarshalled] get; [param:Unmarshalled] set; }
+        [NativeProperty("MarshalledFontReferences", false, TargetType.Function)] public extern Font[] fontReferences { [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [param:UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
+        [NativeProperty("MarshalledFontNames", false, TargetType.Function)] public extern string[] fontNames { [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [param:UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
 
         internal extern bool IsFormatSupported();
         public extern Font GenerateEditableFont(string path);
 
-        internal extern Font[] MarshalledLookupFallbackFontReferences([Unmarshalled] string[] names);
-        internal Font[] LookupFallbackFontReferences([Unmarshalled] string[] names)
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern Font[] MarshalledLookupFallbackFontReferences([UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] names);
+        internal Font[] LookupFallbackFontReferences([UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] names)
         {
             return MarshalledLookupFallbackFontReferences(names);
         }

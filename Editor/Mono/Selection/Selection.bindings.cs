@@ -82,7 +82,7 @@ namespace UnityEditor
         }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern internal static void SetSelectionWithActiveObject([Unmarshalled] Object[] newSelection, Object activeObject);
+        extern internal static void SetSelectionWithActiveObject([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] newSelection, Object activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         extern internal static void SetSelectionWithActiveEntityId([NotNull] EntityId[] newSelection, EntityId activeObject);
@@ -94,7 +94,7 @@ namespace UnityEditor
         }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelection([Unmarshalled] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
+        internal static extern void SetFullSelection([UnityMarshalAs(NativeType.ScriptingObjectPtr)] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetFullSelectionByID([NotNull]EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint);
@@ -149,7 +149,7 @@ namespace UnityEditor
 
         // The actual unfiltered selection from the Scene.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern public static Object[] objects { [return: Unmarshalled]  get; [param:Unmarshalled] set; }
+        extern public static Object[] objects { [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]  get; [param:UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
@@ -213,6 +213,7 @@ namespace UnityEditor
 
         //* undocumented - utility function
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal static Object[] GetObjectsMode(SelectionMode mode);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]

@@ -15,7 +15,7 @@ internal class LegacyFormatDropdownButton : BaseDropdownButton<GenericDropdownMe
     private static readonly string k_InProjectText = L10n.Tr("In Project");
 
     protected override int numDropdownItems => menu?.items.Count ?? 0;
-    protected override void ShowDropdown() => menu?.DropDown(worldBound, this, true, true);
+    protected override void ShowDropdown() => menu?.DropDown(worldBound, this, DropdownMenuSizeMode.Auto);
 
     private readonly IList<PackageAction> m_Actions;
     public event Action onActionTriggered

@@ -88,10 +88,6 @@ namespace UnityEngine.UIElements
             if (treeView.viewController is TDefaultController defaultController)
             {
                 defaultController.AddItem(item, parentId, childIndex, rebuildTree);
-
-                if (rebuildTree)
-                    treeView.RefreshItems();
-
                 return;
             }
 

@@ -88,6 +88,37 @@ namespace UnityEngine.TextCore.LowLevel
     };
 
     /// <summary>
+    /// A MarkAdjustmentRecord defines the position of an anchor point relative to the origin of a base glyph as well as the positional adjustment of a mark glyph relative to this anchor point.
+    /// </summary>
+    [Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MarkAdjustmentRecord
+    {
+        /// <summary>
+        /// The anchor point position relative to the base glyph's origin.
+        /// </summary>
+        public GlyphAnchorPoint anchorPosition { get { return m_AnchorPoint; } set { m_AnchorPoint = value; } }
+
+        /// <summary>
+        /// The positional adjustment of the mark glyph relative to the anchor point.
+        /// </summary>
+        public MarkPositionAdjustment markPositionAdjustment { get { return m_MarkPositionAdjustment; } set { m_MarkPositionAdjustment = value; } }
+
+        // =============================================
+        // Private backing fields for public properties.
+        // =============================================
+
+        [SerializeField]
+        [NativeName("anchorPoint")]
+        private GlyphAnchorPoint m_AnchorPoint;
+
+        [SerializeField]
+        [NativeName("markPositionAdjustment")]
+        private MarkPositionAdjustment m_MarkPositionAdjustment;
+    }
+
+    /// <summary>
     /// A MarkToBaseAdjustmentRecord defines the positional adjustment between a base glyph and mark glyph.
     /// </summary>
     [Serializable]
@@ -185,5 +216,45 @@ namespace UnityEngine.TextCore.LowLevel
         [SerializeField]
         [NativeName("combiningMarkPositionAdjustment")]
         private MarkPositionAdjustment m_CombiningMarkPositionAdjustment;
+    }
+
+    /// <summary>
+    /// A MarkToLigatureAdjustmentRecord defines the potential positional adjustments for a mark relative to a ligature glyph.
+    /// </summary>
+    [Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MarkToLigatureAdjustmentRecord
+    {
+        /// <summary>
+        /// The index of the ligature glyph.
+        /// </summary>
+        public uint ligatureGlyphID { get { return m_LigatureGlyphID; } set { m_LigatureGlyphID = value; } }
+
+        /// <summary>
+        /// The index of the mark glyph.
+        /// </summary>
+        public uint combiningMarkGlyphID { get { return m_CombiningMarkGlyphID; } set { m_CombiningMarkGlyphID = value; } }
+
+        /// <summary>
+        /// Array that contains the positional adjustment records of the combining mark glyph relative to the ligature glyph.
+        /// </summary>
+        public MarkAdjustmentRecord[] combiningMarkAdjustmentRecords { get { return m_CombiningMarkAdjustmentRecords; } set { m_CombiningMarkAdjustmentRecords = value; } }
+
+        // =============================================
+        // Private backing fields for public properties.
+        // =============================================
+
+        [SerializeField]
+        [NativeName("ligatureGlyphID")]
+        private uint m_LigatureGlyphID;
+
+        [SerializeField]
+        [NativeName("combiningMarkGlyphID")]
+        private uint m_CombiningMarkGlyphID;
+
+        [SerializeField]
+        [NativeName("adjustmentRecords")]
+        private MarkAdjustmentRecord[] m_CombiningMarkAdjustmentRecords;
     }
 }

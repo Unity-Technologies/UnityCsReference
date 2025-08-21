@@ -40,12 +40,38 @@ namespace Unity.Hierarchy
         /// <param name="nativePtr">The native pointer.</param>
         /// <param name="hierarchy">The hierarchy.</param>
         /// <param name="cmdList">The command list.</param>
-        [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal HierarchyNodeTypeHandler(IntPtr nativePtr, Hierarchy hierarchy, HierarchyCommandList cmdList) : base(nativePtr, hierarchy, cmdList)
         {
             m_ViewItemPool = new Lazy<UnityEngine.Pool.ObjectPool<HierarchyViewItem>>(() =>
                 new UnityEngine.Pool.ObjectPool<HierarchyViewItem>(() => new HierarchyViewItem(), defaultCapacity: 0));
         }
+
+        /// <summary>
+        /// Called when the hierarchy node type handler is bound to a hierarchy view.
+        /// Typically used to add stylesheets or classes to the <see cref="HierarchyView.StyleContainer"/>.
+        /// </summary>
+        /// <param name="view">The hierarchy view.</param>
+        protected virtual void OnBindView(HierarchyView view) { }
+
+        /// <summary>
+        /// Called when the hierarchy node type handler is unbound from a hierarchy view.
+        /// </summary>
+        /// <param name="view">The hierarchy view.</param>
+        protected virtual void OnUnbindView(HierarchyView view) { }
+
+        /// <summary>
+        /// Called whenever a hierarchy view item is bound to a hierarchy view.
+        /// Typically used to set up the item with the necessary data and styles.
+        /// </summary>
+        /// <param name="item">The hierarchy view item.</param>
+        protected virtual void OnBindItem(HierarchyViewItem item) { }
+
+        /// <summary>
+        /// Called whenever a hierarchy view item is unbound from a hierarchy view.
+        /// </summary>
+        /// <param name="item">The hierarchy view item.</param>
+        protected virtual void OnUnbindItem(HierarchyViewItem item) { }
 
         /// <summary>
         /// Determines if a node type handler can accept a specified node as a parent.
@@ -299,24 +325,6 @@ namespace Unity.Hierarchy
         protected virtual DragVisualMode OnDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
 
         /// <summary>
-        /// Callback to initialize <see cref="HierarchyView"/>'s. Typically to add stylesheets or classes to <see cref="HierarchyView.StyleContainer"/> that are going to be used by nodes.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        protected virtual void OnInitializingView(HierarchyView view) { }
-
-        /// <summary>
-        /// Called when a hierarchy view item is bound to a hierarchy view, allowing customization of the view item.
-        /// </summary>
-        /// <param name="item">The hierarchy view item.</param>
-        protected virtual void Bind(HierarchyViewItem item) { }
-
-        /// <summary>
-        /// Called when a hierarchy view item is unbound from a hierarchy view, allowing cleanup of the view item.
-        /// </summary>
-        /// <param name="item">The hierarchy view item.</param>
-        protected virtual void Unbind(HierarchyViewItem item) { }
-
-        /// <summary>
         /// Customize the tooltip displayed when the mouse hovers the node name label.
         /// </summary>
         /// <param name="item"><see cref="HierarchyViewItem"/> that is hovered.</param>
@@ -341,15 +349,16 @@ namespace Unity.Hierarchy
         protected virtual void PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu) { }
 
         #region Expose protected methods to internal
+        internal void Internal_BindView(HierarchyView view) => OnBindView(view);
+        internal void Internal_UnbindView(HierarchyView view) => OnUnbindView(view);
+        internal void Internal_BindItem(HierarchyViewItem item) => OnBindItem(item);
+        internal void Internal_UnbindItem(HierarchyViewItem item) => OnUnbindItem(item);
         internal bool Internal_OnSetName(HierarchyView view, in HierarchyNode node, string name) => OnSetName(view, in node, name);
         internal DragVisualMode Internal_CanDrop(in HierarchyViewDragAndDropHandlingData data) => CanDrop(data);
         internal bool Internal_CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => CanStartDrag(view, nodes);
         internal void Internal_OnStartDrag(in HierarchyViewDragAndDropSetupData data) => OnStartDrag(data);
         internal DragVisualMode Internal_OnDrop(in HierarchyViewDragAndDropHandlingData data) => OnDrop(data);
-        internal void Internal_OnInitializingView(HierarchyView view) => OnInitializingView(view);
         internal void Internal_PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu) => PopulateContextMenu(view, item, menu);
-        internal void Internal_Bind(HierarchyViewItem item) => Bind(item);
-        internal void Internal_Unbind(HierarchyViewItem item) => Unbind(item);
         internal void Internal_GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip) => GetTooltip(item, isFiltering, tooltip);
         #endregion
     }

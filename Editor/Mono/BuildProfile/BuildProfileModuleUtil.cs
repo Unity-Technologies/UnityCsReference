@@ -29,6 +29,8 @@ namespace UnityEditor.Build.Profile
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
         const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
+        const string k_HeroPathPrefix = "BuildProfile/Hero/";
+        const string k_HeroPathSuffix = ".Hero";
         // The asset database supports file name length to max. 250 symbols
         // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
         // an asset with such name already exists.
@@ -78,6 +80,12 @@ namespace UnityEditor.Build.Profile
             BuildTargetDiscovery.BuildPlatformNameLinkList(platformGuid);
 
         /// <summary>
+        /// Get platform settings docs link for preconfigured settings.
+        /// </summary>
+        public static string GetPlatformSettingsDocsLink(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformSettingsDocsLink(platformGuid);
+
+        /// <summary>
         /// Fetch default editor platform icon texture.
         /// </summary>
         public static Texture2D GetHelpIcon()
@@ -104,6 +112,14 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Fetch RawImage icon texture for package thumbnail placeholder.
+        /// </summary>
+        public static Texture2D GetRawImageIcon()
+        {
+            return EditorGUIUtility.LoadIcon("RawImage");
+        }
+
+        /// <summary>
         /// Fetch small (16x16) editor platform icon texture.
         /// </summary>
         public static Texture2D GetPlatformIconSmall(GUID platformId)
@@ -112,6 +128,25 @@ namespace UnityEditor.Build.Profile
                 return icon;
 
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId) + ".Small");
+        }
+
+        /// <summary>
+        /// Fetches the Hero image associated with the platform.
+        /// If no specific hero image is found, it falls back to the platform icon.
+        /// </summary>
+        public static Texture2D GetPlatformIconHero(GUID platformId)
+        {
+            if (LoadBuildProfileIcon(platformId, out Texture2D icon))
+                return icon;
+
+            // Attempt to load the hero icon for the platform
+            icon = EditorGUIUtility.LoadIcon($"{k_HeroPathPrefix}{GetPlatformIconId(platformId)}{k_HeroPathSuffix}");
+
+            // If no specific hero icon is found, fallback to the platform icon
+            if (icon == null)
+                icon = GetPlatformIcon(platformId);
+
+            return icon;
         }
 
         [Obsolete("Do not use internal APIs from packages.")]
@@ -345,7 +380,7 @@ namespace UnityEditor.Build.Profile
 
             if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out IBuildTarget iBuildTarget))
             {
-                if (EditorUserBuildSettings.connectProfiler && (developmentBuild || (iBuildTarget.PlayerConnectionPlatformProperties?.ForceAllowProfilerConnection ?? false)) )
+                if (EditorUserBuildSettings.connectProfiler && (developmentBuild || (iBuildTarget.PlayerConnectionPlatformProperties?.ForceAllowProfilerConnection ?? false)))
                     options |= BuildOptions.ConnectWithProfiler;
             }
 
@@ -707,6 +742,11 @@ namespace UnityEditor.Build.Profile
             return BuildTargetDiscovery.BuildPlatformPartnerPackages(platformGuid);
         }
 
+        public static string[] GetAllPlatformPackageNames()
+        {
+            return BuildTargetDiscovery.GetAllPlatformPackageNames();
+        }
+
         public static string BuildPlatformDescription(GUID platformGuid)
         {
             return BuildTargetDiscovery.BuildPlatformDescription(platformGuid);
@@ -834,7 +874,7 @@ namespace UnityEditor.Build.Profile
             var settingsRequiringRestart = PlayerSettings.GetSettingsRequiringRestart(currentPlayerSettings,
                 nextPlayerSettings, currentBuildTarget, nextBuildTarget);
             // if we've found settings that need restarting..
-            if (settingsRequiringRestart.Length > 0 )
+            if (settingsRequiringRestart.Length > 0)
             {
                 // ..we show the restart prompt, if the user restarts, we add a restart call to the editor
                 if (ShowRestartEditorDialog(settingsRequiringRestart))

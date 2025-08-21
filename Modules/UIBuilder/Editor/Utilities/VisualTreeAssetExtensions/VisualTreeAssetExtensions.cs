@@ -379,7 +379,8 @@ namespace Unity.UI.Builder
             if (wasCreated)
             {
                 var inlineSheet = vta.GetOrCreateInlineStyleSheet();
-                vea.ruleIndex = inlineSheet.AddRule();
+                vea.ruleIndex = inlineSheet.rules.Length;
+                return inlineSheet.AddRule();
             }
 
             return vta.inlineSheet.GetRule(vea.ruleIndex);

@@ -93,7 +93,7 @@ namespace UnityEngine.Networking
     {
         NativeArray<byte> m_Payload;
 
-        private static extern unsafe IntPtr Create([Unmarshalled] UploadHandlerRaw self, byte* data, int dataLength);
+        private static extern unsafe IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] UploadHandlerRaw self, byte* data, int dataLength);
 
         public UploadHandlerRaw(byte[] data)
             : this((data == null || data.Length == 0) ? new NativeArray<byte>() : new NativeArray<byte>(data, Allocator.Persistent), true)
@@ -156,7 +156,7 @@ namespace UnityEngine.Networking
     public sealed class UploadHandlerFile : UploadHandler
     {
         [NativeThrows]
-        private static extern IntPtr Create([Unmarshalled] UploadHandlerFile self, string filePath);
+        private static extern IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] UploadHandlerFile self, string filePath);
 
         public UploadHandlerFile(string filePath)
         {

@@ -7,7 +7,10 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
+using UnityEditor.Shaders;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
 namespace UnityEditor.Build.Profile
 {
     [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
@@ -36,6 +39,7 @@ namespace UnityEditor.Build.Profile
         [SerializeField] LightProbeOutsideHullStrategy m_LightProbeOutsideHullStrategy = LightProbeOutsideHullStrategy.kLightProbeSearchTetrahedralHull;
         [SerializeField] ShaderVariantCollection[] m_PreloadedShaders = Array.Empty<ShaderVariantCollection>();
         [SerializeField] int m_PreloadShadersBatchTimeLimit = -1;
+        [SerializeField] ShaderBuildSettings m_ShaderBuildSettings;
 
         internal StrippingModes lightmapStripping
         {
@@ -161,6 +165,12 @@ namespace UnityEditor.Build.Profile
         {
             get => m_PreloadShadersBatchTimeLimit;
             set => m_PreloadShadersBatchTimeLimit = value;
+        }
+
+        internal ShaderBuildSettings shaderBuildSettings
+        {
+            get => m_ShaderBuildSettings;
+            set => m_ShaderBuildSettings = value;
         }
 
         public void Instantiate()

@@ -46,9 +46,11 @@ namespace Unity.PlayMode.Editor
             EditorApplication.playModeStateChanged += OnEditorChangedPlaymodeState;
 
             // Setup initial states
+            var isPlaying = PlayModeManager.instance.CurrentState == PlayModeState.Running || EditorApplication.isPlaying;
+            var isPaused = EditorApplication.isPaused;
             OnConfigAssetChanged();
-            OnPlayModeStateChanged(PlayModeManager.instance.CurrentState == PlayModeState.Running ? PlayModeState.Running : PlayModeState.NotRunning);
-            OnPauseStateChanged(EditorApplication.isPaused ? PauseState.Paused : PauseState.Unpaused);
+            OnPlayModeStateChanged(isPlaying ? PlayModeState.Running : PlayModeState.NotRunning);
+            OnPauseStateChanged(isPaused ? PauseState.Paused : PauseState.Unpaused);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)

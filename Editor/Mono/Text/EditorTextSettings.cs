@@ -42,7 +42,7 @@ namespace UnityEditor
             IMGUITextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
             IMGUITextHandle.GetEditorTextGeneratorType = GetEditorTextGeneratorType;
             UITKTextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
-            UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
+            UITKTextHandle.GenerateBitmapFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 
         private void OnEnable()
@@ -76,13 +76,13 @@ namespace UnityEditor
             if (pointSize < k_MinSupportedPointSize || pointSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
                 return ft;
 
-            s_DefaultTextSettings.blurryTextCaching.InitializeLookups();
-            FontAsset fa = s_DefaultTextSettings.blurryTextCaching.Find(ft, pointSize, isRaster);
+            defaultTextSettings.blurryTextCaching.InitializeLookups();
+            FontAsset fa = defaultTextSettings.blurryTextCaching.Find(ft, pointSize, isRaster);
             bool isMainThread = !JobsUtility.IsExecutingJob;
             if (fa == null && isMainThread)
             {
                 fa = FontAssetFactory.CloneFontAssetWithBitmapRendering(ft, pointSize, isRaster);
-                s_DefaultTextSettings.blurryTextCaching.Add(ft, pointSize, isRaster, fa);
+                defaultTextSettings.blurryTextCaching.Add(ft, pointSize, isRaster, fa);
             }
 
             return fa;
@@ -112,7 +112,7 @@ namespace UnityEditor
         {
             if (currentEditorTextGeneratorType == null)
             {
-                SetEditorTextGeneratorType((TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorType", (int)TextGeneratorType.Standard));
+                SetEditorTextGeneratorType((TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorTypeV2", (int)TextGeneratorType.Advanced));
             }
             return (TextGeneratorType)currentEditorTextGeneratorType;
         }

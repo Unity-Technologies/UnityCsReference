@@ -257,8 +257,7 @@ namespace UnityEditor.UIElements
             try
             {
                 // This can throw if the serialized object changes type under our feet
-                handlePrefabState = prop.serializedObject.targetObjects.Length == 1 &&
-                    prop.isInstantiatedPrefab &&
+                handlePrefabState = prop.isInstantiatedPrefab &&
                     (prop.prefabOverride || ComponentIsPrefabOverride(prop.serializedObject.targetObject as Component));
             }
             catch

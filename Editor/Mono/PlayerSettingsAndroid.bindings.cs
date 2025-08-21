@@ -77,9 +77,11 @@ namespace UnityEditor
         AndroidApiLevel22 = 22,
 
         // Android 6.0, "Marshmallow", API level 23
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel23 = 23,
 
         // Android 7.0, "Nougat", API level 24
+        [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel24 = 24,
 
         // Android 7.1, "Nougat", API level 25
@@ -132,6 +134,16 @@ namespace UnityEditor
         ForceInternal = 2,
     }
 
+    // Preferred data location
+    public enum AndroidPreferredDataLocation
+    {
+        // Use external storage if available, otherwise use internal storage
+        PreferExternal = 1,
+
+        // Use internal storage only
+        ForceInternal = 2,
+    }
+
     public enum AndroidShowActivityIndicatorOnLoading
     {
         // Large == progressBarStyleLarge
@@ -164,6 +176,17 @@ namespace UnityEditor
         Social = 8,
         Video = 9,
         Other = 99,
+    }
+
+    [Flags]
+    public enum AndroidDisplayOptions : uint
+    {
+        // No specific option set
+        None = 0,
+
+        // Detect presentation display
+        // This option is used to enable the creation of a Presentation used to render a Camera targetting Display 2 if a Presentation display is detected in the system
+        DetectPresentationDisplay = 1 << 0
     }
 
     // Gamepad support level for Android TV
@@ -253,10 +276,22 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         public partial class Android
         {
-            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 23 (Android 6.0 Marshmallow). Please use AndroidApiLevel23 or higher";
+            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 25 (Android 7.1 Nougat). Please use AndroidApiLevel25 or higher.";
+            internal const string MinSupportedAPILevelWarningGracePeriod = MinSupportedAPILevelWarning + " This warning will become an error on a next release.";
 
             // Disable Depth and Stencil Buffers
             public static extern bool disableDepthAndStencilBuffers { get; set; }
+
+            // Minimum supported Android API level
+            // This is the minimum API level that Unity supports for Android builds
+            public static AndroidSdkVersions minSupportedSdkVersion
+            {
+                get
+                {
+                    // Minimum supported Android API level is 25 (Android 7.1 Nougat).
+                    return AndroidSdkVersions.AndroidApiLevel25;
+                }
+            }
 
             // 24-bit Depth Buffer is used
             [Obsolete("use24BitDepthBuffer is deprecated, use disableDepthAndStencilBuffers instead.")]
@@ -352,7 +387,22 @@ namespace UnityEditor
             }
 
             // Minimal Android SDK version
-            public static extern AndroidSdkVersions minSdkVersion
+            public static AndroidSdkVersions minSdkVersion
+            {
+                get
+                {
+                    return internalMinSdkVersion;
+                }
+                set
+                {
+                    if (value != AndroidSdkVersions.AndroidApiLevelAuto && value < minSupportedSdkVersion)
+                        Debug.LogError(PlayerSettings.Android.MinSupportedAPILevelWarning);
+                    internalMinSdkVersion = value;
+                }
+            }
+
+            // Internal Minimal Android SDK version
+            private static extern AndroidSdkVersions internalMinSdkVersion
             {
                 [NativeMethod("GetAndroidMinSdkVersion")]
                 get;
@@ -361,7 +411,22 @@ namespace UnityEditor
             }
 
             // Target Android SDK version
-            public static extern AndroidSdkVersions targetSdkVersion
+            public static AndroidSdkVersions targetSdkVersion
+            {
+                get
+                {
+                    return internalTargetSdkVersion;
+                }
+                set
+                {
+                    if (value != AndroidSdkVersions.AndroidApiLevelAuto && value < minSupportedSdkVersion)
+                        Debug.LogError(PlayerSettings.Android.MinSupportedAPILevelWarning);
+                    internalTargetSdkVersion = value;
+                }
+            }
+
+            // Internal target Android SDK version
+            private static extern AndroidSdkVersions internalTargetSdkVersion
             {
                 [NativeMethod("GetAndroidTargetSdkVersion")]
                 get;
@@ -375,6 +440,15 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidPreferredInstallLocation")]
                 get;
                 [NativeMethod("SetAndroidPreferredInstallLocation")]
+                set;
+            }
+
+            // Preferred data location
+            public static extern AndroidPreferredDataLocation preferredDataLocation
+            {
+                [NativeMethod("GetAndroidPreferredDataLocation")]
+                get;
+                [NativeMethod("SetAndroidPreferredDataLocation")]
                 set;
             }
 
@@ -403,22 +477,7 @@ namespace UnityEditor
             [Obsolete("androidIsGame has been deprecated. Please use appCategory instead.", false)]
             public static bool androidIsGame
             {
-                get
-                {
-                    if (!useAndroidAppCategory)
-                        return false;
-
-                    if (GetAndroidAppCategory() == AndroidAppCategory.Game)
-                        return true;
-
-                    if (GetAndroidAppCategory() == AndroidAppCategory.Other)
-                    {
-                        string otherValue = androidAppCategoryOther.Trim();
-                        return string.Equals(otherValue, AndroidAppCategory.Game.ToString(), StringComparison.OrdinalIgnoreCase);
-                    }
-
-                    return false;
-                }
+                get => string.Equals(appCategory, AndroidAppCategory.Game.ToString(), StringComparison.OrdinalIgnoreCase);
                 set
                 {
                     useAndroidAppCategory = value;
@@ -439,9 +498,16 @@ namespace UnityEditor
                     if (!useAndroidAppCategory)
                         return "";
 
-                    return (GetAndroidAppCategory() == AndroidAppCategory.Other)
-                        ? androidAppCategoryOther
-                        : GetAndroidAppCategory().ToString().ToLowerInvariant();
+                    var category = GetAndroidAppCategory();
+                    if (category == AndroidAppCategory.Other)
+                    {
+                        if (string.Equals(androidAppCategoryOther.Trim(), AndroidAppCategory.Game.ToString(), StringComparison.OrdinalIgnoreCase))
+                            return AndroidAppCategory.Game.ToString().ToLowerInvariant();
+                        else
+                            return androidAppCategoryOther;
+                    }
+
+                    return category.ToString().ToLowerInvariant();
                 }
                 set
                 {
@@ -634,6 +700,14 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidShowActivityIndicatorOnLoading")]
                 get;
                 [NativeMethod("SetAndroidShowActivityIndicatorOnLoading")]
+                set;
+            }
+
+            public static extern AndroidDisplayOptions displayOptions
+            {
+                [NativeMethod("GetAndroidDisplayOptions")]
+                get;
+                [NativeMethod("SetAndroidDisplayOptions")]
                 set;
             }
 

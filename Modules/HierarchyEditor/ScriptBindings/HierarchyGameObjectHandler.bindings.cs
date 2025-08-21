@@ -74,8 +74,6 @@ namespace Unity.Hierarchy.Editor
 
         protected override void Initialize()
         {
-            base.Initialize();
-
             var currentStage = StageUtility.GetCurrentStage();
             m_State.CustomParentForNewGameObjects = currentStage is PrefabStage prefabStage ? prefabStage.prefabContentsRoot.transform : null;
         }
@@ -241,7 +239,7 @@ namespace Unity.Hierarchy.Editor
             return AllowCutCopyAndDuplicate(view);
         }
 
-        protected override void Bind(HierarchyViewItem item)
+        protected override void OnBindItem(HierarchyViewItem item)
         {
             item.AddToClassList(k_GameObjectUssClass);
 
@@ -263,7 +261,7 @@ namespace Unity.Hierarchy.Editor
 
         protected override void PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
         {
-            HierarchyViewContextMenuUtility.PopulateCommonContextMenuItems(view, item?.Node ?? HierarchyNode.Null, this, menu);
+            HierarchyWindowContextMenuUtility.PopulateCommonContextMenuItems(view, item?.Node ?? HierarchyNode.Null, this, menu);
             BuildGameObjectContextMenu(view, item?.Node ?? HierarchyNode.Null, GetGameObject(item?.Node ?? HierarchyNode.Null), menu);
         }
 

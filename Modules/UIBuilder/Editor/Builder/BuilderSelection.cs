@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -298,7 +299,9 @@ namespace Unity.UI.Builder
             if (vea != null && vea.ruleIndex >= 0 && changeType.HasFlag(BuilderHierarchyChangeType.InlineStyle))
             {
                 var vta = m_PaneWindow.document.visualTreeAsset;
-                var rule = vta.GetOrCreateInlineStyleRule(vea);
+                Assert.IsNotNull(vta.inlineSheet);
+                Assert.IsTrue(vea.ruleIndex < vta.inlineSheet.rules.Length);
+                var rule = vta.inlineSheet.GetRule(vea.ruleIndex);
 
                 element.UpdateInlineRule(vta.inlineSheet, rule);
 

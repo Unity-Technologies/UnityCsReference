@@ -66,8 +66,18 @@ namespace UnityEngine.UIElements.UIR
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
             bool changesDefaultMaterial = ve.defaultMaterial != null;
+            bool changesDefault = true;
             if (changesDefaultMaterial)
                 mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.defaultMaterial);
+            else
+            {
+                changesDefaultMaterial = ve.resolvedStyle.unityMaterial != null;
+                if (changesDefaultMaterial)
+                {
+                    changesDefault = false;
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                }
+            }
 
             bool mustPopClipping = false;
 
@@ -92,13 +102,17 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
+            if (!changesDefault && changesDefaultMaterial)
+            {
+                mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
+            }
 
             mgc.entryRecorder.DrawChildren(mgc.parentEntry);
 
             if (mustPopClipping)
                 PopVisualElementClipping(mgc);
 
-            if (changesDefaultMaterial)
+            if (changesDefault && changesDefaultMaterial)
                 mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
 
             if (isGroupTransform)

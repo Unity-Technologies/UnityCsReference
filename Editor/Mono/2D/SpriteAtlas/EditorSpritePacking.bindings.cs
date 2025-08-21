@@ -85,12 +85,23 @@ namespace UnityEditor.U2D.SpritePacking
         public int page;
         public int textureWidth;
         public int textureHeight;
+        public int rotation;
     };
 
     [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlas.h")]
     [NativeHeader("Editor/Src/2D/SpriteAtlas/SpriteAtlasPackingUtilities.h")]
     internal class SpritePackUtility
     {
+        // Strictly Internal
+        [FreeFunction("SpritePacking::PackAtlasForPreview")]
+        extern internal static JobHandle PackAtlasForPreview(GUID guid, SpriteAtlasAsset spriteAtlasAsset, SpriteAtlasImporter spriteAtlasImporter);
+
+        [FreeFunction("SpritePacking::GetPreviewTextures")]
+        extern internal static Texture2D[] GetPreviewTextures(GUID guid);
+
+        [FreeFunction("SpritePacking::GetPreviewSpriteAtlasGUID")]
+        extern internal static GUID GetActivePreviewAtlasGUID();
+
         internal unsafe static SpritePackDataset PackCustomSpritesWrapper(SpritePackDataset input, SpritePackConfig packConfig, Allocator alloc)
         {
             var output = new SpritePackDataset();

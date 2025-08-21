@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering; //for GraphicsFormat
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.VectorGraphicsModule")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterUtils.h")]
     [NativeHeader("Runtime/Graphics/TextureFormat.h")]
     [NativeHeader("Runtime/Graphics/Format.h")]

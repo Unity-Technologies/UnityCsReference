@@ -583,7 +583,8 @@ namespace UnityEditor.Search
 
         internal virtual void OnDisable()
         {
-            m_CustomPanelContainer.config = null;
+            if (m_CustomPanelContainer != null)
+                m_CustomPanelContainer.config = null;
 
             ClearShortcutBindings();
             s_FocusedWindow = null;
@@ -605,8 +606,12 @@ namespace UnityEditor.Search
 
             SaveSessionSettings();
 
-            m_SearchView.syncSearch = false;
-            m_SearchView?.Dispose();
+            if (m_SearchView != null)
+            {
+                m_SearchView.syncSearch = false;
+                m_SearchView.Dispose();
+            }
+
             guiCreated = false;
 
             m_SearchMonitorView.Dispose();
@@ -650,7 +655,7 @@ namespace UnityEditor.Search
 
             m_DebounceOff = null;
 
-            UpdateWindowTitle();
+            UpdateWindowTitle(asyncResultUpdate: true);
             SaveItemCountToPropertyDatabase(false);
         }
 
@@ -858,7 +863,7 @@ namespace UnityEditor.Search
             Refresh();
         }
 
-        protected virtual void UpdateWindowTitle()
+        protected virtual void UpdateWindowTitle(bool asyncResultUpdate = false)
         {
             if (HasCustomTitle())
                 titleContent = viewState.windowTitle;
@@ -886,6 +891,9 @@ namespace UnityEditor.Search
                 if (Utils.IsRunningTests())
                     titleContent.text = $"[TEST] {titleContent.text}";
             }
+
+            if (asyncResultUpdate)
+                Repaint();
         }
 
         IEnumerable<SearchQueryError> ISearchView.GetAllVisibleErrors()

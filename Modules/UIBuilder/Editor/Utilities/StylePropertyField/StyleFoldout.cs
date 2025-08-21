@@ -74,7 +74,7 @@ namespace Unity.UI.Builder
             set
             {
                 m_Foldout.text = value;
-                NotifyPropertyChanged(nameof(text));
+                NotifyPropertyChanged(textProperty);
             }
         }
 
@@ -89,7 +89,7 @@ namespace Unity.UI.Builder
                 m_Foldout.toggle.EnableInClassList(categoryUssClassName, value);
                 contentContainer.EnableInClassList(categoryUssClassName, value);
                 EnableInClassList(categoryUssClassName, value);
-                NotifyPropertyChanged(nameof(isCategory));
+                NotifyPropertyChanged(isCategoryProperty);
             }
         }
 

@@ -16,7 +16,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Profiling.Editor
 {
-    // Must be in sync with UnityProfilingSessionMetaDataEntry in!
+    // Must be in sync with UnityProfilingSessionMetaDataEntry in Profiler.h!
     internal enum ProfilingSessionMetaDataEntry
     {
         Version,
@@ -30,5 +30,7 @@ namespace Unity.Profiling.Editor
         FrameCountSinceStartup,
         UnityVersion,
         ProductName,
+        ScreenshotTextureInfo,
+        ScreenshotRawTextureData,
     }
 }

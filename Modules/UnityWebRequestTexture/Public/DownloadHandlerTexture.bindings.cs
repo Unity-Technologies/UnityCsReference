@@ -64,7 +64,7 @@ namespace UnityEngine.Networking
     {
         private NativeArray<byte> m_NativeData;
 
-        private static extern IntPtr Create([Unmarshalled] DownloadHandlerTexture obj, DownloadedTextureParams parameters);
+        private static extern IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerTexture obj, DownloadedTextureParams parameters);
 
         private void InternalCreateTexture(DownloadedTextureParams parameters)
         {

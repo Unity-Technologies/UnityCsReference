@@ -4,100 +4,258 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.UIElements;
+using UnityEditor.UIElements.ProjectSettings;
+using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Presets
 {
     [CustomEditor(typeof(PresetManager))]
-    internal sealed class PresetManagerEditor : Editor
+    internal sealed class PresetManagerEditor : ProjectSettingsBaseEditor
     {
+        const string k_ProjectSettingsStyleSheet = "StyleSheets/ProjectSettings/ProjectSettingsCommon.uss";
+        const string k_view = "UXML/ProjectSettings/PresetManagerSettingsView.uxml";
+        const string k_PresetPerTypeList = "UXML/ProjectSettings/PresetPerTypeList.uxml";
+        const string k_PresetPerTypeListItem = "UXML/ProjectSettings/PresetPerTypeListItem.uxml";
+        internal override string targetTitle => "Preset Manager";
         class Content
         {
             public static GUIContent presetManager = EditorGUIUtility.TrTextContent("Preset management");
         }
 
-        static class Style
+        struct DefaultPresetListData
         {
-            public static GUIContent managerIcon = EditorGUIUtility.IconContent("GameManager Icon");
-            public static GUIStyle centerStyle = new GUIStyle() {alignment = TextAnchor.MiddleCenter};
-
-            public static GUIContent addDefault = EditorGUIUtility.TrTextContent("Add Default Preset");
-            public static GUIStyle addComponentButtonStyle = "AC Button";
+            public PresetType presetType;
+            public SerializedProperty defaultPresets;
+            public string className;
         }
 
         string m_Search = string.Empty;
         SerializedProperty m_DefaultPresets;
-        List<DefaultPresetReorderableList> m_Defaults;
-        Vector2 m_ScrollPosition;
+        List<VisualElement> m_Defaults;
+        VisualElement m_RootVisualElement;
+        VisualTreeAsset m_presetPerTypeListVisualAsset;
+        VisualTreeAsset m_presetPerTypeListItemVisualAsset;
+        int m_LastDefaultPresetsArraySize = -1;
 
-        internal override void OnHeaderIconGUI(Rect iconRect)
+        static string ClassName(string fullTypeName)
         {
-            GUI.Label(iconRect, Style.managerIcon, Style.centerStyle);
+            if (string.IsNullOrEmpty(fullTypeName))
+                return "Unsupported Type";
+            int lastDot = fullTypeName.LastIndexOf(".");
+            if (lastDot == -1)
+                return fullTypeName;
+            return fullTypeName.Substring(lastDot + 1);
         }
 
-        internal override void OnHeaderTitleGUI(Rect titleRect, string header)
-        {
-            header = "PresetManager";
-            base.OnHeaderTitleGUI(titleRect, header);
-        }
-
-        void OnEnable()
-        {
-            SetupDefaultList();
-        }
-
-        void SetupDefaultList()
+        public override VisualElement CreateInspectorGUI()
         {
             m_DefaultPresets = serializedObject.FindProperty("m_DefaultPresets");
-            m_Defaults = new List<DefaultPresetReorderableList>(m_DefaultPresets.arraySize);
-            for (int i = 0; i < m_DefaultPresets.arraySize; ++i)
-            {
-                SerializedProperty defaultPreset = m_DefaultPresets.GetArrayElementAtIndex(i);
-                var presetType = new PresetType(defaultPreset.FindPropertyRelative("first"));
-                var list = new DefaultPresetReorderableList(serializedObject, defaultPreset.FindPropertyRelative("second"), presetType);
-                m_Defaults.Add(list);
-            }
 
-            m_Defaults.Sort((a, b) => a.className.CompareTo(b.className));
+            m_RootVisualElement = new VisualElement();
+            VisualTreeAsset presetManagerSettingsView = EditorGUIUtility.Load(k_view) as VisualTreeAsset;
+            presetManagerSettingsView.CloneTree(m_RootVisualElement);
+
+            m_presetPerTypeListVisualAsset = EditorGUIUtility.Load(k_PresetPerTypeList) as VisualTreeAsset;
+            m_presetPerTypeListItemVisualAsset = EditorGUIUtility.Load(k_PresetPerTypeListItem) as VisualTreeAsset;
+            CreateDefaultPresetsLists();
+
+            var searchField = m_RootVisualElement.Q<ToolbarSearchField>("searchField");
+            searchField.value = m_Search;
+            searchField.RegisterValueChangedCallback(evt =>
+            {
+                m_Search = evt.newValue;
+                RefreshDefaultPresetVisibility();
+            });
+
+            var addDefaultButton = m_RootVisualElement.Q<UnityEngine.UIElements.Button>("addDefaultButton");
+            addDefaultButton.clicked += () =>
+            {
+                AddPresetTypeWindow.Show(addDefaultButton.worldBound, OnPresetTypeWindowSelection, string.IsNullOrEmpty(m_Search) ? null : m_Search);
+            };
+
+            EditorApplication.update += CheckSerializedObjectChanged;
+            m_RootVisualElement.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                EditorApplication.update -= CheckSerializedObjectChanged;
+            });
+            
+            return m_RootVisualElement;
         }
 
-        public override void OnInspectorGUI()
+        private void CreateDefaultPresetsLists()
         {
-            if (serializedObject.UpdateIfRequiredOrScript() || m_DefaultPresets.arraySize != m_Defaults.Count)
-                SetupDefaultList();
+            var presetPerTypeListContainer = m_RootVisualElement.Q<VisualElement>("presetPerTypeListContainer");
+            presetPerTypeListContainer.Clear();
 
-            m_Search = EditorGUI.SearchField(EditorGUILayout.GetControlRect(), m_Search);
-            EditorGUILayout.Space();
-
-            using (var scope = new EditorGUILayout.VerticalScrollViewScope(m_ScrollPosition))
+            m_LastDefaultPresetsArraySize = m_DefaultPresets.arraySize;
+            var defaultPresetList = new List<DefaultPresetListData>(m_DefaultPresets.arraySize);
+            for (int i = 0; i < m_DefaultPresets.arraySize; ++i)
             {
-                for (int i = 0; i < m_DefaultPresets.arraySize; ++i)
+                SerializedProperty defaultPresetListElement = m_DefaultPresets.GetArrayElementAtIndex(i);
+                var presetType = new PresetType(defaultPresetListElement.FindPropertyRelative("first"));
+                defaultPresetList.Add( new DefaultPresetListData
                 {
-                    if (string.IsNullOrEmpty(m_Search) || m_Defaults[i].fullClassName.ToLower().Contains(m_Search.ToLower()))
-                        m_Defaults[i].DoLayoutList();
-                }
-
-                m_ScrollPosition = scope.scrollPosition;
+                    presetType = presetType,
+                    defaultPresets = defaultPresetListElement.FindPropertyRelative("second"),
+                    className = ClassName(presetType.GetManagedTypeName())
+                });
             }
+            defaultPresetList.Sort((a, b) => a.className.CompareTo(b.className));
 
-            EditorGUILayout.Space();
-
-            using (new EditorGUILayout.HorizontalScope())
+            m_Defaults = new List<VisualElement>(defaultPresetList.Count);
+            for (int i = 0; i < defaultPresetList.Count; ++i)
             {
-                GUILayout.FlexibleSpace();
-                Rect rect = GUILayoutUtility.GetRect(Style.addDefault, Style.addComponentButtonStyle);
-                if (EditorGUI.DropdownButton(rect, Style.addDefault, FocusType.Passive, Style.addComponentButtonStyle))
+                var data = defaultPresetList[i];
+                var listContainer = new VisualElement();
+                m_presetPerTypeListVisualAsset.CloneTree(listContainer);
+                listContainer.name = data.className;
+                presetPerTypeListContainer.Add(listContainer);
+                listContainer.Q<Label>("filterLabel").text = EditorGUIUtility.TrTextContent("Filter").text;
+                listContainer.Q<Label>("classNameLabel").text = data.className;
+                listContainer.Q<Label>("fullNameLabel").text = $"({data.presetType.GetManagedTypeName()})";
+                listContainer.Q<VisualElement>("icon").style.backgroundImage = data.presetType.GetIcon();
+               
+                var listView = listContainer.Q<ListView>("defaultPresetList");
+                listView.userData = data.presetType;
+                
+
+                listView.makeItem = () =>
                 {
-                    if (AddPresetTypeWindow.Show(rect, OnPresetTypeWindowSelection, string.IsNullOrEmpty(m_Search) ? null : m_Search))
+                    var container = new VisualElement();
+                    m_presetPerTypeListItemVisualAsset.CloneTree(container);
+                    return container;
+                };
+
+                listView.bindItem = (element, index) =>
+                {
+                    if (!data.defaultPresets.isValid)
+                        return;
+                    var toggle = element.Q<Toggle>("enabledToggle");
+                    var presetProperty = data.defaultPresets.GetArrayElementAtIndex(index);
+                    var boolProp = presetProperty.FindPropertyRelative("m_Disabled");
+
+                    EventCallback<ChangeEvent<bool>> toggleCallback = evt =>
                     {
-                        GUIUtility.ExitGUI();
-                    }
-                }
+                        boolProp.boolValue = !evt.newValue;
+                        boolProp.serializedObject.ApplyModifiedProperties();
+                    };
+                    toggle.RegisterValueChangedCallback(toggleCallback);
+                    toggle.userData = toggleCallback;
 
-                GUILayout.FlexibleSpace();
+                    toggle.SetValueWithoutNotify(!boolProp.boolValue);
+
+                    var filterField = element.Q<TextField>("filterField");
+                    filterField.BindProperty(presetProperty.FindPropertyRelative("m_Filter"));
+
+                    var presetField = element.Q<UIElements.ObjectField>("presetField");
+                    
+                    var display = presetField.Query<VisualElement>().Class("unity-object-field-display").First();
+                    presetField.objectType = typeof(Preset);
+                    presetField.BindProperty(presetProperty.FindPropertyRelative("m_Preset"));
+
+                    EventCallback<DragPerformEvent> dragPerformCallback = evt =>
+                    {
+                        var draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
+                        if (draggedObject is Preset preset && preset.GetPresetType() == data.presetType)
+                        {
+                            presetField.value = preset;
+                        }
+                        DragAndDrop.AcceptDrag();
+                        if (display != null)
+                            display.RemoveFromClassList("unity-object-field-display--accept-drop");
+                        evt.StopPropagation();
+                    };
+                    presetField.RegisterCallback(dragPerformCallback, TrickleDown.TrickleDown);
+                    presetField.SetProperty("drag-perform", dragPerformCallback);
+
+                    EventCallback<DragUpdatedEvent> dragUpdatedCallback = evt =>
+                    {
+                        var draggedObject = DragAndDrop.objectReferences.FirstOrDefault();
+                        if (draggedObject is Preset preset && preset.GetPresetType() == data.presetType)
+                        {
+                            DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                            if (display != null)
+                                display.AddToClassList("unity-object-field-display--accept-drop");
+                        }
+                        else
+                        {
+                            DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                            if (display != null)
+                                display.RemoveFromClassList("unity-object-field-display--accept-drop");
+                        }
+                        evt.StopPropagation();
+                    };
+                    presetField.RegisterCallback(dragUpdatedCallback, TrickleDown.TrickleDown);
+                    presetField.SetProperty("drag-updated", dragUpdatedCallback);
+
+                    EventCallback<MouseDownEvent> mouseDownCallback = evt =>
+                    {
+                        if (evt.button == 0 && evt.target is VisualElement ve && ve.fullTypeName == "UnityEditor.UIElements.ObjectField+ObjectFieldSelector")
+                        {
+                            var objectField = (UIElements.ObjectField)ve.parent.parent;
+                            var presetObject = (Preset)objectField.value;
+                            var presetType = (PresetType)listView.userData;
+                            var property = serializedObject.FindProperty(objectField.bindingPath);
+                            var presetContext = new PresetContext(presetType, presetObject, property, false);
+                            PresetSelector.ShowSelector(presetContext);
+                            presetContext.OnSelectionChanged = (x) => { objectField.value = x; };
+                            evt.StopPropagation();
+                        }
+                    };
+                    presetField.RegisterCallback(mouseDownCallback, TrickleDown.TrickleDown);
+                    presetField.SetProperty("mouse-down", mouseDownCallback);
+                };
+                
+                listView.unbindItem = (element, index) =>
+                {
+                    var toggle = element.Q<Toggle>("enabledToggle");
+                    if (toggle.userData is EventCallback<ChangeEvent<bool>> toggleCallback)
+                    {
+                        toggle.UnregisterValueChangedCallback(toggleCallback);
+                        toggle.userData = null;
+                    }
+                    
+                    var presetField = element.Q<UIElements.ObjectField>("presetField");
+                    if (presetField != null)
+                    {
+                        var dragPerformCallback = presetField.GetProperty("drag-perform") as EventCallback<DragPerformEvent>;
+                        if (dragPerformCallback != null)
+                            presetField.UnregisterCallback(dragPerformCallback, TrickleDown.TrickleDown);
+
+                        var dragUpdatedCallback = presetField.GetProperty("drag-updated") as EventCallback<DragUpdatedEvent>;
+                        if (dragUpdatedCallback != null)
+                            presetField.UnregisterCallback(dragUpdatedCallback, TrickleDown.TrickleDown);
+
+                        var mouseDownCallback = presetField.GetProperty("mouse-down") as EventCallback<MouseDownEvent>;
+                        if (mouseDownCallback != null)
+                            presetField.UnregisterCallback(mouseDownCallback, TrickleDown.TrickleDown);
+
+                        presetField.SetProperty("drag-perform", null);
+                        presetField.SetProperty("drag-updated", null);
+                        presetField.SetProperty("mouse-down", null);
+                        presetField.Unbind();
+                    }
+
+                    var filterField = element.Q<TextField>("filterField");
+                    if (filterField != null)
+                        filterField.Unbind();
+                };
+                
+                m_Defaults.Add(listContainer);
+                listView.BindProperty(data.defaultPresets);
             }
-            GUILayout.FlexibleSpace();
-            serializedObject.ApplyModifiedProperties();
+            RefreshDefaultPresetVisibility();
+        }
+
+        private void RefreshDefaultPresetVisibility()
+        {
+            foreach (var defaultPreset in m_Defaults)
+            {
+                defaultPreset.style.display = defaultPreset.name.ToLower().Contains(m_Search.ToLower()) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
 
         void OnPresetTypeWindowSelection(PresetType type)
@@ -107,6 +265,8 @@ namespace UnityEditor.Presets
             {
                 manager.AddPresetType(type);
             }
+            serializedObject.Update();
+            CreateDefaultPresetsLists();
             Undo.FlushUndoRecordObjects();
         }
 
@@ -116,15 +276,31 @@ namespace UnityEditor.Presets
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/Preset Manager", "ProjectSettings/PresetManager.asset",
                 SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
-            provider.inspectorUpdateHandler += () =>
+            provider.activateHandler = (text, root) =>
             {
-                if (provider.settingsEditor != null &&
-                    provider.settingsEditor.serializedObject.UpdateIfRequiredOrScript())
-                {
-                    provider.settingsWindow.Repaint();
-                }
+                var serializedObject = provider.settingsEditor.serializedObject;
+                var titleBar = new ProjectSettingsTitleBar("Preset Manager");
+                titleBar.Initialize(serializedObject);
+
+                var styleSheet = EditorGUIUtility.Load(k_ProjectSettingsStyleSheet) as StyleSheet;
+                root.styleSheets.Add(styleSheet);
+
+                root.Add(titleBar);
+                root.Add(provider.settingsEditor.CreateInspectorGUI());
             };
             return provider;
+        }
+
+        private void CheckSerializedObjectChanged()
+        {
+            if (serializedObject.isValid)
+            {
+                serializedObject.Update();
+                if (m_DefaultPresets.isValid && m_LastDefaultPresetsArraySize != m_DefaultPresets.arraySize)
+                {
+                    CreateDefaultPresetsLists();
+                }    
+            }
         }
     }
 }

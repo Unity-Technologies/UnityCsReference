@@ -405,6 +405,10 @@ namespace UnityEditor
             get;
         }
 
+        [VisibleToOtherModules()]
+        [FreeFunction("IsBuildingEditorResources")]
+        internal static extern bool IsBuildingEditorResources();
+
         public static extern bool isFocused
         {
             [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]

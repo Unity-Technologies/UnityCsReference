@@ -41,22 +41,20 @@ namespace UnityEngine
         }
 
         // Color32 can be implicitly converted to and from [[Color]].
-        public static implicit operator Color32(Color c)
-        {
-            return new Color32((byte)(Mathf.Round((Mathf.Clamp01(c.r) * 255f))),
+        public static implicit operator Color32(in Color c) => new Color32(
+                (byte)(Mathf.Round((Mathf.Clamp01(c.r) * 255f))),
                 (byte)(Mathf.Round((Mathf.Clamp01(c.g) * 255f))),
                 (byte)(Mathf.Round((Mathf.Clamp01(c.b) * 255f))),
                 (byte)(Mathf.Round((Mathf.Clamp01(c.a) * 255f))));
-        }
 
         // Color32 can be implicitly converted to and from [[Color]].
-        public static implicit operator Color(Color32 c)
-        {
-            return new Color(c.r / 255f, c.g / 255f, c.b / 255f, c.a / 255f);
-        }
+        public static implicit operator Color(in Color32 c) => new Color(c.r / 255f, c.g / 255f, c.b / 255f, c.a / 255f);
 
         // Interpolates between colors /a/ and /b/ by /t/.
-        public static Color32 Lerp(Color32 a, Color32 b, float t)
+        public static Color32 Lerp(Color32 a, Color32 b, float t) => Lerp(in a, in b, t);
+
+        // Interpolates between colors /a/ and /b/ by /t/.
+        public static Color32 Lerp(in Color32 a, in Color32 b, float t)
         {
             t = Mathf.Clamp01(t);
             return new Color32(
@@ -68,20 +66,20 @@ namespace UnityEngine
         }
 
         // Interpolates between colors /a/ and /b/ by /t/ without clamping the interpolant
-        public static Color32 LerpUnclamped(Color32 a, Color32 b, float t)
-        {
-            return new Color32(
+        public static Color32 LerpUnclamped(Color32 a, Color32 b, float t) => LerpUnclamped(in a, in b, t);
+
+        // Interpolates between colors /a/ and /b/ by /t/ without clamping the interpolant
+        public static Color32 LerpUnclamped(in Color32 a, in Color32 b, float t) => new Color32(
                 (byte)(a.r + (b.r - a.r) * t),
                 (byte)(a.g + (b.g - a.g) * t),
                 (byte)(a.b + (b.b - a.b) * t),
                 (byte)(a.a + (b.a - a.a) * t)
             );
-        }
 
         // Access the r, g, b,a components using [0], [1], [2], [3] respectively.
         public byte this[int index]
         {
-            get
+            readonly get
             {
                 switch (index)
                 {
@@ -108,37 +106,25 @@ namespace UnityEngine
             }
         }
 
-        public override int GetHashCode()
-        {
-            return rgba.GetHashCode();
-        }
+        public override readonly int GetHashCode() => rgba.GetHashCode();
 
-        public override bool Equals(object other)
+        public override readonly bool Equals(object other)
         {
             if (other is Color32 color)
                 return Equals(color);
             return false;
         }
 
-        public bool Equals(Color32 other)
-        {
-            return rgba == other.rgba;
-        }
+        public readonly bool Equals(Color32 other) => rgba == other.rgba;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override readonly string ToString() => ToString(null, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;

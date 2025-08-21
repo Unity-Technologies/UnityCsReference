@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,11 +12,23 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
+    struct SynchronizePathResult
+    {
+        public bool success { get; set; }
+        public UxmlAsset uxmlAsset { get; set; }
+        public object serializedData { get; set; }
+        public UxmlSerializedDataDescription dataDescription { get; set; }
+        public UxmlSerializedAttributeDescription attributeDescription { get; set; }
+        public object attributeOwner { get; set; }
+        public string propertyPath { get; set; }
+    }
+
     internal static class BuilderAssetUtilities
     {
         public static string assetsPath { get; } = Application.dataPath;
@@ -24,6 +37,20 @@ namespace Unity.UI.Builder
 
         public const string defaultRuntimeThemeContent = "@import url(\"" + ThemeRegistry.kThemeScheme +
                                                            "://default\");\nVisualElement {}";
+
+
+        static readonly Dictionary<string, string[]> s_PathPartsCache = new();
+        static bool s_DocumentUndoRecorded;
+
+        internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
+
+        const string k_ArraySizePart = "size";
+
+        // UxmlTraits
+
+        // Sync path
+        static readonly List<UxmlObjectAsset> s_TempUxmlAssets = new();
+        static readonly object[] s_SingleUxmlSerializedData = new object[1];
 
         internal static bool IsProjectDefaultRuntimeAsset(string path)
         {
@@ -641,6 +668,575 @@ namespace Unity.UI.Builder
                 UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
             if ((changes & LiveReloadChanges.Styles) != 0)
                 UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
+        }
+
+        // Check if VisualElement will support type as a child. Assume true by default, unless explicitly false.
+        public static bool IsSupportedChildType(VisualElement visualElement, Type type)
+        {
+            var fullName = visualElement?.GetType().FullName;
+            UxmlSerializedDataDescription desc = null;
+            if (!string.IsNullOrEmpty(fullName))
+                desc = UxmlSerializedDataRegistry.GetDescription(fullName);
+
+            if (desc != null && !desc.IsSupportedChild(type))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static void UndoRecordDocument(BuilderUxmlAttributesEditingContext context, string reason)
+        {
+            if (context.undoEnabled)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RegisterCompleteObjectUndo(context.visualTree, reason);
+            }
+        }
+
+        public static SynchronizePathResult AddUxmlObjectToSerializedData(BuilderUxmlAttributesEditingContext context, SerializedProperty property, Type type, Dictionary<string, object> values = null)
+        {
+            Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
+
+            if (property.isArray)
+            {
+                property.InsertArrayElementAtIndex(property.arraySize);
+                property = property.GetArrayElementAtIndex(property.arraySize - 1);
+            }
+
+            var serializedObj = type != null ? UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType) : null;
+
+            // sets the attributes of serializedObj from values
+            if (values != null)
+            {
+                var description = UxmlSerializedDataRegistry.GetDescription(type.DeclaringType.FullName);
+                foreach (var kvp in values)
+                {
+                    var propertyAttribute = description.FindAttributeWithPropertyName(kvp.Key);
+
+                    if (propertyAttribute == null)
+                    {
+                        Debug.LogError($"Could not find attribute with name {kvp.Key} in {type.DeclaringType.FullName}");
+                        continue;
+                    }
+                    propertyAttribute.SetSerializedValue(serializedObj, kvp.Value);
+                    propertyAttribute.SetSerializedValueAttributeFlags(serializedObj, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                }
+            }
+            property.managedReferenceValue = serializedObj;
+            property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+            return SyncUxmlObjectChanges(context, property.propertyPath);
+        }
+
+        public static SynchronizePathResult SyncUxmlObjectChanges(BuilderUxmlAttributesEditingContext context, string propertyPath)
+        {
+            if (context.batchedChangesController.isInsideUndoRedoUpdate)
+                return default;
+
+            var undoGroup = context.batchedChangesController.GetCurrentUndoGroup();
+            Undo.IncrementCurrentGroup();
+            var ret = SynchronizePath(context, propertyPath, true);
+            CallDeserializeOnElement(context);
+            context.NotifyAttributesChanged(null);
+            Undo.CollapseUndoOperations(undoGroup);
+            return ret;
+        }
+
+        /// <summary>
+        /// Synchronizes the UXML serialized data to the current UXML asset and sub-UXML objects that are part of the path.
+        /// __Note__: To synchronize the attribute owner when extracting, call <see cref="CallDeserializeOnElement"/>.
+        /// </summary>
+        /// <param name="propertyPath">The full serialized property path.</param>
+        /// <param name="changeUxmlAssets">Whether to add missing UXML assets in the path.</param>
+        /// <returns></returns>
+        public static SynchronizePathResult SynchronizePath(BuilderUxmlAttributesEditingContext context, string propertyPath, bool changeUxmlAssets)
+        {
+            SynchronizePathResult result = default;
+
+            if (string.IsNullOrEmpty(propertyPath))
+                return result;
+
+            // Cache the split so we don't have to do it every time.
+            if (!s_PathPartsCache.TryGetValue(propertyPath, out var pathParts))
+            {
+                if (context.serializedBasePath == propertyPath)
+                {
+                    pathParts = Array.Empty<string>();
+                }
+                else
+                {
+                    pathParts = propertyPath[(context.serializedBasePath.Length + 1)..].Split('.');
+                }
+
+                s_PathPartsCache[propertyPath] = pathParts;
+            }
+
+            s_DocumentUndoRecorded = false;
+            object currentUxmlSerializedData = context.uxmlSerializedData;
+            UxmlAsset currentAttributesUxmlOwner = context.elementAsset;
+            result.attributeOwner = context.element;
+            result.propertyPath = propertyPath;
+
+            for (int i = 0; i < pathParts.Length; ++i)
+            {
+                if (currentUxmlSerializedData == null)
+                {
+                    continue;
+                }
+
+                // Is the current value a list?
+                if (currentUxmlSerializedData is IList serializedDataList)
+                {
+                    // Find the item index from the path and extract it.
+                    var dataPath = pathParts[i + 1];
+
+                    // Targeting the Array.size, nothing more to sync. The array size was synchronized in the previous
+                    // loop and we don't want to return anything here because the result at this path is not part of UxmlSerializedData.
+                    if (dataPath == k_ArraySizePart)
+                    {
+                        result.success = false;
+                        return result;
+                    }
+
+                    var arrayItemIndexStart = dataPath.IndexOf('[') + 1;
+                    var arrayItemIndexEnd = dataPath.IndexOf(']');
+                    var indexString = dataPath.Substring(arrayItemIndexStart, arrayItemIndexEnd - arrayItemIndexStart);
+                    var listIndex = int.Parse(indexString);
+
+                    currentAttributesUxmlOwner = s_TempUxmlAssets[listIndex];
+                    currentUxmlSerializedData = serializedDataList[listIndex];
+
+                    if (result.attributeOwner is IList attributeOwnerList && listIndex < attributeOwnerList.Count)
+                    {
+                        result.attributeOwner = attributeOwnerList[listIndex];
+                    }
+                    else
+                    {
+                        result.attributeOwner = null; // We could not extract the value
+                    }
+
+                    i += 1;
+                    continue;
+                }
+
+                result.dataDescription = UxmlSerializedDataRegistry.GetDescription(currentUxmlSerializedData.GetType().DeclaringType.FullName);
+
+                var name = pathParts[i];
+                result.attributeDescription = result.dataDescription.FindAttributeWithPropertyName(name);
+                var attributeObjectDescription = result.attributeDescription as UxmlSerializedUxmlObjectAttributeDescription;
+                if (attributeObjectDescription == null)
+                    break;
+
+                result.attributeDescription.TryGetValueFromObject(result.attributeOwner, out var updatedAttributeOwner);
+                result.attributeOwner = updatedAttributeOwner;
+
+                var parentUxmlSerializedData = currentUxmlSerializedData as UxmlSerializedData;
+                currentUxmlSerializedData = result.attributeDescription.GetSerializedValue(parentUxmlSerializedData);
+                var uxmlSerializedDataList = currentUxmlSerializedData as IList;
+
+                // If we are not syncing a list then its a single field but we still treat it as a list.
+                if (uxmlSerializedDataList == null)
+                {
+                    s_SingleUxmlSerializedData[0] = currentUxmlSerializedData;
+                    uxmlSerializedDataList = s_SingleUxmlSerializedData;
+                }
+
+                if (!SyncUxmlAssetsFromSerializedData(context, uxmlSerializedDataList, parentUxmlSerializedData, currentAttributesUxmlOwner, attributeObjectDescription, changeUxmlAssets))
+                {
+                    if (!changeUxmlAssets)
+                    {
+                        result.uxmlAsset = currentAttributesUxmlOwner;
+                        result.serializedData = currentUxmlSerializedData;
+                        result.success = false;
+                        return result;
+                    }
+                }
+
+                if (!attributeObjectDescription.isList)
+                    currentAttributesUxmlOwner = currentUxmlSerializedData == null ? null : s_TempUxmlAssets[0];
+            }
+
+            // We need to update the serialized object if we made changes.
+            if (changeUxmlAssets)
+                context.rootSerializedObject.UpdateIfRequiredOrScript();
+
+            result.uxmlAsset = currentAttributesUxmlOwner;
+            result.serializedData = currentUxmlSerializedData;
+            result.success = true;
+            return result;
+        }
+
+        static bool SyncUxmlAssetsFromSerializedData(BuilderUxmlAttributesEditingContext context, IList uxmlSerializedData, UxmlSerializedData parentUxmlSerialized, UxmlAsset parentAsset,
+            UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges)
+        {
+            bool contentsChanged = false;
+
+            s_TempUxmlAssets.Clear();
+
+            using var listPool = ListPool<UxmlObjectAsset>.Get(out var collectedUxmlAssets);
+            parentAsset?.CollectUxmlObjectAssets(attributeDescription.rootName, collectedUxmlAssets);
+
+            // Sync the list by checking each item is at the expected index and moving/adding items as needed.
+            using var hashSetPool = HashSetPool<int>.Get(out var duplicateIds);
+            for (int j = 0; j < uxmlSerializedData.Count; ++j)
+            {
+                var currentSerializedData = uxmlSerializedData[j] as UxmlSerializedData;
+
+                // Avoid adding null uxml objects when attribute description is not a list
+                if (!attributeDescription.isList && currentSerializedData == null)
+                {
+                    continue;
+                }
+
+                if (currentSerializedData != null && currentSerializedData.uxmlAssetId != 0)
+                {
+                    // When a list element is copied it may also copy the id of the original element.
+                    // If the id has already been used we clear it so a new one can be assigned.
+                    if (duplicateIds.Contains(currentSerializedData.uxmlAssetId))
+                        currentSerializedData.uxmlAssetId = 0;
+                }
+
+                // Find matching UxmlObjectAsset
+                if (!ExtractOrCreateUxmlSerializedDataUxmlAsset(context, currentSerializedData, parentUxmlSerialized, parentAsset,
+                    attributeDescription, canMakeChanges, collectedUxmlAssets, out var foundUxmlAsset, j))
+                {
+                    if (!canMakeChanges)
+                        return false;
+                    contentsChanged = true;
+                }
+
+                duplicateIds.Add(foundUxmlAsset.id);
+                s_TempUxmlAssets.Add(foundUxmlAsset);
+            }
+
+            var acceptedTypes = attributeDescription.uxmlObjectAcceptedTypes;
+
+            // If we have uxml assets remaining then the serialized data must have been removed and we should do the same.
+            foreach (var collectedUxmlAsset in collectedUxmlAssets)
+            {
+                if (collectedUxmlAsset == null)
+                    continue;
+
+                var isAcceptedType = false;
+                foreach (var acceptedType in acceptedTypes)
+                {
+                    if (acceptedType.DeclaringType?.FullName == collectedUxmlAsset.fullTypeName)
+                    {
+                        isAcceptedType = true;
+                        break;
+                    }
+                }
+
+                // Do not delete the asset if it's not an accepted type.
+                // This avoid deleting other objects of different types when having multiple UxmlObjectReferences with no name like in MultiColumnListView/TreeView
+                if (!isAcceptedType && collectedUxmlAsset.fullTypeName != UxmlAsset.NullNodeType)
+                {
+                    s_TempUxmlAssets.Add(collectedUxmlAsset);
+                    continue;
+                }
+
+                contentsChanged = true;
+                RecordDocumentUndoOnce(context);
+
+                // We need to do this to ensure that any dependencies are also removed.
+                collectedUxmlAsset.RemoveAssetAndFieldParentIfEmpty();
+            }
+
+            if (contentsChanged)
+                parentAsset.SetUxmlObjectAssets(attributeDescription.rootName, s_TempUxmlAssets);
+
+            return true;
+        }
+
+        static bool ExtractOrCreateUxmlSerializedDataUxmlAsset(BuilderUxmlAttributesEditingContext context, UxmlSerializedData uxmlSerializedData, UxmlSerializedData parentUxmlSerialized,
+            UxmlAsset parentAsset, UxmlSerializedUxmlObjectAttributeDescription attributeDescription, bool canMakeChanges,
+            List<UxmlObjectAsset> uxmlObjectAssets, out UxmlObjectAsset uxmlAsset, int expectedIndex)
+        {
+            // If the asset id is 0 then we do not currently have a UxmlAsset for this serialized data
+            if (uxmlSerializedData?.uxmlAssetId != 0)
+            {
+                // Check if the data is at the expected index.
+                if (expectedIndex < uxmlObjectAssets.Count)
+                {
+                    if (uxmlObjectAssets[expectedIndex] != null &&
+                        ((uxmlSerializedData == null && uxmlObjectAssets[expectedIndex]?.isNull == true) ||
+                        uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[expectedIndex]?.id))
+                    {
+                        uxmlAsset = uxmlObjectAssets[expectedIndex];
+
+                        // We dont remove the asset from the list as it will break the expected index but we do set it to null
+                        uxmlObjectAssets[expectedIndex] = null;
+                        return true;
+                    }
+                }
+
+                if (!canMakeChanges)
+                {
+                    uxmlAsset = null;
+                    return false;
+                }
+
+                RecordDocumentUndoOnce(context);
+
+                // See if we can find it at another index
+                for (int i = 0; i < uxmlObjectAssets.Count; ++i)
+                {
+                    if (uxmlObjectAssets[i] == null)
+                        continue;
+
+                    if ((uxmlSerializedData == null && uxmlObjectAssets[i].isNull) ||
+                        uxmlSerializedData?.uxmlAssetId == uxmlObjectAssets[i].id)
+                    {
+                        uxmlAsset = uxmlObjectAssets[i];
+                        uxmlObjectAssets[i] = null;
+                        return false;
+                    }
+                }
+            }
+
+            if (!canMakeChanges)
+            {
+                uxmlAsset = null;
+                return false;
+            }
+
+            RecordDocumentUndoOnce(context);
+
+            attributeDescription.SetSerializedValueAttributeFlags(parentUxmlSerialized, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
+            // We could not find the asset so we need to create a new one.
+            uxmlAsset = CreateUxmlObjectAsset(context, attributeDescription, uxmlSerializedData, parentAsset);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if any serialized data fields are not set to their default values. If any are not, apply those changes to the UXML asset.
+        /// </summary>
+        /// <param name="uxmlSerializedData">The serialized data to check for non-default values.</param>
+        /// <param name="uxmlAsset">The asset to apply the uxml attributes to.</param>
+        public static void SyncSerializedDataToNewUxmlAsset(BuilderUxmlAttributesEditingContext context, UxmlSerializedData uxmlSerializedData, UxmlAsset uxmlAsset)
+        {
+            if (uxmlSerializedData == null)
+                return;
+
+            var description = UxmlSerializedDataRegistry.GetDescription(uxmlSerializedData.GetType().DeclaringType.FullName);
+            bool madeChanges = false;
+            foreach (var attribute in description.serializedAttributes)
+            {
+                if (attribute.isUxmlObject)
+                {
+                    madeChanges = true;
+                    var attributeUxmlObjectDescription = attribute as UxmlSerializedUxmlObjectAttributeDescription;
+                    attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                    if (attribute.isList)
+                    {
+                        // Extract the serialized data list
+                        var serializedDataList = (IList)attribute.GetSerializedValue(uxmlSerializedData);
+                        foreach (UxmlSerializedData serializedDataItem in serializedDataList)
+                        {
+                            CreateUxmlObjectAsset(context, attributeUxmlObjectDescription, serializedDataItem, uxmlAsset);
+                        }
+                    }
+                    else
+                    {
+                        var serializedData = attribute.GetSerializedValue(uxmlSerializedData) as UxmlSerializedData;
+
+                        // Avoid creating null objects when attribute description is not a list
+                        if (serializedData != null)
+                        {
+                            CreateUxmlObjectAsset(context, attributeUxmlObjectDescription, serializedData, uxmlAsset);
+                        }
+                    }
+                }
+                else
+                {
+                    var attributeValue = attribute.GetSerializedValue(uxmlSerializedData);
+                    if (!UxmlAttributeComparison.ObjectEquals(attributeValue, attribute.defaultValue))
+                    {
+                        madeChanges = true;
+                        attribute.SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
+                        if (attributeValue == null || !UxmlAttributeConverter.TryConvertToString(attributeValue, context.visualTree, out var stringValue))
+                            stringValue = attributeValue?.ToString();
+
+                        using (new BuilderUxmlAttributesEditingContext.DisableUndoScope(context))
+                        {
+                            PostAttributeValueChange(context, attribute.name, stringValue, uxmlAsset);
+                        }
+                    }
+                }
+            }
+
+            if (madeChanges)
+                context.rootSerializedObject.UpdateIfRequiredOrScript();
+        }
+
+        static UxmlObjectAsset CreateUxmlObjectAsset(BuilderUxmlAttributesEditingContext context, UxmlSerializedUxmlObjectAttributeDescription attribute, UxmlSerializedData serializedData, UxmlAsset parentAsset)
+        {
+            var fullTypeName = serializedData == null ? UxmlAsset.NullNodeType : serializedData.GetType().DeclaringType.FullName;
+            var xmlns = context.visualTree.FindUxmlNamespaceDefinitionForTypeName(parentAsset, fullTypeName);
+            var uxmlAsset = context.visualTree.AddUxmlObject(parentAsset, attribute.rootName, fullTypeName, xmlns);
+
+            // Assign the new asset id to the serialized data
+            if (serializedData != null)
+            {
+                SyncSerializedDataToNewUxmlAsset(context, serializedData, uxmlAsset);
+                serializedData.uxmlAssetId = uxmlAsset.id;
+            }
+
+            return uxmlAsset;
+        }
+
+        static void RecordDocumentUndoOnce(BuilderUxmlAttributesEditingContext context)
+        {
+            if (!s_DocumentUndoRecorded)
+            {
+                UndoRecordDocument(context,BuilderConstants.ModifyUxmlObject);
+                s_DocumentUndoRecorded = true;
+            }
+            UndoRecordDocument(context, BuilderConstants.ModifyUxmlObject);
+        }
+
+        #pragma warning disable CS0618 // Type or member is obsolete
+        static UxmlTraits GetCurrentElementTraits(BuilderUxmlAttributesEditingContext context)
+        {
+            string uxmlTypeName = null;
+
+            if (context.element is TemplateContainer)
+            {
+                uxmlTypeName = BuilderConstants.BuilderInspectorTemplateInstance;
+            }
+            else
+            {
+                uxmlTypeName = context.elementAsset != null ? context.elementAsset.fullTypeName : context.element.GetType().ToString();
+            }
+
+            List<IUxmlFactory> factories = null;
+
+            // Workaround: TemplateContainer.UxmlTrais.Init() cannot be called multiple times. Otherwise, the source template is loaded again into the template container without clearing the previous content.
+            if (uxmlTypeName == TemplateAsset.UxmlInstanceTypeName || !VisualElementFactoryRegistry.TryGetValue(uxmlTypeName, out factories))
+            {
+                // We fallback on the VisualElement factory if we don't find any so
+                // we can update the modified attributes. This fixes the TemplateContainer
+                // factory not found.
+                VisualElementFactoryRegistry.TryGetValue(typeof(VisualElement).FullName,
+                    out factories);
+            }
+
+            if (factories == null)
+                return null;
+
+            return factories[0].GetTraits() as UxmlTraits;
+        }
+        #pragma warning restore CS0618 // Type or member is obsolete
+
+        public static void CallDeserializeOnElement(BuilderUxmlAttributesEditingContext context, VisualElement element = null)
+        {
+            if (context.usesUxmlTraits || context.uxmlSerializedData == null)
+                return;
+
+            element ??= context.element;
+
+            // We need to clear bindings before calling Init to avoid corrupting the data source.
+            BuilderBindingUtility.ClearUxmlBindings(element);
+            context.uxmlSerializedData.Deserialize(element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+        }
+
+        internal static void CallInitOnElement(BuilderUxmlAttributesEditingContext context)
+        {
+            if (!context.callInitOnValueChange)
+                return;
+
+            var traits = GetCurrentElementTraits(context);
+
+            if (traits == null)
+                return;
+
+            // We need to clear bindings before calling Init to avoid corrupting the data source.
+            BuilderBindingUtility.ClearUxmlBindings(context.element);
+
+            var creationContext = new CreationContext(null, null, context.visualTree, context.element);
+            traits.Init(context.element, context.elementAsset, creationContext);
+        }
+
+        internal static void CallInitOnTemplateChild(BuilderUxmlAttributesEditingContext context, VisualElement visualElement, VisualElementAsset vea,
+           List<CreationContext.AttributeOverrideRange> attributeOverrides)
+        {
+            if (!context.callInitOnValueChange)
+                return;
+
+            var traits = GetCurrentElementTraits(context);
+
+            if (traits == null)
+                return;
+
+            // We need to clear bindings before calling Init to avoid corrupting the data source.
+            BuilderBindingUtility.ClearUxmlBindings(context.element);
+
+            var creationContext = new CreationContext(null, attributeOverrides, visualElement.visualTreeAssetSource, null);
+            traits.Init(visualElement, vea, creationContext);
+        }
+
+        static void PostAttributeValueChange(BuilderUxmlAttributesEditingContext context, string attributeName, string value, UxmlAsset uxmlAsset = null)
+        {
+            UndoRecordDocument(context, BuilderConstants.ChangeAttributeValueUndoMessage);
+
+            // Set value in asset.
+            if (context.isInTemplateInstance)
+            {
+                TemplateContainer templateContainerParent = GetVisualElementRootTemplate(context.element);
+
+                if (templateContainerParent != null)
+                {
+                    var templateAsset = templateContainerParent.GetVisualElementAsset() as TemplateAsset;
+                    var currentVisualElementName = context.element.name;
+
+                    if (!string.IsNullOrEmpty(currentVisualElementName))
+                    {
+                        var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(context.element);
+                        templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
+
+                        var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
+                        elementsToChange.ForEach(x =>
+                        {
+                            var templateVea = x.GetVisualElementAssetInTemplate();
+
+                            if (templateVea == null)
+                                return;
+
+                            if (!context.usesUxmlTraits)
+                            {
+                                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(context.visualTree), false);
+                                CallDeserializeOnElement(context, x);
+                            }
+                            else
+                            {
+                                var attributeOverrides = GetAccumulatedAttributeOverrides(context.element);
+                                CallInitOnTemplateChild(context, x, templateVea, attributeOverrides);
+                            }
+                        });
+                    }
+                }
+            }
+            else
+            {
+                uxmlAsset ??= context.elementAsset;
+                uxmlAsset.SetAttribute(attributeName, value);
+
+                // Call Init();
+                CallInitOnElement(context);
+            }
+        }
+
+        public static string GetUndoMessage(SerializedProperty prop)
+        {
+            var undoMessage = $"Modified {prop.name}";
+            if (prop.m_SerializedObject.targetObject.name != string.Empty)
+                undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
+
+            return undoMessage;
         }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine
 {
@@ -72,7 +73,10 @@ namespace UnityEngine
             return ret;
         }
 
-        public static string ToHtmlStringRGB(Color color)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static string ToHtmlStringRGB(Color color) => ToHtmlStringRGB(in color);
+
+        public static string ToHtmlStringRGB(in Color color)
         {
             // Round to int to prevent precision issues that, for example cause values very close to 1 to become FE instead of FF (case 770904).
             Color32 col32 = new Color32(
@@ -84,7 +88,10 @@ namespace UnityEngine
             return string.Format("{0:X2}{1:X2}{2:X2}", col32.r, col32.g, col32.b);
         }
 
-        public static string ToHtmlStringRGBA(Color color)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static string ToHtmlStringRGBA(Color color) => ToHtmlStringRGBA(in color);
+
+        public static string ToHtmlStringRGBA(in Color color)
         {
             // Round to int to prevent precision issues that, for example cause values very close to 1 to become FE instead of FF (case 770904).
             Color32 col32 = new Color32(

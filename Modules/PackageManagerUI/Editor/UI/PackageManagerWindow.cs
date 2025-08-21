@@ -82,10 +82,11 @@ namespace UnityEditor.PackageManager.UI
             var operationDispatcher = container.Resolve<IPackageOperationDispatcher>();
             var delayedSelectionHandler = container.Resolve<IDelayedSelectionHandler>();
             var displayDialogCustomProxy = container.Resolve<ICustomDisplayDialog>();
+            var packageCreator = container.Resolve<IPackageCreator>();
 
             // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler,
-                operationDispatcher, delayedSelectionHandler, displayDialogCustomProxy);
+                operationDispatcher, delayedSelectionHandler, displayDialogCustomProxy, packageCreator);
             try
             {
                 m_Root.OnEnable();
@@ -99,11 +100,6 @@ namespace UnityEditor.PackageManager.UI
             {
                 CheckInnerException<ResourceLoaderException>(e);
             }
-
-            if (pageRefreshHandler.IsInitialFetchingDone(pageManager.activePage))
-                OnFirstRefreshOperationFinish();
-            else
-                pageRefreshHandler.onRefreshOperationFinish += OnFirstRefreshOperationFinish;
         }
 
         void CreateGUI()
@@ -134,16 +130,9 @@ namespace UnityEditor.PackageManager.UI
             m_Root.OnCreateGUI();
         }
 
-        private void OnFirstRefreshOperationFinish()
-        {
-            var container = ServicesContainer.instance;
-            var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
-            pageRefreshHandler.onRefreshOperationFinish -= OnFirstRefreshOperationFinish;
-        }
-
         void OnDisable()
         {
-            if (instance == null) instance = this;
+            instance ??= this;
             if (instance != this)
                 return;
 
@@ -210,6 +199,14 @@ namespace UnityEditor.PackageManager.UI
         }
 
         [UsedByNativeCode]
+        internal static void OpenCreatePackageDropdown()
+        {
+            ShowWindow();
+            instance.Focus();
+            instance.m_Root.OpenCreatePackageDropdown(instance);
+        }
+
+        [UsedByNativeCode]
         internal static void OpenAndSelectPackage(string packageToSelect, string pageId = null)
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
@@ -228,6 +225,27 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerWindowAnalytics.SendEvent("openWindow", packageId);
         }
 
+        [UsedByNativeCode]
+        internal static void OpenExportPackageWindow(string packageName)
+        {
+            var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
+            var modalManager = ServicesContainer.instance.Resolve<IModalManager>();
+            var package = packageDatabase.GetPackageByIdOrName(packageName);
+
+            if (package == null)
+            {
+                Debug.LogError(L10n.Tr($"[Package Manager Window] Unable to open the Export window. Try opening the Package Manager Window first and exporting from there."));
+                return;
+            }
+
+
+            // There is a flickering effect on the project browser if we don't repaint it before showing the modal.
+            // https://jira.unity3d.com/browse/UUM-113810
+            Resources.FindObjectsOfTypeAll<ProjectBrowser>().FirstOrDefault()?.RepaintImmediately();
+            var version = package.versions.installed;
+            modalManager.ShowExportModal(version);
+        }
+
         internal static void OpenAndSelectPage(string pageId, string searchText = null)
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
@@ -240,18 +258,7 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
         internal static void OnPackageManagerResolve()
         {
-            var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-            packageDatabase?.ClearSamplesCache();
-
-            var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
-            if (applicationProxy.isBatchMode || !applicationProxy.isUpmRunning)
-                return;
-
-            var upmRegistryClient = ServicesContainer.instance.Resolve<IUpmRegistryClient>();
-            upmRegistryClient.CheckRegistriesChanged();
-
-            var upmClient = ServicesContainer.instance.Resolve<IUpmClient>();
-            upmClient.List(true);
+            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnPackageManagerResolve();
         }
 
         [InitializeOnLoadMethod]
@@ -264,24 +271,12 @@ namespace UnityEditor.PackageManager.UI
         [UsedByNativeCode]
         internal static void OnEditorFinishLoadingProject()
         {
-            var servicesContainer = ServicesContainer.instance;
-            var applicationProxy = servicesContainer.Resolve<IApplicationProxy>();
-            if (!applicationProxy.isBatchMode && applicationProxy.isUpmRunning)
-            {
-                var upmClient = servicesContainer.Resolve<IUpmClient>();
-                EntitlementsErrorAndDeprecationChecker.ManagePackageManagerEntitlementErrorAndDeprecation(upmClient);
-                upmClient.List();
-            }
+            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnEditorFinishLoadingProject();
         }
 
         private static void OnRegisteredPackages(PackageRegistrationEventArgs args)
         {
-            var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
-            if (applicationProxy.isBatchMode)
-                return;
-
-            var pageRefreshHandler = ServicesContainer.instance.Resolve<IPageRefreshHandler>();
-            pageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
+            ServicesContainer.instance.Resolve<IInProjectPackagesMonitor>().OnRegisteredPackages(args);
         }
 
         private static void SelectPackageStatic(string packageToSelect = null, string pageId = null)

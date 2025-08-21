@@ -177,11 +177,6 @@ namespace UnityEditor.Presets
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
 
-            // Freeze to prevent flicker on OSX.
-            // Screen will be updated again when calling
-            // SetFreezeDisplay(false) further down.
-            ContainerWindow.SetFreezeDisplay(true);
-
             // Set member variables
             m_SearchField = string.Empty;
             m_CanCreateNew = createNewAllowed;
@@ -204,7 +199,6 @@ namespace UnityEditor.Presets
 
             // Focus
             Focus();
-            ContainerWindow.SetFreezeDisplay(false);
 
             // Add after unfreezing display because AuxWindowManager.cpp assumes that aux windows are added after we get 'got/lost'- focus calls.
             m_Parent.AddToAuxWindowList();

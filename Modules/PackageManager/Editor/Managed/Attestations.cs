@@ -25,6 +25,10 @@ namespace UnityEditor.PackageManager
         private string m_PublishingChannel;
 
         [SerializeField]
+        [NativeName("entitlementKeys")]
+        private string[] m_EntitlementKeys;
+
+        [SerializeField]
         [NativeName("ownerOrgId")]
         private string m_OwnerOrgId;
 
@@ -34,6 +38,7 @@ namespace UnityEditor.PackageManager
 
         public string format => m_Format;
         public string publishingChannel => m_PublishingChannel;
+        public string[] entitlementKeys => m_EntitlementKeys;
         public string ownerOrgId => m_OwnerOrgId;
         public string ownerOrgName => m_OwnerOrgName;
 

@@ -25,20 +25,26 @@ namespace UnityEditor.PackageManager
         private string m_Reason;
 
         [SerializeField]
+        [NativeName("errorCode")]
+        private string m_ErrorCode;
+
+        [SerializeField]
         [NativeName("attestation")]
         private Attestation m_Attestation;
 
         public SignatureStatus status => m_Status;
         public string reason => m_Reason;
+        public string errorCode => m_ErrorCode;
         public Attestation attestation => m_Attestation;
 
-        internal SignatureInfo() : this(SignatureStatus.Unchecked, "", null) {}
+        internal SignatureInfo() : this(SignatureStatus.Unchecked, "", null, "") {}
 
-        internal SignatureInfo(SignatureStatus status, string reason, Attestation attestation)
+        internal SignatureInfo(SignatureStatus status, string reason, Attestation attestation, string errorCode)
         {
             m_Status = status;
             m_Reason = reason;
             m_Attestation = attestation;
+            m_ErrorCode = errorCode;
         }
     }
 }

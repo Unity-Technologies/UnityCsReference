@@ -100,6 +100,7 @@ namespace UnityEngine.Playables
         extern internal void PushNotification(PlayableHandle origin, INotification notification, object context);
 
         [FreeFunction("PlayableOutputHandleBindings::GetNotificationReceivers", HasExplicitThis = true, ThrowsException = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal INotificationReceiver[] GetNotificationReceivers();
 
         [FreeFunction("PlayableOutputHandleBindings::AddNotificationReceiver", HasExplicitThis = true, ThrowsException = true)]

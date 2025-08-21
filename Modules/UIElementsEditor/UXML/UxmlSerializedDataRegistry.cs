@@ -208,6 +208,7 @@ namespace UnityEditor.UIElements
             HelpBox.UxmlSerializedData.Register();
             InspectorElement.UxmlSerializedData.Register();
             IntegerField.UxmlSerializedData.Register();
+            Image.UxmlSerializedData.Register();
             LayerField.UxmlSerializedData.Register();
             LayerMaskField.UxmlSerializedData.Register();
             ListView.UxmlSerializedData.Register();

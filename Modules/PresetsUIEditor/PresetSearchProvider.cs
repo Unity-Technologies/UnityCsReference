@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Search;
-using UnityEngine;
 using Object = UnityEngine.Object;
 using SService = UnityEditor.Search.SearchService;
 
@@ -23,8 +22,8 @@ namespace UnityEditor.Presets
         public readonly bool CreateNewAllowed;
         public readonly bool RevertOnNullSelection;
 
-        public readonly Action<Preset> OnSelectionChanged;
-        public readonly Action<Preset, bool> OnSelectionClosed;
+        public Action<Preset> OnSelectionChanged;
+        public Action<Preset, bool> OnSelectionClosed;
 
         public PresetContext(Object[] targets, bool createNewAllowed) : this(targets, null, createNewAllowed, null, null) {}
 

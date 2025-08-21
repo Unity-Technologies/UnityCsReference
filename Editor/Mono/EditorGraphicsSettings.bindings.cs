@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.Build;
 using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.Rendering.Settings;
+using UnityEditor.Shaders;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
@@ -227,5 +228,8 @@ namespace UnityEditor.Rendering
             var globalSettings = renderPipelineGlobalSettings as RenderPipelineGlobalSettings;
             return globalSettings.ContainsReference(settings);
         }
+
+        extern public static ShaderBuildSettings GetShaderBuildSettings();
+        extern public static void SetShaderBuildSettings(ShaderBuildSettings settings);
     }
 }

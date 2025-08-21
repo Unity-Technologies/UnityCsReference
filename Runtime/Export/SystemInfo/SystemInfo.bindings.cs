@@ -55,6 +55,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Misc/SystemInfo.h")]
     [NativeHeader("Runtime/Misc/SystemInfoAudio.h")]
     [NativeHeader("Runtime/Misc/SystemInfoMemory.h")]
+    [NativeHeader("Runtime/Misc/SystemInfoRendering.h")]
     [NativeHeader("Runtime/Shaders/GraphicsCapsScriptBindings.h")]
     [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
@@ -165,6 +166,11 @@ namespace UnityEngine
         public static bool supportsAudio
         {
             get { return SupportsAudio(); }
+        }
+
+        public static bool supportsRendering
+        {
+            get { return SupportsRendering(); }
         }
 
         // Returns the kind of device the application is running on. See [[DeviceType]] enumeration for possible values.
@@ -403,6 +409,11 @@ namespace UnityEngine
         public static bool supportsMultisampleAutoResolve
         {
             get { return SupportsMultisampleAutoResolve(); }
+        }
+
+        public static bool supportsMultisampledShaderResolve
+        {
+            get { return SupportsMultisampledShaderResolve(); }
         }
 
         public static int supportsTextureWrapMirrorOnce
@@ -797,6 +808,9 @@ namespace UnityEngine
         [FreeFunction("systeminfo::SupportsAudio")]
         static extern bool SupportsAudio();
 
+        [FreeFunction("systeminfo::SupportsRendering")]
+        static extern bool SupportsRendering();
+
         [FreeFunction("systeminfo::GetDeviceType")]
         static extern DeviceType GetDeviceType();
 
@@ -937,6 +951,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
         static extern bool SupportsMultisampleAutoResolve();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledShaderResolve")]
+        static extern bool SupportsMultisampledShaderResolve();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsTextureWrapMirrorOnce")]
         static extern int SupportsTextureWrapMirrorOnce();

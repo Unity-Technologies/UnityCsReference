@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool seeAllPackageVersions { get; set; }
         long loadAssets { get; set; }
         bool oneTimeWarningShown { get; set; }
-        bool oneTimeDeprecatedPopUpShown { get; set; }
+        bool oneTimePackageErrorsPopUpShown { get; set; }
         bool isUserAddingNewScopedRegistry { get; set; }
 
         IList<RegistryInfo> registries { get; }
@@ -92,10 +92,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             set => PackageManagerProjectSettings.instance.oneTimeWarningShown = value;
         }
 
-        public bool oneTimeDeprecatedPopUpShown
+        public bool oneTimePackageErrorsPopUpShown
         {
-            get => PackageManagerProjectSettings.instance.oneTimeDeprecatedPopUpShown;
-            set => PackageManagerProjectSettings.instance.oneTimeDeprecatedPopUpShown = value;
+            get => PackageManagerProjectSettings.instance.oneTimePackageErrorsPopUpShown;
+            set => PackageManagerProjectSettings.instance.oneTimePackageErrorsPopUpShown = value;
         }
 
         public bool isUserAddingNewScopedRegistry

@@ -23,7 +23,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The Unity editor Hierarchy window.
     /// </summary>
-    [EditorWindowTitle(title = "Hierarchy", icon = "UnityEditor.SceneHierarchyWindow")]
+    [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
     {
@@ -146,10 +146,7 @@ namespace Unity.Hierarchy.Editor
             // Instantiate the node type handlers for all hierarchy windows.
             var windows = Resources.FindObjectsOfTypeAll<HierarchyWindow>();
             foreach (var window in windows)
-            {
                 HierarchyWindowManager.InstantiateNodeTypeHandlers(window.m_Hierarchy);
-                window.m_HierarchyView.Initialize();
-            }
         }
 
         /// <summary>
@@ -233,25 +230,25 @@ namespace Unity.Hierarchy.Editor
             LoadStyleSheet(rootVisualElement, EditorGUIUtility.isProSkin ? s_EditorStyleSheetDark : s_EditorStyleSheetLight);
             LoadStyleSheet(rootVisualElement, s_EditorStyleSheet);
 
+            // Create a new hierarchy with registered node type handlers.
             m_Hierarchy = new Hierarchy();
             HierarchyWindowManager.InstantiateNodeTypeHandlers(m_Hierarchy);
 
-            m_HierarchyView = new HierarchyView(m_Hierarchy);
-            m_HierarchyView.ListView.showAlternatingRowBackgrounds = HierarchyPreferences.AlternatingRowBackground
-                ? AlternatingRowBackground.All : AlternatingRowBackground.None;
+            m_HierarchyView = new HierarchyView();
             m_HierarchyView.Initializing += OnHierarchyViewInitializing;
             m_HierarchyView.OnFlagsChanged += OnHierarchyViewFlagsChanged;
-            m_HierarchyView.ListView.headerContextMenuPopulateEvent += OnHeaderContextMenu;
-            m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
-            m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
-            m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
-            m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
             m_HierarchyView.SourceHierarchyChanged += OnSourceHierarchyChanged;
             m_HierarchyView.BindViewItem += OnBindViewItem;
             m_HierarchyView.UnbindViewItem += OnUnbindViewItem;
             m_HierarchyView.PopulateContextMenu += OnPopulateContextMenu;
             m_HierarchyView.GetTooltip += OnGetTooltip;
-            m_HierarchyView.Initialize();
+
+            m_HierarchyView.ListView.showAlternatingRowBackgrounds = HierarchyPreferences.AlternatingRowBackground
+                ? AlternatingRowBackground.All : AlternatingRowBackground.None;
+            m_HierarchyView.ListView.headerContextMenuPopulateEvent += OnHeaderContextMenu;
+            m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
+            m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
+            m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
 
             m_HasSceneHandler =
                 m_Hierarchy.GetNodeTypeHandlerBase<HierarchyGameObjectHandler>() != null ||
@@ -289,26 +286,10 @@ namespace Unity.Hierarchy.Editor
             m_FilterTimer = new();
 
             m_SelectionHandler = new HierarchyGlobalSelectionHandler(m_HierarchyView, m_LockTracker);
-            m_HierarchyView.EnqueuePostUpdateAction(() =>
-            {
-                m_SelectionHandler.SyncViewModelFromGlobalSelection(frameSelection: false);
-            });
 
             PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
-            RefreshDescriptors();
-            if (m_ViewState == null)
-            {
-                var settingsState = LoadProjectWindowState();
-                // Note: since we only restore columns, we can do a synchronous SetViewState.
-                ResetColumns(settingsState);
-            }
-            else
-            {
-                ResetColumns();
-                SetViewState(m_ViewState);
-            }
             StageNavigationManager.instance.stageChanging += OnStageChanging;
             StageNavigationManager.instance.stageChanged += OnStageChanged;
             PrefabStage.prefabStageReloading += OnPrefabStageReloading;
@@ -327,9 +308,27 @@ namespace Unity.Hierarchy.Editor
             HierarchyPreferences.AlternatingRowBackground.valueChanged += OnToggleBackgroundStyleChange;
             HierarchyPreferences.UseNewHierarchy.valueChanged += OnUseNewHierarchyChanged;
 
-            // Call source hierarchy changed event manually, since we cannot register the
-            // event at the moment the hierarchy view sets its source hierarchy in the constructor.
-            OnSourceHierarchyChanged(m_Hierarchy);
+            // Now that the UI is initialized, set the hierarchy source.
+            m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
+            m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
+
+            RefreshDescriptors();
+            if (m_ViewState == null)
+            {
+                var settingsState = LoadProjectWindowState();
+                // Note: since we only restore columns, we can do a synchronous SetViewState.
+                ResetColumns(settingsState);
+            }
+            else
+            {
+                ResetColumns();
+                SetViewState(m_ViewState);
+            }
+
+            m_HierarchyView.EnqueuePostUpdateAction(() =>
+            {
+                m_SelectionHandler.SyncViewModelFromGlobalSelection(frameSelection: false);
+            });
         }
 
         void OnDisable()
@@ -420,12 +419,15 @@ namespace Unity.Hierarchy.Editor
 
         void OnSourceHierarchyChanged(Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
-            var currentStage = StageUtility.GetCurrentStage();
+            if (m_Hierarchy == null || !m_Hierarchy.IsCreated)
+                return;
 
             // If we are on prefab stage, set its scene as the root
+            var currentStage = StageUtility.GetCurrentStage();
             if (currentStage is PrefabStage prefabStage)
             {
-                var sceneNode = m_Hierarchy.GetNodeTypeHandler<HierarchySceneHandler>().GetOrCreateNode(prefabStage.scene);
+                var sceneHandler = m_Hierarchy.GetNodeTypeHandler<HierarchySceneHandler>();
+                var sceneNode = sceneHandler.GetOrCreateNode(prefabStage.scene);
                 if (sceneNode != HierarchyNode.Null)
                 {
                     m_HierarchyView.ViewModel.SetRoot(in sceneNode);
@@ -567,10 +569,13 @@ namespace Unity.Hierarchy.Editor
             // Keep a reference to the current hierarchy to dispose it later
             var oldHierarchy = m_Hierarchy;
 
-            // Create and set the new hierarchy, which also unreferences the old one
+            // Create and set the new hierarchy with registered node type handlers
             m_Hierarchy = new Hierarchy();
             HierarchyWindowManager.InstantiateNodeTypeHandlers(m_Hierarchy);
+
+            // Set the new hierarchy for the hierarchy view
             m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
+            m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
             // Dispose the old hierarchy
             if (oldHierarchy != null)

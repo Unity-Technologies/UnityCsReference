@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using UnityEngine;
+using System.IO;
 
 namespace UnityEditor.Profiling
 {
@@ -12,6 +13,7 @@ namespace UnityEditor.Profiling
         [UsedImplicitly]
         class Content
         {
+            public static readonly GUIContent k_CapturePathText = EditorGUIUtility.TrTextContent("Profiler Capture Storage Path", "Where Profiler Capture files are saved to.");
             public static readonly GUIContent k_FrameCountText = EditorGUIUtility.TrTextContent("Frame Count", "Maximum of visible frames in the Profiler Window.");
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent k_DropFramesOnMemoryPressureText = EditorGUIUtility.TrTextContent("Automatic memory management", "Automatically drop frame data when system memory usage is at critical level and Unity Profiler uses more than 75% of the Editor memory.");
@@ -19,6 +21,9 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
             public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode on start", "Default profiler recording target mode, which is set on editor start.");
             public static readonly GUIContent k_TargetFps = EditorGUIUtility.TrTextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.");
+            public static readonly string OnlyRelativePaths = L10n.Tr("Only relative paths are allowed");
+            public static readonly string OKButton = L10n.Tr("OK");
+            public static readonly string InvalidPathWindow = L10n.Tr("Invalid Path");
 
             public static readonly GUIContent[] k_RecordStates =
             {
@@ -40,6 +45,8 @@ namespace UnityEditor.Profiling
             connectionID = ProfilerUserSettings.customConnectionID;
         }
 
+        const string k_RootPathSignifier = "./";
+        const string k_PathOneUpSignifier = "../";
         private string connectionID;
         int m_TargetFramesPerSecond;
 
@@ -48,6 +55,39 @@ namespace UnityEditor.Profiling
             using var _ = new SettingsWindow.GUIScope();
 
             EditorGUIUtility.labelWidth = 300;
+
+            EditorGUI.BeginChangeCheck();
+            var prevControl = GUI.GetNameOfFocusedControl();
+            var val = EditorGUILayout.DelayedTextField(Content.k_CapturePathText, ProfilerUserSettings.ProfilerCaptureStoragePath);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (!(val.StartsWith(k_RootPathSignifier) || val.StartsWith(k_PathOneUpSignifier)))
+                {
+                    if (EditorUtility.DisplayDialog(Content.InvalidPathWindow, Content.OnlyRelativePaths, Content.OKButton))
+                    {
+                        GUI.FocusControl(prevControl);
+                        var currentlySavedPath = ProfilerUserSettings.ProfilerCaptureStoragePath;
+                        // in case this faulty path has actually been saved, fix it back to default
+                        if (!(currentlySavedPath.StartsWith(k_RootPathSignifier) || currentlySavedPath.StartsWith(k_PathOneUpSignifier)))
+                            ProfilerUserSettings.ResetProfilerCaptureStoragePathToDefault();
+                    }
+                }
+                else
+                {
+                    ProfilerUserSettings.ProfilerCaptureStoragePath = val;
+                    var collectionPath = ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath;
+                    var info = new DirectoryInfo(collectionPath);
+                    if (!info.Exists)
+                    {
+                        info = Directory.CreateDirectory(collectionPath);
+                        if (!info.Exists)
+                            throw new UnityException("Failed to create directory, with provided preferences path: " + collectionPath);
+                    }
+                }
+            }
+
+
             ProfilerUserSettings.frameCount = EditorGUILayout.IntSlider(Content.k_FrameCountText, ProfilerUserSettings.frameCount, ProfilerUserSettings.kMinFrameCount, ProfilerUserSettings.kMaxFrameCount);
             if (ProfilerUserSettings.frameCount > ProfilerUserSettings.kDefaultFrameCount)
                 EditorGUILayout.HelpBox(Content.k_FrameCountWarningText);

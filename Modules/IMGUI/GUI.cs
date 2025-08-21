@@ -1187,9 +1187,16 @@ namespace UnityEngine
                         var isSelected = selected == buttonIndex;
 
                         if (!isSelected)
-                            buttonStyle.Draw(buttonRect, content, enabled && isMouseOver && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, false, false);
+                        {
+                            if (buttonRect.Overlaps(GUIClip.visibleRect))
+                            {
+                                buttonStyle.Draw(buttonRect, content, enabled && isMouseOver && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, false, false);
+                            }
+                        }
                         else
+                        {
                             selectedButtonStyle = buttonStyle;
+                        }
 
                         if (isMouseOver)
                         {
@@ -1212,7 +1219,10 @@ namespace UnityEngine
                 var isHotControl = GUIUtility.hotControl == selectedButtonControlID;
                 var wasEnabled = enabled;
                 enabled &= (contentsEnabled == null || contentsEnabled[selected]);
-                selectedButtonStyle.Draw(buttonRect, content, enabled && isMouseOver && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, true, false);
+                if (buttonRect.Overlaps(GUIClip.visibleRect))
+                {
+                    selectedButtonStyle.Draw(buttonRect, content, enabled && isMouseOver && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, true, false);
+                }
                 enabled = wasEnabled;
             }
 

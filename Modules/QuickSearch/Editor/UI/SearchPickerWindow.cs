@@ -97,7 +97,7 @@ namespace UnityEditor.Search
                 yield return SearchItem.clear;
         }
 
-        protected override void UpdateWindowTitle()
+        protected override void UpdateWindowTitle(bool asyncResultUpdate = false)
         {
             if (!titleContent.image)
                 titleContent.image = Icons.quickSearchWindow;

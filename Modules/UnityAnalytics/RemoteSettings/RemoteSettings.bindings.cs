@@ -172,7 +172,7 @@ namespace UnityEngine
             GC.SuppressFinalize(this);
         }
 
-        internal static extern IntPtr Internal_Create([Unmarshalled] RemoteConfigSettings rcs, string configKey);
+        internal static extern IntPtr Internal_Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] RemoteConfigSettings rcs, string configKey);
         [ThreadSafe]
         internal static extern void Internal_Destroy(IntPtr ptr);
 

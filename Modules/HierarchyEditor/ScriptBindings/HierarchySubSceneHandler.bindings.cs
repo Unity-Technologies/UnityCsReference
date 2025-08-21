@@ -233,7 +233,7 @@ namespace Unity.Hierarchy.Editor
             menu.AppendFromGenericMenu(genericMenu2);
         }
 
-        protected override void Bind(HierarchyViewItem item)
+        protected override void OnBindItem(HierarchyViewItem item)
             => item.AddToClassList(k_SubSceneNodeUssClass);
 
         void BuildSubSceneContextMenu(HierarchyView view, DropdownMenu menu)

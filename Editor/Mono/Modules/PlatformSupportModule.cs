@@ -362,12 +362,14 @@ namespace UnityEditor.Modules
     internal class PreconfiguredSettingsVariant
     {
         public string Name { get; }
+        public string Description { get; }
         public bool SelectedInitially { get; }
         public bool Selected { get; set; }
         public string Tooltip;
-        public PreconfiguredSettingsVariant(string name, bool selectedInitially, string tooltip = "")
+        public PreconfiguredSettingsVariant(string name, bool selectedInitially, string description = "", string tooltip = "")
         {
             Name = name;
+            Description = description;
             SelectedInitially = selectedInitially;
             Selected = selectedInitially;
             Tooltip = tooltip;

@@ -15,7 +15,7 @@ namespace UnityEditor.Search
         static Texture2D s_Icon;
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement("Editor Utility/Store", true, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 10)]
+        [MainToolbarElement("Editor Controls/Store", true, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 10)]
         static MainToolbarElement QueryStoreButtonInfo()
         {
             return new MainToolbarDropdown(new MainToolbarContent("Asset Store", s_Icon, L10n.Tr($"Asset Store")), ActivateAssetStoreMenu)

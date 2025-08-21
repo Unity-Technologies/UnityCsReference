@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Unity.Collections;
 using Unity.Profiling;
-using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements.Layout;
@@ -256,21 +255,21 @@ internal class LayoutManager : IDisposable
         };
 
         const string areaName = nameof(UIElements);
-        ReadOnlySpan<UnsafeAllocLabel> nodeComponentLabels = stackalloc UnsafeAllocLabel[]
+        ReadOnlySpan<MemoryLabel> nodeComponentLabels = stackalloc MemoryLabel[]
         {
-            new UnsafeAllocLabel(areaName, $"ComponentData<{nameof(LayoutNodeData)}>"),
-            new UnsafeAllocLabel(areaName, $"ComponentData<{nameof(LayoutStyleData)}>"),
-            new UnsafeAllocLabel(areaName, $"ComponentData<{nameof(LayoutComputedData)}>"),
-            new UnsafeAllocLabel(areaName, $"ComponentData<{nameof(LayoutCacheData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutNodeData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutStyleData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutComputedData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutCacheData)}>"),
         };
 
         var configComponentTypes = new[]
         {
             ComponentType.Create<LayoutConfigData>()
         };
-        ReadOnlySpan<UnsafeAllocLabel> configComponentLabels = stackalloc UnsafeAllocLabel[]
+        ReadOnlySpan<MemoryLabel> configComponentLabels = stackalloc MemoryLabel[]
         {
-            new UnsafeAllocLabel(areaName, $"ComponentData<{nameof(LayoutConfigData)}>"),
+            new MemoryLabel(areaName, $"Layout.ComponentData<{nameof(LayoutConfigData)}>"),
         };
 
         m_Nodes = new LayoutDataStore(nodeComponentTypes, nodeComponentLabels, initialNodeCapacity, allocator);

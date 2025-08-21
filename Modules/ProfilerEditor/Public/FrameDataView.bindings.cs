@@ -215,6 +215,7 @@ namespace UnityEditor.Profiling
         public extern string GetMarkerName(int markerId);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern MarkerMetadataInfo[] GetMarkerMetadataInfo(int markerId);
 
         [NativeMethod(IsThreadSafe = true)]
@@ -353,7 +354,7 @@ namespace UnityEditor.Profiling
             [NativeName("name")]
             readonly string m_Name;
             [NativeName("relatedGameObjectInstanceId")]
-            readonly int m_RelatedGameObjectInstanceId;
+            readonly EntityId m_RelatedGameObjectInstanceId;
             [NativeName("nativeTypeIndex")]
             readonly int m_NativeTypeIndex;
             [NativeName("rootId")]
@@ -361,12 +362,17 @@ namespace UnityEditor.Profiling
 
             public string name => m_Name;
             public int nativeTypeIndex => m_NativeTypeIndex;
+            [Obsolete("relatedGameObjectInstanceId is obsolete. Use relatedGameObjectEntityId instead.")]
             public int relatedGameObjectInstanceId => m_RelatedGameObjectInstanceId;
+            public EntityId relatedGameObjectEntityId => m_RelatedGameObjectInstanceId;
             public ulong allocationRootId => m_RootId;
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern bool GetUnityObjectInfo(int instanceId, out UnityObjectInfo info);
+        public extern bool GetUnityObjectInfo(EntityId entityId, out UnityObjectInfo info);
+
+        [Obsolete("GetUnityObjectInfo(int, out UnityObjectInfo) is obsolete. Use GetUnityObjectInfo(EntityId, out UnityObjectInfo) instead.")]
+        public bool GetUnityObjectInfo(int instanceId, out UnityObjectInfo info) => GetUnityObjectInfo((EntityId)instanceId, out info);
 
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
@@ -394,7 +400,7 @@ namespace UnityEditor.Profiling
             [NativeName("rootId")]
             readonly ulong m_RootId;
             [NativeName("instanceId")]
-            readonly int m_InstanceId;
+            readonly EntityId m_InstanceId;
 
             public ulong relatedAllocationRootId => m_RootId;
             public int relatedInstanceId => m_InstanceId;

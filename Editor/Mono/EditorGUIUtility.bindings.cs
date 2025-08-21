@@ -129,6 +129,7 @@ namespace UnityEditor
         public static extern void SetIconForObject([NotNull] Object obj, Texture2D icon);
         [NativeThrows]
         internal static extern Object GetBuiltinExtraResource(Type type, string path);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         internal static extern BuiltinResource[] GetBuiltinResourceList(int classID);
         internal static extern AssetBundle GetEditorAssetBundle();
         internal static extern AssetBundle ReloadEditorAssetBundle();
@@ -210,8 +211,8 @@ namespace UnityEditor
         public static extern void EraseVector3(string key);
         public static extern void EraseIntArray(string key);
         public static extern void SetIntArray(string key, int[] value);
-        [return:Unmarshalled]
-        public static extern int[] GetIntArray(string key, [Unmarshalled]int[] defaultValue);
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        public static extern int[] GetIntArray(string key, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]int[] defaultValue);
 
         internal static extern string[] GetSessionStateIntTypeKeys();
     }

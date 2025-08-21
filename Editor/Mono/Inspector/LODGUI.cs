@@ -1,0 +1,484 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEditorInternal;
+
+namespace UnityEditor
+{
+    internal static class LODGUI
+    {
+        // Default colors for each LOD group....
+        public static readonly Color[] kLODColors =
+        {
+            new Color(0.4831376f, 0.6211768f, 0.0219608f, 1.0f),
+            new Color(0.2792160f, 0.4078432f, 0.5835296f, 1.0f),
+            new Color(0.2070592f, 0.5333336f, 0.6556864f, 1.0f),
+            new Color(0.5333336f, 0.1600000f, 0.0282352f, 1.0f),
+            new Color(0.3827448f, 0.2886272f, 0.5239216f, 1.0f),
+            new Color(0.8000000f, 0.4423528f, 0.0000000f, 1.0f),
+            new Color(0.4486272f, 0.4078432f, 0.0501960f, 1.0f),
+            new Color(0.7749016f, 0.6368624f, 0.0250984f, 1.0f)
+        };
+
+        public static readonly Color[] kMeshLODColors =
+        {
+            new Color(0.8588235f, 0.6666667f, 0.1333333f, 1.0f),
+            new Color(0.8f,       0.5529411f, 0.1333333f, 1.0f),
+            new Color(0.6980392f, 0.4549019f, 0.1098039f, 1.0f),
+            new Color(0.6f,       0.3725490f, 0.0941176f, 1.0f),
+            new Color(0.5098039f, 0.3176470f, 0.0784313f, 1.0f),
+            new Color(0.4117647f, 0.2549019f, 0.0627450f, 1.0f),
+            new Color(0.3215686f, 0.2f,       0.0470588f, 1.0f),
+            new Color(0.2509803f, 0.1529411f, 0.0392156f, 1.0f),
+            new Color(0.2f,       0.1254901f, 0.0313725f, 1.0f),
+            new Color(0.1686274f, 0.1058823f, 0.0274509f, 1.0f),
+        };
+
+        public static readonly Color kCulledLODColor = new Color(.4f, 0f, 0f, 1f);
+
+        public const int kSceneLabelHalfWidth = 100;
+        public const int kSceneLabelHeight = 45;
+        public const int kSceneHeaderOffset = 40;
+
+        public const int kSliderBarTopMargin = 18;
+        public const int kSliderBarHeight = 30;
+        public const int kSliderBarBottomMargin = 16;
+
+        public const int kRenderersButtonHeight = 60;
+        public const int kButtonPadding = 2;
+        public const int kDeleteButtonSize = 20;
+
+        public const int kSelectedLODRangePadding = 3;
+
+        public const int kRenderAreaForegroundPadding = 3;
+
+        public class GUIStyles
+        {
+            public readonly GUIStyle m_LODSliderBG = "LODSliderBG";
+            public readonly GUIStyle m_LODSliderRange = "LODSliderRange";
+            public readonly GUIStyle m_LODSliderRangeSelected = "LODSliderRangeSelected";
+            public readonly GUIStyle m_LODSliderText = "LODSliderText";
+            public readonly GUIStyle m_LODSliderTextSelected = "LODSliderTextSelected";
+            public readonly GUIStyle m_LODStandardButton = "Button";
+            public readonly GUIStyle m_LODRendererButton = "LODRendererButton";
+            public readonly GUIStyle m_LODRendererAddButton = "LODRendererAddButton";
+            public readonly GUIStyle m_LODRendererRemove = "LODRendererRemove";
+            public readonly GUIStyle m_LODBlackBox = "LODBlackBox";
+            public readonly GUIStyle m_LODCameraLine = "LODCameraLine";
+
+            public readonly GUIStyle m_LODSceneText = "LODSceneText";
+            public readonly GUIStyle m_LODRenderersText = "LODRenderersText";
+            public readonly GUIStyle m_LODLevelNotifyText = "LODLevelNotifyText";
+
+            public readonly GUIContent m_IconRendererPlus                   = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add New Renderers");
+            public readonly GUIContent m_IconRendererMinus                  = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove Renderer");
+            public readonly GUIContent m_CameraIcon                         = EditorGUIUtility.IconContent<Camera>();
+
+            public readonly GUIContent m_UploadToImporter                   = EditorGUIUtility.TrTextContent("Upload to Importer", "Upload the modified screen percentages to the model importer.");
+            public readonly GUIContent m_UploadToImporterDisabled           = EditorGUIUtility.TrTextContent("Upload to Importer", "Number of LOD's in the scene instance differ from the number of LOD's in the imported model.");
+            public readonly GUIContent m_RecalculateBounds                  = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Recalculate bounds to encapsulate all child renderers.");
+            public readonly GUIContent m_RecalculateBoundsDisabled          = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Bounds are already up-to-date.");
+            public readonly GUIContent m_LightmapScale                      = EditorGUIUtility.TrTextContent("Recalculate Lightmap Scale", "Set the lightmap scale to match the LOD percentages.");
+            public readonly GUIContent m_RendersTitle                       = EditorGUIUtility.TrTextContent("Renderers");
+
+            public readonly GUIContent m_AnimatedCrossFadeInvalidText       = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. Please enable \"Animate Between Next LOD\" on either the current or the previous LOD.");
+            public readonly GUIContent m_AnimatedCrossFadeInconsistentText  = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. \"Animate Between Next LOD\" is enabled but the next LOD is not in Animated Cross Fade mode.");
+            public readonly GUIContent m_AnimateBetweenPreviousLOD          = EditorGUIUtility.TrTextContent("Animate Between Previous LOD", "Cross-fade animation plays when transits between this LOD and the previous (lower) LOD.");
+
+            public readonly GUIContent m_LODObjectSizeLabel = EditorGUIUtility.TrTextContent("Object Size", "The Object size in local space. This is used to calculate the relative screen height for the object.");
+            public readonly GUIContent m_ResetObjectSizeLabel = EditorGUIUtility.TrTextContent("Reset Object Size", "Resets the Object Size in Local Space to 1 and preserves LOD distances.");
+            public readonly GUIContent m_LODDistancesInRelativeSizeLabel = EditorGUIUtility.TrTextContent("LOD Distances in Screen Relative Size");
+            public readonly GUIContent m_LODSetToCameraLabel = EditorGUIUtility.TrTextContent("Set to Camera");
+
+            public readonly GUIContent m_LODTransitionPercentageLabel = EditorGUIUtility.TrTextContent("Transition (% Screen Size)", "This value marks where LOD level transitions into a lower LOD level.");
+            public static GUIContent m_TriangleCountLabel = EditorGUIUtility.TrTextContent("Triangles");
+            public static GUIContent m_VertexCountLabel = EditorGUIUtility.TrTextContent("Vertices");
+
+            public static GUIContent m_DistanceInMetersLabel = EditorGUIUtility.TrTextContent("-", "The displayed distance depends on the current Scene View camera settings and might be different in Game View.");
+
+            public static GUIStyle m_InspectorTitlebarFlat;
+
+            public static GUIContent m_BlueBorderTextureSelected = EditorGUIUtility.TrIconContent("AnimationRowOddSelected");
+            public static GUIContent m_BlueBorderTextureNormal = EditorGUIUtility.TrIconContent("OL title act");
+            public static GUIContent m_MeshLodInfo = EditorGUIUtility.TrTextContent("Mesh LOD is active and has been applied to ");
+
+            public GUIStyles()
+            {
+                m_InspectorTitlebarFlat = new GUIStyle(EditorStyles.inspectorTitlebarFlat);
+                m_InspectorTitlebarFlat.focused.textColor = m_InspectorTitlebarFlat.normal.textColor;
+            }
+        }
+
+        private static GUIStyles s_Styles;
+
+        public static GUIStyles Styles
+        {
+            get
+            {
+                if (s_Styles == null)
+                    s_Styles = new GUIStyles();
+                return s_Styles;
+            }
+        }
+
+        public static float DelinearizeScreenPercentage(float percentage)
+        {
+            if (Mathf.Approximately(0.0f, percentage))
+                return 0.0f;
+
+            return Mathf.Sqrt(percentage);
+        }
+
+        public static float LinearizeScreenPercentage(float percentage)
+        {
+            return percentage * percentage;
+        }
+
+        public static Rect CalcLODButton(Rect totalRect, float percentage)
+        {
+            return new Rect(totalRect.x + (Mathf.Round(totalRect.width * (1.0f - percentage))) - 5, totalRect.y, 10, totalRect.height);
+        }
+
+        public static Rect GetCulledBox(Rect totalRect, float previousLODPercentage)
+        {
+            var r = CalcLODRange(totalRect, previousLODPercentage, 0.0f);
+            r.height -= 2;
+            r.width -= 1;
+            r.center += new Vector2(0f, 1.0f);
+            return r;
+        }
+
+        public class LODInfo
+        {
+            public Rect m_ButtonPosition;
+            public Rect m_RangePosition;
+
+            public LODInfo(int lodLevel, string name, float screenPercentage)
+            {
+                LODLevel = lodLevel;
+                LODName = name;
+                RawScreenPercent = screenPercentage;
+            }
+
+            public int LODLevel { get; private set; }
+            public string LODName { get; private set; }
+            public float RawScreenPercent { get; set; }
+
+            public float ScreenPercent
+            {
+                get { return DelinearizeScreenPercentage(RawScreenPercent); }
+                set { RawScreenPercent = LinearizeScreenPercentage(value); }
+            }
+        }
+
+        public static List<LODInfo> CreateLODInfos(int numLODs, Rect area, Func<int, string> nameGen, Func<int, float> heightGen)
+        {
+            var lods = new List<LODInfo>();
+
+            for (int i = 0; i < numLODs; ++i)
+            {
+                var lodInfo = new LODInfo(i, nameGen(i), heightGen(i));
+                lodInfo.m_ButtonPosition = CalcLODButton(area, lodInfo.ScreenPercent);
+                var previousPercentage = i == 0 ? 1.0f : lods[i - 1].ScreenPercent;
+                lodInfo.m_RangePosition = CalcLODRange(area, previousPercentage, lodInfo.ScreenPercent);
+                lods.Add(lodInfo);
+            }
+
+            return lods;
+        }
+
+        public static float GetCameraPercent(Vector2 position, Rect sliderRect)
+        {
+            var percentage = Mathf.Clamp(1.0f - (position.x - sliderRect.x) / sliderRect.width, 0.01f, 1.0f);
+            percentage = LODGUI.LinearizeScreenPercentage(percentage);
+            return percentage;
+        }
+
+        public static void SetSelectedLODLevelPercentage(float newScreenPercentage, int lod, List<LODInfo> lods)
+        {
+            // Find the lower detail lod... clamp value to stop overlapping slider
+            var minimum = 0.0f;
+            var lowerLOD = lods.FirstOrDefault(x => x.LODLevel == lods[lod].LODLevel + 1);
+            if (lowerLOD != null)
+                minimum = lowerLOD.RawScreenPercent;
+
+            // Find the higher detail lod... clamp value to stop overlapping slider
+            var maximum = 1.0f;
+            var higherLOD = lods.FirstOrDefault(x => x.LODLevel == lods[lod].LODLevel - 1);
+            if (higherLOD != null)
+                maximum = higherLOD.RawScreenPercent;
+
+            maximum = Mathf.Clamp01(maximum);
+            minimum = Mathf.Clamp01(minimum);
+
+            // Set that value
+            lods[lod].RawScreenPercent = Mathf.Clamp(newScreenPercentage, minimum, maximum);
+        }
+
+        // Find the given sceen space rectangular bounds from a list of vector 3 points.
+        private static Rect CalculateScreenRect(IEnumerable<Vector3> points)
+        {
+            var points2 = points.Select(p => HandleUtility.WorldToGUIPoint(p)).ToList();
+
+            var min = new Vector2(float.MaxValue, float.MaxValue);
+            var max = new Vector2(float.MinValue, float.MinValue);
+
+            foreach (var point in points2)
+            {
+                min.x = (point.x < min.x) ? point.x : min.x;
+                max.x = (point.x > max.x) ? point.x : max.x;
+
+                min.y = (point.y < min.y) ? point.y : min.y;
+                max.y = (point.y > max.y) ? point.y : max.y;
+            }
+
+            return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
+        }
+
+        public static void DrawLODSlider(Rect area, IList<LODInfo> lods, int selectedLevel, bool[] enabledMeshLods = null)
+        {
+            Styles.m_LODSliderBG.Draw(area, GUIContent.none, false, false, false, false);
+            for (int i = 0; i < lods.Count; i++)
+            {
+                var lod = lods[i];
+                if (enabledMeshLods != null)
+                {
+                    DrawLODRange(lod, i == 0 ? 1.0f : lods[i - 1].RawScreenPercent, i == selectedLevel, enabledMeshLods[i]);
+                }
+                else
+                {
+                    DrawLODRange(lod, i == 0 ? 1.0f : lods[i - 1].RawScreenPercent, i == selectedLevel);
+                }
+                DrawLODButton(lod);
+            }
+
+            DrawCulledRange(area, lods.Count > 0 ? lods[lods.Count - 1].RawScreenPercent : 1.0f);
+        }
+
+
+        public static void DrawMixedValueLODSlider(Rect area)
+        {
+            Styles.m_LODSliderBG.Draw(area, GUIContent.none, false, false, false, false);
+            var r = GetCulledBox(area, 1.0f);
+            // Draw the range of a lod level on the slider
+            var tempColor = GUI.color;
+            GUI.color = kLODColors[1] * 0.6f; // more greyish
+            Styles.m_LODSliderRange.Draw(r, GUIContent.none, false, false, false, false);
+            GUI.color = tempColor;
+            var centeredStyle = new GUIStyle(EditorStyles.whiteLargeLabel)
+            {
+                alignment = TextAnchor.MiddleCenter
+            };
+            GUI.Label(area, "---", centeredStyle);
+        }
+
+        public static void DrawLODLabel(Camera camera, Vector3 position, float size, int LODLevel, Color[] colors, string LODText)
+        {
+            if (Vector3.Dot(camera.transform.forward, (camera.transform.position - position).normalized) > 0)
+                return;
+
+            // Draw cap around LOD to visualize it's size
+            Handles.color = LODLevel != -1 ? colors[Math.Min(LODLevel, colors.Length - 1)] : LODGUI.kCulledLODColor;
+
+            Handles.SelectionFrame(0, position, camera.transform.rotation, size / 2);
+
+            // Calculate a screen rect for the on scene title
+            Vector3 sideways = camera.transform.right * size / 2.0f;
+            Vector3 up = camera.transform.up * size / 2.0f;
+            var rect = CalculateScreenRect(
+                new[]
+                {
+                    position - sideways + up,
+                    position - sideways - up,
+                    position + sideways + up,
+                    position + sideways - up
+                });
+
+            // Place the screen space label directly under the screen rect
+            var midPoint = rect.x + rect.width / 2.0f;
+            rect = new Rect(midPoint - LODGUI.kSceneLabelHalfWidth, rect.yMax, LODGUI.kSceneLabelHalfWidth * 2, LODGUI.kSceneLabelHeight);
+
+            if (rect.yMax > Screen.height - LODGUI.kSceneLabelHeight)
+                rect.y = Screen.height - LODGUI.kSceneLabelHeight - LODGUI.kSceneHeaderOffset;
+
+            Handles.BeginGUI();
+            GUI.Label(rect, GUIContent.none, EditorStyles.notificationBackground);
+            EditorGUI.DoDropShadowLabel(rect, GUIContent.Temp(LODLevel >= 0 ? LODText + LODLevel : "Culled"), LODGUI.Styles.m_LODLevelNotifyText, 0.3f);
+            Handles.EndGUI();
+        }
+
+        private static Rect CalcLODRange(Rect totalRect, float startPercent, float endPercent)
+        {
+            var startX = Mathf.Round(totalRect.width * (1.0f - startPercent));
+            var endX = Mathf.Round(totalRect.width * (1.0f - endPercent));
+
+            return new Rect(totalRect.x + startX, totalRect.y, endX - startX, totalRect.height);
+        }
+
+        private static void DrawLODButton(LODInfo currentLOD)
+        {
+            // Make the lod button areas a horizonal resizer
+            EditorGUIUtility.AddCursorRect(currentLOD.m_ButtonPosition, MouseCursor.ResizeHorizontal);
+        }
+
+        private static void DrawLODRange(LODInfo currentLOD, float previousLODPercentage, bool isSelected, bool isMeshLodEnabled = false)
+        {
+            var tempColor = GUI.backgroundColor;
+            var startPercentageString = string.Format("{0}\n{1:0}%", currentLOD.LODName + (isMeshLodEnabled ? " (Mesh LOD)" : ""), previousLODPercentage * 100);
+            if (isSelected)
+            {
+                var foreground = currentLOD.m_RangePosition;
+                foreground.width -= kSelectedLODRangePadding * 2;
+                foreground.height -= kSelectedLODRangePadding * 2;
+                foreground.center += new Vector2(kSelectedLODRangePadding, kSelectedLODRangePadding);
+                Styles.m_LODSliderRangeSelected.Draw(currentLOD.m_RangePosition, GUIContent.none, false, false, false, false);
+                GUI.backgroundColor = kLODColors[currentLOD.LODLevel];
+                if (foreground.width > 0)
+                    Styles.m_LODSliderRange.Draw(foreground, GUIContent.none, false, false, false, false);
+                Styles.m_LODSliderText.Draw(currentLOD.m_RangePosition, startPercentageString, false, false, false, false);
+            }
+            else
+            {
+                GUI.backgroundColor = kLODColors[currentLOD.LODLevel];
+                GUI.backgroundColor *= 0.6f;
+                Styles.m_LODSliderRange.Draw(currentLOD.m_RangePosition, GUIContent.none, false, false, false, false);
+                Styles.m_LODSliderText.Draw(currentLOD.m_RangePosition, startPercentageString, false, false, false, false);
+            }
+            GUI.backgroundColor = tempColor;
+        }
+
+        private static void DrawCulledRange(Rect totalRect, float previousLODPercentage)
+        {
+            if (Mathf.Approximately(previousLODPercentage, 0.0f)) return;
+
+            var r = GetCulledBox(totalRect, DelinearizeScreenPercentage(previousLODPercentage));
+            // Draw the range of a lod level on the slider
+            var tempColor = GUI.color;
+            GUI.color = kCulledLODColor;
+            Styles.m_LODSliderRange.Draw(r, GUIContent.none, false, false, false, false);
+            GUI.color = tempColor;
+
+            // Draw some details for the current marker
+            var startPercentageString = string.Format("Culled\n{0:0}%", previousLODPercentage * 100);
+            Styles.m_LODSliderText.Draw(r, startPercentageString, false, false, false, false);
+        }
+
+        private static readonly int s_FoldoutHeaderHash = "FoldoutHeader".GetHashCode();
+
+        internal static void DrawRoundedBoxAroundLODDFoldout(int lodGroupIndex, int activeLOD)
+        {
+            Texture borderTexture = lodGroupIndex == activeLOD ? GUIStyles.m_BlueBorderTextureSelected.image : GUIStyles.m_BlueBorderTextureNormal.image;
+
+            GUILayoutGroup g = GUILayoutUtility.BeginLayoutGroup(EditorStyles.helpBox, null, typeof(GUILayoutGroup));
+            g.isVertical = true;
+
+            GUIUtility.CheckOnGUI();
+            if (Event.current.type == EventType.Repaint)
+            {
+                GUI.DrawTexture(g.rect, borderTexture, ScaleMode.StretchToFill, true, 1, Color.white, Vector4.one * 1, Vector4.one * 3, true);
+            }
+        }
+
+        internal static bool FoldoutHeaderGroupInternal(Rect position, bool foldout, string label, Texture2D background, Color backgroundColor, string additionalLabel = "")
+        {
+            GUIStyle foldoutStyle = EditorStyles.titlebarFoldout;
+
+            var offset = 18;
+            position.x += offset;
+
+            // add some spaces so that we could draw a colored texture before the label
+            label = $"       {label}";
+            GUIContent content = new GUIContent(label);
+            // Removing the default margin for inspectors
+            if (EditorGUIUtility.hierarchyMode)
+            {
+                position.xMin -= EditorStyles.inspectorDefaultMargins.padding.left - EditorStyles.inspectorDefaultMargins.padding.right;
+                position.xMax += EditorStyles.inspectorDefaultMargins.padding.right;
+            }
+
+            var labelSize = GUI.skin.label.CalcSize(new GUIContent(additionalLabel));
+            Rect menuRect = new Rect
+            {
+                x = position.xMax - foldoutStyle.padding.right - labelSize.x - offset,
+                y = position.y + 2,
+                size = labelSize
+            };
+
+            int id = GUIUtility.GetControlID(s_FoldoutHeaderHash, FocusType.Keyboard, position);
+
+            if (Event.current.type == EventType.KeyDown && GUIUtility.keyboardControl == id)
+            {
+                KeyCode kc = Event.current.keyCode;
+                if (kc == KeyCode.LeftArrow && foldout || (kc == KeyCode.RightArrow && foldout == false))
+                {
+                    foldout = !foldout;
+                    GUI.changed = true;
+                    Event.current.Use();
+                }
+            }
+            else
+            {
+                foldout = EditorGUIInternal.DoToggleForward(position, id, foldout, content, foldoutStyle);
+            }
+
+            if (additionalLabel != null && Event.current.type == EventType.Repaint && labelSize.x < Screen.width * 0.8f)
+            {
+                GUI.Label(menuRect, additionalLabel);
+                menuRect.x = 24 + offset;
+                menuRect.y += 1;
+                menuRect.width = menuRect.height = 16;
+                GUI.DrawTexture(menuRect, background, ScaleMode.ScaleToFit, true, 1, backgroundColor, Vector4.zero, Vector4.one * 2, true);
+            }
+
+            return foldout;
+        }
+    }
+}
+
+internal static class LODGroupExtensions
+{
+    public static float GetWorldSpaceSize(this LODGroup lodGroup)
+    {
+        return GetWorldSpaceScale(lodGroup.transform) * lodGroup.size;
+    }
+
+    static float GetWorldSpaceScale(Transform t)
+    {
+        var scale = t.lossyScale;
+        float largestAxis = Mathf.Abs(scale.x);
+        largestAxis = Mathf.Max(largestAxis, Mathf.Abs(scale.y));
+        largestAxis = Mathf.Max(largestAxis, Mathf.Abs(scale.z));
+        return largestAxis;
+    }
+
+    public static float DistanceToRelativeHeight(Camera camera, float distance, float size)
+    {
+        if (camera.orthographic)
+            return size * 0.5F / camera.orthographicSize;
+
+        var halfAngle = Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView * 0.5F);
+        var relativeHeight = size * 0.5F / (distance * halfAngle);
+        return relativeHeight;
+    }
+
+    public static float RelativeHeightToDistance(Camera camera, float relativeHeight, float size)
+    {
+        if (camera.orthographic)
+            return -1;
+
+        var halfAngle = Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView * 0.5F);
+        var distance = size * 0.5F / (relativeHeight * halfAngle);
+        return distance;
+    }
+
+    public static float GetRelativeHeight(this LODGroup lodGroup, Camera camera)
+    {
+        var distance = (lodGroup.transform.TransformPoint(lodGroup.localReferencePoint) - camera.transform.position).magnitude;
+        return DistanceToRelativeHeight(camera, distance, lodGroup.GetWorldSpaceSize()) * QualitySettings.lodBias;
+    }
+}

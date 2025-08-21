@@ -216,13 +216,7 @@ namespace Unity.UI.Builder
             }
 
             var selectorContainerElement = m_Viewport.styleSelectorElementContainer;
-            if (!SelectorUtility.TryCreateSelector(newSelectorStr, out var complexSelector, out var error))
-            {
-                Builder.ShowWarning(error);
-                return false;
-            }
-
-            var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
+            var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, newSelectorStr);
 
             m_Selection.NotifyOfStylingChange();
 

@@ -19,7 +19,10 @@ namespace UnityEditor
         }
 
         [NativeMethod]
-        public extern static bool IsProxyAsset(int instanceID);
+        public extern static bool IsProxyAsset(EntityId entityId);
+
+        [System.Obsolete("IsProxyAsset(int) is obsolete. Use IsProxyAsset(EntityId) instead.")]
+        public static bool IsProxyAsset(int instanceID) => IsProxyAsset((EntityId)instanceID);
     }
 
     [CustomEditor(typeof(AssetImportInProgressProxy))]

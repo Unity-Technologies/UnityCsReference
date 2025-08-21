@@ -16,7 +16,7 @@ namespace UnityEngine.AI
 
 #pragma warning disable CS0618 // The OffMeshLink class is obsolete
         [FreeFunction("OffMeshLinkScriptBindings::GetOffMeshLinkInternal")]
-        static extern OffMeshLink GetOffMeshLinkInternal(int instanceID);
+        static extern OffMeshLink GetOffMeshLinkInternal(EntityId instanceID);
 #pragma warning restore CS0618
     }
 

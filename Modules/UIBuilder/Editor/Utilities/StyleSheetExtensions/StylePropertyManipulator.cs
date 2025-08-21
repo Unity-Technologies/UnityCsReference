@@ -647,14 +647,8 @@ namespace Unity.UI.Builder
                     styleProperty.GetManipulator(styleSheet).AddVariableReference(variable.name);
                     var handles = styleProperty.values[^3..];
 
-                    var property = new StyleProperty
-                    {
-                        name = styleProperty.name,
-                        values = handles
-                    };
-
                     var ib = 0;
-                    var newPart = ResolveValueOrVariable(styleSheet, element, styleRule, property, ref ib,
+                    var newPart = ResolveValueOrVariable(styleSheet, element, styleRule, styleProperty.name, handles.AsSpan(), ref ib,
                         editorExtensionMode);
 
                     list.InsertRange(currentOffset, handles);
@@ -783,7 +777,7 @@ namespace Unity.UI.Builder
 
             styleProperty.values = list.ToArray();
             var i = part.offset;
-            var newPart = ResolveValueOrVariable(styleSheet, element, styleRule, styleProperty, ref i, editorExtensionMode);
+            var newPart = ResolveValueOrVariable(styleSheet, element, styleRule, styleProperty.name, styleProperty.values.AsSpan(), ref i, editorExtensionMode);
             stylePropertyParts.RemoveAt(indices.partIndex);
             stylePropertyParts.Insert(indices.partIndex, newPart);
             part.Dispose();
@@ -957,11 +951,12 @@ namespace Unity.UI.Builder
             StyleSheet styleSheet,
             VisualElement element,
             StyleRule styleRule,
-            StyleProperty property,
+            string propertyName,
+            Span<StyleValueHandle> propertyHandles,
             ref int currentIndex,
             bool isEditorExtensionMode)
         {
-            var handle = property.values[currentIndex];
+            var handle = propertyHandles[currentIndex];
 
             switch (handle.valueType)
             {
@@ -991,12 +986,12 @@ namespace Unity.UI.Builder
 
                 case StyleValueType.Function:
                 {
-                    var argCountHandle = property.values[++currentIndex];
+                    var argCountHandle = propertyHandles[++currentIndex];
                     var argCount = (int)styleSheet.ReadFloat(argCountHandle);
 
                     if (argCount > 0)
                     {
-                        var varHandle = property.values[++currentIndex];
+                        var varHandle = propertyHandles[++currentIndex];
                         if (varHandle.valueType != StyleValueType.Variable)
                             return StylePropertyPart.Create();
 
@@ -1025,7 +1020,7 @@ namespace Unity.UI.Builder
                         // Skip comma and point to next function argument.
                         currentIndex += 2;
 
-                        var fallbackPart = ResolveValueOrVariable(styleSheet, element, styleRule, property, ref currentIndex, isEditorExtensionMode);
+                        var fallbackPart = ResolveValueOrVariable(styleSheet, element, styleRule, propertyName, propertyHandles, ref currentIndex, isEditorExtensionMode);
                         fallbackPart.isVariable = true;
                         fallbackPart.variableName = variable;
 
@@ -1075,7 +1070,7 @@ namespace Unity.UI.Builder
                     for (var i = 0; i < property.values.Length; ++i)
                     {
                         var index = i;
-                        var offset = ResolveValueOrVariable(propStyleSheet, currentVisualElement, styleRule, property, ref i, editorExtensionMode);
+                        var offset = ResolveValueOrVariable(propStyleSheet, currentVisualElement, styleRule, property.name, property.values.AsSpan(), ref i, editorExtensionMode);
                         offset.offset = index;
                         offset.isVariable = true;
                         offset.variableName = variableName;
@@ -1111,43 +1106,46 @@ namespace Unity.UI.Builder
             string variableName,
             bool editorExtensionMode)
         {
-            for (var selectorIndex = sheet.complexSelectors.Length - 1; selectorIndex >= 0; --selectorIndex)
+            for (var ruleIndex = sheet.rules.Length - 1; ruleIndex >= 0; --ruleIndex)
             {
-                var complexSelector = sheet.complexSelectors[selectorIndex];
-                if (!complexSelector.isSimple)
-                    continue;
-
-                var simpleSelector = complexSelector.selectors[0];
-                var selectorPart = simpleSelector.parts[0];
-
-                if (selectorPart.type != StyleSelectorType.Wildcard &&
-                    selectorPart.type != StyleSelectorType.PseudoClass)
-                    continue;
-
-                if (selectorPart.type == StyleSelectorType.PseudoClass && selectorPart.value != "root")
-                    continue;
-
-                var rule = complexSelector.rule;
-                for (var propertyIndex = rule.properties.Length - 1; propertyIndex >= 0; --propertyIndex)
+                var rule = sheet.rules[ruleIndex];
+                for (var selectorIndex = rule.complexSelectors.Length - 1; selectorIndex >= 0; --selectorIndex)
                 {
-                    var property = rule.properties[propertyIndex];
-                    if (property.name != variableName)
-                    {
+                    var complexSelector = rule.complexSelectors[selectorIndex];
+                    if (!complexSelector.isSimple)
                         continue;
-                    }
 
-                    var manipulator = GetPooled();
-                    for (var i = 0; i < property.values.Length; ++i)
+                    var simpleSelector = complexSelector.selectors[0];
+                    var selectorPart = simpleSelector.parts[0];
+
+                    if (selectorPart.type != StyleSelectorType.Wildcard &&
+                        selectorPart.type != StyleSelectorType.PseudoClass)
+                        continue;
+
+                    if (selectorPart.type == StyleSelectorType.PseudoClass && selectorPart.value != "root")
+                        continue;
+
+                    for (var propertyIndex = rule.properties.Length - 1; propertyIndex >= 0; --propertyIndex)
                     {
-                        var index = i;
-                        var newPart = ResolveValueOrVariable(sheet, currentVisualElement, styleRule, property, ref i, editorExtensionMode);
-                        newPart.offset = index;
-                        newPart.isVariable = true;
-                        newPart.variableName = variableName;
-                        manipulator.stylePropertyParts.Add(newPart);
-                    }
+                        var property = rule.properties[propertyIndex];
+                        if (property.name != variableName)
+                        {
+                            continue;
+                        }
 
-                    return manipulator;
+                        var manipulator = GetPooled();
+                        for (var i = 0; i < property.values.Length; ++i)
+                        {
+                            var index = i;
+                            var newPart = ResolveValueOrVariable(sheet, currentVisualElement, styleRule, property.name, property.values.AsSpan(), ref i, editorExtensionMode);
+                            newPart.offset = index;
+                            newPart.isVariable = true;
+                            newPart.variableName = variableName;
+                            manipulator.stylePropertyParts.Add(newPart);
+                        }
+
+                        return manipulator;
+                    }
                 }
             }
 
@@ -1156,14 +1154,8 @@ namespace Unity.UI.Builder
 
         StylePropertyPart ResolveVariable(StyleValueHandle[] handles)
         {
-            var property = new StyleProperty
-            {
-                name = propertyName,
-                values = handles
-            };
-
             var index = 0;
-            return ResolveValueOrVariable(styleSheet, element, styleRule, property, ref index,
+            return ResolveValueOrVariable(styleSheet, element, styleRule, propertyName, handles.AsSpan(), ref index,
                 editorExtensionMode);
         }
 

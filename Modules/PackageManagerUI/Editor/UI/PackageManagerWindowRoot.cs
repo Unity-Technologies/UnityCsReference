@@ -30,6 +30,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
         private readonly ICustomDisplayDialog m_CustomDisplayDialog;
+        private readonly IPackageCreator m_PackageCreator;
+
         public PackageManagerWindowRoot(IResourceLoader resourceLoader,
             IExtensionManager extensionManager,
             ISelectionProxy selection,
@@ -43,7 +45,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPageRefreshHandler pageRefreshHandler,
             IPackageOperationDispatcher packageOperationDispatcher,
             IDelayedSelectionHandler delayedSelectionHandler,
-            ICustomDisplayDialog customDisplayDialog)
+            ICustomDisplayDialog customDisplayDialog,
+            IPackageCreator packageCreator)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -59,6 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OperationDispatcher = packageOperationDispatcher;
             m_DelayedSelectionHandler = delayedSelectionHandler;
             m_CustomDisplayDialog = customDisplayDialog;
+            m_PackageCreator = packageCreator;
         }
 
         public void OnEnable()
@@ -323,6 +327,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             // so that the OnTextFieldChange of placeholder gets called
             dropdown.packageNameField.value = packageName;
             dropdown.packageVersionField.value = packageVersion;
+            return dropdown;
+        }
+
+        public CreatePackageDropdown OpenCreatePackageDropdown(EditorWindow anchorWindow)
+        {
+            var dropdown = new CreatePackageDropdown(m_ResourceLoader, m_PackageCreator, anchorWindow);
+            DropdownElement.ShowDropdown(this, dropdown);
             return dropdown;
         }
 

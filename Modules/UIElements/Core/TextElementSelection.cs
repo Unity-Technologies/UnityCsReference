@@ -37,9 +37,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public int cursorIndex { get; set; }
 
-        ///// <summary>
-        ///// Controls whether double clicking selects the word under the mouse pointer or not.
-        ///// </summary>
+        /// <summary>
+        /// Controls whether double-clicking selects the word under the mouse pointer.
+        /// </summary>
         public bool doubleClickSelectsWord { get; set; }
 
         /// <summary>
@@ -47,9 +47,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public int selectIndex { get; set; }
 
-        ///// <summary>
-        ///// Controls whether triple clicking selects the entire line under the mouse pointer or not.
-        ///// </summary>
+        /// <summary>
+        /// Controls whether triple-clicking selects the entire line under the mouse pointer.
+        /// </summary>
         public bool tripleClickSelectsLine { get; set; }
 
         /// <summary>

@@ -239,6 +239,7 @@ namespace UnityEditor.Search
                 // This method does not need to be optimal, this will not be called outside of testing.
                 var totalEntries = m_WordEntries.Count;
                 totalEntries += m_PropertyDoubleEntries.Count;
+                totalEntries += m_PropertyStringEntries.Count;
                 return totalEntries;
             }
         }
@@ -656,18 +657,13 @@ namespace UnityEditor.Search
             throw new NotSupportedException($"{nameof(RemoveDocuments)} is not supported by {nameof(SearchIndexArtifactStorage)}");
         }
 
-        public void AddWord(string word, int minVariations, int maxVariations, int score, int documentIndex)
+        public void AddWord(string word, int score, int documentIndex)
         {
             var wordId = AddStringToStringTable(word);
 
             var entry = new SearchIndexArtifactWordEntry() { WordId = wordId, DocumentIndex = documentIndex, Score = score };
 
             m_WordEntries.Add(entry);
-        }
-
-        public void AddExactWord(string word, int score, int documentIndex)
-        {
-            AddWord(word, 1, int.MaxValue, score, documentIndex);
         }
 
         public void AddProperty(string name, double value, int score, int documentIndex)
@@ -680,7 +676,7 @@ namespace UnityEditor.Search
             AddPropertyKeyword(name, string.Empty, false);
         }
 
-        public void AddProperty(string name, string value, int minVariations, int maxVariations, int score, int documentIndex, bool exact, bool saveKeyword)
+        public void AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword)
         {
             var nameId = AddStringToStringTable(name);
             var valueId = AddStringToStringTable(value);
@@ -689,11 +685,6 @@ namespace UnityEditor.Search
 
             m_PropertyStringEntries.Add(entry);
             AddPropertyKeyword(name, value, saveKeyword);
-        }
-
-        public void AddExactProperty(string name, string value, int score, int documentIndex, bool saveKeyword)
-        {
-            AddProperty(name, value, 1, int.MaxValue, score, documentIndex, true, saveKeyword);
         }
 
         public void MapProperty(string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys)
@@ -730,11 +721,6 @@ namespace UnityEditor.Search
         public void Merge(string[] removedDocuments, SearchIndexer other, int baseScore, Action<int, SearchIndexer, int> documentIndexing, SearchTask<TaskData> task)
         {
             throw new NotSupportedException($"{nameof(Merge)} is not supported by {nameof(SearchIndexArtifactStorage)}");
-        }
-
-        public void ApplyFrom(SearchIndexer source)
-        {
-            throw new NotSupportedException($"{nameof(ApplyFrom)} is not supported by {nameof(SearchIndexArtifactStorage)}");
         }
 
         public void Write(Stream stream)

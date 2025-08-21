@@ -121,7 +121,7 @@ namespace UnityEngine.UIElements.UIR
 
         readonly RenderTreeManager m_RenderTreeManager;
         DrawOperation m_RootOperation;
-        List<RenderTreeAtlas.AtlasBlock> m_AllocatedTextureEntries = new();
+        List<RenderTexture> m_AllocatedTextures = new();
         MaterialPropertyBlock m_Block = new();
         ObjectPool<DrawOperation> m_DrawOperationPool = new(() => new DrawOperation());
 
@@ -317,7 +317,6 @@ namespace UnityEngine.UIElements.UIR
                 RenderTreeAtlas.AtlasBlock block;
                 if (RenderTreeAtlas.ReserveSize(op.bounds.width, op.bounds.height, out block))
                 {
-                    m_AllocatedTextureEntries.Add(block);
                     op.dstAtlasBlock = block;
 
                     if (op.parent.type == DrawOperationType.RenderTree)
@@ -389,8 +388,10 @@ namespace UnityEngine.UIElements.UIR
                 filterShouldOutputLinear = true;
             }
 
-            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma))
+            if (RenderTreeAtlas.CreateTextureForAtlasBlock(ref op.dstAtlasBlock, forceGamma, out bool allocatedNewTexture))
             {
+                if (allocatedNewTexture)
+                    m_AllocatedTextures.Add(op.dstAtlasBlock.texture);
                 if (op.dstTextureId.IsValid())
                     m_RenderTreeManager.textureRegistry.UpdateDynamic(op.dstTextureId, op.dstAtlasBlock.texture);
             }
@@ -517,9 +518,9 @@ namespace UnityEngine.UIElements.UIR
                 m_RootOperation = null;
             }
 
-            for(int i = 0 ; i < m_AllocatedTextureEntries.Count ; ++i)
-                RenderTreeAtlas.ReleaseTextureForAtlasBlock(m_AllocatedTextureEntries[i]);
-            m_AllocatedTextureEntries.Clear();
+            foreach (var rt in m_AllocatedTextures)
+                RenderTexture.ReleaseTemporary(rt);
+            m_AllocatedTextures.Clear();
         }
 
         void CleanupOperation_PostOrder(DrawOperation op)

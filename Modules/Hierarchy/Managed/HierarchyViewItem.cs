@@ -65,7 +65,7 @@ namespace Unity.Hierarchy
 
         /// <summary>
         /// The <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.
-        /// This is going to be <see cref="HierarchyNode.Null"/> when <see cref="HierarchyNodeTypeHandler.Unbind(HierarchyViewItem)"/> is called.
+        /// This is going to be <see cref="HierarchyNode.Null"/> when <see cref="HierarchyNodeTypeHandler.OnUnbindItem(HierarchyViewItem)"/> is called.
         /// </summary>
         public ref readonly HierarchyNode Node => ref m_Node;
 
@@ -132,7 +132,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Gets the <see cref="HierarchyView"/> currently associated with this <see cref="HierarchyViewItem"/>.
         /// </summary>
-        internal HierarchyView View => m_View;
+        public HierarchyView View => m_View;
 
         internal bool Bound => m_Node != HierarchyNode.Null || m_View != null;
 

@@ -226,6 +226,12 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
+        static VisualElement()
+        {
+            // This is an empty call to prevent the initialization from being stripped out of a build
+            // if VisualElement is included.
+            UIElementsInitialization.SoftPreserve();
+        }
         internal static class Testing
         {
             public static void SetDefaultMaterial(VisualElement ve, Material material) => ve.defaultMaterial = material;
@@ -1528,9 +1534,6 @@ namespace UnityEngine.UIElements
 
                 if ((int)diff > 0)
                 {
-                    if ((value & PseudoStates.Root) == PseudoStates.Root)
-                        isRootVisualContainer = true;
-
                     // If only the root changed do not trigger a new style update since the root
                     // pseudo state change base on the current style sheet when selectors are matched.
                     if (diff != PseudoStates.Root)
@@ -1549,35 +1552,50 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns true if this element matches the @@:active@@ pseudo-class
+        /// Returns true if this element matches the @@:active@@ pseudo-class.
         /// </summary>
+        /// <remarks>
+        /// For an example of how to use this property, refer to [[wiki:ui-systems/check-pseudo-state|Check pseudo-state of a control]].
+        /// </remarks>
         public bool hasActivePseudoState => (pseudoStates & PseudoStates.Active) != 0;
         /// <summary>
-        /// Returns true if this element matches the @@:inactive@@ pseudo-class
+        /// Returns true if this element matches the @@:inactive@@ pseudo-class.
         /// </summary>
         public bool hasInactivePseudoState => (pseudoStates & PseudoStates.Active) == 0;
         /// <summary>
-        /// Returns true if this element matches the @@:hover@@ pseudo-class
+        /// Returns true if this element matches the @@:hover@@ pseudo-class.
         /// </summary>
+        /// <remarks>
+        /// For an example of how to use this property, refer to [[wiki:ui-systems/check-pseudo-state|Check pseudo-state of a control]].
+        /// </remarks>
         public bool hasHoverPseudoState => (pseudoStates & PseudoStates.Hover) != 0;
         /// <summary>
-        /// Returns true if this element matches the @@:checked@@ pseudo-class
+        /// Returns true if this element matches the @@:checked@@ pseudo-class.
         /// </summary>
+        /// <remarks>
+        /// For an example of how to use this property, refer to [[wiki:ui-systems/check-pseudo-state|Check pseudo-state of a control]].
+        /// </remarks>
         public bool hasCheckedPseudoState => (pseudoStates & PseudoStates.Checked) != 0;
         /// <summary>
-        /// Returns true if this element matches the @@:enabled@@ pseudo-class
+        /// Returns true if this element matches the @@:enabled@@ pseudo-class.
         /// </summary>
         public bool hasEnabledPseudoState => (pseudoStates & PseudoStates.Disabled) == 0;
         /// <summary>
-        /// Returns true if this element matches the @@:disabled@@ pseudo-class
+        /// Returns true if this element matches the @@:disabled@@ pseudo-class.
         /// </summary>
+        /// <remarks>
+        /// For an example of how to use this property, refer to [[wiki:ui-systems/check-pseudo-state|Check pseudo-state of a control]].
+        /// </remarks>
         public bool hasDisabledPseudoState => (pseudoStates & PseudoStates.Disabled) != 0;
         /// <summary>
-        /// Returns true if this element matches the @@:focus@@ pseudo-class
+        /// Returns true if this element matches the @@:focus@@ pseudo-class.
         /// </summary>
+        /// <remarks>
+        /// For an example of how to use this property, refer to [[wiki:ui-systems/check-pseudo-state|Check pseudo-state of a control]].
+        /// </remarks>
         public bool hasFocusPseudoState => (pseudoStates & PseudoStates.Focus) != 0;
         /// <summary>
-        /// Returns true if this element matches the @@:root@@ pseudo-class
+        /// Returns true if this element matches the @@:root@@ pseudo-class.
         /// </summary>
         public bool hasRootPseudoState => (pseudoStates & PseudoStates.Root) != 0;
 

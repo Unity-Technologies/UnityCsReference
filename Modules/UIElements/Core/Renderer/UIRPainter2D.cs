@@ -5,13 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements.UIR;
+using UnityEngine.Bindings;
 
 // Overview of the Vector Graphics API
 // ===================================
@@ -61,8 +61,8 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// The example below demonstrates how to use the Painter2D class to draw content in a <see cref="VisualElement"/> with
     /// the <see cref="VisualElement.generateVisualContent"/> callback.
-    /// 
-    /// 
+    ///
+    ///
     /// You can also create a standalone <see cref="Painter2D.Painter2D"/> object to draw content offscreen,
     ///  and use the <see cref="Painter2D.SaveToVectorImage"/> method to save the painter content in a <see cref="VectorImage"/> asset.
     /// </remarks>
@@ -101,15 +101,22 @@ namespace UnityEngine.UIElements
     /// ]]>
     /// </code>
     /// </example>
+    
     public class Painter2D : IDisposable
     {
+        static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(Painter2D)}");
+
         private MeshGenerationContext m_Ctx;
         internal DetachedAllocator m_DetachedAllocator;
         internal SafeHandleAccess m_Handle;
 
+        FillGradient m_FillGradient;
+        Texture2D m_FillTexture;
+
         internal bool isDetached => m_DetachedAllocator != null;
 
         List<Painter2DJobData> m_JobSnapshots = null;
+        List<VectorImage> m_VectorImageToRelease = null;
         NativeArray<Painter2DJobData> m_JobParameters;
 
         // Instantiated internally by UIR, users shouldn't derive from this class.
@@ -118,6 +125,7 @@ namespace UnityEngine.UIElements
             m_Handle = new SafeHandleAccess(UIPainter2D.Create());
             m_Ctx = ctx;
             m_JobSnapshots = new(32);
+            m_VectorImageToRelease = new(16);
             m_OnMeshGenerationDelegate = OnMeshGeneration;
             Reset();
         }
@@ -192,6 +200,18 @@ namespace UnityEngine.UIElements
                     m_DetachedAllocator.Dispose();
 
                 m_JobParameters.Dispose();
+                if (m_VectorImageToRelease != null)
+                {
+                    foreach (var vi in m_VectorImageToRelease)
+                    {
+                        if (vi != null)
+                        {
+                            UIRUtility.Destroy(vi.atlas);
+                            UIRUtility.Destroy(vi);
+                        }
+                    }
+                    m_VectorImageToRelease.Clear();
+                }
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
@@ -231,6 +251,58 @@ namespace UnityEngine.UIElements
         {
             get => UIPainter2D.GetStrokeGradient(m_Handle);
             set => UIPainter2D.SetStrokeGradient(m_Handle, value);
+        }
+
+        internal Matrix4x4 fillTransform
+        {
+            [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
+            set
+            {
+                UIPainter2D.SetFillTransform(m_Handle, value);
+            }
+        }
+
+        internal float opacity
+        {
+            [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
+            set => UIPainter2D.SetOpacity(m_Handle, value);
+        }
+
+        /// <summary>
+        /// The fill gradient to use when using. <see cref="Fill"/>.
+        /// </summary>
+        /// <remarks>
+        /// Setting a fill gradient will override the currently set <see cref="fillColor"/>.
+        /// </remarks>
+        public FillGradient fillGradient
+        {
+            set
+            {
+                m_FillGradient = value;
+                UIPainter2D.SetFillGradient(m_Handle, value);
+            }
+        }
+
+        private bool hasFillGradient
+        {
+            get => UIPainter2D.HasFillGradient(m_Handle);
+        }
+
+        private bool hasFillTexture
+        {
+            get => UIPainter2D.HasFillTexture(m_Handle);
+        }
+
+        /// <summary>
+        /// Texture2D to use when filling paths using <see cref="Fill"/>.
+        /// </summary>
+        public Texture2D fillTexture
+        {
+            set
+            {
+                m_FillTexture = value;
+                UIPainter2D.SetHasFillTexture(m_Handle, value != null);
+            }
         }
 
         /// <summary>
@@ -443,12 +515,97 @@ namespace UnityEngine.UIElements
                     // Take a snapshot for the job system
                     m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                     int snapshotIndex = UIPainter2D.TakeStrokeSnapshot(m_Handle);
-                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex });
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex, vectorImagePtr = IntPtr.Zero, texturePtr = IntPtr.Zero });
                 }
             }
         }
 
         private static readonly ProfilerMarker s_FillMarker = new ProfilerMarker("Painter2D.Fill");
+
+        private static void SetSolidTextureData(Texture2D targetTexture, Color color, int width, int height)
+        {
+            NativeArray<Color32> texels = targetTexture.GetRawTextureData<Color32>();
+            var textureWidth = targetTexture.width;
+            for (int y = 0; y < height; ++y)
+            {
+                for (int x = 0; x < width; ++x)
+                    texels[x + y * textureWidth] = color;
+            }
+        }
+
+        private static void SetGradientTextureData(Texture2D texture, int width, int x, int y, Gradient gradient, bool duplicateOnBorder = false)
+        {
+            NativeArray<Color32> texels = texture.GetRawTextureData<Color32>();
+            float scale = 1.0f / (float)(Math.Max(1, width - 1));
+            for (int i = 0; i < width; i++)
+            {
+                float t = i * scale;
+                Color color = gradient.Evaluate(t);
+                texels[x + i + y * texture.width] = color;
+
+                if (duplicateOnBorder)
+                {
+                    if (i == 0)
+                    {
+                        texels[x + width + y * texture.width] = color;
+                    }
+                    else if (i == width - 1)
+                    {
+                        texels[x - 1 + y * texture.width] = color;
+                    }
+
+                    texels[x + i + (y + 1) * texture.width] = color;
+                    texels[x + i + (y - 1) * texture.width] = color;
+                }
+            }
+        }
+
+        private static void SetupSolidColor(int width, int height, int x, int y, out GradientSettings gradientSettings)
+        {
+            gradientSettings = new GradientSettings();
+            gradientSettings.gradientType = GradientType.Linear;
+            gradientSettings.addressMode = AddressMode.Clamp;
+            gradientSettings.location.x = x;
+            gradientSettings.location.y = y;
+            gradientSettings.location.width = width;
+            gradientSettings.location.height = height;
+            gradientSettings.radialFocus = Vector2.zero;
+        }
+
+        private static void SetupGradient(ref FillGradient fillGradient, int width, int x, int y, out GradientSettings gradientSettings)
+        {
+            gradientSettings = new GradientSettings();
+            gradientSettings.gradientType = fillGradient.gradientType;
+            gradientSettings.addressMode = fillGradient.addressMode;
+            gradientSettings.location.x = x;
+            gradientSettings.location.y = y;
+            gradientSettings.location.width = width;
+            gradientSettings.location.height = 1;
+
+            var focus = fillGradient.radius > UIRUtility.k_Epsilon ? (fillGradient.focus - fillGradient.center) / fillGradient.radius : Vector2.zero;
+            gradientSettings.radialFocus = focus;
+        }
+
+        private static void SetupGradientForTexture(int width, int height, int x, int y, out GradientSettings gradientSettings)
+        {
+            gradientSettings = new GradientSettings();
+            gradientSettings.gradientType = GradientType.Linear;
+            gradientSettings.addressMode = AddressMode.Clamp;
+            gradientSettings.location.x = x;
+            gradientSettings.location.y = y;
+            gradientSettings.location.width = width;
+            gradientSettings.location.height = height;
+            gradientSettings.radialFocus = Vector2.zero;
+        }
+
+        private static void CreateTextureAndGradientSettings(ref FillGradient fillGradient, out Texture2D texture, out GradientSettings gradientSettings)
+        {
+            const int width = 64;
+            texture = new Texture2D(width, 1, TextureFormat.RGBA32, false);
+            SetGradientTextureData(texture, width, 0, 0, fillGradient.gradient);
+            texture.Apply(false, true);
+            SetupGradient(ref fillGradient, width, 0, 0, out gradientSettings);
+        }
 
         /// <summary>
         /// Fills the currently defined path.
@@ -469,6 +626,17 @@ namespace UnityEngine.UIElements
 
                     // transfer all data in a single batch
                     var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
+
+                    if (hasFillGradient)
+                    {
+                        m_DetachedAllocator.AddGradient(m_FillGradient);
+                    }
+
+                    if (hasFillTexture)
+                    {
+                        m_DetachedAllocator.AddTexture(m_FillTexture);
+                    }
+
                     unsafe
                     {
                         var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
@@ -479,10 +647,28 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
+                    IntPtr vectorImagePtr = IntPtr.Zero;
+                    IntPtr texturePtr = IntPtr.Zero;
+
+                    if (hasFillGradient)
+                    {
+                        VectorImage vi = ScriptableObject.CreateInstance<VectorImage>();
+                        m_VectorImageToRelease.Add(vi);
+                        CreateTextureAndGradientSettings(ref m_FillGradient, out Texture2D texture, out GradientSettings gradientSettings);
+                        vi.atlas = texture;
+                        vi.settings = new GradientSettings[] { gradientSettings };
+                        vectorImagePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(vi);
+                    }
+
+                    if (hasFillTexture)
+                    {
+                        texturePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(m_FillTexture);
+                    }
+
                     // Take a snapshot for the job system
                     m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                     int jobIndex = UIPainter2D.TakeFillSnapshot(m_Handle, fillRule);
-                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = jobIndex });
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = jobIndex, vectorImagePtr = vectorImagePtr, texturePtr = texturePtr });
                 }
             }
         }
@@ -491,6 +677,8 @@ namespace UnityEngine.UIElements
         {
             public UnsafeMeshGenerationNode node;
             public int snapshotIndex;
+            public IntPtr vectorImagePtr;
+            public IntPtr texturePtr;
         }
 
         struct Painter2DJob : IJobParallelFor
@@ -521,7 +709,20 @@ namespace UnityEngine.UIElements
                 vertices.CopyFrom(nativeVertices);
                 indices.CopyFrom(nativeIndices);
 
-                data.node.DrawMesh(vertices, indices);
+                if (data.vectorImagePtr != IntPtr.Zero)
+                {
+                    GCHandle handle = GCHandle.FromIntPtr(data.vectorImagePtr);
+                    VectorImage vi = (VectorImage)handle.Target;
+                    data.node.DrawGradientsInternal(vertices, indices, vi);
+                }
+                else if (data.texturePtr != IntPtr.Zero)
+                {
+                    GCHandle handle = GCHandle.FromIntPtr(data.texturePtr);
+                    Texture texture = handle.Target as Texture;
+                    data.node.DrawMesh(vertices, indices, texture);
+                }
+                else
+                    data.node.DrawMesh(vertices, indices);
             }
         }
 
@@ -534,7 +735,7 @@ namespace UnityEngine.UIElements
             if (m_JobParameters.Length < snapshotCount)
             {
                 m_JobParameters.Dispose();
-                m_JobParameters = new NativeArray<Painter2DJobData>(snapshotCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                m_JobParameters = new NativeArray<Painter2DJobData>(snapshotCount, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
             }
 
             for (int i = 0; i < snapshotCount; ++i)
@@ -598,9 +799,50 @@ namespace UnityEngine.UIElements
             int vCount = 0;
             int iCount = 0;
             int baseVertex = 0;
-            foreach (var mwd in meshes)
+
+            int padding = 1;
+            UIRAtlasAllocator atlasAllocator = new UIRAtlasAllocator(64, 4096);
+            List<RectInt> textureAllocations = new List<RectInt>();
+            List<int> gradientMeshIndex = new List<int>();
+
+            if (m_DetachedAllocator.HasGradientsOrTextures())
             {
+                // Reserve the first gradient entry to a white texture for solid geometry
+                atlasAllocator.TryAllocate(1 + 2 * padding, 1 + 2 * padding, out RectInt location);
+                textureAllocations.Add(location);
+            }
+
+            for (int meshIndex = 0; meshIndex < meshes.Count; ++meshIndex)
+            {
+                var mwd = meshes[meshIndex];
                 var verts = mwd.m_Vertices;
+
+                bool hasGradient = false;
+                if (m_DetachedAllocator.HasGradientAtMeshIndex(meshIndex))
+                {
+                    if (!atlasAllocator.TryAllocate(64 + 2 * padding, 1 + 2 * padding, out RectInt location))
+                    {
+                        Debug.LogError("SaveToVectorImage cannot save VectorImage since texture atlas has no space left.");
+                        return false;
+                    }
+                    textureAllocations.Add(location);
+                    gradientMeshIndex.Add(meshIndex);
+                    hasGradient = true;
+                }
+
+                if (m_DetachedAllocator.HasTextureAtMeshIndex(meshIndex))
+                {
+                    Texture texture = m_DetachedAllocator.GetTextureFromMeshIndex(meshIndex);
+                    if (!atlasAllocator.TryAllocate(texture.width, texture.height, out RectInt location))
+                    {
+                        Debug.LogError("SaveToVectorImage cannot save VectorImage since texture atlas has no space left.");
+                        return false;
+                    }
+                    textureAllocations.Add(location);
+                    gradientMeshIndex.Add(-1);
+                    hasGradient = true;
+                }
+
                 for (int i = 0; i < verts.Length; ++i)
                 {
                     var v = verts[i];
@@ -612,7 +854,8 @@ namespace UnityEngine.UIElements
                         tint = v.tint,
                         uv = v.uv,
                         flags = v.flags,
-                        circle = v.circle,
+                        settingIndex = hasGradient ? (UInt32)(textureAllocations.Count - 1) : 0,
+                        circle = v.circle
                     };
                 }
 
@@ -627,6 +870,75 @@ namespace UnityEngine.UIElements
             vectorImage.vertices = allVerts;
             vectorImage.indices = allInds;
             vectorImage.size = bbox.size;
+
+            if (textureAllocations.Count > 0)
+            {
+                RenderTexture atlasTexture = new RenderTexture(atlasAllocator.physicalWidth, atlasAllocator.physicalHeight, 0, RenderTextureFormat.ARGB32);
+                List<GradientSettings> gradientSettingsList = new List<GradientSettings>(textureAllocations.Count);
+
+                for (int i = 0; i < textureAllocations.Count; ++i)
+                {
+                    var r = textureAllocations[i];
+                    int gradIndex = (i > 0) ? gradientMeshIndex[i-1] : -1;
+
+                    Texture2D tempTexture = null;
+
+                    // First gradient is reserved for solid geometry
+                    if (i == 0)
+                    {
+                        tempTexture = new Texture2D(r.width, r.height, TextureFormat.RGBA32, false);
+                        SetSolidTextureData(tempTexture, Color.white, r.width, r.height);
+                        tempTexture.Apply(false, true);
+
+                        SetupSolidColor(r.width, r.height, r.x + padding, r.y + padding, out GradientSettings gradientSettings);
+                        gradientSettingsList.Add(gradientSettings);
+                    }
+                    else if (gradIndex != -1)
+                    {
+                        // Fill Gradient
+                        FillGradient fillGradient = m_DetachedAllocator.GetGradientFromMeshIndex(gradIndex);
+
+                        tempTexture = new Texture2D(r.width, r.height, TextureFormat.RGBA32, false);
+                        SetGradientTextureData(tempTexture, r.width - 2 * padding, padding, padding, fillGradient.gradient, true);
+                        tempTexture.Apply(false, true);
+                        SetupGradient(ref fillGradient, r.width - 2 * padding, r.x + padding, r.y + padding, out GradientSettings gradientSettings);
+                        gradientSettingsList.Add(gradientSettings);
+                    }
+                    else
+                    {
+                        RenderTexture.active = atlasTexture;
+                        Rect destRect = new Rect(r.x, atlasTexture.height - r.height - r.y, r.width, r.height);
+                        Texture texture = m_DetachedAllocator.GetTextureFromMeshIndex(i-1);
+                        GL.PushMatrix();
+                        GL.LoadPixelMatrix(0, atlasTexture.width, atlasTexture.height, 0);
+                        Graphics.DrawTexture(destRect, texture);
+                        GL.PopMatrix();
+                        RenderTexture.active = null;
+
+                        SetupGradientForTexture(r.width, r.height, r.x, r.y, out GradientSettings gradientSettings);
+                        gradientSettingsList.Add(gradientSettings);
+                    }
+
+                    if (tempTexture != null)
+                    {
+                        // Copy temp texture into atlas
+                        Graphics.CopyTexture(
+                            tempTexture, 0, 0, 0, 0, r.width, r.height,
+                            atlasTexture, 0, 0, r.x, r.y);
+
+                        UIRUtility.Destroy(tempTexture);
+                    }
+                }
+
+                RenderTexture.active = atlasTexture;
+                Texture2D atlasTexture2D = new Texture2D(atlasTexture.width, atlasTexture.height, TextureFormat.RGBA32, false);
+                atlasTexture2D.ReadPixels(new Rect(0, 0, atlasTexture.width, atlasTexture.height), 0, 0);
+                atlasTexture2D.Apply();
+                RenderTexture.active = null;
+                vectorImage.atlas = atlasTexture2D;
+                vectorImage.settings = gradientSettingsList.ToArray();
+                atlasTexture.Release();
+            }
 
             return true;
         }

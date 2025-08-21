@@ -3,22 +3,50 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    internal enum GradientType
+    /// <summary>
+    /// Specifies the type of gradient to use for color interpolation.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Linear"/> creates a gradient that transitions colors along a straight line.
+    /// <see cref="Radial"/> creates a gradient that radiates colors outward from a central point.
+    /// </remarks>
+    public enum GradientType
     {
+        /// <summary>A gradient that transitions colors along a straight line.</summary>
         Linear,
+        /// <summary>A gradient that radiates colors outward from a central point.</summary>
         Radial
     }
 
-    internal enum AddressMode
+    /// <summary>
+    /// Specifies how the gradient is sampled when UV coordinates are outside the [0, 1] range.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Wrap"/> repeats the gradient, creating a tiled effect.
+    /// <see cref="Clamp"/> extends the edge colors of the gradient beyond the [0, 1] range.
+    /// <see cref="Mirror"/> repeats the gradient, but mirrors it at every integer boundary, creating a seamless mirrored tiling.
+    /// </remarks>
+    public enum AddressMode
     {
+        /// <summary>
+        /// Repeats the gradient when sampling outside the [0, 1] range, creating a tiled effect.
+        /// </summary>
         Wrap,
+        /// <summary>
+        /// Extends the edge colors of the gradient beyond the [0, 1] range.
+        /// </summary>
         Clamp,
+        /// <summary>
+        /// Repeats the gradient, but mirrors it at every integer boundary, creating a seamless mirrored tiling.
+        /// </summary>
         Mirror
     }
 
+    [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
     [Serializable]
     internal struct VectorImageVertex
     {
@@ -30,6 +58,7 @@ namespace UnityEngine.UIElements
         public Vector4 circle;
     }
 
+    [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
     [Serializable]
     internal struct GradientSettings
     {
@@ -51,11 +80,22 @@ namespace UnityEngine.UIElements
     [Serializable]
     public sealed class VectorImage : ScriptableObject
     {
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
         [SerializeField] internal int version = 0; // For future upgrades using ISerializationCallbackReceiver
+
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
         [SerializeField] internal Texture2D atlas = null;
+
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule", "UnityEditor.VectorGraphicsModule")]
         [SerializeField] internal VectorImageVertex[] vertices = null;
+
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
         [SerializeField] internal UInt16[] indices = null;
+
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
         [SerializeField] internal GradientSettings[] settings = null;
+
+        [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
         [SerializeField] internal Vector2 size = Vector2.zero;
 
         /// <summary>The width of the vector image.</summary>
@@ -63,5 +103,13 @@ namespace UnityEngine.UIElements
 
         /// <summary>The height of the vector image.</summary>
         public float height => size.y;
+
+        private void OnDestroy()
+        {
+            if (atlas != null)
+            {
+                UIRUtility.Destroy(atlas);
+            }
+        }
     }
 }

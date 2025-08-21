@@ -99,6 +99,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-font", StylePropertyId.UnityFont},
             {"-unity-font-definition", StylePropertyId.UnityFontDefinition},
             {"-unity-font-style", StylePropertyId.UnityFontStyleAndWeight},
+            {"-unity-material", StylePropertyId.UnityMaterial},
             {"-unity-overflow-clip-box", StylePropertyId.UnityOverflowClipBox},
             {"-unity-paragraph-spacing", StylePropertyId.UnityParagraphSpacing},
             {"-unity-slice-bottom", StylePropertyId.UnitySliceBottom},
@@ -201,6 +202,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.UnityFont, "-unity-font"},
             {StylePropertyId.UnityFontDefinition, "-unity-font-definition"},
             {StylePropertyId.UnityFontStyleAndWeight, "-unity-font-style"},
+            {StylePropertyId.UnityMaterial, "-unity-material"},
             {StylePropertyId.UnityOverflowClipBox, "-unity-overflow-clip-box"},
             {StylePropertyId.UnityParagraphSpacing, "-unity-paragraph-spacing"},
             {StylePropertyId.UnitySliceBottom, "-unity-slice-bottom"},
@@ -303,6 +305,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-font", "unityFont"},
             {"-unity-font-definition", "unityFontDefinition"},
             {"-unity-font-style", "unityFontStyleAndWeight"},
+            {"-unity-material", "unityMaterial"},
             {"-unity-overflow-clip-box", "unityOverflowClipBox"},
             {"-unity-paragraph-spacing", "unityParagraphSpacing"},
             {"-unity-slice-bottom", "unitySliceBottom"},
@@ -405,6 +408,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"unityFont", "-unity-font"},
             {"unityFontDefinition", "-unity-font-definition"},
             {"unityFontStyleAndWeight", "-unity-font-style"},
+            {"unityMaterial", "-unity-material"},
             {"unityOverflowClipBox", "-unity-overflow-clip-box"},
             {"unityParagraphSpacing", "-unity-paragraph-spacing"},
             {"unitySliceBottom", "-unity-slice-bottom"},
@@ -1198,6 +1202,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return new[]{typeof(Font)};
                 case StylePropertyId.UnityFontDefinition:
                     return FontDefinition.allowedAssetTypes;
+                case StylePropertyId.UnityMaterial:
+                    return MaterialDefinition.allowedAssetTypes;
                 case StylePropertyId.Custom:
                     return new[]{typeof(UnityEngine.Object)};
                 default:
@@ -1216,6 +1222,8 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StylePropertyId.UnityFont:
                     return true;
                 case StylePropertyId.UnityFontDefinition:
+                    return true;
+                case StylePropertyId.UnityMaterial:
                     return true;
                 case StylePropertyId.Custom:
                     return true;

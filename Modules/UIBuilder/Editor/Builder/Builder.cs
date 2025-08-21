@@ -67,6 +67,11 @@ namespace Unity.UI.Builder
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
 
+        /// <summary>
+        /// Provided for debug purposes to force the builder to use UxmlTraits
+        /// </summary>
+        internal static bool alwaysUseUxmlTraits { get; set; }
+
         readonly Action m_UnregisterBuilderLibraryContentProcessors = BuilderLibraryContent.UnregisterProcessors;
 
         public bool codePreviewVisible
@@ -325,9 +330,6 @@ namespace Unity.UI.Builder
 
         public override void DiscardChanges()
         {
-            // Ensure stylesheet cache will be up to date.
-            UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
-
             // Restore UXML and USS assets from backup
             document.RestoreAssetsFromBackup();
 

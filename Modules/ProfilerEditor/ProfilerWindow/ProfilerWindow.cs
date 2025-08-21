@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text;
 using Unity.Profiling;
 using Unity.Profiling.Editor;
 using Unity.Profiling.Editor.UI;
@@ -35,7 +37,6 @@ namespace UnityEditor
             public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Profiler Modules", "Add and remove profiler modules");
             public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts");
             public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
-            public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
             public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
 
             public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling");
@@ -66,13 +67,13 @@ namespace UnityEditor
 
             public static SVC<Color> borderColor =
                 new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
+            public static readonly GUIContent showHideCaptures = EditorGUIUtility.TrIconContent("LeftPanel", "Show/Hide Captures List");
             public static readonly GUIContent prevFrame = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Previous frame");
             public static readonly GUIContent nextFrame = EditorGUIUtility.TrIconContent("Animation.NextKey", "Next frame");
             public static readonly GUIContent currentFrame = EditorGUIUtility.TrIconContent("Animation.LastKey", "Current frame");
             public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ", "Selected frame / Total number of frames");
             public static readonly GUIContent clearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play", "Clear the captured data on entering Play Mode, or connecting to a new Player");
             public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear", "Clear the captured data");
-            public static readonly GUIContent saveWindowTitle = EditorGUIUtility.TrTextContent("Save Window");
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrIconContent("SaveAs", "Save current profiling information to a binary file");
             public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data");
@@ -86,14 +87,11 @@ namespace UnityEditor
             public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = EditorGUIUtility.TrTextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.");
 
             public static readonly GUIStyle background = "OL box flat";
-            public static readonly GUIStyle header = "OL title";
-            public static readonly GUIStyle label = "OL label";
-            public static readonly GUIStyle entryEven = "OL EntryBackEven";
-            public static readonly GUIStyle entryOdd = "OL EntryBackOdd";
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
-            public static readonly GUIStyle profilerDetailViewBackground = "ProfilerDetailViewBackground";
 
-            public static readonly GUILayoutOption chartWidthOption = GUILayout.Width(Chart.kSideWidth - 1);
+            public static readonly int kButtonWidth = 25;
+            public static readonly GUILayoutOption buttonWidthOption = GUILayout.MaxWidth(kButtonWidth);
+            public static readonly GUILayoutOption chartWidthOption = GUILayout.Width(Chart.kSideWidth - 1 - kButtonWidth);
 
             static Styles()
             {
@@ -108,6 +106,7 @@ namespace UnityEditor
         const string k_UssClass_Light = "profiler-view--light";
         const string k_UxmlIdentifier_ToolbarViewContainer = "profiler-view__toolbar-view-container";
         const string k_UxmlIdentifier_BottlenecksViewContainer = "profiler-view__bottlenecks-view-container";
+        const string k_UxmlIdentifier_CapturesListViewContainer = "profiler-view__captures-list-view-container";
         const string k_UxmlIdentifier_SplitView = "profiler-view__split-view";
         const string k_UxmlIdentifier_ChartsViewContainer = "profiler-view__charts-view-container";
         const string k_UxmlIdentifier_DetailsViewContainer = "profiler-view__details-view-container";
@@ -197,6 +196,30 @@ namespace UnityEditor
 
         internal VisualElement DetailsViewContainer => m_DetailsViewContainer;
 
+        // Captures list
+        CapturesListViewController m_CapturesListViewController;
+        VisualElement m_CapturesListViewContainer;
+        CaptureDataService m_CaptureDataService;
+        ScreenshotsManager m_ScreenshotsManager;
+        string m_CurrentLoadedCaptureFile;
+        internal string CurrentLoadedCaptureFile
+        {
+            get => m_CurrentLoadedCaptureFile;
+            private set
+            {
+                if (m_CurrentLoadedCaptureFile == value)
+                    return;
+
+                m_CurrentLoadedCaptureFile = value;
+                if (string.IsNullOrEmpty(m_CurrentLoadedCaptureFile))
+                {
+                    // We already refresh when a capture is loaded, so
+                    // only do it here if one is being cleared/changed.
+                    m_CapturesListViewController.RefreshView();
+                }
+            }
+        }
+
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
         const string kProfilerEditorTargetModeEnabledSessionKey = "ProfilerTargetMode";
@@ -248,6 +271,11 @@ namespace UnityEditor
                     throw new ArgumentOutOfRangeException("value", $"Can't set a value greater than {nameof(lastAvailableFrameIndex)} which is currently {lastAvailableFrameIndex}.");
                 SetActiveVisibleFrameIndex((int)value);
             }
+        }
+
+        static bool ProfilerHasAnyFrames()
+        {
+            return ProfilerDriver.lastFrameIndex != FrameDataView.invalidOrCurrentFrameIndex;
         }
 
         // At the time of writing, this is only used by the Highlights module to support range
@@ -425,8 +453,17 @@ namespace UnityEditor
             }
 
             m_BottlenecksChartViewController.Dispose();
+            m_BottlenecksChartViewController = null;
+            m_CapturesListViewController.Dispose();
+            m_CapturesListViewController = null;
+            m_CaptureDataService.Dispose();
+            m_CaptureDataService = null;
+            m_ScreenshotsManager.Dispose();
+            m_ScreenshotsManager = null;
             m_PersistentSettingsService.Dispose();
+            m_PersistentSettingsService = null;
             m_DataService.Dispose();
+            m_DataService = null;
 
             UnsubscribeFromGlobalEvents();
 
@@ -594,6 +631,12 @@ namespace UnityEditor
             var bottleneckViewVisible = persistentSettingsService.IsBottleneckViewVisible;
             SetBottleneckViewVisible(bottleneckViewVisible);
 
+            m_CaptureDataService = new CaptureDataService(this);
+            m_ScreenshotsManager = new ScreenshotsManager(dataService);
+            m_CapturesListViewController = new CapturesListViewController(this, m_CaptureDataService, m_ScreenshotsManager);
+            m_CapturesListViewContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_CapturesListViewContainer);
+            m_CapturesListViewContainer.Add(m_CapturesListViewController.View);
+
             m_ChartsIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UxmlIdentifier_ChartsViewContainer);
             m_ChartsIMGUIContainer.onGUIHandler = DoLegacyChartsGUI;
 
@@ -605,9 +648,14 @@ namespace UnityEditor
             m_DetailsViewContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_DetailsViewContainer);
         }
 
+        void OnProfilerFrameRecorded(int _, int __)
+        {
+            CurrentLoadedCaptureFile = string.Empty;
+        }
+
         void SubscribeToGlobalEvents()
         {
-            // maximize playmode will call ondisable which will unsibrcibe for clear events.
+            // maximize playmode will call ondisable which will unsubscribe for clear events.
             // we unsubscribe here to make sure that we dont end up with multiple
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
@@ -620,6 +668,7 @@ namespace UnityEditor
             ProfilerDriver.profilerCaptureLoaded += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected += ProfilerWindowAnalytics.SendConnectionEvent;
             ProfilerDriver.profilerCaptureStarted += ProfilerWindowAnalytics.StartCapture;
+            ProfilerDriver.NewProfilerFrameRecorded += OnProfilerFrameRecorded;
         }
 
         void UnsubscribeFromGlobalEvents()
@@ -634,6 +683,7 @@ namespace UnityEditor
             ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
             ProfilerDriver.profilerCaptureStarted -= ProfilerWindowAnalytics.StartCapture;
+            ProfilerDriver.NewProfilerFrameRecorded -= OnProfilerFrameRecorded;
         }
 
         void OnSettingsChanged()
@@ -681,6 +731,8 @@ namespace UnityEditor
             {
                 SetCurrentFrameDontPause(FrameDataView.invalidOrCurrentFrameIndex);
                 m_CurrentFrameEnabled = true;
+                CurrentLoadedCaptureFile = string.Empty;
+                m_ScreenshotsManager.ResetTemporaryScreenshot();
             }
 
             foreach (var module in m_AllModules)
@@ -965,7 +1017,7 @@ namespace UnityEditor
 
         string PickFrameLabel()
         {
-            // Frames incides are incremented by 1 for display purposes.
+            // Frames indices are incremented by 1 for display purposes.
             var lastFrameForDisplay = (ProfilerDriver.lastFrameIndex + 1);
             if (SelectedFrameRange.HasValue)
             {
@@ -1116,19 +1168,29 @@ namespace UnityEditor
 
         internal void SaveProfilingData()
         {
-            string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
-            string directory = string.IsNullOrEmpty(recent)
-                ? ""
-                : System.IO.Path.GetDirectoryName(recent);
-            string filename = string.IsNullOrEmpty(recent)
-                ? ""
-                : System.IO.Path.GetFileName(recent);
+            var dateString = DateTime.Now.ToLocalTime().ToString("yyyy-MM-dd_HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture);
+            var prodName = Application.productName;
 
-            string selected = EditorUtility.SaveFilePanel(Styles.saveWindowTitle.text, directory, filename, "data");
+            // Sanitise the product name
+            var invalidChars = Path.GetInvalidFileNameChars();
+            StringBuilder prodNameSanitised = new StringBuilder(prodName);
+            for (int i = 0; i < invalidChars.Length; i++)
+            {
+                prodNameSanitised.Replace(invalidChars[i], '_');
+            }
+
+            string selected = $"{ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath}/{prodNameSanitised}_{dateString}.data";
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
-                ProfilerDriver.SaveProfile(selected);
+                if (ProfilerDriver.SaveProfile(selected))
+                {
+                    // Saving the .data was successful, now save the bottleneck data and screenshot
+                    m_BottlenecksChartViewController.SaveBottleneckInfo(selected);
+                    m_ScreenshotsManager.WriteOutTempScreenshot(selected);
+                    CurrentLoadedCaptureFile = selected;
+                    m_CaptureDataService.SetCapturesFolderDirty();
+                }
             }
         }
 
@@ -1137,19 +1199,42 @@ namespace UnityEditor
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string selected = EditorUtility.OpenFilePanelWithFilters(Styles.loadWindowTitle.text, recent, Styles.loadProfilingDataFileFilters);
 
-            if (selected.Length != 0)
-            {
-                EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
+            LoadProfilingData(keepExistingData, selected);
+        }
 
-                if (ProfilerDriver.LoadProfile(selected, keepExistingData))
-                {
-                    // Stop current profiling if data was loaded successfully
-                    ProfilerDriver.enabled = m_Recording = false;
-                    SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
-                    if (ProfilerUserSettings.rememberLastRecordState)
-                        EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
-                }
-            }
+        internal void LoadProfilingData(bool keepExistingData, string path, bool showWarning = false)
+        {
+            if (string.IsNullOrEmpty(path))
+                return;
+            EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, path);
+
+            var profilerHasFrames = ProfilerHasAnyFrames();
+            if (showWarning && !keepExistingData && profilerHasFrames && path != CurrentLoadedCaptureFile &&
+                !EditorUtility.DisplayDialog("Load Profiler Capture",
+                    "Loading Capture will clear currently loaded data. Continue?", "OK", "Cancel"))
+                return;
+
+            if (!ProfilerDriver.LoadProfile(path, keepExistingData))
+                return;
+
+            // If we're appending, don't mark the newly loaded file as being the sole opened data.
+            if (keepExistingData && profilerHasFrames)
+                CurrentLoadedCaptureFile = string.Empty;
+            else
+                CurrentLoadedCaptureFile = path;
+
+            // Stop current profiling if data was loaded successfully
+            ProfilerDriver.enabled = m_Recording = false;
+            SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
+            if (ProfilerUserSettings.rememberLastRecordState)
+                EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
+
+            // If there's an existing screenshot, start with that. If the user adds to this capture and saves,
+            // it'll be better to have the old screenshot to show than nothing.
+            m_ScreenshotsManager.ReadInOrReset(path);
+
+            // If the serialised bottleneck data hadn't been saved, do so now.
+            m_BottlenecksChartViewController.SaveBottleneckInfo(path);
         }
 
         internal void SetRecordingEnabled(bool profilerEnabled)
@@ -1169,10 +1254,11 @@ namespace UnityEditor
             Repaint();
         }
 
-        float DrawMainToolbar()
+        void DrawMainToolbar()
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
+            DrawShowHideCapturesView();
             DrawModuleSelectionDropdownMenu();
 
             // Engine attach
@@ -1185,7 +1271,7 @@ namespace UnityEditor
 
             FrameNavigationControls();
 
-            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == FrameDataView.invalidOrCurrentFrameIndex))
+            using (new EditorGUI.DisabledScope(!ProfilerHasAnyFrames()))
             {
                 // Clear
                 if (GUILayout.Button(Styles.clearData, EditorStyles.toolbarButton))
@@ -1216,7 +1302,7 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             // Load profile
-            if (GUILayout.Button(Styles.loadProfilingData, EditorStyles.toolbarButton, GUILayout.MaxWidth(25)))
+            if (GUILayout.Button(Styles.loadProfilingData, EditorStyles.toolbarButton, Styles.buttonWidthOption))
             {
                 LoadProfilingData(Event.current.shift);
 
@@ -1225,7 +1311,7 @@ namespace UnityEditor
             }
 
             // Save profile
-            using (new EditorGUI.DisabledScope(ProfilerDriver.lastFrameIndex == FrameDataView.invalidOrCurrentFrameIndex))
+            using (new EditorGUI.DisabledScope(!ProfilerHasAnyFrames()))
             {
                 if (GUILayout.Button(Styles.saveProfilingData, EditorStyles.toolbarButton))
                 {
@@ -1255,8 +1341,19 @@ namespace UnityEditor
             }
 
             GUILayout.EndHorizontal();
+        }
 
-            return EditorStyles.toolbar.fixedHeight;
+        void DrawShowHideCapturesView()
+        {
+            if (GUILayout.Button(Styles.showHideCaptures, EditorStyles.toolbarButtonLeft, Styles.buttonWidthOption))
+            {
+                var splitView = (TwoPaneSplitView)m_CapturesListViewContainer.parent;
+
+                if (splitView.fixedPane.style.display == DisplayStyle.None)
+                    splitView.UnCollapse();
+                else
+                    splitView.CollapseChild(0);
+            }
         }
 
         void DrawModuleSelectionDropdownMenu()

@@ -118,6 +118,17 @@ namespace UnityEngine.UIElements
         //     return StyleKeyword.Null;
         // }
 
+        public StyleMaterialDefinition GetStyleMaterialDefinition(StylePropertyId id)
+        {
+            var inline = new StyleValue();
+            if (TryGetStyleValue(id, ref inline))
+            {
+                var materialDef = inline.resource.IsAllocated ? inline.resource.Target as object : null;
+                if (materialDef != null)
+                    return new StyleMaterialDefinition(materialDef, inline.keyword);
+            }
+            return StyleKeyword.Null;
+        }
 
         public StyleRatio GetStyleRatio(StylePropertyId id)
         {
@@ -204,8 +215,7 @@ namespace UnityEngine.UIElements
         {
             public StyleSheet sheet;
             public StyleRule rule;
-            public StyleProperty[] properties => rule.properties;
-            public StylePropertyId[] propertyIds;
+            public StyleProperty[] properties => rule?.properties;
         }
 
         public InlineStyleAccess(VisualElement ve)
@@ -232,7 +242,6 @@ namespace UnityEngine.UIElements
         {
             m_InlineRule.sheet = sheet;
             m_InlineRule.rule = rule;
-            m_InlineRule.propertyIds = StyleSheetCache.GetPropertyIds(rule);
 
             ApplyInlineStyles(ref ve.computedStyle);
         }
@@ -287,7 +296,7 @@ namespace UnityEngine.UIElements
 
             if (m_InlineRule.sheet != null)
             {
-                s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.rule.properties, m_InlineRule.propertyIds);
+                s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.rule.properties);
                 computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
             }
 
@@ -862,6 +871,35 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        private bool SetStyleValue(StylePropertyId id, StyleMaterialDefinition inlineValue)
+        {
+            var sv = new StyleValue();
+            if (TryGetStyleValue(id, ref sv))
+            {
+                var material = sv.resource.IsAllocated ? sv.resource.Target as Material : null;
+                if (material == inlineValue.value && sv.keyword == inlineValue.keyword)
+                    return false;
+
+                if (sv.resource.IsAllocated)
+                    sv.resource.Free();
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            sv.id = id;
+            sv.keyword = inlineValue.keyword;
+            sv.resource = inlineValue.value != null ? GCHandle.Alloc(inlineValue.value) : new GCHandle();
+
+            SetStyleValue(sv);
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+                return RemoveInlineStyle(id);
+
+            ApplyStyleValue(sv);
+            return true;
+        }
 
         private bool SetStyleValue<T>(StylePropertyId id, StyleList<T> inlineValue)
         {

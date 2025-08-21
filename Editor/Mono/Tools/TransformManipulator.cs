@@ -233,7 +233,7 @@ namespace UnityEditor
         static bool s_LockHandle = false;
 
         public static bool active { get { return s_MouseDownState != null; } }
-
+        
         public static bool individualSpace { get { return Tools.pivotRotation == PivotRotation.Local && Tools.pivotMode == PivotMode.Pivot; } }
 
         private static void BeginEventCheck()
@@ -329,7 +329,7 @@ namespace UnityEditor
                 // Scale about handlePosition or local pivot based on pivotMode
                 if (Tools.pivotMode == PivotMode.Pivot)
                     point = s_MouseDownState[i].position;
-                if (individualSpace)
+                if (individualSpace) // PivotMode: Pivot PivotRotation: Local
                     pivotRotation = s_MouseDownState[i].rotation;
                 s_MouseDownState[i].SetScaleDelta(scaleDelta, point, pivotRotation, false);
             }

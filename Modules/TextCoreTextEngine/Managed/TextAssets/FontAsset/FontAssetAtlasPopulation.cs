@@ -429,6 +429,11 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
+            if (m_GetFontFeatures && m_GlyphIndexListNewlyAdded.Count > 0)
+            {
+                RegisterFontAssetForKerningUpdate(this);
+            }
+
             FontEngine.SetTextureUploadMode(true);
             return allGlyphsAddedToTexture;
         }
@@ -485,7 +490,7 @@ namespace UnityEngine.TextCore.Text
             return m_VariantGlyphIndexes.TryGetValue((unicode, nextCharacter), out variantGlyphIndex);
         }
 
-        internal bool TryAddGlyphInternal(uint glyphIndex, out Glyph glyph)
+        internal bool TryAddGlyphInternal(uint glyphIndex, out Glyph glyph, bool populateLigatures = true)
         {
             using (k_TryAddGlyphMarker.Auto())
             {
@@ -501,7 +506,7 @@ namespace UnityEngine.TextCore.Text
                 if (LoadFontFace() != FontEngineError.Success)
                     return false;
 
-                return TryAddGlyphToAtlas(glyphIndex, out glyph);
+                return TryAddGlyphToAtlas(glyphIndex, out glyph, populateLigatures);
             }
         }
 
@@ -660,9 +665,7 @@ namespace UnityEngine.TextCore.Text
                         RegisterFontAssetForFontFeatureUpdate(this);
                     }
                     else
-                    {
                         RegisterFontAssetForKerningUpdate(this);
-                    }
                 }
 
                 RegisterAtlasTextureForApply(m_AtlasTextures[m_AtlasTextureIndex]);

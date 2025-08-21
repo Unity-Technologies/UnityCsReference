@@ -2,13 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
+using UnityEditor;
 using UnityEditor.UIElements.StyleSheets;
-using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -31,11 +28,12 @@ namespace Unity.UI.Builder
 
             var fakeSelector = styleSheet.FindSelector(fakeSelectorString); // May already exist because of Undo/Redo
 
-            if (fakeSelector == null)
-                fakeSelector = styleSheet.AddSelector(fakeSelectorString);
+            if ((fakeSelector == null || fakeSelector.rule != complexSelector.rule))
+            {
+                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.AddNewSelectorUndoMessage);
+                complexSelector.rule.AddSelector(fakeSelectorString);
+            }
 
-            fakeSelector.rule = complexSelector.rule;
-            fakeSelector.ruleIndex = complexSelector.ruleIndex; // shared index
             selectorElement.SetProperty(BuilderConstants.ElementLinkedFakeStyleSelectorVEPropertyName, fakeSelector);
             // To ensure that the fake selector is removed from the stylesheet if the builder gets closed with a selector still selected
             selectorElement.RegisterCallback<DetachFromPanelEvent>(OnSelectorElementDetachedFromPanel);

@@ -8,6 +8,7 @@ using System.IO;
 using JetBrains.Annotations;
 using UnityEditor.Modules;
 using UnityEditor.Rendering;
+using UnityEditor.Shaders;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -109,6 +110,9 @@ namespace UnityEditor.Build.Profile
                 BuildProfileModuleUtil.RequestScriptCompilation(value);
             }
         }
+
+        [VisibleToOtherModules]
+        internal static PlatformPackageServiceInfoProvider packageServiceInfoProvider = new();
 
         [SerializeField]
         List<BuildProfilePackageAddInfo> m_PackageAddInfos = new();
@@ -433,6 +437,8 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
+            packageServiceInfoProvider.Dispose();
+
             Save();
 
             // Platform profiles must be manually serialized for changes to persist.
@@ -795,6 +801,25 @@ namespace UnityEditor.Build.Profile
                 return string.Empty;
 
             return activeProfile.qualitySettings.defaultQualityLevel;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static bool SetActiveShaderBuildSettings(ShaderBuildSettings settings)
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return false;
+
+            activeProfile.graphicsSettings.shaderBuildSettings = settings;
+            return true;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static ShaderBuildSettings GetActiveShaderBuildSettings()
+        {
+            if (!ActiveProfileHasGraphicsSettings())
+                return new ShaderBuildSettings();
+
+            return activeProfile.graphicsSettings.shaderBuildSettings;
         }
 
         [RequiredByNativeCode]

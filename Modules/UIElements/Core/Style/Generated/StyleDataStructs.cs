@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
         public Font unityFont;
         public FontDefinition unityFontDefinition;
         public FontStyle unityFontStyleAndWeight;
+        public MaterialDefinition unityMaterial;
         public Length unityParagraphSpacing;
         public TextAnchor unityTextAlign;
         public TextGeneratorType unityTextGenerator;
@@ -59,6 +60,7 @@ namespace UnityEngine.UIElements
                 lhs.unityFont == rhs.unityFont &&
                 lhs.unityFontDefinition == rhs.unityFontDefinition &&
                 lhs.unityFontStyleAndWeight == rhs.unityFontStyleAndWeight &&
+                lhs.unityMaterial == rhs.unityMaterial &&
                 lhs.unityParagraphSpacing == rhs.unityParagraphSpacing &&
                 lhs.unityTextAlign == rhs.unityTextAlign &&
                 lhs.unityTextGenerator == rhs.unityTextGenerator &&
@@ -99,6 +101,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ (unityFont == null ? 0 : unityFont.GetHashCode());
                 hashCode = (hashCode * 397) ^ unityFontDefinition.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityFontStyleAndWeight;
+                hashCode = (hashCode * 397) ^ (unityMaterial == null ? 0 : unityMaterial.GetHashCode());
                 hashCode = (hashCode * 397) ^ unityParagraphSpacing.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextAlign;
                 hashCode = (hashCode * 397) ^ (int)unityTextGenerator;

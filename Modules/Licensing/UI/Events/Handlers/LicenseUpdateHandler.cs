@@ -31,24 +31,28 @@ class LicenseUpdateHandler : INotificationHandler
         if (m_Notification.HasAnyReason(NotificationReasons.k_EntitlementGroupRevoked))
         {
             m_ModalWrapper.ShowLicenseRevokedWindow(m_NativeApiWrapper, m_LicenseLogger, m_Notification);
+            m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
         }
 
         // assigned
         if (m_Notification.HasAnyReason(NotificationReasons.k_EntitlementGroupAdded))
         {
             LogMessage(NotificationReasons.k_EntitlementGroupAdded);
+            m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
         }
 
         // removed
         if (m_Notification.HasAnyReason(NotificationReasons.k_EntitlementGroupRemoved))
         {
             m_ModalWrapper.ShowLicenseRemovedWindow(m_NativeApiWrapper, m_LicenseLogger, m_Notification);
+            m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
         }
 
         // returned
         if (m_Notification.HasAnyReason(NotificationReasons.k_EntitlementGroupReturned))
         {
             m_ModalWrapper.ShowLicenseReturnedWindow(m_NativeApiWrapper, m_LicenseLogger, m_Notification);
+            m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
         }
     }
 

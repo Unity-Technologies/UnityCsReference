@@ -8,6 +8,7 @@ using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using CellValueEditorGOBool = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.GameObject, UnityEngine.UIElements.Toggle, bool>;
 using CellValueEditorSceneBool = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.SceneManagement.Scene, UnityEngine.UIElements.Toggle, bool>;
@@ -19,6 +20,7 @@ namespace Unity.Hierarchy.Editor
     /// User can derive from this class to implement their own CellDescriptor for other object type that can be displayed in hierarchy (ex: Entity).
     /// Note that cells in this column have ClearCellContent=false. Which means the cell is not Clear after Unbind. Cell will contain a Toggle for editing.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class HierarchyWindowColumnActive
     {
         /// <summary>

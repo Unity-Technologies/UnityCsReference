@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Unity.IntegerTime;
 
 namespace UnityEngine.Audio;
 
@@ -51,7 +52,7 @@ sealed class AudioContainerElement : Object
 
 [NativeHeader("Modules/Audio/Public/AudioRandomContainer.h")]
 [ExcludeFromPreset]
-sealed class AudioRandomContainer : AudioResource
+sealed class AudioRandomContainer : AudioResource, IGeneratorDefinition
 {
     internal enum ChangeEventType
     {
@@ -94,4 +95,17 @@ sealed class AudioRandomContainer : AudioResource
     internal extern void NotifyObservers(ChangeEventType eventType);
 
     static extern void Internal_Create([Writable] AudioRandomContainer self);
+
+    #region IGeneratorDefinition
+
+    bool Generator.ICapabilities.isFinite => throw new NotImplementedException();
+    bool Generator.ICapabilities.isRealtime => throw new NotImplementedException();
+    DiscreteTime? Generator.ICapabilities.length => throw new NotImplementedException();
+
+    Generator IGeneratorDefinition.CreateRuntime(ControlContext context, DSPConfiguration? configuration, ControlContext.ProcessorCreationParameters creationParameters)
+    {
+        throw new NotImplementedException();
+    }
+    
+    #endregion
 }

@@ -456,7 +456,6 @@ namespace UnityEditor
             newDockArea.AddTab(dropWindow, sendPaneEvents: false);
             Reflow();
             RecalcMinMaxAndReflowAll(this);
-            newDockArea.MakeVistaDWMHappyDance();
             dropWindow.Focus();
             return true;
         }

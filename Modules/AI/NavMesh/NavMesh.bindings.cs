@@ -300,13 +300,13 @@ namespace UnityEngine.AI
 
         [StaticAccessor("GetNavMeshManager()")]
         [NativeName("SetSurfaceUserID")]
-        internal static extern bool InternalSetOwner(int dataID, int ownerID);
+        internal static extern bool InternalSetOwner(int dataID, UnityEngine.EntityId ownerID);
 
         internal static extern Object InternalGetLinkOwner(int linkID);
 
         [StaticAccessor("GetNavMeshManager()")]
         [NativeName("SetLinkUserID")]
-        internal static extern bool InternalSetLinkOwner(int linkID, int ownerID);
+        internal static extern bool InternalSetLinkOwner(int linkID, UnityEngine.EntityId ownerID);
 
         [StaticAccessor("GetNavMeshManager()")]
         [NativeName("LoadData")]

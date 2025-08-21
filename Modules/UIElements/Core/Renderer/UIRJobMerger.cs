@@ -12,13 +12,15 @@ namespace UnityEngine.UIElements.UIR
     // When the array is full, all the current job handles are combined and assigned to slot 0.
     class JobMerger : IDisposable
     {
+        static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(JobMerger)}");
+
         NativeArray<JobHandle> m_Jobs;
         int m_JobCount;
 
         public JobMerger(int capacity)
         {
             Debug.Assert(capacity > 1);
-            m_Jobs = new NativeArray<JobHandle>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_Jobs = new NativeArray<JobHandle>(capacity, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
         }
 
         public void Add(JobHandle job)

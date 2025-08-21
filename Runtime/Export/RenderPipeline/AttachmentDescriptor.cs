@@ -215,6 +215,8 @@ namespace UnityEngine.Rendering
         ReadOnlyStencil = 1 << 2,
         ReadOnlyDepthStencil = ReadOnlyDepth | ReadOnlyStencil,
         UseShadingRateImage = 1 << 3,
+        TileProperties = 1 << 4,
+        MultiviewRenderRegionsCompatible = 1 << 5
     }
 
     [StructLayout(LayoutKind.Sequential)]

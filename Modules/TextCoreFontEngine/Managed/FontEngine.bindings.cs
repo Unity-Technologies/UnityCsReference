@@ -174,7 +174,7 @@ namespace UnityEngine.TextCore.LowLevel
     internal struct FontReference
     {
         /// <summary>
-        /// The family name of the font.
+        /// The family name of the font face.
         /// </summary>
         public string familyName;
 
@@ -184,7 +184,7 @@ namespace UnityEngine.TextCore.LowLevel
         public string styleName;
 
         /// <summary>
-        /// The face index of the face face matching this style name.
+        /// The index of the font face.
         /// </summary>
         public int faceIndex;
 
@@ -219,6 +219,7 @@ namespace UnityEngine.TextCore.LowLevel
         private static GlyphPairAdjustmentRecord[] s_PairAdjustmentRecords_MarshallingArray;
         private static MarkToBaseAdjustmentRecord[] s_MarkToBaseAdjustmentRecords_MarshallingArray;
         private static MarkToMarkAdjustmentRecord[] s_MarkToMarkAdjustmentRecords_MarshallingArray;
+        private static MarkToLigatureAdjustmentRecord[] s_MarkToLigatureAdjustmentRecords_MarshallingArray;
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
 
@@ -610,6 +611,50 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>Returns true if the given unicode has a glyph index.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::TryGetGlyphIndex", IsThreadSafe = true, IsFreeFunction = true)]
         public static extern bool TryGetGlyphIndex(uint unicode, out uint glyphIndex);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        internal static Dictionary<uint, List<int>> GetCharacterMap()
+        {
+            GlyphIndexCodePointMap[] map = GetFontCharacterMap_Internal();
+
+            Dictionary<uint, List<int>> characterMap = new Dictionary<uint, List<int>>();
+
+            for (int i = 0; i < map.Length; i++)
+            {
+                uint glyphIndex = (uint)map[i].glyphIndex;
+                uint unicode = map[i].unicode;
+
+                if (!characterMap.ContainsKey(glyphIndex))
+                    characterMap.Add(glyphIndex, new List<int> { (int)unicode });
+                else
+                {
+                    characterMap[glyphIndex].Add((int)unicode);
+                }
+            }
+
+            return characterMap;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetFontCharacterMap", IsThreadSafe = true, IsFreeFunction = true)]
+        internal static extern GlyphIndexCodePointMap[] GetFontCharacterMap_Internal();
+
+        /// <summary>
+        /// Load the glyph at unicode value using the given load flags.
+        /// </summary>
+        /// <param name="unicode">The Unicode value of the character whose glyph should be loaded.</param>
+        /// <param name="flags">The Load Flags.</param>
+        /// <returns>Returns a value of zero if the glyph was successfully loaded for the character using the Unicode value.</returns>
+        internal static FontEngineError LoadGlyph(uint unicode, GlyphLoadFlags flags)
+        {
+            return (FontEngineError)LoadGlyph_Internal(unicode, flags);
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::LoadGlyph", IsThreadSafe = true, IsFreeFunction = true)]
+        static extern int LoadGlyph_Internal(uint unicode, GlyphLoadFlags loadFlags);
+
 
         /// <summary>
         /// Try loading a glyph for the given unicode value. If available, populates the glyph and returns true. Otherwise returns false and populates the glyph with the .notdef / missing glyph data.
@@ -2254,6 +2299,108 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::GetMarkToMarkAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
         extern static int GetMarkToMarkAdjustmentRecordsFromMarshallingArray(Span<MarkToMarkAdjustmentRecord> adjustmentRecords);
         #endregion
+
+        #region MARK TO LIGATURE
+        /// <summary>
+        /// Retrieve all Mark-to-Ligature adjustment records for the currently loaded font.
+        /// </summary>
+        /// <returns>An array that contains the Mark-to-Ligature adjustment records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllMarkToLigatureAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MarkToLigatureAdjustmentRecord[] GetAllMarkToLigatureAdjustmentRecords();
+
+        /// <summary>
+        /// Retrieve all potential Mark-to-Ligature adjustment records for the given base mark glyph.
+        /// </summary>
+        /// <param name="baseMarkGlyphIndex">The index of the base mark glyph.</param>
+        /// <returns>An array that contains the adjustment records for the given base mark glyph.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToLigatureAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MarkToLigatureAdjustmentRecord[] GetMarkToLigatureAdjustmentRecords(uint baseMarkGlyphIndex);
+
+        /// <summary>
+        /// Internal function used to retrieve the potential MarkToLigatureAdjustmentRecord for the given ligature and mark glyph indexes.
+        /// </summary>
+        /// <param name="firstGlyphIndex">The index of the first glyph.</param>
+        /// <param name="secondGlyphIndex">The index of the second glyph.</param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToLigatureAdjustmentRecord", IsFreeFunction = true)]
+        internal extern static MarkToLigatureAdjustmentRecord GetMarkToLigatureAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
+
+        /// <summary>
+        /// Internal function used to retrieve the potential Mark-To-Ligature adjustment records for the given list of glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">The list of glyph indexes.</param>
+        /// <returns>An array that contains the adjustment records for the given list of glyph indexes.</returns>
+        internal static MarkToLigatureAdjustmentRecord[] GetMarkToLigatureAdjustmentRecords(List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMarkToLigatureAdjustmentRecords(s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve the potential Mark-to-Ligature adjustment records for the given list of glyphs.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential adjustment records.</param>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
+        /// <returns>An array that contains the Mark-to-Ligature adjustment records.</returns>
+        internal static MarkToLigatureAdjustmentRecord[] GetMarkToLigatureAdjustmentRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMarkToLigatureAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static MarkToLigatureAdjustmentRecord[] GetMarkToLigatureAdjustmentRecords(uint[] glyphIndexes)
+        {
+            PopulateMarkToLigatureAdjustmentRecordMarshallingArray(s_GlyphIndexes_MarshallingArray_A, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MarkToLigatureAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMarkToLigatureAdjustmentRecordsFromMarshallingArray(s_MarkToLigatureAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MarkToLigatureAdjustmentRecords_MarshallingArray[recordCount] = new MarkToLigatureAdjustmentRecord();
+
+            return s_MarkToLigatureAdjustmentRecords_MarshallingArray;
+        }
+
+        private static MarkToLigatureAdjustmentRecord[] GetMarkToLigatureAdjustmentRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateMarkToLigatureAdjustmentRecordMarshallingArray_for_LookupIndex(s_GlyphIndexes_MarshallingArray_A, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MarkToLigatureAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMarkToLigatureAdjustmentRecordsFromMarshallingArray(s_MarkToLigatureAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MarkToLigatureAdjustmentRecords_MarshallingArray[recordCount] = new MarkToLigatureAdjustmentRecord();
+
+            return s_MarkToLigatureAdjustmentRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMarkToLigatureAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMarkToLigatureAdjustmentRecordMarshallingArray(uint[] glyphIndexes, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMarkToLigatureAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMarkToLigatureAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToLigatureAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetMarkToLigatureAdjustmentRecordsFromMarshallingArray([Out] MarkToLigatureAdjustmentRecord[] adjustmentRecords);
+        #endregion
+
+        // ================================================
+        // Harfbuzz - Methods
+        // ================================================
 
 
         // ================================================

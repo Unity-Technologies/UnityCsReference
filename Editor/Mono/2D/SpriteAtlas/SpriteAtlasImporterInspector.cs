@@ -2,16 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using Unity.Jobs;
+using UnityEditor.AssetImporters;
+using UnityEditor.Build;
+using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.U2D.Common;
+using UnityEditor.U2D.Interface;
+using UnityEditor.U2D.SpritePacking;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.U2D;
-using UnityEditor.Build;
-using UnityEditor.U2D.Common;
-using UnityEditor.U2D.Interface;
-using UnityEditorInternal;
-using UnityEditor.AssetImporters;
 
 namespace UnityEditor.U2D
 {
@@ -59,7 +62,7 @@ namespace UnityEditor.U2D
             public readonly GUIContent paddingLabel = EditorGUIUtility.TrTextContent("Padding", "The amount of extra padding between packed sprites.");
 
             public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
-            public readonly GUIContent packPreviewLabel = EditorGUIUtility.TrTextContent("Pack Preview", "Save and preview packed Sprite Atlas textures.");
+            public readonly GUIContent packPreviewLabel = EditorGUIUtility.TrTextContent("Pack Preview", "Pack and preview Sprite Atlas textures when Enabled for Builds. Previews shown may not be upto-date.");
             public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
@@ -114,6 +117,17 @@ namespace UnityEditor.U2D
                 return s_Styles;
             }
         }
+
+        // Check state if SpritePreview.
+        enum PreviewStatus
+        {
+            Unknown,
+            Default,
+            PackRequest,
+            FillRequest,
+            GetTextures,
+        };
+
         private SpriteAtlasAsset spriteAtlasAsset
         {
             get { return m_TargetAsset; }
@@ -140,7 +154,6 @@ namespace UnityEditor.U2D
         private SerializedProperty m_VariantScale;
         private SerializedProperty m_ScriptablePacker;
 
-        private string m_Hash;
         private int m_PreviewPage = 0;
         private int m_TotalPages = 0;
         private int[] m_OptionValues = null;
@@ -152,15 +165,18 @@ namespace UnityEditor.U2D
         private ReorderableList m_PackableList;
         private SpriteAtlasAsset m_TargetAsset;
         private string m_AssetPath;
+        private GUID m_AssetGUID;
 
         private float m_MipLevel = 0;
         private bool m_ShowAlpha;
-        private bool m_Discard = false;
+        private PreviewStatus m_PreviewStatus = PreviewStatus.Unknown;
+        private JobHandle m_Fence = default;
 
         private List<string> m_PlatformSettingsOptions;
         private int m_SelectedPlatformSettings = 0;
 
         private int m_ContentHash = 0;
+        private int m_PreviewHash = 0;
         private List<BuildPlatform> m_ValidPlatforms;
         private Dictionary<string, List<TextureImporterPlatformSettings>> m_TempPlatformSettings;
 
@@ -196,7 +212,7 @@ namespace UnityEditor.U2D
             return spriteAtlasAsset ? !spriteAtlasAsset.isVariant : true;
         }
 
-        protected override bool needsApplyRevert => false;
+        protected override bool needsApplyRevert => true;
 
         internal override string targetTitle
         {
@@ -204,6 +220,23 @@ namespace UnityEditor.U2D
             {
                 return spriteAtlasAsset ? ( Path.GetFileNameWithoutExtension(m_AssetPath) + " (Sprite Atlas)" ) : "SpriteAtlasImporter Settings";
             }
+        }
+
+        private Texture2D[] previewTextures
+        {
+            get { return m_PreviewTextures; }
+            set { m_PreviewTextures = value; }
+        }
+
+        private Texture2D[] previewAlphaTextures
+        {
+            get { return m_PreviewAlphaTextures; }
+            set { m_PreviewAlphaTextures = value; }
+        }
+
+        private void SetPreviewDirty()
+        {
+
         }
 
         private string LoadSourceAsset()
@@ -217,10 +250,7 @@ namespace UnityEditor.U2D
 
         private SerializedObject serializedAssetObject
         {
-            get
-            {
-                return GetSerializedAssetObject();
-            }
+            get { return GetSerializedAssetObject(); }
         }
 
         internal static int SpriteAtlasAssetHash(SerializedObject obj)
@@ -230,11 +260,12 @@ namespace UnityEditor.U2D
                 return 0;
             unchecked
             {
-                hashCode = (int)2166136261 ^ (int) obj.FindProperty("m_MasterAtlas").contentHash;
-                hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_ImporterData").contentHash;
-                hashCode = hashCode * 16777619 ^ (int) obj.FindProperty("m_IsVariant").contentHash;
+                hashCode = (int)2166136261 ^ (int)obj.FindProperty("m_MasterAtlas").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_ImporterData").contentHash;
+                hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_IsVariant").contentHash;
                 hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_ScriptablePacker").contentHash;
             }
+
             return hashCode;
         }
 
@@ -252,6 +283,7 @@ namespace UnityEditor.U2D
                 hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_BindAsDefault").contentHash;
                 hashCode = hashCode * 16777619 ^ (int)obj.FindProperty("m_VariantMultiplier").contentHash;
             }
+
             return hashCode;
         }
 
@@ -278,10 +310,11 @@ namespace UnityEditor.U2D
                     throw new SerializedObjectNotCreatableException(e.Message);
                 }
             }
+
             return m_SerializedAssetObject;
         }
 
-       public override void OnEnable()
+        public override void OnEnable()
         {
             base.OnEnable();
 
@@ -312,6 +345,12 @@ namespace UnityEditor.U2D
             if (spriteAtlasAsset == null)
                 return;
 
+            m_AssetGUID = AssetDatabase.GUIDFromAssetPath(m_AssetPath);
+            UpdateSpriteAtlasAssetSerializedObject();
+        }
+
+        private void UpdateSpriteAtlasAssetSerializedObject()
+        {
             m_MasterAtlas = serializedAssetObject.FindProperty("m_MasterAtlas");
             m_ScriptablePacker = serializedAssetObject.FindProperty("m_ScriptablePacker");
             m_Packables = serializedAssetObject.FindProperty("m_ImporterData.packables");
@@ -430,17 +469,20 @@ namespace UnityEditor.U2D
 
             using (new GUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(!HasModified() || !IsValidAtlas() || Application.isPlaying))
+                bool disabled = (m_PreviewHash == GetInspectorHash() || !IsValidAtlas() || Application.isPlaying || !SpritePackUtility.GetActivePreviewAtlasGUID().Empty() || !(EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2Build));
+                using (new EditorGUI.DisabledScope(disabled))
                 {
-                    GUILayout.FlexibleSpace();
 
                     if (GUILayout.Button(styles.packPreviewLabel))
                     {
                         GUI.FocusControl(null);
-                        SpriteAtlasUtility.EnableV2Import(true);
-                        SaveChanges();
-                        SpriteAtlasUtility.EnableV2Import(false);
+                        m_Fence = SpritePackUtility.PackAtlasForPreview(m_AssetGUID, spriteAtlasAsset, spriteAtlasImporter);
+                        m_PreviewStatus = PreviewStatus.FillRequest;
+                        m_PreviewHash = GetInspectorHash();
                     }
+
+                    GUILayout.FlexibleSpace();
+
                 }
             }
         }
@@ -455,7 +497,7 @@ namespace UnityEditor.U2D
 
         public override bool HasModified()
         {
-            return !m_Discard && (base.HasModified() || m_ContentHash != GetInspectorHash());
+            return (base.HasModified() || m_ContentHash != GetInspectorHash());
         }
 
         private void ValidateMasterAtlas()
@@ -844,63 +886,131 @@ namespace UnityEditor.U2D
 
         public override void SaveChanges()
         {
-            if (!m_Discard)
-                base.SaveChanges();
+            base.SaveChanges();
             m_ContentHash = GetInspectorHash();
         }
 
         public override void DiscardChanges()
         {
-            m_Discard = true;
-            base.DiscardChanges();
+            m_SerializedAssetObject = null;
+            LoadSourceAsset();
+            GetSerializedAssetObject();
+            UpdateSpriteAtlasAssetSerializedObject();
+            if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
+                m_PreviewStatus = PreviewStatus.Unknown;
             m_ContentHash = GetInspectorHash();
+            base.DiscardChanges();
         }
 
+        void UpdatePages()
+        {
+            m_TotalPages = previewTextures.Length;
+            m_OptionDisplays = new string[m_TotalPages];
+            m_OptionValues = new int[m_TotalPages];
+            for (int i = 0; i < m_TotalPages; ++i)
+            {
+                string texName = m_PreviewTextures[i].name;
+                var pageNum = SpriteAtlasExtensions.GetPageNumberInAtlas(texName);
+                var secondaryName = SpriteAtlasExtensions.GetSecondaryTextureNameInAtlas(texName);
+                m_OptionDisplays[i] = secondaryName == ""
+                    ? string.Format("MainTex - ({0})", pageNum)
+                    : string.Format("{0} - ({1})", secondaryName, pageNum);
+                m_OptionValues[i] = i;
+            }
+        }
+
+        bool UpdateTextures(GUID guid)
+        {
+            if (previewTextures.Length != 0)
+            {
+                if (previewTextures[0].name.Contains(guid.ToString()))
+                {
+                    UpdatePages();
+                    m_PreviewStatus = PreviewStatus.Default;
+                    return true;
+                }
+            }
+
+            return false;
+        }
         void CachePreviewTexture()
         {
-            var spriteAtlas = AssetDatabase.LoadAssetAtPath<SpriteAtlas>(m_AssetPath);
-            if (spriteAtlas != null)
-            {
-                bool hasPreview = m_PreviewTextures != null && m_PreviewTextures.Length > 0;
-                if (hasPreview)
-                {
-                    foreach (var previewTexture in m_PreviewTextures)
-                        hasPreview = previewTexture != null;
-                }
-                if (!hasPreview || m_Hash != spriteAtlas.GetHash())
-                {
-                    m_PreviewTextures = spriteAtlas.GetPreviewTextures();
-                    m_PreviewAlphaTextures = spriteAtlas.GetPreviewAlphaTextures();
-                    m_Hash = spriteAtlas.GetHash();
 
-                    if (m_PreviewTextures != null
-                        && m_PreviewTextures.Length > 0
-                        && m_TotalPages != m_PreviewTextures.Length)
+            if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2)
+            {
+                if (m_PreviewStatus == PreviewStatus.Unknown)
+                {
+                    var spriteAtlas = AssetDatabase.LoadAssetAtPath<SpriteAtlas>(m_AssetPath);
+                    if (spriteAtlas != null)
                     {
-                        m_TotalPages = m_PreviewTextures.Length;
-                        m_OptionDisplays = new string[m_TotalPages];
-                        m_OptionValues = new int[m_TotalPages];
-                        for (int i = 0; i < m_TotalPages; ++i)
-                        {
-                            string texName = m_PreviewTextures[i].name;
-                            var pageNum = SpriteAtlasExtensions.GetPageNumberInAtlas(texName);
-                            var secondaryName = SpriteAtlasExtensions.GetSecondaryTextureNameInAtlas(texName);
-                            m_OptionDisplays[i] = secondaryName == "" ? string.Format("MainTex - Page ({0})", pageNum) : string.Format("{0} - Page ({1})", secondaryName, pageNum);
-                            m_OptionValues[i] = i;
-                        }
+                        previewTextures = spriteAtlas.GetPreviewTextures();
+                        previewAlphaTextures = spriteAtlas.GetPreviewAlphaTextures();
+                        if (previewTextures.Length != 0)
+                            UpdatePages();
                     }
+                    m_PreviewStatus = PreviewStatus.Default;
+                }
+            }
+            else if (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2Build)
+            {
+                GUID guid = m_AssetGUID;
+                GUID activePreviewGuid = SpritePackUtility.GetActivePreviewAtlasGUID();
+                switch (m_PreviewStatus)
+                {
+                    case PreviewStatus.Unknown:
+                    {
+                        m_PreviewStatus = PreviewStatus.GetTextures;
+
+                        if (guid == activePreviewGuid)
+                        {
+                            m_Fence = SpritePackUtility.PackAtlasForPreview(m_AssetGUID, spriteAtlasAsset, spriteAtlasImporter);
+                            m_PreviewStatus = PreviewStatus.FillRequest;
+                        }
+                    } break;
+
+                    case PreviewStatus.GetTextures:
+                    {
+                        previewTextures = SpritePackUtility.GetPreviewTextures(m_AssetGUID);
+                        UpdateTextures(guid);
+                    } break;
+
+                    case PreviewStatus.PackRequest:
+                    {
+
+                    } break;
+
+                    case PreviewStatus.FillRequest:
+                    {
+                        if (m_Fence.IsCompleted)
+                        {
+                            previewTextures = SpritePackUtility.GetPreviewTextures(m_AssetGUID);
+                            UpdateTextures(guid);
+                        }
+                    } break;
+
+                    case PreviewStatus.Default:
+                    {
+
+                    } break;
                 }
             }
         }
 
+        public override void DrawPreview(Rect previewArea)
+        {
+            if (null == assetTargets)
+                return;
+            base.DrawPreview(previewArea);
+        }
+
         public override string GetInfoString()
         {
-            if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
+            if (previewTextures != null && m_PreviewPage < previewTextures.Length)
             {
-                Texture2D t = m_PreviewTextures[m_PreviewPage];
+                Texture2D t = previewTextures[m_PreviewPage];
                 GraphicsFormat format = GraphicsFormatUtility.GetFormat(t);
-
-                return string.Format("{0}x{1} {2}\n{3}", t.width, t.height, GraphicsFormatUtility.GetFormatString(format), EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t)));
+                var preview = (EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2Build) ? " (Preview) " : "";
+                return string.Format("{0}x{1} {2}\n{3} {4}", t.width, t.height, GraphicsFormatUtility.GetFormatString(format), EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t)), preview);
             }
             return "";
         }
@@ -908,38 +1018,34 @@ namespace UnityEditor.U2D
         public override bool HasPreviewGUI()
         {
             CachePreviewTexture();
-            if (m_PreviewTextures != null && m_PreviewTextures.Length > 0)
-            {
-                Texture2D t = m_PreviewTextures[0];
-                return t != null;
-            }
-            return false;
+            return (null != previewTextures && previewTextures.Length != 0);
         }
+
 
         public override void OnPreviewSettings()
         {
             // Do not allow changing of pages when multiple atlases is selected.
             if (targets.Length == 1 && m_OptionDisplays != null && m_OptionValues != null && m_TotalPages > 1)
-                m_PreviewPage = EditorGUILayout.IntPopup(m_PreviewPage, m_OptionDisplays, m_OptionValues, styles.preDropDown, GUILayout.MaxWidth(50));
+                m_PreviewPage = EditorGUILayout.IntPopup(m_PreviewPage, m_OptionDisplays, m_OptionValues, styles.preDropDown, GUILayout.MaxWidth(96));
             else
                 m_PreviewPage = 0;
 
-            if (m_PreviewTextures != null)
+            if (previewTextures != null && 0 != previewTextures.Length)
             {
-                m_PreviewPage = Mathf.Min(m_PreviewPage, m_PreviewTextures.Length - 1);
-
-                Texture2D t = m_PreviewTextures[m_PreviewPage];
-                if (t == null)
+                m_PreviewPage = Mathf.Min(m_PreviewPage, previewTextures.Length - 1);
+                if (m_PreviewPage >= previewTextures.Length || null == previewTextures[m_PreviewPage])
                     return;
 
-                if (GraphicsFormatUtility.HasAlphaChannel(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
+                if (GraphicsFormatUtility.HasAlphaChannel(previewTextures[m_PreviewPage].format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
+                {
                     m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? styles.alphaIcon : styles.RGBIcon, styles.previewButton);
+                }
 
-                int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(t));
+                int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(previewTextures[m_PreviewPage]));
                 if (mipCount > 1)
                 {
                     GUILayout.Box(styles.smallZoom, styles.previewLabel);
-                    m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, styles.previewSlider, styles.previewSliderThumb, GUILayout.MaxWidth(64)));
+                    m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, styles.previewSlider, styles.previewSliderThumb, GUILayout.MaxWidth(32)));
                     GUILayout.Box(styles.largeZoom, styles.previewLabel);
                 }
             }
@@ -947,27 +1053,24 @@ namespace UnityEditor.U2D
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
-            CachePreviewTexture();
-
-            if (m_ShowAlpha && m_PreviewAlphaTextures != null && m_PreviewPage < m_PreviewAlphaTextures.Length)
+            if (m_ShowAlpha && (previewAlphaTextures != null && m_PreviewPage < previewAlphaTextures.Length))
             {
-                var at = m_PreviewAlphaTextures[m_PreviewPage];
+                var at = previewAlphaTextures[m_PreviewPage];
                 var bias = m_MipLevel - (float)(System.Math.Log(at.width / r.width) / System.Math.Log(2));
-
                 EditorGUI.DrawTextureTransparent(r, at, ScaleMode.ScaleToFit, 0, bias);
             }
-            else if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
+            else if (previewTextures != null && m_PreviewPage < previewTextures.Length)
             {
-                Texture2D t = m_PreviewTextures[m_PreviewPage];
-                if (t == null)
-                    return;
-
+                Texture2D t = previewTextures[m_PreviewPage];
                 float bias = m_MipLevel - (float)(System.Math.Log(t.width / r.width) / System.Math.Log(2));
-
                 if (m_ShowAlpha)
+                {
                     EditorGUI.DrawTextureAlpha(r, t, ScaleMode.ScaleToFit, 0, bias);
+                }
                 else
+                {
                     EditorGUI.DrawTextureTransparent(r, t, ScaleMode.ScaleToFit, 0, bias);
+                }
             }
         }
     }

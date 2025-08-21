@@ -51,6 +51,17 @@ namespace UnityEditor
             [NativeMethod("GetMacOSMinimumVersionString")]
             internal static extern string GetMinimumVersionString();
             internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
+
+            internal static void MakeOsVersionValid(ref Version version)
+            {
+                string ver = version.ToString();
+                if (!ValidateVersionString(ref ver))
+                    version = new Version(ver);
+            }
+
+            [StaticAccessor("EditorOnlyPlayerSettings", StaticAccessorType.DoubleColon)]
+            [NativeMethod("ValidateMacOSVersionString")]
+            static extern bool ValidateVersionString(ref string version);
         }
     }
 }

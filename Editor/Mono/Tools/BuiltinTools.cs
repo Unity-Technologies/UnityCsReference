@@ -248,14 +248,14 @@ namespace UnityEditor
                     foreach (Transform t in Selection.transforms)
                     {
                         // Rotate around handlePosition (Global or Local axis).
-                        if (Tools.pivotMode == PivotMode.Center)
+                        if (Tools.pivotMode != PivotMode.Pivot)
                             t.RotateAround(handlePosition, startRotation * axis, angle);
-                        // Local rotation (Pivot mode with Local axis).
-                        else if (TransformManipulator.individualSpace)
+                        // Local rotation (Pivot mode with Local axis). PivotMode: Pivot PivotRotation: Local
+                        else if (TransformManipulator.individualSpace) 
                             t.Rotate(t.rotation * axis, angle, Space.World);
-                        // Pivot mode with Global axis.
+                        // Pivot mode with Global axis. PivotMode: Pivot PivotRotation: Global
                         else
-                            t.Rotate(startRotation * axis, angle, Space.World);
+                            t.Rotate(startRotation * axis, angle, Space.World); 
 
                         // sync euler hints after a rotate tool update tyo fake continuous rotation
                         t.SetLocalEulerHint(t.GetLocalEulerAngles(t.rotationOrder));
@@ -321,13 +321,40 @@ namespace UnityEditor
         }
     }
 
+    // Helper class for tracking active/working rotation of rotational handles
+    class ActiveRotationTracker
+    {
+        Quaternion m_Rotation = Quaternion.identity;
+        public Quaternion rotation => m_Rotation;
+        int m_LastHotRotationControl = -1;
+        int m_PrevHotContol = -1;
+
+        public bool isRotationControlHot => m_LastHotRotationControl != -1 && m_LastHotRotationControl == GUIUtility.hotControl; 
+        
+        public void RecordHotControl()
+        {
+            m_PrevHotContol = GUIUtility.hotControl;
+        }
+        
+        public void CheckForHotControlChangeAndRefresh(Quaternion newRotation)
+        {
+            if (GUIUtility.hotControl == 0)
+                m_LastHotRotationControl = -1;
+            else if (m_PrevHotContol != GUIUtility.hotControl)
+                m_LastHotRotationControl = GUIUtility.hotControl;
+                
+            if (m_LastHotRotationControl == GUIUtility.hotControl) 
+                m_Rotation = newRotation;
+        }
+    }
+
     class RotateTool : ManipulationTool<RotateTool>
     {
         public override GUIContent toolbarIcon
         {
             get { return EditorGUIUtility.TrTextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool"); }
         }
-
+        
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
         {
             if (IsDisabledByPrefabPropertyPatching("m_LocalRotation", out disabledLabel))
@@ -338,37 +365,44 @@ namespace UnityEditor
 
             return false;
         }
-
         protected override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
             ResetGlobalHandleRotationIfNeeded();
-
             Quaternion before = Tools.handleRotation;
+
+            if (Tools.pivotRotation == PivotRotation.Custom)
+            {
+                if (Tools.activeRotationTracker.isRotationControlHot) 
+                    before = Tools.activeRotationTracker.rotation;
+                
+                Tools.activeRotationTracker.RecordHotControl();
+            }
 
             EditorGUI.BeginChangeCheck();
             Quaternion after = Handles.RotationHandle(before, handlePosition);
 
+            if (Tools.pivotRotation == PivotRotation.Custom)
+                Tools.activeRotationTracker.CheckForHotControlChangeAndRefresh(after);
+
             if (EditorGUI.EndChangeCheck() && !isStatic)
             {
                 Quaternion delta = Quaternion.Inverse(before) * after;
-                float angle;
-                Vector3 axis;
-                delta.ToAngleAxis(out angle, out axis);
+                delta.ToAngleAxis(out var angle, out var axis);
 
                 Undo.RecordObjects(Selection.transforms, "Rotate");
                 foreach (Transform t in Selection.transforms)
                 {
                     // Rotate around handlePosition (Global or Local axis).
-                    if (Tools.pivotMode == PivotMode.Center)
+                    if (Tools.pivotMode != PivotMode.Pivot)
                     {
                         t.RotateAround(handlePosition, before * axis, angle);
                     }
-                    // Local rotation (Pivot mode with Local axis).
+                    // Local rotation (Pivot mode with Local axis). PivotMode: Pivot PivotRotation: Local
                     else if (TransformManipulator.individualSpace)
                     {
                         t.Rotate(t.rotation * axis, angle, Space.World);
                     }
-                    // Pivot mode with Global axis.
+                    // Pivot mode with Global axis. PivotMode: Pivot PivotRotation: Global
                     else
                     {
                         t.Rotate(before * axis, angle, Space.World);
@@ -409,7 +443,7 @@ namespace UnityEditor
         {
             // Allow global space scaling for multi-selection but not for a single object
             Quaternion handleRotation = Selection.transforms.Length > 1 ?
-                Tools.handleRotation : Tools.handleLocalRotation;
+                Tools.handleRotation : LocalPivotRotation.RetrieveLocalRotation();
 
             if (Event.current.type == EventType.MouseDown)
                 s_CurrentScale = Vector3.one;
@@ -568,13 +602,24 @@ namespace UnityEditor
                 {
                     // Rotation handles
                     EditorGUI.BeginChangeCheck();
+                  
+                    if (Tools.pivotRotation == PivotRotation.Custom)
+                    {
+                        if (Tools.activeRotationTracker.isRotationControlHot) 
+                            rectRotation = Tools.activeRotationTracker.rotation;
+                
+                        Tools.activeRotationTracker.RecordHotControl();
+                    }
+                    
                     Quaternion after = RotationHandlesGUI(rect, handlePosition, rectRotation);
+                    
+                    if (Tools.pivotRotation == PivotRotation.Custom)
+                        Tools.activeRotationTracker.CheckForHotControlChangeAndRefresh(after);
+                    
                     if (EditorGUI.EndChangeCheck() && !isStatic)
                     {
                         Quaternion delta = Quaternion.Inverse(rectRotation) * after;
-                        float angle;
-                        Vector3 axis;
-                        delta.ToAngleAxis(out angle, out axis);
+                        delta.ToAngleAxis(out var angle, out var axis);
                         axis = rectRotation * axis;
                         // The rotation method converts euler angles, which makes us lose precision. This will make sure we don't accumulate small imprecision while rotating (case 1417850)
                         axis = new Vector3((float)Math.Round(axis.x, 4), (float)Math.Round(axis.y, 4), (float)Math.Round(axis.z, 4));

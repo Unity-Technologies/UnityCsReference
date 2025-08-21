@@ -11,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEditorInternal;
 using UnityEditor.Rendering;
+using UnityEditor.Shaders;
 using UnityEditor.Build.Profile;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -52,6 +53,7 @@ namespace UnityEditor
         bool m_FinishedInitialization;
         int m_LastListsHash;
         int m_GeometryChangedEventCounter;
+        ShaderBuildSettingsUI m_ShaderBuildSettingsUI = new();
 
         // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.
         // This way we don't need to do it in each following containers.
@@ -124,6 +126,8 @@ namespace UnityEditor
 
             BindShaderPreload(m_CurrentRoot);
 
+            m_ShaderBuildSettingsUI.Initialize(m_CurrentRoot, serializedObject, false);
+
             if (globalSettingsExist)
             {
                 m_TabbedView = m_CurrentRoot.MandatoryQ<TabbedView>("PipelineSpecificSettings");
@@ -158,8 +162,12 @@ namespace UnityEditor
             var shaderPreloadPropertyField = root.MandatoryQ<IMGUIContainer>("PreloadedShaders");
             shaderPreloadPropertyField.onGUIHandler = () =>
             {
+                shaderPreloadProperty.serializedObject.Update();
+                EditorGUI.BeginChangeCheck();
                 //for some reason, converting the display of this native array to UITK make MacOS crash when domain reload after user add a new script
                 EditorGUILayout.PropertyField(shaderPreloadProperty, EditorGUIUtility.TrTextContent("Preload Shaders"));
+                if (EditorGUI.EndChangeCheck())
+                    shaderPreloadProperty.serializedObject.ApplyModifiedProperties();
             };
             
             var delayedShaderTimeLimitProperty = serializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");

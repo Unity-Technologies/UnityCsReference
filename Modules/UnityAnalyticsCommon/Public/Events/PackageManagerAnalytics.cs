@@ -79,6 +79,7 @@ namespace UnityEditor.Analytics
         public string[] package_sources;
         public string[] package_types;
         public string[] package_compliance_statuses;
+        public string[] package_signature_errorCodes;
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]

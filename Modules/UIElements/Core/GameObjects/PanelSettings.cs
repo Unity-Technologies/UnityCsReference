@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
@@ -135,6 +136,7 @@ namespace UnityEngine.UIElements
             private BaseRuntimePanel m_RuntimePanel;
 
             internal bool isInitialized => m_RuntimePanel != null;
+            internal bool isTransient { get; set; }
 
             /// <summary>
             /// Internal, typed access to the Panel used to draw UI of type Player.
@@ -145,7 +147,7 @@ namespace UnityEngine.UIElements
                 {
                     if (m_RuntimePanel == null)
                     {
-                        m_RuntimePanel = CreateRelatedRuntimePanel();
+                        m_RuntimePanel = isTransient ? RuntimePanel.Create(m_Settings) : CreateRelatedRuntimePanel();
                         m_RuntimePanel.sortingPriority = m_Settings.m_SortingOrder;
                         m_RuntimePanel.targetDisplay = m_Settings.m_TargetDisplay;
                         m_RuntimePanel.panelChangeReceiver = m_Settings.GetPanelChangeReceiver();
@@ -252,7 +254,12 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        private bool m_DisableNoThemeWarning = false;
+        private bool m_DisableNoThemeWarning = false; // Used for graphics tests and shader graph preview.
+        internal bool disableNoThemeWarning
+        {
+            get => m_DisableNoThemeWarning;
+            set => m_DisableNoThemeWarning = value;
+        }
 
         [SerializeField]
         private RenderTexture m_TargetTexture;
@@ -651,9 +658,14 @@ namespace UnityEngine.UIElements
 
         private RuntimePanelAccess m_PanelAccess;
 
-        internal BaseRuntimePanel panel => m_PanelAccess.panel;
+        internal BaseRuntimePanel panel
+        {
+            [VisibleToOtherModules("UnityEngine.VectorGraphicsModule")]
+            get { return m_PanelAccess.panel; }
+        }
 
         internal bool isInitialized => m_PanelAccess?.isInitialized ?? false;
+        internal bool isTransient { get => m_PanelAccess.isTransient; set => m_PanelAccess.isTransient = value; }
 
         /// <summary>
         /// The top level visual element.
@@ -765,19 +777,6 @@ namespace UnityEngine.UIElements
 
         private void OnEnable()
         {
-            if (!m_DisableNoThemeWarning && themeUss == null)
-            {
-                // In the Editor, we only want this to run when in play mode, because otherwise users may get a false
-                // alarm when the project is loading and the theme asset is not yet loaded. By keeping it here, we can
-                // still inform them of a potential problem (it's also in the PanelSettings inspector).
-                // On a built player, this will always show, so if they're UI is missing they can have a clue of why.
-                if (UIDocument.IsEditorPlayingOrWillChangePlaymode())
-                {
-                    Debug.LogWarning(
-                        "No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly", this);
-                }
-            }
-
             UpdateScreenDPI();
             InitializeShaders();
             AssignICUData();
@@ -851,6 +850,22 @@ namespace UnityEngine.UIElements
                 themeUss.isDefaultStyleSheet = true;
                 root?.styleSheets.Add(themeUss);
             }
+            else
+            {
+                if (!m_DisableNoThemeWarning)
+                {
+                    // In the Editor, we only want this to run when in play mode, because otherwise users may get a false
+                    // alarm when the project is loading and the theme asset is not yet loaded. By keeping it here, we can
+                    // still inform them of a potential problem (it's also in the PanelSettings inspector).
+                    // On a built player, this will always show, so if they're UI is missing they can have a clue of why.
+                    if (UIDocument.IsEditorPlayingOrWillChangePlaymode())
+                    {
+                        Debug.LogWarning(
+                            "No Theme Style Sheet set to PanelSettings " + name + ", UI will not render properly", this);
+                    }
+                }
+            }
+
 
             m_OldThemeUss = themeUss;
         }

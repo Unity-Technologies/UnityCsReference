@@ -60,6 +60,11 @@ namespace UnityEngine.UIElements.StyleSheets
             return score;
         }
 
+        public static bool ValidateSelector(string selector)
+        {
+            return rgx.Matches(selector).Count > 0;
+        }
+
         public static bool ParseSelector(string selector, out StyleSelectorPart[] parts)
         {
             var matches = rgx.Matches(selector);

@@ -24,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         GetCacheRootRequest GetCacheRoot();
         SetCacheRootRequest SetCacheRoot(string path);
         ClearCacheRootRequest ClearCacheRoot();
+        PackRequest Pack(string packageFolder, string exportPath, string orgId);
     }
 
     [ExcludeFromCodeCoverage]
@@ -102,6 +103,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         public ClearCacheRootRequest ClearCacheRoot()
         {
             return Client.ClearCacheRoot();
+        }
+
+        public PackRequest Pack(string packageFolder, string exportPath, string orgId)
+        {
+            return Client.Pack(packageFolder, exportPath, orgId);
         }
     }
 }

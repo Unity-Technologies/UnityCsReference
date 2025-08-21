@@ -31,18 +31,20 @@ namespace UnityEditor.Animations
         extern public AnimatorControllerLayer[] layers
         {
             [FreeFunction(Name = "AnimatorControllerBindings::GetLayers", HasExplicitThis = true)]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
             [FreeFunction(Name = "AnimatorControllerBindings::SetLayers", HasExplicitThis = true, ThrowsException = true)]
-            [param: Unmarshalled]
+            [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             set;
         }
 
         extern public AnimatorControllerParameter[] parameters
         {
             [FreeFunction(Name = "AnimatorControllerBindings::GetParameters", HasExplicitThis = true)]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
             [FreeFunction(Name = "AnimatorControllerBindings::SetParameters", HasExplicitThis = true, ThrowsException = true)]
-            [param: Unmarshalled]
+            [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             set;
         }
 
@@ -135,6 +137,6 @@ namespace UnityEditor.Animations
         extern internal ScriptableObject[] Internal_GetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex);
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_SetEffectiveBehaviours", HasExplicitThis = true)]
-        extern internal void Internal_SetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex, [Unmarshalled] ScriptableObject[] behaviours);
+        extern internal void Internal_SetEffectiveBehaviours([NotNull] AnimatorState state, int layerIndex, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ScriptableObject[] behaviours);
     }
 }

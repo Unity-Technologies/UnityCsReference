@@ -181,6 +181,7 @@ namespace UnityEngine
         public string ToString(string format) => m_Data.ToString(format);
 
         internal static EntityId From(int input) => new EntityId {m_Data = input};
+        internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };
     }
 
     internal static class EntityIdExtensions
@@ -436,10 +437,10 @@ namespace UnityEngine
             {
                 fixed(Vector3* positionsPtr = positions)
                 fixed(Quaternion* rotationsPtr = rotations)
-                {                    
+                {
                     return new AsyncInstantiateOperation<T>(Internal_InstantiateAsyncWithParams(original, count, parameters, (IntPtr)positionsPtr, positions.Length, (IntPtr)rotationsPtr, rotations.Length), cancellationToken);
                 }
-            }            
+            }
         }
 
         // Clones the object /original/ and returns the clone.
@@ -632,6 +633,7 @@ namespace UnityEngine
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfType")]
         [Obsolete("Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.", false)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
 
         // Returns a list of all active loaded objects of Type /type/.
@@ -643,6 +645,7 @@ namespace UnityEngine
         // Returns a list of all loaded objects of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsByType")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static Object[] FindObjectsByType(Type type, FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode);
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
@@ -679,6 +682,7 @@ namespace UnityEngine
         //*undocumented*  DEPRECATED
         [Obsolete("use Resources.FindObjectsOfTypeAll instead.")]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfTypeIncludingAssets")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static Object[] FindObjectsOfTypeIncludingAssets(Type type);
 
         // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
@@ -852,20 +856,20 @@ namespace UnityEngine
         extern void SetName(string name);
 
         [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithInstanceIDExist", IsFreeFunction = true, IsThreadSafe = true)]
-        internal extern static bool DoesObjectWithInstanceIDExist(int instanceID);
+        internal extern static bool DoesObjectWithInstanceIDExist(EntityId instanceID);
 
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]
-        internal extern static Object FindObjectFromInstanceID(int instanceID);
+        internal extern static Object FindObjectFromInstanceID(EntityId instanceID);
 
         [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
-        private extern static IntPtr GetPtrFromInstanceID(int instanceID, Type objectType, out bool isMonoBehaviour);
+        private extern static IntPtr GetPtrFromInstanceID(EntityId instanceID, Type objectType, out bool isMonoBehaviour);
 
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
-        internal extern static Object ForceLoadFromInstanceID(int instanceID);
+        internal extern static Object ForceLoadFromInstanceID(EntityId instanceID);
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static Object CreateMissingReferenceObject(int instanceID)
+        internal static Object CreateMissingReferenceObject(EntityId instanceID)
         {
             return new Object { m_InstanceID = instanceID };
         }

@@ -105,6 +105,8 @@ namespace UnityEngine.UIElements.UIR
         public TextureId quadTextureId;
         public RectInt quadRect;
         public Rect quadUVRect;
+        
+        public GCHandlePool m_GCHandlePool = new();
 
         internal RenderTreeManager renderTreeManager => m_RenderTreeManager;
         internal RenderData rootRenderData => m_RootRenderData;
@@ -170,8 +172,10 @@ namespace UnityEngine.UIElements.UIR
         // Iterates on render data (caller performs null check)
         void DepthFirstResetTextures(RenderData renderData)
         {
+            m_GCHandlePool.ReturnAll();
+
             // Work
-            m_RenderTreeManager.ResetTextures(renderData);
+            m_RenderTreeManager.ResetGraphicEntries(renderData);
 
             // Recurse
             RenderData child = renderData.firstChild;

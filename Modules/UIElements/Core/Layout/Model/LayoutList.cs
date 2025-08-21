@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Assertions;
 using UnityEngine.Scripting;
 
@@ -18,7 +17,7 @@ namespace UnityEngine.UIElements.Layout;
 unsafe struct LayoutList<T> : IDisposable
     where T : unmanaged
 {
-    static readonly UnsafeAllocLabel s_Label = new(nameof(UIElements), "LayoutList");
+    static readonly MemoryLabel s_Label = new(nameof(UIElements), "Layout.LayoutList");
 
     [StructLayout(LayoutKind.Sequential)]
     struct Data

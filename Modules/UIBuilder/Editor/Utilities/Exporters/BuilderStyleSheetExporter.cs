@@ -76,39 +76,6 @@ namespace Unity.UI.Builder
             return stringBuilder.ToString();
         }
 
-        protected override void WriteStyleSheet(ref ExportContext ctx, StyleSheet styleSheet)
-        {
-            if (styleSheet.imports?.Length > 0)
-            {
-                WriteImportBlock(ref ctx, styleSheet.imports);
-                ctx.AppendLine();
-            }
-
-            // The UI Builder operates in a selector-based fashion instead of a rule-based one.
-            // What this means is that a rule containing multiple selectors will be exported as
-            // distinct "rules".
-            // For example:
-            //     .some-selector, .some-other-selector {}
-            // will become:
-            //     .some-selector {}
-            //     .some-other-selector {}
-            // Thus here we override the behavior of the base exporter.
-            using var _ = ListPool<StyleComplexSelector>.Get(out var selectors);
-            selectors.AddRange(styleSheet.complexSelectors);
-            selectors.RemoveAll(ctx.options.IsSelectorIgnored);
-
-            for (var selectorIndex = 0; selectorIndex < selectors.Count; ++selectorIndex)
-            {
-                var styleComplexSelector = selectors[selectorIndex];
-
-                WriteSelectorAsRule(ref ctx, styleComplexSelector);
-                ctx.AppendLine();
-
-                if (selectorIndex < selectors.Count - 1)
-                    ctx.AppendLine();
-            }
-        }
-
         private void WriteSelectorAsRule(ref ExportContext ctx, StyleComplexSelector selector)
         {
             WriteSelector(ref ctx, selector);

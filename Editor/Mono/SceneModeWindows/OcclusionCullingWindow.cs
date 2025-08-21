@@ -577,7 +577,7 @@ namespace UnityEditor
             }
         }
 
-        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
+        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName, group = OverlayAttribute.unityGroup)]
         class SceneViewOcclusionCullingOverlay : TransientSceneViewOverlay
         {
             const string k_OverlayId = "Scene View/Occlusion Culling";

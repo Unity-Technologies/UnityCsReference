@@ -536,13 +536,11 @@ namespace UnityEditor.UIElements.StyleSheets
 
                     if (!disableValidation)
                     {
-                        var propertyName = new StylePropertyName(m_Builder.currentProperty.name);
-
                         // Unknown properties (not custom) should beforehand
-                        if (propertyName.id == StylePropertyId.Unknown)
+                        if (m_Builder.currentProperty.id == StylePropertyId.Unknown)
                             return;
 
-                        var allowed = StylePropertyUtil.GetAllowedAssetTypesForProperty(propertyName.id);
+                        var allowed = StylePropertyUtil.GetAllowedAssetTypesForProperty(m_Builder.currentProperty.id);
 
                         // If no types were returned, it means this property doesn't support assets.
                         // Normal syntax validation should cover this.

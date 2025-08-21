@@ -1039,6 +1039,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleMaterialDefinition IStyle.unityMaterial
+        {
+            get
+            {
+                return GetStyleMaterialDefinition(StylePropertyId.UnityMaterial);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnityMaterial, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleEnum<OverflowClipBox> IStyle.unityOverflowClipBox
         {
             get

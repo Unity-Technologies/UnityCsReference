@@ -12,8 +12,8 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequestAssetBundle/Public/DownloadHandlerAssetBundle.h")]
     public sealed class DownloadHandlerAssetBundle : DownloadHandler
     {
-        private extern static IntPtr Create([Unmarshalled] DownloadHandlerAssetBundle obj, string url, uint crc);
-        private extern static IntPtr CreateCached([Unmarshalled] DownloadHandlerAssetBundle obj, string url, string name, Hash128 hash, uint crc);
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerAssetBundle obj, string url, uint crc);
+        private extern static IntPtr CreateCached([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerAssetBundle obj, string url, string name, Hash128 hash, uint crc);
 
         private void InternalCreateAssetBundle(string url, uint crc)
         {

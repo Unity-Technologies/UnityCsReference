@@ -145,10 +145,11 @@ namespace UnityEditor
         }
 
         // Returns the array of AnimationClips that are referenced in the Animation component
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal static AnimationClip[] GetAnimationClipsInAnimationPlayer([NotNull] GameObject gameObject);
 
         // Sets the array of AnimationClips to be referenced in the Animation component
-        extern public static void SetAnimationClips([NotNull] Animation animation, [Unmarshalled] AnimationClip[] clips);
+        extern public static void SetAnimationClips([NotNull] Animation animation, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AnimationClip[] clips);
 
         public static EditorCurveBinding[] GetAnimatableBindings(GameObject targetObject, GameObject root)
         {
@@ -210,12 +211,15 @@ namespace UnityEditor
         extern private static Type Internal_PropertyModificationToEditorCurveBinding(PropertyModification modification, [NotNull] GameObject gameObject, out EditorCurveBinding binding);
         extern internal static PropertyModification EditorCurveBindingToPropertyModification(EditorCurveBinding binding, [NotNull] GameObject gameObject);
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static EditorCurveBinding[] GetCurveBindings([NotNull] AnimationClip clip);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static EditorCurveBinding[] GetObjectReferenceCurveBindings([NotNull] AnimationClip clip);
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public static ObjectReferenceKeyframe[] GetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 
-        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, [Unmarshalled]ObjectReferenceKeyframe[] keyframes)
+        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]ObjectReferenceKeyframe[] keyframes)
         {
             Internal_SetObjectReferenceCurve(clip, binding, keyframes, true);
             Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
@@ -246,7 +250,7 @@ namespace UnityEditor
         }
 
         [NativeThrows]
-        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, [Unmarshalled] ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
+        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
 
         extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
 
@@ -410,7 +414,7 @@ namespace UnityEditor
                 blittableEvent.Dispose();
             return animationEvents;
         }
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal static AnimationEventBlittable[] GetAnimationEventsInternal([NotNull] AnimationClip clip);
         public static void SetAnimationEvents(AnimationClip clip, AnimationEvent[] events)
         {

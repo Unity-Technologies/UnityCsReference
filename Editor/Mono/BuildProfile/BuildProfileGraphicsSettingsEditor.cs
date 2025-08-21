@@ -8,6 +8,8 @@ using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.Rendering;
 using UnityEngine;
+using UnityEditor.Rendering;
+using UnityEditor.Shaders;
 
 namespace UnityEditor.Build.Profile
 {
@@ -18,6 +20,9 @@ namespace UnityEditor.Build.Profile
         const string k_Uxml = "BuildProfile/UXML/BuildProfileCommonGraphicsSettings.uxml";
         const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
         const string k_LastDefaultPropertyPath = "m_EditorClassIdentifier";
+        const string k_ShaderBuildSettingsTypeName = "ShaderBuildSettings";
+
+        ShaderBuildSettingsUI m_ShaderBuildSettingsUI = new();
 
         public override VisualElement CreateInspectorGUI()
         {
@@ -35,6 +40,8 @@ namespace UnityEditor.Build.Profile
             BindEnumFieldWithFadeGroup(root, "Fog", CalculateFogStrippingFromCurrentScene);
 
             BindShaderPreload(root);
+
+            m_ShaderBuildSettingsUI.Initialize(root, serializedObject, true);
 
             // Align fields as in the inspector
             var type = typeof(BaseField<>);
@@ -174,7 +181,8 @@ namespace UnityEditor.Build.Profile
                             return false;
                     }
                 }
-                else if (!profileSerializedProperty.boxedValue.Equals(globalSerializedProperty.boxedValue))
+                else if (profileSerializedProperty.type != k_ShaderBuildSettingsTypeName && // TODO @ SHADERS-1095: Do proper equality check on the shader build settings data too
+                    !profileSerializedProperty.boxedValue.Equals(globalSerializedProperty.boxedValue))
                     return false;
             }
 
@@ -201,7 +209,11 @@ namespace UnityEditor.Build.Profile
                     }
                 }
                 else
-                    profileSerializedProperty.boxedValue = globalSerializedProperty.boxedValue;
+                {
+                    profileSerializedProperty.boxedValue = profileSerializedProperty.type == k_ShaderBuildSettingsTypeName
+                        ? EditorGraphicsSettings.GetShaderBuildSettings()
+                        : globalSerializedProperty.boxedValue;
+                }
             }
 
             serializedObject.ApplyModifiedProperties();

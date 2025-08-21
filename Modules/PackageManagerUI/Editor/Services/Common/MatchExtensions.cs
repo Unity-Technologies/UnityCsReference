@@ -22,5 +22,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             return false;
         }
+
+        public static List<TResult> SelectMatchesAsList<T, TResult>(this IEnumerable<T> collection, Func<T, TResult> selector)
+        {
+            if (collection == null || selector == null)
+                return null;
+
+            var result = new List<TResult>();
+            foreach (var item in collection)
+            {
+                result.Add(selector(item));
+            }
+
+            return result;
+        }
     }
 }

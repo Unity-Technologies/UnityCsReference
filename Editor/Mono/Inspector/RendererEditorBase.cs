@@ -307,6 +307,7 @@ namespace UnityEditor
             }
         }
 
+        private SerializedProperty m_MaskInteraction;
         private SerializedProperty m_SortingOrder;
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
@@ -329,6 +330,7 @@ namespace UnityEditor
             public static readonly GUIContent otherSettings = EditorGUIUtility.TrTextContent("Additional Settings");
             public static readonly GUIContent meshLodSettings = EditorGUIUtility.TrTextContent("Mesh LOD");
 
+            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "Renderer's interaction with a Sprite Mask");
             public static readonly GUIContent dynamicOcclusion = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
             public static readonly GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
             public static readonly GUIContent skinnedMotionVectors = EditorGUIUtility.TrTextContent("Skinned Motion Vectors", "Enabling Skinned Motion Vectors will allow generation of high precision motion vectors for the Skinned Mesh. This is achieved by keeping the skinning results of the previous frame in memory thus increasing the memory usage.");
@@ -343,6 +345,7 @@ namespace UnityEditor
             public static readonly GUIContent meshLodSelectionBiasStyle = EditorGUIUtility.TrTextContent("LOD Selection Bias", "The value that Unity adds to the calculated LOD index. Increasing this value results in Unity selecting less detailed LODs, reducing the value - in more detailed LODs.");
         }
 
+        private int m_SelectedRendererCount;
         protected Probes m_Probes;
         protected RendererLightingSettings m_Lighting;
 
@@ -354,6 +357,7 @@ namespace UnityEditor
 
         public virtual void OnEnable()
         {
+            m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
             m_SortingOrder = serializedObject.FindProperty("m_SortingOrder");
             m_SortingLayerID = serializedObject.FindProperty("m_SortingLayerID");
             m_DynamicOccludee = serializedObject.FindProperty("m_DynamicOccludee");
@@ -384,6 +388,24 @@ namespace UnityEditor
 
             m_Probes = new Probes();
             m_Probes.Initialize(serializedObject);
+            m_SelectedRendererCount = targets.Length;
+        }
+
+        public void DrawMeshLODLabel(Renderer renderer)
+        {
+            if (m_SelectedRendererCount > 1)
+                return;
+
+            if (SceneView.lastActiveSceneView == null)
+                return;
+
+            Vector3 position = renderer.bounds.center;
+            float size = renderer.bounds.size.magnitude;
+
+            Camera camera = SceneView.lastActiveSceneView.camera;
+
+            ushort meshLODLevel = LODUtility.CalculateMeshLOD(camera, renderer);
+            LODGUI.DrawLODLabel(camera, position, size, meshLODLevel, LODGUI.kMeshLODColors, "Mesh LOD ");
         }
 
         protected void LightingSettingsGUI(bool showLightmappSettings)

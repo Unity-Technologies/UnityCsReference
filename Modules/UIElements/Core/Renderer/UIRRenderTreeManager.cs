@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements.UIR
         LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), cmd => cmd.Reset());
         LinkedPool<ExtraRenderData> m_ExtraDataPool = new(() => new ExtraRenderData(), null);
         BasicNodePool<MeshHandle> m_MeshHandleNodePool = new();
-        BasicNodePool<TextureEntry> m_TexturePool = new();
+        BasicNodePool<GraphicEntry> m_GraphicEntryPool = new();
         Dictionary<RenderData, ExtraRenderData> m_ExtraData = new();
         internal List<ElementInsertionData> m_InsertionList = new(1024); // Internal for testing purposes
 
@@ -650,7 +650,7 @@ namespace UnityEngine.UIElements.UIR
         void DepthFirstRepaintTextured(RenderData renderData)
         {
             // Work
-            if (renderData.textures != null)
+            if (renderData.graphicEntries != null)
                 UIEOnVisualsChanged(renderData.owner, false);
 
             // Recurse
@@ -718,28 +718,44 @@ namespace UnityEngine.UIElements.UIR
 
         public void InsertTexture(RenderData renderData, Texture src, TextureId id, bool isAtlas)
         {
-            BasicNode<TextureEntry> node = m_TexturePool.Get();
+            BasicNode<GraphicEntry> node = m_GraphicEntryPool.Get();
             node.data.source = src;
             node.data.actual = id;
             node.data.replaced = isAtlas;
-            node.InsertFirst(ref renderData.textures);
+            node.InsertFirst(ref renderData.graphicEntries);
         }
 
-        public void ResetTextures(RenderData renderData)
+        public void InsertVectorImage(RenderData renderData, VectorImage vi)
+        {
+            BasicNode<GraphicEntry> node = m_GraphicEntryPool.Get();
+            node.data.vectorImage = vi;
+            node.InsertFirst(ref renderData.graphicEntries);
+        }
+
+        public void ResetGraphicEntries(RenderData renderData)
         {
             AtlasBase atlas = this.atlas;
             TextureRegistry registry = m_TextureRegistry;
-            BasicNodePool<TextureEntry> pool = m_TexturePool;
+            BasicNodePool<GraphicEntry> pool = m_GraphicEntryPool;
 
-            BasicNode<TextureEntry> current = renderData.textures;
-            renderData.textures = null;
+            BasicNode<GraphicEntry> current = renderData.graphicEntries;
+            renderData.graphicEntries = null;
             while (current != null)
             {
                 var next = current.next;
-                if (current.data.replaced)
-                    atlas.ReturnAtlas(renderData.owner, current.data.source as Texture2D, current.data.actual);
+                if (current.data.vectorImage != null)
+                {
+                    vectorImageManager.RemoveUser(current.data.vectorImage);
+                    current.data.vectorImage = null;
+                }
                 else
-                    registry.Release(current.data.actual);
+                {
+                    if (current.data.replaced)
+                        atlas.ReturnAtlas(renderData.owner, current.data.source as Texture2D, current.data.actual);
+                    else
+                        registry.Release(current.data.actual);
+                    current.data.source = null;
+                }
                 pool.Return(current);
                 current = next;
             }

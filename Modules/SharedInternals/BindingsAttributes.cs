@@ -275,6 +275,14 @@ namespace UnityEngine.Bindings
 
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     [VisibleToOtherModules]
+    [Obsolete("This attribute is not supported - consider using blittable types or supported marshaling - or if native code requires a ScriptingObjectPtr use [UnityMarshalAs(NativeType.ScriptingObjectPtr)]", error: true)]
+    /// <summary>
+    /// This attribute is no longer supported.  For GC safety types will be marshalled in some way
+    /// If possible rely on the supported marshaling, or blittable types
+    /// If you wish to pass a managed object to native code as a ScriptingObjectPtr mark the parameter, type, or field as [UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+    /// If native code needs a GCHandle use GCHandle marshalling [UnityMarshalAs(NativeType.GCHandle, GCHandleOptions = /* See below docs for GCHandleOptions below */)]
+    /// See https://internaldocs.unity.com/version/neutron/main/index.html or #devs-bindings for more information
+    /// </summary>
     class UnmarshalledAttribute : Attribute, IBindingsAttribute
     {
         public UnmarshalledAttribute()
@@ -424,5 +432,46 @@ namespace UnityEngine.Bindings
     {
         bool IsReadOnly { get; }
         string SizeParameter { get; }
+    }
+
+    [VisibleToOtherModules]
+    internal enum NativeType
+    {
+        /// <summary>
+        /// Marshal the reference as a ScriptingObjectPtr (ScritptingArrayPtr for arrays)
+        /// </summary>
+        ScriptingObjectPtr,
+        /// <summary>
+        /// Marshal the type using a custom managed marshaled class set in CustomManarshaller
+        /// </summary>
+        Custom,
+    }
+
+
+    [VisibleToOtherModules]
+    [AttributeUsage(AttributeTargets.Method)]
+    class UnityMarshalThisAsAttribute : UnityMarshalAsAttribute
+    {
+        public UnityMarshalThisAsAttribute(NativeType nativeType) : base(nativeType)
+        {
+        }
+    }
+
+
+    [VisibleToOtherModules]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = false)]
+    class UnityMarshalAsAttribute : Attribute, IBindingsAttribute
+    {
+        public NativeType NativeType { get; }
+
+        /// <summary>
+        /// Used for NativeType.Custom - sets the marshaller type
+        /// </summary>
+        public Type CustomMarshaller { get; set; }
+
+        public UnityMarshalAsAttribute(NativeType nativeType)
+        {
+            NativeType = nativeType;
+        }
     }
 }

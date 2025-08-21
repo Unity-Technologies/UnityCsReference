@@ -9,6 +9,7 @@ using UnityEngine.Audio;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Playables;
+using Unity.IntegerTime;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -51,6 +52,25 @@ namespace UnityEngine
         Mode7point1 = 6,
         // Channel count is set to 2. Stereo output, but data is encoded in a way that is picked up by a Prologic/Prologic2 decoder and split into a 5.1 speaker setup.
         Prologic = 7
+    }
+
+    static public partial class AudioExtensions
+    {
+        public static int ChannelCount(this AudioSpeakerMode mode)
+        {
+            switch (mode)
+            {
+                case AudioSpeakerMode.Mono: return 1;
+                case AudioSpeakerMode.Stereo: return 2;
+                case AudioSpeakerMode.Quad: return 4;
+                case AudioSpeakerMode.Surround: return 5;
+                case AudioSpeakerMode.Mode5point1: return 6;
+                case AudioSpeakerMode.Mode7point1: return 8;
+                case AudioSpeakerMode.Prologic: return 2;
+            }
+
+            throw new ArgumentException($"{nameof(mode)}");
+        }
     }
 
     public enum AudioDataLoadState
@@ -448,7 +468,7 @@ namespace UnityEngine
     // A container for audio data.
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
     [StaticAccessor("AudioClipBindings", StaticAccessorType.DoubleColon)]
-    public sealed class AudioClip : AudioResource
+    public sealed class AudioClip : AudioResource, IGeneratorDefinition
     {
         private AudioClip() {}
 
@@ -633,6 +653,19 @@ namespace UnityEngine
             if (m_PCMSetPositionCallback != null)
                 m_PCMSetPositionCallback(position);
         }
+
+        #region Generator.IDefinition
+
+        bool Generator.ICapabilities.isRealtime => throw new NotImplementedException();
+        bool Generator.ICapabilities.isFinite => throw new NotImplementedException();
+        DiscreteTime? Generator.ICapabilities.length => throw new NotImplementedException();
+
+        Generator IGeneratorDefinition.CreateRuntime(ControlContext context, DSPConfiguration? configuration, ControlContext.ProcessorCreationParameters parameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 
 
@@ -743,11 +776,39 @@ namespace UnityEngine
         // The default [[AudioClip]] to play
         public AudioClip clip
         {
-            get => resource as AudioClip;
-            set => resource = value as AudioClip;
+            get => generator as AudioClip;
+            set => generator = value;
         }
 
-        extern public AudioResource resource { get; set; }
+        public AudioResource resource
+        {
+            get => generator as AudioResource;
+            set => generator = value;
+        }
+
+        public IGeneratorDefinition generatorDefinition
+        {
+            // These shall always succeed
+            get => (IGeneratorDefinition)generator;
+            set => generator = (Object)value;
+        }
+
+        public unsafe Processor generatorHandle
+        {
+            get
+            {
+                var header = (Generator.GeneratorHeader*)generatorHeader;
+
+                if (header != null)
+                    return new Generator(header);
+
+                return default;
+            }
+        }
+
+        extern internal unsafe void* generatorHeader { get; }
+
+        extern internal Object generator { get; set; }
 
         extern public AudioMixerGroup outputAudioMixerGroup { get; set; }
 

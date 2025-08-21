@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
 
             #pragma warning disable 649
             [SerializeField, MultilineTextField] string label;
-            [ImageFieldValueDecorator]
+            [ImageFieldValueDecorator("Icon Image")]
             [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;
             [SerializeField] bool closeable;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;

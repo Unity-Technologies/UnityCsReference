@@ -14,6 +14,7 @@ namespace UnityEditor.Toolbars
         public bool enabled { get; set; } = true;
 
         public Action<DropdownMenu> populateContextMenu { get; set; } = null;
+        internal virtual Action<DropdownMenu> populateContextMenuInternal => null;
 
         internal VisualElement Rebuild()
         {

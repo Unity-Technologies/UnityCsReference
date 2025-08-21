@@ -41,7 +41,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                 time = e.time,
                 functionName = e.functionName,
                 stringParameter = e.stringParam,
-                objectReferenceParameter = InternalEditorUtility.GetObjectFromInstanceID(e.objectParam),
+                objectReferenceParameter = InternalEditorUtility.GetObjectFromEntityId(e.objectParam),
                 floatParameter = e.floatParam,
                 intParameter = e.intParam,
                 messageOptions = e.messageOptions

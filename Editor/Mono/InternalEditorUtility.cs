@@ -51,6 +51,7 @@ namespace UnityEditorInternal
                 case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
                 case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEngine.LightingSettings));
+                case "overridecontroller": return EditorGUIUtility.FindTexture(typeof(AnimatorOverrideController));
                 case "scenetemplate": return EditorGUIUtility.FindTexture("UnityEditor/SceneTemplate/SceneTemplateAsset Icon");
                 case "ttf": case "otf": case "fon": case "fnt":
                     return EditorGUIUtility.FindTexture(typeof(Font));
@@ -67,7 +68,7 @@ namespace UnityEditorInternal
                 case "hdr":
                     return EditorGUIUtility.FindTexture(typeof(Texture));
 
-                case "3df": case "3dm": case "3dmf": case "3ds": case "3dv": case "3dx": case "blend": case "c4d":
+                case "3df": case "3dm": case "3dmf": case "3ds": case "3dv": case "3dx": case "blend":
                 case "lwo": case "lws": case "ma": case "max": case "mb": case "mesh": case "obj": case "vrl":
                 case "wrl": case "wrz": case "fbx":
                     return EditorGUIUtility.FindTexture(typeof(Mesh));
@@ -83,6 +84,7 @@ namespace UnityEditorInternal
                     return EditorGUIUtility.FindTexture(typeof(ScriptableObject));
 
                 case "vulkandevicefilter":
+                case "d3d12devicefilter":
                     return EditorGUIUtility.FindTexture(typeof(EditorSettings));
 
                 default: return null;
@@ -188,7 +190,7 @@ namespace UnityEditorInternal
             // The guid is always valid. Assets not yet present will not have an instanceID yet.
             // Could be because it is on-demand imported.
             public string guid;
-            public EntityId instanceID; // instanceID of an object in an asset if the asset is available in imported form. Else 0.
+            public EntityId entityId; // entityId of an object in an asset if the asset is available in imported form. Else 0.
 
             public sealed class GuidThenInstanceIDEqualityComparer : IEqualityComparer<AssetReference>
             {
@@ -198,12 +200,12 @@ namespace UnityEditorInternal
                         return string.Equals(x.guid, y.guid);
 
                     // Both guids are nullOrEmpty now
-                    return x.instanceID == y.instanceID;
+                    return x.entityId == y.entityId;
                 }
 
                 public int GetHashCode(AssetReference assetReference)
                 {
-                    return (assetReference.instanceID * 397)
+                    return (assetReference.entityId * 397)
                         ^ (assetReference.guid != null ? assetReference.guid.GetHashCode() : 0);
                 }
             }
@@ -227,17 +229,17 @@ namespace UnityEditorInternal
         internal static List<EntityId> GetNewSelection(EntityId clickedInstanceID, List<EntityId> allInstanceIDs, List<EntityId> selectedInstanceIDs, EntityId lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
         {
             List<string> allGuids = null;
-            var clicked = new AssetReference() { guid = null, instanceID = clickedInstanceID };
+            var clicked = new AssetReference() { guid = null, entityId = clickedInstanceID };
 
             return GetNewSelection(ref clicked, allInstanceIDs, allGuids, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, shiftKeyIsDown, actionKeyIsDown);
         }
 
         internal static bool TrySetInstanceId(ref AssetReference entry)
         {
-            if (entry.instanceID != 0 || string.IsNullOrEmpty(entry.guid))
+            if (entry.entityId != EntityId.None || string.IsNullOrEmpty(entry.guid))
                 return true;
 
-            if (entry.instanceID == 0 && EditorUtility.isInSafeMode)
+            if (entry.entityId == EntityId.None && EditorUtility.isInSafeMode)
                 return false; // Íf instance id is 0 in safe mode, then don't try to produce it. InstanceIDs are 0 for non script assets in safe mode.
 
             GUID lookupGUID = new GUID(entry.guid);
@@ -246,7 +248,7 @@ namespace UnityEditorInternal
                 return false;
 
             string path = AssetDatabase.GUIDToAssetPath(entry.guid);
-            entry.instanceID = AssetDatabase.GetMainAssetEntityId(path);
+            entry.entityId = AssetDatabase.GetMainAssetEntityId(path);
             return true;
         }
 
@@ -314,22 +316,22 @@ namespace UnityEditorInternal
             if (useActionKey && !useShift)
             {
                 var newSelection = new List<EntityId>(selectedInstanceIDs);
-                if (newSelection.Contains(clickedEntry.instanceID))
+                if (newSelection.Contains(clickedEntry.entityId))
                 {
                     if (!keepMultiSelection)
-                        newSelection.Remove(clickedEntry.instanceID);
+                        newSelection.Remove(clickedEntry.entityId);
                 }
                 else
                 {
                     if (TrySetInstanceId(ref clickedEntry))
-                        newSelection.Add(clickedEntry.instanceID);
+                        newSelection.Add(clickedEntry.entityId);
                 }
                 return newSelection;
             }
             // Select everything between the first selected object and the selected
             else if (useShift)
             {
-                if (clickedEntry.instanceID == lastClickedInstanceID)
+                if (clickedEntry.entityId == lastClickedInstanceID)
                 {
                     return new List<EntityId>(selectedInstanceIDs);
                 }
@@ -339,7 +341,7 @@ namespace UnityEditorInternal
                     // We had no selection
                     var newSelection = new List<EntityId>(1);
                     if (TrySetInstanceId(ref clickedEntry))
-                        newSelection.Add(clickedEntry.instanceID);
+                        newSelection.Add(clickedEntry.entityId);
 
                     return newSelection;
                 }
@@ -352,7 +354,7 @@ namespace UnityEditorInternal
                 if (!TrySetInstanceId(ref clickedEntry))
                     return new List<EntityId>(selectedInstanceIDs);
 
-                int clickedInstanceID = clickedEntry.instanceID;
+                int clickedInstanceID = clickedEntry.entityId;
 
                 if (lastClickedInstanceID != 0)
                 {
@@ -514,7 +516,7 @@ namespace UnityEditorInternal
                 {
                     // Don't change selection on mouse down when clicking on selected item.
                     // This is for dragging in case with multiple items selected or right click (mouse down should not unselect the rest).
-                    if (selectedInstanceIDs.Contains(clickedEntry.instanceID))
+                    if (selectedInstanceIDs.Contains(clickedEntry.entityId))
                     {
                         return new List<EntityId>(selectedInstanceIDs);
                     }
@@ -523,7 +525,7 @@ namespace UnityEditorInternal
                 if (TrySetInstanceId(ref clickedEntry))
                 {
                     var newSelection = new List<EntityId>(1);
-                    newSelection.Add(clickedEntry.instanceID);
+                    newSelection.Add(clickedEntry.entityId);
                     return newSelection;
                 }
                 else

@@ -38,11 +38,11 @@ namespace UnityEngine.Accessibility
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
-    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
-    ///- [TalkBack user guide for Android](https://support.google.com/accessibility/android/topic/3529932?ref_topic=9078845)
-    ///- [VoiceOver user guide for iOS](https://support.apple.com/en-us/guide/iphone/iph3e2e415f/ios)
-    ///- [Narrator user guide for Windows](https://support.microsoft.com/en-us/windows/complete-guide-to-narrator-e4397a0d-ef4f-b386-d8ae-c172f109bdb1)
-    ///- [VoiceOver user guide for macOS](https://support.apple.com/en-us/guide/voiceover/welcome/mac)
+    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
+    ///- &lt;a href="https://support.google.com/accessibility/android/topic/3529932?ref_topic=9078845" &gt;TalkBack user guide for Android&lt;/a&gt;
+    ///- &lt;a href="https://support.apple.com/en-us/guide/iphone/iph3e2e415f/ios" &gt;VoiceOver user guide for iOS&lt;/a&gt;
+    ///- &lt;a href="https://support.microsoft.com/en-us/windows/complete-guide-to-narrator-e4397a0d-ef4f-b386-d8ae-c172f109bdb1" &gt;Narrator user guide for Windows&lt;/a&gt;
+    ///- &lt;a href="https://support.apple.com/en-us/guide/voiceover/welcome/mac" &gt;VoiceOver user guide for macOS&lt;/a&gt;
     /// </para>
     /// </remarks>
     public static class AssistiveSupport
@@ -277,11 +277,6 @@ namespace UnityEngine.Accessibility
         static void NodeFocusChanged(AccessibilityNode currentNode)
         {
             nodeFocusChanged?.Invoke(currentNode);
-        }
-
-        internal static void SetApplicationAccessibilityLanguage(SystemLanguage language)
-        {
-            AccessibilityManager.SetApplicationAccessibilityLanguage(language);
         }
     }
 }

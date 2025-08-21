@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
@@ -10,6 +11,7 @@ namespace Unity.Hierarchy
     /// Cell Container for a value displayed in a HierarchyColumn. By default all cells that are displaying a default value won't have their
     /// UI/editor be displayed except when their corresponding row is selected or mouse is hovered over the row.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyViewCell : VisualElement
     {
         bool m_IsCellBound;

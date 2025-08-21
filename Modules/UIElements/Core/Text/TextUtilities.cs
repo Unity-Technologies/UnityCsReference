@@ -27,63 +27,38 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static Vector2 MeasureVisualElementTextSize(TextElement te, in RenderedText textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize= null)
+        private static Vector2 PostProcessMeasuredSize(TextElement te, Vector2 measuredSize, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float pixelsPerPoint)
         {
-            float measuredWidth = float.NaN;
-            float measuredHeight = float.NaN;
-
-            if (!IsFontAssigned(te))
-                return new Vector2(measuredWidth, measuredHeight);
-
-            float pixelsPerPoint = 1.0f;
-            if (te.panel != null)
-                pixelsPerPoint = te.scaledPixelsPerPoint;
-
-            if (pixelsPerPoint <= 0)
-                return Vector2.zero;
-
-            if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
-            {
-                var size = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height, fontsize);
-                measuredWidth = size.x;
-                measuredHeight = size.y;
-            }
+            float measuredWidth = measuredSize.x;
+            float measuredHeight = measuredSize.y;
 
             if (widthMode == VisualElement.MeasureMode.Exactly)
             {
                 measuredWidth = width;
             }
-            else
+            else if (widthMode == VisualElement.MeasureMode.AtMost)
             {
-                if (widthMode == VisualElement.MeasureMode.AtMost)
-                {
-                    measuredWidth = Mathf.Min(measuredWidth, width);
-                }
+                measuredWidth = Mathf.Min(measuredWidth, width);
             }
 
             if (heightMode == VisualElement.MeasureMode.Exactly)
             {
                 measuredHeight = height;
             }
-            else
+            else if (heightMode == VisualElement.MeasureMode.AtMost)
             {
-                if (heightMode == VisualElement.MeasureMode.AtMost)
-                {
-                    measuredHeight = Mathf.Min(measuredHeight, height);
-                }
+                measuredHeight = Mathf.Min(measuredHeight, height);
             }
 
-            // Case 1215962: round up as yoga could decide to round down and text would start wrapping
             float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, 0.0f);
             float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, 0.0f);
             var roundedValues = new Vector2(roundedWidth, roundedHeight);
 
             if (IsAdvancedTextEnabledForElement(te))
             {
-                te.uitkTextHandle.ATGMeasuredSizes = new Vector2(measuredWidth, measuredHeight);
-                te.uitkTextHandle.ATGRoundedSizes = roundedValues;
+                te.uitkTextHandle.ATGMeasuredWidth = measuredWidth;
+                te.uitkTextHandle.ATGRoundedWidth = roundedWidth;
                 te.uitkTextHandle.LastPixelPerPoint = pixelsPerPoint;
-
             }
             else
             {
@@ -93,6 +68,43 @@ namespace UnityEngine.UIElements
             }
 
             return roundedValues;
+        }
+
+        internal static Vector2 MeasureVisualElementTextSize(TextElement te, string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
+        {
+            if (!IsFontAssigned(te))
+                return new Vector2(float.NaN, float.NaN);
+
+            float pixelsPerPoint = te.panel?.scaledPixelsPerPoint ?? 1.0f;
+            if (pixelsPerPoint <= 0)
+                return Vector2.zero;
+
+            Vector2 measuredSize = Vector2.zero;
+            if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
+            {
+                measuredSize = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height, fontsize);
+            }
+
+            return PostProcessMeasuredSize(te, measuredSize, width, widthMode, height, heightMode, pixelsPerPoint);
+        }
+
+
+        internal static Vector2 MeasureVisualElementTextSize(TextElement te, in RenderedText textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
+        {
+            if (!IsFontAssigned(te))
+                return new Vector2(float.NaN, float.NaN);
+
+            float pixelsPerPoint = te.panel?.scaledPixelsPerPoint ?? 1.0f;
+            if (pixelsPerPoint <= 0)
+                return Vector2.zero;
+
+            Vector2 measuredSize = Vector2.zero;
+            if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
+            {
+                measuredSize = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height, fontsize);
+            }
+
+            return PostProcessMeasuredSize(te, measuredSize, width, widthMode, height, heightMode, pixelsPerPoint);
         }
 
         internal static FontAsset GetFontAsset(VisualElement ve)
@@ -124,23 +136,27 @@ namespace UnityEngine.UIElements
 
         static bool s_HasAdvancedTextSystemErrorBeenShown = false;
 
+        internal static bool IsAdvancedTextEnabledForPanel(IPanel panel)
+        {
+            var isAdvancedTextGeneratorEnabledOnProject = false;
+            if (panel is RuntimePanel runtimePanel && !runtimePanel.panelSettings.disableNoThemeWarning)
+                isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
+            else
+                isAdvancedTextGeneratorEnabledOnProject = true;
+            return isAdvancedTextGeneratorEnabledOnProject;
+        }
+
         internal static bool IsAdvancedTextEnabledForElement(VisualElement ve)
         {
             if (ve == null)
                 return false;
             var isAdvancedTextGeneratorEnabledOnTextElement = ve.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
-            var isAdvancedTextGeneratorEnabledOnProject = false;
-            if (ve.panel is RuntimePanel runtimePanel)
-                isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
-            else
-                isAdvancedTextGeneratorEnabledOnProject = true;
-
+            var isAdvancedTextGeneratorEnabledOnProject = isAdvancedTextGeneratorEnabledOnTextElement && IsAdvancedTextEnabledForPanel(ve.panel);
             if (!s_HasAdvancedTextSystemErrorBeenShown && !isAdvancedTextGeneratorEnabledOnProject && isAdvancedTextGeneratorEnabledOnTextElement)
             {
                 s_HasAdvancedTextSystemErrorBeenShown = true;
                 Debug.LogError("Advanced Text Generator is disabled but the API is still called. Please enable it in the UI Toolkit Project Settings if you want to use it, or refrain from calling the API.");
             }
-
             return isAdvancedTextGeneratorEnabledOnTextElement && isAdvancedTextGeneratorEnabledOnProject;
         }
 
@@ -211,8 +227,17 @@ namespace UnityEngine.UIElements
             };
         }
 
-        public static TextWrappingMode toTextWrappingMode(this WhiteSpace whiteSpace)
+        public static TextWrappingMode toTextWrappingMode(this WhiteSpace whiteSpace, bool isSingleLineInputField)
         {
+            if (isSingleLineInputField)
+            {
+                return whiteSpace switch
+                {
+                    WhiteSpace.Normal or WhiteSpace.NoWrap => TextWrappingMode.NoWrap,
+                    WhiteSpace.Pre or WhiteSpace.PreWrap => TextWrappingMode.PreserveWhitespaceNoWrap,
+                    _ => TextWrappingMode.NoWrap
+                };
+            }
             return whiteSpace switch
             {
                 WhiteSpace.Normal => TextWrappingMode.Normal,
@@ -244,8 +269,12 @@ namespace UnityEngine.UIElements
             };
         }
 
-        public static TextCore.TextOverflow toTextCore(this TextOverflow textOverflow, OverflowInternal overflow)
+        public static TextCore.TextOverflow toTextCore(this TextOverflow textOverflow, OverflowInternal overflow, TextOverflowPosition position)
         {
+            // TextCore and ATG do not support the middle and left ellipsis. In thoses case the TextElement will take care of the ellipsi.
+            if (position != TextOverflowPosition.End)
+                return TextCore.TextOverflow.Clip;
+
             return textOverflow switch
             {
                 TextOverflow.Ellipsis when overflow == OverflowInternal.Hidden => TextCore.TextOverflow.Ellipsis,

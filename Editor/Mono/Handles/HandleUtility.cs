@@ -1203,7 +1203,7 @@ namespace UnityEditor
             {
                 int materialIndex = 0;
                 bool isEntity = false;
-                uint pickingID = Internal_GetClosestPickingID(cam,
+                ulong pickingID = Internal_GetClosestPickingID(cam,
                         layers,
                         screenPosition,
                         NoAllocHelpers.ExtractArrayFromList(ignore),
@@ -1216,16 +1216,19 @@ namespace UnityEditor
                 {
                     UnityObject pickedObject;
 
+                    // TODO: What should the pickingID be for entities? We should then be able to retrieve the authoring object the same way as GameObjects
+                    // What if the pickingID is just directly the EntityId?
                     if (isEntity)
                     {
-                        // The render target stores entityIndex + 1
-                        int entityIndex = (int)pickingID - 1;
+                        // If isEntity is true, then pickingID stores the entity index + 1.
+                        int entityIndex = ((int)pickingID) - 1;
                         pickedObject = GetAuthoringObjectForEntity(entityIndex);
                     }
                     else
                     {
-                        int instanceID = (int)pickingID;
-                        pickedObject = EditorUtility.EntityIdToObject(instanceID);
+                        // If isEntity is false, then pickingID stores the object instanceID.
+                        EntityId entityId = EntityId.From(pickingID);
+                        pickedObject = EditorUtility.EntityIdToObject(entityId);
                     }
 
                     picked = new PickingObject(pickedObject, materialIndex);
@@ -1297,7 +1300,7 @@ namespace UnityEditor
 
                 // Otherwise, use the Renderer component, if any
                 if (objects[i].target is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
-                    ren.Add(renderer.GetInstanceID());
+                    ren.Add(renderer.GetEntityId());
             }
         }
 
@@ -1317,7 +1320,7 @@ namespace UnityEditor
 
                 // Otherwise, use the Renderer component, if any
                 if (objects[i] is GameObject gameObject && gameObject.TryGetComponent<Renderer>(out var renderer))
-                    ren.Add(renderer.GetInstanceID());
+                    ren.Add(renderer.GetEntityId());
             }
         }
 

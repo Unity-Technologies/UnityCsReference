@@ -335,11 +335,19 @@ namespace UnityEngine.Jobs
             Add(m_TransformArray, transform);
         }
 
+        [Obsolete("TransformAccessArray.Add(int) is obsolete. Use TransformAccessArray.Add(EntityId) instead.")]
         public void Add(int instanceId)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
             AddInstanceId(m_TransformArray, instanceId);
+        }
+
+        public void Add(EntityId entityId)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            AddInstanceId(m_TransformArray, entityId);
         }
 
         public void RemoveAtSwapBack(int index)
@@ -369,7 +377,7 @@ namespace UnityEngine.Jobs
         private static extern void Add(IntPtr transformArrayIntPtr, Transform transform);
 
         [NativeMethod(Name = "TransformAccessArrayBindings::AddTransformInstanceId", IsFreeFunction = true)]
-        private static extern void AddInstanceId(IntPtr transformArrayIntPtr, int instanceId);
+        private static extern void AddInstanceId(IntPtr transformArrayIntPtr, EntityId instanceId);
 
         [NativeMethod(Name = "TransformAccessArrayBindings::RemoveAtSwapBack", IsFreeFunction = true, ThrowsException = true)]
         private static extern void RemoveAtSwapBack(IntPtr transformArrayIntPtr, int index);

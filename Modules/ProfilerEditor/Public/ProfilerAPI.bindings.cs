@@ -426,7 +426,7 @@ namespace UnityEditorInternal
         [NativeMethod("SaveToFile")]
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
 
-        static public extern void SaveProfile(string filename);
+        static public extern bool SaveProfile(string filename);
 
         [NativeMethod("LoadFromFile")]
         [StaticAccessor("profiling::GetProfilerSessionPtr()", StaticAccessorType.Arrow)]
@@ -434,9 +434,11 @@ namespace UnityEditorInternal
 
         [NativeMethod("GetAllStatisticsProperties")]
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static public extern string[] GetAllStatisticsProperties();
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static public extern string[] GetGraphStatisticsPropertiesForArea(ProfilerArea area);
 
         [Obsolete("Use GetStatisticsIdentifierForArea that takes ProfilerArea as first argument", false)]

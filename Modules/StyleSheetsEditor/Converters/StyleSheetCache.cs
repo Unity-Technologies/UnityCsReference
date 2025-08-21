@@ -46,7 +46,8 @@ namespace UnityEditor.StyleSheets
 
         private void IndexSheet()
         {
-            foreach (var complexSelector in sheet.complexSelectors)
+            foreach (var rule in sheet.rules)
+            foreach (var complexSelector in rule.complexSelectors)
             {
                 AddSelector(complexSelector);
             }

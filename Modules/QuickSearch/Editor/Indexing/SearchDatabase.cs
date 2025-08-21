@@ -55,7 +55,8 @@ namespace UnityEditor.Search
         // 6- Use produce artifacts async
         // 7- Update how keywords are encoded
         // 8- Update t:prefab
-        public const int version = (8 << 8) ^ SearchIndexEntryImporter.version;
+        // 9- Change default storage to LMDB
+        public const int version = (9 << 8) ^ SearchIndexArtifactImporter.Version;
         private const string k_QuickSearchLibraryPath = "Library/Search";
         public const string defaultSearchDatabaseIndexPath = "UserSettings/Search.index";
 
@@ -304,20 +305,31 @@ namespace UnityEditor.Search
             return db.Reload(settingsPath);
         }
 
+        public static SearchDatabase Create(Settings settings)
+        {
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
+            var db = CreateInstance<SearchDatabase>();
+            db.hideFlags |= HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+            return db.Reload(settings);
+        }
+
         public SearchDatabase Reload(string settingsPath)
         {
-            m_IndexSettingsPath = settingsPath;
-            SearchMonitor.RaiseContentRefreshed(new[] { settingsPath }, new string[0], new string[0]);
             return Reload(LoadSettings(settingsPath));
         }
 
         public SearchDatabase Reload(Settings settings)
         {
+            m_IndexSettingsPath = settings.source;
+            SearchMonitor.RaiseContentRefreshed(new[] { settings.source }, new string[0], new string[0]);
+
             LoadingState = LoadState.Loading;
             loaded = false;
 
             m_IndexingRequestTrackerId = EditorPerformanceTracker.StartTracker("SearchImporter.IndexingRequest");
 
+            // TODO: Remove this
             using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
             if (!writeLockScope.locked)
             {
@@ -333,22 +345,38 @@ namespace UnityEditor.Search
             return this;
         }
 
+        // Used by performance tests
+        public bool ReloadWithoutIndexing(Settings settings)
+        {
+            m_IndexSettingsPath = settings.source;
+            SearchMonitor.RaiseContentRefreshed(new[] { settings.source }, new string[0], new string[0]);
+
+            LoadingState = LoadState.Loading;
+            loaded = false;
+
+            m_IndexingRequestTrackerId = EditorPerformanceTracker.StartTracker("SearchImporter.IndexingRequest");
+
+            // TODO: Remove this
+            using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
+            if (!writeLockScope.locked)
+            {
+                return false;
+            }
+
+            this.settings = settings;
+            index?.Dispose();
+            index = CreateIndexer(settings);
+            name = settings.name;
+
+            return true;
+        }
+
         private static string GetDbGuid(string settingsPath)
         {
             var guid = AssetDatabase.AssetPathToGUID(settingsPath);
             if (string.IsNullOrEmpty(guid))
                 return Hash128.Compute(settingsPath).ToString();
             return guid;
-        }
-
-        private static bool IsValidType(string path, string[] types)
-        {
-            if (!File.Exists(path))
-                return false;
-            var settings = LoadSettings(path);
-            if (settings.options.disabled)
-                return false;
-            return types.Length == 0 || types.Contains(settings.type);
         }
 
         public static IEnumerable<SearchDatabase> Enumerate(params string[] types)
@@ -459,7 +487,7 @@ namespace UnityEditor.Search
         internal static Type GetIndexImporterTypeForAsset(Settings settings, string assetPath)
         {
             var importerHashCode = GetImporterHashCode(settings, assetPath);
-            return SearchIndexEntryImporter.GetIndexImporterType(importerHashCode);
+            return SearchIndexArtifactImporter.GetIndexImporterType(importerHashCode);
         }
 
         internal static string GetIndexTypeSuffix(Settings settings, string assetPath)
@@ -483,8 +511,8 @@ namespace UnityEditor.Search
 
         internal static void MakeIndexImporterDirty(bool types, bool properties, bool extended, bool dependencies)
         {
-            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(Options.GetHashCode(types, properties, extended, dependencies));
-            var customDependencyName = SearchIndexEntryImporter.GetCustomDependencyName(indexImporterType);
+            var indexImporterType = SearchIndexArtifactImporter.GetIndexImporterType(Options.GetHashCode(types, properties, extended, dependencies));
+            var customDependencyName = SearchIndexArtifactImporter.GetCustomDependencyName(indexImporterType);
             AssetDatabaseAPI.RegisterCustomDependency(customDependencyName, Hash128.Parse(Guid.NewGuid().ToString("N")));
         }
 
@@ -518,29 +546,14 @@ namespace UnityEditor.Search
             return indexSettings;
         }
 
-        public static ObjectIndexer CreateIndexer(Settings settings, string settingsPath = null)
+        internal static ObjectIndexer CreateIndexer(Settings settings, string settingsPath = null)
         {
-            return CreateIndexer(settings, settingsPath, new SearchIndexEntryStorage());
+            return CreateIndexer(settings, settingsPath, new LMDBIndexStorage(GetBackupIndexPath(true, settings, settingsPath)));
         }
 
         public static ObjectIndexer CreateIndexer(Settings settings, string settingsPath, ISearchIndexerStorage storage)
         {
-            // Fix the settings root if needed
-            if (!String.IsNullOrEmpty(settingsPath))
-            {
-                if (String.IsNullOrEmpty(settings.source))
-                    settings.source = settingsPath;
-
-                if (String.IsNullOrEmpty(settings.root))
-                    settings.root = Path.GetDirectoryName(settingsPath).Replace("\\", "/");
-
-                if (String.IsNullOrEmpty(settings.guid))
-                    settings.guid = GetDbGuid(settingsPath);
-
-                if (settings.type == "prefab" || settings.type == "scene")
-                    settings.options.extended = true;
-            }
-
+            FixSettings(settings, settingsPath);
             return new AssetIndexer(settings, storage);
         }
 
@@ -548,9 +561,9 @@ namespace UnityEditor.Search
         {
             settings = LoadSettings(settingsPath);
             index?.Dispose();
-            index = CreateIndexer(settings);
-            name = settings.name;
             DeleteBackupIndex();
+            index = CreateIndexer(settings, null, new LMDBIndexStorage(GetBackupIndexPath(true)));
+            name = settings.name;
         }
 
         private static SearchDatabase Find(string path)
@@ -567,7 +580,10 @@ namespace UnityEditor.Search
 
             var currentDb = Find(settingsPath);
             if (currentDb)
+            {
+                currentDb.index?.Dispose();
                 currentDb.DeleteBackupIndex();
+            }
 
             AssetDatabase.ImportAsset(settingsPath, forceUpdate ? ImportAssetOptions.ForceUpdate : ImportAssetOptions.Default);
             if (currentDb)
@@ -639,10 +655,26 @@ namespace UnityEditor.Search
             }
 
             var backupIndexPath = GetBackupIndexPath(false);
-            if (File.Exists(backupIndexPath))
+            if (!IsFullBuildNeeded())
                 IncrementalLoad(backupIndexPath);
             else
                 Build();
+        }
+
+        bool IsFullBuildNeeded()
+        {
+            if (index.storage is LMDBIndexStorage lmdbStorage)
+            {
+                // Timestamp is set to 0 by default, so no indexing was done yet. Full build needed.
+                if (lmdbStorage.Timestamp == 0)
+                    return true;
+
+                // If the version is not the default one, we need to rebuild the index.
+                if (lmdbStorage.Version != LMDBIndexStorage.DefaultVersion)
+                    return true;
+            }
+
+            return false;
         }
 
         [System.Diagnostics.Conditional("DEBUG_INDEXING")]
@@ -670,29 +702,22 @@ namespace UnityEditor.Search
             Log(status, args);
         }
 
-        private void IncrementalLoad(string indexPath)
+        internal void IncrementalLoad(string indexPath)
         {
             LoadingState = LoadState.Loading;
             loaded = false;
-            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, AssignNewIndexAndSetup), this);
+            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", OnIncrementalLoadFinished, this);
             loadTask.RunThread(() =>
             {
                 loadTask.Report($"Loading {indexPath}...", -1);
-                var fileBytes = File.ReadAllBytes(indexPath);
-
-                // Note about Storage: Since we are trying to read an index written on disk, assume it is SearchIndexEntryStorage
-                var newIndex = new AssetIndexer(settings, new SearchIndexEntryStorage());
-                IncrementLoadBytes(fileBytes, loadTask, newIndex, $"Failed to load {indexPath}.");
+                IncrementLoadBytes(loadTask, $"Failed to load {indexPath}.");
             });
         }
 
-        private void IncrementLoadBytes(byte[] indexerBytes, Task loadTask, ObjectIndexer indexer, string loadFailedMessage)
+        private void IncrementLoadBytes(Task loadTask, string loadFailedMessage)
         {
-            if (!indexer.LoadBytes(indexerBytes))
-                throw new Exception(loadFailedMessage);
-
             var deletedAssets = new HashSet<string>();
-            foreach (var d in indexer.GetDocuments())
+            foreach (var d in index.GetDocuments())
             {
                 if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
                     deletedAssets.Add(d.source);
@@ -707,11 +732,11 @@ namespace UnityEditor.Search
                 }
 
                 loadTask.Report($"Checking for changes...", -1);
-                var diff = SearchMonitor.GetDiff(indexer.timestamp, deletedAssets, path => KeepChangesetPredicate(path, indexer));
+                var diff = SearchMonitor.GetDiff(index.timestamp, deletedAssets, path => KeepChangesetPredicate(path, index));
                 if (!diff.empty)
                     IncrementalUpdate(diff);
 
-                loadTask.Resolve(new TaskData(indexerBytes, indexer, diff.empty));
+                loadTask.Resolve(new TaskData(null, index, diff.empty));
             });
         }
 
@@ -794,7 +819,7 @@ namespace UnityEditor.Search
             Console.WriteLine($"Cannot find search index artifact for {assetPath} ({a.guid}{artifactIndexSuffix})\n\t- {string.Join("\n\t- ", paths)}");
         }
 
-        private Task ResolveArtifacts(string taskName, string title, Task.ResolveHandler finished)
+        private Task ResolveArtifacts(string taskName, string title, Task.ResolveHandler finished, Action<IndexArtifact[], Task> onArtifactsResolved)
         {
             var resolveTask = new Task(taskName, title, finished, 1, this);
             List<string> paths = null;
@@ -802,12 +827,12 @@ namespace UnityEditor.Search
             {
                 resolveTask.Report("Scanning dependencies...");
                 paths = index.GetDependencies();
-            }, () => ProduceArtifacts(resolveTask, paths));
+            }, () => ProduceArtifacts(resolveTask, paths, onArtifactsResolved));
 
             return resolveTask;
         }
 
-        private void ProduceArtifacts(Task resolveTask, in IList<string> paths)
+        private void ProduceArtifacts(Task resolveTask, in IList<string> paths, Action<IndexArtifact[], Task> onArtifactsResolved)
         {
             if (paths == null || (resolveTask?.Canceled() ?? false))
                 return;
@@ -819,10 +844,10 @@ namespace UnityEditor.Search
 
             // TODO: Can't use combineAutoResolve = true here, because we use WaitForReadComplete which might defer the resolver
             // on another frame, and so the task still needs to be valid at that moment.
-            ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, true);
+            ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, onArtifactsResolved);
         }
 
-        private bool ResolveArtifacts(IndexArtifact[] artifacts, IList<IndexArtifact> partialSet, Task task, bool combineAutoResolve)
+        private bool ResolveArtifacts(IndexArtifact[] artifacts, IList<IndexArtifact> partialSet, Task task, Action<IndexArtifact[], Task> onArtifactsResolved)
         {
             try
             {
@@ -836,11 +861,11 @@ namespace UnityEditor.Search
                 {
                     if (task.Canceled())
                         return false;
-                    return task.RunThread(() => CombineIndexes(settings, artifacts, task, combineAutoResolve));
+                    return task.RunThread(() => onArtifactsResolved(artifacts, task));
                 }
 
                 // Resume later with remaining artifacts
-                Dispatcher.Enqueue(() => ResolveArtifacts(artifacts, remainingArtifacts, task, combineAutoResolve),
+                Dispatcher.Enqueue(() => ResolveArtifacts(artifacts, remainingArtifacts, task, onArtifactsResolved),
                     GetArtifactResolutionCheckDelay(remainingArtifacts.Count));
             }
             catch (Exception err)
@@ -858,65 +883,39 @@ namespace UnityEditor.Search
             return 1;
         }
 
-        private static void CombineIndexes(in Settings settings, in IndexArtifact[] artifacts, Task task, bool autoResolve)
+        void CombineBuildArtifacts(in IndexArtifact[] artifacts, Task task)
         {
-            if (task.Canceled())
+            if (task.Canceled() || index == null)
                 return;
-
-            // Combine all search index artifacts into one large binary stream.
-            // Note about Storage: Since we are trying to read an index written on disk, assume it is SearchIndexEntryStorage
-            var combineIndexer = new SearchIndexer(String.Empty, new SearchIndexEntryStorage());
-            var indexName = settings.name.ToLowerInvariant();
-            task.Report("Loading artifacts...", 0);
-            var artifactDbs = EnumerateSearchArtifactsDirect(artifacts, task);
 
             task.Report("Combining indexes...", -1f);
             task.total = artifacts.Length;
 
-            combineIndexer.Start();
-            combineIndexer.CombineIndexes(artifactDbs, settings.baseScore, indexName, task);
-            foreach (var searchIndexer in artifactDbs)
+            // TODO: Remove this
+            using var writeLockScope = new WriteLockScope(m_ImmutableLock);
+
+            if (index.storage is LMDBIndexStorage lmdbStorage)
             {
-                searchIndexer.Dispose();
+                var artifactPaths = new string[artifacts.Length];
+                for (int i = 0; i < artifacts.Length; ++i)
+                {
+                    var a = artifacts[i];
+                    if (a != null && a.valid && !string.IsNullOrEmpty(a.path))
+                        artifactPaths[i] = a.path;
+                }
+                lmdbStorage.Clear();
+                lmdbStorage.MergeArtifacts(Array.Empty<string>(), artifactPaths, 0, task);
+                lmdbStorage.Finish(Array.Empty<string>());
             }
 
             if (task.Canceled())
                 return;
 
             task.Report($"Saving index...", -1f);
-            byte[] bytes = autoResolve ? combineIndexer.SaveBytes() : null;
-            Dispatcher.Enqueue(() => task.Resolve(new TaskData(bytes, combineIndexer), completed: autoResolve));
+            Dispatcher.Enqueue(() => task.Resolve(new TaskData(null, index), completed: true));
         }
 
-        static List<SearchIndexer> EnumerateSearchArtifactsDirect(IndexArtifact[] artifacts, Task task)
-        {
-            var results = new List<SearchIndexer>();
-            var total = artifacts.Length;
-            for (var i = 0; i < total; ++i)
-            {
-                var a = artifacts[i];
-                if (a == null || a.path == null)
-                    continue;
-
-                // Note about Storage: Since we are trying to read an index written on disk, assume it is SearchIndexEntryStorage
-                var si = new SearchIndexer(Path.GetFileName(a.source), new SearchIndexEntryStorage());
-                if (!si.ReadIndexFromDisk(a.path))
-                    continue;
-
-                results.Add(si);
-                task.Report(i+1, total);
-            }
-
-
-            return results;
-        }
-
-        private static void AddIndexNameArea(int documentIndex, SearchIndexer indexer, string indexName)
-        {
-            indexer.AddProperty("a", indexName, indexName.Length, indexName.Length, 0, documentIndex, saveKeyword: true, exact: true);
-        }
-
-        private void Build()
+        internal void Build()
         {
             if (EditorApplication.isPlaying)
             {
@@ -927,11 +926,10 @@ namespace UnityEditor.Search
             LoadingState = LoadState.Loading;
             m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
-            m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, OnArtifactsResolved));
+            m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", OnBuildFinished, (artifacts, task) => CombineBuildArtifacts(artifacts, task));
         }
 
-        // To be used with WaitForReadComplete.
-        private void OnArtifactsResolved(Task task, TaskData data)
+        private void OnBuildFinished(Task task, TaskData data)
         {
             m_CurrentResolveTask = null;
             if (!this || task.canceled || task.error != null)
@@ -940,15 +938,12 @@ namespace UnityEditor.Search
                 return;
             }
 
-            // Do not dispose of data.combinedIndex, since we are using its data into index
-            index.ApplyFrom(data.combinedIndex);
-            indexSize = data.bytes.Length;
-            SaveIndex(data.bytes, Setup);
+            indexSize = (long)(index.storage as LMDBIndexStorage).MapSize;
+            Setup();
             EmitDatabaseReady(this);
         }
 
-        // To be used with WaitForReadComplete.
-        private void AssignNewIndexAndSetup(Task task, TaskData data)
+        private void OnIncrementalLoadFinished(Task task, TaskData data)
         {
             if (!this || task.error != null)
             {
@@ -964,9 +959,7 @@ namespace UnityEditor.Search
                 return;
             }
 
-            // Do not dispose of data.combinedIndex, since we are using its data into index
-            index.ApplyFrom(data.combinedIndex);
-            indexSize = data.bytes.Length;
+            indexSize = (long)(index.storage as LMDBIndexStorage).MapSize;
             Setup();
 
             if (data.userData is true)
@@ -996,57 +989,17 @@ namespace UnityEditor.Search
             SearchMonitor.contentRefreshed += OnContentRefreshed;
         }
 
-        private string GetBackupIndexPath(bool createDirectory)
+        public string GetBackupIndexPath(bool createDirectory)
         {
+            return GetBackupIndexPath(createDirectory, settings, settings.source);
+        }
+
+        static string GetBackupIndexPath(bool createDirectory, Settings settings, string settingsPath)
+        {
+            FixSettings(settings, settingsPath);
             if (createDirectory && !Directory.Exists(k_QuickSearchLibraryPath))
                 Directory.CreateDirectory(k_QuickSearchLibraryPath);
-            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{SearchIndexEntryImporter.version}.{GetIndexTypeSuffix(settings, null)}";
-        }
-
-        internal void SaveIndex(string backupIndexPath = null)
-        {
-            backupIndexPath ??= GetBackupIndexPath(true);
-            index.SaveIndexToDisk(backupIndexPath);
-            indexSize = 0;
-            var info = new FileInfo(backupIndexPath);
-            if (info.Exists)
-            {
-                indexSize = info.Length;
-            }
-        }
-
-        private void SaveIndex(string backupIndexPath, byte[] saveBytes, Task saveTask = null)
-        {
-            try
-            {
-                saveTask?.Report("Saving search index");
-                var tempSave = Path.GetTempFileName();
-                File.WriteAllBytes(tempSave, saveBytes);
-                indexSize = saveBytes.Length;
-
-                RetriableOperation<IOException>.Execute(() =>
-                {
-                    if (File.Exists(backupIndexPath))
-                        File.Delete(backupIndexPath);
-
-                    File.Move(tempSave, backupIndexPath);
-                });
-            }
-            catch (IOException ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
-
-        internal void SaveIndex(byte[] saveBytes, Action savedCallback = null)
-        {
-            string savePath = GetBackupIndexPath(createDirectory: true);
-            var saveTask = new Task("Save", $"Saving {settings.name.ToLowerInvariant()} search index", (task, data) => savedCallback?.Invoke(), this);
-            saveTask.RunThread(() =>
-            {
-                SaveIndex(savePath, saveBytes, saveTask);
-                Dispatcher.Enqueue(() => saveTask.Resolve(new TaskData(saveBytes, index)));
-            });
+            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{nameof(SearchIndexArtifactImporter)}.{SearchIndexArtifactImporter.Version}.{GetIndexTypeSuffix(settings, null)}";
         }
 
         internal void DeleteBackupIndex()
@@ -1056,6 +1009,9 @@ namespace UnityEditor.Search
                 var backupIndexPath = GetBackupIndexPath(false);
                 if (File.Exists(backupIndexPath))
                     File.Delete(backupIndexPath);
+                var lockFile = backupIndexPath + "-lock";
+                if (File.Exists(lockFile))
+                    File.Delete(lockFile);
             }
             catch (IOException ex)
             {
@@ -1102,7 +1058,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private void IncrementalUpdate(AssetIndexChangeSet changeset)
+        internal void IncrementalUpdate(AssetIndexChangeSet changeset)
         {
             if (!this)
                 return;
@@ -1153,24 +1109,12 @@ namespace UnityEditor.Search
             Interlocked.Increment(ref m_UpdateTasks);
             m_CurrentUpdateTask = new Task("Update", taskName, (task, data) =>
             {
-                WaitForReadComplete(task, data, (t, d) => MergeDocuments(t, d, changeset));
+                ResolveIncrementalUpdate(task);
             }, updates.Length, this);
-            ResolveArtifacts(updates, null, m_CurrentUpdateTask, false);
+            ResolveArtifacts(updates, null, m_CurrentUpdateTask, (artifacts, task) => MergeArtifacts(artifacts, task, changeset));
         }
 
-        private void WaitForReadComplete(Task task, TaskData data, Action<Task, TaskData> callback)
-        {
-            using var tryWriteLockScope = new TryWriteLockScope(m_ImmutableLock);
-            if (tryWriteLockScope.locked)
-                callback(task, data);
-            else
-            {
-                task.Report("Waiting for read completion...");
-                Dispatcher.Enqueue(() => WaitForReadComplete(task, data, callback));
-            }
-        }
-
-        private void MergeDocuments(Task task, TaskData data, AssetIndexChangeSet changeset)
+        private void MergeArtifacts(IndexArtifact[] artifacts, Task task, AssetIndexChangeSet changeset)
         {
             if (task.canceled || task.error != null)
             {
@@ -1179,27 +1123,25 @@ namespace UnityEditor.Search
             }
 
             var baseScore = settings.baseScore;
-            var indexName = settings.name.ToLowerInvariant();
-            var saveIndexCache = !Utils.IsRunningTests();
-            var savePath = GetBackupIndexPath(createDirectory: true);
-
             task.Report("Merging changes to index...");
-            task.RunThread(() =>
+
+            // TODO: Remove this
+            using var writeLockScope = new WriteLockScope(m_ImmutableLock);
+
+            if (index.storage is LMDBIndexStorage lmdbStorage)
             {
-                using var writeScope = new WriteLockScope(m_ImmutableLock);
+                var artifactPaths = new string[artifacts.Length];
+                for (int i = 0; i < artifacts.Length; ++i)
+                {
+                    var a = artifacts[i];
+                    if (a != null && a.valid && !string.IsNullOrEmpty(a.path))
+                        artifactPaths[i] = a.path;
+                }
+                lmdbStorage.MergeArtifacts(changeset.removed, artifactPaths, baseScore, task);
+                lmdbStorage.Finish(Array.Empty<string>());
+            }
 
-                index.Merge(changeset.removed, data.combinedIndex, baseScore,
-                    (di, indexer, count) => OnDocumentMerged(indexer, indexName, di), task);
-                data.combinedIndex.Dispose();
-                if (saveIndexCache)
-                    SaveIndex(savePath);
-            }, () => ResolveIncrementalUpdate(task));
-        }
-
-        private static void OnDocumentMerged(SearchIndexer indexer, string indexName, int documentIndex)
-        {
-            if (indexer != null)
-                AddIndexNameArea(documentIndex, indexer, indexName);
+            Dispatcher.Enqueue(() => task.Resolve(new TaskData(null, index), completed: true));
         }
 
         private void ResolveIncrementalUpdate(Task task)
@@ -1219,7 +1161,7 @@ namespace UnityEditor.Search
         {
             {
                 var artifacts = new IndexArtifact[assetPaths.Count];
-                
+
                 for (int i = 0; i < assetPaths.Count; ++i)
                 {
                     var indexImporterType = GetIndexImporterTypeForAsset(settings, assetPaths[i]);
@@ -1283,6 +1225,7 @@ namespace UnityEditor.Search
             return ImportAsset(defaultSearchDatabaseIndexPath);
         }
 
+        // TODO: Remove this. It will no longer be needed with LMDB
         // Don't use on the main thread!
         public IDisposable GetImmutableScope()
         {
@@ -1291,6 +1234,9 @@ namespace UnityEditor.Search
 
         static bool KeepChangesetPredicate(string path, ObjectIndexer index)
         {
+            if (string.IsNullOrEmpty(path) || index == null || index.settings.options.disabled)
+                return false;
+
             if (index.SkipEntry(path, true))
                 return false;
 
@@ -1303,6 +1249,25 @@ namespace UnityEditor.Search
         static void EmitDatabaseReady(SearchDatabase db)
         {
             Dispatcher.Emit(SearchEvent.SearchIndexReady, new SearchEventPayload(new HeadlessSearchViewState(), db));
+        }
+
+        static void FixSettings(Settings settings, string settingsPath)
+        {
+            // Fix the settings root if needed
+            if (string.IsNullOrEmpty(settingsPath) || settings == null)
+                return;
+
+            if (string.IsNullOrEmpty(settings.source))
+                settings.source = settingsPath;
+
+            if (string.IsNullOrEmpty(settings.root))
+                settings.root = Path.GetDirectoryName(settingsPath).Replace("\\", "/");
+
+            if (string.IsNullOrEmpty(settings.guid))
+                settings.guid = GetDbGuid(settingsPath);
+
+            if (settings.type == "prefab" || settings.type == "scene")
+                settings.options.extended = true;
         }
     }
 }

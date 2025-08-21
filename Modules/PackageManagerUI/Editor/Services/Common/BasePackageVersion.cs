@@ -94,7 +94,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
         public virtual SemVersion? supportedVersion => null;
         public virtual string deprecationMessage => null;
-        public virtual SignatureInfo signatureInfo => null;
+        public virtual SignatureInfo signature => null;
+        public virtual TrustLevel trustLevel => TrustLevel.OutOfTrust;
 
         public abstract string uniqueId { get; }
         public abstract string packageId { get; }

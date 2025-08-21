@@ -185,7 +185,7 @@ namespace UnityEditor
                  * 2) Display one big tooltip made up with all elements from custom tooltip
                  */
 
-                GameObject assetGameObject = (GetLoadedObjectFromInstanceID(assetReference.instanceID) as GameObject);
+                GameObject assetGameObject = (GetLoadedObjectFromEntityId(assetReference.entityId) as GameObject);
                 if (!assetGameObject)
                 {
                     /* this seems to happen non-deterministically at project startup depending of what the user is hovering when the editor opens,

@@ -18,15 +18,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IEnumerable<PackageInfo> searchPackageInfos { get; }
         IEnumerable<PackageInfo> installedPackageInfos  { get; }
+        bool installedPackageInfosReady { get; }
 
         void SetLoadAllVersions(string packageUniqueId, bool value);
         void AddExtraPackageInfo(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
-        void RemoveInstalledPackageInfo(string packageName);
         PackageInfo GetInstalledPackageInfo(string packageName);
         PackageInfo GetInstalledPackageInfoById(string packageId);
-        bool SetInstalledPackageInfo(PackageInfo info, string packageNamePreInstall);
-        void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0);
+        IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0);
         PackageInfo GetSearchPackageInfo(string packageName);
         PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
         IUpmPackageData GetPackageData(string packageName);
@@ -56,10 +55,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private HashSet<string> m_LoadAllVersions = new();
 
         [SerializeField]
-        private long m_SearchPackageInfosTimestamp;
+        private long m_SearchPackageInfosTimestamp = -1;
 
         [SerializeField]
-        private long m_InstalledPackageInfosTimestamp;
+        private long m_InstalledPackageInfosTimestamp = -1;
 
         // arrays created to help serialize dictionaries
         [SerializeField]
@@ -84,16 +83,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
         public IEnumerable<PackageInfo> installedPackageInfos => m_PackageNameToInstalledPackageInfosMap.Values;
+        public bool installedPackageInfosReady => m_InstalledPackageInfosTimestamp >= 0;
 
-        private readonly IUniqueIdMapper m_UniqueIdMapper;
         private readonly IProjectSettingsProxy m_SettingsProxy;
-        public UpmCache(IUniqueIdMapper uniqueIdMapper, IProjectSettingsProxy settingsProxy)
+        public UpmCache(IProjectSettingsProxy settingsProxy)
         {
-            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
             m_SettingsProxy = RegisterDependency(settingsProxy);
         }
 
-        private static IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
+        private static List<(PackageInfo oldInfo, PackageInfo newInfo)> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
         {
             var result = new List<(PackageInfo oldInfo, PackageInfo newInfo)>();
             foreach (var oldInfo in oldInfos.Values)
@@ -220,17 +218,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return null;
         }
 
-        public void RemoveInstalledPackageInfo(string packageName)
-        {
-            var oldInfo = m_PackageNameToInstalledPackageInfosMap.Get(packageName);
-            if (oldInfo == null)
-                return;
-
-            m_PackageNameToInstalledPackageInfosMap.Remove(packageName);
-            UpdateProductIdToInstalledPackageInfoMap(oldInfo, null);
-            TriggerOnPackageInfosUpdated(new [] { (oldInfo, (PackageInfo)null) });
-        }
-
         public bool IsPackageInstalled(string packageName) => m_PackageNameToInstalledPackageInfosMap.ContainsKey(packageName);
 
         public PackageInfo GetInstalledPackageInfo(string packageName) => m_PackageNameToInstalledPackageInfosMap.Get(packageName);
@@ -243,20 +230,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return idSplit?.Length == 2 ? GetInstalledPackageInfo(idSplit[0]) : null;
         }
 
-        public bool SetInstalledPackageInfo(PackageInfo info, string packageNamePreInstall)
-        {
-            var oldInfo = m_PackageNameToInstalledPackageInfosMap.Get(info.name);
-            m_PackageNameToInstalledPackageInfosMap[info.name] = info;
-            UpdateProductIdToInstalledPackageInfoMap(oldInfo, info);
-            m_UniqueIdMapper.MapTempIdAndFinalizedId(packageNamePreInstall, info.name);
-            if (packageNamePreInstall != info.name || oldInfo == null || IsDifferent(oldInfo, info))
-            {
-                TriggerOnPackageInfosUpdated(new [] { (oldInfo, info) });
-                return true;
-            }
-            return false;
-        }
-
         private void UpdateProductIdToInstalledPackageInfoMap(PackageInfo oldInfo, PackageInfo newInfo)
         {
             var oldProductId = oldInfo?.ParseProductId() ?? 0;
@@ -267,24 +240,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ProductIdToInstalledPackageInfosMap[newProductId] = newInfo;
         }
 
-        public void SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
+        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
             var oldPackageInfos = m_PackageNameToInstalledPackageInfosMap;
             m_PackageNameToInstalledPackageInfosMap = newPackageInfos;
+            m_InstalledPackageInfosTimestamp = timestamp;
 
             m_ProductIdToInstalledPackageInfosMap.Clear();
             foreach (var info in newPackageInfos.Values)
                 UpdateProductIdToInstalledPackageInfoMap(null, info);
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
+
             if (updatedInfos.Count > 0)
             {
                 TriggerOnPackageInfosUpdated(updatedInfos);
                 DetectScopedRegistriesChanges(updatedInfos, false);
             }
-            m_InstalledPackageInfosTimestamp = timestamp;
+            return updatedInfos;
         }
 
         public PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
@@ -330,6 +305,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var oldPackageInfos = m_SearchPackageInfos;
             m_SearchPackageInfos = newPackageInfos;
+            m_SearchPackageInfosTimestamp = timestamp;
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
             if (updatedInfos.Count > 0)
@@ -337,7 +313,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 TriggerOnPackageInfosUpdated(updatedInfos);
                 DetectScopedRegistriesChanges(updatedInfos, true);
             }
-            m_SearchPackageInfosTimestamp = timestamp;
         }
 
         public PackageInfo GetProductSearchPackageInfo(long productId) => GetProductSearchPackageInfoAndTimestamp(productId).info;

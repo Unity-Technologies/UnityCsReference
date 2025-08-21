@@ -215,7 +215,7 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerBuffer.h")]
     public sealed class DownloadHandlerBuffer : DownloadHandler
     {
-        private extern static IntPtr Create([Unmarshalled] DownloadHandlerBuffer obj);
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerBuffer obj);
 
         private NativeArray<byte> m_NativeData;
 
@@ -255,8 +255,8 @@ namespace UnityEngine.Networking
     [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerScript.h")]
     public class DownloadHandlerScript : DownloadHandler
     {
-        private extern static IntPtr Create([Unmarshalled] DownloadHandlerScript obj);
-        private extern static IntPtr CreatePreallocated([Unmarshalled] DownloadHandlerScript obj, [Unmarshalled]byte[] preallocatedBuffer);
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerScript obj);
+        private extern static IntPtr CreatePreallocated([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerScript obj, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]byte[] preallocatedBuffer);
 
         private void InternalCreateScript()
         {
@@ -294,7 +294,7 @@ namespace UnityEngine.Networking
     public sealed class DownloadHandlerFile : DownloadHandler
     {
         [NativeThrows]
-        private extern static IntPtr Create([Unmarshalled] DownloadHandlerFile obj, string path, bool append);
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerFile obj, string path, bool append);
 
         private void InternalCreateVFS(string path, bool append)
         {

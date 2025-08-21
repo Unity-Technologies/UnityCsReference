@@ -215,7 +215,7 @@ namespace UnityEditor
                     int outputInstanceID;
                     if (System.Int32.TryParse(resourceFile, out outputInstanceID))
                     {
-                        var outputGroup = InternalEditorUtility.GetObjectFromInstanceID(outputInstanceID) as AudioMixerGroupController;
+                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(outputInstanceID) as AudioMixerGroupController;
                         if (outputGroup != null)
                             controller.outputAudioMixerGroup = outputGroup;
                     }
@@ -789,7 +789,7 @@ namespace UnityEditor
                 if (DragAndDrop.objectReferences.Length > 1)
                     title = "<Multiple>";
                 else
-                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromInstanceID(draggedInstanceID));
+                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedInstanceID));
             }
 
             DragAndDrop.StartDrag(title);
@@ -806,14 +806,14 @@ namespace UnityEditor
             {
                 for (int i = 0; i < selectedInstanceIDs.Count; ++i)
                 {
-                    Object obj = InternalEditorUtility.GetObjectFromInstanceID(selectedInstanceIDs[i]);
+                    Object obj = InternalEditorUtility.GetObjectFromEntityId(selectedInstanceIDs[i]);
                     if (obj != null)
                         outList.Add(obj);
                 }
             }
             else
             {
-                Object obj = InternalEditorUtility.GetObjectFromInstanceID(draggedInstanceID);
+                Object obj = InternalEditorUtility.GetObjectFromEntityId(draggedInstanceID);
                 if (obj != null)
                     outList.Add(obj);
             }
@@ -984,7 +984,7 @@ namespace UnityEditor
                 while (property.Next(default(EntityId[])))
                 {
                     GUID parent;
-                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetEntityIdIfImported()) as Material;
+                    var child = InternalEditorUtility.GetLoadedObjectFromEntityId(property.GetEntityIdIfImported()) as Material;
                     if (child)
                     {
                         if (AssetDatabase.IsForeignAsset(child))
@@ -1029,7 +1029,7 @@ namespace UnityEditor
                 property.SetSearchFilter(new SearchFilter { classNames = new string[] { "Material" }, searchArea = SearchFilter.SearchArea.AllAssets });
                 while (property.Next(default(EntityId[])))
                 {
-                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetEntityIdIfImported()) as Material;
+                    var child = InternalEditorUtility.GetLoadedObjectFromEntityId(property.GetEntityIdIfImported()) as Material;
                     if (!child)
                     {
                         // First check guid from file to avoid loading all materials in memory

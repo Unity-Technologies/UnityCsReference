@@ -231,14 +231,14 @@ namespace UnityEditor.SpeedTree.Importer
         {
             // Variables used a lot are cached, since accessing any Reader array has a non-negligeable cost. 
             m_LODCount = (uint)m_Tree.Lod.Length;
-            if(m_LODCount > LODGroupGUI.kLODColors.Length)
+            if(m_LODCount > LODGUI.kLODColors.Length)
             {
                 Debug.LogWarningFormat("Number of LOD meshes in asset ({0}) is larger than the maximum number supported by Unity GUI ({1})." +
                     "\nImporting only the first {1} LOD meshes."
-                    , m_LODCount, LODGroupGUI.kLODColors.Length);
+                    , m_LODCount, LODGUI.kLODColors.Length);
 
                 // LODGroup GUI won't draw if we're above this limit, so we prevent future assertions here.
-                m_LODCount = (uint)LODGroupGUI.kLODColors.Length;
+                m_LODCount = (uint)LODGUI.kLODColors.Length;
             }
 
             m_HasFacingData = TreeHasFacingData();

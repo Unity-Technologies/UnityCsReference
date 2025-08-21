@@ -386,7 +386,7 @@ namespace UnityEditor
                 if (m_LocalAssets.AssetReferenceAtIndex(0, out firstAssetReference))
                 {
                     m_LocalAssets.GetNewSelection(ref firstAssetReference, false, false);
-                    Selection.activeEntityId = firstAssetReference.instanceID;
+                    Selection.activeEntityId = firstAssetReference.entityId;
                 }
             }
 
@@ -909,7 +909,7 @@ namespace UnityEditor
                     newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, false).ToArray();
 
                 SetSelection(newSelection, false);
-                m_State.m_LastClickedInstanceID = assetReference.instanceID;
+                m_State.m_LastClickedInstanceID = assetReference.entityId;
             }
         }
 
@@ -1346,7 +1346,7 @@ namespace UnityEditor
                 m_pingIndex = index;
 
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
-                var assetReference = new AssetReference() { instanceID = instanceID };
+                var assetReference = new AssetReference() { entityId = instanceID };
                 var textClipping = m_LocalAssets.ListMode ? TextClipping.Overflow : TextClipping.Ellipsis;
                 GUIContent cont = new GUIContent(name);
                 string label = cont.text;

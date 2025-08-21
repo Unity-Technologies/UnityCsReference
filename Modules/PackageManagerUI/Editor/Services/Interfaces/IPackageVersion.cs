@@ -101,7 +101,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string deprecationMessage { get; }
 
-        SignatureInfo signatureInfo { get; }
+        SignatureInfo signature { get; }
+
+        TrustLevel trustLevel { get; }
 
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 

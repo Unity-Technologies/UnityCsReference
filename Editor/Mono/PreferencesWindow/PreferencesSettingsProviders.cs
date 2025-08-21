@@ -15,7 +15,6 @@ using Unity.CodeEditor;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
-using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -218,7 +217,7 @@ By default, Windows will combine these under a single taskbar item.");
 
         EditorTextRenderingMode m_EditorTextRenderingMode = EditorTextRenderingMode.SDF;
         private float m_EditorTextSharpness = 0.0f;
-        TextGeneratorType m_EditorTextGeneratorType = TextGeneratorType.Standard;
+        TextGeneratorType m_EditorTextGeneratorType = TextGeneratorType.Advanced;
         private bool m_AllowAlphaNumericHierarchy = false;
         private GOCreationCommands.PlacementMode m_CreatePlacementMode = GOCreationCommands.PlacementMode.SceneIntersection;
         private float m_ProgressDialogDelay = 3.0f;
@@ -579,7 +578,7 @@ By default, Windows will combine these under a single taskbar item.");
             m_EditorTextGeneratorType = (TextGeneratorType)EditorGUILayout.EnumPopup(GeneralProperties.editorTextGeneration, m_EditorTextGeneratorType);
             if (EditorGUI.EndChangeCheck())
             {
-                EditorPrefs.SetInt("EditorTextGeneratorType", (int)m_EditorTextGeneratorType);
+                EditorPrefs.SetInt("EditorTextGeneratorTypeV2", (int)m_EditorTextGeneratorType);
                 EditorTextSettings.SetEditorTextGeneratorType(m_EditorTextGeneratorType);
 
                 // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
@@ -1274,7 +1273,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
             EditorPrefs.SetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", m_EditorTextSharpness);
-            EditorPrefs.SetInt("EditorTextGeneratorType", (int)m_EditorTextGeneratorType);
+            EditorPrefs.SetInt("EditorTextGeneratorTypeV2", (int)m_EditorTextGeneratorType);
             EditorTextSettings.SetEditorTextRenderingMode(m_EditorTextRenderingMode);
             EditorTextSettings.SetEditorTextGeneratorType(m_EditorTextGeneratorType);
             EditorApplication.RequestRepaintAllTexts(VersionChangeType.Repaint);
@@ -1368,7 +1367,7 @@ By default, Windows will combine these under a single taskbar item.");
             m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
             m_EditorTextRenderingMode = (EditorTextRenderingMode)EditorPrefs.GetInt("EditorTextRenderingMode", (int)EditorTextRenderingMode.SDF);
             m_EditorTextSharpness = EditorPrefs.GetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", 0.0f);
-            m_EditorTextGeneratorType = (TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorType", (int)TextGeneratorType.Standard);
+            m_EditorTextGeneratorType = (TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorTypeV2", (int)TextGeneratorType.Advanced);
             EditorTextSettings.SetCurrentEditorSharpness(m_EditorTextSharpness);
 
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);

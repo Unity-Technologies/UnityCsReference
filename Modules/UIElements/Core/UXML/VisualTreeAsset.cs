@@ -1180,32 +1180,20 @@ namespace UnityEngine.UIElements
             var fromRule = fromStyleSheet.rules[vea.ruleIndex];
 
             // Add rule to StyleSheet.
-            var rules = toStyleSheet.rules;
-            var index = rules.Length;
-
-            var toRule = new StyleRule
-            {
-                properties = new StyleProperty[fromRule.properties.Length],
-                customPropertiesCount = fromRule.customPropertiesCount
-            };
-            Unity.Collections.CollectionExtensions.AddToArray(ref rules, toRule);
-
+            var index = toStyleSheet.rules.Length;
+            var toRule = toStyleSheet.AddRule();
+            toRule.customPropertiesCount = fromRule.customPropertiesCount;
 
             // Add property values to sheet.
             for (var i = 0; i < fromRule.properties.Length; ++i)
             {
                 var fromProperty = fromRule.properties[i];
-                var toProperty = new StyleProperty
-                {
-                    name = fromProperty.name,
-                    requireVariableResolve = fromProperty.requireVariableResolve,
-                    isCustomProperty = fromProperty.isCustomProperty
-                };
+                var toProperty = toRule.AddProperty(fromProperty.name);
+                toProperty.requireVariableResolve = fromProperty.requireVariableResolve;
                 StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, fromProperty, toStyleSheet, toProperty);
-                toRule.properties[i] = toProperty;
             }
             vea.ruleIndex = index;
-            toStyleSheet.rules = rules;
+            toStyleSheet.RequestRebuild();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

@@ -149,7 +149,7 @@ namespace Unity.UI.Builder
         internal override void UnsetAllAttributes()
         {
             var undoGroup = Undo.GetCurrentGroup();
-            UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
+            BuilderAssetUtilities.UndoRecordDocument(context, BuilderConstants.ChangeAttributeValueUndoMessage);
             var builder = Builder.ActiveWindow;
 
             var styleRows = attributesContainer.Query<BuilderStyleRow>().ToList();
@@ -163,11 +163,11 @@ namespace Unity.UI.Builder
                     var attributeName = GetAttributeName(fieldElement);
 
                     var currentAttributesUxmlOwner = attributesUxmlOwner;
-                    var currentSerializedData = uxmlSerializedData;
+                    var currentSerializedData = context.uxmlSerializedData;
 
                     if (fieldElement.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>() is { } dataRoot && dataRoot.dataDescription.isUxmlObject)
                     {
-                        var result = SynchronizePath(dataRoot.rootPath, false);
+                        var result = BuilderAssetUtilities.SynchronizePath(context, dataRoot.rootPath, false);
                         currentAttributesUxmlOwner = result.uxmlAsset;
                         currentSerializedData = result.serializedData as UxmlSerializedData;
 
@@ -183,7 +183,7 @@ namespace Unity.UI.Builder
                     currentAttributesUxmlOwner.RemoveAttribute(attributeName);
                     var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
                     description.SyncDefaultValue(currentSerializedData, true);
-                    CallDeserializeOnElement();
+                    BuilderAssetUtilities.CallDeserializeOnElement(context);
 
                     UnsetEnumValue(attributeName, false);
                 }
@@ -256,7 +256,7 @@ namespace Unity.UI.Builder
             attributesContainer.Add(root);
 
             // Add any additional fields from inherited types.
-            var property = m_CurrentElementSerializedObject.FindProperty(bindingSerializedPropertyRootPath);
+            var property = context.rootSerializedObject.FindProperty(bindingSerializedPropertyRootPath);
             CreateUxmlObjectField(property, uxmlSerializedDataDescription, root);
 
             if (!isDataBinding)
@@ -268,7 +268,7 @@ namespace Unity.UI.Builder
                 m_RequiresConstantUpdateField = row.GetLinkedFieldElements()[0];
             }
 
-            root.Bind(m_CurrentElementSerializedObject);
+            root.Bind(context.rootSerializedObject);
         }
 
         /// <inheritdoc/>
@@ -325,7 +325,7 @@ namespace Unity.UI.Builder
         {
             var undoGroup = Undo.GetCurrentGroup();
 
-            var property = targetView.m_CurrentElementSerializedObject.FindProperty(path);
+            var property = targetView.context.rootSerializedObject.FindProperty(path);
 
             var undoMessage = $"Modified {property.name}";
             if (property.m_SerializedObject.targetObject.name != string.Empty)
@@ -338,7 +338,7 @@ namespace Unity.UI.Builder
             path = property.propertyPath;
 
             // Extract the SerializedData and UxmlObject
-            var result = SynchronizePath(path, true);
+            var result = BuilderAssetUtilities.SynchronizePath(context, path, true);
 
             var data = result.serializedData as Binding.UxmlSerializedData;
             data.property = boundProperty;
@@ -355,11 +355,11 @@ namespace Unity.UI.Builder
             Undo.IncrementCurrentGroup();
 
             // Get the UxmlAsset for our new serialized data.
-            var resultTarget = targetView.SynchronizePath(path, true);
+            var resultTarget = BuilderAssetUtilities.SynchronizePath(targetView.context, path, true);
             Undo.IncrementCurrentGroup();
 
             // Copy attribute values
-            targetView.UndoRecordDocument("Add Binding");
+            BuilderAssetUtilities.UndoRecordDocument(targetView.context, "Add Binding");
             var bindingWindowUxmlObject = result.uxmlAsset;
             var viewUxmlObject = resultTarget.uxmlAsset;
 
@@ -372,7 +372,7 @@ namespace Unity.UI.Builder
             Undo.CollapseUndoOperations(undoGroup);
 
             // Apply changes to the element
-            targetView.CallDeserializeOnElement();
+            BuilderAssetUtilities.CallDeserializeOnElement(targetView.context);
             targetView.SendNotifyAttributesChanged();
         }
 
@@ -404,24 +404,24 @@ namespace Unity.UI.Builder
                 if (attributeDescription.isList)
                 {
                     var i = 0;
-                    var arrayProperty = targetView.m_CurrentElementSerializedObject.FindProperty($"{attributePath}.Array.data[{i}]");
+                    var arrayProperty = targetView.context.rootSerializedObject.FindProperty($"{attributePath}.Array.data[{i}]");
                     while (arrayProperty != null)
                     {
                         // Copy this uxml object's attributes.
                         var arrayPath = arrayProperty.propertyPath;
-                        var result = SynchronizePath(arrayPath, false);
-                        var resultTarget = targetView.SynchronizePath(arrayPath, true);
+                        var result = BuilderAssetUtilities.SynchronizePath(context, arrayPath, false);
+                        var resultTarget = BuilderAssetUtilities.SynchronizePath(targetView.context, arrayPath, true);
 
                         CopyAttributesRecursively(arrayPath, result.uxmlAsset, resultTarget.uxmlAsset, targetView);
 
-                        arrayProperty = targetView.m_CurrentElementSerializedObject.FindProperty($"{attributePath}.Array.data[{++i}]");
+                        arrayProperty = targetView.context.rootSerializedObject.FindProperty($"{attributePath}.Array.data[{++i}]");
                     }
                 }
                 else
                 {
                     // Copy this uxml object's attributes.
-                    var result = SynchronizePath(attributePath, false);
-                    var resultTarget = targetView.SynchronizePath(attributePath, true);
+                    var result = BuilderAssetUtilities.SynchronizePath(context, attributePath, false);
+                    var resultTarget = BuilderAssetUtilities.SynchronizePath(targetView.context, attributePath, true);
 
                     CopyAttributesRecursively(attributePath, result.uxmlAsset, resultTarget.uxmlAsset, targetView);
                 }

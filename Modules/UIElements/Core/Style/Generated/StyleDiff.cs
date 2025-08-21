@@ -86,6 +86,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleFont, Font> m_UnityFont;
         private StylePropertyData<StyleFontDefinition, FontDefinition> m_UnityFontDefinition;
         private StylePropertyData<StyleEnum<FontStyle>, FontStyle> m_UnityFontStyleAndWeight;
+        private StylePropertyData<StyleMaterialDefinition, MaterialDefinition> m_UnityMaterial;
         private StylePropertyData<StyleEnum<OverflowClipBox>, OverflowClipBox> m_UnityOverflowClipBox;
         private StylePropertyData<StyleLength, Length> m_UnityParagraphSpacing;
         private StylePropertyData<StyleInt, int> m_UnitySliceBottom;
@@ -1416,6 +1417,25 @@ namespace UnityEngine.UIElements
         }
 
         [CreateProperty]
+        public StylePropertyData<StyleMaterialDefinition, MaterialDefinition> unityMaterial
+        {
+            get => m_UnityMaterial;
+            private set
+            {
+                m_UnityMaterial.target = value.target;
+                if (m_UnityMaterial == value)
+                {
+                    value.Dispose();
+                    return;
+                }
+
+                m_UnityMaterial.Dispose();
+                m_UnityMaterial = value;
+                Notify();
+            }
+        }
+
+        [CreateProperty]
         public StylePropertyData<StyleEnum<OverflowClipBox>, OverflowClipBox> unityOverflowClipBox
         {
             get => m_UnityOverflowClipBox;
@@ -1828,6 +1848,7 @@ namespace UnityEngine.UIElements
             unityFont = ComputeStyleProperty(element, nameof(unityFont), element.style.unityFont, element.computedStyle.unityFont, in context);
             unityFontDefinition = ComputeStyleProperty(element, nameof(unityFontDefinition), element.style.unityFontDefinition, element.computedStyle.unityFontDefinition, in context);
             unityFontStyleAndWeight = ComputeStyleProperty(element, nameof(unityFontStyleAndWeight), element.style.unityFontStyleAndWeight, element.computedStyle.unityFontStyleAndWeight, in context);
+            unityMaterial = ComputeStyleProperty(element, nameof(unityMaterial), element.style.unityMaterial, element.computedStyle.unityMaterial, in context);
             unityOverflowClipBox = ComputeStyleProperty(element, nameof(unityOverflowClipBox), element.style.unityOverflowClipBox, element.computedStyle.unityOverflowClipBox, in context);
             unityParagraphSpacing = ComputeStyleProperty(element, nameof(unityParagraphSpacing), element.style.unityParagraphSpacing, element.computedStyle.unityParagraphSpacing, in context);
             unitySliceBottom = ComputeStyleProperty(element, nameof(unitySliceBottom), element.style.unitySliceBottom, element.computedStyle.unitySliceBottom, in context);
@@ -1919,6 +1940,7 @@ namespace UnityEngine.UIElements
             m_UnityFont.Dispose();
             m_UnityFontDefinition.Dispose();
             m_UnityFontStyleAndWeight.Dispose();
+            m_UnityMaterial.Dispose();
             m_UnityOverflowClipBox.Dispose();
             m_UnityParagraphSpacing.Dispose();
             m_UnitySliceBottom.Dispose();

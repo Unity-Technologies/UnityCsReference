@@ -39,7 +39,8 @@ namespace UnityEditor.Overlays
         internal const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         const string k_PanelLayout = "overlay-layout--freesize";
-        internal const string draggerName = "unity-overlay-collapse__dragger";
+        internal const string k_DraggerName = "unity-overlay-collapse__dragger";
+        internal const string k_BoxBackground = "overlay-box-background";
 
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_ActiveLayout = Layout.Panel;
@@ -95,6 +96,8 @@ namespace UnityEditor.Overlays
         }
         internal OverlayCanvasMode canvasMode => m_Canvas != null ? m_Canvas.mode : OverlayCanvasMode.Default;
 
+        internal int menuPriority { get; set; }
+        internal string menuGroup { get; set; }
         internal bool isPopup { get; set; }
 
         OverlayCanvas m_Canvas;
@@ -406,6 +409,7 @@ namespace UnityEditor.Overlays
             m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
             m_RootVisualElement.AddToClassList(ussClassName);
             m_RootVisualElement.AddManipulator(new GlobalMouseBehaviourForOverlays(this));
+            m_RootVisualElement.pickingMode = PickingMode.Ignore;
 
             var dragger = new OverlayDragger(this);
             var contextClick = new ContextualMenuManipulator(BuildContextMenu);
@@ -678,14 +682,17 @@ namespace UnityEditor.Overlays
 
         internal GUIContent GetCollapsedIconContent()
         {
-            var icon = m_CollapsedIcon == null
-                ? EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType()))
-                : m_CollapsedIcon;
+            var icon = m_CollapsedIcon == null ? GetOverlayIconTexture() : m_CollapsedIcon;
 
             if (icon != null)
                 return new GUIContent(icon);
 
             return new GUIContent(OverlayUtilities.GetSignificantLettersForIcon(displayName));
+        }
+
+        internal Texture2D GetOverlayIconTexture()
+        {
+            return EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType()));
         }
 
         private void UpdateOverlayIcons()
@@ -703,11 +710,12 @@ namespace UnityEditor.Overlays
 
             if (headerIconElement != null)
             {
-                if (image == null)
+                var headerIcon = GetOverlayIconTexture();
+                if (headerIcon == null)
                     headerIconElement.style.display = DisplayStyle.None;
                 else
                 {
-                    headerIconElement.style.backgroundImage = image;
+                    headerIconElement.style.backgroundImage = headerIcon;
                     headerIconElement.style.display = StyleKeyword.Null;
                 }
             }
@@ -837,12 +845,19 @@ namespace UnityEditor.Overlays
             }
 
             m_ModalPopup = OverlayPopup.CreateUnderOverlay(this);
-            ApplySize(m_ModalPopup.Q(className: "overlay-box-background"), true, sizeOverridden);
+            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>
             {
                 if (evt.relatedTarget is VisualElement target && (m_ModalPopup == target || m_ModalPopup.Contains(target)))
                     return;
+
+                if (evt.relatedTarget is VisualElement { userData: GenericDropdownMenu menu } &&
+                    m_ModalPopup.Contains(menu.targetElement))
+                {
+                    menu.onClose += m_ModalPopup.Focus;
+                    return;
+                }
 
                 // When the new focus is an embedded IMGUIContainer or popup window, give focus back to the modal
                 // popup so that the next focus out event has the opportunity to close the element.
@@ -915,9 +930,9 @@ namespace UnityEditor.Overlays
             rootVisualElement.EnableInClassList(k_Highlight, highlight);
         }
 
-        internal void Initialize(OverlayAttribute attrib) => Initialize(attrib.id, attrib.ussName, attrib.displayName, attrib.defaultSize, attrib.minSize, attrib.maxSize);
+        internal void Initialize(OverlayAttribute attrib) => Initialize(attrib.id, attrib.ussName, attrib.displayName, attrib.defaultSize, attrib.minSize, attrib.maxSize, attrib.priority, attrib.group);
 
-        internal void Initialize(string _id, string _uss, string _display, Vector2 defaultSize, Vector2 minSize, Vector2 maxSize)
+        internal void Initialize(string _id, string _uss, string _display, Vector2 defaultSize, Vector2 minSize, Vector2 maxSize, int menuPriority, string menuGroup)
         {
             m_RootVisualElementName = _uss;
             string name = string.IsNullOrEmpty(_display) ? m_RootVisualElementName : _display;
@@ -934,6 +949,9 @@ namespace UnityEditor.Overlays
 
             if (!float.IsNegativeInfinity(maxSize.x) && !float.IsNegativeInfinity(maxSize.y))
                 m_MaxSize = maxSize;
+
+            this.menuPriority = menuPriority;
+            this.menuGroup = menuGroup;
         }
 
         // marked obsolete by @karlh 2023/03/13

@@ -2416,11 +2416,10 @@ namespace UnityEditor
                         OnItemSelected, null);
                 }
 
-                optionsRect.x += 120;
-
                 var searchFieldRect = optionsRect;
-                searchFieldRect.x = rect.width - 300;
-                searchFieldRect.width = 300;
+                searchFieldRect.width = Math.Min(300, rect.width - optionsRect.xMax);
+                searchFieldRect.x = rect.width - searchFieldRect.width;
+                
                 var search = EditorGUI.ToolbarSearchField(searchFieldRect, m_SearchString, false);
 
                 if (search.GetHashCode() != m_SearchString.GetHashCode())

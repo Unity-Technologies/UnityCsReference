@@ -207,7 +207,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         DragVisualMode GetVisualMode(Vector3 pointerPosition, EventModifiers modifiers, ref DragPosition dragPosition)
         {
-            if (dragAndDropController == null)
+            if (dragAndDropController == null || !dragAndDropController.CanDrop())
             {
                 return DragVisualMode.Rejected;
             }

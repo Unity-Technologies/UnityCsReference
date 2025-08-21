@@ -16,42 +16,38 @@ namespace UnityEngine
 
         // Creates a ray starting at /origin/ along /direction/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Ray2D(Vector2 origin, Vector2 direction) { m_Origin = origin; m_Direction = direction.normalized; }
+        public Ray2D(in Vector2 origin, in Vector2 direction)
+        {
+            m_Origin = origin; 
+            m_Direction = direction.normalized;
+        }
 
         // The origin point of the ray.
         public Vector2 origin
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Origin; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Origin = value; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Origin;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Origin = value;
         }
 
         // The direction of the ray.
         public Vector2 direction
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Direction; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Direction = value.normalized; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Direction;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Direction = value.normalized;
         }
 
         // Returns a point at /distance/ units along the ray.
-        public Vector2 GetPoint(float distance)
-        {
-            return m_Origin + m_Direction * distance;
-        }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector2 GetPoint(float distance) => m_Origin + m_Direction * distance;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override readonly string ToString() => ToString(null, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F2";

@@ -47,20 +47,14 @@ namespace UnityEngine
 
         /// *listonly*
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override readonly string ToString() => ToString(null, null);
 
         // Returns a nicely formatted string of this color.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F3";
@@ -69,58 +63,56 @@ namespace UnityEngine
         }
 
         // used to allow Colors to be used as keys in hash tables
-        public override int GetHashCode()
-        {
-            return ((Vector4)this).GetHashCode();
-        }
+        public override readonly int GetHashCode() => ((Vector4)this).GetHashCode();
 
         // also required for being able to use Colors as keys in hash tables
-        public override bool Equals(object other)
+        public override readonly bool Equals(object other)
         {
             if (other is Color color)
                 return Equals(color);
             return false;
         }
 
-        public bool Equals(Color other)
-        {
-            return r.Equals(other.r) && g.Equals(other.g) && b.Equals(other.b) && a.Equals(other.a);
-        }
+        public readonly bool Equals(Color other) => r.Equals(other.r) && g.Equals(other.g) && b.Equals(other.b) && a.Equals(other.a);
 
         // Adds two colors together. Each component is added separately.
-        public static Color operator+(Color a, Color b) { return new Color(a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a); }
+        public static Color operator+(in Color a, in Color b) => new Color(a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a);
 
         // Subtracts color /b/ from color /a/. Each component is subtracted separately.
-        public static Color operator-(Color a, Color b) { return new Color(a.r - b.r, a.g - b.g, a.b - b.b, a.a - b.a); }
+        public static Color operator-(in Color a, in Color b) => new Color(a.r - b.r, a.g - b.g, a.b - b.b, a.a - b.a);
 
         // Multiplies two colors together. Each component is multiplied separately.
-        public static Color operator*(Color a, Color b) { return new Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a); }
+        public static Color operator*(in Color a, in Color b) => new Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
+
+        // Multiplies color /a/ and Vector4 /b/ together. Each component is multiplied separately.
+        // This supports existing Color * Vector4 multiplication usage after adding Vector4 operator*
+        public static Color operator*(in Color a, in Vector4 b) => new Color(a.r * b.x, a.g * b.y, a.b * b.z, a.a * b.w);
 
         // Multiplies color /a/ by the float /b/. Each color component is scaled separately.
-        public static Color operator*(Color a, float b) { return new Color(a.r * b, a.g * b, a.b * b, a.a * b); }
+        public static Color operator*(in Color a, float b) => new Color(a.r * b, a.g * b, a.b * b, a.a * b);
 
         // Multiplies color /a/ by the float /b/. Each color component is scaled separately.
-        public static Color operator*(float b, Color a) { return new Color(a.r * b, a.g * b, a.b * b, a.a * b); }
+        public static Color operator*(float b, in Color a) => new Color(a.r * b, a.g * b, a.b * b, a.a * b);
 
         // Divides color /a/ by the float /b/. Each color component is scaled separately.
-        public static Color operator/(Color a, float b) { return new Color(a.r / b, a.g / b, a.b / b, a.a / b); }
+        public static Color operator/(in Color a, float b) => new Color(a.r / b, a.g / b, a.b / b, a.a / b);
 
         //*undoc*
-        public static bool operator==(Color lhs, Color rhs)
-        {
+        public static bool operator==(in Color lhs, in Color rhs) =>
             // Returns false in the presence of NaN values.
-            return (Vector4)lhs == (Vector4)rhs;
-        }
+            (Vector4)lhs == (Vector4)rhs;
 
         //*undoc*
-        public static bool operator!=(Color lhs, Color rhs)
-        {
+        public static bool operator!=(in Color lhs, in Color rhs) =>
             // Returns true in the presence of NaN values.
-            return !(lhs == rhs);
-        }
+            !(lhs == rhs);
 
         // Interpolates between colors /a/ and /b/ by /t/.
-        public static Color Lerp(Color a, Color b, float t)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Color Lerp(Color a, Color b, float t) => Lerp(in a, in b, t);
+
+        // Interpolates between colors /a/ and /b/ by /t/.
+        public static Color Lerp(in Color a, in Color b, float t)
         {
             t = Mathf.Clamp01(t);
             return new Color(
@@ -132,69 +124,55 @@ namespace UnityEngine
         }
 
         // Interpolates between colors /a/ and /b/ by /t/ without clamping the interpolant
-        public static Color LerpUnclamped(Color a, Color b, float t)
-        {
-            return new Color(
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Color LerpUnclamped(Color a, Color b, float t) => LerpUnclamped(in a, in b, t);
+
+        // Interpolates between colors /a/ and /b/ by /t/ without clamping the interpolant
+        public static Color LerpUnclamped(in Color a, in Color b, float t) => new Color(
                 a.r + (b.r - a.r) * t,
                 a.g + (b.g - a.g) * t,
                 a.b + (b.b - a.b) * t,
                 a.a + (b.a - a.a) * t
             );
-        }
 
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal Color RGBMultiplied(float multiplier) { return new Color(r * multiplier, g * multiplier, b * multiplier, a); }
+        internal readonly Color RGBMultiplied(float multiplier) => new Color(r * multiplier, g * multiplier, b * multiplier, a);
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.
-        internal Color AlphaMultiplied(float multiplier) { return new Color(r, g, b, a * multiplier); }
+        internal readonly Color AlphaMultiplied(float multiplier) => new Color(r, g, b, a * multiplier);
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.
-        internal Color RGBMultiplied(Color multiplier) { return new Color(r * multiplier.r, g * multiplier.g, b * multiplier.b, a); }
+        internal readonly Color RGBMultiplied(Color multiplier) => new Color(r * multiplier.r, g * multiplier.g, b * multiplier.b, a);
 
         // The grayscale value of the color (RO)
-        public float grayscale { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return 0.299F * r + 0.587F * g + 0.114F * b; } }
+        public readonly float grayscale { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => 0.299F * r + 0.587F * g + 0.114F * b; }
 
         // A version of the color that has had the inverse gamma curve applied
-        public Color linear
+        public readonly Color linear
         {
-            get
-            {
-                return new Color(Mathf.GammaToLinearSpace(r), Mathf.GammaToLinearSpace(g), Mathf.GammaToLinearSpace(b), a);
-            }
+            get => new Color(Mathf.GammaToLinearSpace(r), Mathf.GammaToLinearSpace(g), Mathf.GammaToLinearSpace(b), a);
         }
 
         // A version of the color that has had the gamma curve applied
-        public Color gamma
+        public readonly Color gamma
         {
-            get
-            {
-                return new Color(Mathf.LinearToGammaSpace(r), Mathf.LinearToGammaSpace(g), Mathf.LinearToGammaSpace(b), a);
-            }
+            get => new Color(Mathf.LinearToGammaSpace(r), Mathf.LinearToGammaSpace(g), Mathf.LinearToGammaSpace(b), a);
         }
 
-        public float maxColorComponent
+        public readonly float maxColorComponent
         {
-            get
-            {
-                return Mathf.Max(Mathf.Max(r, g), b);
-            }
+            get => Mathf.Max(Mathf.Max(r, g), b);
         }
 
         // Colors can be implicitly converted to and from [[Vector4]].
-        public static implicit operator Vector4(Color c)
-        {
-            return new Vector4(c.r, c.g, c.b, c.a);
-        }
+        public static implicit operator Vector4(in Color c) => new Vector4(c.r, c.g, c.b, c.a);
 
         // Colors can be implicitly converted to and from [[Vector4]].
-        public static implicit operator Color(Vector4 v)
-        {
-            return new Color(v.x, v.y, v.z, v.w);
-        }
+        public static implicit operator Color(in Vector4 v) => new Color(v.x, v.y, v.z, v.w);
 
         // Access the r, g, b,a components using [0], [1], [2], [3] respectively.
         public float this[int index]
         {
-            get
+            readonly get
             {
                 switch (index)
                 {
@@ -222,7 +200,11 @@ namespace UnityEngine
         }
 
         // Convert a color from RGB to HSV color space.
-        public static void RGBToHSV(Color rgbColor, out float H, out float S, out float V)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static void RGBToHSV(Color rgbColor, out float H, out float S, out float V) => RGBToHSV(in rgbColor, out H, out S, out V);
+
+        // Convert a color from RGB to HSV color space.
+        public static void RGBToHSV(in Color rgbColor, out float H, out float S, out float V)
         {
             // when blue is highest valued
             if ((rgbColor.b > rgbColor.g) && (rgbColor.b > rgbColor.r))
@@ -277,10 +259,7 @@ namespace UnityEngine
             }
         }
 
-        public static Color HSVToRGB(float H, float S, float V)
-        {
-            return HSVToRGB(H, S, V, true);
-        }
+        public static Color HSVToRGB(float H, float S, float V) => HSVToRGB(H, S, V, true);
 
         // Convert a set of HSV values to an RGB Color.
         public static Color HSVToRGB(float H, float S, float V, bool hdr)

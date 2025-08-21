@@ -16,7 +16,15 @@ namespace UnityEngine.UIElements
     class TagFieldValueDecoratorAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class ImageFieldValueDecoratorAttribute : PropertyAttribute { }
+    class ImageFieldValueDecoratorAttribute : PropertyAttribute
+    {
+        public string name;
+
+        public ImageFieldValueDecoratorAttribute(string fieldName)
+        {
+            name = fieldName;
+        }
+    }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class FixedItemHeightDecoratorAttribute : PropertyAttribute { }

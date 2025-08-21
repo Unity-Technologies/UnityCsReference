@@ -19,7 +19,6 @@ internal class InProjectNonCompliancePage: InProjectPage
 
     public override bool ShouldInclude(IPackage package)
     {
-        return base.ShouldInclude(package)
-               && package.compliance.status != PackageComplianceStatus.Compliant;
+        return base.ShouldInclude(package) && package.state == PackageState.Restricted;
     }
 }

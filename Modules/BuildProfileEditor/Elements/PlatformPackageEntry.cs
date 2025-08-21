@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
 using PlatformPackageInfo = UnityEditor.BuildTargetDiscovery.PlatformPackageInfo;
 
 namespace UnityEditor.Build.Profile
@@ -32,6 +33,17 @@ namespace UnityEditor.Build.Profile
         public string publisher { get; private set; }
 
         /// <summary>
+        /// Package thumbnail image.
+        /// </summary>
+        public Texture thumbnail { get; private set; }
+
+        /// <summary>
+        /// Indicates whether the package has a thumbnail and should show a
+        /// placeholder if the thumbnail is not available.
+        /// </summary>
+        public bool hasThumbnail { get; private set; }
+
+        /// <summary>
         /// Required package for a build profile targeting the current platform.
         /// Will automatically be installed when a build profile is created.
         /// </summary>
@@ -53,6 +65,8 @@ namespace UnityEditor.Build.Profile
             displayName = string.Empty;
             description = string.Empty;
             publisher = string.Empty;
+            thumbnail = null;
+            hasThumbnail = false;
             shouldInstalled = false;
             required = false;
             isInstalled = false;
@@ -62,12 +76,19 @@ namespace UnityEditor.Build.Profile
         /// <param name="selected">Set when package is toggled on for installation.</param>
         /// <param name="required"><see cref="required"/></param>
         /// <param name="isInstalled"><see cref="isInstalled"/></param>
-        public PlatformPackageEntry(PlatformPackageInfo packageInfo, bool selected, bool required, bool isInstalled)
+        public PlatformPackageEntry(PlatformPackageInfo platformPackageInfo, bool selected, bool required, bool isInstalled)
         {
-            qualifiedName = packageInfo.qualifiedName;
-            displayName = packageInfo.displayName;
-            description = packageInfo.description;
-            publisher = packageInfo.publisher;
+            qualifiedName = platformPackageInfo.qualifiedName;
+            var serviceInfoProvider = BuildProfileContext.packageServiceInfoProvider;
+            var packageInfo = serviceInfoProvider.GetPackageInfo(qualifiedName);
+            displayName = packageInfo != null ? packageInfo.displayName : platformPackageInfo.displayName;
+            description = packageInfo != null ? packageInfo.description : platformPackageInfo.description;
+
+            var thumbnail = serviceInfoProvider.GetThumbnail(qualifiedName);
+            this.thumbnail = thumbnail != null ? thumbnail : null;
+            hasThumbnail = platformPackageInfo.hasThumbnail;
+  
+            publisher = platformPackageInfo.publisher;
             shouldInstalled = required || selected;
             this.required = required;
             this.isInstalled = isInstalled;

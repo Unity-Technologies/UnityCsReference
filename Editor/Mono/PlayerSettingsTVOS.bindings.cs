@@ -98,6 +98,17 @@ namespace UnityEditor
 
             internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
 
+            internal static void MakeOsVersionValid(ref Version version)
+            {
+                string ver = version.ToString();
+                if (!ValidateVersionString(ref ver))
+                    version = new Version(ver);
+            }
+
+            [StaticAccessor("EditorOnlyPlayerSettings", StaticAccessorType.DoubleColon)]
+            [NativeMethod("ValidatetvOSVersionString")]
+            static extern bool ValidateVersionString(ref string version);
+
             public static extern string targetOSVersionString
             {
                 [NativeMethod("GettvOSTargetOSVersion")]

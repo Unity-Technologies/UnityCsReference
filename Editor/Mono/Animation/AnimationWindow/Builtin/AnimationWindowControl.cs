@@ -19,6 +19,14 @@ namespace UnityEditor.AnimationWindowBuiltin
     [Serializable]
     class AnimationWindowControl : IAnimationWindowController, IAnimationContextualResponder
     {
+        public AnimationWindowControl()
+        {
+            if (AnimationMode.GetDriver() is MainDriver mainDriver)
+                m_Driver = mainDriver;
+        }
+
+        class MainDriver: AnimationModeDriver {}
+        class CandidateDriver: AnimationModeDriver {}
         class CandidateRecordingState : IAnimationRecordingState
         {
             public GameObject activeGameObject { get; private set; }
@@ -688,7 +696,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
             if (m_Driver == null)
             {
-                m_Driver = ScriptableObject.CreateInstance<AnimationModeDriver>();
+                m_Driver = ScriptableObject.CreateInstance<MainDriver>();
                 m_Driver.hideFlags = HideFlags.HideAndDontSave;
                 m_Driver.name = "AnimationWindowDriver";
                 m_Driver.isKeyCallback += (Object target, string propertyPath) =>
@@ -718,7 +726,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         {
             if (m_CandidateDriver == null)
             {
-                m_CandidateDriver = ScriptableObject.CreateInstance<AnimationModeDriver>();
+                m_CandidateDriver = ScriptableObject.CreateInstance<CandidateDriver>();
                 m_CandidateDriver.name = "AnimationWindowCandidateDriver";
             }
 

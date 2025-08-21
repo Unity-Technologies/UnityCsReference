@@ -71,6 +71,7 @@ namespace NiceIO
 
         [DataMember]
         private readonly string _path;
+        private int _hashCode = int.MinValue;
 
         static NPath Empty => new NPath("");
 
@@ -713,19 +714,28 @@ namespace NiceIO
         /// <returns>A hash value for this NPath.</returns>
         public override int GetHashCode()
         {
-            if (k_IsCaseSensitiveFileSystem)
-                return _path.GetHashCode();
-
-            uint hash = 27644437;
-            for (int i = 0, len = _path.Length; i < len; ++i)
+            if (_hashCode == int.MinValue)
             {
-                uint c = _path[i];
-                if (c > 0x80) c = 0x80; // All non-ASCII chars may (potentially) compare Equal.
-                c |= 0x20; // ASCII case folding.
-                hash ^= (hash << 5) ^ c;
+	            if (k_IsCaseSensitiveFileSystem)
+	            {
+		            _hashCode = _path.GetHashCode();
+	            }
+	            else
+	            {
+		            uint hash = 27644437;
+		            for (int i = 0, len = _path.Length; i < len; ++i)
+		            {
+			            uint c = _path[i];
+			            if (c > 0x80) c = 0x80; // All non-ASCII chars may (potentially) compare Equal.
+			            c |= 0x20; // ASCII case folding.
+			            hash ^= (hash << 5) ^ c;
+		            }
+
+		            _hashCode = unchecked((int)hash);
+	            }
             }
 
-            return unchecked((int)hash);
+            return _hashCode;
         }
 
         /// <summary>

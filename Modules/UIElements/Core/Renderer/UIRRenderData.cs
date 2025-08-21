@@ -55,11 +55,12 @@ namespace UnityEngine.UIElements.UIR
         public BasicNode<MeshHandle> extraMesh;
     }
 
-    struct TextureEntry
+    struct GraphicEntry
     {
         public Texture source;
         public TextureId actual;
         public bool replaced;
+        public VectorImage vectorImage;
     }
 
     // IMPORTANT: Initialize all fields in this struct in RenderTreeManager.InitRenderData()
@@ -92,7 +93,7 @@ namespace UnityEngine.UIElements.UIR
         public float compositeOpacity;
         public float backgroundAlpha;
 
-        public BasicNode<TextureEntry> textures;
+        public BasicNode<GraphicEntry> graphicEntries;
 
         public RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
         public static bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
@@ -149,7 +150,7 @@ namespace UnityEngine.UIElements.UIR
             textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
             compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
             backgroundAlpha = 0.0f;
-            textures = null;
+            graphicEntries = null;
             pendingRepaint = false;
             pendingHierarchicalRepaint = false;
             clippingRect = Rect.zero;
@@ -176,7 +177,7 @@ namespace UnityEngine.UIElements.UIR
             lastTailCommand = null;
             headMesh = null;
             tailMesh = null;
-            textures = null;
+            graphicEntries = null;
         }
 
         public bool isGroupTransform

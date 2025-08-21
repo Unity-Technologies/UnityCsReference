@@ -582,7 +582,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetHeights", HasExplicitThis = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private float[,] Internal_GetHeights(int xBase, int yBase, int width, int height);
 
         public void SetHeights(int xBase, int yBase, float[,] heights)
@@ -689,7 +689,7 @@ namespace UnityEngine
         extern private void Internal_SetHoles(int xBase, int yBase, int width, int height, bool[,] holes);
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetHoles", HasExplicitThis = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private bool[,] Internal_GetHoles(int xBase, int yBase, int width, int height);
 
         [FreeFunction(k_ScriptingInterfacePrefix + "IsHole", HasExplicitThis = true)]
@@ -844,7 +844,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailLayer", HasExplicitThis = true)]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer);
 
         public int[,] GetDetailLayer(Vector2Int positionBase, Vector2Int size, int layer)
@@ -951,7 +951,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetAlphamaps", HasExplicitThis = true)]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private float[,,] Internal_GetAlphamaps(int x, int y, int width, int height);
 
         public int alphamapResolution
@@ -1064,10 +1064,11 @@ namespace UnityEngine
         extern public TerrainLayer[] terrainLayers
         {
             [FreeFunction(k_ScriptingInterfacePrefix + "GetTerrainLayers", HasExplicitThis = true)]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayers", HasExplicitThis = true)]
-            [param: Unmarshalled] set;
+            [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)] set;
         }
 
         public void SetTerrainLayersRegisterUndo(TerrainLayer[] terrainLayers, string undoName)
@@ -1082,7 +1083,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayersRegisterUndo", HasExplicitThis = true)]
-        extern private void Internal_SetTerrainLayersRegisterUndo([Unmarshalled] TerrainLayer[] terrainLayers, string undoName);
+        extern private void Internal_SetTerrainLayersRegisterUndo([UnityMarshalAs(NativeType.ScriptingObjectPtr)] TerrainLayer[] terrainLayers, string undoName);
 
         [NativeName(k_TreeDatabasePrefix + "AddTree")]
         extern internal void AddTree(ref TreeInstance tree);

@@ -11,7 +11,7 @@ namespace UnityEditor.Search
 {
     static class SearchButton
     {
-        const string k_Path = "Editor Utility/Search";
+        const string k_Path = "Editor Controls/Search";
         const string k_CommandName = "OpenQuickSearch";
 
         static SearchButton()
@@ -39,7 +39,7 @@ namespace UnityEditor.Search
         }
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, true, defaultDockIndex = 2, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             return new MainToolbarButton(new MainToolbarContent("", EditorGUIUtility.FindTexture("Search Icon"), GetTooltipText()), () => CommandService.Execute(k_CommandName))

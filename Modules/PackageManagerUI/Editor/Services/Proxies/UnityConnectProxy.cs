@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         string GetConfigurationURL(CloudConfigUrl config);
         void ShowLogin();
         void OpenAuthorizedURLInWebBrowser(string url);
+        OrganizationInfo[] ParseOrganizationInfos();
     }
 
     [Serializable]
@@ -80,6 +81,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OpenAuthorizedURLInWebBrowser(string url)
         {
             UnityConnect.instance.OpenAuthorizedURLInWebBrowser(url);
+        }
+
+        public OrganizationInfo[] ParseOrganizationInfos()
+        {
+            var foreignKeys = UnityConnect.instance.userInfo.organizationForeignKeys.Split(',');
+            var parsedOrganizationInfos = new OrganizationInfo[foreignKeys.Length];
+            for (var i = 0; i < foreignKeys.Length; i++)
+            {
+                var name = UnityConnect.instance.userInfo.organizationNames[i];
+                var orgInfo = new OrganizationInfo
+                {
+                    name = name,
+                    foreignKey = foreignKeys[i]
+                };
+                parsedOrganizationInfos[i] = orgInfo;
+            }
+
+            return parsedOrganizationInfos;
         }
 
         private void OnUserStateChanged(UserInfo newInfo)

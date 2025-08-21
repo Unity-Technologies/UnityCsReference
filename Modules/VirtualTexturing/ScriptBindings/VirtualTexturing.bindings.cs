@@ -46,7 +46,7 @@ namespace UnityEngine.Rendering
 
             [NativeThrows] extern internal static int tileSize { get; }
 
-            [NativeThrows] extern public static bool ValidateTextureStack([NotNull][Unmarshalled] Texture[] textures, out string errorMessage);
+            [NativeThrows] extern public static bool ValidateTextureStack([NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Texture[] textures, out string errorMessage);
 
             [NativeThrows] extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 

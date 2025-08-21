@@ -168,38 +168,8 @@ namespace UnityEditor.Overlays
         public OverlayDragger(Overlay overlay)
         {
             m_Overlay = overlay;
-            m_Overlay.canvasModeChanged += ApplyCanvasMode;
-            ApplyCanvasMode();
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
             m_Active = false;
-        }
-
-        void ApplyCanvasMode()
-        {
-            activators.Clear();
-            if (m_Overlay.canvasMode != OverlayCanvasMode.MainToolbar)
-            {
-                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-            }
-            else
-            {
-                if (Application.platform == RuntimePlatform.OSXEditor ||
-                    Application.platform == RuntimePlatform.OSXPlayer)
-                {
-                    activators.Add(new ManipulatorActivationFilter
-                    { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
-                }
-                else
-                {
-                    activators.Add(new ManipulatorActivationFilter
-                    { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
-                }
-            }
-
-            if (target != null)
-            {
-                UnregisterCallbacksFromTarget();
-                RegisterCallbacksOnTarget();
-            }
         }
 
         protected override void RegisterCallbacksOnTarget()
@@ -241,7 +211,7 @@ namespace UnityEditor.Overlays
             m_DockOperation = new DockingOperation(canvas, m_Overlay);
 
             m_StartMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
-            var dragger = m_Overlay.rootVisualElement.Q(Overlay.draggerName);
+            var dragger = m_Overlay.rootVisualElement.Q(Overlay.k_DraggerName);
 
             m_StartLeftCornerPosition = dragger is not null ? dragger.worldBound.position : m_Overlay.rootVisualElement.worldBound.position;
 

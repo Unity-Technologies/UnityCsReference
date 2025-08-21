@@ -85,7 +85,7 @@ namespace Unity.UI.Builder
             private set
             {
                 m_IsCreatingBinding = value;
-                m_AttributesView.callInitOnValueChange = !value;
+                m_AttributesView.context.callInitOnValueChange = !value;
             }
         }
 
@@ -170,7 +170,7 @@ namespace Unity.UI.Builder
 
         void OnCreateBindingAccepted()
         {
-            m_AttributesView.TransferBindingInstance($"{m_AttributesView.serializedRootPath}.bindings", m_Inspector.attributesSection, bindingPropertyName);
+            m_AttributesView.TransferBindingInstance($"{m_AttributesView.context.serializedBasePath}.bindings", m_Inspector.attributesSection, bindingPropertyName);
         }
 
         /// <summary>
@@ -310,7 +310,7 @@ namespace Unity.UI.Builder
             m_AttributesView.SetAttributesOwnerFromCopy(m_Inspector.document.visualTreeAsset, currentVisualElement);
 
             // Add the Binding serialized data to the current element's binding list.
-            var property = m_AttributesView.m_CurrentElementSerializedObject.FindProperty($"{m_AttributesView.serializedRootPath}.bindings");
+            var property = m_AttributesView.context.rootSerializedObject.FindProperty($"{m_AttributesView.context.serializedBasePath}.bindings");
 
             var undoMessage = $"Modified {property.name}";
             if (property.m_SerializedObject.targetObject.name != string.Empty)
@@ -328,12 +328,12 @@ namespace Unity.UI.Builder
             m_AttributesView.bindingUxmlSerializedDataDescription = description;
 
             // Update the uxml asset
-            using (new BuilderUxmlAttributesView.DisableUndoScope(m_AttributesView))
+            using (new BuilderUxmlAttributesEditingContext.DisableUndoScope(m_AttributesView.context))
             {
                 if (bindingModeAttribute != null)
                 {
                     // need to update the uxmlAsset with the binding mode change
-                    var result = m_AttributesView.SynchronizePath(uxmlObjectPropertyPath, true);
+                    var result = BuilderAssetUtilities.SynchronizePath(m_AttributesView.context, uxmlObjectPropertyPath, true);
                     result.uxmlAsset?.SetAttribute("binding-mode", BindingMode.ToTarget.ToString());
                 }
             }
@@ -361,8 +361,8 @@ namespace Unity.UI.Builder
             m_AttributesView.SetAttributesOwner(m_Inspector.document.visualTreeAsset, currentVisualElement);
 
             // Find the binding
-            var bindingsPath = $"{m_Inspector.attributesSection.serializedRootPath}.bindings";
-            var bindingsProperty = m_Inspector.attributesSection.m_CurrentElementSerializedObject.FindProperty(bindingsPath);
+            var bindingsPath = $"{m_Inspector.attributesSection.context.serializedBasePath}.bindings";
+            var bindingsProperty = m_Inspector.attributesSection.context.rootSerializedObject.FindProperty(bindingsPath);
             for (var i = 0; i < bindingsProperty.arraySize; i++)
             {
                 var item = bindingsProperty.GetArrayElementAtIndex(i);
@@ -383,7 +383,7 @@ namespace Unity.UI.Builder
         {
             // if we're undoing the creation of the binding window, we need to close the view
             // we also need to wait for the selection to be restored before refreshing the view
-            var validBinding = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyRootPath)?.managedReferenceValue != null;
+            var validBinding = m_AttributesView.context.rootSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyRootPath)?.managedReferenceValue != null;
             if (Builder.ActiveWindow.isInUndoRedo && validBinding && selectedVisualElement != null)
             {
                 m_AttributesView.RefreshAllAttributeOverrideStyles();
@@ -415,7 +415,7 @@ namespace Unity.UI.Builder
 
             try
             {
-                var validBinding = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyRootPath)?.managedReferenceValue != null;
+                var validBinding = m_AttributesView.context.rootSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyRootPath)?.managedReferenceValue != null;
                 if (selectedVisualElement != null && validBinding)
                 {
                     var currentVea = selectedVisualElement.GetVisualElementAsset();

@@ -14,7 +14,7 @@ namespace UnityEngine
     public struct GradientColorKey
     {
         // Gradient color key
-        public GradientColorKey(Color col, float time)
+        public GradientColorKey(in Color col, float time)
         {
             color = col;
             this.time = time;

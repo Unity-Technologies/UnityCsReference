@@ -4600,6 +4600,32 @@ namespace UnityEditor
             return property.ValidateObjectReferenceValue(obj);
         }
 
+        private static Object SelectReferenceFromComponentsIfNecessary(Object[] references, Type objType)
+        {
+            if (objType != null)
+            {
+                // if we got a reference list with gameobject(s), turn that into the components existing
+                // on the first one if the objType is something that can only be implemented on components
+                if (references[0] is GameObject go && (objType.IsInterface || typeof(Component).IsAssignableFrom(objType)))
+                {
+                    references = go.GetComponents(typeof(Component));
+                }
+                foreach (Object i in references)
+                {
+                    if (i != null && objType.IsAssignableFrom(i.GetType()))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else
+            {
+                return references[0];
+            }
+
+            return null;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Object ValidateObjectFieldAssignment(Object[] references, Type objType, SerializedProperty property, ObjectFieldValidatorOptions options)
         {
@@ -4620,25 +4646,7 @@ namespace UnityEditor
                         if (EditorSceneManager.preventCrossSceneReferences && CheckForCrossSceneReferencing(references[0], property.serializedObject.targetObject))
                             return null;
 
-                        if (objType != null)
-                        {
-                            if (references[0] is GameObject && typeof(Component).IsAssignableFrom(objType))
-                            {
-                                GameObject go = (GameObject)references[0];
-                                references = go.GetComponents(typeof(Component));
-                            }
-                            foreach (Object i in references)
-                            {
-                                if (i != null && objType.IsAssignableFrom(i.GetType()))
-                                {
-                                    return i;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            return references[0];
-                        }
+                        return SelectReferenceFromComponentsIfNecessary(references, objType);
                     }
 
                     // If array, test against the target arrayElementType, if not test against the target Type.
@@ -4653,18 +4661,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    if (references[0] != null && references[0] is GameObject && typeof(Component).IsAssignableFrom(objType))
-                    {
-                        GameObject go = (GameObject)references[0];
-                        references = go.GetComponents(typeof(Component));
-                    }
-                    foreach (Object i in references)
-                    {
-                        if (i != null && objType.IsAssignableFrom(i.GetType()))
-                        {
-                            return i;
-                        }
-                    }
+                    return SelectReferenceFromComponentsIfNecessary(references, objType);
                 }
             }
             return null;
@@ -6128,9 +6125,9 @@ namespace UnityEditor
             int enabled = -1;
             foreach (Object targetObj in targetObjs)
             {
-                if (comp is MonoBehaviour)
+                if (comp is MonoBehaviour mb)
                 {
-                    enabled = 1;
+                    enabled = mb.enabled ? 1 : 0;
                 }
                 else
                 {

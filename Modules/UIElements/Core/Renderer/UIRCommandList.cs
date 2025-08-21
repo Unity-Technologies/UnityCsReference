@@ -34,6 +34,8 @@ namespace UnityEngine.UIElements.UIR
 
     class CommandList : IDisposable
     {
+        static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(CommandList)}");
+
         public VisualElement m_Owner; // Might be null if non-initialized or for the default command list.
         readonly IntPtr m_VertexDecl;
         readonly IntPtr m_StencilState;
@@ -51,7 +53,7 @@ namespace UnityEngine.UIElements.UIR
         {
             m_VertexDecl = vertexDecl;
             m_StencilState = stencilState;
-            m_DrawRanges = new(1024);
+            m_DrawRanges = new(1024, k_MemoryLabel);
             handle = GCHandle.Alloc(this);
         }
 

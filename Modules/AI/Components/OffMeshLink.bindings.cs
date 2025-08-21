@@ -31,7 +31,7 @@ namespace UnityEngine.AI
     {
         internal int m_Valid;
         internal int m_Activated;
-        internal int m_InstanceID;
+        internal EntityId m_InstanceID;
         internal OffMeshLinkType m_LinkType;
         internal Vector3 m_StartPos;
         internal Vector3 m_EndPos;
@@ -55,6 +55,6 @@ namespace UnityEngine.AI
         public Object owner => GetLinkOwnerInternal(m_InstanceID);
 
         [FreeFunction("OffMeshLinkScriptBindings::GetLinkOwnerInternal")]
-        static extern Object GetLinkOwnerInternal(int instanceID);
+        static extern Object GetLinkOwnerInternal(EntityId instanceID);
     }
 }

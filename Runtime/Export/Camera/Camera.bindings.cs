@@ -410,7 +410,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("CameraScripting::SubmitRenderRequests", HasExplicitThis = true)]  extern private void SubmitRenderRequestsInternal(object requests);
-        [FreeFunction("CameraScripting::SubmitBuiltInObjectIDRenderRequest", HasExplicitThis = true)] [NativeConditional("UNITY_EDITOR")] [return: Unmarshalled]
+        [FreeFunction("CameraScripting::SubmitBuiltInObjectIDRenderRequest", HasExplicitThis = true)] [NativeConditional("UNITY_EDITOR")] [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private UnityEngine.Object[] SubmitBuiltInObjectIDRenderRequest(
             RenderTexture target,
             int mipLevel,
@@ -529,6 +529,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("CameraScripting::GetCommandBuffers", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern internal UnityEngine.Rendering.CommandBuffer[] GetCommandBuffersImpl(UnityEngine.Rendering.CameraEvent evt);
 	    internal uint m_NonSerializedVersion;
     }

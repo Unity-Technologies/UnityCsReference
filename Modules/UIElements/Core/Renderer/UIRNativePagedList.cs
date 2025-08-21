@@ -22,15 +22,15 @@ namespace UnityEngine.UIElements.UIR
         List<NativeArray<T>> m_Pages = new List<NativeArray<T>>(8);
         NativeArray<T> m_LastPage;
         int m_CountInLastPage;
-        Allocator m_FirstPageAllocator;
-        Allocator m_OtherPagesAllocator;
+        readonly NativeArrayAllocator m_FirstPageAllocator;
+        readonly NativeArrayAllocator m_OtherPagesAllocator;
 
-        public NativePagedList(int poolCapacity, Allocator firstPageAllocator = Allocator.Persistent, Allocator otherPagesAllocator = Allocator.Persistent)
+        public NativePagedList(int poolCapacity, string profilerName, Allocator firstPageAllocator = Allocator.Persistent, Allocator otherPagesAllocator = Allocator.Persistent)
         {
             Debug.Assert(poolCapacity > 0);
             k_PoolCapacity = Mathf.NextPowerOfTwo(poolCapacity);
-            m_FirstPageAllocator = firstPageAllocator;
-            m_OtherPagesAllocator = otherPagesAllocator;
+            m_FirstPageAllocator = new NativeArrayAllocator(profilerName, firstPageAllocator);
+            m_OtherPagesAllocator = new NativeArrayAllocator(profilerName, otherPagesAllocator);
         }
 
         public void Add(ref T data)
@@ -43,8 +43,8 @@ namespace UnityEngine.UIElements.UIR
             }
 
             int newPageSize = m_Pages.Count > 0 ? m_LastPage.Length << 1 : k_PoolCapacity;
-            Allocator allocator = m_Pages.Count == 0 ? m_FirstPageAllocator : m_OtherPagesAllocator;
-            m_LastPage = new NativeArray<T>(newPageSize, allocator, NativeArrayOptions.UninitializedMemory);
+            NativeArrayAllocator allocator = m_Pages.Count == 0 ? m_FirstPageAllocator : m_OtherPagesAllocator;
+            m_LastPage = allocator.CreateArray(newPageSize, NativeArrayOptions.UninitializedMemory);
             m_Pages.Add(m_LastPage);
 
             m_LastPage[0] = data;
@@ -100,6 +100,34 @@ namespace UnityEngine.UIElements.UIR
             }
 
             m_CountInLastPage = 0;
+        }
+
+        // TempAllocator does not require labels, this struct helps to use the correct way to build a NativeArray depending on the allocator used.
+        struct NativeArrayAllocator
+        {
+            Allocator m_Allocator;
+            MemoryLabel m_MemoryLabel;
+
+            public NativeArrayAllocator(string profilerName, Allocator allocator)
+            {
+                if (MemoryLabel.SupportsAllocator(allocator))
+                {
+                    m_Allocator = default;
+                    m_MemoryLabel = new MemoryLabel(nameof(UIElements), profilerName, allocator);
+                }
+                else
+                {
+                    m_Allocator = allocator;
+                    m_MemoryLabel = default;
+                }
+            }
+            public NativeArray<T> CreateArray(int length, NativeArrayOptions options = NativeArrayOptions.ClearMemory)
+            {
+                if (m_MemoryLabel.IsCreated)
+                    return new NativeArray<T>(length, m_MemoryLabel, options);
+                else
+                    return new NativeArray<T>(length, m_Allocator, options);
+            }
         }
 
         #region Dispose Pattern

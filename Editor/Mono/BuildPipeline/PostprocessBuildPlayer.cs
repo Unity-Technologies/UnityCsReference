@@ -248,8 +248,9 @@ namespace UnityEditor
             {
                 System.Console.WriteLine("Deployment aborted");
             }
-            catch (NoTargetsFoundException)
+            catch (NoTargetsFoundException e)
             {
+                Debug.LogException(e);
                 throw new UnityException(string.Format("Could not find any valid targets to launch on for {0}", buildTarget));
             }
 

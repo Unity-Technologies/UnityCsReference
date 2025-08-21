@@ -180,6 +180,7 @@ namespace UnityEngine.UIElements
 
             generateVisualContent += OnGenerateVisualContent;
             edition.GetDefaultValueType = GetDefaultValueType;
+
         }
         string GetDefaultValueType() { return string.Empty; }
 
@@ -208,29 +209,34 @@ namespace UnityEngine.UIElements
             {
                 switch (evt)
                 {
-                    case GeometryChangedEvent @event:
-                        OnGeometryChanged(@event);
+                    case GeometryChangedEvent:
+                        UpdateVisibleText();
                         return;
-                    case AttachToPanelEvent @event:
-                        OnAttachToPanel(@event);
+
+                    case AttachToPanelEvent ape:
+                        OnAttachToPanel(ape);
                         return;
-                    case DetachFromPanelEvent @event:
-                        OnDetachFromPanel(@event);
+                    case DetachFromPanelEvent dpe:
+                        OnDetachFromPanel(dpe);
                         return;
                 }
             }
 
-            EditionHandleEvent(evt);
+            if (selection.isSelectable)
+            {
+                EditionHandleEvent(evt);
+            }
         }
 
-        private void OnGeometryChanged(GeometryChangedEvent e)
-        {
-            UpdateVisibleText();
-        }
 
         void OnAttachToPanel(AttachToPanelEvent attachEvent)
         {
-            (attachEvent.destinationPanel as BaseVisualElementPanel)?.liveReloadSystem.RegisterTextElement(this);
+            // All panels should account for TextElement  LiveReload in the Editor
+            // And otherwise we only register them if ATG is effectively used
+            {
+                (attachEvent.destinationPanel as BaseVisualElementPanel)?.textElementRegistry.Value.Add(this);
+            }
+
             uitkTextHandle.ReleaseResourcesIfPossible();
             // The Hyperlink getter on the panel is not thread safe
             uitkTextHandle.atgHyperlinkColor = (panel as Panel)?.HyperlinkColor ?? Color.blue;
@@ -240,7 +246,9 @@ namespace UnityEngine.UIElements
         {
             uitkTextHandle.RemoveFromPermanentCache();
             uitkTextHandle.RemoveFromTemporaryCache();
-            (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
+            var textRegistry = (detachEvent.originPanel as BaseVisualElementPanel)?.textElementRegistry;
+            if (textRegistry != null && textRegistry.IsValueCreated)
+                textRegistry.Value.Remove(this);
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
 
@@ -400,6 +408,8 @@ namespace UnityEngine.UIElements
 
             if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
                 isElided = uitkTextHandle.IsElided();
+
+            UpdateTooltip();
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
@@ -413,12 +423,12 @@ namespace UnityEngine.UIElements
             float extraWidth = Mathf.Clamp(paddingRight, 1.0f / scaledPixelsPerPoint, 1.0f);
 
             // Try full size first
-            var size = MeasureTextSize(drawText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
+            var size = MeasureTextSize(drawText, float.NaN, MeasureMode.Undefined, float.NaN, MeasureMode.Undefined);
             if (size.x <= (width + extraWidth) || string.IsNullOrEmpty(ellipsisText))
                 return drawText;
 
             var minText = drawText.Length > 1 ? ellipsisText : drawText;
-            var minSize = MeasureTextSize(minText, 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
+            var minSize = MeasureTextSize(minText, float.NaN, MeasureMode.Undefined, float.NaN, MeasureMode.Undefined);
             if (minSize.x >= width)
                 return minText;
 
@@ -444,8 +454,8 @@ namespace UnityEngine.UIElements
                     truncatedText = (mid - 1 <= 0 ? "" : drawText.Substring(0, mid - 1)) + ellipsisText +
                         (drawTextMax - (mid - 1) <= 0 ? "" : drawText.Substring(drawTextMax - (mid - 1)));
 
-                size = MeasureTextSize(truncatedText, 0, MeasureMode.Undefined,
-                    0, MeasureMode.Undefined);
+                size = MeasureTextSize(truncatedText, float.NaN, MeasureMode.Undefined,
+                    float.NaN, MeasureMode.Undefined);
 
                 if (Math.Abs(size.x - width) < UIRUtility.k_Epsilon)
                     return truncatedText;
@@ -543,7 +553,7 @@ namespace UnityEngine.UIElements
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
-            return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode);
+            return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode);
         }
 
         /// <summary>
@@ -558,12 +568,19 @@ namespace UnityEngine.UIElements
         /// <returns>The horizontal and vertical size needed to display the text string.</returns>
         internal Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
         {
-            return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode, fontsize);
+            return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, fontsize);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
-            return TextUtilities.MeasureVisualElementTextSize(this, renderedText, desiredWidth, widthMode, desiredHeight, heightMode);
+            if (TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                return TextUtilities.MeasureVisualElementTextSize(this, renderedTextString, desiredWidth, widthMode, desiredHeight, heightMode);
+            }
+            else
+            {
+                return TextUtilities.MeasureVisualElementTextSize(this, renderedText, desiredWidth, widthMode, desiredHeight, heightMode);
+            }
         }
 
         //INotifyValueChange
@@ -602,6 +619,11 @@ namespace UnityEngine.UIElements
             set => ((INotifyValueChanged<string>) this).value = value;
         }
 
+        static internal bool AnySizeAutoOrNone(ComputedStyle computedStyle)
+        {
+            return computedStyle.height.IsAuto() || computedStyle.height.IsNone() || computedStyle.width.IsAuto() || computedStyle.width.IsNone();
+        }
+
         void INotifyValueChanged<string>.SetValueWithoutNotify(string newValue)
         {
             newValue = ((ITextEdition)this).CullString(newValue);
@@ -611,7 +633,7 @@ namespace UnityEngine.UIElements
                 m_Text = newValue;
 
                 //No need to dirty the layout if the element's size is not affected by the text change
-                if (computedStyle.height.IsAuto() || computedStyle.height.IsNone() || (computedStyle.width.IsAuto() || computedStyle.width.IsNone())  )
+                if (AnySizeAutoOrNone(computedStyle))
                     IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 else
                     IncrementVersion(VersionChangeType.Repaint);

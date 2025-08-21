@@ -57,10 +57,10 @@ namespace UnityEditor.Search
                 return; // Already indexed
 
             var prefabType = PrefabUtility.GetPrefabAssetType(prefab);
-            indexer.IndexProperty(documentIndex, "prefab", prefabType.ToString(), saveKeyword: true, exact: true);
+            indexer.IndexProperty(documentIndex, "prefab", prefabType.ToString(), saveKeyword: true);
 
             if (prefabType != PrefabAssetType.NotAPrefab)
-                indexer.IndexProperty(documentIndex, "prefab", "any", saveKeyword: true, exact: true);
+                indexer.IndexProperty(documentIndex, "prefab", "any", saveKeyword: true);
 
             var rootPrefab = PrefabUtility.GetOriginalSourceOrVariantRoot(prefab);
             if (rootPrefab != null && rootPrefab != prefab)
@@ -72,7 +72,7 @@ namespace UnityEditor.Search
 
             if (rootPrefab == null || source == null)
             {
-                indexer.IndexProperty(documentIndex, "prefab", "base", saveKeyword: true, exact: true);
+                indexer.IndexProperty(documentIndex, "prefab", "base", saveKeyword: true);
             }
 
             var instanceRoot = PrefabUtility.GetPrefabInstanceHandle(prefab);
@@ -82,9 +82,9 @@ namespace UnityEditor.Search
             if (instanceRoot != null && indexerDictionary.TryGetValue(instanceRootId, out var data))
             {
                 if (data.isModified)
-                    indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+                    indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true);
                 if (data.isAltered)
-                    indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+                    indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true);
             }
             else
             {
@@ -94,9 +94,9 @@ namespace UnityEditor.Search
                     isAltered = PrefabUtility.HasPrefabInstanceAnyOverrides(prefab, true)
                 };
                 if (newData.isModified)
-                    indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true, exact: true);
+                    indexer.IndexProperty(documentIndex, "prefab", "modified", saveKeyword: true);
                 if (newData.isAltered)
-                    indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true, exact: true);
+                    indexer.IndexProperty(documentIndex, "prefab", "altered", saveKeyword: true);
 
                 if (instanceRoot != null)
                     indexerDictionary.TryAdd(instanceRootId, newData);
@@ -173,7 +173,7 @@ namespace UnityEditor.Search
             foreach (var e in clip.events)
             {
                 indexer.AddNumber("time", e.time, indexer.settings.baseScore, context.documentIndex);
-                indexer.AddProperty("function", e.functionName.ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: false);
+                indexer.AddProperty("function", e.functionName.ToLowerInvariant(), context.documentIndex, saveKeyword: true);
             }
         }
 
@@ -207,18 +207,18 @@ namespace UnityEditor.Search
             if (!(context.target is Texture2D texture) || !indexer.settings.options.properties)
                 return;
 
-            indexer.IndexProperty<TextureFormat, Texture2D>(context.documentIndex, "format", texture.format.ToString(), saveKeyword: true, exact: true, "Format", string.Empty);
-            indexer.IndexProperty<FilterMode, Texture2D>(context.documentIndex, "filtermode", texture.filterMode.ToString(), saveKeyword: true, exact: true, "Filter Mode", string.Empty);
-            indexer.IndexProperty<TextureDimension, Texture2D>(context.documentIndex, "dimension", texture.dimension.ToString(), saveKeyword: true, exact: true, "Dimension", string.Empty);
+            indexer.IndexProperty<TextureFormat, Texture2D>(context.documentIndex, "format", texture.format.ToString(), saveKeyword: true, "Format", string.Empty);
+            indexer.IndexProperty<FilterMode, Texture2D>(context.documentIndex, "filtermode", texture.filterMode.ToString(), saveKeyword: true, "Filter Mode", string.Empty);
+            indexer.IndexProperty<TextureDimension, Texture2D>(context.documentIndex, "dimension", texture.dimension.ToString(), saveKeyword: true, "Dimension", string.Empty);
 
             var ti = AssetImporter.GetAtPath(context.id) as TextureImporter;
             if (ti)
             {
-                indexer.IndexProperty<TextureImporterType, TextureImporter>(context.documentIndex, "type", ti.textureType.ToString(), saveKeyword: true, exact: true, "Type", string.Empty);
-                indexer.IndexProperty<TextureImporterShape, TextureImporter>(context.documentIndex, "shape", ti.textureShape.ToString(), saveKeyword: true, exact: true, "Shape", string.Empty);
-                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "readable", ti.isReadable.ToString(), saveKeyword: false, exact: true, "Readable", string.Empty);
-                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "srgb", ti.sRGBTexture.ToString(), saveKeyword: false, exact: true, "sRGB", string.Empty);
-                indexer.IndexProperty<TextureImporterCompression, TextureImporter>(context.documentIndex, "compression", ti.textureCompression.ToString(), saveKeyword: true, exact: true, "Compression", string.Empty);
+                indexer.IndexProperty<TextureImporterType, TextureImporter>(context.documentIndex, "type", ti.textureType.ToString(), saveKeyword: true, "Type", string.Empty);
+                indexer.IndexProperty<TextureImporterShape, TextureImporter>(context.documentIndex, "shape", ti.textureShape.ToString(), saveKeyword: true, "Shape", string.Empty);
+                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "readable", ti.isReadable.ToString(), saveKeyword: false, "Readable", string.Empty);
+                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "srgb", ti.sRGBTexture.ToString(), saveKeyword: false, "sRGB", string.Empty);
+                indexer.IndexProperty<TextureImporterCompression, TextureImporter>(context.documentIndex, "compression", ti.textureCompression.ToString(), saveKeyword: true, "Compression", string.Empty);
 
                 var so = new SerializedObject(ti);
                 var psArray = so.FindProperty("m_PlatformSettings");
@@ -362,7 +362,7 @@ namespace UnityEditor.Search
                     continue;
 
                 if (!string.IsNullOrEmpty(m.name) && indexer.settings.options.types)
-                    indexer.AddProperty("material", m.name.Replace(" (Instance)", "").ToLowerInvariant(), context.documentIndex, saveKeyword: false, exact: false);
+                    indexer.AddProperty("material", m.name.Replace(" (Instance)", "").ToLowerInvariant(), context.documentIndex, saveKeyword: false);
 
                 if (indexer.settings.options.dependencies)
                 {
@@ -377,7 +377,7 @@ namespace UnityEditor.Search
         internal static void IndexColor(string propertyName, in Color c, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
         {
             var colorHex = c.a < 1f ? ColorUtility.ToHtmlStringRGBA(c) : ColorUtility.ToHtmlStringRGB(c);
-            indexer.AddProperty(propertyName, "#" + colorHex.ToLowerInvariant(), documentIndex, exact: true, saveKeyword: false);
+            indexer.AddProperty(propertyName, "#" + colorHex.ToLowerInvariant(), documentIndex, saveKeyword: false);
             indexer.AddNumber(propertyName + ".r", c.r, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".g", c.g, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".b", c.b, indexer.settings.baseScore, documentIndex);

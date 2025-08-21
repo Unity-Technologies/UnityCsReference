@@ -63,10 +63,10 @@ namespace UnityEngine.AI
         int m_GenerateLinks;
 
         [StaticAccessor("NavMeshBuildSource", StaticAccessorType.DoubleColon)]
-        static extern Component InternalGetComponent(int instanceID);
+        static extern Component InternalGetComponent(EntityId instanceID);
 
         [StaticAccessor("NavMeshBuildSource", StaticAccessorType.DoubleColon)]
-        static extern Object InternalGetObject(int instanceID);
+        static extern Object InternalGetObject(EntityId instanceID);
     }
 
     // Struct containing source geometry data and annotation for runtime navmesh building
@@ -92,6 +92,6 @@ namespace UnityEngine.AI
         int m_IgnoreChildren; // backing field is reversed for the default value to align with the legacy default behaviour
 
         [StaticAccessor("NavMeshBuildMarkup", StaticAccessorType.DoubleColon)]
-        static extern Transform InternalGetRootGO(int instanceID);
+        static extern Transform InternalGetRootGO(EntityId instanceID);
     }
 }

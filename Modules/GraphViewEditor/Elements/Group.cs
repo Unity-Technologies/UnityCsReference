@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.GraphView
 {
     public class Group : Scope, ICollectibleElement
     {
+        private const int kMaxTitleLength = 256;
         private Label m_TitleItem;
         private TextField m_TitleEditor;
         private GroupDropArea m_DropArea;
@@ -21,10 +22,19 @@ namespace UnityEditor.Experimental.GraphView
             get { return m_TitleItem.text; }
             set
             {
-                if (m_TitleItem.text == value)
+                var newTitle = value?.Length > kMaxTitleLength
+                    ? value.Substring(0, kMaxTitleLength)
+                    : value;
+
+                if (m_TitleItem.text == newTitle)
                     return;
 
-                m_TitleItem.text = value;
+                if (value.Length > kMaxTitleLength)
+                {
+                    Debug.LogWarning($"The group title is too long. It will be truncated to {kMaxTitleLength} characters.");
+                }
+
+                m_TitleItem.text = newTitle;
 
                 GraphView gv = GetFirstAncestorOfType<GraphView>();
 
@@ -168,7 +178,6 @@ namespace UnityEditor.Experimental.GraphView
 
         internal void OnStartDragging(IMouseEvent evt, IEnumerable<GraphElement> elements)
         {
-            m_DropArea.OnStartDragging(evt, elements);
         }
 
         public void CollectElements(HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)

@@ -212,7 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                {
                    if (registryInfo.compliance.status == RegistryComplianceStatus.NonCompliant)
                    {
-                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry")
+                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry", L10n.Tr("OK"))
                        {
                            headerIcon = Icon.RegistryErrorLarge,
                            headerMainText = registryInfo.name,

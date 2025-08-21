@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    static class PanelSettingsCreator
+    internal static class PanelSettingsCreator
     {
         static void CreateDirectoryRecursively(string dirPath)
         {

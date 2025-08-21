@@ -17,6 +17,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private const string k_UnityPrefix = "com.unity.";
 
+        private const string k_NoSubscriptionUpmErrorMessage = "You do not have a subscription for this package";
+        private const string k_NotAcquiredUpmErrorMessage = "Your account does not grant permission to use the package";
+        private const string k_NotSignedInUpmErrorMessage = "You are not signed in";
+
         [SerializeField]
         private string m_Category;
         public override string category => m_Category ?? string.Empty;
@@ -97,8 +101,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string deprecationMessage => m_DeprecationMessage ?? string.Empty;
 
         [SerializeField]
-        private SignatureInfo m_SignatureInfo;
-        public override SignatureInfo signatureInfo => m_SignatureInfo;
+        private SignatureInfo m_Signature;
+        public override SignatureInfo signature => m_Signature;
+
+        [SerializeField]
+        private TrustLevel m_TrustLevel;
+        public override TrustLevel trustLevel => m_TrustLevel;
 
         private UpmPackageVersion(string name, string versionString, RegistryType availableRegistry)
         {
@@ -142,7 +150,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PublishedDateTicks = GetPublishDateTicks(packageInfo),
                 m_MinimumUnityVersion = packageInfo.editorCompatibility?.minimumUnityVersion,
                 m_Author = packageInfo.author,
-                m_SignatureInfo = packageInfo.signature
+                m_Signature = packageInfo.signature,
+                m_TrustLevel = packageInfo.trustLevel,
             };
 
             packageVersion.UpdateTags(packageData, packageInfo);
@@ -230,7 +239,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_HasErrorWithEntitlementMessage = info.errors.Any(error
                 => error.errorCode == ErrorCode.Forbidden
-                && error.message.IndexOf(EntitlementsErrorAndDeprecationChecker.k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
+                && error.message.IndexOf(k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
 
             m_Errors.Clear();
 
@@ -239,20 +248,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var error in info.errors)
             {
-                if (error.message.Contains(EntitlementsErrorAndDeprecationChecker.k_NotAcquiredUpmErrorMessage))
+                if (error.message.Contains(k_NotAcquiredUpmErrorMessage))
                     m_Errors.Add(new UIError(UIErrorCode.UpmError_NotAcquired, error.message));
-                else if (error.message.Contains(EntitlementsErrorAndDeprecationChecker.k_NotSignedInUpmErrorMessage))
+                else if (error.message.Contains(k_NotSignedInUpmErrorMessage))
                     m_Errors.Add(new UIError(UIErrorCode.UpmError_NotSignedIn, error.message));
                 else
                     m_Errors.Add(new UIError(error));
             }
 
-            if (info.signature.status == SignatureStatus.Unsigned && name.StartsWith(k_UnityPrefix) &&
-                (info.source == PackageSource.LocalTarball ||
-                 info.source == PackageSource.Registry && !info.registry.isDefault))
-                // Flag Unsigned packages on a non-default registry and local tarballs
-                // when the name starts with "com.unity." to prevent dependency confusion
-                m_Errors.Add(UIError.k_UnsignedUnityPackageWarning);
+            if (Unsupported.IsDeveloperBuild() && isInstalled && info.signature.status == SignatureStatus.Error)
+                m_Errors.Add(UIError.k_CantValidateSignatureError);
         }
     }
 }

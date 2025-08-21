@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 namespace Unity.Hierarchy
 {
     /// <summary>
-    /// Interface that HierarchyNodeHandler should implement to be able to sync their selection with Unity global selection.
+    /// Interface that <see cref="HierarchyNodeTypeHandler"/> should implement if the type can be mapped to <see cref="EntityId"/>.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface IHierarchyEntityIdConverter
@@ -19,8 +19,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="entityId">The entity id.</param>
         /// <returns>The hierarchy node.</returns>
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal HierarchyNode GetNode(EntityId entityId);
+        protected internal HierarchyNode GetNode(EntityId entityId);
 
         /// <summary>
         /// Get the hierarchy nodes corresponding to the given entity ids.
@@ -30,16 +29,14 @@ namespace Unity.Hierarchy
         /// </remarks>
         /// <param name="entityIds">The entity ids.</param>
         /// <param name="outNodes">The hierarchy nodes.</param>
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal void GetNodes(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes);
+        protected internal void GetNodes(ReadOnlySpan<EntityId> entityIds, Span<HierarchyNode> outNodes);
 
         /// <summary>
         /// Get the entity id corresponding to the given hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The entity id.</returns>
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.HierarchyModule")]
-        internal EntityId GetEntityId(in HierarchyNode node);
+        protected internal EntityId GetEntityId(in HierarchyNode node);
 
         /// <summary>
         /// Get the entity ids corresponding to the given hierarchy nodes.
@@ -49,8 +46,7 @@ namespace Unity.Hierarchy
         /// </remarks>
         /// <param name="nodes">The hierarchy nodes.</param>
         /// <param name="outEntityIds">The entity ids.</param>
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal void GetEntityIds(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
+        protected internal void GetEntityIds(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
     }
 
     /// <summary>

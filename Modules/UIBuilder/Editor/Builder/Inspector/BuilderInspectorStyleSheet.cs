@@ -46,14 +46,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(
                 styleSheet, BuilderConstants.AddNewSelectorUndoMessage);
 
-            if (!SelectorUtility.TryCreateSelector(newSelectorString, out var complexSelector, out var error))
-            {
-                Builder.ShowWarning(error);
-                return;
-            }
-
-            BuilderSharedStyles.CreateNewSelector(
-                currentVisualElement.parent, styleSheet, newSelectorString);
+            BuilderSharedStyles.CreateNewSelector(currentVisualElement.parent, styleSheet, newSelectorString);
 
             m_Selection.NotifyOfHierarchyChange(m_Inspector);
             m_Selection.NotifyOfStylingChange(m_Inspector);

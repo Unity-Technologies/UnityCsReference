@@ -44,8 +44,6 @@ namespace UnityEditor.UIElements
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
 
-            DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
-
             UIToolkitProjectSettings.onEnableAdvancedTextChanged += SetICUdataAssetOnAllPanelSettings;
 
             EditorApplication.playModeStateChanged += stateChange =>
@@ -56,15 +54,8 @@ namespace UnityEditor.UIElements
                     UIElementsRuntimeUtility.OnExitingPlayMode();
             };
 
-            PanelInputConfiguration.IsPartOfPrefabAsset = gameObject =>
-                PrefabStageUtility.GetCurrentPrefabStage() != null;
+            UIElementsRuntimeUtility.IsEditingPrefab = () => PrefabStageUtility.GetCurrentPrefabStage() != null;
         }
-
-        private static GenericOSMenu CreateGenericOSMenu()
-        {
-            return new GenericOSMenu();
-        }
-
 
         private static void SetICUdataAssetOnAllPanelSettings(bool _)
         {

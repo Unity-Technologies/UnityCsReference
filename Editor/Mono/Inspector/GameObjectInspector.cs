@@ -1360,7 +1360,7 @@ namespace UnityEditor
 
                     if (s_PlaceObject)
                     {
-                        if (Tools.pivotMode == PivotMode.Center)
+                        if (Tools.pivotMode != PivotMode.Pivot)
                         {
                             float geomOffset = HandleUtility.CalcRayPlaceOffset(m_DragObject.GetComponentsInChildren<Transform>(), normal);
                             if (geomOffset != Mathf.Infinity)

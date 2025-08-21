@@ -137,6 +137,7 @@ namespace UnityEditor.DeviceSimulation
         public int supportedRandomWriteTargetCount;
         public int supportsMultisampledTextures;
         public bool supportsMultisampleAutoResolve;
+        public bool supportsMultisampledShaderResolve;
         public int supportsTextureWrapMirrorOnce;
         public bool usesReversedZBuffer;
         public NPOTSupport npotSupport;

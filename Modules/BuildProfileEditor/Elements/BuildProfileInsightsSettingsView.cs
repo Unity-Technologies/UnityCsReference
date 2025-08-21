@@ -9,14 +9,14 @@ namespace UnityEditor.Build.Profile.Elements;
 
 class BuildProfileInsightsSettingsView
 {
-    internal static void CreateGUI(BuildProfile buildProfile, VisualElement root, bool isClassicPlatformSettingsMode)
+    internal static bool CreateGUI(BuildProfile buildProfile, VisualElement root, bool isClassicPlatformSettingsMode)
     {
         _ = BuildTargetDiscovery.TryGetProperties<IInsightsPlatformProperties>(
             buildProfile.buildTarget,
             out var buildTargetProperties);
         if (buildTargetProperties == null)
         {
-            return;
+            return false;
         }
 
         var buildProfileInsightsSettingsVisualElement = new BuildProfileInsightsSettingsVisualElement
@@ -46,5 +46,7 @@ class BuildProfileInsightsSettingsView
         {
             InsightsEditorUtils.DrawInsightsInfoBox(root);
         }
+
+        return true;
     }
 }

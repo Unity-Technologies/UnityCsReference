@@ -129,7 +129,10 @@ namespace UnityEditor.SceneTemplate
 
             using (new EditorPerformanceTracker("SceneTemplateDialog.SetupData"))
                 SetupData();
+        }
 
+        void CreateGUI()
+        {
             using (new EditorPerformanceTracker("SceneTemplateDialog.BuildingUI"))
             {
                 BuildUI();
@@ -400,15 +403,18 @@ namespace UnityEditor.SceneTemplate
 
             rootContainer.RegisterCallback<GeometryChangedEvent>(evt => m_PreviewArea?.UpdatePreviewAreaSize());
 
+            var scrollViewContainer = new ScrollView { style = { flexGrow = 1 } };
+            rootContainer.Add(scrollViewContainer);
+
             // Title
             var sceneTitleLabel = new Label();
-            rootContainer.Add(sceneTitleLabel);
+            scrollViewContainer.Add(sceneTitleLabel);
             sceneTitleLabel.name = k_SceneTemplateTitleLabelName;
             sceneTitleLabel.AddToClassList(Styles.classWrappingText);
 
             // Asset path
             var assetPathSection = new VisualElement();
-            rootContainer.Add(assetPathSection);
+            scrollViewContainer.Add(assetPathSection);
             assetPathSection.name = k_SceneTemplatePathSection;
             {
                 var scenePathLabel = new Label();
@@ -456,7 +462,7 @@ namespace UnityEditor.SceneTemplate
 
             // Description
             var descriptionSection = new VisualElement();
-            rootContainer.Add(descriptionSection);
+            scrollViewContainer.Add(descriptionSection);
             descriptionSection.name = k_SceneTemplateDescriptionSection;
             {
                 var descriptionLabel = new Label();
@@ -464,14 +470,10 @@ namespace UnityEditor.SceneTemplate
                 descriptionLabel.text = L10n.Tr("Description");
                 descriptionSection.Add(descriptionLabel);
 
-                // Text container
-                var scrollViewContainer = new ScrollView { style = { flexGrow = 1 } };
-                descriptionSection.Add(scrollViewContainer);
-
                 var sceneDescriptionLabel = new Label();
                 sceneDescriptionLabel.AddToClassList(Styles.classWrappingText);
                 sceneDescriptionLabel.name = k_SceneTemplateDescriptionName;
-                scrollViewContainer.Add(sceneDescriptionLabel);
+                descriptionSection.Add(sceneDescriptionLabel);
             }
         }
 

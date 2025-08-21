@@ -327,6 +327,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleEnum<FontStyle> unityFontStyleAndWeight { get; set; }
         /// <summary>
+        /// Custom material to use on the element.
+        /// </summary>
+        StyleMaterialDefinition unityMaterial { get; set; }
+        /// <summary>
         /// Specifies which box the element content is clipped against.
         /// </summary>
         StyleEnum<OverflowClipBox> unityOverflowClipBox { get; set; }

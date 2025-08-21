@@ -209,7 +209,7 @@ namespace UnityEditor
                         if (isRepaintEvent && renderer != null)
                         {
                             bool iconRendered = false;
-                            int instanceID = 0;
+                            EntityId entityId = 0;
 
                             if (!multiEdit)
                             {
@@ -217,35 +217,35 @@ namespace UnityEditor
                                 {
                                     if (renderer.mesh != null)
                                     {
-                                        instanceID = renderer.mesh.GetInstanceID();
+                                        entityId = renderer.mesh.GetEntityId();
 
                                         // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
-                                        if (m_CachedMeshInstanceID != instanceID)
+                                        if (m_CachedMeshInstanceID != entityId)
                                         {
-                                            m_CachedMeshInstanceID = instanceID;
+                                            m_CachedMeshInstanceID = entityId;
                                             m_CachedMeshDirtyCount = -1;
                                         }
-                                        if (EditorUtility.GetDirtyCount(instanceID) != m_CachedMeshDirtyCount)
+                                        if (EditorUtility.GetDirtyCount(entityId) != m_CachedMeshDirtyCount)
                                         {
                                             AssetPreview.ClearTemporaryAssetPreviews();
-                                            m_CachedMeshDirtyCount = EditorUtility.GetDirtyCount(instanceID);
+                                            m_CachedMeshDirtyCount = EditorUtility.GetDirtyCount(entityId);
                                         }
                                     }
                                 }
                                 else if (renderer.sharedMaterial != null)
                                 {
-                                    instanceID = renderer.sharedMaterial.GetInstanceID();
+                                    entityId = renderer.sharedMaterial.GetInstanceID();
 
                                     // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
-                                    if (m_CachedMaterialInstanceID != instanceID)
+                                    if (m_CachedMaterialInstanceID != entityId)
                                     {
-                                        m_CachedMaterialInstanceID = instanceID;
+                                        m_CachedMaterialInstanceID = entityId;
                                         m_CachedMaterialDirtyCount = -1;
                                     }
-                                    if (EditorUtility.GetDirtyCount(instanceID) != m_CachedMaterialDirtyCount)
+                                    if (EditorUtility.GetDirtyCount(entityId) != m_CachedMaterialDirtyCount)
                                     {
                                         AssetPreview.ClearTemporaryAssetPreviews();
-                                        m_CachedMaterialDirtyCount = EditorUtility.GetDirtyCount(instanceID);
+                                        m_CachedMaterialDirtyCount = EditorUtility.GetDirtyCount(entityId);
                                     }
                                 }
                             }
@@ -253,12 +253,12 @@ namespace UnityEditor
                             if (multiEdit || !isEditable)
                             {
                                 // Presets should use the default material.
-                                instanceID = Material.GetDefaultParticleMaterial().GetInstanceID();
+                                entityId = Material.GetDefaultParticleMaterial().GetInstanceID();
                             }
 
-                            if (instanceID != 0)
+                            if (entityId != 0)
                             {
-                                Texture2D icon = AssetPreview.GetAssetPreview(instanceID);
+                                Texture2D icon = AssetPreview.GetAssetPreview(entityId);
                                 if (icon != null)
                                 {
                                     GUI.DrawTexture(iconRect, icon, ScaleMode.StretchToFill, true);

@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
@@ -30,6 +31,38 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
         }
 
+        internal static Material shadingRateImageMaterial
+        {
+            get {
+                if (s_ShadingRateImageMaterial == null)
+                    s_ShadingRateImageMaterial = new Material(Shader.Find("Hidden/VisualizeShadingRateImage"));
+                return s_ShadingRateImageMaterial;
+            }
+        }
+
+        private static readonly Lazy<GraphicsBuffer> m_ShadingRateLut =
+            new Lazy<GraphicsBuffer>(() => {
+                // Keep in sync with VrsLut.cs for now
+                // TO DO: Update to match the visualization colors set in the Editor Graphics pipeline settings
+                Color[] bufferData = {
+                    (new Color(0.785f, 0.23f, 0.20f, 1)).linear,    // 1x1 - Red
+                    (new Color(1.00f, 0.80f, 0.80f, 1)).linear,     // 1x2 - Light Red
+                    (new Color(0.60f, 0.80f, 1.00f, 1)).linear,     // 1x4 - Light Blue
+                    Color.black.linear,                               
+                    (new Color(0.40f, 0.20f, 0.20f, 1)).linear,     // 2x1 - Dark Red
+                    (new Color(0.51f, 0.80f, 0.60f, 1)).linear,     // 2x2 - Green
+                    (new Color(0.80f, 1.00f, 0.80f, 1)).linear,     // 2x4 - Light Green
+                    Color.black.linear,
+                    (new Color(0.20f, 0.40f, 0.60f, 1)).linear,     // 4x1 - Medium Blue
+                    (new Color(0.20f, 0.40f, 0.20f, 1)).linear,     // 4x2 - Dark Green
+                    (new Color(0.125f, 0.22f, 0.36f, 1)).linear     // 4x4 - Dark Blue
+                };
+                GraphicsBuffer buf = new GraphicsBuffer(GraphicsBuffer.Target.Structured, bufferData.Length, Marshal.SizeOf(typeof(Color)));
+                buf.SetData(bufferData);
+                return buf;
+            });
+        internal static GraphicsBuffer shadingRateLut = m_ShadingRateLut.Value;
+
         // Utility functions...
         internal static bool IsAValidFrame(int curEventIndex, int descsLength) => (curEventIndex >= 0 && curEventIndex < descsLength);
         internal static bool IsAClearEvent(FrameEventType eventType) => eventType >= FrameEventType.ClearNone && eventType <= FrameEventType.ClearAll;
@@ -44,10 +77,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal static bool IsHoveringRect(Rect rect) => rect.Contains(Event.current.mousePosition);
         internal static bool IsARenderTexture(ref Texture t) => t != null && (t as RenderTexture) != null;
         internal static bool IsADepthTexture(ref Texture t) => IsARenderTexture(ref t) && ((t as RenderTexture).graphicsFormat == GraphicsFormat.None);
+        internal static bool IsVRSSupported() => SystemInfo.supportsVariableRateShading;
 
 
         // Private Static Variables
         private static Material s_Material = null;
+        private static Material s_ShadingRateImageMaterial = null;
         private static StringBuilder s_StringBuilder = new StringBuilder();
 
         // Functions
@@ -66,6 +101,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static int _UndoOutputSRGB = Shader.PropertyToID("_UndoOutputSRGB");
             internal static int _MainTexWidth = Shader.PropertyToID("_MainTexWidth");
             internal static int _MainTexHeight = Shader.PropertyToID("_MainTexHeight");
+            internal static int _VisualizationLut = Shader.PropertyToID("_VisualizationLut");
         }
 
         internal static void BlitToRenderTexture(
@@ -88,7 +124,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             SetMaterialProperties(width, height, depth, samplerType, msaaValue, channels, levels, shouldYFlip, undoOutputSRGB);
             frameDebuggerMaterial.SetTexture(ShaderPropertyIDs._MainTex, t);
 
-            Blit(ref output);
+            Blit(ref output, frameDebuggerMaterial);
         }
 
         internal static void BlitToRenderTexture(
@@ -111,7 +147,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             SetMaterialProperties(width, height, rt.volumeDepth, samplerType, msaaValue, channels, levels, shouldYFlip, undoOutputSRGB);
             frameDebuggerMaterial.SetTexture(ShaderPropertyIDs._MainTex, rt);
 
-            Blit(ref output);
+            Blit(ref output, frameDebuggerMaterial);
         }
 
         private static void SetMaterialProperties(
@@ -155,16 +191,35 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             mat.SetFloat(ShaderPropertyIDs._UndoOutputSRGB, undoOutputSRGB ? 1.0f : 0.0f);
         }
 
-        private static void Blit(ref RenderTexture rt)
+        private static void Blit(ref RenderTexture rt, Material mat)
         {
             // Remember currently active render texture
             RenderTexture currentActiveRT = RenderTexture.active;
 
             // Blit to the Render Texture
-            Graphics.Blit(null, rt, frameDebuggerMaterial, 0);
+            Graphics.Blit(null, rt, mat, 0);
 
             // Restore previously active render texture
             RenderTexture.active = currentActiveRT;
+        }
+
+        internal static void ConvertShadingRateImage(
+            ref Texture t,
+            ref RenderTexture output,
+            int sriWidth,
+            int sriHeight)
+        {
+            if (t == null || output == null)
+                return;
+
+            output.name = t.name;
+
+            shadingRateImageMaterial.SetFloat(ShaderPropertyIDs._MainTexWidth, sriWidth);
+            shadingRateImageMaterial.SetFloat(ShaderPropertyIDs._MainTexHeight, sriHeight);
+            shadingRateImageMaterial.SetTexture(ShaderPropertyIDs._MainTex, t);
+            shadingRateImageMaterial.SetBuffer(ShaderPropertyIDs._VisualizationLut, shadingRateLut);
+
+            Blit(ref output, shadingRateImageMaterial);
         }
 
         internal static int GetVolumeDepth(ref Texture t)

@@ -55,11 +55,7 @@ namespace UnityEngine.Accessibility
             /// On iOS, if this method is repeatedly called with the same <paramref name="announcement"/> text, the
             /// screen reader indicates to the user that scrolling cannot continue due to a border or boundary.
             /// </para>
-            /// <para>
-            /// **Platform support**: This method has no effect on macOS.
-            /// </para>
             /// </remarks>
-            // TODO: A11Y-652
             public void SendPageScrolledAnnouncement(string announcement, AccessibilityNode nodeToFocus = null);
 
             /// <summary>

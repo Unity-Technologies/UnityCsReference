@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements.UIR
             return true;
         }
 
-        static public bool CreateTextureForAtlasBlock(ref AtlasBlock block, bool forceGammaRendering)
+        static public bool CreateTextureForAtlasBlock(ref AtlasBlock block, bool forceGammaRendering, out bool allocatedNewTexture)
         {
             // Fills the entry.texture with a newly allocated RenderTexture
             Debug.Assert(block.texture == null, "Entry already has a texture assigned.");
@@ -75,6 +75,7 @@ namespace UnityEngine.UIElements.UIR
             descriptor.useMipMap = false;
 
             block.texture = RenderTexture.GetTemporary(descriptor);
+            allocatedNewTexture = true; // Eventually, we may reuse previously allocated textures
 
             if (block.texture == null)
             {
@@ -147,13 +148,6 @@ namespace UnityEngine.UIElements.UIR
             GL.Vertex3(rt.width, rt.height, 0);
 
             GL.End();
-        }
-
-        static public void ReleaseTextureForAtlasBlock(AtlasBlock block)
-        {
-            RenderTexture texture = block.texture;
-            if (texture != null)
-                RenderTexture.ReleaseTemporary(texture);
         }
     }
 }

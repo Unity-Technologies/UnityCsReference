@@ -119,6 +119,9 @@ namespace UnityEditor.UIElements.Inspector
             var display = isFixedSize ? DisplayStyle.Flex : DisplayStyle.None;
             m_WorldSpaceWidthField.style.display = display;
             m_WorldSpaceHeightField.style.display = display;
+
+            // Let the UIDocument's LateUpdate method kick in (UUM-105765)
+            EditorUtility.SetDirty(target);
         }
 
         string GenerateEditorElementsErrorMessage(int maxElements)

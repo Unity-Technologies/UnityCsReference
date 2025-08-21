@@ -95,8 +95,13 @@ namespace UnityEngine
         [NativeProperty("KeepUnusedRenderingResources")]
         extern public bool keepUnusedRenderingResources { get; set; }
 
-        extern public bool GetKeepUnusedCameraRenderingResources(int cameraInstanceID);
-        extern public void SetKeepUnusedCameraRenderingResources(int cameraInstanceID, bool keepUnused);
+        extern public bool GetKeepUnusedCameraRenderingResources(EntityId cameraEntityId);
+        extern public void SetKeepUnusedCameraRenderingResources(EntityId cameraEntityId, bool keepUnused);
+
+        [Obsolete("GetKeepUnusedCameraRenderingResources(int) is obsolete. Use GetKeepUnusedCameraRenderingResources(EntityId) instead.")]
+        public bool GetKeepUnusedCameraRenderingResources(int cameraInstanceID) => GetKeepUnusedCameraRenderingResources((EntityId)cameraInstanceID);
+        [Obsolete("SetKeepUnusedCameraRenderingResources(int, bool) is obsolete. Use SetKeepUnusedCameraRenderingResources(EntityId, bool) instead.")]
+        public void SetKeepUnusedCameraRenderingResources(int cameraInstanceID, bool keepUnused) => SetKeepUnusedCameraRenderingResources((EntityId)cameraInstanceID, keepUnused);
 
         extern public ShadowCastingMode shadowCastingMode { get; set; }
 
@@ -208,7 +213,7 @@ namespace UnityEngine
         extern public static void SetConnectivityDirty();
 
         [NativeProperty("ActiveTerrainsScriptingArray")]
-        extern public static Terrain[] activeTerrains { [return:Unmarshalled] get; }
+        extern public static Terrain[] activeTerrains { [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; }
 
         public static void GetActiveTerrains(List<Terrain> terrainList)
         {
@@ -250,7 +255,7 @@ namespace UnityEngine
 
         [FreeFunction]
         [NativeConditional("INCLUDE_DYNAMIC_GI && ENABLE_RUNTIME_GI")]
-        extern internal static void UpdateGIMaterialsForTerrain(int terrainInstanceID, Rect uvBounds);
+        extern internal static void UpdateGIMaterialsForTerrain(EntityId terrainInstanceID, Rect uvBounds);
     }
 
     [NativeHeader("Modules/Terrain/Public/Tree.h")]

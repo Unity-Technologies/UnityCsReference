@@ -95,6 +95,19 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
+        /// Delegate that is invoked when a new hierarchy node type handler is created.
+        /// </summary>
+        /// <param name="handler">The hierarchy node type handler that was created.</param>
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal delegate void HandlerCreatedDelegate(HierarchyNodeTypeHandlerBase handler);
+
+        /// <summary>
+        /// Event that is invoked when a new hierarchy node type handler is created.
+        /// </summary>
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal event HandlerCreatedDelegate HandlerCreated;
+
+        /// <summary>
         /// Constructs a new <see cref="Hierarchy"/>.
         /// </summary>
         public Hierarchy()
@@ -151,25 +164,7 @@ namespace Unity.Hierarchy
         /// If a hierarchy node type handler with that type is already created, the same instance is returned.
         /// </remarks>
         /// <returns>The hierarchy node type handler instance for that type.</returns>
-        public T GetOrCreateNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase
-        {
-            var handler = (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T), out var created));
-            if (created)
-                HandlerCreated?.Invoke(handler);
-            return handler;
-        }
-
-        /// <summary>
-        /// Event that is invoked when a new hierarchy node type handler is created.
-        /// </summary>
-        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-        internal event HandlerCreatedEventHandler HandlerCreated;
-
-        /// <summary>
-        /// Delegate for the <see cref="HandlerCreated"/> event.
-        /// </summary>
-        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-        internal delegate void HandlerCreatedEventHandler(HierarchyNodeTypeHandlerBase handler);
+        public T GetOrCreateNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T)));
 
         /// <summary>
         /// Gets a hierarchy node type handler instance from this hierarchy.
@@ -534,7 +529,7 @@ namespace Unity.Hierarchy
         static extern void Destroy(IntPtr nativePtr);
 
         [FreeFunction("HierarchyBindings::GetOrCreateNodeTypeHandler", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
-        extern IntPtr GetOrCreateNodeTypeHandler(Type type, out bool created);
+        extern IntPtr GetOrCreateNodeTypeHandler(Type type);
 
         [FreeFunction("HierarchyBindings::GetNodeTypeHandlerFromType", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern IntPtr GetNodeTypeHandlerFromType(Type type);
@@ -589,6 +584,14 @@ namespace Unity.Hierarchy
         #region Called from native
         [RequiredByNativeCode]
         static IntPtr CreateHierarchy(IntPtr nativePtr, IntPtr rootPtr, IntPtr versionPtr) => GCHandle.ToIntPtr(GCHandle.Alloc(new Hierarchy(nativePtr, rootPtr, versionPtr)));
+
+        [RequiredByNativeCode]
+        static void InvokeHandlerCreated(IntPtr hierarchyPtr, IntPtr handlerPtr)
+        {
+            var hierarchy = FromIntPtr(hierarchyPtr);
+            var handler = HierarchyNodeTypeHandlerBase.FromIntPtr(handlerPtr);
+            hierarchy.HandlerCreated?.Invoke(handler);
+        }
         #endregion
 
         #region Obsolete public APIs to remove in 2024
@@ -601,7 +604,7 @@ namespace Unity.Hierarchy
         /// <returns>The hierarchy node type handler instance for that type.</returns>
         [Obsolete("RegisterNodeTypeHandler has been renamed GetOrCreateNodeTypeHandler (UnityUpgradable) -> GetOrCreateNodeTypeHandler<T>()")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T), out _));
+        public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T)));
 
         /// <summary>
         /// Removes a hierarchy node type handler from this hierarchy.

@@ -27,6 +27,26 @@ namespace Unity.Collections
         }
 
         /// <summary>
+        /// Resizes the array and inserts the item to the provided index.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="index">The insert at which we add the item.</param>
+        /// <param name="item">The item to add to the array.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void InsertIntoArray<T>(ref T[] array, int index, T item)
+        {
+            if (index < 0 || index > array.Length)
+                throw new IndexOutOfRangeException("Trying to insert into an array out of bounds.");
+
+            var current = array;
+            array = new T[current.Length + 1];
+            Array.Copy(current, array, index);
+            Array.Copy(current, index, array, index + 1, current.Length - index);
+            array[index] = item;
+        }
+
+        /// <summary>
         /// Removes the item from the array and resizes it.
         /// </summary>
         /// <typeparam name="T">The item type.</typeparam>
@@ -39,13 +59,28 @@ namespace Unity.Collections
             if (removeIndex == -1)
                 return false;
 
+            RemoveFromArray(ref array, removeIndex);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes the item from the array and resizes it.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="index">The index to remove from the array.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        internal static void RemoveFromArray<T>(ref T[] array, int index)
+        {
+            if (index < 0 || index >= array.Length)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
             for (int i = 0, j = 0; i < array.Length; i++)
             {
-                if (i != removeIndex)
+                if (i != index)
                     array[j++] = array[i];
             }
             Array.Resize(ref array, array.Length - 1);
-            return true;
         }
 
         /// <summary>

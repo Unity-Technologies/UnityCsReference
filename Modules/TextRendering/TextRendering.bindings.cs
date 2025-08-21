@@ -304,7 +304,7 @@ namespace UnityEngine
         public delegate void FontTextureRebuildCallback();
 
         public extern Material material { get; set; }
-        public extern string[] fontNames { [return: Unmarshalled ] get; [param: Unmarshalled] set; }
+        public extern string[] fontNames { [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
         public extern bool dynamic { get; }
         public extern int ascent { get; }
         public extern int fontSize { get; }
@@ -377,9 +377,12 @@ namespace UnityEngine
 
         private extern bool HasCharacter(int c);
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern string[] GetOSInstalledFontNames();
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern string[] GetPathsToOSFonts();
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         internal static extern string[] GetOSFallbacks();
 
         [ThreadSafe][VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.CoreModule")]
@@ -387,7 +390,7 @@ namespace UnityEngine
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);
         private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);
-        private static extern void Internal_CreateDynamicFont([Writable] Font self, [Unmarshalled]string[] _names, int size);
+        private static extern void Internal_CreateDynamicFont([Writable] Font self, [UnityMarshalAs(NativeType.ScriptingObjectPtr)]string[] _names, int size);
 
         [FreeFunction("TextRenderingPrivate::GetCharacterInfo", HasExplicitThis = true)]
         public extern bool GetCharacterInfo(char ch, out CharacterInfo info, [DefaultValue("0")] int size, [DefaultValue("FontStyle.Normal")] FontStyle style);

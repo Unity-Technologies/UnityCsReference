@@ -3,10 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System;
-using System.Text;
-using Unity.Jobs.LowLevel.Unsafe;
-using System.Diagnostics;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
@@ -21,7 +17,8 @@ namespace UnityEngine.TextCore.Text
         {
             lock (syncRoot)
             {
-                if (textHandle.IsCachedPermanent)
+
+                if (textHandle.IsCachedPermanentTextCore)
                     return;
 
                 if (textHandle.IsCachedTemporary)
@@ -41,6 +38,7 @@ namespace UnityEngine.TextCore.Text
                 }
             }
 
+            textHandle.IsCachedPermanentTextCore = true;
             textHandle.IsCachedPermanent = true;
             textHandle.SetDirty();
             textHandle.Update();
@@ -51,20 +49,21 @@ namespace UnityEngine.TextCore.Text
         {
             lock (syncRoot)
             {
-                if (!textHandle.IsCachedPermanent)
+                if (!textHandle.IsCachedPermanentTextCore)
                     return;
 
-                s_Cache.AddFirst(textHandle.TextInfoNode);
-                ResetEntryState(textHandle);
+                if (textHandle.TextInfoNode != null)
+                {
+                    s_Cache.AddFirst(textHandle.TextInfoNode);
+                    ResetEntryState(textHandle);
+                }
+
+                textHandle.IsCachedPermanentTextCore = false;
             }
         }
 
-        internal void ResetEntryState(TextHandle handle)
+        private void ResetEntryState(TextHandle handle)
         {
-            if (!handle.IsCachedPermanent)
-                return;
-
-            handle.IsCachedPermanent = false;
             handle.TextInfoNode.SetTime(0f);
             handle.TextInfoNode.SetTextHandle(null);
             handle.TextInfoNode = null;

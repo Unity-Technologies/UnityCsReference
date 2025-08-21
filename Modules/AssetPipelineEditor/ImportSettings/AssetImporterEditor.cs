@@ -723,6 +723,7 @@ namespace UnityEditor.AssetImporters
             EditorGUI.indentLevel++;
 
             var processor = m_Postprocessors[index];
+            rect.y += 3;
             rect.yMax = rect.yMin + EditorGUIUtility.singleLineHeight;
             if (Event.current.type == EventType.ContextClick && rect.Contains(Event.current.mousePosition))
             {

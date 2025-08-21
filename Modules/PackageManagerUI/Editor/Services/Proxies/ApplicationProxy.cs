@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<PlayModeStateChange> onPlayModeStateChanged;
         event Action update;
 
+        string dataPath { get; }
         string userAppDataPath { get; }
         bool isInternetReachable { get; }
         bool isBatchMode { get; }
@@ -34,6 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void RevealInFinder(string path);
         string OpenFilePanelWithFilters(string title, string directory, string[] filters);
         string OpenFolderPanel(string title, string folder);
+        void DisplayAlertDialog(string idForAnalytics, string title, string message, string buttonText);
         bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "");
         int DisplayDialogComplex(string idForAnalytics, string title, string message, string ok, string cancel, string alt);
         void CheckUrlValidity(string uri, Action success, Action failure);
@@ -58,6 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<PlayModeStateChange> onPlayModeStateChanged = delegate {};
         public event Action update = delegate {};
 
+        public string dataPath => Application.dataPath;
         public string userAppDataPath => InternalEditorUtility.userAppDataFolder;
 
         public bool isInternetReachable => m_IsInternetReachable;
@@ -172,6 +175,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string OpenFolderPanel(string title, string folder)
         {
             return EditorUtility.OpenFolderPanel(title, folder, string.Empty);
+        }
+
+        public void DisplayAlertDialog(string idForAnalytics, string title, string message, string buttonText)
+        {
+            EditorDialog.DisplayAlertDialog(title, message, buttonText);
+            PackageManagerDialogAnalytics.SendEvent(idForAnalytics, title, message, buttonText);
         }
 
         public bool DisplayDialog(string idForAnalytics, string title, string message, string ok, string cancel = "")

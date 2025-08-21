@@ -1030,7 +1030,6 @@ namespace UnityEditor
                             DropInfo di = null;
                             ContainerWindow[] windows = ContainerWindow.windows;
                             Vector2 screenMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
-                            ContainerWindow win = null;
                             foreach (ContainerWindow w in windows)
                             {
                                 var rootSplitView = w.rootSplitView;
@@ -1054,7 +1053,6 @@ namespace UnityEditor
 
                                 if (di != null)
                                 {
-                                    win = w;
                                     break;
                                 }
                             }
@@ -1071,7 +1069,7 @@ namespace UnityEditor
 
                             // Handle the window getting closed mid-drag
                             if (PaneDragTab.get.m_Window)
-                                PaneDragTab.get.SetDropInfo(di, screenMousePos, win);
+                                PaneDragTab.get.SetDropInfo(di, screenMousePos);
                         }
                     }
                     break;
@@ -1198,6 +1196,8 @@ namespace UnityEditor
             {
                 // Save space for the '*'
                 int maxLength = hasUnsavedChanges ? cappedMaxChars - 3 : cappedMaxChars - 2;
+                if (tabContent.image != null)
+                    maxLength -= 3;
 
                 text = text.Substring(0, Math.Max(3, Math.Min(maxLength, text.Length))) + "\u2026";
 
@@ -1301,6 +1301,14 @@ namespace UnityEditor
             }
 
             return EditorWindow.focusedWindow.maximized;
+        }
+
+        // internal for tests
+        internal static class DockAreaTestHelpers
+        {
+            public static Dictionary<GUIContentKey, GUIContent> GetGUIContents() => DockArea.s_GUIContents;
+            public static int GetCappedMaxCharsForTab(DockArea dockArea, string text)
+                => dockArea.tabStyle.GetNumCharactersThatFitWithinWidth(text, Styles.tabMaxWidth);
         }
     }
 

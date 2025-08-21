@@ -638,7 +638,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Controls whether double clicking selects the word under the mouse pointer or not.
+        /// Controls whether double-clicking selects the word under the mouse pointer.
         /// </summary>
         [CreateProperty]
         public bool doubleClickSelectsWord
@@ -736,7 +736,7 @@ namespace UnityEngine.UIElements
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
             MeasureMode heightMode)
         {
-            return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, new RenderedText(textToMeasure), width, widthMode, height, heightMode);
+            return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, textToMeasure, width, widthMode, height, heightMode);
         }
 
         [EventInterest(typeof(NavigationSubmitEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(FocusOutEvent),
@@ -1403,7 +1403,7 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Controls whether double clicking selects the word under the mouse pointer or not.
+            /// Controls whether double-clicking selects the word under the mouse pointer.
             /// </summary>
             [Obsolete("doubleClickSelectsWord is deprecated. Use textSelection.doubleClickSelectsWord instead.")]
             public bool doubleClickSelectsWord

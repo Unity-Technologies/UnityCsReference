@@ -31,9 +31,6 @@ namespace UnityEditor.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
-        // HashSet is for faster removals when elements go away from a panel
-        private HashSet<TextElement> m_TextElements = new HashSet<TextElement>();
-
         private bool m_HasAnyTextAssetChanged;
 
         private readonly Action<bool, Object> m_TextAssetChange;
@@ -60,8 +57,6 @@ namespace UnityEditor.UIElements
                 TextEventManager.FONT_PROPERTY_EVENT.Remove(m_TextAssetChange);
                 TextEventManager.SPRITE_ASSET_PROPERTY_EVENT.Remove(m_TextAssetChange);
                 TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Remove(m_ColorGradientChange);
-
-                m_TextElements.Clear();
 
                 m_EditorVisualTreeAssetTracker = null;
                 m_RuntimeVisualTreeAssetTrackers.Clear();
@@ -324,30 +319,7 @@ namespace UnityEditor.UIElements
 
         public override void Update()
         {
-            if (!enable)
-            {
-                return;
-            }
-
-            // Windows can decide to enable/disable live reload of text elements,
-            // For example, the UI Builder will only refresh changes made to font assets and not the rest.
-            if ((enabledTrackers & LiveReloadTrackers.Text) != 0)
-            {
-                UpdateTextElements();
-            }
-
-            // Windows can also decide to skip document live reload, and only do text elements.
-            // The UI Builder will skip the live reload of hierarchy and styles, because it is already editing them.
-            if ((enabledTrackers & LiveReloadTrackers.Document) == 0)
-            {
-                return;
-            }
-
-            // Early out: no tracker found for panel.
-            if (m_EditorVisualTreeAssetTracker == null && m_RuntimeVisualTreeAssetTrackers.Count == 0)
-            {
-                return;
-            }
+            UpdateTextElements();
 
             if (EditorApplication.isPlaying)
             {
@@ -361,14 +333,46 @@ namespace UnityEditor.UIElements
                 m_LastUpdateTimeMs = currentTimeMs;
             }
 
-            // InMemoryAssets versions are split into two categories to help track what needs recreating.
-            bool shouldRecreateUI =
-                m_PreviousInMemoryAssetsHierarchyVersion != UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
-            bool shouldRefreshStyles =
-                m_PreviousInMemoryAssetsStyleVersion != UIElementsUtility.m_InMemoryAssetsStyleVersion;
+            UpdateDocuments();
+            UpdateStyleSheets();
+        }
 
-            // There's no need to reload anything if there are no changes.
-            if (!shouldRecreateUI && !shouldRefreshStyles)
+        private void UpdateTextElements()
+        {
+            // Windows can decide to enable/disable live reload of text elements,
+            // For example, the UI Builder will only refresh changes made to font assets and not the rest.
+            if (!enable ||
+                (enabledTrackers & LiveReloadTrackers.Text) == 0 ||
+                !m_HasAnyTextAssetChanged)
+                return;
+
+            m_HasAnyTextAssetChanged = false;
+
+            if (!panel.textElementRegistry.IsValueCreated)
+                return;
+
+            foreach (var textElement in panel.textElementRegistry.Value)
+            {
+                textElement.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                textElement.uitkTextHandle.SetDirty();
+            }
+        }
+
+        private void UpdateDocuments()
+        {
+            // Windows can also decide to skip document live reload, and only do text elements.
+            // The UI Builder will skip the live reload of hierarchy and styles, because it is already editing them.
+            if (!enable ||
+                (enabledTrackers & LiveReloadTrackers.Document) == 0)
+                return;
+
+            // InMemoryAssets versions are split into two categories to help track what needs recreating.
+            var shouldRecreateUI = m_PreviousInMemoryAssetsHierarchyVersion != UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
+
+            // Early out: no tracker found for panel.
+            if (m_EditorVisualTreeAssetTracker == null && m_RuntimeVisualTreeAssetTrackers.Count == 0 &&
+                // There's no need to reload anything if there are no changes.
+                !shouldRecreateUI)
             {
                 return;
             }
@@ -376,7 +380,6 @@ namespace UnityEditor.UIElements
             // This value is updated by the UI Builder whenever an asset is changed.
             // We update here to prevent unnecessary checking of asset changes.
             m_PreviousInMemoryAssetsHierarchyVersion = UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
-            m_PreviousInMemoryAssetsStyleVersion = UIElementsUtility.m_InMemoryAssetsStyleVersion;
 
             // We iterate on the assets to avoid calling GetDirtyCount for the same asset more than once.
             // In Editor this seems very likely and in Runtime we're assuming there are not multiple panels going
@@ -411,10 +414,6 @@ namespace UnityEditor.UIElements
 
                         shouldRecreateUI = true;
                     }
-                    else
-                    {
-                        shouldRefreshStyles = true;
-                    }
                 }
 
                 foreach (var tracker in trackersEntry.m_Trackers)
@@ -435,39 +434,18 @@ namespace UnityEditor.UIElements
                 tracker.OnTrackedAssetChanged();
             }
             m_TrackersToRefresh.Clear();
+        }
 
+        private void UpdateStyleSheets()
+        {
+            var shouldRefreshStyles = m_PreviousInMemoryAssetsStyleVersion != UIElementsUtility.m_InMemoryAssetsStyleVersion;
             if (shouldRefreshStyles || m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty())
             {
                 panel.DirtyStyleSheets();
                 panel.UpdateInlineStylesRecursively();
             }
-        }
 
-        public void RegisterTextElement(TextElement element)
-        {
-            if ((enabledTrackers & LiveReloadTrackers.Text) != 0)
-            {
-                m_TextElements.Add(element);
-            }
-        }
-
-        public void UnregisterTextElement(TextElement element)
-        {
-            m_TextElements.Remove(element);
-        }
-
-        private void UpdateTextElements()
-        {
-            if (!m_HasAnyTextAssetChanged)
-                return;
-
-            m_HasAnyTextAssetChanged = false;
-
-            foreach (var textElement in m_TextElements)
-            {
-                textElement.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-                textElement.uitkTextHandle.SetDirty();
-            }
+            m_PreviousInMemoryAssetsStyleVersion = UIElementsUtility.m_InMemoryAssetsStyleVersion;
         }
     }
 }

@@ -206,7 +206,7 @@ namespace UnityEditor
         private string m_VariantName;
 
         [FreeFunction("PlayerSettingsIOSBindings::SetOrAddDeviceRequirementForVariantNameImpl")]
-        extern private static void SetOrAddDeviceRequirementForVariantNameImpl(PlayerSettings playerSettings, string name, int index, [Unmarshalled] string[] keys, [Unmarshalled] string[] values);
+        extern private static void SetOrAddDeviceRequirementForVariantNameImpl(PlayerSettings playerSettings, string name, int index, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] keys, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] values);
 
         [FreeFunction("PlayerSettingsIOSBindings::RemoveIOSDeviceRequirementForVariantNameImpl")]
         extern private static void RemoveIOSDeviceRequirementForVariantNameImpl(PlayerSettings playerSettings, string name, int index);
@@ -367,6 +367,17 @@ namespace UnityEditor
             static extern string GetMinimumVersionString();
 
             internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
+
+            internal static void MakeOsVersionValid(ref Version version)
+            {
+                string ver = version.ToString();
+                if (!ValidateVersionString(ref ver))
+                    version = new Version(ver);
+            }
+
+            [StaticAccessor("EditorOnlyPlayerSettings", StaticAccessorType.DoubleColon)]
+            [NativeMethod("ValidateiOSVersionString")]
+            static extern bool ValidateVersionString(ref string version);
 
             [NativeProperty("iOSTargetOSVersion")]
             public extern static string targetOSVersionString

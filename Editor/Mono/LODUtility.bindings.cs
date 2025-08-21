@@ -38,6 +38,9 @@ namespace UnityEditor
         [FreeFunction("LODUtilityBindings::CalculateDistance")]
         extern internal static float CalculateDistance(Camera camera, float relativeScreenHeight, LODGroup group);
 
+        [FreeFunction("LODUtilityBindings::CalculateMeshLOD")]
+        extern internal static UInt16 CalculateMeshLOD(Camera camera, Renderer renderer);
+
         internal static Vector3 CalculateWorldReferencePoint(LODGroup group)
         {
             return group.worldReferencePoint;

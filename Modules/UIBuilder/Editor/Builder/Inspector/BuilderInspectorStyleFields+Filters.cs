@@ -105,7 +105,6 @@ namespace Unity.UI.Builder
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);
             styleSheet.RemoveProperty(currentRule, styleProperty);
-            styleSheet.SetTemporaryContentHash();
         }
 
         void OnFilterFunctionChanged(FilterFunctionChangedEvent evt, FilterStyleField filterStyleField)
@@ -131,7 +130,6 @@ namespace Unity.UI.Builder
             }
 
             NotifyStyleChanges(s_StyleChangeList, true);
-            styleSheet.SetTemporaryContentHash();
         }
 
         void OnFilterFunctionValueChanged(FilterFunctionValueChangedEvent evt, FilterStyleField filterStyleField)
@@ -150,7 +148,6 @@ namespace Unity.UI.Builder
             manipulator.SetFilterFunction(evt.index, evt.filterFunction);
 
             NotifyStyleChanges(s_StyleChangeList, false);
-            styleSheet.SetTemporaryContentHash();
         }
 
         void OnFilterFunctionReordered(FilterFunctionReorderedEvent evt, FilterStyleField filterStyleField)
@@ -163,7 +160,6 @@ namespace Unity.UI.Builder
             styleProperty.SetFilter(styleSheet, filter);
 
             NotifyStyleChanges(s_StyleChangeList, false);
-            styleSheet.SetTemporaryContentHash();
         }
     }
 }

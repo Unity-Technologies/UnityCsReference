@@ -21,7 +21,12 @@ namespace UnityEditor.Build.Profile
         readonly Label m_InstalledIndicator;
         readonly Label m_Description;
         readonly Label m_Publisher;
+        readonly Image m_Thumbnail;
         PlatformPackageEntry m_Entry;
+        readonly VisualElement m_DisplayNamePlaceholder;
+        readonly VisualElement m_DescriptionPlaceholder;
+        readonly VisualElement m_PublisherPlaceholder;
+        readonly VisualElement m_ThumbnailPlaceholder;
 
         internal PlatformPackageItem()
         {
@@ -43,25 +48,89 @@ namespace UnityEditor.Build.Profile
             m_InstalledIndicator.tooltip = TrText.packageInstalled;
             m_Description = this.Q<Label>("package-list-description");
             m_Publisher = this.Q<Label>("package-list-publisher");
+            m_Thumbnail = this.Q<Image>("package-list-thumbnail");
+            m_DisplayNamePlaceholder = this.Q<VisualElement>("package-label-name-placeholder");
+            m_DescriptionPlaceholder = this.Q<VisualElement>("package-description-placeholder");
+            m_PublisherPlaceholder = this.Q<VisualElement>("package-publisher-placeholder");
+            m_ThumbnailPlaceholder = this.Q<VisualElement>("package-thumbnail-placeholder");
+            m_ThumbnailPlaceholder.Q<Image>("package-thumbnail-placeholder-icon").image = BuildProfileModuleUtil.GetRawImageIcon();
         }
 
         internal void Set(PlatformPackageEntry entry)
         {
             m_Entry = entry;
-            m_DisplayName.text = string.IsNullOrEmpty(entry.displayName) ? entry.qualifiedName : entry.displayName;
-            SetInstalledIndicator(entry.isInstalled);
-            SetRequiredIndicator(entry.required);
-            m_ShouldInstallToggle.SetValueWithoutNotify(entry.shouldInstalled || entry.isInstalled);
-            m_ShouldInstallToggle.SetEnabled(!entry.required && !entry.isInstalled);
-            m_Description.text = entry.description;
 
-            if (string.IsNullOrEmpty(entry.publisher))
-                m_Publisher.Hide();
-            else
+            switch (BuildProfileContext.packageServiceInfoProvider.currentRequestState)
             {
-                m_Publisher.text = string.Format(TrText.publisherLabel, entry.publisher);
-                m_Publisher.Show();
+                case PlatformPackageServiceInfoProvider.RequestState.Pending:
+                {
+                    ShowPackageInfoPlaceholders();
+                    SetInstalledIndicator(false);
+                    SetRequiredIndicator(false);
+                    m_ShouldInstallToggle.SetEnabled(false);
+
+                    if (!entry.hasThumbnail)
+                        m_ThumbnailPlaceholder.Hide();
+
+                    break;
+                }
+                case PlatformPackageServiceInfoProvider.RequestState.Success:
+                case PlatformPackageServiceInfoProvider.RequestState.Failure:
+                case PlatformPackageServiceInfoProvider.RequestState.Timeout:
+                default:
+                {
+                    HidePackageInfoPlaceholders();
+                    m_DisplayName.text = string.IsNullOrEmpty(entry.displayName) ? entry.qualifiedName : entry.displayName;
+                    SetInstalledIndicator(entry.isInstalled);
+                    SetRequiredIndicator(entry.required);
+                    m_ShouldInstallToggle.SetValueWithoutNotify(entry.shouldInstalled || entry.isInstalled);
+                    m_ShouldInstallToggle.SetEnabled(!entry.required && !entry.isInstalled);
+                    m_Description.text = entry.description;
+
+                    if (string.IsNullOrEmpty(entry.publisher))
+                        m_Publisher.Hide();
+                    else
+                        m_Publisher.text = string.Format(TrText.publisherLabel, entry.publisher);
+
+                    if (!entry.hasThumbnail)
+                        m_Thumbnail.Hide();
+                    else if (entry.thumbnail == null)
+                    {
+                        m_ThumbnailPlaceholder.Show();
+                        m_Thumbnail.Hide();
+                    }
+                    else
+                        m_Thumbnail.image = entry.thumbnail;
+
+                    break;
+                }
             }
+        }
+
+        void ShowPackageInfoPlaceholders()
+        {
+            m_DisplayName.Hide();
+            m_Description.Hide();
+            m_Publisher.Hide();
+            m_Thumbnail.Hide();
+
+            m_DisplayNamePlaceholder.Show();
+            m_DescriptionPlaceholder.Show();
+            m_PublisherPlaceholder.Show();
+            m_ThumbnailPlaceholder.Show();
+        }
+
+        void HidePackageInfoPlaceholders()
+        {
+            m_DisplayNamePlaceholder.Hide();
+            m_DescriptionPlaceholder.Hide();
+            m_PublisherPlaceholder.Hide();
+            m_ThumbnailPlaceholder.Hide();
+
+            m_DisplayName.Show();
+            m_Description.Show();
+            m_Publisher.Show();
+            m_Thumbnail.Show();
         }
 
         internal void SetShouldInstallToggle(bool selection)

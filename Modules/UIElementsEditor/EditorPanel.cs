@@ -36,6 +36,7 @@ namespace UnityEditor.UIElements
             panelDebug = new PanelDebug(this);
             uiElementsBridge = new EditorUIElementsBridge();
             UpdateScalingFromEditorWindow = true;
+            CreateMenuFunctor = () => new GenericOSMenu();
         }
 
         public static void InitEditorUpdater(BaseVisualElementPanel panel, VisualTreeUpdater visualTreeUpdater)
@@ -100,7 +101,6 @@ namespace UnityEditor.UIElements
             base.UpdateForRepaint();
         }
 
-        internal override IGenericMenu CreateMenu() => new GenericOSMenu();
 
         internal override Color HyperlinkColor
         {

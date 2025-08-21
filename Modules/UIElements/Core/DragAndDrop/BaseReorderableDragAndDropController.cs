@@ -28,6 +28,11 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        public virtual bool CanDrop()
+        {
+            return true;
+        }
+
         public virtual StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIds, bool skipText = false)
         {
             m_SortedSelectedIds.Clear();
@@ -67,7 +72,8 @@ namespace UnityEngine.UIElements
         protected virtual int CompareId(int id1, int id2) => id1.CompareTo(id2);
 
         public abstract DragVisualMode HandleDragAndDrop(IListDragAndDropArgs args);
-        public abstract void OnDrop(IListDragAndDropArgs args);
+
+        public virtual void OnDrop(IListDragAndDropArgs args) { }
 
         public virtual void DragCleanup() { }
         public virtual void HandleAutoExpand(ReusableCollectionItem item, Vector2 pointerPosition) { }

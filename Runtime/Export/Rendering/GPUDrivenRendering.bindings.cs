@@ -95,6 +95,7 @@ namespace UnityEngine.Rendering
             var lightmapScaleOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.lightmapScaleOffset, nativeData.rendererGroupCount, Allocator.Invalid);
             var gameObjectLayer = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.gameObjectLayer, nativeData.rendererGroupCount, Allocator.Invalid);
             var renderingLayerMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<uint>(nativeData.renderingLayerMask, nativeData.rendererGroupCount, Allocator.Invalid);
+            var rendererUserValues = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<uint>(nativeData.rendererUserValues, nativeData.rendererGroupCount, Allocator.Invalid);
             var lodGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(nativeData.lodGroupID, nativeData.lodGroupID == null ? 0 : nativeData.rendererGroupCount, Allocator.Invalid);
             var lightmapIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.motionVecGenMode, nativeData.rendererGroupCount, Allocator.Invalid);
             var packedRendererData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenPackedRendererData>(nativeData.packedRendererData, nativeData.rendererGroupCount, Allocator.Invalid);
@@ -132,6 +133,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lightmapScaleOffset, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref gameObjectLayer, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref renderingLayerMask, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref rendererUserValues, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodGroupID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lightmapIndex, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref packedRendererData, AtomicSafetyHandle.Create());
@@ -164,6 +166,7 @@ namespace UnityEngine.Rendering
                 lightmapScaleOffset = lightmapScaleOffset,
                 gameObjectLayer = gameObjectLayer,
                 renderingLayerMask = renderingLayerMask,
+                rendererUserValues = rendererUserValues,
                 lodGroupID = lodGroupID,
                 lightmapIndex = lightmapIndex,
                 packedRendererData = packedRendererData,
@@ -198,6 +201,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lightmapScaleOffset));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(gameObjectLayer));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(renderingLayerMask));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(rendererUserValues));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodGroupID));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lightmapIndex));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(packedRendererData));
@@ -350,6 +354,7 @@ namespace UnityEngine.Rendering
         public Vector4* lightmapScaleOffset;
         public int* gameObjectLayer;
         public uint* renderingLayerMask;
+        public uint* rendererUserValues;
         public EntityId* lodGroupID;
         public MotionVectorGenerationMode* motionVecGenMode;
         public GPUDrivenPackedRendererData* packedRendererData;
@@ -526,6 +531,7 @@ namespace UnityEngine.Rendering
         public NativeArray<Vector4> lightmapScaleOffset;
         public NativeArray<int> gameObjectLayer;
         public NativeArray<uint> renderingLayerMask;
+        public NativeArray<uint> rendererUserValues;
         public NativeArray<EntityId> lodGroupID;
         public NativeArray<int> lightmapIndex;
         public NativeArray<GPUDrivenPackedRendererData> packedRendererData;

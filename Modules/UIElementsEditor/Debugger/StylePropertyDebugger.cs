@@ -123,12 +123,12 @@ namespace UnityEditor.UIElements.Debugger
             if (m_SelectedElement.inlineStyleAccess == null)
                 return;
 
-            var inlineRulePropIds = m_SelectedElement.inlineStyleAccess.inlineRule.propertyIds;
-            if (inlineRulePropIds != null)
+            var inlineRuleProperties = m_SelectedElement.inlineStyleAccess.inlineRule.properties;
+            if (inlineRuleProperties != null)
             {
-                foreach (var id in inlineRulePropIds)
+                foreach (var property in inlineRuleProperties)
                 {
-                    m_PropertySpecificityDictionary[id] = StyleDebug.InlineSpecificity;
+                    m_PropertySpecificityDictionary[property.id] = StyleDebug.InlineSpecificity;
                 }
             }
 
@@ -310,7 +310,6 @@ namespace UnityEditor.UIElements.Debugger
             }
             else if (val is FontDefinition fontDefinition)
             {
-
                 ObjectField field;
                 if (fontDefinition.fontAsset != null)
                 {
@@ -498,6 +497,12 @@ namespace UnityEditor.UIElements.Debugger
                 if (!IsFocused(field))
                     field.SetValueWithoutNotify(ratio.value);
             }
+            else if (val is MaterialDefinition materialDef)
+            {
+                var field = GetOrCreateObjectField<Material>();
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(materialDef.material);
+            }
             else
             {
                 var type = val.GetType();
@@ -630,6 +635,9 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (type == typeof(StyleFontDefinition))
                     val = new StyleFontDefinition();
+
+                if (type == typeof(StyleMaterialDefinition))
+                    val = new StyleMaterialDefinition();
             }
             else if (type == newValue.GetType())
             {

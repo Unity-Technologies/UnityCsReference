@@ -48,7 +48,7 @@ namespace UnityEngine.Analytics
             GC.SuppressFinalize(this);
         }
 
-        internal static extern IntPtr Internal_Create([Unmarshalled] CustomEventData ced, string name);
+        internal static extern IntPtr Internal_Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] CustomEventData ced, string name);
         [ThreadSafe]
         internal static extern void Internal_Destroy(IntPtr ptr);
 

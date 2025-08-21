@@ -252,6 +252,10 @@ namespace UnityEditor.Search
     public class SearchIndexer : IDisposable
     {
 
+        // 1- Initial version after removing the old SearchIndexEntry
+        // 2- Fix Search Areas for sub assets and sub objects
+        internal const int version = 2;
+
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>
         /// </summary>
@@ -331,19 +335,25 @@ namespace UnityEditor.Search
         static readonly ProfilerMarker k_AddNumberMarker = new($"{nameof(SearchIndexer)}.{nameof(AddNumber)}");
         static readonly ProfilerMarker k_AddPropertyMarker = new($"{nameof(SearchIndexer)}.{nameof(AddProperty)}");
 
+        [Obsolete("This constructor is no longer supported. Please use SearchIndexer(string name, string filePath)")]
         /// <summary>
         /// Create a new default SearchIndexer.
         /// </summary>
         public SearchIndexer()
-            : this(string.Empty, new SearchIndexEntryStorage())
+            : this(string.Empty, new LMDBIndexStorage(FileUtil.GetUniqueTempPathInProject()))
         {}
 
+        [Obsolete("This constructor is no longer supported. Please use SearchIndexer(string name, string filePath)")]
         /// <summary>
         /// Create a new SearchIndexer.
         /// </summary>
         /// <param name="name">Name of the indexer</param>
         public SearchIndexer(string name)
-            : this(name, new SearchIndexEntryStorage())
+            : this(name, new LMDBIndexStorage(FileUtil.GetUniqueTempPathInProject()))
+        {}
+
+        public SearchIndexer(string name, string filePath)
+            : this(name, new LMDBIndexStorage(filePath))
         {}
 
         internal SearchIndexer(string name, ISearchIndexerStorage storage)
@@ -488,9 +498,10 @@ namespace UnityEditor.Search
         public void AddWord(string word, int score, int documentIndex)
         {
             using var _ = k_AddWordMarker.Auto();
-            m_Storage.AddWord(word, 2, word.Length, score, documentIndex);
+            m_Storage.AddWord(word, score, documentIndex);
         }
 
+        [Obsolete("AddWord with variations is no longer supported. Variations are handled automatically internally. Please use AddWord(string word, int score, int documentIndex)")]
         /// <summary>
         /// Add a new word coming from a specific document to the index. The word will be added with multiple variations allowing partial search.
         /// </summary>
@@ -501,9 +512,10 @@ namespace UnityEditor.Search
         public void AddWord(string word, int size, int score, int documentIndex)
         {
             using var _ = k_AddWordMarker.Auto();
-            m_Storage.AddWord(word, size, size, score, documentIndex);
+            m_Storage.AddWord(word, score, documentIndex);
         }
 
+        [Obsolete("AddExactWord is no longer supported. Variations are handled automatically internally. Please use AddWord(string word, int score, int documentIndex)")]
         /// <summary>
         /// Add a new word coming from a specific document to the index. The word will be added as an exact match.
         /// </summary>
@@ -513,9 +525,10 @@ namespace UnityEditor.Search
         public void AddExactWord(string word, int score, int documentIndex)
         {
             using var _ = k_AddExactWordMarker.Auto();
-            m_Storage.AddExactWord(word, score, documentIndex);
+            m_Storage.AddWord(word, score, documentIndex);
         }
 
+        [Obsolete("AddWord with variations is no longer supported. Variations are handled automatically internally. Please use AddWord(string word, int score, int documentIndex)")]
         /// <summary>
         /// Add a new word coming from a specific document to the index. The word will be added with multiple variations allowing partial search.
         /// </summary>
@@ -527,7 +540,7 @@ namespace UnityEditor.Search
         public void AddWord(string word, int minVariations, int maxVariations, int score, int documentIndex)
         {
             using var _ = k_AddWordMarker.Auto();
-            m_Storage.AddWord(word, minVariations, maxVariations, score, documentIndex);
+            m_Storage.AddWord(word, score, documentIndex);
         }
 
         /// <summary>
@@ -544,6 +557,59 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value.
+        /// </summary>
+        /// <param name="key">Key used to retrieve the value.</param>
+        /// <param name="value">String value to store in the index.</param>
+        /// <param name="documentIndex">Document where the indexed value was found.</param>
+        public void AddProperty(string key, string value, int documentIndex)
+        {
+            using var _ = k_AddPropertyMarker.Auto();
+            m_Storage.AddProperty(key, value, 0, documentIndex, false);
+        }
+
+        /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value.
+        /// </summary>
+        /// <param name="key">Key used to retrieve the value.</param>
+        /// <param name="value">String value to store in the index.</param>
+        /// <param name="score">Relevance score of the word.</param>
+        /// <param name="documentIndex">Document where the indexed value was found.</param>
+        public void AddProperty(string key, string value, int score, int documentIndex)
+        {
+            using var _ = k_AddPropertyMarker.Auto();
+            m_Storage.AddProperty(key, value, score, documentIndex, false);
+        }
+
+        /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value.
+        /// </summary>
+        /// <param name="key">Key used to retrieve the value.</param>
+        /// <param name="value">String value to store in the index.</param>
+        /// <param name="documentIndex">Document where the indexed value was found.</param>
+        /// <param name="saveKeyword">Define if we store this key in the keyword registry of the index. See <see cref="SearchIndexer.GetKeywords"/>.</param>
+        public void AddProperty(string key, string value, int documentIndex, bool saveKeyword)
+        {
+            using var _ = k_AddPropertyMarker.Auto();
+            m_Storage.AddProperty(key, value, 0, documentIndex, saveKeyword);
+        }
+
+        /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value.
+        /// </summary>
+        /// <param name="key">Key used to retrieve the value.</param>
+        /// <param name="value">String value to store in the index.</param>
+        /// <param name="score">Relevance score of the word.</param>
+        /// <param name="documentIndex">Document where the indexed value was found.</param>
+        /// <param name="saveKeyword">Define if we store this key in the keyword registry of the index. See <see cref="SearchIndexer.GetKeywords"/>.</param>
+        public void AddProperty(string key, string value, int score, int documentIndex, bool saveKeyword)
+        {
+            using var _ = k_AddPropertyMarker.Auto();
+            m_Storage.AddProperty(key, value, score, documentIndex, saveKeyword);
+        }
+
+        [Obsolete("AddProperty with variations is no longer supported. Variations are handled automatically internally. Please use AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword)")]
+        /// <summary>
         /// Add a property value to the index. A property is specified with a key and a string value. The value will be stored with multiple variations.
         /// </summary>
         /// <param name="key">Key used to retrieve the value.</param>
@@ -554,9 +620,10 @@ namespace UnityEditor.Search
         public void AddProperty(string key, string value, int documentIndex, bool saveKeyword = false, bool exact = true)
         {
             using var _ = k_AddPropertyMarker.Auto();
-            m_Storage.AddProperty(key, value, minWordIndexationLength, value.Length, 0, documentIndex, exact, saveKeyword);
+            m_Storage.AddProperty(key, value, 0, documentIndex, saveKeyword);
         }
 
+        [Obsolete("AddProperty with variations is no longer supported. Variations are handled automatically internally. Please use AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword)")]
         /// <summary>
         /// Add a property value to the index. A property is specified with a key and a string value. The value will be stored with multiple variations.
         /// </summary>
@@ -569,9 +636,10 @@ namespace UnityEditor.Search
         public void AddProperty(string key, string value, int score, int documentIndex, bool saveKeyword = false, bool exact = true)
         {
             using var _ = k_AddPropertyMarker.Auto();
-            m_Storage.AddProperty(key, value, minWordIndexationLength, value.Length, score, documentIndex, exact, saveKeyword);
+            m_Storage.AddProperty(key, value, score, documentIndex, saveKeyword);
         }
 
+        [Obsolete("AddProperty with variations is no longer supported. Variations are handled automatically internally. Please use AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword)")]
         /// <summary>
         /// Add a property value to the index. A property is specified with a key and a string value. The value will be stored with multiple variations.
         /// </summary>
@@ -586,7 +654,7 @@ namespace UnityEditor.Search
         public void AddProperty(string name, string value, int minVariations, int maxVariations, int score, int documentIndex, bool saveKeyword = false, bool exact = true)
         {
             using var _ = k_AddPropertyMarker.Auto();
-            m_Storage.AddProperty(name, value, minVariations, maxVariations, score, documentIndex, exact, saveKeyword);
+            m_Storage.AddProperty(name, value, score, documentIndex, saveKeyword);
         }
 
         /// <summary>
@@ -634,6 +702,7 @@ namespace UnityEditor.Search
             return patternMatchLimit == int.MaxValue ? parsedQuery.Apply(null) : parsedQuery.Apply(null).Take(patternMatchLimit);
         }
 
+        [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk.")]
         /// <summary>
         /// Write a binary representation of the the index on a stream.
         /// </summary>
@@ -643,6 +712,7 @@ namespace UnityEditor.Search
             m_Storage.Write(stream);
         }
 
+        [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk.")]
         /// <summary>
         /// Get the bytes representation of this index. See <see cref="SearchIndexer.Write"/>.
         /// </summary>
@@ -656,6 +726,7 @@ namespace UnityEditor.Search
             }
         }
 
+        [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk.")]
         /// <summary>
         /// Read a stream and populate the index from it.
         /// </summary>
@@ -676,6 +747,7 @@ namespace UnityEditor.Search
             m_Storage.MapProperty(name, label, help, propertyType, ownerTypeName, propositionGenerationOptions, removeNestedKeys);
         }
 
+        [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk.")]
         /// <summary>
         /// Load asynchronously (i.e. in another thread) the index from a binary buffer.
         /// </summary>
@@ -698,12 +770,6 @@ namespace UnityEditor.Search
             });
             t.Start();
             return t.ThreadState != ThreadState.Unstarted;
-        }
-
-        internal bool LoadBytes(byte[] bytes)
-        {
-            using (var memoryStream = new MemoryStream(bytes))
-                return Read(memoryStream, false);
         }
 
         /// <summary>
@@ -771,12 +837,6 @@ namespace UnityEditor.Search
                 if (!m_QueryEngine.HasFilter(filter))
                     m_QueryEngine.AddFilter(filter);
             }
-        }
-
-        internal void ApplyFrom(SearchIndexer source)
-        {
-            m_Storage.ApplyFrom(source);
-            m_RebuildFilters = true;
         }
 
         internal IEnumerable<string> GetKeywords()
@@ -857,7 +917,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Start indexing entries.
         /// </summary>
-        /// <param name="clear">True if the the current index should be cleared.</param>
+        /// <param name="clear">True if the current index should be cleared.</param>
         public void Start(bool clear = false)
         {
             m_IndexerThread = null;
@@ -873,7 +933,7 @@ namespace UnityEditor.Search
         /// </summary>
         public void Finish()
         {
-            Finish(null, null, saveBytes: false);
+            Finish(removedDocuments: null);
         }
 
         /// <summary>
@@ -882,14 +942,41 @@ namespace UnityEditor.Search
         /// <param name="threadCompletedCallback">Callback invoked when the index is ready to be used.</param>
         public void Finish(Action threadCompletedCallback)
         {
-            Finish(bytes => threadCompletedCallback?.Invoke(), null, saveBytes: false);
+            Finish(threadCompletedCallback, null);
         }
 
         public void Finish(Action threadCompletedCallback, string[] removedDocuments)
         {
-            Finish(bytes => threadCompletedCallback?.Invoke(), removedDocuments, saveBytes: false);
+            m_IndexerThread = new Thread(() =>
+            {
+                try
+                {
+                    using (new IndexerThreadScope(AbortIndexing))
+                    {
+                        Finish(removedDocuments);
+
+                        if (threadCompletedCallback != null)
+                        {
+                            Dispatcher.Enqueue(threadCompletedCallback);
+                        }
+                    }
+                }
+                catch (ThreadAbortException)
+                {
+                    Thread.ResetAbort();
+                }
+                catch (Exception ex)
+                {
+                    if (Utils.isDeveloperBuild)
+                        UnityEngine.Debug.LogException(ex);
+                    else
+                        Console.WriteLine($"[QS] Failed to finalize index: {ex}");
+                }
+            });
+            m_IndexerThread.Start();
         }
 
+        [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk. Please use Finish(Action threadCompletedCallback, string[] removedDocuments) instead.")]
         /// <summary>
         /// /// Finalize the current index, sorting and compiling of all the indexes.
         /// </summary>
@@ -900,6 +987,7 @@ namespace UnityEditor.Search
             Finish(threadCompletedCallback, removedDocuments, saveBytes: true);
         }
 
+        [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk. Please use Finish(Action threadCompletedCallback, string[] removedDocuments) instead.")]
         public void Finish(Action<byte[]> threadCompletedCallback, string[] removedDocuments, bool saveBytes)
         {
             m_IndexerThread = new Thread(() =>
@@ -949,110 +1037,16 @@ namespace UnityEditor.Search
         private protected virtual void OnFinish()
         {}
 
-        internal string Print(IEnumerable<SearchIndexEntry> indexes)
-        {
-            var sb = new StringBuilder();
-            foreach (var i in indexes)
-                sb.AppendLine(i.ToString());
-            return sb.ToString();
-        }
-
         internal virtual IEnumerable<SearchResult> SearchTerm(
             string name, in object value, SearchIndexOperator op, bool exclude, SearchResultCollection subset = null)
         {
             return m_Storage.SearchTerm(name, value, op, exclude, subset);
         }
 
-        internal void SaveIndexToDisk(string indexFilePath)
-        {
-            if (String.IsNullOrEmpty(indexFilePath))
-                return;
-
-            var indexTempFilePath = Path.GetTempFileName();
-            using (var fileStream = new FileStream(indexTempFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                Write(fileStream);
-
-            try
-            {
-                try
-                {
-                    if (File.Exists(indexFilePath))
-                        File.Delete(indexFilePath);
-                }
-                catch (IOException)
-                {
-                    // ignore file index persistence operation, since it is not critical and will redone later.
-                }
-
-                File.Move(indexTempFilePath, indexFilePath);
-            }
-            catch (IOException)
-            {
-                // ignore file index persistence operation, since it is not critical and will redone later.
-            }
-        }
-
-        internal bool ReadIndexFromDisk(string indexFilePath, bool checkVersionOnly = false)
-        {
-            using (var fileStream = new FileStream(indexFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                return Read(fileStream, checkVersionOnly);
-        }
-
-        // Used by tests
-        internal bool LoadIndexFromDisk(string indexFilePath, bool useThread = false)
-        {
-            if (indexFilePath == null || !File.Exists(indexFilePath))
-                return false;
-
-            if (useThread)
-            {
-                if (!ReadIndexFromDisk(indexFilePath, true))
-                    return false;
-
-                var t = new Thread(() => ReadIndexFromDisk(indexFilePath));
-                t.Start();
-                return t.ThreadState != System.Threading.ThreadState.Unstarted;
-            }
-
-            return ReadIndexFromDisk(indexFilePath);
-        }
-
         private void AbortIndexing()
         {
             m_IndexerThread?.Abort();
             m_IndexerThread = null;
-        }
-
-        readonly struct IndexRange
-        {
-            public readonly int start;
-            public readonly int end;
-
-            public IndexRange(int s, int e)
-            {
-                start = s;
-                end = e;
-            }
-
-            public bool valid => start != -1;
-
-            public static IndexRange Invalid = new IndexRange(-1, -1);
-        }
-
-        readonly struct RangeSet : IEquatable<RangeSet>
-        {
-            public readonly SearchIndexEntry.Type type;
-            public readonly int crc;
-
-            public RangeSet(SearchIndexEntry.Type type, int crc)
-            {
-                this.type = type;
-                this.crc = crc;
-            }
-
-            public override int GetHashCode() => (type, crc).GetHashCode();
-            public override bool Equals(object other) => other is RangeSet l && Equals(l);
-            public bool Equals(RangeSet other) => type == other.type && crc == other.crc;
         }
 
         struct IndexerThreadScope : IDisposable

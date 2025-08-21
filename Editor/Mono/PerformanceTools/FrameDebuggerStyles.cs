@@ -43,7 +43,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             "SRP Batch",
             "",                 // on purpose empty string for kFrameEventHierarchyLevelBreak
             "Hybrid Batch Group",
-            "Configure Foveated Rendering",
+            "Configure Foveated Rendering"
         };
 
         // General settings for the Frame Debugger Window and layout

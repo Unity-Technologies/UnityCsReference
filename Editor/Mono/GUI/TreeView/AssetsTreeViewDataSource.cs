@@ -66,7 +66,7 @@ namespace UnityEditor
         public override List<EntityId> GetNewSelection(TreeViewItem<EntityId> clickedItem, TreeViewSelectState<EntityId> selectState)
         {
             var assetTreeClickedItem = clickedItem as IAssetTreeViewItem;
-            var clickedEntry = new AssetReference() { instanceID = clickedItem.id };
+            var clickedEntry = new AssetReference() { entityId = clickedItem.id };
             if (clickedItem.id == 0 && assetTreeClickedItem != null)
                 clickedEntry.guid = assetTreeClickedItem.Guid;
 
@@ -96,7 +96,7 @@ namespace UnityEditor
 
             var result = InternalEditorUtility.GetNewSelection(ref clickedEntry, allIDs, allGuids, selectedIDs, lastClickedID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection);
 
-            clickedItem.id = clickedEntry.instanceID;
+            clickedItem.id = clickedEntry.entityId;
 
             for (int i = 0; i < allIDs.Count; ++i)
             {

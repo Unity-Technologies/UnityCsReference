@@ -16,7 +16,7 @@ namespace UnityEditor
     {
         public static void CreateAndSetTreeView(ObjectTreeForSelector.TreeSelectorData data)
         {
-            var ignoreController = InternalEditorUtility.GetObjectFromInstanceID(data.userData) as AudioMixerController;
+            var ignoreController = InternalEditorUtility.GetObjectFromEntityId(data.userData) as AudioMixerController;
 
             // Create treeview
             var treeView = new TreeViewController<EntityId>(data.editorWindow, data.state);

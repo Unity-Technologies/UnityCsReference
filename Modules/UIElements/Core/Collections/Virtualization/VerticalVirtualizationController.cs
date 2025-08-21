@@ -250,7 +250,7 @@ namespace UnityEngine.UIElements
         /// <returns>true if the content container is dirty and the scroll will need to be deferred.</returns>
         protected bool ShouldDeferScrollToItem(int index)
         {
-            if (m_ScrollView.contentContainer.layoutNode.IsDirty)
+            if (m_ScrollView.contentContainer.panel.isDirty)
             {
                 m_DeferredScrollToItemIndex = index;
                 return true;

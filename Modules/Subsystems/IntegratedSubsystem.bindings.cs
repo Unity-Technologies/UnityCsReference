@@ -19,7 +19,7 @@ namespace UnityEngine
 
         internal ISubsystemDescriptor m_SubsystemDescriptor;
 
-        extern internal void SetHandle([Unmarshalled] IntegratedSubsystem subsystem);
+        extern internal void SetHandle([UnityMarshalAs(NativeType.ScriptingObjectPtr)] IntegratedSubsystem subsystem);
         extern public void Start();
         extern public void Stop();
         public void Destroy()

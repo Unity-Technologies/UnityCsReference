@@ -447,6 +447,15 @@ namespace Unity.UI.Builder
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
                     uiField.visualInput.tooltip = styleValueTooltip;
             }
+            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is ObjectField materialField)
+            {
+                materialField.objectType = typeof(Material);
+                materialField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    materialField.visualInput.tooltip = styleValueTooltip;
+            }            
             else if (IsComputedStyleEnum(val, styleType))
             {
                 var enumValue = GetComputedStyleEnumValue(val, styleType);
@@ -1244,6 +1253,18 @@ namespace Unity.UI.Builder
                 return true;
             }
 
+            if (IsComputedStyleMaterial(val, styleName) && fieldElement is ObjectField)
+            {
+                var uiField = fieldElement as ObjectField;
+                var value = GetComputedStyleMaterialValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetAsset(styleProperty.values[0]) as Material;
+
+                uiField.SetValueWithoutNotify(value.material);
+
+                return true;
+            }
+
             if (IsComputedStyleEnum(val, styleType))
             {
                 var enumValue = GetComputedStyleEnumValue(val, styleType);
@@ -1486,6 +1507,10 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(transitionTimingFunctionField);
             }
+            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is ObjectField objectMaterialField)
+            {
+                DispatchChangeEvent(objectMaterialField);
+            }            
             else if (IsComputedStyleEnum(val, styleType))
             {
                 switch (fieldElement)
@@ -1636,7 +1661,7 @@ namespace Unity.UI.Builder
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
                                 (a) =>
                                 {
-                                    BuilderBindingUtility.DeleteBinding(fieldElement, csPropertyName, m_Inspector.paneWindow as Builder);
+                                    BuilderBindingUtility.DeleteBinding(m_Inspector.attributeSection.context, csPropertyName, fieldElement);
                                 },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
@@ -3013,6 +3038,11 @@ namespace Unity.UI.Builder
             return val is StyleCursor || val is UnityEngine.UIElements.Cursor;
         }
 
+        static public bool IsComputedStyleMaterial(object val, string styleName)
+        {
+            return val is StyleMaterialDefinition || val is Material || styleName == "-unity-material";
+        }
+
         static public bool IsComputedStyleEnum(object val, Type valType)
         {
             if (val is Enum)
@@ -3027,6 +3057,20 @@ namespace Unity.UI.Builder
         }
 
         // Getters
+
+        static public MaterialDefinition GetComputedStyleMaterialValue(object val)
+        {
+            if (val == null)
+                return null;
+
+            if (val is Material)
+                return (Material)val;
+
+            if (val is StyleMaterialDefinition)
+                return ((StyleMaterialDefinition)val).value;
+
+            return (MaterialDefinition)val;
+        }
 
         static public float GetComputedStyleFloatValue(object val)
         {

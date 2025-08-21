@@ -188,10 +188,10 @@ namespace UnityEngine
         [FreeFunction]
         extern static bool IsObjectMonoBehaviour([NotNull] Object obj);
 
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern Coroutine StartCoroutineManaged(string methodName, object value);
 
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern Coroutine StartCoroutineManaged2(IEnumerator enumerator);
 
         extern void StopCoroutineManaged(Coroutine routine);

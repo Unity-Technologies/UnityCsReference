@@ -13,7 +13,7 @@ namespace Unity.PlayMode.Editor
     /// </summary>
     class DetailView : ScrollView
     {
-        const string k_Stylesheet = "PlayMode/UI/DetailView.uss";
+        const string k_Stylesheet = "PlayMode/UI/Framework.uss";
         internal const string k_DetailedViewName = "playmodeconfig-detail-view";
 
         PlayModeConfiguration m_Config;
@@ -66,6 +66,7 @@ namespace Unity.PlayMode.Editor
         {
             var container = new VisualElement();
             container.name = "no-config-selected-view";
+            container.AddToClassList("unity-scenarios-detailed-view__no-config-selected-view");
             container.Add(new Label("No configuration selected"));
             return container;
         }

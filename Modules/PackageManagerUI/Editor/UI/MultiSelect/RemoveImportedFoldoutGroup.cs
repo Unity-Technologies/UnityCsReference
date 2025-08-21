@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool AddPackage(IPackage package)
         {
-            return package.versions.primary.importedAssets?.Any() == true && base.AddPackage(package);
+            return package.versions.imported != null && base.AddPackage(package);
         }
     }
 }

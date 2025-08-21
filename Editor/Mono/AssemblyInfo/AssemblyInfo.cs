@@ -62,6 +62,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.PackageManagerUI.Develop.Editor")]
 [assembly: InternalsVisibleTo("Unity.DeviceSimulator.Editor")]
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
@@ -101,11 +102,13 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Compiler.Client")]
 [assembly: InternalsVisibleTo("ExternalCSharpCompiler")]
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.ImportActivityWindow.Tests")]
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.PlayMode.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ComponentUtility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
@@ -150,6 +153,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.UI.Builder.Editor")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.Tests")] // for UI Test Framework
 [assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
+[assembly: InternalsVisibleTo("UnityEditor.VectorGraphicsModule")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
@@ -172,7 +176,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]
 [assembly: InternalsVisibleTo("com.unity.search.extensions.editor")]
-
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 
 [assembly: InternalsVisibleTo("Unity.Entities.Build")]
@@ -193,6 +196,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
+//For add Component tests
+[assembly: InternalsVisibleTo("Unity.Modules.AdaptivePerformanceEditor.Tests.Playmode.EditorScripts.AssetCreation")]
+
 
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Tests")]
 
@@ -204,6 +210,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
 
 // Module test assemblies
+[assembly: InternalsVisibleTo("Unity.Modules.Scripting.APIUpdater.Misc.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Scripting.APIUpdater.UpdateSameProjectAsConfigs.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Scripting.APIUpdater.PackManIntegration.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CodeEditors.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.iOSExtensions.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.PlatformIcons.Tests.Editor")]
@@ -212,6 +222,7 @@ using UnityEngine;
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.EditorBake.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
 
@@ -226,6 +237,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Core.InspectorFramework.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Core.VersionControl.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.ProjectAuditor.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.Analytics.Tests.Editor")]
 

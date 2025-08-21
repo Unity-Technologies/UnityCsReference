@@ -19,7 +19,7 @@ namespace UnityEditor.Build.Content
         internal string m_Scene;
         public string scene { get { return m_Scene; } }
 
-        [Obsolete("processedScene has been deprecated.")]
+        [Obsolete("processedScene has been deprecated, use scene instead.", true)]
         public string processedScene { get { return m_Scene; } }
 
         [NativeName("referencedObjects")]

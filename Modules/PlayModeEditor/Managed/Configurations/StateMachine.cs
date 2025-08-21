@@ -103,6 +103,7 @@ namespace Unity.PlayMode.Editor
         /// Synchronously transition between two states. This method will block until the transition is complete.
         /// </summary>
         /// <param name="to">The state to transition to.</param>
+        /// <param name="transitionAction">The action to execute during the transition. Transition will be complete when this action returns.</param>
         /// <exception cref="InvalidOperationException">Throws if the transition is not valid.</exception>
         public void Transition(T to, Action<T, T> transitionAction)
         {

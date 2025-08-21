@@ -41,12 +41,14 @@ namespace UnityEditor
             [FreeFunction(k_ScriptingPrefix + "SetPosition", HasExplicitThis = true)] set;
         }
 
-        [FreeFunction(k_ScriptingPrefix + "SetFreeze", HasExplicitThis = true)]
-        public extern void SetFreeze(bool freeze);
         public extern bool maximized {[FreeFunction(k_ScriptingPrefix + "IsWindowMaximized", HasExplicitThis = true)] get; }
 
-        [FreeFunction(k_ScriptingPrefix + "SetAlpha", HasExplicitThis = true)]
-        public extern void SetAlpha(float alpha);
+        public void SetAlpha(float alpha)
+        {
+            // UUM-113705
+            // This functionality has been removed but ProBuilder package is referencing the internal API.
+            // Therefore this shell API is being added back in until ProBuilder can be updated to remove the reference.
+        }
 
         // Used by invisible "under the mouse" window of the eye dropper.
         [FreeFunction(k_ScriptingPrefix + "SetInvisible", HasExplicitThis = true)]
@@ -55,23 +57,8 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "IsZoomed", HasExplicitThis = true)]
         public extern bool IsZoomed();
 
-        [FreeFunction(k_ScriptingPrefix + "DisplayAllViews", HasExplicitThis = true)]
-        public extern void DisplayAllViews();
-
-        [FreeFunction(k_ScriptingPrefix + "Minimize", HasExplicitThis = true)]
-        public extern void Minimize();
-
         [FreeFunction(k_ScriptingPrefix + "ToggleMaximize", HasExplicitThis = true)]
         public extern void ToggleMaximize();
-
-        [FreeFunction(k_ScriptingPrefix + "MoveInFrontOf", HasExplicitThis = true)]
-        public extern void MoveInFrontOf(ContainerWindow other);
-
-        [FreeFunction(k_ScriptingPrefix + "MoveBehindOf", HasExplicitThis = true)]
-        public extern void MoveBehindOf(ContainerWindow other);
-
-        [FreeFunction(k_ScriptingPrefix + "SendCaptionEvent", HasExplicitThis = true)]
-        public extern void SendCaptionEvent(bool mouseDown);
 
         [FreeFunction(k_ScriptingPrefix + "Internal_Destroy", HasExplicitThis = true)]
         public extern void Internal_Destroy();
@@ -96,10 +83,6 @@ namespace UnityEditor
 
         [FreeFunction(k_ScriptingPrefix + "Internal_GetTopleftScreenPosition", HasExplicitThis = true)]
         private extern Vector2 Internal_GetTopleftScreenPosition();
-
-        // Disables any repaints until freeze is set to false again.
-        [FreeFunction(k_ScriptingPrefix + "SetFreezeDisplay")]
-        public static extern void SetFreezeDisplay(bool freeze);
 
         [FreeFunction(k_ScriptingPrefix + "GetOrderedWindowList")]
         internal static extern void GetOrderedWindowList();

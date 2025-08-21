@@ -409,7 +409,30 @@ namespace UnityEngine.UIElements
         /// </remarks>
         float scaledPixelsPerPoint { get; }
 
+    }
 
+    /// <summary>
+    /// Provides extension methods for Panel utilities.
+    /// </summary>
+    public static class PanelExtensions
+    {
+        /// <summary>
+        /// Creates an instance of <see cref="AbstractGenericMenu"/> that is valid at Runtime or within the Editor.
+        /// </summary>
+        /// <remarks>
+        /// If the <paramref name="panel"/> is an `EditorPanel`, creates a `GenericOSMenu`.
+        /// If the <paramref name="panel"/> is a `RuntimePanel`, creates a `GenericDropdownMenu`.
+        /// </remarks>
+        /// <param name="panel">The panel that will create the menu.</param>
+        /// <returns>An instance of `AbstractGenericMenu`.</returns>
+        public static AbstractGenericMenu CreateMenu(this IPanel panel)
+        {
+            if (panel is BaseVisualElementPanel p)
+            {
+                return p.CreateMenu();
+            }
+            return null;
+        }
     }
 
     /// <summary>
@@ -434,7 +457,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule")]
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -840,6 +863,7 @@ namespace UnityEngine.UIElements
 
         public IPanelDebug panelDebug { get; set; }
         public ILiveReloadSystem liveReloadSystem { get; set; }
+        public readonly Lazy<HashSet<TextElement>> textElementRegistry = new(isThreadSafe: false);
 
         public void RegisterChangeProcessor(IVisualElementChangeProcessor processor)
         {
@@ -855,7 +879,9 @@ namespace UnityEngine.UIElements
 
         public virtual void Render() => panelRenderer.Render();
 
-        internal virtual IGenericMenu CreateMenu() => new GenericDropdownMenu();
+        internal Func<AbstractGenericMenu> CreateMenuFunctor = () => new GenericDropdownMenu();
+
+        internal AbstractGenericMenu CreateMenu() => CreateMenuFunctor.Invoke();
     }
 
     // Strategy to initialize the editor updater
@@ -888,6 +914,7 @@ namespace UnityEngine.UIElements
         private uint m_Version = 0;
         private uint m_RepaintVersion = 0;
         private uint m_HierarchyVersion = 0;
+        private uint m_LastTickedHierarchyVersion = 0;
 
         ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
@@ -1235,6 +1262,8 @@ namespace UnityEngine.UIElements
                 atlas = null;
                 visualTree.Clear();
                 m_VisualTreeUpdater.Dispose();
+                if (textElementRegistry.IsValueCreated)
+                    textElementRegistry.Value.Clear();
             }
 
             base.Dispose(disposing);
@@ -1351,6 +1380,7 @@ namespace UnityEngine.UIElements
             // Updaters use version numbers for early exit, but it may happen that an updater invalidates a subsequent updater.
             if (!m_ValidatingLayout)
             {
+                UIElementsUtility.RebuildDirtyStyleSheets();
                 m_ValidatingLayout = true;
 
                 m_MarkerValidateLayout.Begin();
@@ -1382,6 +1412,9 @@ namespace UnityEngine.UIElements
         {
             using var scope = new UITKScope();
             using var _ = m_MarkerTickScheduledActions.Auto();
+
+            UIElementsUtility.RebuildDirtyStyleSheets();
+
             // Dispatch all timer update messages to each scheduled item
             scheduler.UpdateScheduledEvents(); //This entire thing should become an updater
             ValidateFocus();
@@ -1391,6 +1424,7 @@ namespace UnityEngine.UIElements
             UpdateBindings();
             UpdateDataBinding();
             UpdateAnimations();
+            m_LastTickedHierarchyVersion = m_HierarchyVersion;
         }
 
         public override void UpdateAuthoring()
@@ -1410,6 +1444,15 @@ namespace UnityEngine.UIElements
 
         public override void UpdateForRepaint()
         {
+            // Force the scheduling updaters to run if it wasn't run in the same frame as a hierarchy change.
+            // This is necessary because when an element is added to the panel, it may use the scheduler, register
+            // bindings or use animations. If the scheduling updaters are not ticked during the same frame, scheduled
+            // or bound elements may flicker.
+            if (m_LastTickedHierarchyVersion != m_HierarchyVersion)
+                TickSchedulingUpdaters();
+            else
+                UIElementsUtility.RebuildDirtyStyleSheets();
+
             //Here we don't want to update animation and bindings which are ticked by the scheduler
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
@@ -1421,6 +1464,7 @@ namespace UnityEngine.UIElements
 
         internal void UpdateWithoutRepaint()
         {
+            UIElementsUtility.RebuildDirtyStyleSheets();
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
             // This code path is currently only used by the InspectorWindow to force a layout
             // while it attempts to throttle the inspector elements creation
@@ -1528,7 +1572,7 @@ namespace UnityEngine.UIElements
         internal virtual Color HyperlinkColor => Color.blue;
     }
 
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule")]
     internal abstract class BaseRuntimePanel : Panel
     {
         private GameObject m_SelectableGameObject;

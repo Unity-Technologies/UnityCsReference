@@ -334,6 +334,16 @@ namespace UnityEditor
         AlwaysAllowed = 2,
     }
 
+    // Keep in synch with HttpAllowed enum from PlayerSettings.h
+    [Flags]
+    internal enum HttpAllowed
+    {
+        Default = 0,
+        HTTP1 = 1 << 0,
+        HTTP2 = 1 << 1,
+        HTTP3 = 1 << 2
+    }
+
     // Windows platform input APIs
     // Keep in sync with WindowsGamepadBackendHint enum from PlayerSettings.h
     public enum WindowsGamepadBackendHint
@@ -1765,6 +1775,8 @@ namespace UnityEditor
 
         public static extern InsecureHttpOption insecureHttpOption { get; set; }
 
+        internal static extern HttpAllowed allowedHttpConnections { get; set; }
+
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         public static extern ShaderPrecisionModel GetShaderPrecisionModel();
 
@@ -2005,5 +2017,14 @@ namespace UnityEditor
         [NativeMethod("GetTemplateCustomValue")]
         internal extern string GetTemplateCustomValue_Internal(string name);
 
+        [NativeMethod("SetEnableFrameTimingStats")]
+        [VisibleToOtherModules]
+        internal extern void SetEnableFrameTimingStats_Internal(bool value);
+
+        [NativeMethod("GetEnableFrameTimingStats")]
+        [VisibleToOtherModules]
+        internal extern bool GetEnableFrameTimingStats_Internal();
+
+        public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
     }
 }

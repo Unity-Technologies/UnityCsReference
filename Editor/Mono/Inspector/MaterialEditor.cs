@@ -2785,8 +2785,8 @@ namespace UnityEditor
         // TO DO: remove IMGUI code after fully finished with UITK one
         public override VisualElement CreatePreview(VisualElement inspectorPreviewWindow)
         {
-            var window = inspectorPreviewWindow as InspectorPreviewWindow;
-            var toolbar = window?.GetButtonPane();
+            var rootElement = inspectorPreviewWindow as PreviewRootElement;
+            var toolbar = rootElement?.GetButtonPane();
 
             var mat = target as Material;
             if (!SupportsRenderingPreview(mat))
@@ -2797,22 +2797,22 @@ namespace UnityEditor
             var viewType = GetPreviewType(mat);
             if (toolbar != null && (targets.Length > 1 || viewType == PreviewType.Mesh))
             {
-                window.AddButton(Styles.timeUpdateButtonName, (Texture2D)s_TimeIcons[m_TimeUpdate].image, () => OnTimeUpdateClick(window));
-                window.AddButton(Styles.selectedMeshButtonName, (Texture2D)s_MeshIcons[m_SelectedMesh].image, () => OnSelectedMeshClick(window));
-                window.AddButton(Styles.lightModeButtonName, (Texture2D)s_LightIcons[m_LightMode].image, () => OnLightModeClick(window));
-                window.AddDropdownWithIcon(Styles.reflectionProbeDropdownName, (Texture2D)Styles.reflectionProbePickerIcon.image, () => OnReflectionProbeClick(toolbar));
+                rootElement.AddButton(Styles.timeUpdateButtonName, (Texture2D)s_TimeIcons[m_TimeUpdate].image, () => OnTimeUpdateClick(rootElement));
+                rootElement.AddButton(Styles.selectedMeshButtonName, (Texture2D)s_MeshIcons[m_SelectedMesh].image, () => OnSelectedMeshClick(rootElement));
+                rootElement.AddButton(Styles.lightModeButtonName, (Texture2D)s_LightIcons[m_LightMode].image, () => OnLightModeClick(rootElement));
+                rootElement.AddDropdownWithIcon(Styles.reflectionProbeDropdownName, (Texture2D)Styles.reflectionProbePickerIcon.image, () => OnReflectionProbeClick(toolbar));
             }
 
-            return window;
+            return rootElement;
         }
 
-        void OnTimeUpdateClick(InspectorPreviewWindow window) { m_TimeUpdate = OnButtonClick(Styles.timeUpdateButtonName, m_TimeUpdate, s_TimeIcons, window); }
+        void OnTimeUpdateClick(PreviewRootElement rootElement) { m_TimeUpdate = OnButtonClick(Styles.timeUpdateButtonName, m_TimeUpdate, s_TimeIcons, rootElement); }
 
-        void OnLightModeClick(InspectorPreviewWindow window) { m_LightMode = OnButtonClick(Styles.lightModeButtonName, m_LightMode, s_LightIcons, window); }
+        void OnLightModeClick(PreviewRootElement rootElement) { m_LightMode = OnButtonClick(Styles.lightModeButtonName, m_LightMode, s_LightIcons, rootElement); }
 
-        void OnSelectedMeshClick(InspectorPreviewWindow window)
+        void OnSelectedMeshClick(PreviewRootElement rootElement)
         {
-            m_SelectedMesh = OnButtonClick(Styles.selectedMeshButtonName, m_SelectedMesh, s_MeshIcons, window);
+            m_SelectedMesh = OnButtonClick(Styles.selectedMeshButtonName, m_SelectedMesh, s_MeshIcons, rootElement);
             EditorPrefs.SetInt(kDefaultMaterialPreviewMesh, m_SelectedMesh);
         }
 
@@ -2825,13 +2825,13 @@ namespace UnityEditor
             }
         }
 
-        int OnButtonClick(string name, int state, GUIContent[] icons, InspectorPreviewWindow window)
+        int OnButtonClick(string name, int state, GUIContent[] icons, PreviewRootElement rootElement)
         {
             state++;
             if (state == icons.Length)
                 state = 0;
 
-            window.UpdateButtonIcon(name, (Texture2D)icons[state].image);
+            rootElement.UpdateButtonIcon(name, (Texture2D)icons[state].image);
 
             return state;
         }

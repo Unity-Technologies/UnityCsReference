@@ -150,6 +150,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal GraphicsFormat m_RenderTargetFormat;
         internal UnityEngine.Object m_RealShader;
         internal UnityEngine.Object m_OriginalShader;
+        internal Texture m_ShadingRateImageTexture;
 
         internal string copyString
         {
@@ -203,6 +204,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
         }
 
+        internal string m_ShadingRateImageDetails;
+
         private string m_MeshNamesString;
         internal string meshNames
         {
@@ -214,6 +217,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 return m_MeshNamesString;
             }
         }
+
         internal ShaderPropertyCollection[] m_ShaderProperties;
         internal ShaderPropertyCollection m_Keywords => m_ShaderProperties[(int)ShaderPropertyType.Keyword];
         internal ShaderPropertyCollection m_Textures => m_ShaderProperties[(int)ShaderPropertyType.Texture];
@@ -294,6 +298,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_RenderTargetHeight = curEventData.m_RenderTargetHeight;
                 m_IsValid = m_IsComputeEvent || m_IsRayTracingEvent;
             }
+            if (curEventData.m_ShadingRateImageTexture != null)
+                m_ShadingRateImageTexture = curEventData.m_ShadingRateImageTexture;
         }
 
         private void BuildShaderPropertyData(FrameDebuggerEventData curEventData)
@@ -693,10 +699,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private void Clear()
         {
             FrameDebuggerHelper.DestroyTexture(ref m_RenderTargetRenderTexture);
+            m_ShadingRateImageTexture = null;
             m_StringBuilder.Clear();
             m_DetailsStringBuilder.Clear();
             m_MeshStringBuilder.Clear();
             m_Details = string.Empty;
+            m_ShadingRateImageDetails = string.Empty;
             m_MeshNamesString = string.Empty;
             m_RealShaderName = string.Empty;
             m_RealShader = null;
@@ -1032,6 +1040,24 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "LightMode", lightModeName);
             m_DetailsStringBuilder.AppendLine();
             m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", passName);
+
+            // Set variable rate shading image details
+            if (FrameDebuggerHelper.IsVRSSupported())
+            {
+                m_StringBuilder.Clear();
+                m_StringBuilder.AppendFormat(k_TwoColumnFormat, "Base Shading Rate", $"{(ShadingRateFragmentSize)curEventData.m_ShadingRateFragmentSize}");
+                if (curEventData.m_ShadingRateImageTexture != null)
+                {
+                    ShadingRateCombiner primCombiner = (ShadingRateCombiner)curEventData.m_ShadingRatePrimitiveCombiner;
+                    ShadingRateCombiner fragCombiner = (ShadingRateCombiner)curEventData.m_ShadingRateFragmentCombiner;
+                    m_StringBuilder.AppendLine();
+                    m_StringBuilder.AppendFormat(k_TwoColumnFormat, "ShadingRateCombiners", $"{primCombiner} / {fragCombiner}");
+                    m_StringBuilder.AppendLine();
+                    // Custom format to reserve space for the SRI texture preview
+                    m_StringBuilder.AppendFormat("{0, -25}{1, -32}", "Shading Rate Image", curEventData.m_ShadingRateImageTexture.name);
+                }
+                m_ShadingRateImageDetails = m_StringBuilder.ToString();
+            }
         }
 
         private void CountCharacters(ShaderPropertyType dataType, ShaderInfo shaderInfo)

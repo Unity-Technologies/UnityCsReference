@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -219,8 +220,13 @@ namespace Unity.UI.Builder
             var showOpenInPlaceAction = showOpenInIsolationAction;
             var showSiblingOpenActions = !isLinkedOpenVTAActiveVTA && isLinkedInstancedVTAActiveVTA;
             var showUnpackAction = isLinkedVEADirectChild;
+
+            // Check if Template Container is allowed as child of parents content container if it exists.
+            // eg. Making Tab into TemplateContainer is not allowed because TabView's content container expects only Tabs.
+            var isTemplateContainerAllowed = BuilderAssetUtilities.IsSupportedChildType(documentElement?.parent, typeof(TemplateContainer));
+
             var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.DepthFirstTraversal().Contains(linkedVEA) &&
-                                           isSingleElementAffected;
+                                           isSingleElementAffected && isTemplateContainerAllowed;
 
             if (showOpenInBuilder || showReturnToParentAction || showOpenInIsolationAction || showOpenInPlaceAction || showSiblingOpenActions)
                 evt.menu.AppendSeparator();

@@ -400,7 +400,7 @@ namespace UnityEngine.TextCore
             glyphMetricsValue = null;
             tintValue = null;
             scaleValue = null;
-            colorValue = null; 
+            colorValue = null;
             ReadOnlySpan<char> spriteAssetName = ReadOnlySpan<char>.Empty;
             ReadOnlySpan<char> spriteName = ReadOnlySpan<char>.Empty;
             SpriteAsset? spriteAsset = null;
@@ -713,7 +713,7 @@ namespace UnityEngine.TextCore
                                 continue;
                             }
                         }
-         
+
                         if (tagType == TagType.Mspace || tagType == TagType.CSpace)
                         {
                             var tagUnitType = ParseTagUnitType(ref attributeSection);
@@ -846,7 +846,7 @@ namespace UnityEngine.TextCore
             int startingPos = 0; //Assument the starting position is always 0 as we do not backup the stack infos..
             // TODO incremental procesing, will have to review methods parameter and structure...
             // TOOD clean the checks belos
-            
+
             Debug.Assert(string.IsNullOrEmpty(input) || (atPosition < input.Length && atPosition >= 0), "Invalid position");
             Debug.Assert(startingPos <= atPosition && startingPos >= 0, "Invalid starting position");
 
@@ -1121,8 +1121,7 @@ namespace UnityEngine.TextCore
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void CreateTextGenerationSettingsArray(ref NativeTextGenerationSettings tgs, List<(int, TagType, string)> links, Color hyperlinkColor, float pixelsPerPoint, TextSettings textSettings)
         {
-			links.Clear();
-
+            links.Clear();
 
             var tags = FindTags(ref tgs.text, textSettings);
             var segments = GenerateSegments(tgs.text, tags);
@@ -1170,6 +1169,98 @@ namespace UnityEngine.TextCore
             }
 
             return false;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void PreProcessString(ref string text)
+        {
+            if (string.IsNullOrEmpty(text) || text.IndexOf('\\') == -1)
+            {
+                return;
+            }
+
+            var sb = new StringBuilder(text.Length);
+            int readIndex = 0;
+
+            while (readIndex < text.Length)
+            {
+                char c = text[readIndex];
+
+                if (c == '\\' && readIndex < text.Length - 1)
+                {
+                    readIndex++;
+                    char escapeCode = text[readIndex];
+
+                    switch (escapeCode)
+                    {
+                        case '\\': // escape
+                            sb.Append('\\');
+                            break;
+                        case 'n': // LineFeed
+                            sb.Append('\n');
+                            break;
+                        case 'r': // Carriage return
+                            sb.Append('\r');
+                            break;
+                        case 't': // Tab
+                            sb.Append('\t');
+                            break;
+                        case 'v': // Vertical tab used as soft line break
+                            sb.Append('\v');
+                            break;
+                        
+                        case 'u': // UTF-16 Unicode - \uXXXX
+                            if (readIndex + 4 < text.Length)
+                            {
+                                string hex = text.Substring(readIndex + 1, 4);
+                                if (uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint unicodeChar))
+                                {
+                                    sb.Append(Convert.ToChar(unicodeChar));
+                                    readIndex += 4; 
+                                }
+                                else
+                                {
+                                    sb.Append('\\').Append(escapeCode);
+                                }
+                            }
+                            else
+                            {
+                                sb.Append('\\').Append(escapeCode);
+                            }
+                            break;
+                        case 'U': // UTF-32 Unicode - \UXXXXXXXX
+                            if (readIndex + 8 < text.Length)
+                            {
+                                string hex = text.Substring(readIndex + 1, 8);
+                                if (uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint unicodeChar))
+                                {
+                                    sb.Append(char.ConvertFromUtf32((int)unicodeChar));
+                                    readIndex += 8;
+                                }
+                                else
+                                {
+                                    sb.Append('\\').Append(escapeCode);
+                                }
+                            }
+                            else
+                            {
+                                sb.Append('\\').Append(escapeCode);
+                            }
+                            break;
+                        default:
+                            sb.Append('\\').Append(escapeCode);
+                            break;
+                    }
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+
+                readIndex++;
+            }
+
+            text = sb.ToString();
         }
     }
 }

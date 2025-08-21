@@ -51,7 +51,7 @@ namespace UnityEditor
         }
 
         [NativeThrows]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static extern Vector2[] GeneratePerTriangleUVImpl(Mesh src, UnwrapParam settings);
 
         // Will auto generate uv2 with default settings for provided mesh, and fill them in

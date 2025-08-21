@@ -167,6 +167,12 @@ namespace UnityEditor.Toolbars
         {
             window.overlayCanvas.ApplyPreset(new UnityOnlyToolbarPreset());
         }
+
+        internal static bool editModeEnabled
+        {
+            get => MainToolbarWindow.instance.editModeActive;
+            set => MainToolbarWindow.instance.editModeActive = value;
+        }
     }
 
     sealed class UnityOnlyToolbarPreset : IOverlayPreset

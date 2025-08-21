@@ -62,7 +62,7 @@ namespace UnityEditor
             for (int i = 0; i < m_Textures.Length; i++)
             {
                 m_Textures[i] = new Texture2D(1, 1);
-                m_Textures[i].SetPixel(0, 0, LODGroupGUI.kLODColors[i]);
+                m_Textures[i].SetPixel(0, 0, LODGUI.kLODColors[i]);
             }
         }
 
@@ -107,7 +107,7 @@ namespace UnityEditor
             m_IsPreset = Preset.IsEditorTargetAPreset(serializedObject.targetObject);
 
             CalculatePrimitiveCountForRenderers();
-            m_PrimitiveCountLabel = LODGroupGUI.GUIStyles.m_TriangleCountLabel;
+            m_PrimitiveCountLabel = LODGUI.GUIStyles.m_TriangleCountLabel;
             ResetFoldoutLists();
             UpdateRendererMeshListCounts();
 
@@ -202,7 +202,7 @@ namespace UnityEditor
         protected virtual void DrawLODRendererMeshListHeader(Rect rect)
         {
             rect.height = EditorGUI.kSingleLineHeight;
-            GUI.Label(rect, LODGroupGUI.Styles.m_RendersTitle);
+            GUI.Label(rect, LODGUI.Styles.m_RendersTitle);
         }
 
         protected virtual void RemoveLODRendererMeshFromList(ReorderableList list)
@@ -231,26 +231,6 @@ namespace UnityEditor
             m_BillboardPreviewProperties = null;
         }
 
-        // Find the given sceen space rectangular bounds from a list of vector 3 points.
-        private static Rect CalculateScreenRect(IEnumerable<Vector3> points)
-        {
-            var points2 = points.Select(p => HandleUtility.WorldToGUIPoint(p)).ToList();
-
-            var min = new Vector2(float.MaxValue, float.MaxValue);
-            var max = new Vector2(float.MinValue, float.MinValue);
-
-            foreach (var point in points2)
-            {
-                min.x = (point.x < min.x) ? point.x : min.x;
-                max.x = (point.x > max.x) ? point.x : max.x;
-
-                min.y = (point.y < min.y) ? point.y : min.y;
-                max.y = (point.y > max.y) ? point.y : max.y;
-            }
-
-            return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
-        }
-
         public static bool IsSceneGUIEnabled()
         {
             if (Event.current.type != EventType.Repaint
@@ -271,45 +251,17 @@ namespace UnityEditor
             if (m_SelectedLODGroupCount > 1)
                 return;
 
+            if (SceneView.lastActiveSceneView == null)
+                return;
+
             LODGroup lodGroup = (LODGroup)target;
             Camera camera = SceneView.lastActiveSceneView.camera;
             var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(lodGroup);
 
-            if (Vector3.Dot(camera.transform.forward,
-                (camera.transform.position - worldReferencePoint).normalized) > 0)
-                return;
-
             var info = LODUtility.CalculateVisualizationData(camera, lodGroup, -1);
             float size = info.worldSpaceSize;
 
-            // Draw cap around LOD to visualize it's size
-            Handles.color = info.activeLODLevel != -1 ? LODGroupGUI.kLODColors[info.activeLODLevel] : LODGroupGUI.kCulledLODColor;
-
-            Handles.SelectionFrame(0, worldReferencePoint, camera.transform.rotation, size / 2);
-
-            // Calculate a screen rect for the on scene title
-            Vector3 sideways = camera.transform.right * size / 2.0f;
-            Vector3 up = camera.transform.up * size / 2.0f;
-            var rect = CalculateScreenRect(
-                new[]
-                {
-                    worldReferencePoint - sideways + up,
-                    worldReferencePoint - sideways - up,
-                    worldReferencePoint + sideways + up,
-                    worldReferencePoint + sideways - up
-                });
-
-            // Place the screen space lable directaly under the
-            var midPoint = rect.x + rect.width / 2.0f;
-            rect = new Rect(midPoint - LODGroupGUI.kSceneLabelHalfWidth, rect.yMax, LODGroupGUI.kSceneLabelHalfWidth * 2, LODGroupGUI.kSceneLabelHeight);
-
-            if (rect.yMax > Screen.height - LODGroupGUI.kSceneLabelHeight)
-                rect.y = Screen.height - LODGroupGUI.kSceneLabelHeight - LODGroupGUI.kSceneHeaderOffset;
-
-            Handles.BeginGUI();
-            GUI.Label(rect, GUIContent.none, EditorStyles.notificationBackground);
-            EditorGUI.DoDropShadowLabel(rect, GUIContent.Temp(info.activeLODLevel >= 0 ? "LOD " + info.activeLODLevel : "Culled"), LODGroupGUI.Styles.m_LODLevelNotifyText, 0.3f);
-            Handles.EndGUI();
+            LODGUI.DrawLODLabel(camera, worldReferencePoint, size, info.activeLODLevel, LODGUI.kLODColors, "LOD ");
         }
 
         private Vector3 m_LastCameraPos = Vector3.zero;
@@ -382,9 +334,9 @@ namespace UnityEditor
         void DrawLODGroupFoldouts()
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(m_LODSize, LODGroupGUI.Styles.m_LODObjectSizeLabel);
+            EditorGUILayout.PropertyField(m_LODSize, LODGUI.Styles.m_LODObjectSizeLabel);
 
-            if (GUILayout.Button(LODGroupGUI.Styles.m_ResetObjectSizeLabel))
+            if (GUILayout.Button(LODGUI.Styles.m_ResetObjectSizeLabel))
             {
                 float originalSize = m_LODSize.floatValue;
                 m_LODSize.floatValue = 1f;
@@ -424,12 +376,12 @@ namespace UnityEditor
             var submeshCountLabel = wideInspector ? $"- {m_SubmeshCounts[lodGroupIndex]} Sub Mesh(es)" : "";
 
             if (activeLOD == lodGroupIndex)
-                LODGroupGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, activeLOD);
+                LODGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, activeLOD);
             else
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            foldoutState.value = LODGroupGUI.FoldoutHeaderGroupInternal(GUILayoutUtility.GetRect(GUIContent.none, LODGroupGUI.GUIStyles.m_InspectorTitlebarFlat), foldoutState.value, $"LOD {lodGroupIndex}", m_Textures[lodGroupIndex],
-                LODGroupGUI.kLODColors[lodGroupIndex] * 0.6f, $"{totalTriCount} {m_PrimitiveCountLabel.text} {triangleChangeLabel} {submeshCountLabel}");
+            foldoutState.value = LODGUI.FoldoutHeaderGroupInternal(GUILayoutUtility.GetRect(GUIContent.none, LODGUI.GUIStyles.m_InspectorTitlebarFlat), foldoutState.value, $"LOD {lodGroupIndex}", m_Textures[lodGroupIndex],
+                LODGUI.kLODColors[lodGroupIndex] * 0.6f, $"{totalTriCount} {m_PrimitiveCountLabel.text} {triangleChangeLabel} {submeshCountLabel}");
 
             if (foldoutState.value)
             {
@@ -475,10 +427,10 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             float newVal = 0;
             if (targets.Length == 1)
-                newVal = EditorGUILayout.FloatField(LODGroupGUI.Styles.m_LODTransitionPercentageLabel, heightPercentageProperty.floatValue * 100);
+                newVal = EditorGUILayout.FloatField(LODGUI.Styles.m_LODTransitionPercentageLabel, heightPercentageProperty.floatValue * 100);
             else
             {
-                GUIContent label = new GUIContent($"LOD {lodGroupIndex} Transition", LODGroupGUI.Styles.m_LODTransitionPercentageLabel.tooltip);
+                GUIContent label = new GUIContent($"LOD {lodGroupIndex} Transition", LODGUI.Styles.m_LODTransitionPercentageLabel.tooltip);
                 newVal = EditorGUILayout.FloatField(label, heightPercentageProperty.floatValue * 100);
             }
 
@@ -509,7 +461,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
 
             EditorGUI.BeginDisabledGroup(!IsObjectVisibleToCamera(camera));
-            if (GUILayout.Button(LODGroupGUI.Styles.m_LODSetToCameraLabel, GUILayout.Width(95)))
+            if (GUILayout.Button(LODGUI.Styles.m_LODSetToCameraLabel, GUILayout.Width(95)))
             {
                 heightPercentageProperty.floatValue = m_LODGroup.GetRelativeHeight(camera);
             }
@@ -518,8 +470,8 @@ namespace UnityEditor
             if (Screen.width > 380)
             {
                 var distanceLabel = Selection.count == 1 && newVal > 0 && camera != null ? LODGroupExtensions.RelativeHeightToDistance(camera, heightPercentageProperty.floatValue, m_LODSize.floatValue).ToString("F2") + " m" : "-";
-                LODGroupGUI.GUIStyles.m_DistanceInMetersLabel.text = distanceLabel;
-                GUILayout.Label(LODGroupGUI.GUIStyles.m_DistanceInMetersLabel, GUILayout.Width(60));
+                LODGUI.GUIStyles.m_DistanceInMetersLabel.text = distanceLabel;
+                GUILayout.Label(LODGUI.GUIStyles.m_DistanceInMetersLabel, GUILayout.Width(60));
             }
             EditorGUILayout.EndHorizontal();
         }
@@ -561,7 +513,7 @@ namespace UnityEditor
         {
             var lods = m_LODGroup.GetLODs();
 
-            m_PrimitiveCountLabel = LODGroupGUI.GUIStyles.m_TriangleCountLabel;
+            m_PrimitiveCountLabel = LODGUI.GUIStyles.m_TriangleCountLabel;
             m_PrimitiveCounts = new int[lods.Length][];
             m_SubmeshCounts = new int[lods.Length];
 
@@ -583,7 +535,7 @@ namespace UnityEditor
                     if (hasMismatchingSubMeshTopologyTypes)
                     {
                         m_PrimitiveCounts[i][j] = rendererMesh.vertexCount;
-                        m_PrimitiveCountLabel = LODGroupGUI.GUIStyles.m_VertexCountLabel;
+                        m_PrimitiveCountLabel = LODGUI.GUIStyles.m_VertexCountLabel;
                     }
                     else
                     {
@@ -698,7 +650,7 @@ namespace UnityEditor
             }
 
             resultBuilder.Append('.');
-            return LODGroupGUI.GUIStyles.m_MeshLodInfo.text + resultBuilder.ToString();
+            return LODGUI.GUIStyles.m_MeshLodInfo.text + resultBuilder.ToString();
         }
 
         public override void OnInspectorGUI()
@@ -745,18 +697,18 @@ namespace UnityEditor
             }
 
             // Add some space at the top..
-            GUILayout.Space(LODGroupGUI.kSliderBarTopMargin);
+            GUILayout.Space(LODGUI.kSliderBarTopMargin);
 
             // Precalculate and cache the slider bar position for this update
-            var sliderBarPosition = GUILayoutUtility.GetRect(0, LODGroupGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
+            var sliderBarPosition = GUILayoutUtility.GetRect(0, LODGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
 
             // Precalculate the lod info (button locations / ranges ect)
-            var lods = LODGroupGUI.CreateLODInfos(m_NumberOfLODs, sliderBarPosition,
+            var lods = LODGUI.CreateLODInfos(m_NumberOfLODs, sliderBarPosition,
                 i => String.Format("LOD {0}", i),
                 i => serializedObject.FindProperty(string.Format(kPixelHeightDataPath, i)).floatValue);
 
             DrawLODLevelSlider(sliderBarPosition, lods);
-            GUILayout.Space(LODGroupGUI.kSliderBarBottomMargin);
+            GUILayout.Space(LODGUI.kSliderBarBottomMargin);
 
             if (QualitySettings.lodBias != 1.0f)
                 EditorGUILayout.HelpBox(string.Format("Active LOD bias is {0:0.0#}. Distances are adjusted accordingly.", QualitySettings.lodBias), MessageType.Warning);
@@ -775,14 +727,14 @@ namespace UnityEditor
             bool needUpdateBounds = LODUtility.NeedUpdateLODGroupBoundingBox(m_LODGroup);
             using (new EditorGUI.DisabledScope(!needUpdateBounds))
             {
-                if (GUILayout.Button(needUpdateBounds ? LODGroupGUI.Styles.m_RecalculateBounds : LODGroupGUI.Styles.m_RecalculateBoundsDisabled, GUILayout.ExpandWidth(false)))
+                if (GUILayout.Button(needUpdateBounds ? LODGUI.Styles.m_RecalculateBounds : LODGUI.Styles.m_RecalculateBoundsDisabled, GUILayout.ExpandWidth(false)))
                 {
                     Undo.RecordObject(m_LODGroup, "Recalculate LODGroup Bounds");
                     m_LODGroup.RecalculateBounds();
                 }
             }
 
-            if (GUILayout.Button(LODGroupGUI.Styles.m_LightmapScale, GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(LODGUI.Styles.m_LightmapScale, GUILayout.ExpandWidth(false)))
                 SendPercentagesToLightmapScale();
 
             GUILayout.EndHorizontal();
@@ -803,7 +755,7 @@ namespace UnityEditor
                     if (!lodNumberOnImporterMatches)
                         GUI.enabled = false;
 
-                    if (GUILayout.Button(lodNumberOnImporterMatches ? LODGroupGUI.Styles.m_UploadToImporter : LODGroupGUI.Styles.m_UploadToImporterDisabled))
+                    if (GUILayout.Button(lodNumberOnImporterMatches ? LODGUI.Styles.m_UploadToImporter : LODGUI.Styles.m_UploadToImporterDisabled))
                     {
                         // Number of imported LOD's is the same as in the imported model
                         for (var i = 0; i < importerLODLevels.arraySize; i++)
@@ -830,10 +782,10 @@ namespace UnityEditor
         // Arrange in a grid
         private void DrawRenderersInfo(float availableWidth)
         {
-            var horizontalCount = Mathf.Max(Mathf.FloorToInt(availableWidth / LODGroupGUI.kRenderersButtonHeight), 1);
-            var titleArea = GUILayoutUtility.GetRect(LODGroupGUI.Styles.m_RendersTitle, LODGroupGUI.Styles.m_LODSliderTextSelected);
+            var horizontalCount = Mathf.Max(Mathf.FloorToInt(availableWidth / LODGUI.kRenderersButtonHeight), 1);
+            var titleArea = GUILayoutUtility.GetRect(LODGUI.Styles.m_RendersTitle, LODGUI.Styles.m_LODSliderTextSelected);
             if (Event.current.type == EventType.Repaint)
-                EditorStyles.label.Draw(titleArea, LODGroupGUI.Styles.m_RendersTitle, false, false, false, false);
+                EditorStyles.label.Draw(titleArea, LODGUI.Styles.m_RendersTitle, false, false, false, false);
 
             // Draw renderer info
             var renderersProperty = serializedObject.FindProperty(string.Format(kRenderRootPath, activeLOD));
@@ -841,11 +793,11 @@ namespace UnityEditor
             var numberOfButtons = renderersProperty.arraySize + 1;
             var numberOfRows = Mathf.CeilToInt(numberOfButtons / (float)horizontalCount);
 
-            var drawArea = GUILayoutUtility.GetRect(0, numberOfRows * LODGroupGUI.kRenderersButtonHeight, GUILayout.ExpandWidth(true));
+            var drawArea = GUILayoutUtility.GetRect(0, numberOfRows * LODGUI.kRenderersButtonHeight, GUILayout.ExpandWidth(true));
             var rendererArea = drawArea;
             GUI.Box(drawArea, GUIContent.none);
-            rendererArea.width -= 2 * LODGroupGUI.kRenderAreaForegroundPadding;
-            rendererArea.x += LODGroupGUI.kRenderAreaForegroundPadding;
+            rendererArea.width -= 2 * LODGUI.kRenderAreaForegroundPadding;
+            rendererArea.x += LODGUI.kRenderAreaForegroundPadding;
 
             var buttonWidth = rendererArea.width / horizontalCount;
 
@@ -856,10 +808,10 @@ namespace UnityEditor
                 for (int k = 0; k < horizontalCount && (i * horizontalCount + k) < renderersProperty.arraySize; k++)
                 {
                     var drawPos = new Rect(
-                        LODGroupGUI.kButtonPadding + rendererArea.x + k * buttonWidth,
-                        LODGroupGUI.kButtonPadding + rendererArea.y + i * LODGroupGUI.kRenderersButtonHeight,
-                        buttonWidth - LODGroupGUI.kButtonPadding * 2,
-                        LODGroupGUI.kRenderersButtonHeight - LODGroupGUI.kButtonPadding * 2);
+                        LODGUI.kButtonPadding + rendererArea.x + k * buttonWidth,
+                        LODGUI.kButtonPadding + rendererArea.y + i * LODGUI.kRenderersButtonHeight,
+                        buttonWidth - LODGUI.kButtonPadding * 2,
+                        LODGUI.kRenderersButtonHeight - LODGUI.kButtonPadding * 2);
                     buttons.Add(drawPos);
                     DrawRendererButton(drawPos, i * horizontalCount + k);
                 }
@@ -872,10 +824,10 @@ namespace UnityEditor
             int horizontalPos = (numberOfButtons - 1) % horizontalCount;
             int verticalPos = numberOfRows - 1;
             HandleAddRenderer(new Rect(
-                LODGroupGUI.kButtonPadding + rendererArea.x + horizontalPos * buttonWidth,
-                LODGroupGUI.kButtonPadding + rendererArea.y + verticalPos * LODGroupGUI.kRenderersButtonHeight,
-                buttonWidth - LODGroupGUI.kButtonPadding * 2,
-                LODGroupGUI.kRenderersButtonHeight - LODGroupGUI.kButtonPadding * 2), buttons, drawArea);
+                LODGUI.kButtonPadding + rendererArea.x + horizontalPos * buttonWidth,
+                LODGUI.kButtonPadding + rendererArea.y + verticalPos * LODGUI.kRenderersButtonHeight,
+                buttonWidth - LODGUI.kButtonPadding * 2,
+                LODGUI.kRenderersButtonHeight - LODGUI.kButtonPadding * 2), buttons, drawArea);
         }
 
         private void HandleAddRenderer(Rect position, IEnumerable<Rect> alreadyDrawn, Rect drawArea)
@@ -886,8 +838,8 @@ namespace UnityEditor
                 case EventType.Repaint:
                 {
                     bool isHovered = position.Contains(evt.mousePosition);
-                    LODGroupGUI.Styles.m_LODStandardButton.Draw(position, GUIContent.none, isHovered, false, false, false);
-                    LODGroupGUI.Styles.m_LODRendererAddButton.Draw(new Rect(position.x - LODGroupGUI.kButtonPadding, position.y, position.width, position.height), "Add", false, false, false, false);
+                    LODGUI.Styles.m_LODStandardButton.Draw(position, GUIContent.none, isHovered, false, false, false);
+                    LODGUI.Styles.m_LODRendererAddButton.Draw(new Rect(position.x - LODGUI.kButtonPadding, position.y, position.width, position.height), "Add", false, false, false, false);
                     break;
                 }
                 case EventType.DragUpdated:
@@ -965,7 +917,7 @@ namespace UnityEditor
             var rendererRef = renderersProperty.GetArrayElementAtIndex(rendererIndex).FindPropertyRelative("renderer");
             var renderer = rendererRef.objectReferenceValue as Renderer;
 
-            var deleteButton = new Rect(position.xMax - LODGroupGUI.kDeleteButtonSize, position.yMax - LODGroupGUI.kDeleteButtonSize, LODGroupGUI.kDeleteButtonSize, LODGroupGUI.kDeleteButtonSize);
+            var deleteButton = new Rect(position.xMax - LODGUI.kDeleteButtonSize, position.yMax - LODGUI.kDeleteButtonSize, LODGUI.kDeleteButtonSize, LODGUI.kDeleteButtonSize);
 
             Event evt = Event.current;
             switch (evt.type)
@@ -986,25 +938,25 @@ namespace UnityEditor
                         else
                             content = new GUIContent(ObjectNames.NicifyVariableName(renderer.GetType().Name), renderer.gameObject.name);
 
-                        LODGroupGUI.Styles.m_LODBlackBox.Draw(position, GUIContent.none, false, false, false, false);
+                        LODGUI.Styles.m_LODBlackBox.Draw(position, GUIContent.none, false, false, false, false);
 
-                        LODGroupGUI.Styles.m_LODRendererButton.Draw(
+                        LODGUI.Styles.m_LODRendererButton.Draw(
                             new Rect(
-                                position.x + LODGroupGUI.kButtonPadding,
-                                position.y + LODGroupGUI.kButtonPadding,
-                                position.width - 2 * LODGroupGUI.kButtonPadding, position.height - 2 * LODGroupGUI.kButtonPadding),
+                                position.x + LODGUI.kButtonPadding,
+                                position.y + LODGUI.kButtonPadding,
+                                position.width - 2 * LODGUI.kButtonPadding, position.height - 2 * LODGUI.kButtonPadding),
                             content, false, false, false, false);
                     }
                     else
                     {
-                        LODGroupGUI.Styles.m_LODBlackBox.Draw(position, GUIContent.none, false, false, false, false);
-                        LODGroupGUI.Styles.m_LODRendererAddButton.Draw(position, "Empty", false, false, false, false);
+                        LODGUI.Styles.m_LODBlackBox.Draw(position, GUIContent.none, false, false, false, false);
+                        LODGUI.Styles.m_LODRendererAddButton.Draw(position, "Empty", false, false, false, false);
                     }
 
                     if (!m_IsPrefab)
                     {
-                        LODGroupGUI.Styles.m_LODBlackBox.Draw(deleteButton, GUIContent.none, false, false, false, false);
-                        LODGroupGUI.Styles.m_LODRendererRemove.Draw(deleteButton, LODGroupGUI.Styles.m_IconRendererMinus, false, false, false, false);
+                        LODGUI.Styles.m_LODBlackBox.Draw(deleteButton, GUIContent.none, false, false, false, false);
+                        LODGUI.Styles.m_LODRendererRemove.Draw(deleteButton, LODGUI.Styles.m_IconRendererMinus, false, false, false, false);
                     }
                     break;
                 }
@@ -1141,7 +1093,7 @@ namespace UnityEditor
         private class LODAction
         {
             private readonly float m_Percentage;
-            private readonly List<LODGroupGUI.LODInfo> m_LODs;
+            private readonly List<LODGUI.LODInfo> m_LODs;
             private readonly Vector2 m_ClickedPosition;
             private readonly SerializedObject m_ObjectRef;
             private readonly SerializedProperty m_LODsProperty;
@@ -1149,7 +1101,7 @@ namespace UnityEditor
             public delegate void Callback();
             private readonly Callback m_Callback;
 
-            public LODAction(List<LODGroupGUI.LODInfo> lods, float percentage, Vector2 clickedPosition, SerializedProperty propLODs, Callback callback)
+            public LODAction(List<LODGUI.LODInfo> lods, float percentage, Vector2 clickedPosition, SerializedProperty propLODs, Callback callback)
             {
                 m_LODs = lods;
                 m_Percentage = percentage;
@@ -1262,7 +1214,7 @@ namespace UnityEditor
             SceneView.lastActiveSceneView.LookAtDirect(worldReferencePoint, sceneCamera.transform.rotation, size);
         }
 
-        private void UpdateSelectedLODFromCamera(IEnumerable<LODGroupGUI.LODInfo> lods, float cameraPercent)
+        private void UpdateSelectedLODFromCamera(IEnumerable<LODGUI.LODInfo> lods, float cameraPercent)
         {
             foreach (var lod in lods)
             {
@@ -1276,7 +1228,7 @@ namespace UnityEditor
 
         private readonly int m_LODSliderId = "LODSliderIDHash".GetHashCode();
         private readonly int m_CameraSliderId = "LODCameraIDHash".GetHashCode();
-        private void DrawLODLevelSlider(Rect sliderPosition, List<LODGroupGUI.LODInfo> lods)
+        private void DrawLODLevelSlider(Rect sliderPosition, List<LODGUI.LODInfo> lods)
         {
             int sliderId = GUIUtility.GetControlID(m_LODSliderId, FocusType.Passive);
             int camerId = GUIUtility.GetControlID(m_CameraSliderId, FocusType.Passive);
@@ -1286,7 +1238,7 @@ namespace UnityEditor
             {
                 case EventType.Repaint:
                 {
-                    LODGroupGUI.DrawLODSlider(sliderPosition, lods, activeLOD, m_EnabledMeshLods);
+                    LODGUI.DrawLODSlider(sliderPosition, lods, activeLOD, m_EnabledMeshLods);
                     break;
                 }
                 case EventType.MouseDown:
@@ -1294,7 +1246,7 @@ namespace UnityEditor
                     // Handle right click first
                     if (evt.button == 1 && sliderPosition.Contains(evt.mousePosition))
                     {
-                        var cameraPercent = LODGroupGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+                        var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
                         var pm = new GenericMenu();
                         if (lods.Count >= 8)
                         {
@@ -1357,7 +1309,7 @@ namespace UnityEditor
                         var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODLevel);
                         var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODLevel);
 
-                        var lodButtonOrder = new List<LODGroupGUI.LODInfo>();
+                        var lodButtonOrder = new List<LODGUI.LODInfo>();
                         lodButtonOrder.AddRange(lodsLeft);
                         lodButtonOrder.AddRange(lodsRight);
 
@@ -1397,9 +1349,9 @@ namespace UnityEditor
                     {
                         evt.Use();
 
-                        var cameraPercent = LODGroupGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+                        var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
                         // Bias by 0.1% so that there is no skipping when sliding
-                        LODGroupGUI.SetSelectedLODLevelPercentage(cameraPercent - 0.001f, m_SelectedLODSlider, lods);
+                        LODGUI.SetSelectedLODLevelPercentage(cameraPercent - 0.001f, m_SelectedLODSlider, lods);
                         var percentageProperty = serializedObject.FindProperty(string.Format(kPixelHeightDataPath, lods[m_SelectedLODSlider].LODLevel));
                         percentageProperty.floatValue = lods[m_SelectedLODSlider].RawScreenPercent;
 
@@ -1439,7 +1391,7 @@ namespace UnityEditor
 
                     if (lodLevel == -2)
                     {
-                        var culledRange = LODGroupGUI.GetCulledBox(sliderPosition, lods.Count > 0 ? lods[lods.Count - 1].ScreenPercent : 1.0f);
+                        var culledRange = LODGUI.GetCulledBox(sliderPosition, lods.Count > 0 ? lods[lods.Count - 1].ScreenPercent : 1.0f);
                         if (culledRange.Contains(evt.mousePosition))
                         {
                             lodLevel = -1;
@@ -1503,14 +1455,14 @@ namespace UnityEditor
 
                 var info = LODUtility.CalculateVisualizationData(camera, m_LODGroup, -1);
                 var linearHeight = info.activeRelativeScreenSize;
-                var relativeHeight = LODGroupGUI.DelinearizeScreenPercentage(linearHeight);
+                var relativeHeight = LODGUI.DelinearizeScreenPercentage(linearHeight);
 
                 var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(m_LODGroup);
                 var vectorFromObjectToCamera = (SceneView.lastActiveSceneView.camera.transform.position - worldReferencePoint).normalized;
                 if (Vector3.Dot(camera.transform.forward, vectorFromObjectToCamera) > 0f)
                     relativeHeight = 1.0f;
 
-                var cameraRect = LODGroupGUI.CalcLODButton(sliderPosition, Mathf.Clamp01(relativeHeight));
+                var cameraRect = LODGUI.CalcLODButton(sliderPosition, Mathf.Clamp01(relativeHeight));
                 var cameraIconRect = new Rect(cameraRect.center.x - 15, cameraRect.y - 25, 32, 32);
                 var cameraLineRect = new Rect(cameraRect.center.x - 1, cameraRect.y, 2, cameraRect.height);
                 var cameraPercentRect = new Rect(cameraIconRect.center.x - 5, cameraLineRect.yMax, 35, 20);
@@ -1522,10 +1474,10 @@ namespace UnityEditor
                         // Draw a marker to indicate the current scene camera distance
                         var colorCache = GUI.backgroundColor;
                         GUI.backgroundColor = new Color(colorCache.r, colorCache.g, colorCache.b, 0.8f);
-                        LODGroupGUI.Styles.m_LODCameraLine.Draw(cameraLineRect, false, false, false, false);
+                        LODGUI.Styles.m_LODCameraLine.Draw(cameraLineRect, false, false, false, false);
                         GUI.backgroundColor = colorCache;
-                        GUI.Label(cameraIconRect, LODGroupGUI.Styles.m_CameraIcon, GUIStyle.none);
-                        LODGroupGUI.Styles.m_LODSliderText.Draw(cameraPercentRect, String.Format("{0:0}%", Mathf.Clamp01(linearHeight) * 100.0f), false, false, false, false);
+                        GUI.Label(cameraIconRect, LODGUI.Styles.m_CameraIcon, GUIStyle.none);
+                        LODGUI.Styles.m_LODSliderText.Draw(cameraPercentRect, String.Format("{0:0}%", Mathf.Clamp01(linearHeight) * 100.0f), false, false, false, false);
                         break;
                     }
                     case EventType.MouseDown:
@@ -1533,7 +1485,7 @@ namespace UnityEditor
                         if (cameraIconRect.Contains(evt.mousePosition))
                         {
                             evt.Use();
-                            var cameraPercent = LODGroupGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+                            var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
 
                             // Update the selected LOD to be where the camera is if we click the camera
                             UpdateSelectedLODFromCamera(lods, cameraPercent);
@@ -1548,7 +1500,7 @@ namespace UnityEditor
                         if (GUIUtility.hotControl == camerId)
                         {
                             evt.Use();
-                            var cameraPercent = LODGroupGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+                            var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
 
                             // Change the active LOD level if the camera moves into a new LOD level
                             UpdateSelectedLODFromCamera(lods, cameraPercent);

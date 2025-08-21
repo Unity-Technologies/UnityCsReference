@@ -86,7 +86,7 @@ namespace UnityEditor.Search
         }
 
         internal ObjectIndexer(string name, SearchDatabase.Settings settings)
-            : this(name, settings, new SearchIndexEntryStorage())
+            : this(name, settings, new LMDBIndexStorage(FileUtil.GetUniqueTempPathInProject()))
         {}
 
         internal ObjectIndexer(string name, SearchDatabase.Settings settings, ISearchIndexerStorage storage)
@@ -249,10 +249,10 @@ namespace UnityEditor.Search
                 }
                 else
                 {
-                    AddProperty(name, c, score, documentIndex, saveKeyword: false, exact: false);
+                    AddProperty(name, c, score, documentIndex, saveKeyword: false);
                 }
             }
-            AddProperty(name, value.ToLowerInvariant(), settings.baseScore - 5, documentIndex, saveKeyword: false, exact: true);
+            AddProperty(name, value.ToLowerInvariant(), settings.baseScore - 5, documentIndex, saveKeyword: false);
         }
 
         /// <summary>
@@ -267,6 +267,7 @@ namespace UnityEditor.Search
             return SearchUtils.SplitFileEntryComponents(entry, SearchUtils.entrySeparators);
         }
 
+        [Obsolete("IndexWord with variations and exact match is no longer supported. Variations are handled internally. Exact match is handled when filtering. Use IndexWord(int documentIndex, string word, int scoreModifier) instead.")]
         /// <summary>
         /// Add a new word coming from a specific document to the index. The word will be added with multiple variations allowing partial search. See <see cref="SearchIndexer.AddWord"/>.
         /// </summary>
@@ -277,19 +278,16 @@ namespace UnityEditor.Search
         /// <param name="scoreModifier">Modified to apply to the base score for a specific word.</param>
         public void IndexWord(int documentIndex, in string word, int maxVariations, bool exact, int scoreModifier = 0)
         {
-            IndexWord(documentIndex, word, minWordIndexationLength, maxVariations, exact, scoreModifier);
+            IndexWord(documentIndex, word, scoreModifier);
         }
 
+        [Obsolete("IndexWord with exact match is no longer supported. Exact match is handled when filtering. Use IndexWord(int documentIndex, string word, int scoreModifier) instead.")]
         internal void IndexWord(int documentIndex, in string word, int minVariations, int maxVariations, bool exact, int scoreModifier = 0)
         {
-            using var _ = k_IndexWordMarker.Auto();
-            var lword = word.ToLowerInvariant();
-            var modifiedScore = settings.baseScore + scoreModifier;
-            AddWord(lword, minVariations, maxVariations, modifiedScore, documentIndex);
-            if (exact)
-                AddExactWord(lword, modifiedScore, documentIndex);
+            IndexWord(documentIndex, word, scoreModifier);;
         }
 
+        [Obsolete("IndexWord with exact match is no longer supported. Exact match is handled when filtering. Use IndexWord(int documentIndex, string word, int scoreModifier) instead.")]
         /// <summary>
         /// Add a new word coming from a specific document to the index. The word will be added with multiple variations allowing partial search. See <see cref="SearchIndexer.AddWord"/>.
         /// </summary>
@@ -303,6 +301,48 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
+        /// Add a new word coming from a specific document to the index. See <see cref="SearchIndexer.AddWord"/>.
+        /// </summary>
+        /// <param name="word">Word to add to the index.</param>
+        /// <param name="documentIndex">Document where the indexed word was found.</param>
+        public void IndexWord(int documentIndex, string word)
+        {
+            IndexWord(documentIndex, word, 0);
+        }
+
+        /// <summary>
+        /// Add a new word coming from a specific document to the index. See <see cref="SearchIndexer.AddWord"/>.
+        /// </summary>
+        /// <param name="word">Word to add to the index.</param>
+        /// <param name="documentIndex">Document where the indexed word was found.</param>
+        /// <param name="scoreModifier">Modified to apply to the base score for a specific word.</param>
+        public void IndexWord(int documentIndex, string word, int scoreModifier)
+        {
+            using var _ = k_IndexWordMarker.Auto();
+            var lword = word.ToLowerInvariant();
+            var modifiedScore = settings.baseScore + scoreModifier;
+            AddWord(lword, modifiedScore, documentIndex);
+        }
+
+        /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value. See <see cref="SearchIndexer.AddProperty"/>.
+        /// </summary>
+        /// <param name="name">Key used to retrieve the value. See <see cref="SearchIndexer.AddProperty"/></param>
+        /// <param name="value">Value to add to the index.</param>
+        /// <param name="documentIndex">Document where the indexed word was found.</param>
+        /// <param name="saveKeyword">Define if we store this key in the keyword registry of the index. See <see cref="SearchIndexer.GetKeywords"/>.</param>
+        public void IndexProperty(int documentIndex, string name, string value, bool saveKeyword)
+        {
+            using var _ = k_IndexPropertyMarker.Auto();
+            if (string.IsNullOrEmpty(value))
+                return;
+            name = name.ToLowerInvariant();
+            var valueLower = value.ToLowerInvariant();
+            AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+        }
+
+        [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword)")]
+        /// <summary>
         /// Add a property value to the index. A property is specified with a key and a string value. The value will be stored with multiple variations. See <see cref="SearchIndexer.AddProperty"/>.
         /// </summary>
         /// <param name="name">Key used to retrieve the value. See <see cref="SearchIndexer.AddProperty"/></param>
@@ -310,36 +350,53 @@ namespace UnityEditor.Search
         /// <param name="documentIndex">Document where the indexed word was found.</param>
         /// <param name="saveKeyword">Define if we store this key in the keyword registry of the index. See <see cref="SearchIndexer.GetKeywords"/>.</param>
         /// <param name="exact">If exact is true, only the exact match of the value will be stored in the index (not the variations).</param>
-        public void IndexProperty(int documentIndex, string name, string value, bool saveKeyword, bool exact = false)
+        public void IndexProperty(int documentIndex, string name, string value, bool saveKeyword, bool exact)
         {
-            using var _ = k_IndexPropertyMarker.Auto();
-            if (string.IsNullOrEmpty(value))
-                return;
-            name = name.ToLowerInvariant();
-            var valueLower = value.ToLowerInvariant();
-            if (exact)
-            {
-                AddProperty(name, valueLower, valueLower.Length, valueLower.Length, settings.baseScore, documentIndex, saveKeyword: saveKeyword, exact: true);
-            }
-            else
-                AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+            IndexProperty(documentIndex, name, value, saveKeyword);
         }
 
+        /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value. See <see cref="SearchIndexer.AddProperty"/>.
+        /// </summary>
+        /// <param name="value">Value to add to the index.</param>
+        /// <param name="propertyName">Name of the property that will be used as the key to the index entry.</param>
+        /// <param name="documentIndex">Document where the indexed word was found.</param>
+        /// <remarks>This overload automatically adds a keyword with TPropertyOwner information.</remarks>
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string propertyName, string value)
         {
-            IndexProperty<TProperty, TPropertyOwner>(documentIndex, propertyName, value, false, false);
+            IndexProperty<TProperty, TPropertyOwner>(documentIndex, propertyName, value, false);
         }
 
+        /// <summary>
+        /// Add a property value to the index. A property is specified with a key and a string value. See <see cref="SearchIndexer.AddProperty"/>.
+        /// </summary>
+        /// <param name="value">Value to add to the index.</param>
+        /// <param name="propertyName">Name of the property that will be used as the key to the index entry.</param>
+        /// <param name="documentIndex">Document where the indexed word was found.</param>
+        /// <param name="saveKeyword">Define if we store this key in the keyword registry of the index. See <see cref="SearchIndexer.GetKeywords"/>.</param>
+        /// <remarks>This overload automatically adds a keyword with TPropertyOwner information.</remarks>
+        public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string propertyName, string value, bool saveKeyword)
+        {
+            IndexProperty(documentIndex, propertyName, value, saveKeyword);
+            MapProperty(propertyName, propertyName, propertyName, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+        }
+
+        [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword)")]
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact)
         {
-            IndexProperty(documentIndex, name, value, saveKeyword, exact);
-            MapProperty(name, name, name, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            IndexProperty<TProperty, TPropertyOwner>(documentIndex, name, value, saveKeyword);
         }
 
+        internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, string keywordLabel, string keywordHelp)
+        {
+            IndexProperty(documentIndex, name, value, saveKeyword);
+            MapProperty(name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+        }
+
+        [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword, string keywordLabel, string keywordHelp)")]
         internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact, string keywordLabel, string keywordHelp)
         {
-            IndexProperty(documentIndex, name, value, saveKeyword, exact);
-            MapProperty(name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            IndexProperty<TProperty, TPropertyOwner>(documentIndex, name, value, saveKeyword, keywordLabel, keywordHelp);
         }
 
         /// <summary>
@@ -545,14 +602,14 @@ namespace UnityEditor.Search
                     else if (managedType == typeof(bool))
                     {
                         var boolStringValue = p.intValue == 0 ? "false" : "true";
-                        IndexProperty(documentIndex, fieldName, boolStringValue, saveKeyword: false, exact: true);
+                        IndexProperty(documentIndex, fieldName, boolStringValue, saveKeyword: false);
                         LogProperty(fieldName, p, propositionGenerationOptions, boolStringValue);
                     }
                     else
                         LogProperty(fieldName, p, propositionGenerationOptions, p.intValue);
                     break;
                 case SerializedPropertyType.Boolean:
-                    IndexProperty(documentIndex, fieldName, p.boolValue.ToString(), saveKeyword: false, exact: true);
+                    IndexProperty(documentIndex, fieldName, p.boolValue.ToString(), saveKeyword: false);
                     LogProperty(fieldName, p, propositionGenerationOptions, p.boolValue);
                     break;
                 case SerializedPropertyType.Float:
@@ -591,7 +648,7 @@ namespace UnityEditor.Search
                     LogProperty(fieldName, p, propositionGenerationOptions, p.objectReferenceValue);
                     break;
                 case SerializedPropertyType.Hash128:
-                    IndexProperty(documentIndex, fieldName, p.hash128Value.ToString(), saveKeyword: true, exact: true);
+                    IndexProperty(documentIndex, fieldName, p.hash128Value.ToString(), saveKeyword: true);
                     LogProperty(fieldName, p, propositionGenerationOptions, p.hash128Value);
                     break;
             }
@@ -607,13 +664,13 @@ namespace UnityEditor.Search
             {
                 foreach (var f in m_FlagsPool)
                 {
-                    IndexProperty(documentIndex, fieldName, f, saveKeyword: true, exact: true);
+                    IndexProperty(documentIndex, fieldName, f, saveKeyword: true);
                 }
             }
 
             // Add the complete Flag list:
             var flagValue = m_FlagsPool.Count == 1 ? m_FlagsPool[0] : string.Join(",", m_FlagsPool);
-            IndexProperty(documentIndex, fieldName, flagValue, saveKeyword: true, exact: true);
+            IndexProperty(documentIndex, fieldName, flagValue, saveKeyword: true);
             LogProperty(fieldName, p, propositionGenerationOptions, flagValue);
         }
 
@@ -625,7 +682,7 @@ namespace UnityEditor.Search
             if (sv.Length >= minWordIndexationLength && sv.Length < 32)
                 IndexPropertyComponents(documentIndex, fieldName, sv);
             else
-                IndexProperty(documentIndex, fieldName, sv, saveKeyword: false, exact: true);
+                IndexProperty(documentIndex, fieldName, sv, saveKeyword: false);
             return true;
         }
 
@@ -643,11 +700,11 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(assetPath))
                 return;
 
-            IndexProperty(documentIndex, "ref", assetPath, saveKeyword, exact: true);
+            IndexProperty(documentIndex, "ref", assetPath, saveKeyword);
             var assetInstanceID = Utils.GetMainAssetInstanceID(assetPath);
-            var gid = GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceID);
+            var gid = GlobalObjectId.GetGlobalObjectIdSlow((EntityId)assetInstanceID);
             if (gid.identifierType != 0)
-                IndexProperty(documentIndex, "ref", gid.ToString(), saveKeyword, exact: true);
+                IndexProperty(documentIndex, "ref", gid.ToString(), saveKeyword);
             if (settings.options.properties)
                 IndexPropertyStringComponents(documentIndex, "ref", Path.GetFileNameWithoutExtension(assetPath));
         }
@@ -658,7 +715,7 @@ namespace UnityEditor.Search
             if (!objRef)
             {
                 if (settings.options.properties)
-                    IndexProperty(documentIndex, propertyName, "none", saveKeyword: false, exact: true);
+                    IndexProperty(documentIndex, propertyName, "none", saveKeyword: false);
                 return;
             }
 
@@ -667,14 +724,14 @@ namespace UnityEditor.Search
                 return;
 
             propertyName = propertyName.ToLowerInvariant();
-            IndexProperty(documentIndex, propertyName, assetPath, saveKeyword: false, exact: true);
+            IndexProperty(documentIndex, propertyName, assetPath, saveKeyword: false);
 
             var gid = GlobalObjectId.GetGlobalObjectIdSlow(objRef);
             if (gid.identifierType != 0)
             {
                 var gidStr = gid.ToString();
-                IndexProperty(documentIndex, propertyName, gidStr, saveKeyword: false, exact: true);
-                IndexProperty(documentIndex, "ref", gidStr, saveKeyword: false, exact: true);
+                IndexProperty(documentIndex, propertyName, gidStr, saveKeyword: false);
+                IndexProperty(documentIndex, "ref", gidStr, saveKeyword: false);
             }
 
             if (AssetDatabase.IsSubAsset(objRef))
@@ -683,12 +740,12 @@ namespace UnityEditor.Search
                 var mainGid = GlobalObjectId.GetGlobalObjectIdSlow(mainInstanceId);
                 if (mainGid.identifierType != 0)
                 {
-                    IndexProperty(documentIndex, "ref", mainGid.ToString(), saveKeyword: false, exact: true);
+                    IndexProperty(documentIndex, "ref", mainGid.ToString(), saveKeyword: false);
                 }
             }
 
             if (settings.options.dependencies)
-                IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false, exact: true);
+                IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false);
             if (settings.options.properties)
             {
                 IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.RemoveInvalidCharsFromPath(objRef.name ?? assetPath, '_')));

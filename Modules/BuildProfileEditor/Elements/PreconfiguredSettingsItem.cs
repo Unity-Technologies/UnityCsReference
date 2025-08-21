@@ -15,6 +15,7 @@ namespace UnityEditor.Build.Profile
 
         readonly Toggle m_Toggle;
         readonly Label m_Label;
+        readonly Label m_Description;
         PreconfiguredSettingsVariant m_Variant;
 
         internal delegate void OnPreconfiguredSettingsChanged();
@@ -30,6 +31,7 @@ namespace UnityEditor.Build.Profile
             m_Toggle = this.Q<Toggle>("settings-list-toggle");
             m_Label = this.Q<Label>("settings-list-label");
             m_Label = this.Q<Label>("settings-list-label");
+            m_Description = this.Q<Label>("settings-list-description");
 
             m_Toggle.RegisterValueChangedCallback(OnValueChanged);
         }
@@ -38,6 +40,7 @@ namespace UnityEditor.Build.Profile
         {
             m_Variant = variant;
             m_Label.text = variant.Name;
+            m_Description.text = variant.Description;
             m_Toggle.SetValueWithoutNotify(variant.Selected);
             m_Changed = changed;
         }

@@ -70,6 +70,7 @@ namespace UnityEditor.Search
             {
                 RegisterCallback<KeyDownEvent>(OnKeyDown, useTrickleDown: TrickleDown.TrickleDown);
             }
+            RegisterCallback<FocusInEvent>(OnFocusInEvent, TrickleDown.TrickleDown);
             On(SearchEvent.RefreshBuilder, RefreshBuilder);
             On(SearchEvent.SearchContextChanged, Rebuild);
 
@@ -81,6 +82,8 @@ namespace UnityEditor.Search
             m_SearchField.value = m_QueryBuilder.wordText;
 
             m_TextField.RegisterCallback<ChangeEvent<string>>(OnQueryChanged);
+
+            focusable = true;
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -98,7 +101,8 @@ namespace UnityEditor.Search
             {
                 UnregisterCallback<KeyDownEvent>(OnKeyDown);
             }
-            
+            UnregisterCallback<FocusInEvent>(OnFocusInEvent, TrickleDown.TrickleDown);
+
             Off(SearchEvent.RefreshBuilder, RefreshBuilder);
             Off(SearchEvent.SearchContextChanged, Rebuild);
 
@@ -129,12 +133,44 @@ namespace UnityEditor.Search
             }
         }
 
+        void OnFocusInEvent(FocusInEvent evt)
+        {
+            if (m_QueryBuilder == null)
+                return;
+            var targetEv = evt?.target as VisualElement;
+            if (targetEv == null)
+                return;
+
+            foreach (var b in m_QueryBuilder.blocks)
+            {
+                if (b is QueryFilterBlock fb && fb.HasInPlaceEditor() && fb.inPlaceEditorElement != null)
+                {
+                    if (fb.inPlaceEditorElement.Contains(targetEv))
+                    {
+                        // Event is not blocked if the focus is directly on the in-place editor element
+                        return;
+                    }
+                }
+            }
+
+            if (m_TextField.Contains(targetEv))
+            {
+                // Event is not blocked if the focus is on the text field
+                return;
+            }
+
+            // Block the event otherwise and forward focus to the text field
+            m_TextField.Focus();
+            evt.StopPropagation();
+            this.focusController.IgnoreEvent(evt);
+        }
+
         private bool KeyEventHandler(KeyDownEvent evt)
         {
             if (m_QueryBuilder == null)
                 return false;
 
-            var isHandled = m_QueryBuilder.HandleGlobalKeyDown(evt) || m_QueryBuilder.HandleKeyEvent(evt.imguiEvent);
+            var isHandled = m_QueryBuilder.HandleGlobalKeyDown(evt) || m_QueryBuilder.HandleKeyEvent(evt);
             if (isHandled)
                 Focus();
             return isHandled;
@@ -173,7 +209,7 @@ namespace UnityEditor.Search
 
         void ISearchField.Focus()
         {
-            m_SearchField.Focus();
+            m_TextField.Focus();
         }
 
         VisualElement ISearchField.GetTextElement()

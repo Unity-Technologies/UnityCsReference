@@ -24,16 +24,18 @@ namespace UnityEditor
 
     public enum PivotMode
     {
+        Custom = -1,
         Center = 0,
         Pivot = 1
     }
-
+    
     public enum PivotRotation
     {
+        Custom = -1,
         Local = 0,
         Global = 1
     }
-
+    
     public enum Tool
     {
         View = 0,
@@ -157,41 +159,31 @@ namespace UnityEditor
                 return new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
 
             Vector3 totalOffset = handleOffset + handleRotation * localHandleOffset;
+                
             using (s_GetHandlePositionMarker.Auto())
             {
-                switch (get.m_PivotMode)
-                {
-                    case PivotMode.Center:
-                    {
-                        if (current == Tool.Rect)
-                            return handleRotation * InternalEditorUtility
-                                .CalculateSelectionBoundsInSpace(Vector3.zero, handleRotation, rectBlueprintMode)
-                                .center + totalOffset;
-                        else
-                            return InternalEditorUtility.CalculateSelectionBounds(true).center + totalOffset;
-                    }
-                    case PivotMode.Pivot:
-                    {
-                        if (current == Tool.Rect && rectBlueprintMode && InternalEditorUtility.SupportsRectLayout(t))
-                            return t.parent.TransformPoint(new Vector3(t.localPosition.x, t.localPosition.y, 0)) +
-                                   totalOffset;
-                        else
-                            return t.position + totalOffset;
-                    }
-                    default:
-                    {
-                        return new Vector3(Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
-                    }
-                }
+                return EditorPivotManager.activePivotMode.position + totalOffset;
             }
         }
 
+        // For custom pivots, we essentially want to do handle rotations same way as when in Global Pivot rotation but without  
+        // having to resort to storing intermediate state in m_GlobalHandleRotation for active rotation persistence/delta calculation.
+        // We don't want this because m_GlobalHandleRotation can be implicitly set for Global pivots through public API (Tools.handleRotation)
+        // and that would interfere with what a custom implementation might be trying to return instead.
+        // ActiveRotationTracker is used instead to track the intermediate handle rotation for all custom pivot rotation implementations.
+        ActiveRotationTracker m_ActiveRotationTracker = new ();
+        internal static ActiveRotationTracker activeRotationTracker => get.m_ActiveRotationTracker;
+        
         public static Rect handleRect
         {
             get
             {
-                Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, handleRotation, rectBlueprintMode);
-                int axis = GetRectAxisForViewDir(bounds, handleRotation, SceneView.currentDrawingSceneView.camera.transform.forward);
+                var rotation = handleRotation;
+                if (pivotRotation == PivotRotation.Custom && activeRotationTracker.isRotationControlHot)
+                    rotation = activeRotationTracker.rotation;
+                
+                Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, rotation, rectBlueprintMode);
+                int axis = GetRectAxisForViewDir(bounds, rotation, SceneView.currentDrawingSceneView.camera.transform.forward);
                 return GetRectFromBoundsForAxis(bounds, axis);
             }
         }
@@ -200,9 +192,13 @@ namespace UnityEditor
         {
             get
             {
-                Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, handleRotation, rectBlueprintMode);
-                int axis = GetRectAxisForViewDir(bounds, handleRotation, SceneView.currentDrawingSceneView.camera.transform.forward);
-                return GetRectRotationForAxis(handleRotation, axis);
+                var rotation = handleRotation;
+                if (pivotRotation == PivotRotation.Custom && activeRotationTracker.isRotationControlHot)
+                    rotation = activeRotationTracker.rotation;
+                
+                Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, rotation, rectBlueprintMode);
+                int axis = GetRectAxisForViewDir(bounds, rotation, SceneView.currentDrawingSceneView.camera.transform.forward);
+                return GetRectRotationForAxis(rotation, axis);
             }
         }
 
@@ -274,7 +270,7 @@ namespace UnityEditor
         {
             s_LockHandleRectAxisActive = false;
         }
-
+        
         public static PivotMode pivotMode
         {
             get { return get.m_PivotMode; }
@@ -282,8 +278,38 @@ namespace UnityEditor
             {
                 if (get.m_PivotMode != value)
                 {
+                    if (value == PivotMode.Custom)
+                    {
+                        // To match Tools.current behaviour, if Custom pivot mode is set, attempt to
+                        // reactivate last custom pivot but do nothing and return if there's no last custom mode or it's invalid.
+                        var activePivotMode = EditorPivotManager.activePivotMode;
+                        if (activePivotMode == null || EditorPivotManager.IsBuiltInPivotMode(activePivotMode))
+                        {
+                            var lastCustomMode = EditorPivotManager.lastCustomPivotMode;
+                            if (lastCustomMode != null)
+                            {
+                                if (EditorPivotManager.activePivotMode != lastCustomMode)
+                                    PivotManager.SetActivePivotMode(lastCustomMode.GetType());
+                            }
+                            else
+                                return;
+                        }
+                    }
+                    else
+                    {
+                        switch (value)
+                        {
+                            case PivotMode.Center:
+                                PivotManager.SetActivePivotMode(typeof(CenterPivotMode));
+                                break;
+                            case PivotMode.Pivot:
+                                PivotManager.SetActivePivotMode(typeof(PivotPointPivotMode));
+                                break;
+                        }
+                    }
+                    
                     get.m_PivotMode = value;
-                    EditorPrefs.SetInt("PivotMode", (int)pivotMode);
+                    
                     InvalidateHandlePosition();
                     pivotModeChanged?.Invoke();
                 }
@@ -310,20 +336,11 @@ namespace UnityEditor
             }
         }
         private bool m_RectBlueprintMode;
-
+        
         public static Quaternion handleRotation
         {
-            get
-            {
-                switch (get.m_PivotRotation)
-                {
-                    case PivotRotation.Global:
-                        return get.m_GlobalHandleRotation;
-                    case PivotRotation.Local:
-                        return handleLocalRotation;
-                }
-                return Quaternion.identity;
-            }
+            get => EditorPivotManager.activePivotRotation.rotation;
+            
             set
             {
                 if (get.m_PivotRotation == PivotRotation.Global)
@@ -338,8 +355,37 @@ namespace UnityEditor
             {
                 if (get.m_PivotRotation != value)
                 {
+                    if (value == PivotRotation.Custom)
+                    {
+                        // To match Tools.current behaviour, if Custom pivot mode is set, attempt to
+                        // reactivate last custom pivot but do nothing and return if there's no last custom mode or it's invalid.
+                        var activePivotRotation = EditorPivotManager.activePivotRotation;
+                        if (activePivotRotation == null || EditorPivotManager.IsBuiltInPivotRotation(activePivotRotation))
+                        {
+                            var lastCustomRotation = EditorPivotManager.lastCustomPivotRotation;
+                            if (lastCustomRotation != null)
+                            {
+                                if (EditorPivotManager.activePivotRotation != lastCustomRotation)
+                                    PivotManager.SetActivePivotRotation(lastCustomRotation.GetType());
+                            }
+                            else
+                                return;
+                        }
+                    }
+                    else
+                    {
+                        switch (value)
+                        {
+                            case PivotRotation.Global:
+                                PivotManager.SetActivePivotRotation(typeof(GlobalPivotRotation));
+                                break;
+                            case PivotRotation.Local:
+                                PivotManager.SetActivePivotRotation(typeof(LocalPivotRotation));
+                                break;
+                        }
+                    }
+                    
                     get.m_PivotRotation = value;
-                    EditorPrefs.SetInt("PivotRotation", (int)pivotRotation);
                     pivotRotationChanged?.Invoke();
                 }
             }
@@ -428,9 +474,9 @@ namespace UnityEditor
         void OnEnable()
         {
             s_Get = this;
-            pivotMode = (PivotMode)EditorPrefs.GetInt("PivotMode", 0);
+
             rectBlueprintMode = EditorPrefs.GetBool("RectBlueprintMode", false);
-            pivotRotation = (PivotRotation)EditorPrefs.GetInt("PivotRotation", 0);
+            
             var layerSettings = s_LayersStateCache.GetState(m_LayerSettingsKey, new LayerSettings(-1, 0));
             visibleLayers = layerSettings.visibleLayersValue;
             lockedLayers = layerSettings.lockedLayersValue;
@@ -450,7 +496,7 @@ namespace UnityEditor
 #pragma warning restore 618
             };
         }
-
+        
         void OnDisable()
         {
             Selection.selectionChanged -= OnSelectionChange;
@@ -475,6 +521,8 @@ namespace UnityEditor
         }
 
         internal Quaternion m_GlobalHandleRotation = Quaternion.identity;
+        internal static Quaternion globalHandleRotation => get.m_GlobalHandleRotation;
+        
         ViewTool m_ViewTool = ViewTool.Pan;
 
         static void SetToolMode(Tool toolMode)
@@ -530,7 +578,9 @@ namespace UnityEditor
         [FormerlyPrefKeyAs("Tools/Pivot Mode", "z")]
         static void TogglePivotMode(ShortcutArguments args)
         {
-            pivotMode = pivotMode == PivotMode.Center ? PivotMode.Pivot : PivotMode.Center;
+            var nextModeType = EditorPivotManager.GetNextPivotModeType(EditorPivotManager.activePivotMode);
+            PivotManager.SetActivePivotMode(nextModeType);
+            
             ResetGlobalHandleRotation();
             RepaintAllToolViews();
         }
@@ -539,7 +589,9 @@ namespace UnityEditor
         [FormerlyPrefKeyAs("Tools/Pivot Rotation", "x")]
         static void TogglePivotRotation(ShortcutArguments args)
         {
-            pivotRotation = pivotRotation == PivotRotation.Global ? PivotRotation.Local : PivotRotation.Global;
+            var nextRotationType = EditorPivotManager.GetNextPivotRotationType(EditorPivotManager.activePivotRotation);
+            PivotManager.SetActivePivotRotation(nextRotationType);
+            
             ResetGlobalHandleRotation();
             RepaintAllToolViews();
         }
@@ -574,12 +626,7 @@ namespace UnityEditor
         {
             get
             {
-                Transform t = Selection.activeTransform;
-                if (!t)
-                    return Quaternion.identity;
-                if (rectBlueprintMode && InternalEditorUtility.SupportsRectLayout(t))
-                    return t.parent.rotation;
-                return t.rotation;
+                return LocalPivotRotation.RetrieveLocalRotation();
             }
         }
     }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEditor.Build.Profile.AdaptivePerformance;
 using UnityEditor.Build.Profile.Elements;
 using UnityEditor.Build.Profile.Internal;
 
@@ -20,7 +21,9 @@ namespace UnityEditor.Build.Profile.Handlers
             new ScriptingDefinesSettings(),
             new PlayerSettingsProvider(),
             new QualitySettingsProvider(),
-            new Elements.GraphicsSettingsProvider()
+            new Elements.GraphicsSettingsProvider(),
+            new BuildAutomationSettingsProvider(),
+            new AdaptivePerformanceSettingProvider()
         };
 
         readonly BuildProfile m_BuildProfile;

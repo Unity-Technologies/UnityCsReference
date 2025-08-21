@@ -50,8 +50,10 @@ namespace UnityEditor.VersionControl
         public extern void SetCompletionAction(CompletionAction action);
 
         [NativeMethod("GetMonoAssetList")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern Asset[] Internal_GetAssetList();
         [NativeMethod("GetMonoChangeSets")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern ChangeSet[] Internal_GetChangeSets();
 
         [FreeFunction("VersionControlBindings::Task::Destroy", IsThreadSafe = true)]
@@ -84,6 +86,7 @@ namespace UnityEditor.VersionControl
         public extern Message[] messages
         {
             [NativeName("GetMonoMessages")]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 

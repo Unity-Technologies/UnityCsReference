@@ -111,7 +111,7 @@ namespace UnityEditor
         SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = SearchableEditorWindow.SearchModeHierarchyWindow.All;
 
         [NonSerialized]
-        private int m_LastFramedID = -1;
+        private EntityId m_LastFramedID = EntityId.None;
         [NonSerialized]
         bool m_TreeViewReloadNeeded;
         [NonSerialized]
@@ -1949,7 +1949,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                    var go = InternalEditorUtility.GetObjectFromEntityId(id) as GameObject;
                     if (go != null)
                     {
                         if (go.transform.GetComponentsInChildren<Transform>(true).Length > 1)
@@ -1978,7 +1978,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                    var go = InternalEditorUtility.GetObjectFromEntityId(id) as GameObject;
                     if (go != null)
                         instanceIDs.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
                 }
@@ -1994,7 +1994,7 @@ namespace UnityEditor
         {
             foreach (var id in treeView.GetSelection())
             {
-                var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                var go = InternalEditorUtility.GetObjectFromEntityId(id) as GameObject;
                 if (go != null)
                 {
                     var root = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
@@ -2013,7 +2013,7 @@ namespace UnityEditor
             List<EntityId> instanceIDs = new List<EntityId>(treeView.GetSelection().Length);
             foreach (var id in treeView.GetSelection())
             {
-                var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                var go = InternalEditorUtility.GetObjectFromEntityId(id) as GameObject;
                 if (go != null)
                 {
                     var root = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
@@ -2077,21 +2077,21 @@ namespace UnityEditor
             Repaint();
         }
 
-        private void FrameObjectPrivate(int instanceID, bool frame, bool ping, bool animatedFraming)
+        private void FrameObjectPrivate(EntityId entityId, bool frame, bool ping, bool animatedFraming)
         {
-            if (instanceID == 0)
+            if (entityId == 0)
                 return;
 
             // If framing the same instance as the last one we do not remove the ping
             // since issuing first a ping and then a framing should still show the ping.
-            if (m_LastFramedID != instanceID)
+            if (m_LastFramedID != entityId)
                 treeView.EndPing();
 
-            m_LastFramedID = instanceID;
+            m_LastFramedID = entityId;
 
-            treeView.Frame(instanceID, frame, ping, animatedFraming);
+            treeView.Frame(entityId, frame, ping, animatedFraming);
 
-            FrameObjectPrivate(InternalEditorUtility.GetGameObjectInstanceIDFromComponent(instanceID), frame, ping, animatedFraming);
+            FrameObjectPrivate(InternalEditorUtility.GetGameObjectEntityIdFromComponent(entityId), frame, ping, animatedFraming);
         }
 
         internal virtual void DoWindowLockButton(Rect r)
@@ -2168,7 +2168,7 @@ namespace UnityEditor
         {
             public static void AddGameObjectNames(int gameObjectInstanceID, List<string> list)
             {
-                var gameObject = InternalEditorUtility.GetObjectFromInstanceID(gameObjectInstanceID) as GameObject;
+                var gameObject = InternalEditorUtility.GetObjectFromEntityId(gameObjectInstanceID) as GameObject;
                 if (gameObject == null)
                     return;
 

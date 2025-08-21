@@ -154,6 +154,9 @@ namespace UnityEngine
     internal class BlittableStructTests
     {
         [NativeThrows] public static extern void ParameterStructInt(StructInt param);
+        [NativeThrows] public static extern void ParameterStructIntByRef(ref StructInt param);
+        [NativeThrows] public static extern void ParameterStructIntIn(in StructInt param);
+        [NativeThrows] public static extern void ParameterStructIntOut(out StructInt param);
 
         public static extern void ParameterStructInt2(StructInt2 param);
 
@@ -472,6 +475,7 @@ namespace UnityEngine
         public static extern System.Type CanUnmarshallUnityTypeToSystemType();
         public static extern System.Type CanUnmarshallScriptingClassPtrToSystemType();
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern System.Type[] CanUnmarshallScriptingArrayPtrToSystemTypeArray();
         public static extern System.Type[] CanUnmarshallArrayOfScriptingSystemTypeObjectPtrToSystemTypeArray();
         public static extern System.Type[] CanUnmarshallArrayOfUnityTypeToSystemTypeArray();
@@ -511,6 +515,7 @@ namespace UnityEngine
         public static extern System.Reflection.FieldInfo CanUnmarshallScriptingFieldInfoObjectPtrToFieldInfo();
         public static extern System.Reflection.FieldInfo CanUnmarshallScriptingFieldPtrToFieldInfo();
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern System.Reflection.FieldInfo[] CanUnmarshallScriptingArrayPtrToFieldInfoArray();
         public static extern System.Reflection.FieldInfo[] CanUnmarshallArrayOfScriptingFieldInfoObjectPtrToFieldInfoArray();
         public static extern System.Reflection.FieldInfo[] CanUnmarshallArrayOfScriptingFieldPtrToFieldInfoArray();
@@ -549,6 +554,7 @@ namespace UnityEngine
         public static extern System.Reflection.MethodInfo CanUnmarshallScriptingMethodInfoObjectPtrToMethodInfo();
         public static extern System.Reflection.MethodInfo CanUnmarshallScriptingMethodPtrToMethodInfo();
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern System.Reflection.MethodInfo[] CanUnmarshallScriptingArrayPtrToMethodInfoArray();
         public static extern System.Reflection.MethodInfo[] CanUnmarshallArrayOfScriptingMethodInfoObjectPtrToMethodInfoArray();
         public static extern System.Reflection.MethodInfo[] CanUnmarshallArrayOfScriptingMethodPtrToMethodInfoArray();
@@ -813,13 +819,13 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal static class ReturnArrayMarshallingTests
     {
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern float[] ReturnArrayOfPrimitiveTypeWorks_Float1D();
 
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern float[,] ReturnArrayOfPrimitiveTypeWorks_Float2D();
 
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern float[,,] ReturnArrayOfPrimitiveTypeWorks_Float3D();
     }
 
@@ -894,6 +900,68 @@ namespace UnityEngine
         public static extern int[] ParameterIntArrayReturnNull();
         public static extern char[] ParameterCharArrayReturn();
         public static extern BlittableCornerCases[] ParameterBlittableCornerCaseStructArrayReturn();
+
+        // For CreateAndFillArray, passing the array in vs ref doesn't matter for correctness
+        // But there is on reason to pass it by ref - we always update the pointer to
+        // the array in the OutMarshalledArrayFiller.  With the ref case the custom marshalling
+        // code will make an ConvertToManaged call that will just re-read the same pointer
+        // But let's make sure we support calling by ref since that will make more sense since in implies read-only
+
+        public static int[] CreateAndFillArray1UsingIn()
+        {
+            OutArray<int> outArray = new OutArray<int>();
+            CreateAndFillArray1In(in outArray);
+            return outArray.Value;
+        }
+        public static int[] CreateAndFillArray1UsingRef()
+        {
+            OutArray<int> outArray = new OutArray<int>();
+            CreateAndFillArray1Ref(ref outArray);
+            return outArray.Value;
+        }
+
+        public static int[,] CreateAndFillArray2UsingIn()
+        {
+            OutArray2D<int> outArray = new OutArray2D<int>();
+            CreateAndFillArray2In(in outArray);
+            return outArray.Value;
+        }
+
+        public static int[,] CreateAndFillArray2UsingRef()
+        {
+            OutArray2D<int> outArray = new OutArray2D<int>();
+            CreateAndFillArray2Ref(ref outArray);
+            return outArray.Value;
+        }
+
+        public static int[,,] CreateAndFillArray3UsingIn()
+        {
+            OutArray3D<int> outArray = new OutArray3D<int>();
+            CreateAndFillArray3In(in outArray);
+            return outArray.Value;
+        }
+
+        public static int[,,] CreateAndFillArray3UsingRef()
+        {
+            OutArray3D<int> outArray = new OutArray3D<int>();
+            CreateAndFillArray3Ref(ref outArray);
+            return outArray.Value;
+        }
+
+        [NativeName("CreateAndFillArray1")]
+        static extern void CreateAndFillArray1In(in OutArray<int> outArray);
+        [NativeName("CreateAndFillArray1")]
+        static extern void CreateAndFillArray1Ref(ref OutArray<int> outArray);
+
+        [NativeName("CreateAndFillArray2")]
+        static extern void CreateAndFillArray2In(in OutArray2D<int> outArray);
+        [NativeName("CreateAndFillArray2")]
+        static extern void CreateAndFillArray2Ref(ref OutArray2D<int> outArray);
+
+        [NativeName("CreateAndFillArray3")]
+        static extern void CreateAndFillArray3In(in OutArray3D<int> outArray);
+        [NativeName("CreateAndFillArray3")]
+        static extern void CreateAndFillArray3Ref(ref OutArray3D<int> outArray);
     }
 
     // --------------------------------------------------------------------
@@ -985,6 +1053,248 @@ namespace UnityEngine
         static float InvokeFloat(float arg) { return arg; }
         [RequiredMember, RequiredByNativeCode(Optional = true)]
         static double InvokeDouble(double arg) { return arg; }
+    }
+
+
+    internal static class CustomMarshallingTests
+    {
+        [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
+        public class CustomMarshalledClass : ICustomMarshalled
+        {
+            public string Value { get; set; }
+
+            public static class BindingsMarshaller
+            {
+                public static int ConvertToUnmanaged(CustomMarshalledClass c) => c == null ? 0 : int.Parse(c.Value);
+                public static CustomMarshalledClass ConvertToManaged(int n) => new CustomMarshalledClass { Value = n.ToString() };
+            }
+        }
+
+        public class CustomMarshalledDerivedClass : CustomMarshalledClass { }
+
+        public interface ICustomMarshalled
+        {
+            public string Value { get; set; }
+        }
+
+        public class CustomMarshaller
+        {
+            public static int ConvertToUnmanaged(CustomMarshalledClass c) => c == null ? 0 : int.Parse(c.Value) * 2;
+            public static CustomMarshalledClass ConvertToManaged(int n) => new CustomMarshalledClass { Value = (n * 2).ToString() };
+        }
+
+        public class CustomMarshallerUsingInParameters
+        {
+            public static int ConvertToUnmanaged(in CustomMarshalledClass c) => c == null ? 0 : int.Parse(c.Value) * 2;
+            public static CustomMarshalledClass ConvertToManaged(in int n) => new CustomMarshalledClass { Value = (n * 2).ToString() };
+        }
+
+        public class CustomMarshaller_NeeedingMarshalling
+        {
+            public static string ConvertToUnmanaged(CustomMarshalledClass c) => c == null ? null : c.Value + "_ConvertedToUnmanaged";
+            public static CustomMarshalledClass ConvertToManaged(string s) => new CustomMarshalledClass { Value = s + "_ConvertedToManaged" };
+        }
+
+        public class CustomMarshaller_WithFree
+        {
+            private static int _lastFreeValue = int.MinValue;
+            public static int GetLastFreeValue() => _lastFreeValue;
+            public static int ConvertToUnmanaged(CustomMarshalledClass c) => c == null ? 0 : int.Parse(c.Value) * 3;
+            public static CustomMarshalledClass ConvertToManaged(int n) => new CustomMarshalledClass { Value = (n * 3).ToString() };
+
+            public static void Free(int value)
+            {
+                _lastFreeValue = value;
+            }
+        }
+
+        public class CustomMarshallerGeneric<T> where T: ICustomMarshalled, new()
+        {
+            public static int ConvertToUnmanaged(T c) => c == null ? 0 : int.Parse(c.Value) * 2;
+            public static T ConvertToManaged(int n) => new T() { Value = (n * 2).ToString() };
+        }
+
+        public class CustomMarshallerInterface
+        {
+            public static int ConvertToUnmanaged(ICustomMarshalled c) => c == null ? 0 : int.Parse(c.Value) * 2;
+        }
+
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalled(CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalledIn(in CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalledOut(out CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalledRef(ref CustomMarshalledClass arg, int expected);
+        public static extern CustomMarshalledClass ParameterCustomMarshalledReturn(int value);
+
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalled")]
+        public static extern void ParameterCustomMarshalled_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledIn")]
+        public static extern void ParameterCustomMarshalledIn_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] in CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledOut")]
+        public static extern void ParameterCustomMarshalledOut_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] out CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledRef")]
+        public static extern void ParameterCustomMarshalledRef_Attribute([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))] ref CustomMarshalledClass arg, int expected);
+
+        [NativeMethod("ParameterCustomMarshalledReturn")]
+        [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller))]
+        public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_Attribute(int value);
+
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalled")]
+        public static extern void ParameterCustomMarshalled_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledIn")]
+        public static extern void ParameterCustomMarshalledIn_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] in CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledOut")]
+        public static extern void ParameterCustomMarshalledOut_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] out CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledRef")]
+        public static extern void ParameterCustomMarshalledRef_CustomMarshallerUsesInParameters([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))] ref CustomMarshalledClass arg, int expected);
+
+        [NativeMethod("ParameterCustomMarshalledReturn")]
+        [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerUsingInParameters))]
+        public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_CustomMarshallerUsesInParameters(int value);
+
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalled")]
+        public static extern void ParameterCustomMarshalled_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledIn")]
+        public static extern void ParameterCustomMarshalledIn_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] in CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledOut")]
+        public static extern void ParameterCustomMarshalledOut_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] out CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledRef")]
+        public static extern void ParameterCustomMarshalledRef_Free([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))] ref CustomMarshalledClass arg, int expected);
+        [NativeMethod("ParameterCustomMarshalledReturn")]
+        [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_WithFree))]
+        public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_Free(int value);
+
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalled_NeedingMarshalling([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] CustomMarshalledClass arg, string expected);
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalled_NeedingMarshalling_In([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] in CustomMarshalledClass arg, string expected);
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalled_NeedingMarshalling_Out([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] out CustomMarshalledClass arg, string expected);
+        [NativeThrows]
+        public static extern void ParameterCustomMarshalled_NeedingMarshalling_Ref([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))] ref CustomMarshalledClass arg, string expected);
+        [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshaller_NeeedingMarshalling))]
+        public static extern CustomMarshalledClass ParameterCustomMarshalled_NeedingMarshalling_Return(string value);
+
+
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalled")]
+        public static extern void ParameterCustomMarshalled_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledIn")]
+        public static extern void ParameterCustomMarshalledIn_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] in CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledOut")]
+        public static extern void ParameterCustomMarshalledOut_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] out CustomMarshalledClass arg, int expected);
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalledRef")]
+        public static extern void ParameterCustomMarshalledRef_GenericMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] ref CustomMarshalledClass arg, int expected);
+        [NativeMethod("ParameterCustomMarshalledReturn")]
+        [return: UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))]
+        public static extern CustomMarshalledClass ParameterCustomMarshalledReturn_GenericMarshaller(int value);
+
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalled")]
+        public static extern void ParameterCustomMarshalled_DerivedType([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerGeneric<CustomMarshalledClass>))] CustomMarshalledDerivedClass arg, int expected);
+
+        [NativeThrows]
+        [NativeMethod("ParameterCustomMarshalled")]
+        public static extern void ParameterCustomMarshalled_InterfaceMarshaller([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(CustomMarshallerInterface))] CustomMarshalledClass arg, int expected);
+
+        [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
+        public struct CustomMarshalledAsStruct
+        {
+            public int field;
+
+            public static class BindingsMarshaller
+            {
+                public static StructInt ConvertToUnmanaged(in CustomMarshalledAsStruct s)
+                {
+                    return new StructInt { field = s.field };
+                }
+
+                public static CustomMarshalledAsStruct ConvertToManaged(in StructInt s)
+                {
+                    return new CustomMarshalledAsStruct { field = s.field };
+                }
+            }
+        }
+
+        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructInt), isFreeFunction: true)]
+        public static extern void ParameterCustomMarshalled_AsStruct(CustomMarshalledAsStruct arg);
+        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntIn), isFreeFunction: true)]
+        public static extern void ParameterCustomMarshalled_AsStruct_In(in CustomMarshalledAsStruct arg);
+        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntOut), isFreeFunction: true)]
+        public static extern void ParameterCustomMarshalled_AsStruct_Out(out CustomMarshalledAsStruct arg);
+        [NativeThrows, NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ParameterStructIntByRef), isFreeFunction: true)]
+        public static extern void ParameterCustomMarshalled_AsStruct_Ref(ref CustomMarshalledAsStruct arg);
+        [NativeMethod(nameof(BlittableStructTests) + "::" + nameof(BlittableStructTests.ReturnStructInt), isFreeFunction: true)]
+        public static extern CustomMarshalledAsStruct ParameterCustomMarshalled_AsStruct_Return();
+
+        public class MarshalThisAsStructInt
+        {
+            public int field;
+
+            static class BindingsMarshaller
+            {
+                public static StructInt ConvertToUnmanaged(MarshalThisAsStructInt s) => new StructInt { field = s.field };
+            }
+
+            [UnityMarshalThisAs(NativeType.Custom, CustomMarshaller = typeof(BindingsMarshaller))]
+            public extern int GetField();
+        }
+
+        [UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(ClassWithPinnableInnerData))]
+        public class ClassWithPinnableInnerData
+        {
+            public StructInt NativeData;
+
+            internal static ref StructInt GetPinnableReference(ClassWithPinnableInnerData c)
+            {
+                return ref c.NativeData;
+            }
+
+            internal static StructInt ConvertToUnmanaged(ClassWithPinnableInnerData data)
+            {
+                return data.NativeData;
+            }
+        }
+
+        [NativeMethod("BlittableStructTests::ParameterStructIntByRef", IsFreeFunction = true, ThrowsException = true)]
+        public extern static void PassClassWithPinnableInnerData_PinnedRef(ClassWithPinnableInnerData c);
+
+        [NativeMethod("BlittableStructTests::ParameterStructIntDynamicArray", IsFreeFunction = true, ThrowsException = true)]
+        public extern static void PassClassWithPinnableInnerData_AsArray(ClassWithPinnableInnerData[] arr);
+    }
+
+
+    internal class BlittableNestedCollectionMarshallerTests
+    {
+        [NativeThrows]
+        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
+        public extern static void PassInNestedLists([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] List<List<int>> nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
+
+        [NativeThrows]
+        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
+        public extern static void PassInNestedArrays([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] int[][] nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
+
+        [NativeThrows]
+        [NativeMethod("BlittableNestedCollectionMarshallerTests::PassInNestedCollection")]
+        public extern static void PassInListOfInts([UnityMarshalAs(NativeType.Custom, CustomMarshaller = typeof(BlittableNestedCollectionMarshaller<int>))] List<int[]> nested, int exectedCount, int[] expectedValues1, int[] expectedValues2);
     }
 
     internal static class MarshallingTests

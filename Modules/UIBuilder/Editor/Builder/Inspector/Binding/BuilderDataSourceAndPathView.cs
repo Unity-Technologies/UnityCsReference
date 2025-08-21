@@ -124,7 +124,7 @@ namespace Unity.UI.Builder
 
         public UxmlSerializedDataDescription bindingUxmlSerializedDataDescription { get; set; }
 
-        public UxmlSerializedDataDescription uxmlSerializedDataDescription => bindingUxmlSerializedDataDescription ?? m_SerializedDataDescription;
+        public UxmlSerializedDataDescription uxmlSerializedDataDescription => bindingUxmlSerializedDataDescription ?? context.uxmlSerializedDataDescription;
 
         protected bool isBinding => bindingUxmlSerializedDataDescription != null;
 
@@ -262,7 +262,7 @@ namespace Unity.UI.Builder
         /// <inheritdoc/>
         protected override void GenerateSerializedAttributeFields()
         {
-            var path = bindingSerializedPropertyRootPath ?? serializedRootPath;
+            var path = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
             var root = new UxmlAssetSerializedDataRoot { dataDescription = uxmlSerializedDataDescription, rootPath = path, classList = { InspectorElement.ussClassName }};
             attributesContainer.Add(root);
             GenerateDataBindingFields(root);
@@ -357,7 +357,7 @@ namespace Unity.UI.Builder
             }
 
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
-            var basePath = bindingSerializedPropertyRootPath ?? serializedRootPath;
+            var basePath = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
             var path = $"{basePath}.{attributeDesc.serializedField.Name}";
             return CreateSerializedAttributeRow(attributeDesc, path, parent);
         }
@@ -371,7 +371,7 @@ namespace Unity.UI.Builder
 
             var fieldElement = new UxmlSerializedDataAttributeField();
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
-            var basePath = bindingSerializedPropertyRootPath ?? serializedRootPath;
+            var basePath = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
             var path = $"{basePath}.{attributeDesc.serializedField.Name}";
             var propertyField = new PropertyField
             {
@@ -379,7 +379,7 @@ namespace Unity.UI.Builder
                 bindingPath = path,
                 label = StyleSheetUtility.ConvertDashToHuman(attribute)
             };
-            propertyField.Bind(m_CurrentElementSerializedObject);
+            propertyField.Bind(context.rootSerializedObject);
 
             if (!readOnly)
             {
@@ -488,7 +488,7 @@ namespace Unity.UI.Builder
 
             var currentUxmlAttributeOwner = attributesUxmlOwner;
 
-            var result = SynchronizePath(bindingSerializedPropertyRootPath, false);
+            var result = BuilderAssetUtilities.SynchronizePath(context, bindingSerializedPropertyRootPath, false);
             if (isBinding && result.success)
             {
                 currentUxmlAttributeOwner = result.uxmlAsset;
@@ -504,10 +504,10 @@ namespace Unity.UI.Builder
                         var attributeName = k_BindingAttr_DataSource;
                         var bindingProperty = GetRemapAttributeNameToCSProperty(k_BindingAttr_DataSource);
                         var isAttributeOverrideAttribute =
-                            isInTemplateInstance
+                            context.isInTemplateInstance
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement,
                                 attributeName);
-                        var canUnsetBinding = !isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
+                        var canUnsetBinding = !context.isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
                         return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(attributeName)) || isAttributeOverrideAttribute || canUnsetBinding
                             ? DropdownMenuAction.Status.Normal
@@ -522,9 +522,9 @@ namespace Unity.UI.Builder
                     {
                         var bindingProperty = GetRemapAttributeNameToCSProperty(k_BindingAttr_DataSourceType);
                         var isAttributeOverrideAttribute =
-                            isInTemplateInstance
+                            context.isInTemplateInstance
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement, k_BindingAttr_DataSourceType);
-                        var canUnsetBinding = !isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
+                        var canUnsetBinding = !context.isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
                         return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(k_BindingAttr_DataSourceType)) || isAttributeOverrideAttribute || canUnsetBinding
                             ? DropdownMenuAction.Status.Normal
@@ -571,10 +571,10 @@ namespace Unity.UI.Builder
 
             if (bindingSerializedPropertyRootPath != null)
             {
-                CallDeserializeOnElement();
-                using (new DisableUndoScope(this))
+                BuilderAssetUtilities.CallDeserializeOnElement(context);
+                using (new BuilderUxmlAttributesEditingContext.DisableUndoScope(context))
                 {
-                    var result = SynchronizePath(bindingSerializedPropertyRootPath, true);
+                    var result = BuilderAssetUtilities.SynchronizePath(context, bindingSerializedPropertyRootPath, true);
                     m_DataSourcePathCompleter.binding = result.attributeOwner as DataBinding;
                 }
             }

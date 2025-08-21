@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.TextCore.Text;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.UIR;
@@ -16,6 +17,8 @@ namespace UnityEngine.UIElements
     {
         public static event Action<BaseRuntimePanel> onCreatePanel;
         public static event Action<BaseRuntimePanel> onWillDestroyPanel;
+
+        internal static Func<bool> IsEditingPrefab = null;
 
         static UIElementsRuntimeUtility()
         {
@@ -207,6 +210,8 @@ namespace UnityEngine.UIElements
                 if (!onlyOffscreen || panel.targetTexture != null)
                     RepaintPanel(panel);
             }
+
+            TextGenerationInfo.OnRepaintEnd();
         }
 
         internal static Object activeEventSystem { get; private set; }

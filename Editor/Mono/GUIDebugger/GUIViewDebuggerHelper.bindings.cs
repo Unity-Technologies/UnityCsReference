@@ -120,7 +120,7 @@ namespace UnityEditor
         [NativeThrows]
         static internal extern void GetViews(List<GUIView> views);
 
-        static internal extern void DebugWindow([Unmarshalled] GUIView view);
+        static internal extern void DebugWindow([UnityMarshalAs(NativeType.ScriptingObjectPtr)] GUIView view);
 
         [FreeFunction("GetGUIDebuggerManager().StopDebuggingAll")]
         static internal extern void StopDebugging();

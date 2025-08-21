@@ -273,8 +273,7 @@ namespace UnityEditorInternal
         {
             public const int invalidInstancIdCount = -1;
             public const float invalidDuration = -1.0f;
-            // The associated GameObjects instance ID. Negative means Native Object, Positive means Managed Object, 0 means not set (as in, no object associated)
-            public int instanceId = 0;
+            public EntityId instanceId = EntityId.None;
             public string metaData = string.Empty;
 
             public float totalDurationForThread = invalidDuration;
@@ -1952,7 +1951,7 @@ namespace UnityEditorInternal
                     text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
                 }
 
-                bool hasObject = m_SelectedEntry.instanceId != 0;
+                bool hasObject = m_SelectedEntry.instanceId != EntityId.None;
                 if (hasObject || hasCallStack)
                 {
                     using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, m_SelectedEntry.threadIndex))
@@ -1964,7 +1963,7 @@ namespace UnityEditorInternal
                                 var name = string.IsNullOrEmpty(info.name) ? styles.localizedStringUnnamedObject : info.name;
                                 var typeName = frameData.GetUnityObjectNativeTypeInfo(info.nativeTypeIndex, out var typeInfo) ? typeInfo.name : "Object";
                                 // For components we display the information about GameObject as usually components are unnamed.
-                                if (info.relatedGameObjectInstanceId != 0 && frameData.GetUnityObjectInfo(info.relatedGameObjectInstanceId, out var goInfo) && !string.IsNullOrEmpty(goInfo.name))
+                                if (info.relatedGameObjectEntityId != EntityId.None && frameData.GetUnityObjectInfo(info.relatedGameObjectEntityId, out var goInfo) && !string.IsNullOrEmpty(goInfo.name))
                                 {
                                     text.Append(string.Format("\n{0}: {1}", typeName, goInfo.name));
                                 }

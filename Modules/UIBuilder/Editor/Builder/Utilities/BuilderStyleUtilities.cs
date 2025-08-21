@@ -19,11 +19,11 @@ namespace Unity.UI.Builder
             styleRule = vta.GetOrCreateInlineStyleRule(vea);
         }
 
-        static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName)
+        static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName, bool undo = true)
         {
             var styleProperty = styleRule.FindLastProperty(styleName);
             if (styleProperty == null)
-                styleProperty = styleSheet.AddProperty(styleRule, styleName);
+                styleProperty = styleSheet.AddProperty(styleRule, styleName, null, undo);
 
             return styleProperty;
         }
@@ -34,11 +34,13 @@ namespace Unity.UI.Builder
             VisualElement element,
             string styleName,
             T value,
-            Action<StyleProperty, StyleSheet, T> setter)
+            Action<StyleProperty, StyleSheet, T> setter,
+            bool undo = true)
         {
             GetInlineStyleSheetAndRule(vta, vea, out var styleSheet, out var styleRule);
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
+            if (undo)
+                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName, undo);
             setter(styleProperty, styleSheet, value);
             element?.UpdateInlineRule(styleSheet, styleRule);
         }
@@ -50,9 +52,9 @@ namespace Unity.UI.Builder
             SetInlineValue(vta, element.GetVisualElementAsset(), element, styleName, value, (p, s, v) => p.SetDimension(s, v));
         }
 
-        public static void SetInlineFloatValue(VisualTreeAsset vta, VisualElement element, string styleName, float value)
+        public static void SetInlineFloatValue(VisualTreeAsset vta, VisualElement element, string styleName, float value, bool undo = true)
         {
-            SetInlineValue(vta, element.GetVisualElementAsset(), element, styleName, value, (p, s, v) => p.SetFloat(s, v));
+            SetInlineValue(vta, element.GetVisualElementAsset(), element, styleName, value, (p, s, v) => p.SetFloat(s, v), undo);
         }
 
         public static void SetInlineEnumValue(VisualTreeAsset vta, VisualElement element, string styleName, Enum value)

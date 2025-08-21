@@ -99,6 +99,7 @@ namespace UnityEngine.UIElements
         public Font unityFont => inheritedData.Read().unityFont;
         public FontDefinition unityFontDefinition => inheritedData.Read().unityFontDefinition;
         public FontStyle unityFontStyleAndWeight => inheritedData.Read().unityFontStyleAndWeight;
+        public MaterialDefinition unityMaterial => inheritedData.Read().unityMaterial;
         public OverflowClipBox unityOverflowClipBox => rareData.Read().unityOverflowClipBox;
         public Length unityParagraphSpacing => inheritedData.Read().unityParagraphSpacing;
         public int unitySliceBottom => rareData.Read().unitySliceBottom;
@@ -427,6 +428,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnityFontStyleAndWeight:
                         inheritedData.Write().unityFontStyleAndWeight = (FontStyle)reader.ReadEnum(StyleEnumType.FontStyle, 0);
                         break;
+                    case StylePropertyId.UnityMaterial:
+                        inheritedData.Write().unityMaterial = reader.ReadMaterialDefinition(0);
+                        break;
                     case StylePropertyId.UnityOverflowClipBox:
                         rareData.Write().unityOverflowClipBox = (OverflowClipBox)reader.ReadEnum(StyleEnumType.OverflowClipBox, 0);
                         break;
@@ -680,6 +684,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.Write().unityFontStyleAndWeight = (FontStyle)sv.number;
+                    break;
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = sv.resource.IsAllocated ? MaterialDefinition.FromObject(sv.resource.Target) : null;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     rareData.Write().unityOverflowClipBox = (OverflowClipBox)sv.number;
@@ -1013,6 +1020,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.Write().unityFontStyleAndWeight = other.inheritedData.Read().unityFontStyleAndWeight;
+                    break;
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = other.inheritedData.Read().unityMaterial;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     rareData.Write().unityOverflowClipBox = other.rareData.Read().unityOverflowClipBox;
@@ -3405,6 +3415,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.Write().unityFontStyleAndWeight = InitialStyle.unityFontStyleAndWeight;
                     break;
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = InitialStyle.unityMaterial;
+                    break;
                 case StylePropertyId.UnityOverflowClipBox:
                     rareData.Write().unityOverflowClipBox = InitialStyle.unityOverflowClipBox;
                     break;
@@ -3509,6 +3522,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     inheritedData.Write().unityFontStyleAndWeight = parentStyle.unityFontStyleAndWeight;
+                    break;
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = parentStyle.unityMaterial;
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
                     inheritedData.Write().unityParagraphSpacing = parentStyle.unityParagraphSpacing;
@@ -3616,7 +3632,8 @@ namespace UnityEngine.UIElements
                     changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
                 }
 
-                if ((changes & VersionChangeType.Repaint) == 0 && (x.textShadow != y.textShadow ||
+                if ((changes & VersionChangeType.Repaint) == 0 && (x.unityMaterial != y.unityMaterial ||
+                    x.textShadow != y.textShadow ||
                     x.unityTextAlign != y.unityTextAlign ||
                     x.unityTextOutlineColor != y.unityTextOutlineColor))
                 {

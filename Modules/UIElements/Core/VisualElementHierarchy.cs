@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Indicates whether or not this VisualElement is a root for visual styling. For example, if it has the :root selector.
         /// </summary>
-        internal bool isRootVisualContainer { get; set; }
+        internal bool isRootVisualContainer  => styleSheets.count > 0;
 
         [Obsolete("VisualElement.cacheAsBitmap is deprecated and has no effect")]
         public bool cacheAsBitmap { get; set; }
@@ -61,12 +61,6 @@ namespace UnityEngine.UIElements
         // parent in visual tree
         private VisualElement m_PhysicalParent;
         private VisualElement m_LogicalParent;
-
-        // This will be invoked once a visual element is successfully added into the hierarchy.
-        internal event Action<VisualElement, int> elementAdded;
-
-        // This will be invoked once a visual element is successfully removed into the hierarchy.
-        internal event Action<VisualElement> elementRemoved;
 
         /// <summary>
         /// The parent of this VisualElement.
@@ -108,11 +102,11 @@ namespace UnityEngine.UIElements
         /// If a child is added to this element, the child is added to this element's content container instead.
         /// </summary>
         /// <remarks>
-        /// When iterating over the  <see cref="VisualElement.Children">logical children</see> of an element, the
+        /// When iterating over the  <see cref="VisualElement.Children"/> of an element, the
         /// element's content container hierarchy is used instead of the element itself.
-        /// This can lead to unexpected results, such as <see cref="IFocusRing">elements being ignored by the navigation events</see>
-        /// if they are not directly in the content container's hierarchy.
-        ///\\
+        /// This can lead to unexpected results, such as elements being ignored by the navigation events
+        /// if they are not directly in the content container's hierarchy. Refer to <see cref="IFocusRing" /> for more information.
+        /// 
         /// If the content container is the same as the element itself, child elements are added directly to the element.
         /// This is true for most elements but can be overridden by more complex types.
         ///
@@ -527,6 +521,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Override this method to react to new elements being added to this element's children list.
+        /// </summary>
+        internal virtual void OnChildAdded(VisualElement child) { }
+
+        /// <summary>
+        /// Override this method to react to existing elements being removed from this element's children list.
+        /// </summary>
+        internal virtual void OnChildRemoved(VisualElement child) { }
+
+        /// <summary>
         /// Hierarchy is a struct allowing access to the hierarchy of visual elements
         /// </summary>
         public struct Hierarchy
@@ -607,7 +611,7 @@ namespace UnityEngine.UIElements
                 child.InvokeHierarchyChanged(HierarchyChangeType.AddedToParent);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
-                m_Owner.elementAdded?.Invoke(child, index);
+                m_Owner.OnChildAdded(child);
             }
 
             /// <summary>
@@ -680,7 +684,7 @@ namespace UnityEngine.UIElements
                 // Child is detached from the panel, notify using the panel directly.
                 m_Owner.elementPanel?.OnVersionChanged(child, VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
-                m_Owner.elementRemoved?.Invoke(child);
+                m_Owner.OnChildRemoved(child);
             }
 
             /// <summary>
@@ -716,7 +720,7 @@ namespace UnityEngine.UIElements
                         e.hierarchy.SetParent(null);
                         e.m_LogicalParent = null;
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
-                        m_Owner.elementRemoved?.Invoke(e);
+                        m_Owner.OnChildRemoved(e);
                     }
 
                     if (m_Owner.imguiContainerDescendantCount > 0)

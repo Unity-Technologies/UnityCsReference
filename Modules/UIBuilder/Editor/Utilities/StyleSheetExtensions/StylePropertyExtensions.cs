@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -32,7 +33,7 @@ namespace Unity.UI.Builder
             for (var i = 0; i < property.values.Length; ++i)
             {
                 var index = i;
-                var valueInfo = StylePropertyManipulator.ResolveValueOrVariable(styleSheet, element, rule, property, ref i, editorExtensionMode);
+                var valueInfo = StylePropertyManipulator.ResolveValueOrVariable(styleSheet, element, rule, property.name, property.values.AsSpan(), ref i, editorExtensionMode);
                 valueInfo.offset = index;
                 manipulator.stylePropertyParts.Add(valueInfo);
             }

@@ -33,7 +33,7 @@ namespace UnityEngine.Accessibility
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
-    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
     /// </para>
     /// </remarks>
     /// <example>
@@ -143,8 +143,8 @@ namespace UnityEngine.Accessibility
         /// <para>
         /// SA:
         ///
-        ///- [Touch typing on Android](https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Edit%20text%20with%20Gboard)
-        ///- [Touch typing on iOS](https://support.apple.com/en-us/guide/iphone/iph3e2e3d1d/ios#:~:text=Touch%20typing)
+        ///- &lt;a href="https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Edit%20text%20with%20Gboard" &gt;Touch typing on Android&lt;/a&gt;
+        ///- &lt;a href="https://support.apple.com/en-us/guide/iphone/iph3e2e3d1d/ios#:~:text=Touch%20typing" &gt;Touch typing on iOS&lt;/a&gt;
         /// </para>
         /// </remarks>
         KeyboardKey,
@@ -163,13 +163,13 @@ namespace UnityEngine.Accessibility
         /// On mobile platforms, this role enables heading navigation, which allows users to more efficiently navigate
         /// an application by moving from one heading to the next without having to navigate through all the nodes in
         /// between. On Android, this navigation mode can be activated through the "Headings"
-        /// [reading control](https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls)
+        /// &lt;a href="https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls" &gt;reading control&lt;/a&gt;
         /// in TalkBack. On iOS, it can be accessed through the "Headings" control in the
-        /// [VoiceOver rotor](https://support.apple.com/en-us/111796).
+        /// &lt;a href="https://support.apple.com/en-us/111796" &gt;VoiceOver rotor&lt;/a&gt;.
         /// </para>
         /// <para>
         /// On macOS, accessibility nodes with this role may be listed in the "Window Spots" menu of the
-        /// [VoiceOver rotor](https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac).
+        /// &lt;a href="https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac" &gt;VoiceOver rotor&lt;/a&gt;.
         /// </para>
         /// <para>
         /// **Platform support**: On Android, this role is only supported starting with Android 9 (API level 28).
@@ -300,7 +300,7 @@ namespace UnityEngine.Accessibility
         /// information that enhances navigation:
         ///
         ///- They enable container navigation, which can be activated through the "Containers"
-        /// [reading control](https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls)
+        /// &lt;a href="https://support.google.com/accessibility/android/answer/6006598?hl=en#:~:text=Choose%20reading%20controls" &gt;reading control&lt;/a&gt;
         /// in TalkBack. In this navigation mode, users can move from one container to the next without having to
         /// navigate through all the nodes in between.
         ///- Starting with Android 14 (API level 34), the screen reader may announce when the user enters or exits a
@@ -320,9 +320,9 @@ namespace UnityEngine.Accessibility
         /// on iOS), but they provide essential context for the screen reader:
         ///
         ///- They enable container navigation, which can be activated through the "Containers" control in the
-        /// [VoiceOver rotor](https://support.apple.com/en-us/111796). As on Android, this navigation mode allows users
+        /// &lt;a href="https://support.apple.com/en-us/111796" &gt;VoiceOver rotor&lt;/a&gt;. As on Android, this navigation mode allows users
         /// to navigate efficiently between containers.
-        ///- They enable [grouped navigation](https://support.apple.com/en-us/guide/iphone/iphfa3d32c50/ios#:~:text=Use%20flat%20or%20grouped%20navigation),
+        ///- They enable &lt;a href="https://support.apple.com/en-us/guide/iphone/iphfa3d32c50/ios#:~:text=Use%20flat%20or%20grouped%20navigation" &gt;grouped navigation&lt;/a&gt;,
         /// which can be accessed through the "Navigation Style" control in the VoiceOver rotor. In grouped navigation,
         /// container nodes are focusable. When navigating sequentially, the screen reader focuses on the container
         /// node directly instead of focusing on its child nodes. To navigate through the container's child nodes, the
@@ -364,7 +364,7 @@ namespace UnityEngine.Accessibility
         /// </para>
         /// <para>
         /// Container nodes may be listed in the "Window Spots" menu of the
-        /// [VoiceOver rotor](https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac).
+        /// &lt;a href="https://support.apple.com/en-us/guide/voiceover/mchlp2719/mac" &gt;VoiceOver rotor&lt;/a&gt;.
         /// </para>
         /// <para>
         /// Setting other roles on a parent node may result in unintended screen reader behavior.
@@ -479,6 +479,33 @@ namespace UnityEngine.Accessibility
         /// </para>
         /// </remarks>
         TabButton,
+
+        /// <summary>
+        /// The accessibility node behaves like a scrollable container.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Scroll view nodes are specialized container nodes. Refer to <see cref="AccessibilityRole.Container"/> for
+        /// platform-specific screen reader behavior that is common to both container and scroll view nodes.
+        /// </para>
+        /// <para>
+        /// **Platform behavior specific to this role**
+        ///
+        ///- **Android**: This role does not affect the node's announcement but provides the screen reader with
+        /// semantic information about the node.
+        ///- **iOS**: This role does not have any additional effect compared to
+        /// <see cref="AccessibilityRole.Container"/>.
+        ///- **macOS**: If this role is set on a node, the screen reader announces the node as a "scroll area".
+        ///- **Windows**: This role enables screen reader scrolling
+        /// &lt;a href="https://support.microsoft.com/en-us/windows/chapter-6-using-narrator-with-touch-60f8f38b-23fa-ebe2-4345-c900d1b2e22f" &gt;gestures on Windows touch-screen devices&lt;/a&gt;
+        /// It does not affect the node's announcement.
+        /// </para>
+        /// <para>
+        /// For proper functionality, a scroll view's active child nodes must be subscribed to the
+        /// <see cref="AccessibilityNode.scrolled"/> event.
+        /// </para>
+        /// </remarks>
+        ScrollView,
     }
 
     /// <summary>
@@ -499,7 +526,7 @@ namespace UnityEngine.Accessibility
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
-    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
     /// </para>
     /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
@@ -607,7 +634,7 @@ namespace UnityEngine.Accessibility
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
-    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
     /// </para>
     /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
@@ -621,12 +648,50 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// The user is scrolling forward.
         /// </summary>
+        /// <remarks>
+        /// **Platform support**: The forward scroll direction isn't supported on Windows.
+        /// </remarks>
         Forward,
 
         /// <summary>
         /// The user is scrolling backward.
         /// </summary>
+        /// <remarks>
+        /// **Platform support**: The backward scroll direction is not supported on Windows.
+        /// </remarks>
         Backward,
+
+        /// <summary>
+        /// The user is scrolling from right to left.
+        /// </summary>
+        /// <remarks>
+        /// **Platform support**: The right-to-left scroll direction is not supported on Android.
+        /// </remarks>
+        Left,
+
+        /// <summary>
+        /// The user is scrolling from left to right.
+        /// </summary>
+        /// <remarks>
+        /// **Platform support**: The left-to-right scroll direction is not supported on Android.
+        /// </remarks>
+        Right,
+
+        /// <summary>
+        /// The user is scrolling from bottom to top.
+        /// </summary>
+        /// <remarks>
+        /// **Platform support**: The bottom-to-top scroll direction is not supported on Android.
+        /// </remarks>
+        Up,
+
+        /// <summary>
+        /// The user is scrolling from top to bottom.
+        /// </summary>
+        /// <remarks>
+        /// **Platform support**: The top-to-bottom scroll direction is not supported on Android.
+        /// </remarks>
+        Down,
     }
 
     /// <summary>
@@ -655,8 +720,6 @@ namespace UnityEngine.Accessibility
 
             role = AccessibilityRole.None;
             state = AccessibilityState.None;
-
-            language = SystemLanguage.Unknown;
 
             allowsDirectInteraction = false;
 
@@ -712,12 +775,6 @@ namespace UnityEngine.Accessibility
         public AccessibilityState state { get; set; }
 
         /// <summary>
-        /// The language to use when voicing the accessibility node's label, value, and hint (can differ from the system
-        /// or application language).
-        /// </summary>
-        internal SystemLanguage language { get; set; }
-
-        /// <summary>
         /// Whether the node fires accessibility events and can be accessed by assistive technology.
         /// </summary>
         public bool isActive { get; set; }
@@ -734,7 +791,7 @@ namespace UnityEngine.Accessibility
         /// Whether the accessibility node's <see cref="AccessibilityNode.invoked"/> event has subscribers.
         /// </summary>
         /// <remarks>
-        /// This is needed to enable the <see cref="AccessibilityNode.invoked"/> event on Android.
+        /// This is needed to enable the <see cref="AccessibilityNode.invoked"/> event on Android and Windows.
         /// </remarks>
         public bool implementsInvoked { get; set; }
 
@@ -742,7 +799,7 @@ namespace UnityEngine.Accessibility
         /// Whether the accessibility node's <see cref="AccessibilityNode.scrolled"/> event has subscribers.
         /// </summary>
         /// <remarks>
-        /// This is needed to enable the <see cref="AccessibilityNode.scrolled"/> event on Android.
+        /// This is needed to enable the <see cref="AccessibilityNode.scrolled"/> event on Android and Windows.
         /// </remarks>
         public bool implementsScrolled { get; set; }
 

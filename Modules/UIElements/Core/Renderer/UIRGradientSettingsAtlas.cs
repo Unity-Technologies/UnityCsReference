@@ -194,7 +194,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_Atlas != null)
                 return;
 
-            m_Atlas = new Texture2D(m_ElemWidth, m_Length, TextureFormat.ARGB32, 0, true)
+            m_Atlas = new Texture2D(m_ElemWidth, m_Length, TextureFormat.ARGB32, 1, true)
             {
                 hideFlags = HideFlags.HideAndDontSave,
                 name = "GradientSettings " + s_TextureCounter++,

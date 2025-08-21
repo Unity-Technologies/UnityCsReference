@@ -51,7 +51,7 @@ namespace UnityEngine.UIElements
             }
 
             #pragma warning disable 649
-            [ImageFieldValueDecorator]
+            [ImageFieldValueDecorator("Icon Image")]
             [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
             #pragma warning restore 649

@@ -9,18 +9,20 @@ namespace UnityEngine.UIElements.UIR
 {
     class NativeList<T> : IDisposable where T : struct
     {
+        readonly MemoryLabel m_MemoryLabel;
         NativeArray<T> m_NativeArray;
         int m_Count;
 
-        public NativeList(int initialCapacity)
+        public NativeList(int initialCapacity, MemoryLabel allocLabel)
         {
             Debug.Assert(initialCapacity > 0);
-            m_NativeArray = new NativeArray<T>(initialCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_MemoryLabel = allocLabel;
+            m_NativeArray = new NativeArray<T>(initialCapacity, allocLabel, NativeArrayOptions.UninitializedMemory);
         }
 
         void Expand(int newLength)
         {
-            var newArray = new NativeArray<T>(newLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            var newArray = new NativeArray<T>(newLength, m_MemoryLabel, NativeArrayOptions.UninitializedMemory);
             var dst = newArray.Slice(0, m_Count);
             dst.CopyFrom(m_NativeArray);
             m_NativeArray.Dispose();

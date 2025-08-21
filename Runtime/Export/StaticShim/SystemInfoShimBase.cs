@@ -48,6 +48,8 @@ namespace UnityEngine
 
         public virtual bool supportsAudio => UnityEngine.SystemInfo.supportsAudio;
 
+        public virtual bool supportsRendering => UnityEngine.SystemInfo.supportsRendering;
+
         public virtual DeviceType deviceType => UnityEngine.SystemInfo.deviceType;
 
         public virtual int graphicsMemorySize => UnityEngine.SystemInfo.graphicsMemorySize;
@@ -132,6 +134,8 @@ namespace UnityEngine
         public virtual bool supportsMultisampledBackBuffer => UnityEngine.SystemInfo.supportsMultisampledBackBuffer;
 
         public virtual bool supportsMultisampleAutoResolve => UnityEngine.SystemInfo.supportsMultisampleAutoResolve;
+
+        public virtual bool supportsMultisampledShaderResolve => UnityEngine.SystemInfo.supportsMultisampledShaderResolve;
 
         public virtual int supportsTextureWrapMirrorOnce => UnityEngine.SystemInfo.supportsTextureWrapMirrorOnce;
 

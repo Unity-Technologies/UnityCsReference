@@ -40,6 +40,8 @@ namespace UnityEngineInternal.Input
 
         public static extern void SetPollingFrequency(float hertz);
 
+        public static extern float GetPollingFrequency();
+
         public static extern void Update(NativeInputUpdateType updateType);
 
         internal static extern ulong GetBackgroundEventBufferSize();

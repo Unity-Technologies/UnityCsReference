@@ -522,17 +522,20 @@ namespace UnityEditor.Search
         }
 
         // TODO: Remove me
-        public bool HandleKeyEvent(in Event evt)
+        public bool HandleKeyEvent(KeyDownEvent keyDownEvent)
         {
+            var evt = keyDownEvent.imguiEvent;
             if (@readonly || context == null || evt.type != EventType.KeyDown)
                 return false;
 
             if (Utils.IsEditingTextField() && GUIUtility.keyboardControl != m_TextBlock?.GetSearchField().controlID)
                 return false;
 
+            if (IsEditingBlockDuringEvent(keyDownEvent))
+                return false;
+
             var te = m_TextBlock?.GetSearchField();
             var cursorAtBeginning = te?.cursorIndex == 0;
-            var cursorAtEnd = te?.cursorIndex == te?.text?.Length;
             var controlPresed = evt.modifiers.HasAny(EventModifiers.Command) || evt.modifiers.HasAny(EventModifiers.Control);
 
             if (evt.keyCode == KeyCode.Home && cursorAtBeginning)
@@ -579,7 +582,7 @@ namespace UnityEditor.Search
                         // Put focus back in the textfield:
                         m_TextBlock.GetSearchField()?.Focus();
                     }
-                    
+
                     SetSelection(currentIndex + 1);
                     evt.Use();
                     return true;
@@ -649,6 +652,9 @@ namespace UnityEditor.Search
 
         public bool HandleGlobalKeyDown(KeyDownEvent evt)
         {
+            if (IsEditingBlockDuringEvent(evt))
+                return false;
+
             var te = m_TextBlock?.GetSearchField();
             if (evt.keyCode == KeyCode.Tab)
             {
@@ -677,6 +683,37 @@ namespace UnityEditor.Search
                 {
                     SetSelection(blocks.Count - 1);
                     return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if a block other than the QueryTextFieldBlock is being edited.
+        /// </summary>
+        /// <returns></returns>
+        bool IsEditingBlockDuringEvent(EventBase evt)
+        {
+            if (evt == null || evt.target == null || evt.target is not VisualElement targetVe)
+                return false;
+
+            // Do not use EnumerateBlocks, as it will pick up the QueryTextFieldBlock, which we do not want here.
+            foreach (var block in blocks)
+            {
+                // If an editor is open, we can assume that the block is being edited.
+                if (block.editor != null)
+                {
+                    return true;
+                }
+
+                // Otherwise, check if the block has an in-place editor and the event comes from that editor.
+                // Note that we only block events coming from text in-place editors. We don't want to block
+                // events if the focus is on an object field or toggle for example.
+                if (block is QueryFilterBlock fb)
+                {
+                    if (fb.HasInPlaceEditor() && fb.format == QueryBlockFormat.Text && fb.inPlaceEditorElement.Contains(targetVe))
+                        return true;
                 }
             }
 

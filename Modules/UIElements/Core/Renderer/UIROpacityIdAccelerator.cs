@@ -30,7 +30,9 @@ namespace UnityEngine.UIElements.UIR
         const int k_VerticesPerBatch = 128;
         const int k_JobLimit = 256;
 
-        NativeArray<JobHandle> m_Jobs = new NativeArray<JobHandle>(k_JobLimit, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+        static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(OpacityIdAccelerator)}");
+
+        NativeArray<JobHandle> m_Jobs = new NativeArray<JobHandle>(k_JobLimit, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
         int m_NextJobIndex;
 
         public void CreateJob(NativeSlice<Vertex> oldVerts, NativeSlice<Vertex> newVerts, Color32 opacityData, int vertexCount)

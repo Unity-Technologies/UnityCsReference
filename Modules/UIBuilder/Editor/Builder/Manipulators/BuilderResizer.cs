@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
         const string k_BottomLeftHandleName = "bottom-left-handle";
         const string k_BottomRightHandleName = "bottom-right-handle";
 
-        const int k_LayoutCountLimit = UIRLayoutUpdater.kMaxValidateLayoutCount / 2;
+        const int k_LayoutCountLimit = VisualTreeLayoutUpdater.kMaxValidateLayoutCount / 2;
 
         static readonly string s_UssClassName = "unity-builder-resizer";
         public static readonly string s_CursorSetterUssClassName = s_UssClassName + "__cursor-setter";

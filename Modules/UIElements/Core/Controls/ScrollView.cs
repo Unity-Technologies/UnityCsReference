@@ -310,6 +310,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        VisualElement m_DeferredScrollToElement;
+        IVisualElementScheduledItem m_DeferredScrollTo;
+
         // ScrollViews can take more than 3 passes to stabilize. This can be the case when a scrollview contains elements with height bound to their width (e.g label with wrapped text).
         // Beyond 5 passes, we assume that the layout may never be stabilized then we stop updating the visibility of the scrollers.
         private const int k_MaxLocalLayoutPassCount = 5;
@@ -445,6 +448,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The current scrolling position.
         /// </summary>
+        /// <remarks>
+        /// You can set this property to scroll the content to a specific position. For example, 
+        /// to scroll to the bottom of the ScrollView, set this property to the maximum value of the vertical scroller.
+        /// Refer to the [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]] user manual page for an example.
+        /// </remarks>
         [CreateProperty]
         public Vector2 scrollOffset
         {
@@ -797,6 +805,11 @@ namespace UnityEngine.UIElements
             if (!contentContainer.Contains(child))
                 throw new ArgumentException("Cannot scroll to a VisualElement that's not a child of the ScrollView content-container.");
 
+            if (ShouldDeferScrollTo())
+                StartDeferredScrollTo(child);
+            else
+                StopDeferredScrollTo();
+
             m_Velocity = Vector2.zero;
             float yDeltaOffset = 0, xDeltaOffset = 0;
 
@@ -815,6 +828,53 @@ namespace UnityEngine.UIElements
                 return;
 
             UpdateContentViewTransform();
+        }
+
+        bool ShouldDeferScrollTo() => contentContainer.panel.isDirty;
+
+        bool ShouldStopDeferredScrollTo() => !ShouldDeferScrollTo();
+
+        void StartDeferredScrollTo(VisualElement target)
+        {
+            m_DeferredScrollToElement = target;
+            if (m_DeferredScrollTo == null)
+            {
+                m_DeferredScrollTo = schedule.Execute(PerformDeferredScrollTo).Until(ShouldStopDeferredScrollTo);
+            }
+            else if (!m_DeferredScrollTo.isActive)
+            {
+                m_DeferredScrollTo.Resume();
+            }
+        }
+
+        void StopDeferredScrollTo()
+        {
+            m_DeferredScrollToElement = null;
+            if (m_DeferredScrollTo == null)
+                return;
+
+            if (m_DeferredScrollTo.isActive)
+                m_DeferredScrollTo.Pause();
+        }
+
+        void PerformDeferredScrollTo()
+        {
+            if (m_DeferredScrollToElement != null)
+            {
+                if (!contentContainer.Contains(m_DeferredScrollToElement))
+                {
+                    // The element has been removed from the contentContainer, so we can't scroll to it.
+                    StopDeferredScrollTo();
+                }
+                else
+                {
+                    ScrollTo(m_DeferredScrollToElement);
+                }
+            }
+            else
+            {
+                StopDeferredScrollTo();
+            }
         }
 
         private float GetXDeltaOffset(VisualElement child)
@@ -892,8 +952,8 @@ namespace UnityEngine.UIElements
         /// Gets the vertical scrollbar for the scroll view.
         /// </summary>
         /// <remarks>
-        /// The <c>verticalScroller</c> property provides access to the vertical scrollbar of the <see cref="ScrollView"/>. 
-        /// You can use it to control or monitor vertical scrolling, such as setting the scroll value, scrolling by a page, 
+        /// The <c>verticalScroller</c> property provides access to the vertical scrollbar of the <see cref="ScrollView"/>.
+        /// You can use it to control or monitor vertical scrolling, such as setting the scroll value, scrolling by a page,
         /// or handling scroll events. Refer to [[wiki:ScrollView documentation|UIE-uxml-element-ScrollView]] for example usage and additional details.
         /// </remarks>
         public Scroller verticalScroller { get; }
@@ -1057,13 +1117,6 @@ namespace UnityEngine.UIElements
 
             horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
             verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
-
-            horizontalScroller.slider.clampedDragger.acceptClicksIfDisabled = true;
-            verticalScroller.slider.clampedDragger.acceptClicksIfDisabled = true;
-            verticalScroller.highButton.acceptClicksIfDisabled = true;
-            verticalScroller.lowButton.acceptClicksIfDisabled = true;
-            horizontalScroller.highButton.acceptClicksIfDisabled = true;
-            horizontalScroller.lowButton.acceptClicksIfDisabled = true;
 
             horizontalScroller.lowButton.AddAction(UpdateElasticBehaviour);
             horizontalScroller.highButton.AddAction(UpdateElasticBehaviour);
@@ -1801,9 +1854,19 @@ namespace UnityEngine.UIElements
         {
             AdjustScrollers();
 
+            var canScrollVertical = scrollableHeight > 0;
+            var canScrollHorizontal = scrollableWidth > 0;
+
             // Set availability
-            horizontalScroller.SetEnabled(scrollableWidth > 0);
-            verticalScroller.SetEnabled(scrollableHeight > 0);
+            horizontalScroller.SetEnabled(canScrollHorizontal);
+            verticalScroller.SetEnabled(canScrollVertical);
+
+            verticalScroller.slider.clampedDragger.acceptClicksIfDisabled = canScrollVertical;
+            verticalScroller.lowButton.acceptClicksIfDisabled = canScrollVertical;
+            verticalScroller.highButton.acceptClicksIfDisabled = canScrollVertical;
+            horizontalScroller.slider.clampedDragger.acceptClicksIfDisabled = canScrollHorizontal;
+            horizontalScroller.lowButton.acceptClicksIfDisabled = canScrollHorizontal;
+            horizontalScroller.highButton.acceptClicksIfDisabled = canScrollHorizontal;
 
             var newShowHorizontal = displayHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
             var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;

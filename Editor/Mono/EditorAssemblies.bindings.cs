@@ -26,6 +26,7 @@ namespace UnityEditor
         }
 
         [FreeFunction(Name = "GetAllMethodsWithAttribute")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern static object[] Internal_GetAllMethodsWithAttribute(Type attrType, BindingFlags staticness);
 
         [FreeFunction("GetUnchangedAssemblyNames")]

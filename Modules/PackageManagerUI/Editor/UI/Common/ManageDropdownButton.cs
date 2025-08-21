@@ -133,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override void ShowDropdown()
         {
-            menu?.DropDown(worldBound, this, true, true);
+            menu?.DropDown(worldBound, this, DropdownMenuSizeMode.Auto);
         }
 
         protected override int numDropdownItems => menu?.items.Count ?? 0;

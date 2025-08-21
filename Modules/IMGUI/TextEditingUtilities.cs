@@ -471,7 +471,9 @@ namespace UnityEngine
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
                 int count;
                 if (textHandle.useAdvancedText)
-                    count = (char.IsSurrogate(text[cursorIndex - 1]) ? 2 : 1);
+                {
+                    count = cursorIndex - startIndex;
+                }
                 else
                     count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
 

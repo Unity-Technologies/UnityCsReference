@@ -10,7 +10,7 @@ namespace UnityEngine
 {
     public partial class AsyncOperation : YieldInstruction
     {
-        [VisibleToOtherModules("UnityEngine.AssetBundleModule")]
+        [VisibleToOtherModules]
         internal IntPtr m_Ptr;
 
         ~AsyncOperation()

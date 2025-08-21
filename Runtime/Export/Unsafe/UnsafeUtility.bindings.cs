@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
-using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Profiling;
 
 namespace Unity.Collections.LowLevel.Unsafe
@@ -101,19 +100,28 @@ namespace Unity.Collections.LowLevel.Unsafe
             return MallocTracked(size, alignment, allocator, callstacksToSkip + 1, IntPtr.Zero);
         }
 
+        unsafe public static void* MallocTracked(long size, int alignment, MemoryLabel label, int callstacksToSkip)
+        {
+            return MallocTracked(size, alignment, label.allocator, callstacksToSkip + 1, label.pointer);
+        }
+
         [ThreadSafe(ThrowsException = true)]
         unsafe internal static extern void* MallocTracked(long size, int alignment, Allocator allocator, int callstacksToSkip, IntPtr label);
 
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void FreeTracked(void* memory, Allocator allocator);
 
+        unsafe public static void FreeTracked(void* memory, MemoryLabel label)
+        {
+            FreeTracked(memory, label.allocator);
+        }
+
         unsafe public static void* Malloc(long size, int alignment, Allocator allocator)
         {
             return Malloc(size, alignment, allocator, IntPtr.Zero);
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        unsafe internal static void* Malloc(long size, int alignment, UnsafeAllocLabel label)
+        unsafe public static void* Malloc(long size, int alignment, MemoryLabel label)
         {
             label.CheckArgument();
             return Malloc(size, alignment, label.allocator, label.pointer);
@@ -125,8 +133,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        unsafe internal static void Free(void* memory, UnsafeAllocLabel label)
+        unsafe public static void Free(void* memory, MemoryLabel label)
         {
             label.CheckArgument();
             Free(memory, label.allocator);

@@ -270,7 +270,7 @@ namespace Unity.UI.Builder
                         const int visualElementStyled = (int)BuilderLibrary.DefaultVisualElementType.Styled;
                         if (EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, visualElementStyled) == visualElementStyled)
                         {
-                            BuilderStyleUtilities.SetInlineFloatValue(inVta, ve, "flex-grow", k_DefaultVisualElementFlexGrow);
+                            BuilderStyleUtilities.SetInlineFloatValue(inVta, ve, "flex-grow", k_DefaultVisualElementFlexGrow, false);
                         }
 
                         return vea;
@@ -293,6 +293,7 @@ namespace Unity.UI.Builder
             var controlsItem = CreateItem(BuilderConstants.LibraryControlsSectionHeaderName, null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
                 CreateItem("Label", nameof(Label), typeof(Label), () => new Label("Label")),
+                CreateItem("Image", nameof(Image), typeof(Image), () => new Image()),
                 CreateItem("Button", nameof(Button), typeof(Button), () => new Button { text = "Button" }),
                 CreateItem("Toggle", nameof(Toggle), typeof(Toggle), () => new Toggle("Toggle")),
                 CreateItem("Toggle Button Group", nameof(ToggleButtonGroup), typeof(ToggleButtonGroup), () => new ToggleButtonGroup("Toggle Button Group")),

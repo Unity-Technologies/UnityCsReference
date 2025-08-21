@@ -118,9 +118,13 @@ namespace Unity.UI.Builder
                         var floatText = styleSheet.ReadFloat(listItem);
                         item.itemFloatField.SetValueWithoutNotify(floatText);
                         break;
-                    case StyleValueType.String:
+                    case StyleValueType.Enum:
                         var enumText = styleSheet.ReadEnum(listItem);
                         item.itemValueField.SetValueWithoutNotify(string.Join(" ", enumText?.Trim('"')));
+                        break;
+                    case StyleValueType.String:
+                        var str = styleSheet.ReadString(listItem);
+                        item.itemValueField.SetValueWithoutNotify(string.Join(" ", str?.Trim('"')));
                         break;
                     default:
                         var valueText = BuilderStyleSheetExporter.GetStylePropertyHandleString(styleSheet, m_VariablesItemsSource[i].values.AsSpan(), 0);
@@ -174,7 +178,7 @@ namespace Unity.UI.Builder
             // We want to override the add button behavior so that we can create the variable before the list item is created.
             m_VariablesListView.overridingAddButtonBehavior = (_, btn) =>
             {
-                menu.DropDown(btn.worldBound, btn, true, true);
+                menu.DropDown(btn.worldBound, btn, DropdownMenuSizeMode.Auto);
                 menu.contentContainer.AddToClassList(s_VariablesDropdownClassName);
             };
 

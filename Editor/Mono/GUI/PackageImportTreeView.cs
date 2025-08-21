@@ -328,6 +328,18 @@ namespace UnityEditor
                 public static GUIContent badgeOverride = EditorGUIUtility.TrIconContent("PackageBadgeOverride", "This project setting will be overridden!");
                 public static GUIContent badgeWarnPathConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");
                 public static GUIContent badgeChange = EditorGUIUtility.TrIconContent("playLoopOff", "This asset is new or has changed.");
+                public static GUIContent badgeWarnPathRestricted = EditorGUIUtility.TrIconContent("console.erroricon", "Error: Asset is restricted and will not be imported in your project.");
+                public static GUIStyle badgeRestrictedStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 9,
+                    normal = new GUIStyleState
+                    {
+                        textColor = Color.white,
+                        background = CreateBackgroundRestrictedTexture(new Color(1.0f, 0.325f, 0.290f))
+                    }
+                };
 
                 public static GUIStyle paddinglessStyle;
 
@@ -336,6 +348,16 @@ namespace UnityEditor
                     paddinglessStyle = new GUIStyle();
                     paddinglessStyle.padding = new RectOffset(0, 0, 0, 0);
                 }
+            }
+
+            static Texture2D CreateBackgroundRestrictedTexture(Color color)
+            {
+                var texture = new Texture2D(1, 1);
+                var pixels = new Color[1];
+                pixels[0] = color;
+                texture.SetPixels(pixels);
+                texture.Apply();
+                return texture;
             }
 
             public Action<PackageImportTreeViewItem> itemWasToggled;
@@ -377,6 +399,7 @@ namespace UnityEditor
                 bool GUIDOverride = (item != null) ? item.existingAssetPath != string.Empty && item.existingAssetPath != item.destinationAssetPath : false;
                 bool exists = (item != null) ? item.exists : true;
                 bool projectAsset = (item != null) ? item.projectAsset : false;
+                bool isRestricted = (item != null) ? item.isRestricted : false;
 
                 // 1. Foldout
                 if (m_TreeView.data.IsExpandable(tvItem))
@@ -397,49 +420,65 @@ namespace UnityEditor
                     // 4. Preview popup
                     DoPreviewPopup(pitem, rowRect);
 
-                    // 4. Warning about file/GUID clashing.
-                    if (!isDisabled && repainting && validItem)
+                    if (!isRestricted)
                     {
-                        if (pathConflict)
+                        // 4. Warning about file/GUID clashing.
+                        if (!isDisabled && repainting && validItem)
                         {
-                            Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
-                            EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
-                            GUI.Label(labelRect, Constants.badgeWarnPathConflict, Constants.paddinglessStyle);
-                            EditorGUIUtility.SetIconSize(Vector2.zero);
+                            if (pathConflict)
+                            {
+                                Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
+                                EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
+                                GUI.Label(labelRect, Constants.badgeWarnPathConflict, Constants.paddinglessStyle);
+                                EditorGUIUtility.SetIconSize(Vector2.zero);
+                            }
+                            else if (GUIDOverride)
+                            {
+                                Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
+                                EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
+                                GUIContent badgeWarnGUIDConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: A file exists in this project with the same GUID. This Asset being imported will be assigned a new GUID. References to the asset being imported in other imported Assets will be replaced with a reference to: " + item.existingAssetPath);
+                                GUI.Label(labelRect, badgeWarnGUIDConflict, Constants.paddinglessStyle);
+                                EditorGUIUtility.SetIconSize(Vector2.zero);
+                            }
                         }
-                        else if (GUIDOverride)
-                        {
-                            Rect labelRect = new Rect(rowRect.xMax - 58, rowRect.y, rowRect.height, rowRect.height);
-                            EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
-                            GUIContent badgeWarnGUIDConflict = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: A file exists in this project with the same GUID. This Asset being imported will be assigned a new GUID. References to the asset being imported in other imported Assets will be replaced with a reference to: " + item.existingAssetPath);
-                            GUI.Label(labelRect, badgeWarnGUIDConflict, Constants.paddinglessStyle);
-                            EditorGUIUtility.SetIconSize(Vector2.zero);
-                        }
-                    }
 
-                    // 5. Optional badge ("New")
-                    if (!isDisabled && repainting && validItem && !(exists || pathConflict))
-                    {
-                        // FIXME: Need to enable tooltips here.
-                        Texture badge = Constants.badgeNew.image;
-                        Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, badge.width, badge.height);
-                        GUI.Label(labelRect, Constants.badgeNew, Constants.paddinglessStyle);
-                    }
-
-                    // 7. Show what stuff has changed
-                    if (!isDisabled && repainting && validItem && (exists || pathConflict) && assetChanged)
-                    {
-                        if (PackageImportWizard.instance.IsProjectSettingStep)
+                        // 5. Optional badge ("New")
+                        if (!isDisabled && repainting && validItem && !(exists || pathConflict))
                         {
-                            Texture badge = Constants.badgeOverride.image;
+                            // FIXME: Need to enable tooltips here.
+                            Texture badge = Constants.badgeNew.image;
                             Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, badge.width, badge.height);
-                            GUI.Label(labelRect, Constants.badgeOverride, Constants.paddinglessStyle);
+                            GUI.Label(labelRect, Constants.badgeNew, Constants.paddinglessStyle);
                         }
-                        else
+
+                        // 7. Show what stuff has changed
+                        if (!isDisabled && repainting && validItem && (exists || pathConflict) && assetChanged)
                         {
-                            Texture badge = Constants.badgeChange.image;
-                            Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, rowRect.height, rowRect.height);
-                            GUI.Label(labelRect, Constants.badgeChange, Constants.paddinglessStyle);
+                            if (PackageImportWizard.instance.IsProjectSettingStep)
+                            {
+                                Texture badge = Constants.badgeOverride.image;
+                                Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, badge.width, badge.height);
+                                GUI.Label(labelRect, Constants.badgeOverride, Constants.paddinglessStyle);
+                            }
+                            else
+                            {
+                                Texture badge = Constants.badgeChange.image;
+                                Rect labelRect = new Rect(rowRect.xMax - badge.width - 6, rowRect.y, rowRect.height, rowRect.height);
+                                GUI.Label(labelRect, Constants.badgeChange, Constants.paddinglessStyle);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 8. Show restricted badge
+                        if (!isDisabled && repainting && validItem)
+                        {
+                            Rect labelRect = new Rect(rowRect.xMax - 82, rowRect.y, rowRect.height, rowRect.height);
+                            EditorGUIUtility.SetIconSize(new Vector2(rowRect.height, rowRect.height));
+                            GUI.Label(labelRect, Constants.badgeWarnPathRestricted, Constants.paddinglessStyle);
+                            EditorGUIUtility.SetIconSize(Vector2.zero);
+                            var labelRestrictedRect = new Rect(rowRect.xMax - 64, rowRect.y + 2, 56, 12);
+                            GUI.Label(labelRestrictedRect, "Restricted", Constants.badgeRestrictedStyle);
                         }
                     }
                 }
@@ -449,6 +488,9 @@ namespace UnityEditor
             {
                 bool enabled = (int)pitem.enableState > 0;
                 bool isFolder = (pitem.item == null) || pitem.item.isFolder;
+
+                if (pitem.item != null && pitem.item.isRestricted)
+                    enabled = false;
 
                 GUIStyle style = EditorStyles.toggle;
                 bool setMixed = isFolder && (pitem.enableState == EnabledState.Mixed);

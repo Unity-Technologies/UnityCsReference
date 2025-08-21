@@ -3,12 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.AnimatedValues;
+using UnityEditor.EditorTools;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static UnityEngine.GraphicsBuffer;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -16,8 +20,6 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class LightProbeProxyVolumeEditor : Editor
     {
-        static LightProbeProxyVolumeEditor s_LastInteractedEditor;
-
         private SerializedProperty m_ResolutionX;
         private SerializedProperty m_ResolutionY;
         private SerializedProperty m_ResolutionZ;
@@ -100,7 +102,7 @@ namespace UnityEditor
 
         private bool sceneViewEditing
         {
-            get { return IsLightProbeVolumeProxyEditMode(EditMode.editMode) && EditMode.IsOwner(this); }
+            get { return IsLightProbeVolumeProxyEditMode(EditMode.editMode); }
         }
 
         private AnimBool m_ShowBoundingBoxOptions = new AnimBool();
@@ -182,43 +184,6 @@ namespace UnityEditor
             return ((LightProbeProxyVolume)target).boundsGlobal;
         }
 
-        void DoToolbar()
-        {
-            using (new EditorGUI.DisabledScope(m_BoundingBoxMode.intValue != (int)LightProbeProxyVolume.BoundingBoxMode.Custom))
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                var oldEditMode = EditMode.editMode;
-
-                EditorGUI.BeginChangeCheck();
-                EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, this);
-                if (EditorGUI.EndChangeCheck())
-                    s_LastInteractedEditor = this;
-
-                if (oldEditMode != EditMode.editMode)
-                {
-                    if (Toolbar.instance != null)
-                        Toolbar.instance.Repaint();
-                }
-
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-
-                // Info box for tools
-                GUILayout.BeginVertical(EditorStyles.helpBox);
-                string helpText = Styles.baseSceneEditingToolText;
-                if (sceneViewEditing)
-                {
-                    int index = ArrayUtility.IndexOf(Styles.sceneViewEditModes, EditMode.editMode);
-                    if (index >= 0)
-                        helpText = Styles.toolNames[index].text;
-                }
-                GUILayout.Label(helpText, Styles.richTextMiniLabel);
-                GUILayout.EndVertical();
-                EditorGUILayout.Space();
-            }
-        }
-
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -242,10 +207,10 @@ namespace UnityEditor
 
             EditorGUILayout.Popup(m_BoundingBoxMode, Styles.bbMode, Styles.bbModeText);
 
+            LightProbeProxyVolumeTool.HideAll(true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowBoundingBoxOptions.faded))
             {
-                if (targets.Length == 1)
-                    DoToolbar();
+                LightProbeProxyVolumeTool.HideAll(false);
 
                 GUILayout.Label(Styles.bbSettingsText);
 
@@ -257,6 +222,8 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
+
+            EditorToolManager.ForceTrackerRebuild();
 
             EditorGUILayout.Space();
 
@@ -314,10 +281,7 @@ namespace UnityEditor
         [DrawGizmo(GizmoType.Active)]
         static void RenderBoxGizmo(LightProbeProxyVolume probeProxyVolume, GizmoType gizmoType)
         {
-            if (s_LastInteractedEditor == null)
-                return;
-
-            if (s_LastInteractedEditor.sceneViewEditing && EditMode.editMode == EditMode.SceneViewEditMode.LightProbeProxyVolumeBox)
+            if (EditMode.editMode == EditMode.SceneViewEditMode.LightProbeProxyVolumeBox)
             {
                 Color oldColor = Gizmos.color;
                 Gizmos.color = kGizmoLightProbeProxyVolumeColor;
@@ -395,6 +359,79 @@ namespace UnityEditor
                     EditorUtility.SetDirty(target);
                 }
             }
+        }
+    }
+
+    [EditorTool(k_Description, typeof(LightProbeProxyVolume), toolPriority = (int)k_Mode, group = typeof(LightProbeProxyVolume))]
+    class LightProbeProxyVolumeEditTool : LightProbeProxyVolumeTool
+    {
+        const string k_Description = "Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.";
+        const EditMode.SceneViewEditMode k_Mode = EditMode.SceneViewEditMode.LightProbeProxyVolumeBox;
+        const string k_IconName = "EditCollider";
+
+        LightProbeProxyVolumeEditTool() : base(k_Description, k_Mode, k_IconName) { }
+    }
+
+    [EditorTool(k_Description, typeof(LightProbeProxyVolume), toolPriority = (int)k_Mode, group = typeof(LightProbeProxyVolume))]
+    class LightProbeProxyVolumeMoveTool : LightProbeProxyVolumeTool
+    {
+        const string k_Description = "Move the selected objects.";
+        const EditMode.SceneViewEditMode k_Mode = EditMode.SceneViewEditMode.LightProbeProxyVolumeOrigin;
+        const string k_IconName = "MoveTool";
+
+        LightProbeProxyVolumeMoveTool() : base(k_Description, k_Mode, k_IconName) { }
+    }
+
+    class LightProbeProxyVolumeTool : EditorTool
+    {
+        readonly string m_Description;
+        readonly EditMode.SceneViewEditMode m_Mode;
+        readonly string m_IconName;
+        GUIContent m_IconContent;
+        static bool s_HideAll;
+
+        protected LightProbeProxyVolumeTool(string description, EditMode.SceneViewEditMode mode, string iconName)
+        {
+            m_Description = description;
+            m_Mode = mode;
+            m_IconName = iconName;
+        }
+
+        internal static void HideAll(bool hideAll) => s_HideAll = hideAll;
+
+        public override GUIContent toolbarIcon => m_IconContent;
+        public override void OnWillBeDeactivated() => EditMode.SetEditModeToNone();
+        public override void OnToolGUI(EditorWindow window)
+        {
+            if (EditMode.editMode == m_Mode)
+                return;
+
+            List<LightProbeProxyVolume> usefulTargets = new();
+            foreach (Object thisTarget in targets)
+                if (thisTarget is LightProbeProxyVolume proxyVolume)
+                    usefulTargets.Add(proxyVolume);
+
+            if (usefulTargets.Count == 0)
+                return;
+
+            Bounds bounds = GetBoundsOfTargets(usefulTargets);
+            EditMode.ChangeEditMode(m_Mode, bounds);
+            ToolManager.SetActiveTool(this);
+        }
+
+        static Bounds GetBoundsOfTargets(IEnumerable<LightProbeProxyVolume> targets)
+        {
+            var bounds = new Bounds { min = Vector3.positiveInfinity, max = Vector3.negativeInfinity };
+            foreach (LightProbeProxyVolume t in targets)
+                bounds.Encapsulate(t.boundsGlobal);
+
+            return bounds;
+        }
+
+        void OnEnable()
+        {
+            SetHidden(s_HideAll);
+            m_IconContent = EditorGUIUtility.TrIconContent(m_IconName, m_Description);
         }
     }
 }

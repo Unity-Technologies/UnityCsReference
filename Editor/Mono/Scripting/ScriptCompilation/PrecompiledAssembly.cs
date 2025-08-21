@@ -53,10 +53,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [FreeFunction("GetPrecompiledAssembliesManaged")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTarget target, string[] extraScriptingDefines);
 
         [FreeFunction("GetUnityAssembliesManaged")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         protected static extern PrecompiledAssembly[] GetUnityAssembliesNative(bool buildingForEditor, BuildTarget target);
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
 
         [FreeFunction("GetAllPrecompiledAssembliesManaged")]
         protected static extern PrecompiledAssembly[] GetAllPrecompiledAssembliesNative();

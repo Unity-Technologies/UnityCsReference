@@ -12,15 +12,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class UIError
     {
         private static readonly string k_EntitlementErrorMessage = L10n.Tr("An error occurred: This package isn't available because its license isn't registered to your user account. If you're licensed to use this package, go to Unity Hub > Preferences > Licenses and click Refresh. Otherwise, contact your administrator.");
-        internal static readonly string k_UnsignedUnityPackageWarningMessage = L10n.Tr("This package version has no signature. For your security, install a different version or review your scoped registry and load the package from the Unity registry.");
-        internal static readonly string k_ReadMoreDocsUrl = "https://docs.unity3d.com/Manual/upm-errors.html";
+        private static readonly string k_CantValidateSignatureErrorMessage = L10n.Tr("Package signature could not be validated.");
         public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage);
         public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.Warning);
-        internal static readonly UIError k_UnsignedUnityPackageWarning = new UIError(
-            UIErrorCode.UpmError_UnsignedUnityPackage,
-            k_UnsignedUnityPackageWarningMessage,
-            Attribute.Warning,
-            readMoreUrl: k_ReadMoreDocsUrl);
+        public static readonly UIError k_CantValidateSignatureError = new UIError(UIErrorCode.UpmError_Unknown, k_CantValidateSignatureErrorMessage);
 
         [SerializeField]
         private UIErrorCode m_ErrorCode;

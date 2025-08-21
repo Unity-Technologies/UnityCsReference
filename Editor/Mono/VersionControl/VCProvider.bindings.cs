@@ -115,6 +115,7 @@ namespace UnityEditor.VersionControl
         public static extern Plugin GetActivePlugin();
 
         [FreeFunction("VersionControlBindings::VCProvider::GetActiveConfigFields")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern ConfigField[] GetActiveConfigFields();
 
         [StaticAccessor("GetVCProvider()", StaticAccessorType.Dot)]
@@ -124,6 +125,7 @@ namespace UnityEditor.VersionControl
         internal static extern CustomCommand[] customCommands
         {
             [NativeMethod("GetMonoCustomCommands")]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 
@@ -276,6 +278,7 @@ namespace UnityEditor.VersionControl
         public static extern Asset GetAssetByGUID(string guid);
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_GetAssetArrayFromSelection")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private static extern Asset[] Internal_GetAssetArrayFromSelection();
 
         [FreeFunction("VersionControlBindings::VCProvider::IsOpenForEdit")]
@@ -301,6 +304,7 @@ namespace UnityEditor.VersionControl
 
         [NativeThrows]
         [FreeFunction("VersionControlBindings::VCProvider::Internal_ConsolidateAssetList")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private static extern Asset[] Internal_ConsolidateAssetList(Asset[] assets, CheckoutMode mode);
 
         [StaticAccessor("VCProvider", StaticAccessorType.DoubleColon)]

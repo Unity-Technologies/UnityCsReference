@@ -169,7 +169,7 @@ namespace UnityEditor.SceneTemplate
             newSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(newSceneOutputPath);
 
             Dictionary<string, string> refPathMap = null;
-            var idMap = new Dictionary<int, int>();
+            var idMap = new Dictionary<EntityId, EntityId>();
             if (hasAnyCloneableDependencies)
             {
                 if (!CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, out refPathMap, out var clonedAssets))
@@ -177,7 +177,7 @@ namespace UnityEditor.SceneTemplate
                     AssetDatabase.DeleteAsset(newSceneOutputPath);
                     return null;
                 }
-                idMap.Add(sceneTemplate.templateScene.GetInstanceID(), newSceneAsset.GetInstanceID());
+                idMap.Add(sceneTemplate.templateScene.GetEntityId(), newSceneAsset.GetEntityId());
                 ReferenceUtils.RemapAssetReferences(refPathMap, idMap);
 
                 foreach (var clone in clonedAssets)

@@ -22,5 +22,6 @@ namespace UnityEditor.VFX
     internal sealed partial class VisualEffectImporter : AssetImporter
     {
         public extern VFXTemplate templateProperty { get; set; }
+        public extern bool useAsTemplateProperty { get; set; }
     }
 }

@@ -4,8 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -19,8 +20,10 @@ namespace UnityEngine.UIElements
     /// **Note**: This is the Image control for the UI Toolkit framework. This is not related to the
     /// <a href="https://docs.unity3d.com/Packages/com.unity.ugui@latest/index.html?subfolder=/api/UnityEngine.UI.Image.html">UnityEngine.UI.Image</a> uGUI control.
     /// </remarks>
+    [Icon("UIToolkit/Icons/Image.png")]
     public class Image : VisualElement
     {
+        internal static readonly BindingId sourceProperty = nameof(source);
         internal static readonly BindingId imageProperty = nameof(image);
         internal static readonly BindingId spriteProperty = nameof(sprite);
         internal static readonly BindingId vectorImageProperty = nameof(vectorImage);
@@ -32,14 +35,54 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(source), "source"),
+                    new (nameof(tintColor), "tint-color"),
+                    new (nameof(scaleMode), "scale-mode"),
+                    new (nameof(uv), "uv")
+                }, false);
+            }
+
+            #pragma warning disable 649
+            [SerializeField, ImageFieldValueDecorator("Source")] Object source;
+            [SerializeField] Color tintColor;
+            [Tooltip("The base texture coordinates of the Image relative to the bottom left corner.")]
+            [SerializeField] Rect uv;
+            [SerializeField] ScaleMode scaleMode;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags source_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tintColor_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags uv_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scaleMode_UxmlAttributeFlags;
+            #pragma warning restore 649
+
             public override object CreateInstance() => new Image();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Image)obj;
+
+                if (ShouldWriteAttributeValue(source_UxmlAttributeFlags))
+                    e.source = source;
+                if (ShouldWriteAttributeValue(tintColor_UxmlAttributeFlags))
+                    e.tintColor = tintColor;
+                if (ShouldWriteAttributeValue(uv_UxmlAttributeFlags))
+                    e.uv = uv;
+                if (ShouldWriteAttributeValue(scaleMode_UxmlAttributeFlags))
+                    e.scaleMode = scaleMode;
+            }
         }
 
         /// <summary>
         /// Instantiates an <see cref="Image"/> using the data read from a UXML file.
         /// </summary>
         [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Image, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Image, UxmlTraits> { }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Image"/>.
@@ -57,16 +100,42 @@ namespace UnityEngine.UIElements
         }
 
         private ScaleMode m_ScaleMode;
-        private Texture m_Image;
-        private Sprite m_Sprite;
-        private VectorImage m_VectorImage;
+        private Object m_Image;
+
         private Rect m_UV;
         private Color m_TintColor;
 
         // Internal for tests
         internal bool m_ImageIsInline;
-        private bool m_ScaleModeIsInline;
-        private bool m_TintColorIsInline;
+        internal bool m_ScaleModeIsInline;
+        internal bool m_TintColorIsInline;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [CreateProperty]
+        internal Object source
+        {
+            get => m_Image;
+            set
+            {
+                switch (value)
+                {
+                    case Texture t:
+                        image = t;
+                        break;
+                    case Sprite s:
+                        sprite = s;
+                        break;
+                    case VectorImage v:
+                        vectorImage = v;
+                        break;
+                    default:
+                        SetInlineProperty<Object>(null, imageProperty);
+                        break;
+                }
+
+                NotifyPropertyChanged(sourceProperty);
+            }
+        }
 
         /// <summary>
         /// The texture to display in this image. If you assign a `Texture` or `Texture2D`, the Image element will resize and show the assigned texture.
@@ -78,15 +147,8 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public Texture image
         {
-            get => m_Image;
-            set
-            {
-                if (m_Image == value && m_ImageIsInline)
-                    return;
-
-                m_ImageIsInline = value != null;
-                SetProperty(value, ref m_Image, ref m_Sprite, ref m_VectorImage, imageProperty);
-            }
+            get => m_Image as Texture;
+            set => SetInlineProperty<Texture>(value, imageProperty);
         }
 
         /// <summary>
@@ -95,15 +157,8 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public Sprite sprite
         {
-            get => m_Sprite;
-            set
-            {
-                if (m_Sprite == value && m_ImageIsInline)
-                    return;
-
-                m_ImageIsInline = value != null;
-                SetProperty(value, ref m_Sprite, ref m_Image, ref m_VectorImage, spriteProperty);
-            }
+            get => m_Image as Sprite;
+            set => SetInlineProperty<Sprite>(value, spriteProperty);
         }
 
         /// <summary>
@@ -112,15 +167,8 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public VectorImage vectorImage
         {
-            get => m_VectorImage;
-            set
-            {
-                if (m_VectorImage == value && m_ImageIsInline)
-                    return;
-
-                m_ImageIsInline = value != null;
-                SetProperty(value, ref m_VectorImage, ref m_Image, ref m_Sprite, vectorImageProperty);
-            }
+            get => m_Image as VectorImage;
+            set => SetInlineProperty<VectorImage>(value, vectorImageProperty);
         }
 
         /// <summary>
@@ -246,17 +294,25 @@ namespace UnityEngine.UIElements
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            if (image == null && sprite == null && vectorImage == null)
+            if (source == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
             var sourceSize = Vector2.zero;
 
-            if (image != null)
-                sourceSize = GetTextureDisplaySize(image);
-            else if (sprite != null)
-                sourceSize = GetTextureDisplaySize(sprite);
-            else
-                sourceSize = vectorImage.size;
+            switch (source)
+            {
+                case Texture image:
+                    sourceSize = GetTextureDisplaySize(image);
+                    break;
+
+                case Sprite sprite:
+                    sourceSize = GetTextureDisplaySize(sprite);
+                    break;
+
+                case VectorImage vectorImage:
+                    sourceSize = vectorImage.size;
+                    break;
+            }
 
             // covers the MeasureMode.Exactly case
             Rect rect = sourceRect;
@@ -280,7 +336,7 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            if (image == null && sprite == null && vectorImage == null)
+            if (source == null)
                 return;
 
             var alignedRect = GUIUtility.AlignRectToDevice(contentRect);
@@ -318,15 +374,15 @@ namespace UnityEngine.UIElements
             {
                 if (customStyleProvider.TryGetValue(s_ImageProperty, out var textureValue))
                 {
-                    SetProperty(textureValue, ref m_Image, ref m_Sprite, ref m_VectorImage, imageProperty);
+                    SetCustomProperty(textureValue, imageProperty);
                 }
                 else if (customStyleProvider.TryGetValue(s_SpriteProperty, out var spriteValue))
                 {
-                    SetProperty(spriteValue, ref m_Sprite, ref m_Image, ref m_VectorImage, spriteProperty);
+                    SetCustomProperty(spriteValue, spriteProperty);
                 }
                 else if (customStyleProvider.TryGetValue(s_VectorImageProperty, out var vectorImageValue))
                 {
-                    SetProperty(vectorImageValue, ref m_VectorImage, ref m_Image, ref m_Sprite, vectorImageProperty);
+                    SetCustomProperty(vectorImageValue, vectorImageProperty);
                 }
                 // If the value is not inline and none of the custom style properties are resolved, unset the value.
                 else
@@ -341,9 +397,9 @@ namespace UnityEngine.UIElements
                 SetScaleMode((ScaleMode)intValue);
             }
 
-            if (!m_TintColorIsInline )
+            if (!m_TintColorIsInline)
             {
-                if( customStyleProvider.TryGetValue(s_TintColorProperty, out var tintValue) )
+                if (customStyleProvider.TryGetValue(s_TintColorProperty, out var tintValue))
                     SetTintColor(tintValue);
                 else
                 {
@@ -352,22 +408,30 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetProperty<T0, T1, T2>(T0 src, ref T0 dst, ref T1 alt0, ref T2 alt1, BindingId binding)
-            where T0 : Object where T1 : Object where T2 : Object
+        void SetInlineProperty<T>(Object value, BindingId binding)
         {
-            if (src == dst)
+            if (source == value && m_ImageIsInline)
                 return;
 
-            dst = src;
-
-            if (dst != null)
+            // Clear the old value if it came from a custom property.
+            if (!m_ImageIsInline)
             {
-                alt0 = null;
-                alt1 = null;
+                m_Image = null;
             }
 
-            if (dst == null)
+            if (value != null)
+            {
+                m_Image = value;
+            }
+            else if (m_Image is T)
+            {
+                // Clear the old value as its the same type.
+                m_Image = null;
+            }
+
+            m_ImageIsInline = m_Image != null;
+
+            if (m_Image == null)
             {
                 uv = new Rect(0, 0, 1, 1);
                 ReadCustomProperties(customStyle);
@@ -377,13 +441,23 @@ namespace UnityEngine.UIElements
             NotifyPropertyChanged(binding);
         }
 
+        void SetCustomProperty(Object value, BindingId binding)
+        {
+            Debug.Assert(!m_ImageIsInline, "Expected image to not be inline when using set custom property");
+            if (value == source)
+                return;
+
+            m_Image = value;
+
+            IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+            NotifyPropertyChanged(binding);
+        }
+
         private void ClearProperty()
         {
             if (m_ImageIsInline)
                 return;
-            image = null;
-            sprite = null;
-            vectorImage = null;
+            m_Image = null;
         }
 
         private void SetScaleMode(ScaleMode mode)

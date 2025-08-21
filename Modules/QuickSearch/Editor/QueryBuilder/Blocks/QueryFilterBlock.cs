@@ -50,6 +50,8 @@ namespace UnityEditor.Search
         internal override bool wantsEvents => HasInPlaceEditor();
         internal override bool canOpenEditorOnValueClicked => !HasInPlaceEditor();
 
+        internal VisualElement inPlaceEditorElement => m_InPlaceEditorElement;
+
         QueryBuilder IQueryExpressionBlock.builder => builder;
         IQuerySource IQueryExpressionBlock.source => source;
         IBlockEditor IQueryExpressionBlock.editor => editor;
@@ -616,7 +618,7 @@ namespace UnityEditor.Search
             ApplyChanges();
         }
 
-        private bool HasInPlaceEditor()
+        internal bool HasInPlaceEditor()
         {
             switch (format)
             {

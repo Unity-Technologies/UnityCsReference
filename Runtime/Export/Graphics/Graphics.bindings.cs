@@ -237,6 +237,17 @@ namespace UnityEngine
         public RectInt workArea;
         [RequiredMember]
         public string name;
+        [RequiredMember]
+        [NativeName("dpi")]
+        public float physicalDpi;
+
+        public Resolution[] resolutions
+        {
+            get
+            {
+                throw new NotSupportedException("DisplayInfo.resolutions is currently not supported on this platform.");
+            }
+        }
 
         // Implement IEquatable<DisplayInfo> so that storing this struct
         // in a dictionary doesn't result in multiple boxing operations
@@ -248,8 +259,27 @@ namespace UnityEngine
                 height == other.height &&
                 refreshRate.Equals(other.refreshRate) &&
                 workArea.Equals(other.workArea) &&
-                name == other.name;
+                name == other.name &&
+                physicalDpi == other.physicalDpi;
         }
+
+        public static void GetLayout(List<DisplayInfo> displayLayout)
+        {
+            Screen.GetDisplayLayout(displayLayout);
+        }
+
+        private static Resolution[] GetResolutions(DisplayInfo displayInfo)
+        {
+            throw new NotSupportedException("DisplayInfo.GetResolutions() is not supported on this platform.");
+        }
+
+        [FreeFunction("DisplayInfoScripting::GetLayout")]
+        [NativeConditional("PLATFORM_SUPPORTS_DISPLAYINFO_API")]
+        extern static void GetLayoutImpl(List<DisplayInfo> displayLayout);
+
+        [FreeFunction("DisplayInfoScripting::GetResolutions")]
+        [NativeConditional("PLATFORM_SUPPORTS_DISPLAYINFO_API")]
+        extern static Resolution[] GetResolutionsImpl(ulong handle);
     }
 
     public sealed partial class SleepTimeout
@@ -960,10 +990,14 @@ namespace UnityEngine
     [StaticAccessor("GeometryUtilityScripting", StaticAccessorType.DoubleColon)]
     public sealed partial class GeometryUtility
     {
-        extern public static bool TestPlanesAABB(Plane[] planes, Bounds bounds);
+        [NativeName("TestPlanesAABB")] extern private static bool Internal_TestPlanesAABB(Plane[] planes, in Bounds bounds);
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool TestPlanesAABB(Plane[] planes, Bounds bounds) => Internal_TestPlanesAABB(planes, in bounds);
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool TestPlanesAABB(Plane[] planes, in Bounds bounds) => Internal_TestPlanesAABB(planes, in bounds);
 
-        [NativeName("ExtractPlanes")]   extern private static void Internal_ExtractPlanes([Out] Plane[] planes, Matrix4x4 worldToProjectionMatrix);
-        [NativeName("CalculateBounds")] extern private static Bounds Internal_CalculateBounds(Vector3[] positions, Matrix4x4 transform);
+        [NativeName("ExtractPlanes")]   extern private static void Internal_ExtractPlanes([Out] Plane[] planes, in Matrix4x4 worldToProjectionMatrix);
+        [NativeName("CalculateBounds")] extern private static Bounds Internal_CalculateBounds(Vector3[] positions, in Matrix4x4 transform);
     }
 }
 
@@ -994,7 +1028,7 @@ namespace UnityEngine
         private LightmapSettings() {}
 
         // Lightmap array.
-        public extern static LightmapData[] lightmaps {[FreeFunction][return: Unmarshalled] get; [FreeFunction(ThrowsException = true)][param: Unmarshalled] set; }
+        public extern static LightmapData[] lightmaps {[FreeFunction][return: UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [FreeFunction(ThrowsException = true)][param: UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
 
         public extern static LightmapsMode lightmapsMode { get; [FreeFunction(ThrowsException = true)] set; }
 

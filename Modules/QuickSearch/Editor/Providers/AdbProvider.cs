@@ -113,7 +113,7 @@ namespace UnityEditor.Search.Providers
                 var path = AssetDatabase.GetAssetPath((EntityId)id);
                 if (string.IsNullOrEmpty(path))
                     continue;
-                var gid = GlobalObjectId.GetGlobalObjectIdSlow(id).ToString();
+                var gid = GlobalObjectId.GetGlobalObjectIdSlow((EntityId)id).ToString();
                 var flags = SearchDocumentFlags.Asset;
                 if (AssetDatabase.IsSubAsset((EntityId)id))
                 {

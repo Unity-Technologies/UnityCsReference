@@ -69,6 +69,7 @@ namespace UnityEditor.Overlays
         public ContainerSection()
         {
             hierarchy.Add(m_Content = new VisualElement());
+            m_Content.pickingMode = PickingMode.Ignore;
         }
 
         public bool ContainsOverlay(Overlay overlay)

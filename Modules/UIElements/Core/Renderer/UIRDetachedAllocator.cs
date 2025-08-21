@@ -13,6 +13,12 @@ namespace UnityEngine.UIElements.UIR
         private TempAllocator<Vertex> m_VertsPool;
         private TempAllocator<UInt16> m_IndexPool;
         private List<MeshWriteData> m_MeshWriteDataPool;
+        private List<int> m_FillGradientMeshIndices;
+        private List<FillGradient> m_FillGradients;
+        private int m_FillGradientDataCount;
+        private List<int> m_FillTextureMeshIndices;
+        private List<Texture> m_FillTextures;
+        private int m_FillTextureDataCount;
         private int m_MeshWriteDataCount;
 
         public List<MeshWriteData> meshes => m_MeshWriteDataPool.GetRange(0, m_MeshWriteDataCount);
@@ -20,6 +26,10 @@ namespace UnityEngine.UIElements.UIR
         public DetachedAllocator()
         {
             m_MeshWriteDataPool = new List<MeshWriteData>(16);
+            m_FillGradientMeshIndices = new List<int>(16);
+            m_FillGradients = new List<FillGradient>(16);
+            m_FillTextureMeshIndices = new List<int>(16);
+            m_FillTextures = new List<Texture>(16);
             m_MeshWriteDataCount = 0;
             m_VertsPool = new TempAllocator<Vertex>(8192, 2048, 64 * 1024);
             m_IndexPool = new TempAllocator<UInt16>(8192 << 1, 2048 << 1, (64 * 1024) << 1);
@@ -46,6 +56,97 @@ namespace UnityEngine.UIElements.UIR
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
 
             m_Disposed = true;
+        }
+
+        // Make sure to add the Gradient after the MeshWriteData has been added (After calling Alloc()).
+        public void AddGradient(FillGradient gradient)
+        {
+            if (m_FillGradientDataCount >= m_FillGradients.Count)
+            {
+                m_FillGradients.Add(gradient);
+                m_FillGradientMeshIndices.Add(m_MeshWriteDataCount-1);
+            }
+            else
+            {
+                m_FillGradients[m_FillGradientDataCount] = gradient;
+                m_FillGradientMeshIndices[m_FillGradientDataCount] = m_MeshWriteDataCount-1;
+            }
+            m_FillGradientDataCount++;
+        }
+
+        public FillGradient GetGradientFromMeshIndex(int index)
+        {
+            for (int i = 0; i < m_FillGradientDataCount; ++i)
+            {
+                if (m_FillGradientMeshIndices[i] == index)
+                {
+                    return m_FillGradients[i];
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(index), "No gradient found for the specified index.");
+        }
+
+        public FillGradient GetGradientAtIndex(int index)
+        {
+            return m_FillGradients[index];
+        }
+
+        public bool HasGradientsOrTextures()
+        {
+            return m_FillGradientDataCount > 0 || m_FillTextureDataCount > 0;
+        }
+
+        public bool HasGradientAtMeshIndex(int index)
+        {
+            for (int i = 0; i < m_FillGradientDataCount; ++i)
+            {
+                if (m_FillGradientMeshIndices[i] == index)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void AddTexture(Texture fillTexture)
+        {
+            if (m_FillTextureDataCount >= m_FillTextures.Count)
+            {
+                m_FillTextures.Add(fillTexture);
+                m_FillTextureMeshIndices.Add(m_MeshWriteDataCount - 1);
+            }
+            else
+            {
+                m_FillTextures[m_FillTextureDataCount] = fillTexture;
+                m_FillTextureMeshIndices[m_FillTextureDataCount] = m_MeshWriteDataCount - 1;
+            }
+            m_FillTextureDataCount++;
+        }
+
+        public Texture GetTextureFromMeshIndex(int index)
+        {
+            for (int i = 0; i < m_FillTextureDataCount; ++i)
+            {
+                if (m_FillTextureMeshIndices[i] == index)
+                {
+                    return m_FillTextures[i];
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(index), "No texture found for the specified index.");
+        }
+
+        public bool HasTextureAtMeshIndex(int index)
+        {
+            for (int i = 0; i < m_FillTextureDataCount; ++i)
+            {
+                if (m_FillTextureMeshIndices[i] == index)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public MeshWriteData Alloc(int vertexCount, int indexCount)
@@ -75,8 +176,11 @@ namespace UnityEngine.UIElements.UIR
             m_VertsPool.Reset();
             m_IndexPool.Reset();
             m_MeshWriteDataCount = 0;
+            m_FillGradientDataCount = 0;
+            m_FillTextureDataCount = 0;
 
-            // Don't clear m_MeshWriteDataPool to allow reuse.
+            // Don't clear m_MeshWriteDataPool, m_FillGradients, m_FillGradientMeshIdices, m_FillTextures and
+            // m_FillTextureIndices to allow reuse
         }
     }
 }

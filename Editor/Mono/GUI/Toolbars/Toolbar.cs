@@ -18,7 +18,63 @@ namespace UnityEditor
 {
     sealed partial class MainToolbarWindow : EditorWindow, ISupportsOverlaysCustomMode
     {
+        sealed class EditMode
+        {
+            public bool active => m_CurrentState != MainToolbarEditMode.Inactive;
+
+            MainToolbarEditMode m_CurrentState;
+
+            public bool userEnabled { get; set; }
+
+            bool m_ClutchActive = false;
+            OverlayCanvas m_Canvas;
+
+            public EditMode(EditorWindow owner)
+            {
+                m_Canvas = owner.overlayCanvas;
+            }
+
+            public void UpdateClutchInput(Event evt)
+            {
+                if (Application.platform == RuntimePlatform.OSXEditor ||
+                    Application.platform == RuntimePlatform.OSXPlayer)
+                {
+                    m_ClutchActive = evt.command;
+                }
+                else
+                {
+                    m_ClutchActive = evt.control;
+                }
+
+                Update();
+            }
+
+            void Update()
+            {
+                MainToolbarEditMode oldState = m_CurrentState;
+                m_CurrentState = MainToolbarEditMode.Inactive;
+                if (userEnabled)
+                    m_CurrentState = MainToolbarEditMode.Active;
+                else if (m_ClutchActive)
+                    m_CurrentState = MainToolbarEditMode.TempActivation;
+
+                if (oldState != m_CurrentState)
+                {
+                    m_Canvas.rootVisualElement.EnableInClassList(k_MainToolbarEditModeClassName, m_CurrentState == MainToolbarEditMode.Active);
+                    m_Canvas.rootVisualElement.EnableInClassList(k_MainToolbarTempEditModeClassName, m_CurrentState == MainToolbarEditMode.TempActivation);
+                    foreach (var overlay in m_Canvas.overlays)
+                    {
+                        var mto = overlay as MainToolbarOverlay;
+                        mto?.SetEditMode(m_CurrentState);
+                    }
+                }
+            }
+        }
+
         const string k_MainToolbarUSSClassName = "unity-editor-main-toolbar";
+        const string k_MainToolbarEditModeClassName = k_MainToolbarUSSClassName + "--edit-mode";
+        const string k_MainToolbarTempEditModeClassName = k_MainToolbarUSSClassName + "--temp-edit-mode";
+        static readonly string k_EditModeName = L10n.Tr("Edit Mode");
 
         internal static MainToolbarWindow instance;
 
@@ -68,31 +124,105 @@ namespace UnityEditor
 
             rootVisualElement.style.unityEditorTextRenderingMode = new StyleEnum<EditorTextRenderingMode>(EditorTextSettings.GetEditorTextRenderingMode());
             rootVisualElement.style.unityTextGenerator = new StyleEnum<TextGeneratorType>(EditorTextSettings.GetEditorTextGeneratorType());
+
+            windowFocusChanged += () => { editModeActive = false; };
+
+            m_EditModeState = new EditMode(this);
+            EditorApplication.modifierKeysChanged += OnModifierKeyChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.modifierKeysChanged -= OnModifierKeyChanged;
         }
 
         void CreateGUI()
         {
-            overlayCanvas.rootVisualElement.RegisterCallback<ContextClickEvent>((evt) => ShowMenu(evt.mousePosition, overlayCanvas));
+            overlayCanvas.rootVisualElement.RegisterCallback<ContextClickEvent>((evt) =>
+            {
+                ShowMenu(new Rect(evt.mousePosition, Vector2.zero));
+            });
         }
 
-        void ShowMenu(Vector2 position, OverlayCanvas canvas)
+        private void OnGUI()
         {
-            var dropdown = DropdownUtility.CreateDropdown();
+            var evt = Event.current;
+
+            if (evt.type == EventType.KeyDown &&
+                evt.keyCode == KeyCode.Escape &&
+                editModeActive)
+            {
+                editModeActive = false;
+            }
+
+            m_EditModeState.UpdateClutchInput(evt);
+        }
+
+        void OnModifierKeyChanged()
+        {
+            Repaint();
+        }
+
+        EditMode m_EditModeState;
+        internal bool editModeActive
+        {
+            get => m_EditModeState.userEnabled;
+            set => m_EditModeState.userEnabled = value;
+        }
+
+        void ToggleEditMode()
+        {
+            editModeActive = !editModeActive;
+        }
+
+        static HashSet<Overlay> s_UnityOnlyOverlays = new();
+        internal void ShowMenu(Rect dropdownRect)
+        {
+            var dropdown = rootVisualElement.panel.CreateMenu();
 
             var overlays = new List<(Overlay overlay, MainToolbarElementAttribute attrib)>();
-            var windowType = typeof(MainToolbarWindow);
 
-            foreach (var overlay in canvas.overlays)
+            dropdown.AddItem(k_EditModeName, editModeActive, ToggleEditMode);
+            dropdown.AddSeparator("");
+
+            s_UnityOnlyOverlays.Clear();
+            foreach (var overlay in overlayCanvas.overlays)
             {
                 var mto = overlay as MainToolbarOverlay;
                 overlays.Add((overlay, mto.createElementMethod.GetCustomAttribute<MainToolbarElementAttribute>()));
+                if (mto.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null)
+                    s_UnityOnlyOverlays.Add(overlay);
             }
 
-            overlays.Sort((a, b) => ((int)a.attrib.defaultDockPosition * 100 + a.attrib.defaultDockIndex)
-                .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex));
+            overlays.Sort((a, b) =>
+            {
+                // Group into unity vs non-unity first
+                if (s_UnityOnlyOverlays.Contains(a.overlay) && !s_UnityOnlyOverlays.Contains(b.overlay))
+                    return -1;
+                if (s_UnityOnlyOverlays.Contains(b.overlay) && !s_UnityOnlyOverlays.Contains(a.overlay))
+                    return 1;
 
+                // Sort by menu priority first
+                var result = a.attrib.menuPriority.CompareTo(b.attrib.menuPriority);
+                if (result != 0)
+                    return result;
+                
+                // Then alphabetically by path
+                result = String.Compare(a.attrib.path, b.attrib.path, StringComparison.OrdinalIgnoreCase);
+                if (result != 0)
+                    return result;
+                
+                // Then by dock position and index
+                return ((int)a.attrib.defaultDockPosition * 100 + a.attrib.defaultDockIndex)
+                    .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex);
+            });
+
+            Overlay prevOverlay = null;
             foreach (var pair in overlays)
             {
+                if (s_UnityOnlyOverlays.Contains(prevOverlay) && !s_UnityOnlyOverlays.Contains(pair.overlay))
+                    dropdown.AddSeparator("");
+                
                 if (pair.attrib.path != Toolbar.deprecatedElementsId || Toolbar.instance.deprecatedElements.Count > 0)
                 {
                     dropdown.AddItem(pair.attrib.path, pair.overlay.displayed, () =>
@@ -100,6 +230,7 @@ namespace UnityEditor
                         pair.overlay.displayed = !pair.overlay.displayed;
                     });
                 }
+                prevOverlay = pair.overlay;
             }
 
             // Add Show/Hide All to each unique category
@@ -114,7 +245,7 @@ namespace UnityEditor
 
             OverlayPresetManager.GenerateMenu(dropdown, "Presets/", this, new DefaultOverlayPreset(), new UnityOnlyToolbarPreset());
 
-            dropdown.DropDown(new Rect(position, Vector2.zero), rootVisualElement);
+            dropdown.DropDown(dropdownRect, rootVisualElement, DropdownMenuSizeMode.Auto);
         }
     }
 
@@ -124,6 +255,7 @@ namespace UnityEditor
         public const float ToolbarHeight = 36f;
 
         internal static Toolbar instance => s_Instance;
+        internal const string k_MainToolbarAPIDocumentationLink = "https://docs.unity3d.com/ScriptingReference/Toolbars.MainToolbar.html";
 
         Toolbar()
         {
@@ -190,7 +322,6 @@ namespace UnityEditor
         void InitializeFakeHierarchyForDeprecatedToolbarHacks()
         {
             const string k_MainToolbarUSSClassName = "unity-editor-main-toolbar";
-            var uxml = EditorToolbarUtility.LoadUxml("MainToolbar");
 
             var name = VisualElement.k_RootVisualContainerName;
             m_Root = new VisualElement()
@@ -204,30 +335,49 @@ namespace UnityEditor
             m_Root.AddToClassList(k_MainToolbarUSSClassName);
 
             var ve = new VisualElement();
-            uxml.CloneTree(ve);
+            var toolbarContainerContent = new VisualElement { name = "ToolbarContainerContent", classList = { "unity-editor-toolbar-container" } };
+            var leftZone = new ToolbarZone { name = "ToolbarZoneLeftAlign", classList = { "unity-editor-toolbar-container__zone" } };
+            var toolbarProductCaption = new VisualElement { name = "ToolbarProductCaption", classList = { "unity-editor-toolbar-product-caption" } };
+            var middleZone = new ToolbarZone { name = "ToolbarZonePlayMode", classList = { "unity-editor-toolbar-container__zone" } };
+            var rightZone = new ToolbarZone { name = "ToolbarZoneRightAlign", classList = { "unity-editor-toolbar-container__zone" } };
+            leftZone.Add(toolbarProductCaption);
+            toolbarContainerContent.Add(leftZone);
+            toolbarContainerContent.Add(middleZone);
+            toolbarContainerContent.Add(rightZone);
+            ve.Add(toolbarContainerContent);
             m_Root.Add(ve);
 
-            var leftZone = m_Root.Q("ToolbarZoneLeftAlign");
             populateFakeToolbar?.Invoke(MainToolbarDockPosition.Left, leftZone);
-            CheckIfElementAddedToFakeToolbar(leftZone);
+            leftZone.TrackElementsAddedToFakeToolbar(this);
 
-            var middleZone = m_Root.Q("ToolbarZonePlayMode");
             populateFakeToolbar?.Invoke(MainToolbarDockPosition.Middle, middleZone);
-            CheckIfElementAddedToFakeToolbar(middleZone);
+            middleZone.TrackElementsAddedToFakeToolbar(this);
 
-            var rightZone = m_Root.Q("ToolbarZoneRightAlign");
             populateFakeToolbar?.Invoke(MainToolbarDockPosition.Right, rightZone);
-            CheckIfElementAddedToFakeToolbar(rightZone);
+            rightZone.TrackElementsAddedToFakeToolbar(this);
         }
 
-        void CheckIfElementAddedToFakeToolbar(VisualElement element)
+        internal void LogWarningForElementAddedToFakeToolbar(VisualElement ve)
         {
-            element.elementAdded += (ve, index) =>
-            {
-                Debug.LogWarning($"We have detected that your project includes custom elements added to the Unity Editor's main toolbar using unsupported methods. This approach is not supported and will lead to issues in future versions. Refer to the official <a href=\"https://docs.unity3d.com/ScriptingReference/Toolbars.MainToolbar.html\">API documentation</a> for adding custom elements to the main toolbar.\n\nYour custom toolbar elements can be unhidden via the context menu (right-click the main toolbar -> <i>Unsupported User Elements</i>).");
-                m_DeprecatedElements.Add(ve);
-                MainToolbar.Refresh(deprecatedElementsId);
-            };
+            Debug.LogWarning($"We have detected that your project includes custom elements added to the Unity Editor's main toolbar using unsupported methods. This approach is not supported and will lead to issues in future versions. Refer to the official <a href=\"" + k_MainToolbarAPIDocumentationLink + "\">API documentation</a> for adding custom elements to the main toolbar.\n\nYour custom toolbar elements can be unhidden via the context menu (right-click the main toolbar -> <i>Unsupported User Elements</i>).");
+            m_DeprecatedElements.Add(ve);
+            MainToolbar.Refresh(deprecatedElementsId);
+        }
+    }
+
+    internal class ToolbarZone : VisualElement
+    {
+        private Toolbar m_Toolbar;
+
+        public void TrackElementsAddedToFakeToolbar(Toolbar toolbar)
+        {
+            m_Toolbar = toolbar;
+        }
+
+        internal override void OnChildAdded(VisualElement ve)
+        {
+            if (m_Toolbar != null)
+                m_Toolbar.LogWarningForElementAddedToFakeToolbar(ve);
         }
     }
 }

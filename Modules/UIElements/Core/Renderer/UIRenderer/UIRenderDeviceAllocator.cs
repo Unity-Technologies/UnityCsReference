@@ -386,16 +386,18 @@ namespace UnityEngine.UIElements.UIR
 
         public class DataSet<T> : IDisposable where T : struct
         {
+            static readonly MemoryLabel s_CpuMemoryLabel = new (nameof(UIElements), "Renderer.RendererCpuData");
+            static readonly MemoryLabel s_RangesMemoryLabel = new (nameof(UIElements), "Renderer.GfxUpdateBufferRange");
             public DataSet(Utility.GPUBufferType bufferType, uint totalCount, uint maxQueuedFrameCount, uint updateRangePoolSize)
             {
                 gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferType);
-                cpuData = new NativeArray<T>((int)totalCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                cpuData = new NativeArray<T>((int)totalCount, s_CpuMemoryLabel, NativeArrayOptions.UninitializedMemory);
                 allocator = new GPUBufferAllocator(totalCount);
                 m_ElemStride = (uint)gpuData.ElementStride;
 
                 m_UpdateRangePoolSize = updateRangePoolSize;
                 uint multipliedUpdateRangePoolSize = m_UpdateRangePoolSize * maxQueuedFrameCount;
-                updateRanges = new NativeArray<GfxUpdateBufferRange>((int)multipliedUpdateRangePoolSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                updateRanges = new NativeArray<GfxUpdateBufferRange>((int)multipliedUpdateRangePoolSize, s_RangesMemoryLabel, NativeArrayOptions.UninitializedMemory);
                 m_UpdateRangeMin = uint.MaxValue;
                 m_UpdateRangeMax = 0;
                 m_UpdateRangesEnqueued = 0;

@@ -160,6 +160,7 @@ internal class RemoveAction : PackageAction
     protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
     {
         yield return new DisableIfInstalledAsDependency(version);
+        yield return new DisableIfExportingInProgress(version.package);
     }
 
     private void DeselectPackages(IList<IPackage> packages)

@@ -34,23 +34,35 @@ namespace UnityEditor
         [FreeFunction]
         extern public static void GetGlobalObjectIdsSlow(UnityEngine.Object[] objects, [Out] GlobalObjectId[] outputIdentifiers);
 
-        // Converts an Object reference to a global unique ID
+        [Obsolete("GlobalObjectId.GetGlobalObjectIdSlow(int) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId) instead.")]
         public static GlobalObjectId GetGlobalObjectIdSlow(int instanceId)
         {
-            return GetGlobalObjectIdFromInstanceIdSlow(instanceId);
+            return GetGlobalObjectIdSlow((EntityId)instanceId);
         }
 
+        [Obsolete("GlobalObjectId.GetGlobalObjectIdSlow(int[], [Out] GlobalObjectId[]) is obsolete. Use GlobalObjectId.GetGlobalObjectIdSlow(EntityId[], [Out] GlobalObjectId[]) is obsolete instead.")]
         public static void GetGlobalObjectIdsSlow(int[] instanceIds, [Out] GlobalObjectId[] outputIdentifiers)
         {
-            GetGlobalObjectIdsFromInstanceIdsSlow(instanceIds, outputIdentifiers);
+            GetGlobalObjectIdsSlow(instanceIds.ToEntityIdArray(), outputIdentifiers);
+        }
+
+        // Converts an Object reference to a global unique ID
+        public static GlobalObjectId GetGlobalObjectIdSlow(EntityId entityid)
+        {
+            return GetGlobalObjectIdFromInstanceIdSlow(entityid);
+        }
+
+        public static void GetGlobalObjectIdsSlow(EntityId[] entityIds, [Out] GlobalObjectId[] outputIdentifiers)
+        {
+            GetGlobalObjectIdsFromInstanceIdsSlow(entityIds, outputIdentifiers);
         }
 
         // Converts an Object reference to a global unique ID
         [FreeFunction]
-        extern static GlobalObjectId GetGlobalObjectIdFromInstanceIdSlow(int instanceId);
+        extern static GlobalObjectId GetGlobalObjectIdFromInstanceIdSlow(EntityId instanceId);
 
         [FreeFunction]
-        extern static void GetGlobalObjectIdsFromInstanceIdsSlow(int[] instanceIds, [Out] GlobalObjectId[] outputIdentifiers);
+        extern static void GetGlobalObjectIdsFromInstanceIdsSlow(EntityId[] instanceIds, [Out] GlobalObjectId[] outputIdentifiers);
 
         override public string ToString()
         {

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy
 {
@@ -10,6 +11,7 @@ namespace Unity.Hierarchy
     /// Cell Descriptor used to register a new Cell for a specific Node Type in the Hierarchy.
     /// Allows user to create custom UI to edit or display data of this Node in the Cell corresponding to a specific Column.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyViewCellDescriptor
     {
         bool m_IsColumnBound;
@@ -25,7 +27,7 @@ namespace Unity.Hierarchy
         public readonly Type HandlerType;
 
         /// <summary>
-        /// Callback triggered when the cell is bound. 
+        /// Callback triggered when the cell is bound.
         /// </summary>
         public Action<HierarchyViewCell> BindCell;
 

@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements
         {
             // This is called for live reload, but not for property changes or when the editor text is change from sdf to bitmap
             MeasuredWidth = null;
+            ATGMeasuredWidth = null;
             base.SetDirty();
         }
         /// <summary>
@@ -47,37 +48,49 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Stored in Scaled/GUI pixels size
         /// </summary>
-        internal Vector2 ATGMeasuredSizes { get; set; }
+        internal float? ATGMeasuredWidth { get; set; }
 
         /// <summary>
         /// Stored in Scaled/GUI pixels size
         /// </summary>
-        internal Vector2 ATGRoundedSizes { get; set; }
+        internal float ATGRoundedWidth { get; set; }
 
 
         internal static Func<int, FontAsset, bool, FontAsset> GetBlurryFontAssetMapping;
-        internal static Func<int, bool, bool> CanGenerateFallbackFontAssets;
+        internal static Func<int, bool, bool> GenerateBitmapFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
 
         protected TextElement m_TextElement;
 
-        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
+        public Vector2 ComputeTextSize(string textToMeasure, float width, float height, float? fontsize = null)
         {
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
+            {
+                return ComputeTextSize(new RenderedText(textToMeasure), width, height, fontsize);
+            }
             var scale = GetPixelsPerPoint();
             width = Mathf.Round(width * scale);
             height = Mathf.Round(height * scale);
 
+            ComputeNativeTextSize(textToMeasure, width, height, fontsize);
+
+            return preferredSize;
+        }
+
+        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
+        {
             if (TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {
-                ComputeNativeTextSize(textToMeasure, width, height, fontsize);
+                return Vector2.zero;
             }
-            else
-            {
-                ConvertUssToTextGenerationSettings(populateScreenRect:false, fontsize);
-                settings.renderedText = textToMeasure;
-                settings.screenRect = new Rect(0, 0, width, height);
-                UpdatePreferredValues(settings);
-            }
+            var scale = GetPixelsPerPoint();
+            width = Mathf.Round(width * scale);
+            height = Mathf.Round(height * scale);
+
+            ConvertUssToTextGenerationSettings(populateScreenRect: false, fontsize);
+            settings.renderedText = textToMeasure;
+            settings.screenRect = new Rect(0, 0, width, height);
+            UpdatePreferredValues(settings);
             return preferredSize;
         }
 
@@ -133,13 +146,20 @@ namespace UnityEngine.UIElements
             if (useAdvancedText)
             {
                 CacheTextGenerationInfo();
+
                 UpdateNative();
                 UpdateATGTextEventHandler();
-                return;
+            }
+            else
+            {
+                if (ConvertUssToTextGenerationSettings(populateScreenRect: true))
+                    base.AddToPermanentCacheAndGenerateMesh();
             }
 
-            if (ConvertUssToTextGenerationSettings(populateScreenRect: true))
-                base.AddToPermanentCacheAndGenerateMesh();
+            // It is possible that we toggled useAdvancedText and called
+            // AddToPermanentCacheAndGenerateMesh on both states without actually rendering a frame inbetween.
+            // make sure we release the other textGenerator resource asap on transition:
+            ReleaseResourcesIfPossible();
         }
 
         TextOverflowMode GetTextOverflowMode()
@@ -201,18 +221,17 @@ namespace UnityEngine.UIElements
                 FontAsset fa = GetBlurryFontAssetMapping(tgs.fontSize, tgs.fontAsset, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
 
                 // Fallbacks also need to be generated on the Main Thread
-                var canGenerateFallbacks = CanGenerateFallbackFontAssets(tgs.fontSize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
+                var canGenerateFallbacks = GenerateBitmapFallbackFontAssets(tgs.fontSize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
                 if (!canGenerateFallbacks || !fa)
                     return false;
 
-
                 tgs.fontAsset = fa;
-
             }
 
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
-            tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
+            tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode(m_TextElement.isInputField && !m_TextElement.edition.multiline);
+
             tgs.richText = m_TextElement.enableRichText;
             tgs.overflowMode = GetTextOverflowMode();
             tgs.characterSpacing = style.letterSpacing.value;
@@ -296,7 +315,6 @@ namespace UnityEngine.UIElements
             return Mathf.Min(padding * factor * gradientScale, gradientScale);
         }
 
-        private bool wasAdvancedTextEnabledForElement;
         internal override bool IsAdvancedTextEnabledForElement()
         {
             return TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
@@ -305,22 +323,39 @@ namespace UnityEngine.UIElements
         internal void ReleaseResourcesIfPossible()
         {
             bool usesATG = TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
-            if (wasAdvancedTextEnabledForElement && !usesATG && textGenerationInfo != IntPtr.Zero)
+            if (!usesATG)
             {
-                TextGenerationInfo.Destroy(textGenerationInfo);
-                textGenerationInfo = IntPtr.Zero;
-                m_ATGTextEventHandler?.OnDestroy();
-                m_ATGTextEventHandler = null;
-                m_TextEventHandler = new TextEventHandler(m_TextElement);
+                if (textGenerationInfo != IntPtr.Zero)
+                {
+                    TextGenerationInfo.Destroy(textGenerationInfo);
+                    textGenerationInfo = IntPtr.Zero;
+                }
+
+                if (m_ATGTextEventHandler != null)
+                {
+                    m_ATGTextEventHandler?.OnDestroy();
+                    m_ATGTextEventHandler = null;
+                }
+
+                if(m_TextEventHandler == null)
+                    m_TextEventHandler = new TextEventHandler(m_TextElement);
+
             }
-            else if (!wasAdvancedTextEnabledForElement && usesATG)
+            else
             {
-                s_PermanentCache.RemoveFromCache(this);
-                s_TemporaryCache.RemoveFromCache(this);
-                m_TextEventHandler?.OnDestroy();
-                m_TextEventHandler = null;
+                if (IsCachedPermanentTextCore)
+                    s_PermanentCache.RemoveFromCache(this);
+                   
+                if(IsCachedTemporary)
+                    s_TemporaryCache.RemoveFromCache(this);
+
+
+                if (m_TextEventHandler!= null)
+                {
+                    m_TextEventHandler?.OnDestroy();
+                    m_TextEventHandler = null;
+                }
             }
-            wasAdvancedTextEnabledForElement = usesATG;
         }
 
         public override bool IsPlaceholder

@@ -97,5 +97,6 @@ internal abstract class UpdateActionBase : PackageAction
         // We need to check the target version so that we don't disable the button in the details header
         yield return new DisableIfVersionDeprecated(GetUpdateTarget(version));
         yield return new DisableIfEntitlementsError(version);
+        yield return new DisableIfExportingInProgress(version.package);
     }
 }

@@ -192,8 +192,8 @@ namespace UnityEngine.UIElements.UIR
                 // The UINT32 color
                 new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
 
-                // The UV
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
+                // The UV and LayoutUV
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 4),
 
                 // TransformID page coordinate (XY), ClipRectID page coordinate (ZW), packed into a Color32
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4),
@@ -1112,6 +1112,8 @@ namespace UnityEngine.UIElements.UIR
         {
             foreach (Material material in m_ScreenSpaceAlteredMaterials)
             {
+                if (material == null)
+                    continue;
 
                 material.DisableKeyword(Shaders.k_ForceGammaKeyword);
                 material.DisableKeyword(Shaders.k_TextureSlotCount1);

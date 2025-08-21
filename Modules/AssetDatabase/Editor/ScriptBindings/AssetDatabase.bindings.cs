@@ -934,10 +934,13 @@ namespace UnityEditor
         }
 
         [NativeThrows]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ArtifactInfo[] GetArtifactInfos_Internal(GUID guid);
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ArtifactInfo[] GetCurrentRevisions_Internal(GUID[] guids);
 
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ArtifactInfo[] GetImportActivityWindowStartupData_Internal(ImportActivityWindowStartupData dataType);
 
         internal static ArtifactInfo[] GetCurrentRevisions(GUID[] guids)

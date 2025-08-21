@@ -14,10 +14,10 @@ namespace Unity.PlayMode.Editor
     /// </summary>
     class LabelWithIcon : VisualElement
     {
-        static readonly string k_BaseClassName = "label-with-icon";
+        static readonly string k_BaseClassName = "unity-scenarios-label-with-icon__base--scenario-window";
 
         static string s_VisualTreePath = "PlayMode/UI/LabelWithIcon.uxml";
-        static string s_StylePath = "PlayMode/UI/LabelWithIcon.uss";
+        static string s_StylePath = "PlayMode/UI/Framework.uss";
 
         /// <summary>
         /// Invoked if the edit was successful and no InputWarning was present.
@@ -50,9 +50,9 @@ namespace Unity.PlayMode.Editor
             {
                 m_InputIsValid = value;
                 if (m_InputIsValid)
-                    RemoveFromClassList("input-warning");
+                    RemoveFromClassList("unity-scenarios-label-with-icon__base--input-warning");
                 else
-                    AddToClassList("input-warning");
+                    AddToClassList("unity-scenarios-label-with-icon__base--input-warning");
             }
         }
 
@@ -83,6 +83,7 @@ namespace Unity.PlayMode.Editor
             }
 
             m_WarnIcon = element.Q<VisualElement>("warn-icon");
+            m_WarnIcon.AddToClassList("unity-scenarios-label-with-icon__warn-icon");
             m_WarnIcon.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
             m_WarnIcon.style.backgroundImage = EditorGUIUtility.FindTexture("console.warnicon"); ;
 
@@ -108,7 +109,7 @@ namespace Unity.PlayMode.Editor
             TextField.UnregisterCallback<BlurEvent>(OnTextFieldFocusOut);
             TextField.RegisterCallback<BlurEvent>(OnTextFieldFocusOut);
 
-            AddToClassList("editable");
+            AddToClassList("unity-scenarios-label-with-icon__base--editable");
 
             // use scheduler again, because we have to wait until the textfield has display=flex
             // before we can focus it.
@@ -121,8 +122,8 @@ namespace Unity.PlayMode.Editor
 
         void DisableEditMode(bool cancel = false)
         {
-            RemoveFromClassList("input-warning");
-            RemoveFromClassList("editable");
+            RemoveFromClassList("unity-scenarios-label-with-icon__base--input-warning");
+            RemoveFromClassList("unity-scenarios-label-with-icon__base--editable");
 
             TextField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
             TextField.UnregisterCallback<BlurEvent>(OnTextFieldFocusOut);

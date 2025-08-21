@@ -231,11 +231,13 @@ namespace UnityEditor
         // that relies on this returning int, specifically the model importer test
 
         [Obsolete("GetLocalIdentifierInFile() is deprecated. Use GetLocalIdentifierInFileForPersistentObject() instead.", false)]
-        [FreeFunction("GetPersistentManager().GetLocalFileID")]
-        public static extern int GetLocalIdentifierInFile(int instanceID);
+        public static int GetLocalIdentifierInFile(int instanceID) => (int)GetLocalIdentifierInFileForPersistentObjectInternal((EntityId)instanceID);
+
+        [Obsolete("GetLocalIdentifierInFileForPersistentObjectInternal(int) is obsolete. Use GetLocalIdentifierInFileForPersistentObjectInternal(EntityId) instead.")]
+        static UInt64 GetLocalIdentifierInFileForPersistentObjectInternal(int instanceID) => GetLocalIdentifierInFileForPersistentObjectInternal((EntityId)instanceID);
 
         [FreeFunction("GetPersistentManager().GetLocalFileID")]
-        static extern UInt64 GetLocalIdentifierInFileForPersistentObjectInternal(int instanceID);
+        static extern UInt64 GetLocalIdentifierInFileForPersistentObjectInternal(EntityId instanceID);
 
         public static UInt64 GetLocalIdentifierInFileForPersistentObject(UnityEngine.Object obj)
         {
@@ -245,7 +247,7 @@ namespace UnityEditor
             if (!EditorUtility.IsPersistent(obj))
                 throw new ArgumentException("Input object must be persistent");
 
-            return GetLocalIdentifierInFileForPersistentObjectInternal(obj.GetInstanceID());
+            return GetLocalIdentifierInFileForPersistentObjectInternal(obj.GetEntityId());
         }
 
         internal static extern UInt64 GetFileIDHint([NotNull] UnityEngine.Object obj);

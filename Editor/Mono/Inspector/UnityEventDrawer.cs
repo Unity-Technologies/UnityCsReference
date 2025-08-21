@@ -868,7 +868,7 @@ namespace UnityEditorInternal
                 var arguments = m_Listener.FindPropertyRelative(kArgumentsPath);
 
                 listenerTarget.objectReferenceValue = m_Target;
-                listenerTargetType.stringValue = m_Method.DeclaringType.AssemblyQualifiedName;
+                listenerTargetType.stringValue = m_Target?.GetType()?.AssemblyQualifiedName;
                 methodName.stringValue = m_Method.Name;
                 mode.enumValueIndex = (int)m_Mode;
 

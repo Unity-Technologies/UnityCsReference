@@ -19,7 +19,7 @@ namespace UnityEditor.Overlays
         public OverlayPresetDropdown(EditorWindow targetWindow)
         {
             m_TargetWindow = targetWindow;
-            createMenuCallback = DropdownUtility.CreateDropdown;
+            createMenuCallback = () => targetWindow.rootVisualElement.panel.CreateMenu();
             SetValueWithoutNotify(m_TargetWindow.overlayCanvas.lastAppliedPresetName);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -41,7 +41,7 @@ namespace UnityEditor.Overlays
             SetValueWithoutNotify(GetValueToDisplay());
         }
 
-        internal override void AddMenuItems(IGenericMenu menu)
+        internal override void AddMenuItems(AbstractGenericMenu menu)
         {
             OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow, new DefaultOverlayPreset());
         }
@@ -58,9 +58,38 @@ namespace UnityEditor.Overlays
         internal override string GetListItemToDisplay(string item) => item;
     }
 
-    [Overlay(typeof(EditorWindow), "Overlays/OverlayMenu", "Overlay Menu", "overlay-menu", defaultDockZone = DockZone.LeftColumn, defaultLayout = Layout.HorizontalToolbar, defaultDisplay = true, defaultDockIndex = 0)]
+    [Overlay(typeof(EditorWindow), k_Id, k_DisplayName , k_UssName, defaultDockZone = DockZone.LeftColumn, defaultLayout = Layout.HorizontalToolbar, defaultDisplay = true, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
+    [Icon("Icons/Overlays/OverlayMenu.png")]
     sealed class OverlayMenu : Overlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
+
+        const string k_DisplayName = "Overlay Menu";
+        internal const string k_Id = "Overlays/OverlayMenu"; // Used by tests
+        const string k_UssName = "overlay-menu";
+
+        internal sealed class OverlayGroupData : IComparable<OverlayGroupData>
+        {
+            public readonly string name;
+            public readonly List<Overlay> overlays = new List<Overlay>();
+
+            public OverlayGroupData(string name)
+            {
+                this.name = name;
+            }
+
+            public int CompareTo(OverlayGroupData other)
+            {
+                // Sort the unity group at the top
+                if (name == "Unity")
+                    return -1;
+
+                if (other.name == "Unity")
+                    return 1;
+
+                return name.CompareTo(other.name);
+            }
+        }
+
         class Toolbar : OverlayToolbar
         {
             OverlayMenu m_Menu;
@@ -142,7 +171,8 @@ namespace UnityEditor.Overlays
         Toggle m_DynamicPanelBehaviorToggle;
         OverlayPresetDropdown m_Dropdown;
         Toolbar m_Toolbar;
-        const string k_ShowOverlayMenuShortcut = "Overlays/Show Overlay Menu";
+        static readonly string k_CustomGroup = L10n.Tr("Custom");
+        public const string k_ShowOverlayMenuShortcutPath = "Overlays/Show Overlay Menu";
 
         [InitializeOnLoadMethod]
         static void AddOverlayToWindowMenu()
@@ -154,21 +184,41 @@ namespace UnityEditor.Overlays
         {
             if (targetWindow is ISupportsOverlays)
             {
-                var binding = ShortcutManager.instance.GetShortcutBinding(k_ShowOverlayMenuShortcut);
-                var itemContent = EditorGUIUtility.TrTextContent($"Overlay Menu _{binding}");
+                var binding = ShortcutManager.instance.GetShortcutBinding(OverlayMenu.k_ShowOverlayMenuShortcutPath);
+                var overlayMenuItemContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Menu _{binding}");
+                var enableOverlaysContent = EditorGUIUtility.TrTextContent($"Overlays/Enable Overlays");
+                var displaceWindowContent = EditorGUIUtility.TrTextContent($"Overlays/Displace Window");
+                var overlaySettingsContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Settings...");
 
+                var displaceWindow = targetWindow.overlayCanvas.dynamicPanelBehavior == OverlayCanvas.DynamicPanelBehavior.DisplaceWindow;
+                var overlaysEnabled = targetWindow.overlayCanvas.overlaysEnabled;
 
                 if (targetWindow.overlayCanvas.overlaysSupportEnabled)
                 {
-                    menu.AddItem(itemContent, false,
+                    menu.AddItem(overlayMenuItemContent, false,
                         () => { targetWindow.overlayCanvas.ShowPopup<OverlayMenu>(); });
+                    menu.AddSeparator("Overlays/");
+                    menu.AddItem(enableOverlaysContent, overlaysEnabled,
+                        () => targetWindow.overlayCanvas.overlaysEnabled = !overlaysEnabled);
+                    menu.AddItem(displaceWindowContent, displaceWindow,
+                        () => targetWindow.overlayCanvas.dynamicPanelBehavior = displaceWindow
+                            ? OverlayCanvas.DynamicPanelBehavior.None
+                            : OverlayCanvas.DynamicPanelBehavior.DisplaceWindow);
+                    menu.AddItem(overlaySettingsContent, false,
+                        () => SettingsService.OpenUserPreferences("Preferences/Overlays") );
                 }
                 else
-                    menu.AddDisabledItem(itemContent);
+                {
+                    menu.AddDisabledItem(overlayMenuItemContent, false);
+                    menu.AddSeparator("Overlays/");
+                    menu.AddDisabledItem(enableOverlaysContent, overlaysEnabled);
+                    menu.AddDisabledItem(displaceWindowContent, displaceWindow);
+                    menu.AddDisabledItem(overlaySettingsContent, false);
+                }
             }
         }
 
-        [Shortcut(k_ShowOverlayMenuShortcut, typeof(OverlayShortcutContext), KeyCode.BackQuote)]
+        [Shortcut(k_ShowOverlayMenuShortcutPath, typeof(OverlayShortcutContext), KeyCode.BackQuote)]
         static void ShowOverlayMenu(ShortcutArguments args)
         {
             if (args.context is OverlayShortcutContext context)
@@ -186,7 +236,7 @@ namespace UnityEditor.Overlays
         public override void OnWillBeDestroyed()
         {
             if (m_ListRoot != null)
-                m_ListRoot.Query<OverlayMenuItem>().ForEach((item) => item.overlay?.SetHighlightEnabled(false));
+                canvas.ClearHighlights();
 
             canvas.overlaysEnabledChanged -= OnOverlayEnabledChanged;
             canvas.overlayListChanged -= OnOverlayListChanged;
@@ -221,7 +271,7 @@ namespace UnityEditor.Overlays
 
         bool ShouldShowOverlay(Overlay overlay)
         {
-            return overlay.userControlledVisibility && overlay.hasMenuEntry && !canvas.IsTransient(overlay) && (overlay != this || isPopup);
+            return overlay.userControlledVisibility && overlay.hasMenuEntry && !overlay.canvas.IsTransient(overlay) && (overlay != this || isPopup);
         }
 
         public OverlayToolbar CreateHorizontalToolbarContent()
@@ -237,8 +287,7 @@ namespace UnityEditor.Overlays
         public override VisualElement CreatePanelContent()
         {
             VisualElement content = new VisualElement();
-            content.style.minWidth = 160;
-            content.style.maxWidth = 300;
+            content.AddToClassList("overlay-menu");
             m_Toolbar = null;
 
             if (isPopup)
@@ -265,12 +314,38 @@ namespace UnityEditor.Overlays
             content.Add(m_Dropdown = new OverlayPresetDropdown(canvas.containerWindow));
 
             content.Add(m_ListRoot = new ScrollView() { name = "OverlayList" });
-            m_ListRoot.horizontalScrollerVisibility = ScrollerVisibility.Auto;
+            m_ListRoot.mode = ScrollViewMode.Vertical;
+            m_ListRoot.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             m_ListRoot.verticalScrollerVisibility = ScrollerVisibility.Auto;
 
             RebuildList();
 
             return content;
+        }
+
+        internal static List<OverlayGroupData> GetGroups(OverlayMenu menu, IEnumerable<Overlay> overlays)
+        {
+            var groupSet = new Dictionary<string, OverlayGroupData>();
+            foreach (var overlay in overlays)
+            {
+                if (!menu.ShouldShowOverlay(overlay))
+                    continue;
+
+                var group = GetGroupName(overlay);
+                if (!groupSet.TryGetValue(group, out OverlayGroupData data))
+                    groupSet[group] = data = new OverlayGroupData(group);
+
+                data.overlays.Add(overlay);
+            }
+
+            var groups = new List<OverlayGroupData>(groupSet.Values);
+
+            // Sort groups and overlays
+            groups.Sort();
+            foreach (var group in groups)
+                group.overlays.Sort((a, b) => a.menuPriority.CompareTo(b.menuPriority));
+
+            return groups;
         }
 
         void RebuildList()
@@ -280,31 +355,53 @@ namespace UnityEditor.Overlays
 
             m_ListRoot.Clear();
 
-            var overlays = new List<(Overlay overlay, int priority)>();
-            foreach (var overlay in canvas.overlays)
+            var groups = GetGroups(this, canvas.overlays);
+            foreach (var group in groups)
             {
-                if (!ShouldShowOverlay(overlay))
-                    continue;
+                var groupItem = new OverlayGroupMenuItem(group.name, group.overlays);
+                foreach (var overlay in group.overlays)
+                    groupItem.Add(new OverlayMenuItem(overlay));
 
-                var attrib = OverlayUtilities.GetAttribute(containerWindow.GetType(), overlay.GetType());
-                overlays.Add((overlay, attrib.priority));
+                m_ListRoot.Add(groupItem);
             }
-            overlays.Sort((a, b) => a.priority.CompareTo(b.priority));
 
-            foreach(var sortedOverlay in overlays)
-                m_ListRoot.Add(new OverlayMenuItem() { overlay = sortedOverlay.overlay });
-
+            // Create transient overlay items
             if (canvas.HasTransientOverlays())
             {
                 var separator = new VisualElement() { name = "Separator" };
                 separator.AddToClassList("unity-separator");
+
                 m_ListRoot.Add(separator);
+
+                foreach (var overlay in canvas.transientOverlays)
+                {
+                    m_ListRoot.Add(new OverlayMenuItem(overlay));
+                }
+            }
+        }
+
+        static string GetGroupName(Overlay overlay)
+        {
+            if (string.IsNullOrEmpty(overlay.menuGroup))
+                return k_CustomGroup;
+
+            // Ensure that user can't use our reserved name. Nothing stops them from using our reserved string but it's harder to figure out then just "Unity"
+            if (overlay.menuGroup.ToLower().Trim() == "unity")
+            {
+                Debug.LogWarning(GetReservedNameWarning(overlay));
+                return k_CustomGroup;
             }
 
-            foreach (var overlay in canvas.transientOverlays)
-            {
-                m_ListRoot.Add(new OverlayMenuItem() { overlay = overlay });
-            }
+            if (overlay.menuGroup == OverlayAttribute.unityGroup)
+                return "Unity";
+
+            return overlay.menuGroup;
+        }
+
+        internal static string GetReservedNameWarning(Overlay overlay)
+        {
+            return $"Ignoring Overlay attribute of {overlay.displayName} using reserved group \"{overlay.menuGroup}\".\n" +
+                    $"Overlay attribute on {overlay.GetType().FullName} is using \"{overlay.menuGroup}\" which is reserved for Unity used.";
         }
     }
 }

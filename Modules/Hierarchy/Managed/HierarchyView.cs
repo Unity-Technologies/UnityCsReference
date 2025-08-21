@@ -263,12 +263,9 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Create a new instance of the <see cref="HierarchyView"/>.
         /// </summary>
-        /// <param name="hierarchy">The hierarchy.</param>
-        /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAL0015:Auto cleaned up symbol assigned by constructor", Justification = "This is a VisualElement which is re-created on code reload")]
-        public HierarchyView(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+        public HierarchyView()
         {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).New(hierarchy={hierarchy?.GetHashCode():X}, flags={defaultFlags})");
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).New()");
 
             // UX elements
             AddToClassList(k_HierarchyViewRootStyleName);
@@ -315,9 +312,6 @@ namespace Unity.Hierarchy
             m_LastMouseUpSelectionIndex = -1;
             m_IsRenamingItem = false;
             m_RenameDelayMs = k_RenamingDelayMs;
-
-            // Set source hierarchy
-            SetSourceHierarchy(hierarchy, defaultFlags);
         }
 
         /// <summary>
@@ -359,7 +353,6 @@ namespace Unity.Hierarchy
             Reset();
 
             // Reset UX update state
-            m_RenameDelayMs = k_RenamingDelayMs;
             m_IsRenamingItem = false;
             m_LastMouseUpSelectionIndex = -1;
             m_SelectedIndicesChangedFromPointerDown = false;
@@ -457,37 +450,12 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Reset the view to its initial state.
-        /// </summary>
-        internal void Reset()
-        {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).{nameof(Initialize)}()");
-            m_StyleContainer.Remove(m_MultiColumnListView);
-            m_StyleContainer.RemoveFromHierarchy();
-            m_StyleContainer = new VisualElement();
-            m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
-            Add(m_StyleContainer);
-            m_StyleContainer.Add(m_MultiColumnListView);
-        }
-
-        /// <summary>
-        /// Initialize the view with styles and stylesheets provided by <see cref="HierarchyNodeTypeHandler.OnInitializingView(HierarchyView)"/>.
+        /// Initialize the view with styles and stylesheets provided by <see cref="HierarchyNodeTypeHandler.OnBindView(HierarchyView)"/>.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal void Initialize()
         {
-            foreach (var handler in m_Hierarchy.EnumerateNodeTypeHandlers())
-            {
-                try
-                {
-                    handler.Internal_OnInitializingView(this);
-                }
-                catch (Exception ex)
-                {
-                    UnityEngine.Debug.LogException(ex);
-                }
-            }
-
+            BindHandlers();
             try
             {
                 Initializing?.Invoke();
@@ -496,6 +464,27 @@ namespace Unity.Hierarchy
             {
                 UnityEngine.Debug.LogException(ex);
             }
+        }
+
+        /// <summary>
+        /// Reset the view to its initial state.
+        /// </summary>
+        internal void Reset()
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).{nameof(Reset)}()");
+
+            // Unbind handlers
+            UnbindHandlers();
+
+            // Remove then style container
+            m_StyleContainer.Remove(m_MultiColumnListView);
+            m_StyleContainer.RemoveFromHierarchy();
+
+            // Make a new style container
+            m_StyleContainer = new VisualElement();
+            m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
+            m_StyleContainer.Add(m_MultiColumnListView);
+            Add(m_StyleContainer);
         }
 
         /// <summary>
@@ -946,13 +935,13 @@ namespace Unity.Hierarchy
 
         internal void InvokeBindViewItem(HierarchyViewItem item)
         {
-            item.Handler?.Internal_Bind(item);
+            item.Handler?.Internal_BindItem(item);
             BindViewItem?.Invoke(item);
         }
 
         internal void InvokeUnbindViewItem(HierarchyViewItem item)
         {
-            item.Handler?.Internal_Unbind(item);
+            item.Handler?.Internal_UnbindItem(item);
             UnbindViewItem?.Invoke(item);
         }
 
@@ -1096,6 +1085,28 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel.SetFlagsRecursive(parents.Span, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
         }
 
+        void BindHandlers()
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).BindHandlers()");
+            if (m_Hierarchy == null || !m_Hierarchy.IsCreated)
+                return;
+
+            var handlers = m_Hierarchy.EnumerateNodeTypeHandlers();
+            foreach (var handler in handlers)
+                handler.Internal_BindView(this);
+        }
+
+        void UnbindHandlers()
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).UnbindHandlers()");
+            if (m_Hierarchy == null || !m_Hierarchy.IsCreated)
+                return;
+
+            var handlers = m_Hierarchy.EnumerateNodeTypeHandlers();
+            foreach (var handler in handlers)
+                handler.Internal_UnbindView(this);
+        }
+
         void OnClickEvent(ClickEvent evt)
         {
             m_ScheduledItem?.Pause();
@@ -1115,7 +1126,7 @@ namespace Unity.Hierarchy
             if (itemIndex == m_LastMouseUpSelectionIndex && evt.clickCount == 1
                                                          && itemName != null && itemName.worldBound.Contains(position))
             {
-                if (m_RenameDelayMs == 0.0)
+                if (m_RenameDelayMs == 0)
                 {
                     // Execute synchronously if there is no delay.
                     // Schedule will be asynchronous even with a 0ms delay.

@@ -23,6 +23,12 @@ namespace UnityEngine
             get;
         }
 
+        public extern TransformHandle transformHandle
+        {
+            [FreeFunction("GetTransformHandle", HasExplicitThis = true, ThrowsException = true)]
+            get;
+        }
+
         public extern GameObject gameObject
         {
             [FreeFunction("GetGameObject", HasExplicitThis = true)]

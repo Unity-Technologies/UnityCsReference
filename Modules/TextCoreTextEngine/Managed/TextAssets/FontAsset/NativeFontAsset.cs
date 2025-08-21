@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -32,7 +33,8 @@ namespace UnityEngine.TextCore.Text
 
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
-            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2);
+
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode);
         }
 
 
@@ -56,6 +58,11 @@ namespace UnityEngine.TextCore.Text
             UpdateFaceInfo(nativeFontAsset, faceInfo);
         }
 
+        internal void UpdateRenderMode()
+        {
+            UpdateRenderMode(nativeFontAsset, m_AtlasRenderMode);
+        }
+
         internal IntPtr[] GetFallbacks()
         {
             List<IntPtr> fallbackList = new List<IntPtr>();
@@ -75,7 +82,6 @@ namespace UnityEngine.TextCore.Text
 
                 if (HasRecursion(fallback))
                 {
-                    Debug.LogWarning($"Circular reference detected. Cannot add {fallback.name} to the fallbacks.");
                     continue;
                 }
 
@@ -191,8 +197,9 @@ namespace UnityEngine.TextCore.Text
         private static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
         private static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
 
-        private static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, int fontInstanceID, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks);
+        private static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, int fontInstanceID, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks, GlyphRenderMode renderMode);
         private static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
+        static extern void UpdateRenderMode(IntPtr ptr, GlyphRenderMode renderMode);
 
         [FreeFunction("FontAsset::Destroy")]
         private static extern void Destroy(IntPtr ptr);

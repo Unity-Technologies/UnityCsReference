@@ -41,6 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError += OnPackageOperationError;
+            m_UpmClient.onSpecialInstallStart += OnSpecialInstallStart;
+            m_UpmClient.onSpecialInstallFinalize += OnSpecialInstallFinalize;
 
             m_PackageCreator.onPackageCreated += OnPackageCreated;
         }
@@ -56,6 +58,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmClient.onPackagesProgressChange -= OnPackagesProgressChange;
             m_UpmClient.onPackageOperationError -= OnPackageOperationError;
+            m_UpmClient.onSpecialInstallStart -= OnSpecialInstallStart;
+            m_UpmClient.onSpecialInstallFinalize -= OnSpecialInstallFinalize;
 
             m_PackageCreator.onPackageCreated -= OnPackageCreated;
         }
@@ -91,15 +95,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var item in progressUpdates)
             {
                 var package = m_PackageDatabase.GetPackageByIdOrName(item.packageIdOrName) as Package;
-
-                // Special handling for installing a package that's not already in the database. This case is most likely to happen
-                // when a user adds a git or local package through the special add package UI.
-                if (package == null && item.progress == PackageProgress.Installing)
-                {
-                    HandleSpecialInstall(item.packageIdOrName, L10n.Tr("Installing a new package"));
-                    continue;
-                }
-
                 if (package == null || package.progress == item.progress)
                     continue;
 
@@ -122,6 +117,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             var placeholderPackage = CreatePackage(packageIdOrName, new PlaceholderVersionList(version));
             SetProgress(placeholderPackage, PackageProgress.Installing);
             m_PackageDatabase.UpdatePackages(new[] { placeholderPackage });
+        }
+
+        private void OnSpecialInstallStart(string packageIdOrName)
+        {
+            if (m_PackageDatabase.GetPackageByIdOrName(packageIdOrName) != null)
+                return;
+
+            // Special handling for installing a package that's not already in the database. This case is most likely to happen
+            // when a user adds a git or local package through the special add package UI.
+            HandleSpecialInstall(packageIdOrName, L10n.Tr("Installing a new package"));
+        }
+
+        private void OnSpecialInstallFinalize(string packageIdOrName, string finalPackageId)
+        {
+            m_PackageDatabase.FinalizePackageUniqueId(packageIdOrName, finalPackageId);
         }
 
         private void OnExtraPackageInfoFetched(PackageInfo packageInfo)

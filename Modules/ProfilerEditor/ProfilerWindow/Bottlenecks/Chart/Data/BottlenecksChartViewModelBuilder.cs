@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
 using UnityEngine;
 
 namespace Unity.Profiling.Editor.UI
@@ -38,26 +37,28 @@ namespace Unity.Profiling.Editor.UI
         public BottlenecksChartViewModel Build()
         {
             var dataSeriesCapacity = m_SettingsService.MaximumFrameCount;
-            var colors = new[]
-            {
-                new Color(0.929f, 0.337f, 0.337f), // #ED5656
-                new Color(0.929f, 0.906f, 0.337f), // #EDE756
-            };
-            var invalidColor = (EditorGUIUtility.isProSkin) ?
-                new Color(0.078f, 0.078f, 0.078f) :
-                new Color(0.247f, 0.247f, 0.247f);
-
             var model = new BottlenecksChartViewModel(
                 k_NumberOfDataSeries,
                 dataSeriesCapacity,
-                colors,
-                invalidColor,
                 m_TargetFrameDurationNs);
 
             // Update the model with the latest capture data.
             UpdateModel(ref model);
 
             return model;
+        }
+
+        public static BottlenecksChartViewModel BuildFromFile(string pathToFile)
+        {
+            var model = new BottlenecksChartViewModel(
+                k_NumberOfDataSeries,
+                0,
+                0);
+
+            if (model.UpdateFromFile(pathToFile))
+                return model;
+
+            return null;
         }
 
         // Update an existing BottlenecksChartViewModel

@@ -14,7 +14,7 @@ namespace UnityEditor.Build.Player
 {
     public static class TypeDbHelper
     {
-        [Obsolete("TryGet(path, out typeDb) is deprecated. Use TryGet(path, assemblyPath, out typeDb) instead.")]
+        [Obsolete("TryGet(path, out typeDb) is deprecated. Use TryGet(path, assemblyPath, out typeDb) instead.", true)]
         public static bool TryGet(string path, out TypeDB typeDb)
         {
             return TryGet(path, path, out typeDb);
@@ -76,7 +76,7 @@ namespace UnityEditor.Build.Player
         private static extern IntPtr Internal_Create();
 
         [NativeMethod(IsThreadSafe = true)]
-        internal extern void AddAssemblyInfo([Unmarshalled] AssemblyInfoManaged[] assemblyInfos, string assembliesPath);
+        internal extern void AddAssemblyInfo([UnityMarshalAs(NativeType.ScriptingObjectPtr)] AssemblyInfoManaged[] assemblyInfos, string assembliesPath);
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);

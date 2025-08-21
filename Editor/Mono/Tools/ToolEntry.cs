@@ -24,13 +24,18 @@ namespace UnityEditor.EditorTools
 
             // User defined global tools not associated with any context.
             CustomGlobal,
+            
+            // Grouped user defined global tools not associated with any context or component tools applicable to the current selection.
+            Grouped,
 
             // Component tools applicable to the current selection.
             Component
         }
 
         public Scope scope;
+        public Type group;
         public Type variantGroup;
+        public Type targetBehaviour;
         public int priority;
         public List<EditorTool> tools;
         public bool componentTool;
@@ -38,7 +43,9 @@ namespace UnityEditor.EditorTools
         public ToolEntry(EditorTypeAssociation meta, Scope scope)
         {
             this.scope = scope;
+            group = meta.group;
             variantGroup = meta.variantGroup;
+            targetBehaviour = meta.targetBehaviour;
             priority = meta.priority;
             componentTool = meta.targetBehaviour != null && meta.targetBehaviour != typeof(NullTargetKey);
             tools = new List<EditorTool>();

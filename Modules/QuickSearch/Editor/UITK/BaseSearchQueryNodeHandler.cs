@@ -150,7 +150,7 @@ namespace UnityEditor.Search
             return query;
         }
 
-        static IEnumerable<ISearchQuery> GetValidQueries(IEnumerable<ISearchQuery> queries, IEnumerable<SearchProvider> providers)
+        public static IEnumerable<ISearchQuery> GetValidQueries(IEnumerable<ISearchQuery> queries, IEnumerable<SearchProvider> providers)
         {
             var unallowedFilterIds = GetUnallowedFilterIds(providers);
             foreach (var q in queries)

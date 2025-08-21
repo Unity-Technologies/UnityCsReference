@@ -71,6 +71,7 @@ namespace UnityEngine
         extern public void RecalculateBounds();
 
         [FreeFunction("GetLODs_Binding", HasExplicitThis = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public LOD[] GetLODs();
 
         [Obsolete("Use SetLODs instead.")]
@@ -78,7 +79,7 @@ namespace UnityEngine
 
         // Set the LODs for the LOD group. This will remove any existing LODs configured on the LODGroup
         [FreeFunction("SetLODs_Binding", HasExplicitThis = true)]
-        extern public void SetLODs([Unmarshalled] LOD[] lods);
+        extern public void SetLODs([UnityMarshalAs(NativeType.ScriptingObjectPtr)] LOD[] lods);
 
         // Force a LOD level on this LOD group
         //

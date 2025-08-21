@@ -246,7 +246,7 @@ namespace UnityEditor
         // Starts a synchronous bake job.
         [FreeFunction]
         internal static extern bool BakeImpl();
-                
+
         public static bool BakeAsync()
         {
             RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
@@ -258,7 +258,7 @@ namespace UnityEditor
             RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
             return BakeImpl();
         }
-        
+
         // Cancels the currently running asynchronous bake job.
         [FreeFunction("CancelLightmapping")]
         public static extern void Cancel();
@@ -641,11 +641,11 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInputSystemHash(int instanceID, out Hash128 inputSystemHash);
+        extern static internal bool GetInputSystemHash(EntityId entityId, out Hash128 inputSystemHash);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetLightmapIndex(int instanceID, out int lightmapIndex);
+        extern static internal bool GetLightmapIndex(EntityId entityId, out int lightmapIndex);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
@@ -662,7 +662,7 @@ namespace UnityEditor
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/ExtractInstances.h")]
         extern static internal bool IsRendererValid([NotNull] Renderer renderer);
-        
+
         public delegate void AdditionalBakeDelegate(ref float progress, ref bool done);
 
         [RequiredByNativeCode]
@@ -670,10 +670,10 @@ namespace UnityEditor
 
         [RequiredByNativeCode]
         public static AdditionalBakeDelegate GetAdditionalBakeDelegate() { return s_AdditionalBakeDelegate; }
-     
+
         [RequiredByNativeCode]
         public static void ResetAdditionalBakeDelegate() { s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate; }
-     
+
         [RequiredByNativeCode]
         internal static void AdditionalBake(ref float progress, ref bool done)
         {
@@ -755,99 +755,40 @@ namespace UnityEditor.Experimental
         [NativeName("Bake")]
         static extern bool BakeScene(Scene targetScene);
 
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
-        public static event Action additionalBakedProbesCompleted;
-
-        [RequiredByNativeCode]
-        internal static void Internal_CallAdditionalBakedProbesCompleted()
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead. This API is removed and will throw if used.", true)]
+        public static event Action additionalBakedProbesCompleted
         {
-            if (additionalBakedProbesCompleted != null)
-                additionalBakedProbesCompleted();
+            add => throw new NotSupportedException("Lightmapping.additionalBakedProbesCompleted is obsolete. Please use UnityEngine.LightTransport.IProbeIntegrator instead.");
+            remove => throw new NotSupportedException("Lightmapping.additionalBakedProbesCompleted is obsolete. Please use UnityEngine.LightTransport.IProbeIntegrator instead.");
         }
 
-        [FreeFunction]
-        internal unsafe static extern bool GetAdditionalBakedProbes(int id, void* outBakedProbeSH, void* outBakedProbeValidity, void* outBakedProbeOctahedralDepth, int outBakedProbeCount);
-
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", true)]
         public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity)
         {
-            const int octahedralDepthMapTexelCount = 64; // 8*8
-            var outBakedProbeOctahedralDepth = new NativeArray<float>(outBakedProbeSH.Length * octahedralDepthMapTexelCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            bool success = GetAdditionalBakedProbes(id, outBakedProbeSH, outBakedProbeValidity, outBakedProbeOctahedralDepth);
-            outBakedProbeOctahedralDepth.Dispose();
-            return success;
+            return false;
         }
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", true)]
         public unsafe static bool GetAdditionalBakedProbes(int id, Span<SphericalHarmonicsL2> outBakedProbeSH, Span<float> outBakedProbeValidity, Span<float> outBakedProbeOctahedralDepth)
         {
-            const int octahedralDepthMapTexelCount = 64; // 8*8
-
-            int numEntries = outBakedProbeSH.Length;
-
-            if (outBakedProbeOctahedralDepth.Length != numEntries * octahedralDepthMapTexelCount)
-            {
-                Debug.LogError("Octahedral array must provide " + numEntries * octahedralDepthMapTexelCount + " floats.");
-                return false;
-            }
-
-            if (outBakedProbeValidity.Length != numEntries)
-            {
-                Debug.LogError("All output arrays must have equal size.");
-                return false;
-            }
-            fixed (void* shPtr = outBakedProbeSH)
-            fixed (void* validityPtr = outBakedProbeValidity)
-            fixed (void* octahedralDepthPtr = outBakedProbeOctahedralDepth)
-            {
-                return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
-            }
+            return false;
         }
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", true)]
         public unsafe static bool GetAdditionalBakedProbes(int id, NativeArray<SphericalHarmonicsL2> outBakedProbeSH, NativeArray<float> outBakedProbeValidity, NativeArray<float> outBakedProbeOctahedralDepth)
         {
-            if (outBakedProbeSH == null || !outBakedProbeSH.IsCreated ||
-                outBakedProbeValidity == null || !outBakedProbeValidity.IsCreated ||
-                outBakedProbeOctahedralDepth == null || !outBakedProbeOctahedralDepth.IsCreated)
-            {
-                Debug.LogError("Output arrays need to be properly initialized.");
-                return false;
-            }
-
-            const int octahedralDepthMapTexelCount = 64; // 8*8
-
-            int numEntries = outBakedProbeSH.Length;
-
-            if (outBakedProbeOctahedralDepth.Length != numEntries * octahedralDepthMapTexelCount)
-            {
-                Debug.LogError("Octahedral array must provide " + numEntries * octahedralDepthMapTexelCount + " floats.");
-                return false;
-            }
-
-            if (outBakedProbeValidity.Length != numEntries)
-            {
-                Debug.LogError("All output arrays must have equal size.");
-                return false;
-            }
-
-            void* shPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeSH);
-            void* validityPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeValidity);
-            void* octahedralDepthPtr = NativeArrayUnsafeUtility.GetUnsafePtr(outBakedProbeOctahedralDepth);
-
-            return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
+            return false;
         }
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", true)]
         public static void SetAdditionalBakedProbes(int id, Vector3[] positions)
         {
-            SetAdditionalBakedProbes(id, positions.AsSpan(), true);
         }
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", true)]
         public static void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions)
         {
-            SetAdditionalBakedProbes(id, positions, true);
         }
-        [FreeFunction]
-        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", false)]
-        public static extern void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions, bool dering);
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator instead.", true)]
+        public static void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions, bool dering)
+        {
+        }
 
         [FreeFunction]
         public static extern void SetLightDirty(Light light);

@@ -131,6 +131,9 @@ namespace UnityEngine.Profiling
 
             AddFramesFromFile_Internal(file, true);
         }
+        
+        [NativeMethod(Name = "ProfilerBindings::SetScreenshotCaptureFrameInterval", IsFreeFunction = true)]
+        public extern static void SetScreenshotCaptureFrameInterval(int frames);
 
         [NativeHeader("Modules/ProfilerEditor/Public/ProfilerSession.h")]
         [NativeConditional("ENABLE_PROFILER && UNITY_EDITOR")]

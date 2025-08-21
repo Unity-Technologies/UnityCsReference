@@ -11,8 +11,9 @@ namespace UnityEditor.Overlays
     {
         //Default overlays
         Tools = 0,
-        ToolSettings = 1,
-        GridAndSnap = 2,
+        ToolContexts = 1,
+        ToolSettings = 2,
+        GridAndSnap = 3,
         DrawModes = 5,
         ViewOptions = 6,
         Search = 11,
@@ -25,12 +26,14 @@ namespace UnityEditor.Overlays
         LightingVisualizationColor = 33,
         ClothConstraints = 41,
         ClothCollisions = 42,
-        Default = 100
+        Default = -100000
     }
 
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class OverlayAttribute : Attribute
     {
+        internal const string unityGroup = "--builtin-unity-group";
+
         Type m_EditorWindowType;
         string m_Id;
         string m_UssName;
@@ -47,6 +50,7 @@ namespace UnityEditor.Overlays
         float m_MaxWidth;
         float m_MaxHeight;
         int m_Priority = (int)OverlayPriority.Default;
+        string m_Group;
 
         public Type editorWindowType
         {
@@ -136,6 +140,12 @@ namespace UnityEditor.Overlays
         {
             get => m_MaxHeight;
             set => m_MaxHeight = value;
+        }
+
+        public string group
+        {
+            get => m_Group;
+            set => m_Group = value;
         }
 
         internal Vector2 defaultSize => new Vector2(defaultWidth, defaultHeight);

@@ -223,6 +223,9 @@ namespace UnityEngine.UIElements.UIR
                             location.y += uvs.y;
                             current.location = location;
                             current.atlas = atlasId;
+
+                            // Prevent circular dependency
+                            current.next = null;
                         }
 
                         // Write into the previously allocated gradient settings now that we are sure to use it.
@@ -244,10 +247,13 @@ namespace UnityEngine.UIElements.UIR
                             current.origIndex = i;
                             current.destIndex = (int)alloc.start + i;
                             current.atlas = TextureId.invalid;
+                            current.next = null;
                         }
 
                         m_GradientSettingsAtlas.Write(alloc, vi.settings, null);
                     }
+
+                    renderInfo.gradientSettingsAlloc = alloc;
                 }
                 else
                 {
@@ -268,10 +274,14 @@ namespace UnityEngine.UIElements.UIR
         {
             s_MarkerUnregister.Begin();
 
-            if (renderInfo.gradientSettingsAlloc.size > 0)
-                m_GradientSettingsAtlas.Remove(renderInfo.gradientSettingsAlloc);
-
             GradientRemap remap = renderInfo.firstGradientRemap;
+
+            if (renderInfo.gradientSettingsAlloc.size > 0)
+            {
+                m_GradientSettingsAtlas.Remove(renderInfo.gradientSettingsAlloc);
+                m_Atlas.ReturnAtlas(null, vi.atlas, remap.atlas);
+            }
+
             while (remap != null)
             {
                 GradientRemap next = remap.next;

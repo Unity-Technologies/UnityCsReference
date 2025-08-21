@@ -19,7 +19,7 @@ namespace Unity.PlayMode.Editor
         internal Action<PlayModeConfiguration> OnConfigSelected;
         readonly LabelWithIcon m_NewItemTextField;
 
-        private const string k_Stylesheet = "PlayMode/UI/PlayModeListView.uss";
+        private const string k_Stylesheet = "PlayMode/UI/Framework.uss";
 
         internal PlayModeConfiguration ConfigurationToEdit => m_ListView.selectedItem as PlayModeConfiguration;
 
@@ -84,7 +84,7 @@ namespace Unity.PlayMode.Editor
             {
                 var element = new LabelWithIcon("", "", "_Popup");
                 element.AddManipulator(InstanceListItemContextMenu(element));
-                element.AddToClassList("playmode-list-item");
+                element.AddToClassList("unity-scenarios-playmode-list-view__item--scenario-window");
                 element.OnFinishEdit += s =>
                 {
                     var path = AssetDatabase.GetAssetPath(element.userData as PlayModeConfiguration);

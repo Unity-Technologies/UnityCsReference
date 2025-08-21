@@ -234,7 +234,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void RemoveImportedAssets(IPackage package)
         {
-            if (package?.versions.primary?.importedAssets?.Any() != true)
+            if (package?.versions.imported == null)
                 return;
 
             m_AssetStorePackageInstaller.Uninstall(package.product.id, true);

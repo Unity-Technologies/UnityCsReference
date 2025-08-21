@@ -6,7 +6,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -37,40 +36,6 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [FieldOffset(16)] public readonly byte* NameUtf8;
 
         public string Name => ProfilerUnsafeUtility.Utf8ToString(NameUtf8, NameUtf8Len);
-    }
-
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    [StructLayout(LayoutKind.Sequential, Size = 16)]
-    internal readonly struct UnsafeAllocLabel
-    {
-        internal readonly IntPtr pointer;
-        internal readonly Allocator allocator;
-
-        public UnsafeAllocLabel(string areaName, string objectName, Allocator allocator = Allocator.Persistent)
-        {
-            if (string.IsNullOrEmpty(areaName))
-                throw new ArgumentNullException(nameof(areaName));
-
-            if (string.IsNullOrEmpty(objectName))
-                throw new ArgumentNullException(nameof(objectName));
-
-            if (allocator != Allocator.Persistent && allocator != Allocator.Domain)
-                throw new ArgumentException("Only Allocator.Persistent and Allocator.Domain support allocating with a label");
-
-            this.allocator = allocator;
-            // Important: this returns a null pointer in non-development builds.
-            this.pointer = ProfilerUnsafeUtility.GetOrCreateMemLabel(areaName, objectName);
-        }
-
-        internal long RelatedMemorySize => ProfilerUnsafeUtility.GetMemLabelRelatedMemorySize(pointer);
-
-        public bool Created => allocator != Allocator.Invalid;
-
-        internal void CheckArgument()
-        {
-            if (!Created)
-                throw new ArgumentException("UnsafeAllocLabel has not been created. Use the constructor to create it.");
-        }
     }
 
     [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerUnsafeUtility.bindings.h")]
@@ -259,6 +224,13 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [ThreadSafe(ThrowsException = false)]
         [NativeConditional("ENABLE_MEM_PROFILER")]
         internal static extern IntPtr GetOrCreateMemLabel(string areaName, string objectName);
+
+        [ThreadSafe(ThrowsException = false)]
+        [NativeConditional("ENABLE_MEM_PROFILER")]
+        // This will only be referenced from Burst-generated code, in place of the version without the
+        // __Unmanaged suffix. So we need to make sure it will not get stripped.
+        [RequiredMember]
+        internal static extern unsafe IntPtr GetOrCreateMemLabel__Unmanaged(byte* areaName, int areaNameLen, byte* objectName, int objectNameLen);
 
         [ThreadSafe(ThrowsException = true)]
         [NativeConditional("ENABLE_MEM_PROFILER")]

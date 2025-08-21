@@ -17,15 +17,17 @@ namespace UnityEditor.EditorTools
     struct EditorTypeAssociation : ISerializationCallbackReceiver
     {
         [SerializeField]
-        string m_TargetContext, m_TargetBehaviour, m_EditorType, m_VariantGroup;
+        string m_TargetContext, m_TargetBehaviour, m_EditorType, m_VariantGroup, m_Group;
 
         // Context and behaviour types can be null, and should be treated as universally applicable.
         public Type targetContext { get; private set; }
         public Type targetBehaviour { get; private set; }
         public Type editor { get; private set; }
         public Type variantGroup { get; private set; }
+        public Type group { get; private set; }
         public int priority { get; private set; }
         public int variantPriority { get; private set; }
+        public bool supportsPersistentTargets  { get; private set; }
 
         public EditorTypeAssociation(Type editor, Type attributeType)
         {
@@ -34,9 +36,11 @@ namespace UnityEditor.EditorTools
             targetBehaviour = attrib?.targetType ?? typeof(NullTargetKey);
             targetContext = attrib?.targetContext;
             variantGroup = attrib?.variantGroup;
+            group = attrib?.group;
             priority = attrib?.toolPriority ?? ToolAttribute.defaultPriority;
             variantPriority = attrib?.variantPriority ?? ToolAttribute.defaultPriority;
-            m_TargetContext = m_TargetBehaviour = m_EditorType = m_VariantGroup = null;
+            supportsPersistentTargets = attrib?.allowPersistentTargets ?? false;
+            m_TargetContext = m_TargetBehaviour = m_EditorType = m_VariantGroup = m_Group = null;
         }
 
         public void OnBeforeSerialize()
@@ -45,6 +49,7 @@ namespace UnityEditor.EditorTools
             m_TargetBehaviour = targetBehaviour?.AssemblyQualifiedName;
             m_EditorType = editor?.AssemblyQualifiedName;
             m_VariantGroup = variantGroup?.AssemblyQualifiedName;
+            m_Group = group?.AssemblyQualifiedName;
         }
 
         public void OnAfterDeserialize()
@@ -57,6 +62,8 @@ namespace UnityEditor.EditorTools
                 editor = Type.GetType(m_EditorType);
             if (!string.IsNullOrEmpty(m_VariantGroup))
                 variantGroup = Type.GetType(m_VariantGroup);
+            if (!string.IsNullOrEmpty(m_Group)) 
+                group = Type.GetType(m_Group);
         }
     }
 
@@ -166,7 +173,6 @@ namespace UnityEditor.EditorTools
     // target types are treated as "global" editors.
     class EditorToolCache
     {
-
         Type m_AttributeType;
         // Cache of the available tools as defined by EditorToolAttribute
         EditorTypeAssociation[] s_AvailableEditorTypeAssociations = null;
@@ -183,7 +189,7 @@ namespace UnityEditor.EditorTools
 
         public int Count => availableEditorTypeAssociations.Length;
 
-        EditorTypeAssociation[] availableEditorTypeAssociations
+        internal EditorTypeAssociation[] availableEditorTypeAssociations
         {
             get
             {
@@ -254,9 +260,8 @@ namespace UnityEditor.EditorTools
                 var editor = trackerEditors[i];
                 var target = editor != null ? editor.target : null;
 
-                if (target == null || EditorUtility.IsPersistent(target))
+                if (target == null)
                     return;
-
                 var eligible = GetEditorsForTargetType(editor.target.GetType());
                 var activeContextType = ctx == null ? typeof(GameObjectToolContext) : ctx.GetType();
 
@@ -264,7 +269,11 @@ namespace UnityEditor.EditorTools
                 {
                     if (association.targetContext != null && association.targetContext != activeContextType)
                         continue;
-
+                    
+                    // For now, support persistent objects only if they're ScriptableObjects and persistent target support was opted-in.
+                    if (EditorUtility.IsPersistent(target) && !(typeof(ScriptableObject).IsInstanceOfType(target) && association.supportsPersistentTargets))
+                        continue;
+                        
                     // Shared trackers should create one tool per-type, regardless of how many targets are present.
                     // The exception is locked inspectors, which can create a distinct tool instance for each target
                     // not already represented. That means that if the shared tracker and locked inspector are inspecting

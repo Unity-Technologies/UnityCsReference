@@ -1874,7 +1874,7 @@ namespace UnityEditor
     internal class BuiltinResource
     {
         public string m_Name;
-        public int m_InstanceID;
+        public EntityId m_EntityId;
     }
 
     internal struct SliderLabels

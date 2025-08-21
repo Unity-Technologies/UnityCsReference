@@ -133,6 +133,9 @@ namespace UnityEditor
         public static extern bool GetEntryInternal(int row, [Out] LogEntry outputEntry);
 
         [FreeFunction]
+        internal static extern bool GetEntryTimestampInternal(int row, [In, Out] ref string outString);
+
+        [FreeFunction]
         internal static extern string GetCallstackFormattedSignatureInternal(MethodBase methodInfo);
 
         [FreeFunction(ThrowsException = true)]

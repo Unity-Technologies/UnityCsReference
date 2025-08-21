@@ -151,6 +151,14 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class InlineStyleMaterialDefinitionProperty : InlineStyleProperty<StyleMaterialDefinition, MaterialDefinition>
+        {
+            protected InlineStyleMaterialDefinitionProperty()
+            {
+                ConverterGroups.RegisterGlobal((ref MaterialDefinition v) => new StyleMaterialDefinition(v));
+                ConverterGroups.RegisterGlobal((ref StyleMaterialDefinition sv) => sv.value);
+            }
+        }
 
         void AddProperty<TStyleValue, TValue>(InlineStyleProperty<TStyleValue, TValue> property)
             where TStyleValue : IStyleValue<TValue>, new()

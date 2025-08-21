@@ -12,6 +12,13 @@ using System;
 
 namespace UnityEditor.Overlays
 {
+    enum MainToolbarEditMode
+    {
+        Active,
+        TempActivation,
+        Inactive
+    }
+
     sealed class MainToolbarOverlay : Overlay, ICreateHorizontalToolbar
     {
         internal event Action<VisualElement> afterContentRebuilt;
@@ -24,6 +31,9 @@ namespace UnityEditor.Overlays
 
         internal MethodInfo createElementMethod { get; set; }
 
+        OverlayDragger m_Dragger = null;
+        VisualElement m_MainToolbarEditModeDragger = null;
+
         public OverlayToolbar CreateHorizontalToolbarContent()
         {
             OverlayToolbar toolbar = new OverlayToolbar();
@@ -31,6 +41,7 @@ namespace UnityEditor.Overlays
             if (result is MainToolbarElement single)
             {
                 var ve = single.Rebuild();
+                SetElementTooltip(ve);
                 AddContextMenu(single, ve);
                 toolbar.Add(ve);
             }
@@ -40,6 +51,7 @@ namespace UnityEditor.Overlays
                     if (element is MainToolbarElement data)
                     {
                         var ve = data.Rebuild();
+                        SetElementTooltip(ve);
                         AddContextMenu(data, ve);
                         toolbar.Add(ve);
                     }
@@ -62,7 +74,7 @@ namespace UnityEditor.Overlays
 
         void AddContextMenu(MainToolbarElement element, VisualElement target)
         {
-            if (element.populateContextMenu != null)
+            if (element.populateContextMenu != null || element.populateContextMenuInternal != null)
             {
                 target.AddManipulator(new ContextualMenuManipulator((evt) => ContextClickHandler(evt, element)));
             }
@@ -86,8 +98,32 @@ namespace UnityEditor.Overlays
                 menu.AppendSeparator();
             }
 
-            menu.AppendAction(L10n.Tr("Hide"), (action) => displayed = false);
+            if (element != null && element.populateContextMenuInternal != null)
+            {
+                element.populateContextMenuInternal.Invoke(menu);
+                menu.AppendSeparator();
+            }
 
+            menu.AppendAction(L10n.Tr("Hide"), (action) => displayed = false);
+        }
+        
+        void SetElementTooltip(VisualElement element)
+        {
+            string key = "Ctrl";
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+                key = "Command";
+            
+            if (!string.IsNullOrEmpty(element.tooltip))
+                element.tooltip += L10n.Tr(string.Format(k_Tooltip, key));
+            else 
+                element.tooltip = L10n.Tr(displayName) + L10n.Tr(string.Format(k_Tooltip, key));
+        }
+
+        internal void SetEditMode(MainToolbarEditMode mode)
+        {
+            m_MainToolbarEditModeDragger.style.display = mode != MainToolbarEditMode.Inactive
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
         }
 
         internal override void PopulateRoot(VisualElement root)
@@ -101,8 +137,22 @@ namespace UnityEditor.Overlays
             root.usageHints = UsageHints.DynamicTransform;
             root.AddToClassList(ussClassName);
 
-            var dragger = new OverlayDragger(this);
-            root.AddManipulator(dragger);
+            m_MainToolbarEditModeDragger = new VisualElement() { name = "MainToolbarEditModeDragger" };
+            m_MainToolbarEditModeDragger.AddManipulator(new ContextualMenuManipulator((evt) => ContextClickHandler(evt, null)));
+            m_MainToolbarEditModeDragger.tooltip = L10n.Tr(displayName);
+            rootVisualElement.Add(m_MainToolbarEditModeDragger);
+            m_Dragger = new OverlayDragger(this);
+            // Add menu modifier to the dragger filter
+            if (Application.platform == RuntimePlatform.OSXEditor ||
+                Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                m_Dragger.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+            }
+            else
+            {
+                m_Dragger.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+            }
+            m_MainToolbarEditModeDragger.AddManipulator(m_Dragger);
 
             var dockArea = new VisualElement() { name = "OverlayDockArea" };
             dockArea.pickingMode = PickingMode.Ignore;
@@ -111,14 +161,9 @@ namespace UnityEditor.Overlays
 
             dockArea.Add(m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
             dockArea.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
-
-            string key = "Ctrl";
-            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
-                key = "Command";
-
-            root.tooltip = L10n.Tr(displayName) + L10n.Tr(string.Format(k_Tooltip, key));
-
+            
             CreateResizeTarget();
+            SetEditMode(MainToolbarEditMode.Inactive);
         }
     }
 }

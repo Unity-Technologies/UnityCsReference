@@ -220,7 +220,7 @@ namespace UnityEngine.UIElements
         }
 
         // Set this callback to provide a specific implementation of the menu.
-        internal Func<IGenericMenu> createMenuCallback;
+        internal Func<AbstractGenericMenu> createMenuCallback;
 
         /// <summary>
         /// Return the text value of the currently selected enum.
@@ -425,7 +425,7 @@ namespace UnityEngine.UIElements
                 menu.AddItem(m_EnumData.displayNames[i], isSelected, contentView => ChangeValueFromMenu(contentView), m_EnumData.values[i]);
             }
 
-            menu.DropDown(visualInput.worldBound, this, true);
+            menu.DropDown(visualInput.worldBound, this, DropdownMenuSizeMode.Fixed);
         }
 
         private void ChangeValueFromMenu(object menuItem)

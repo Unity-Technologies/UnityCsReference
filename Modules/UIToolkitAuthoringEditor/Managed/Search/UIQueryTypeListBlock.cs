@@ -26,6 +26,11 @@ internal sealed class UIQueryTypeListBlock : QueryListBlock
         // [TODO] MP: Force sync. Can be removed once we switch to the generate attribute descriptions.
         UxmlSerializedDataRegistry.GetDescription("UnityEngine.UIElements.VisualElement");
 
+        // The code below loads icons from the editor default resources, so make sure not to load them
+        // if we are actively building editor resources.
+        if (EditorApplication.IsBuildingEditorResources())
+            return;
+
         // [TODO] MP: Populate a list of runtime-compatible and editor-only types separately.
         foreach (var kvp in UxmlSerializedDataRegistry.SerializedDataTypes)
         {

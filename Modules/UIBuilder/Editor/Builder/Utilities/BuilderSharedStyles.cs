@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System;
 using UnityEditor;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -77,7 +78,6 @@ namespace Unity.UI.Builder
             var complexSelector = GetSelectorProperty(element);
             if (!complexSelector.TrySetSelectorsFromString(newString, out error))
                 return false;
-            styleSheet.SetTemporaryContentHash();
             return true;
 
         }
@@ -160,7 +160,8 @@ namespace Unity.UI.Builder
                 styleSheetElement.styleSheets.Add(styleSheet);
                 selectorContainerElement?.Add(styleSheetElement);
 
-                foreach (var complexSelector in styleSheet.complexSelectors)
+                foreach(var rule in styleSheet.rules)
+                foreach (var complexSelector in rule.complexSelectors)
                 {
                     if (BuilderStyleSheetExporter.options.IsSelectorIgnored(complexSelector))
                         continue;
@@ -175,18 +176,7 @@ namespace Unity.UI.Builder
 
         internal static StyleComplexSelector CreateNewSelector(VisualElement selectorContainerElement, StyleSheet styleSheet, string selectorStr)
         {
-            if (!SelectorUtility.TryCreateSelector(selectorStr, out var complexSelector, out var error))
-            {
-                Builder.ShowWarning(error);
-                return null;
-            }
-
-            return CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
-        }
-
-        internal static StyleComplexSelector CreateNewSelector(VisualElement selectorContainerElement, StyleSheet styleSheet, StyleComplexSelector selector)
-        {
-            var complexSelector = styleSheet.AddSelector(selector);
+            var complexSelector =  StyleSheetExtensions.AddSelector(styleSheet, selectorStr);
 
             VisualElement styleSheetElement = null;
             foreach (var child in selectorContainerElement.Children())
@@ -217,6 +207,9 @@ namespace Unity.UI.Builder
                 Undo.RegisterCompleteObjectUndo(
                     styleSheet, BuilderConstants.MoveUSSSelectorUndoMessage);
 
+            using var seenRulesHandle = HashSetPool<StyleRule>.Get(out var seenRules);
+            using var rulesHandle = ListPool<StyleRule>.Get(out var rules);
+
             var complexSelectorsList = new List<StyleComplexSelector>();
 
             foreach (var childElement in styleSheetElement.Children())
@@ -224,7 +217,30 @@ namespace Unity.UI.Builder
                 complexSelectorsList.Add(childElement.GetStyleComplexSelector());
             }
 
-            styleSheet.complexSelectors = complexSelectorsList.ToArray();
+            // It is possible that style rules have multiple selectors. If that is the case, after we have reordered
+            // them, break them into their own rule. While this is not ideal, the Builder will break them apart
+            // at export time anyways and this avoids having a style rule with separated selectors.
+            for (var i = 0; i < complexSelectorsList.Count; ++i)
+            {
+                var selector = complexSelectorsList[i];
+                // Rule was already seen, split into two rules.
+                if (!seenRules.Add(selector.rule))
+                {
+                    var previousRule = selector.rule;
+                    var rule = styleSheet.AddRule(BuilderStyleSheetExporter.GetSelectorString(selector));
+                    rule.AddSelector(BuilderStyleSheetExporter.GetSelectorString(selector));
+                    selector.rule.RemoveSelector(selector);
+                    StyleSheetExtensions.SwallowStyleRule(styleSheet, rule, styleSheet, previousRule);
+                    rules.Add(rule);
+                }
+                else
+                {
+                    rules.Add(selector.rule);
+                }
+            }
+
+            styleSheet.SetRules(rules.ToArray());
+            styleSheet.RequestRebuild();
         }
 
         public static void MoveSelectorBetweenStyleSheets(

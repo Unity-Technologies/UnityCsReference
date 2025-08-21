@@ -179,9 +179,9 @@ namespace UnityEditor.Search
 
         internal static void ContentRefreshed(string[] updated, string[] removed, string[] moved)
         {
-            var hasUpdated = updated.Any(p => p.EndsWith(".asset"));
-            var hasMoved = moved.Any(p => p.EndsWith(".asset"));
-            var hasRemoved = removed.Any(p => p.EndsWith(".asset"));
+            var hasUpdated = updated != null && updated.Any(p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
+            var hasMoved = moved != null && moved.Any(p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
+            var hasRemoved = removed != null && removed.Any(p => !string.IsNullOrEmpty(p) && p.EndsWith(".asset"));
 
             if (hasUpdated || hasMoved || hasRemoved)
             {

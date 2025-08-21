@@ -56,7 +56,7 @@ namespace UnityEditor.UIElements
 
         public static void DoDisplayEditorMenu(this DropdownMenu menu, Rect rect, VisualElement ve)
         {
-            PrepareMenu(menu, null).DropDown(rect, ve);
+            PrepareMenu(menu, null).DropDown(rect, ve, DropdownMenuSizeMode.Auto);
         }
 
         // This is for backward compatibility with code triggering from imgui, but it wont allow spanning the menu from code (menu item, across window)
@@ -85,7 +85,7 @@ namespace UnityEditor.UIElements
                 position = triggerEvent.elementTarget.layout.center;
             }
 
-            genericMenu.DropDown(new Rect(position, Vector2.zero), triggerEvent.elementTarget);
+            genericMenu.DropDown(new Rect(position, Vector2.zero), triggerEvent.elementTarget, DropdownMenuSizeMode.Auto);
         }
 
         public static Rect GUIToScreenRect(VisualElement targetElement, Rect position)
@@ -111,7 +111,7 @@ namespace UnityEditor.UIElements
         }
     }
 
-    internal class GenericOSMenu : IGenericMenu
+    internal class GenericOSMenu : AbstractGenericMenu
     {
         GenericMenu m_GenericMenu;
 
@@ -126,7 +126,7 @@ namespace UnityEditor.UIElements
             m_GenericMenu = genericMenu;
         }
 
-        public void AddItem(string itemName, bool isChecked, System.Action action)
+        public override void AddItem(string itemName, bool isChecked, System.Action action)
         {
             if (action == null)
                 m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, null);
@@ -134,7 +134,7 @@ namespace UnityEditor.UIElements
                 m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, action.Invoke);
         }
 
-        public void AddItem(string itemName, bool isChecked, System.Action<object> action, object data)
+        public override void AddItem(string itemName, bool isChecked, System.Action<object> action, object data)
         {
             if (action == null)
                 m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, null, data);
@@ -142,19 +142,19 @@ namespace UnityEditor.UIElements
                 m_GenericMenu.AddItem(new GUIContent(itemName), isChecked, action.Invoke, data);
         }
 
-        public void AddDisabledItem(string itemName, bool isChecked)
+        public override void AddDisabledItem(string itemName, bool isChecked)
         {
             m_GenericMenu.AddDisabledItem(new GUIContent(itemName), isChecked);
         }
 
-        public void AddSeparator(string path)
+        public override void AddSeparator(string path)
         {
             m_GenericMenu.AddSeparator(path);
         }
 
-        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false)
+        public override void DropDown(Rect position, VisualElement targetElement, DropdownMenuSizeMode dropdownMenuSizeMode)
         {
-            if(targetElement is null || targetElement.panel == null)
+            if (targetElement is null || targetElement.panel == null)
             {
                 Debug.LogError("Cannot show dropdown menu with a target visualElement not in a panel");
                 return;

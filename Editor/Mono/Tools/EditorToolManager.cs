@@ -535,10 +535,27 @@ namespace UnityEditor.EditorTools
             return StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(cmp.gameObject, Camera.current);
         }
 
+        static void AddDefaultHandleToAvoidExitingToolContext()
+        {
+            int id = GUIUtility.GetControlID(FocusType.Passive);
+            Event evt = Event.current;
+            switch (evt.GetTypeForControl(id))
+            {
+                case EventType.Layout:
+                case EventType.MouseMove:
+                    if (activeToolContext.GetType() != typeof(GameObjectToolContext))
+                        HandleUtility.AddDefaultControl(id);
+                    break;
+            }
+        }
+
         internal static void OnToolGUI(EditorWindow window)
         {
             if (!IsGizmoCulledBySceneCullingMasksOrFocusedScene(activeToolContext.target))
+            {
+                AddDefaultHandleToAvoidExitingToolContext();
                 activeToolContext.OnToolGUI(window);
+            }
 
             if (instance.m_ActiveOverride != null)
             {
@@ -554,7 +571,7 @@ namespace UnityEditor.EditorTools
             if (IsGizmoCulledBySceneCullingMasksOrFocusedScene(current.target))
                 return;
 
-            using (new EditorGUI.DisabledScope(!current.IsAvailable()))
+            using (new EditorGUI.DisabledScope(!current.IsAvailable() || current.isHidden))
             {
                 current.OnToolGUI(window);
             }
@@ -582,6 +599,8 @@ namespace UnityEditor.EditorTools
             var restoredContext = m_ComponentContexts.Find(x => x.editorType == activeContextType);
             if (restoredContext != null)
                 activeToolContext = restoredContext.GetEditor<EditorToolContext>();
+
+            EditorToolUtility.sortedContextsDataCache.SetDirty();
         }
 
         void RebuildAvailableTools()
@@ -605,7 +624,8 @@ namespace UnityEditor.EditorTools
                     RestorePreviousPersistentTool();
                 }
             }
-
+            
+            EditorToolsSettingsData.instance.RefreshToolsData();
             availableToolsChanged?.Invoke();
         }
 
@@ -738,7 +758,7 @@ namespace UnityEditor.EditorTools
                 if (!searchLockedInspectors && customEditorTool.lockedInspector)
                     continue;
 
-                if (predicate(customEditorTool) && customEditorTool.editor is EditorTool tool && tool.IsAvailable())
+                if (predicate(customEditorTool) && customEditorTool.editor is EditorTool tool && (tool.IsAvailable() && !tool.isHidden))
                     list.Add(tool);
             }
         }
@@ -819,21 +839,23 @@ namespace UnityEditor.EditorTools
 
             // 3. custom global tools
             foreach(var global in EditorToolUtility.GetCustomEditorToolsForType(null))
-                if(global.targetContext == null || global.targetContext == ToolManager.activeContextType)
-                    AddToolEntry(global.editor, ToolEntry.Scope.CustomGlobal);
-
+                if (global.targetContext == null || global.targetContext == ToolManager.activeContextType)
+                    AddToolEntry(global.editor, global.group == null ? ToolEntry.Scope.CustomGlobal : ToolEntry.Scope.Grouped);
+            
             // 4. component tools
             foreach (var tool in instance.componentTools)
                 if ((tool.typeAssociation.targetContext == null ||
                      tool.typeAssociation.targetContext == context.GetType())
                     && !tool.lockedInspector
                     && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
-                    AddToolEntry(tool.editorType, ToolEntry.Scope.Component);
+                    AddToolEntry(tool.editorType, tool.typeAssociation.group == null ? ToolEntry.Scope.Component : ToolEntry.Scope.Grouped);
         }
 
         internal static List<ToolEntry> OrderAvailableTools(List<ToolEntry> tools)
         {
-            return tools.OrderBy(x => x.scope)
+            return tools.OrderBy(x => x.scope) // Group by scope (Built-in, additional, global, grouped, component)
+                .ThenBy(x => (x.group == null ? string.Empty : x.group.Name)) // Ensure tools of same group stay adjacent
+                .ThenBy(x => (x.targetBehaviour == null ? string.Empty : x.targetBehaviour.Name)) // Ensure tools targeting same components stay adjacent
                 .ThenBy(x => x.priority)
                 .ThenBy(x => x.GetHashCode())
                 .ToList();

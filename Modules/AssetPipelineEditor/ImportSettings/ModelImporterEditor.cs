@@ -16,16 +16,6 @@ namespace UnityEditor
     {
         static string s_LocalizedTitle = L10n.Tr("Model Import Settings");
 
-        static string s_C4DDeprecationWarning = L10n.Tr("Starting with the Unity 2019.3 release, direct import of Cinema4D files will require an external plugin. Keep an eye on our External Tools forum for updates.\n\nPlease note that FBX files exported from Cinema4D will still be supported.");
-
-        public override void OnInspectorGUI()
-        {
-            if (targets.Any(t => t != null && Path.GetExtension(((AssetImporter)t).assetPath).Equals(".c4d", StringComparison.OrdinalIgnoreCase)))
-                EditorGUILayout.HelpBox(s_C4DDeprecationWarning, MessageType.Warning);
-
-            base.OnInspectorGUI();
-        }
-
         // The modelimporterclipeditor is drawing its own preview for clips to be editable.
         protected override bool useAssetDrawPreview => !(activeTab is ModelImporterClipEditor);
 

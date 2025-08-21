@@ -133,8 +133,10 @@ namespace UnityEditor
         extern internal void RenameSubAssets(int peristentTypeId, string[] oldNames, string[] newNames);
 
         [FreeFunction("AssetImporterBindings::GetIdentifiers")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static SourceAssetIdentifier[] GetIdentifiers(AssetImporter self);
         [FreeFunction("AssetImporterBindings::GetExternalObjects")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static Object[] GetExternalObjects(AssetImporter self);
 
         public Dictionary<SourceAssetIdentifier, Object> GetExternalObjectMap()

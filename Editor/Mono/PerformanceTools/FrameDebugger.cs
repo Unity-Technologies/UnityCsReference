@@ -325,11 +325,13 @@ namespace UnityEditor
                 position.height - toolbarHeight - m_SearchRect.height - 5
             );
 
+            float verticalPadding = maximized ? 4f : 0f;
+
             Rect currentEventRect = new Rect(
                 m_TreeWidth,
                 toolbarHeight,
                 position.width - m_TreeWidth,
-                position.height - toolbarHeight
+                position.height - toolbarHeight - verticalPadding
             );
 
             Profiler.BeginSample("DrawTree");

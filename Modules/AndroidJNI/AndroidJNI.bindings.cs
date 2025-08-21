@@ -1288,31 +1288,31 @@ namespace UnityEngine
         public static extern Byte[] FromByteArray(IntPtr array);
         // Convert a Java array of <tt>byte</tt> to a managed array of System.SByte.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern SByte[] FromSByteArray(IntPtr array);
         // Convert a Java array of <tt>char</tt> to a managed array of System.Char.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Char[] FromCharArray(IntPtr array);
         // Convert a Java array of <tt>short</tt> to a managed array of System.Int16.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Int16[] FromShortArray(IntPtr array);
         // Convert a Java array of <tt>int</tt> to a managed array of System.Int32.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Int32[] FromIntArray(IntPtr array);
         // Convert a Java array of <tt>long</tt> to a managed array of System.Int64.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern Int64[] FromLongArray(IntPtr array);
         // Convert a Java array of <tt>float</tt> to a managed array of System.Single.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern float[] FromFloatArray(IntPtr array);
         // Convert a Java array of <tt>double</tt> to a managed array of System.Double.
         [ThreadSafe]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public static extern double[] FromDoubleArray(IntPtr array);
         // Convert a Java array of <tt>java.lang.Object</tt> to a managed array of System.IntPtr, representing Java objects.
         [ThreadSafe]

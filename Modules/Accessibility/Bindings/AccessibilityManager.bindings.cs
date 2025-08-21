@@ -180,16 +180,6 @@ namespace UnityEngine.Accessibility
         /// </summary>
         internal static extern void SendLayoutChangedNotification(int nodeId = AccessibilityNodeManager.k_InvalidNodeId);
 
-        /// <summary>
-        /// Retrieves the current accessibility language that assistive technologies use for the application.
-        /// </summary>
-        internal static extern SystemLanguage GetApplicationAccessibilityLanguage();
-
-        /// <summary>
-        /// Sets the accessibility language that assistive technologies use for the application.
-        /// </summary>
-        internal static extern void SetApplicationAccessibilityLanguage(SystemLanguage languageCode);
-
         [RequiredByNativeCode]
         [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
         internal static void Internal_Initialize()

@@ -181,10 +181,10 @@ namespace UnityEditor
             m_ShowCrossFadeWidthOptions.valueChanged.RemoveListener(Repaint);
         }
 
-        internal List<LODGroupGUI.LODInfo> GetLODInfoArray(Rect area)
+        internal List<LODGUI.LODInfo> GetLODInfoArray(Rect area)
         {
             int lodCount = m_LODSettings.arraySize;
-            return LODGroupGUI.CreateLODInfos(
+            return LODGUI.CreateLODInfos(
                 lodCount, area,
                 i => i == lodCount - 1 && (target as SpeedTreeImporter).hasBillboard ? "Billboard" : String.Format("LOD {0}", i),
                 i => m_LODSettings.GetArrayElementAtIndex(i).FindPropertyRelative("height").floatValue);
@@ -206,7 +206,7 @@ namespace UnityEditor
             for (int i = 0; i < m_LODColorTextures.Length; i++)
             {
                 m_LODColorTextures[i] = new Texture2D(1, 1);
-                m_LODColorTextures[i].SetPixel(0, 0, LODGroupGUI.kLODColors[i]);
+                m_LODColorTextures[i].SetPixel(0, 0, LODGUI.kLODColors[i]);
             }
         }
         void ResetFoldoutLists()
@@ -467,7 +467,7 @@ namespace UnityEditor
             // LOD slider + Customizations
             if (HasSameLODConfig())
             {
-                var area = GUILayoutUtility.GetRect(0, LODGroupGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
+                var area = GUILayoutUtility.GetRect(0, LODGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
                 var lods = GetLODInfoArray(area);
                 bool bDrawLODCustomizationGUI = m_SelectedLODRange != -1 && lods.Count > 0;
 
@@ -504,16 +504,16 @@ namespace UnityEditor
                     }
                     EditorGUILayout.EndHorizontal();
                 }
-                var area = GUILayoutUtility.GetRect(0, LODGroupGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
+                var area = GUILayoutUtility.GetRect(0, LODGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
                 if (Event.current.type == EventType.Repaint)
-                    LODGroupGUI.DrawMixedValueLODSlider(area);
+                    LODGUI.DrawMixedValueLODSlider(area);
             }
 
             EditorGUILayout.Space();
         }
 
         private readonly int m_LODSliderId = "LODSliderIDHash".GetHashCode();
-        private void DrawLODLevelSlider(Rect sliderPosition, List<LODGroupGUI.LODInfo> lods)
+        private void DrawLODLevelSlider(Rect sliderPosition, List<LODGUI.LODInfo> lods)
         {
             int sliderId = GUIUtility.GetControlID(m_LODSliderId, FocusType.Passive);
             Event evt = Event.current;
@@ -522,7 +522,7 @@ namespace UnityEditor
             {
                 case EventType.Repaint:
                 {
-                    LODGroupGUI.DrawLODSlider(sliderPosition, lods, m_SelectedLODRange);
+                    LODGUI.DrawLODSlider(sliderPosition, lods, m_SelectedLODRange);
                     break;
                 }
                 case EventType.MouseDown:
@@ -544,7 +544,7 @@ namespace UnityEditor
                         var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODLevel);
                         var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODLevel);
 
-                        var lodButtonOrder = new List<LODGroupGUI.LODInfo>();
+                        var lodButtonOrder = new List<LODGUI.LODInfo>();
                         lodButtonOrder.AddRange(lodsLeft);
                         lodButtonOrder.AddRange(lodsRight);
 
@@ -591,9 +591,9 @@ namespace UnityEditor
                     {
                         evt.Use();
 
-                        var cameraPercent = LODGroupGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+                        var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
                         // Bias by 0.1% so that there is no skipping when sliding
-                        LODGroupGUI.SetSelectedLODLevelPercentage(cameraPercent - 0.001f, m_SelectedLODSlider, lods);
+                        LODGUI.SetSelectedLODLevelPercentage(cameraPercent - 0.001f, m_SelectedLODSlider, lods);
                         m_LODSettings.GetArrayElementAtIndex(m_SelectedLODSlider).FindPropertyRelative("height").floatValue = lods[m_SelectedLODSlider].RawScreenPercent;
                     }
                     break;
@@ -601,7 +601,7 @@ namespace UnityEditor
             }
         }
 
-        private void DrawLODGroupFoldouts(List<LODGroupGUI.LODInfo> lods)
+        private void DrawLODGroupFoldouts(List<LODGUI.LODInfo> lods)
         {
             // check camera and bail if null
             Camera camera = null;
@@ -664,9 +664,9 @@ namespace UnityEditor
             triangleChangeLabel = wideInspector ? triangleChangeLabel : "";
             string submeshCountLabel = wideInspector ? $"- {submeshCounts[lodGroupIndex]} Sub Mesh(es)" : "";
 
-            return $"{totalTriCount} {LODGroupGUI.GUIStyles.m_TriangleCountLabel.text} {triangleChangeLabel} {submeshCountLabel}";
+            return $"{totalTriCount} {LODGUI.GUIStyles.m_TriangleCountLabel.text} {triangleChangeLabel} {submeshCountLabel}";
         }
-        private void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState, List<LODGroupGUI.LODInfo> lodInfoList)
+        private void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState, List<LODGUI.LODInfo> lodInfoList)
         {
             GameObject[] prefabs = assetTargets?.Cast<GameObject>().ToArray(); // In tests assetTargets can become null
             SpeedTreeImporter[] importerArray = importers.ToArray();
@@ -689,16 +689,16 @@ namespace UnityEditor
             // ------------------------------------------------------------------------------------------------------------------------------
 
             if (isDrawingSelectedLODGroup)
-                LODGroupGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, m_SelectedLODRange);
+                LODGUI.DrawRoundedBoxAroundLODDFoldout(lodGroupIndex, m_SelectedLODRange);
             else
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            foldoutState.value = LODGroupGUI.FoldoutHeaderGroupInternal(
+            foldoutState.value = LODGUI.FoldoutHeaderGroupInternal(
                 GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebarFlat)
                 , foldoutState.value
                 , LODFoldoutHeaderLabel
                 , m_LODColorTextures[lodGroupIndex]
-                , LODGroupGUI.kLODColors[lodGroupIndex] * 0.6f // 0.5f magic number is copied from LODGroupsGUI.cs
+                , LODGUI.kLODColors[lodGroupIndex] * 0.6f // 0.5f magic number is copied from LODGroupsGUI.cs
                 , LODFoldoutHeaderGroupAdditionalText
             );
 
@@ -713,7 +713,7 @@ namespace UnityEditor
                 EditorGUILayout.EndVertical();
         }
 
-        private void DrawLODSettingCustomizationGUI(List<LODGroupGUI.LODInfo> lods, int lodIndex)
+        private void DrawLODSettingCustomizationGUI(List<LODGUI.LODInfo> lods, int lodIndex)
         {
             bool isBillboard = (lodIndex == lods.Count - 1) && importers.First().hasBillboard;
             int windQuality = m_HighestWindQuality.intValue;

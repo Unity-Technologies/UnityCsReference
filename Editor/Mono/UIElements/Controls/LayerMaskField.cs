@@ -187,7 +187,7 @@ namespace UnityEditor.UIElements
             UpdateLayersInfo();
         }
 
-        internal override void AddMenuItems(IGenericMenu menu)
+        internal override void AddMenuItems(AbstractGenericMenu menu)
         {
             // We must update the choices and the values since we don't know if they changed...
             UpdateLayersInfo();

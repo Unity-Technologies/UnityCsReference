@@ -7,10 +7,10 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal class CustomDisplayDialogContent : ModelContent
+internal class CustomDisplayDialogContent : ModalContent
 {
-    public CustomDisplayDialogArgs args { get; }
-    public CustomDisplayDialogResult result { get; private set; } = CustomDisplayDialogResult.None;
+    public CustomDialogArgsBase args { get; }
+    public DialogResult result { get; private set; } = DialogResult.Cancel;
 
     private string m_ReadMoreUrl;
 
@@ -23,11 +23,11 @@ internal class CustomDisplayDialogContent : ModelContent
         m_ResourceLoader = resourceLoader;
     }
 
-    public CustomDisplayDialogContent(IApplicationProxy applicationProxy, IResourceLoader resourceLoader, CustomDisplayDialogArgs modalArgs)
+    public CustomDisplayDialogContent(IApplicationProxy applicationProxy, IResourceLoader resourceLoader, CustomDialogArgsBase dialogArgs)
     {
         ResolveDependencies(applicationProxy, resourceLoader);
 
-        args = modalArgs;
+        args = dialogArgs;
         windowTitle = args.windowTitle;
 
         Init();
@@ -37,9 +37,9 @@ internal class CustomDisplayDialogContent : ModelContent
     {
         var root = m_ResourceLoader.GetTemplate("CustomDisplayDialog.uxml");
         cache = new VisualElementCache(root);
-        Add(root);
         styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
         styleSheets.Add(m_ResourceLoader.customDisplayDialogStyleSheet);
+        Add(root);
 
         headerIcon.AddToClassList(args.headerIcon.ClassName());
         headerMainLabel.text = args.headerMainText;
@@ -49,10 +49,14 @@ internal class CustomDisplayDialogContent : ModelContent
         helpBoxLabel.text = args.headerInfoBoxText;
 
         var showInfoBox = !string.IsNullOrEmpty(args.headerInfoBoxText);
-        var showHeader = !string.IsNullOrEmpty(args.headerMainText) || !string.IsNullOrEmpty(args.headerSubText);
+        var showHeaderMainLabel = !string.IsNullOrEmpty(args.headerMainText);
+        var showHeaderSubLabel = !string.IsNullOrEmpty(args.headerSubText);
+        var showHeader = showHeaderMainLabel || showHeaderSubLabel;
         UIUtils.SetElementDisplay(helpBoxContainer, showInfoBox);
         UIUtils.SetElementDisplay(headerContainer, showHeader);
         UIUtils.SetElementDisplay(upperContainer, showHeader || showInfoBox);
+        UIUtils.SetElementDisplay(headerMainLabel, showHeaderMainLabel);
+        UIUtils.SetElementDisplay(headerSubLabel, showHeaderSubLabel);
 
         bodyLabel.text = args.bodyText;
         UIUtils.SetElementDisplay(bodyScroll, !string.IsNullOrEmpty(args.bodyText));
@@ -67,30 +71,34 @@ internal class CustomDisplayDialogContent : ModelContent
             readMoreButton.clicked += OnReadMoreClicked;
         }
 
-        okButton.clicked += OnOkClicked;
-        okButton.Focus();
+        foreach (var button in args.buttons)
+        {
+            var buttonElement = new Button { text = button.text };
+            buttonElement.clicked += () =>
+            {
+                result = button.result;
+                container?.Close();
+            };
+            buttonsContainer.Add(buttonElement);
+
+            if (button.result == DialogResult.DefaultAction)
+                buttonElement.Focus();
+        }
+
         RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
     }
 
-    public override void OnModalClosed()
-    {
-        if (result == CustomDisplayDialogResult.None)
-            result = CustomDisplayDialogResult.Negative;
-    }
+    public override void OnBeforeShowModal() { }
+
+    public override void OnModalClosed() {}
 
     private void OnFirstLayout(GeometryChangedEvent evt)
     {
         UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
 
-        var fixedSize = new Vector2(340f, lowerContainer.layout.height + upperContainer.layout.height);
+        var fixedSize = new Vector2(500f, lowerContainer.layout.height + upperContainer.layout.height);
         container.minSize = fixedSize;
         container.maxSize = fixedSize;
-    }
-
-    private void OnOkClicked()
-    {
-        result = CustomDisplayDialogResult.Affirmative;
-        container?.Close();
     }
 
     private void OnReadMoreClicked()
@@ -115,5 +123,5 @@ internal class CustomDisplayDialogContent : ModelContent
     private VisualElement lowerContainer => cache.Get<VisualElement>("lowerContainer");
     private Label bodyLabel => cache.Get<Label>("bodyLabel");
     private Button readMoreButton => cache.Get<Button>("readMoreButton");
-    private Button okButton => cache.Get<Button>("okButton");
+    private VisualElement buttonsContainer => cache.Get<VisualElement>("buttonsContainer");
 }

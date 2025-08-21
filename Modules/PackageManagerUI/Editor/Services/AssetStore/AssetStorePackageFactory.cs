@@ -85,7 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var packagesToRegenerate = new List<IPackage>();
             foreach (var package in m_PackageDatabase.allPackages.Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.LegacyFormat))))
             {
-                if (package.versions.Any(v => v.importedAssets?.Any() == true))
+                if (package.versions.imported != null)
                     packagesToRegenerate.Add(package);
                 else
                     packagesToRemove.Add(package);

@@ -58,6 +58,19 @@ namespace UnityEditor
             if (Camera.current)
             {
                 var handlePos = Vector3.zero;
+                switch (Tools.pivotMode)
+                {
+                    case PivotMode.Pivot:
+                        handlePos = points.GetPosition(selection[0]);
+                        break;
+                    case PivotMode.Center:
+                        handlePos = selection.Aggregate(handlePos, (current, index) => current + points.GetPosition(index)) / selection.Count;
+                        break;
+                    default: // PivotMode.Custom
+                        handlePos = Tools.GetHandlePosition();
+                        break;
+                }
+                
                 handlePos = Tools.pivotMode == PivotMode.Pivot ?
                     points.GetPosition(selection[0]) :
                     selection.Aggregate(handlePos, (current, index) => current + points.GetPosition(index)) / selection.Count;

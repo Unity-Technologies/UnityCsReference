@@ -117,7 +117,7 @@ namespace UnityEditorInternal
 
         public static void OnSelectionChange()
         {
-            IToolModeOwner owner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
+            IToolModeOwner owner = InternalEditorUtility.GetObjectFromEntityId(ownerID) as IToolModeOwner;
             if (owner != null && owner.ModeSurvivesSelectionChange((int)s_EditMode))
                 return;
             QuitEditMode();
@@ -264,7 +264,7 @@ namespace UnityEditorInternal
                 return;
             }
 
-            IToolModeOwner oldOwner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
+            IToolModeOwner oldOwner = InternalEditorUtility.GetObjectFromEntityId(ownerID) as IToolModeOwner;
 
             SetEditMode(mode);
 

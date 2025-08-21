@@ -91,7 +91,7 @@ namespace UnityEditor
                 {
                     if (resource.m_Name == defaultFieldName)
                     {
-                        gm.AddItem(new GUIContent(resource.m_Name), resource.m_InstanceID == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_InstanceID, serializedProperty });
+                        gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
                         resourceList = resourceList.Where(x => x != resource).ToArray();
                         foundDefaultAsset = true;
                         break;
@@ -116,7 +116,7 @@ namespace UnityEditor
             {
                 foreach (var resource in resourceList)
                 {
-                    gm.AddItem(new GUIContent(resource.m_Name), resource.m_InstanceID == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_InstanceID, serializedProperty });
+                    gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
                 }
             }
 

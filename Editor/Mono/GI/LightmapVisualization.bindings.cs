@@ -69,13 +69,13 @@ namespace UnityEditor
         public   extern static VisualisationGITexture GetRealtimeGITexture(Hash128 inputSystemHash, GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
-        public   extern static VisualisationGITexture GetBakedGITexture(int lightmapIndex, int instanceId, GITextureType textureType, bool useInteractiveLightBakingData);
+        public   extern static VisualisationGITexture GetBakedGITexture(int lightmapIndex, EntityId entityId, GITextureType textureType, bool useInteractiveLightBakingData);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static VisualisationGITexture GetSelectedObjectGITexture(GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
-        public   extern static Hash128 GetBakedGITextureHash(int lightmapIndex, int instanceId, GITextureType textureType, bool useInteractiveLightBakingData);
+        public   extern static Hash128 GetBakedGITextureHash(int lightmapIndex, EntityId entityId, GITextureType textureType, bool useInteractiveLightBakingData);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static Hash128 GetRealtimeGITextureHash(Hash128 inputSystemHash, GITextureType textureType);

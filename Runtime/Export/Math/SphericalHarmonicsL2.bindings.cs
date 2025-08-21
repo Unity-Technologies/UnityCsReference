@@ -6,6 +6,7 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine.Rendering
 {
@@ -25,18 +26,27 @@ namespace UnityEngine.Rendering
 
         private extern void SetZero();
 
-        public extern void AddAmbientLight(Color color);
+        [FreeFunction]
+        private extern static void Internal_AddAmbientLight(ref SphericalHarmonicsL2 sh, in Color color);
 
-        public void AddDirectionalLight(Vector3 direction, Color color, float intensity)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void AddAmbientLight(Color color) => Internal_AddAmbientLight(ref this, in color);
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void AddAmbientLight(in Color color) => Internal_AddAmbientLight(ref this, in color);
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void AddDirectionalLight(Vector3 direction, Color color, float intensity) => AddDirectionalLight(in direction, in color, intensity);
+
+        public void AddDirectionalLight(in Vector3 direction, in Color color, float intensity)
         {
             var colorAndIntensity = color * (2.0f * intensity);
-            AddDirectionalLightInternal(ref this, direction, colorAndIntensity);
+            AddDirectionalLightInternal(ref this, in direction, in colorAndIntensity);
         }
 
         [FreeFunction]
-        private extern static void AddDirectionalLightInternal(ref SphericalHarmonicsL2 sh, Vector3 direction, Color color);
+        private extern static void AddDirectionalLightInternal(ref SphericalHarmonicsL2 sh, in Vector3 direction, in Color color);
 
-        public void Evaluate(Vector3[] directions, Color[] results)
+        public readonly void Evaluate(Vector3[] directions, Color[] results)
         {
             if (directions == null)
                 throw new ArgumentNullException("directions");
@@ -50,15 +60,15 @@ namespace UnityEngine.Rendering
             if (directions.Length != results.Length)
                 throw new ArgumentException("Length of the directions array and the results array must match.");
 
-            EvaluateInternal(ref this, directions, results);
+            EvaluateInternal(in this, directions, results);
         }
 
         [FreeFunction]
-        private extern static void EvaluateInternal(ref SphericalHarmonicsL2 sh, Vector3[] directions, [Out] Color[] results);
+        private extern static void EvaluateInternal(in SphericalHarmonicsL2 sh, Vector3[] directions, [Out] Color[] results);
 
         public float this[int rgb, int coefficient]
         {
-            get
+            readonly get
             {
                 int idx = rgb * 9 + coefficient;
                 switch (idx)
@@ -133,7 +143,7 @@ namespace UnityEngine.Rendering
             }
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             // Hash code idea from http://stackoverflow.com/a/263416
 
@@ -170,19 +180,15 @@ namespace UnityEngine.Rendering
             }
         }
 
-        public override bool Equals(object other)
-        {
-            return other is SphericalHarmonicsL2 && Equals((SphericalHarmonicsL2)other);
-        }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public override readonly bool Equals(object other) => other is SphericalHarmonicsL2 sh && Equals(sh);
 
-        public bool Equals(SphericalHarmonicsL2 other)
-        {
-            return this == other;
-        }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(SphericalHarmonicsL2 other) => this == other;
 
-        static public SphericalHarmonicsL2 operator*(SphericalHarmonicsL2 lhs, float rhs)
+        static public SphericalHarmonicsL2 operator*(in SphericalHarmonicsL2 lhs, float rhs)
         {
-            SphericalHarmonicsL2 r = new SphericalHarmonicsL2();
+            SphericalHarmonicsL2 r;
             r.shr0 = lhs.shr0 * rhs;
             r.shr1 = lhs.shr1 * rhs;
             r.shr2 = lhs.shr2 * rhs;
@@ -213,9 +219,9 @@ namespace UnityEngine.Rendering
             return r;
         }
 
-        static public SphericalHarmonicsL2 operator*(float lhs, SphericalHarmonicsL2 rhs)
+        static public SphericalHarmonicsL2 operator*(float lhs, in SphericalHarmonicsL2 rhs)
         {
-            SphericalHarmonicsL2 r = new SphericalHarmonicsL2();
+            SphericalHarmonicsL2 r;
             r.shr0 = rhs.shr0 * lhs;
             r.shr1 = rhs.shr1 * lhs;
             r.shr2 = rhs.shr2 * lhs;
@@ -246,9 +252,9 @@ namespace UnityEngine.Rendering
             return r;
         }
 
-        static public SphericalHarmonicsL2 operator+(SphericalHarmonicsL2 lhs, SphericalHarmonicsL2 rhs)
+        static public SphericalHarmonicsL2 operator+(in SphericalHarmonicsL2 lhs, in SphericalHarmonicsL2 rhs)
         {
-            SphericalHarmonicsL2 r = new SphericalHarmonicsL2();
+            SphericalHarmonicsL2 r;
             r.shr0 = lhs.shr0 + rhs.shr0;
             r.shr1 = lhs.shr1 + rhs.shr1;
             r.shr2 = lhs.shr2 + rhs.shr2;
@@ -279,9 +285,8 @@ namespace UnityEngine.Rendering
             return r;
         }
 
-        public static bool operator==(SphericalHarmonicsL2 lhs, SphericalHarmonicsL2 rhs)
-        {
-            return
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator==(in SphericalHarmonicsL2 lhs, in SphericalHarmonicsL2 rhs) =>
                 lhs.shr0 == rhs.shr0 &&
                 lhs.shr1 == rhs.shr1 &&
                 lhs.shr2 == rhs.shr2 &&
@@ -309,11 +314,8 @@ namespace UnityEngine.Rendering
                 lhs.shb6 == rhs.shb6 &&
                 lhs.shb7 == rhs.shb7 &&
                 lhs.shb8 == rhs.shb8;
-        }
 
-        public static bool operator!=(SphericalHarmonicsL2 lhs, SphericalHarmonicsL2 rhs)
-        {
-            return !(lhs == rhs);
-        }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator!=(in SphericalHarmonicsL2 lhs, in SphericalHarmonicsL2 rhs) => !(lhs == rhs);
     }
 }

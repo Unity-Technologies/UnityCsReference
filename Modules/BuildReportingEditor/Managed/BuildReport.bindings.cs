@@ -232,12 +232,8 @@ namespace UnityEditor.Build.Reporting
             var fileNameToExistingBuildFile = new Dictionary<string, BuildFile>();
             foreach (var file in GetFiles())
             {
-                // only preserve roles for content portions of the files, as some PlayerBuildProgram relies on the roles of dlls being erased 
-                if (file.path.Contains("Library/PlayerDataCache"))
-                {
-                    // We know that these files never have the same filename twice so it is safe to match with that as a unique key.
-                    fileNameToExistingBuildFile.Add(file.path.ToNPath().FileName, file);
-                }
+                // Files with the same name should have the same role
+                fileNameToExistingBuildFile.TryAdd(file.path.ToNPath().FileName, file);
             }
 
             DeleteAllFileEntries();

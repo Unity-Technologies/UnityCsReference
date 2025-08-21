@@ -11,9 +11,11 @@ namespace UnityEngine.UIElements.UIR
 {
     class JobManager : IDisposable
     {
-        NativePagedList<NudgeJobData> m_NudgeJobs = new NativePagedList<NudgeJobData>(64);
-        NativePagedList<ConvertMeshJobData> m_ConvertMeshJobs = new NativePagedList<ConvertMeshJobData>(64);
-        NativePagedList<CopyMeshJobData> m_CopyMeshJobs = new NativePagedList<CopyMeshJobData>(64);
+        const string k_JobManagerName = $"Renderer.{nameof(JobManager)}";
+
+        NativePagedList<NudgeJobData> m_NudgeJobs = new NativePagedList<NudgeJobData>(64, k_JobManagerName);
+        NativePagedList<ConvertMeshJobData> m_ConvertMeshJobs = new NativePagedList<ConvertMeshJobData>(64, k_JobManagerName);
+        NativePagedList<CopyMeshJobData> m_CopyMeshJobs = new NativePagedList<CopyMeshJobData>(64, k_JobManagerName);
 
         JobMerger m_JobMerger = new JobMerger(128);
 
@@ -130,6 +132,7 @@ namespace UnityEngine.UIElements.UIR
 
         public int remapUVs;
         public Rect atlasRect;
+        public Vector2 layoutSize;
     }
 
     [StructLayout(LayoutKind.Sequential)]

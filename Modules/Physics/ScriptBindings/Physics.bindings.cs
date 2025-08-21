@@ -91,6 +91,14 @@ namespace UnityEngine
         }
 
         public bool isFallback => id == k_FallbackIntegrationId;
+
+        internal bool isExperimental => m_IntegrationVersion[0] < 1;
+
+        [NativeHeader("Modules/Physics/PhysicsEntitlementChecker.h")]
+        [FreeFunction("Physics::HasRequiredEntitlements")]
+        extern private static bool HasRequiredEntitlements_internal(uint id);
+
+        internal bool HasRequiredEntitlements() => HasRequiredEntitlements_internal(id);
     }
 
     [NativeHeader("Modules/Physics/PhysicsQuery.h")]
@@ -106,6 +114,8 @@ namespace UnityEngine
         public const int AllLayers = ~0;
 
         extern private unsafe static void GetIntegrationInfos(out IntPtr integrations, out ulong integrationCount);
+
+        [ThreadSafe]
         extern private unsafe static void GetCurrentIntegrationInfo(out IntPtr integration);
 
         internal static ReadOnlySpan<IntegrationInfo> GetIntegrationInfos()
@@ -144,8 +154,7 @@ namespace UnityEngine
 
         extern static public bool invokeCollisionCallbacks { get; set; }
 
-        [NativeProperty("DefaultPhysicsSceneHandle", true, TargetType.Function, true)]
-        extern public static PhysicsScene defaultPhysicsScene { get; }
+        public static PhysicsScene defaultPhysicsScene => PhysicsScene.GetDefaultScene();
 
         extern public static void IgnoreCollision([NotNull] Collider collider1, [NotNull] Collider collider2, [DefaultValue("true")] bool ignore);
 
@@ -1060,11 +1069,23 @@ namespace UnityEngine
 
         [StaticAccessor("GetPhysicsManager()")]
         [ThreadSafe]
-        public static extern void BakeMesh(int meshID, bool convex, MeshColliderCookingOptions cookingOptions);
+        public static extern void BakeMesh(EntityId meshEntityId, bool convex, MeshColliderCookingOptions cookingOptions);
 
+        [Obsolete("BakeMesh(int, bool, MeshColliderCookingOptions) is obsolete. Use BakeMesh(EntityId, bool, MeshColliderCookingOptions) instead.")]
+        public static void BakeMesh(int meshID, bool convex, MeshColliderCookingOptions cookingOptions) => BakeMesh((EntityId)meshID, convex, cookingOptions);
+
+        [Obsolete("BakeMesh(int, bool) is obsolete. Use BakeMesh(EntityId, bool) instead.")]
         public static void BakeMesh(int meshID, bool convex)
         {
-            BakeMesh(meshID, convex, MeshColliderCookingOptions.CookForFasterSimulation |
+            BakeMesh((EntityId)meshID, convex, MeshColliderCookingOptions.CookForFasterSimulation |
+                                     MeshColliderCookingOptions.EnableMeshCleaning |
+                                     MeshColliderCookingOptions.WeldColocatedVertices |
+                                     MeshColliderCookingOptions.UseFastMidphase);
+        }
+
+        public static void BakeMesh(EntityId meshEntityId, bool convex)
+        {
+            BakeMesh(meshEntityId, convex, MeshColliderCookingOptions.CookForFasterSimulation |
                                      MeshColliderCookingOptions.EnableMeshCleaning |
                                      MeshColliderCookingOptions.WeldColocatedVertices |
                                      MeshColliderCookingOptions.UseFastMidphase);
@@ -1084,7 +1105,7 @@ namespace UnityEngine
 
         [ThreadSafe]
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern uint TranslateTriangleIndexFromID(int instanceID, uint faceIndex);
+        internal static extern uint TranslateTriangleIndexFromID(EntityId instanceID, uint faceIndex);
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         private static extern void SendOnCollisionEnter(Component component, Collision collision);

@@ -36,8 +36,5 @@ namespace UnityEngine.UIElements
         void OnStyleSheetAssetsImported(HashSet<StyleSheet> changedAssets, HashSet<string> deletedAssets);
 
         void OnVisualTreeAssetsImported(HashSet<VisualTreeAsset> changedAssets, HashSet<string> deletedAssets);
-
-        void RegisterTextElement(TextElement element);
-        void UnregisterTextElement(TextElement element);
     }
 }

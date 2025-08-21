@@ -8,7 +8,7 @@ namespace UnityEditor.Toolbars
 {
     static class LayoutDropdown
     {
-        const string k_Path = "Editor Utility/Layout";
+        const string k_Path = "Editor Controls/Layout";
 
         static LayoutDropdown()
         {
@@ -23,7 +23,7 @@ namespace UnityEditor.Toolbars
         }
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, true, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             return new MainToolbarDropdown(new MainToolbarContent(

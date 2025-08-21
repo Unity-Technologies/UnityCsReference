@@ -50,6 +50,7 @@ internal abstract class VisualElementNodeTypeHandler :
     public const string HierarchyItemElementNameClassName = HierarchyItemClassName + "__element-name";
     public const string HierarchyItemElementTypeNameClassName = HierarchyItemClassName + "__element-type-name";
     public const string HierarchyItemUssClassName = HierarchyItemClassName + "__element-uss-class";
+    public const string HierarchyItemDisabledClassName = HierarchyItemClassName + "__disabled";
 
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
 
@@ -453,7 +454,7 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <inheritdoc cref="HierarchyNodeTypeHandler.CanDrop"/>>
     protected sealed override DragVisualMode CanDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
 
-    protected override void Bind(HierarchyViewItem item)
+    protected override void OnBindItem(HierarchyViewItem item)
     {
         if (m_Mappings.TryGetValue(item.Node, out var element))
         {
@@ -463,12 +464,12 @@ internal abstract class VisualElementNodeTypeHandler :
         else
         {
             item.Icon.style.backgroundImage = null;
-            item.EnableInClassList("unity-disabled", true);
+            item.EnableInClassList(HierarchyItemDisabledClassName, true);
         }
     }
 
     /// <inheritdoc cref="HierarchyView.UnbindViewItem"/>>
-    protected override void Unbind(HierarchyViewItem item)
+    protected override void OnUnbindItem(HierarchyViewItem item)
     {
         if (m_Mappings.TryGetValue(item.Node, out var element))
         {
@@ -480,7 +481,7 @@ internal abstract class VisualElementNodeTypeHandler :
             item.RemoveFromClassList(HierarchyItemElementNameClassName);
             item.RemoveFromClassList(HierarchyItemElementTypeNameClassName);
             item.RemoveFromClassList(HierarchyItemUssClassName);
-            item.EnableInClassList("unity-disabled", false);
+            item.EnableInClassList(HierarchyItemDisabledClassName, false);
             item.LeftCustomContainer.Clear();
             item.parent.Q(className: HierarchyItemElementTypeNameClassName)?.RemoveFromHierarchy();
         }
@@ -510,7 +511,7 @@ internal abstract class VisualElementNodeTypeHandler :
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandler.OnInitializingView"/>>
-    protected override void OnInitializingView(HierarchyView view)
+    protected override void OnBindView(HierarchyView view)
     {
         view.StyleContainer.styleSheets.Add(StyleSheet);
         view.StyleContainer.styleSheets.Add(ThemeStyleSheet);
@@ -654,6 +655,10 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <returns><see langword="true"/> if the dragging operation can be started, <see langword="false"/> otherwise.</returns>
     protected virtual bool CanStartDrag(HierarchyView view, in SelectionContext selection) => false;
 
+    protected virtual bool CanSetEnabled(HierarchyView view, in HierarchyNode node, VisualElement element) => false;
+
+    protected virtual bool OnSetEnabled(HierarchyView view, in HierarchyNode node, VisualElement element) => false;
+
     /// <summary>
     /// Called when a hierarchy view item is bound to a hierarchy view, allowing customization of the view item.
     /// </summary>
@@ -671,7 +676,10 @@ internal abstract class VisualElementNodeTypeHandler :
             var typeNameLabel = new Label(element.GetType().Name);
             typeNameLabel.AddToClassList(HierarchyItemElementTypeNameClassName);
             nameElement.parent.Insert(index, typeNameLabel);
+            typeNameLabel.EnableInClassList(HierarchyItemDisabledClassName, !element.enabledSelf);
         }
+
+        nameElement.EnableInClassList(HierarchyItemDisabledClassName, !element.enabledSelf);
 
         if ((m_DisplayOptions & UIHierarchyDisplayOptions.UssClasses) != 0)
         {
@@ -682,8 +690,6 @@ internal abstract class VisualElementNodeTypeHandler :
                 item.LeftCustomContainer.Add(ussClassLabel);
             }
         }
-
-        item.EnableInClassList("unity-disabled", null == element.visualTreeAssetSource);
     }
 
     /// <summary>
@@ -693,10 +699,14 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <param name="element">The <see cref="VisualElement"/> to unbind.</param>
     protected virtual void Unbind(HierarchyViewItem item, VisualElement element)
     {
-        item.Q(className: "hierarchy-item__name").RemoveFromClassList(HierarchyItemElementNameClassName);
+        var nameElement = item.Q(className: "hierarchy-item__name");
+        nameElement.RemoveFromClassList(HierarchyItemElementNameClassName);
+        nameElement.EnableInClassList("unity-disabled", false);
         item.EnableInClassList("unity-disabled", false);
         item.LeftCustomContainer.Clear();
-        item.parent.Q(className: HierarchyItemElementTypeNameClassName)?.RemoveFromHierarchy();
+        var typenameElement = item.parent.Q(className: HierarchyItemElementTypeNameClassName);
+        typenameElement.EnableInClassList("unity-disabled", false);
+        typenameElement?.RemoveFromHierarchy();
     }
 
     /// <summary>
@@ -804,6 +814,27 @@ internal abstract class VisualElementNodeTypeHandler :
     protected bool TryGetNodeFromElement(VisualElement element, out HierarchyNode node)
     {
         return m_Mappings.TryGetValue(element, out node);
+    }
+
+
+    public bool GetEnabled(HierarchyView view, in HierarchyNode node)
+    {
+        return TryGetElementFromNode(node, out var element) && element.enabledSelf;
+    }
+
+    public bool SetEnabled(HierarchyView view, in HierarchyNode node, bool value)
+    {
+        try
+        {
+            if (TryGetElementFromNode(node, out var element) &&
+                CanSetEnabled(view, in node, element))
+                return OnSetEnabled(view, in node, element);
+            return false;
+        }
+        finally
+        {
+            Hierarchy.SetDirty();
+        }
     }
 
     #region IVisualElementChangeProcessor

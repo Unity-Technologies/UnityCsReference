@@ -637,6 +637,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<FontStyle> value) => ((IStyle)container).unityFontStyleAndWeight = value;
         }
 
+        class UnityMaterialProperty : InlineStyleMaterialDefinitionProperty
+        {
+            public override string Name => nameof(IStyle.unityMaterial);
+            public override string ussName => "-unity-material";
+            public override bool IsReadOnly => false;
+            public override StyleMaterialDefinition GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityMaterial;
+            public override void SetValue(ref InlineStyleAccess container, StyleMaterialDefinition value) => ((IStyle)container).unityMaterial = value;
+        }
+
         class UnityOverflowClipBoxProperty : InlineStyleEnumProperty<OverflowClipBox>
         {
             public override string Name => nameof(IStyle.unityOverflowClipBox);
@@ -801,8 +810,8 @@ namespace UnityEngine.UIElements
 
         public InlineStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(87);
-            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(261);
+            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(88);
+            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(264);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -872,6 +881,7 @@ namespace UnityEngine.UIElements
             AddProperty(new UnityFontProperty());
             AddProperty(new UnityFontDefinitionProperty());
             AddProperty(new UnityFontStyleAndWeightProperty());
+            AddProperty(new UnityMaterialProperty());
             AddProperty(new UnityOverflowClipBoxProperty());
             AddProperty(new UnityParagraphSpacingProperty());
             AddProperty(new UnitySliceBottomProperty());

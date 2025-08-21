@@ -152,7 +152,6 @@ namespace UnityEditor
             }
 
             window.ShowTooltip();
-            window.SetAlpha(1.0f);
             s_guiView.mouseRayInvisible = true;
         }
 
@@ -250,12 +249,6 @@ namespace UnityEditor
             var temp = s_guiView?.window;
             s_guiView = null;
             temp?.Close();
-        }
-
-        [RequiredByNativeCode]
-        public static void SetAlpha(float percent)
-        {
-            s_guiView?.window?.SetAlpha(percent);
         }
 
         void ValidateCloseRequest(Event currentEvent, bool keepDynamicHintRegardlessOfMousePosition)

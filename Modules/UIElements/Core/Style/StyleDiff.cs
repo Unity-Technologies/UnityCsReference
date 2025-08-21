@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
 
         public UxmlStyleProperty(StyleValueHandle[] values, bool requireVariableResolve)
         {
-            this.values = new NativeArray<StyleValueHandle>(values, Allocator.Persistent);
+            this.values = new NativeArray<StyleValueHandle>(values, StyleDiff.k_MemoryLabel);
             this.requireVariableResolve = requireVariableResolve;
         }
 
@@ -171,6 +171,8 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal sealed partial class StyleDiff : INotifyBindablePropertyChanged, IDataSourceViewHashProvider, IDisposable
     {
+        static internal readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Style.{nameof(StyleDiff)}");
+
         internal readonly struct ResolutionContext
         {
             public readonly StyleDiff diff;

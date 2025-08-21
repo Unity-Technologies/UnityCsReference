@@ -83,7 +83,7 @@ namespace Unity.UI.Builder
 
             m_FilterListView.overridingAddButtonBehavior = (_, btn) =>
             {
-                menu.DropDown(btn.worldBound, btn, true, true);
+                menu.DropDown(btn.worldBound, btn, DropdownMenuSizeMode.Auto);
                 menu.contentContainer.AddToClassList(k_FilterFunctionDropdownClassName);
             };
 

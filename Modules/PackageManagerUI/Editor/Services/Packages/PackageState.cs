@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         InDevelopment,
         UpdateAvailable,
         Error,
-        Warning
+        Warning,
+        Restricted
     }
 }

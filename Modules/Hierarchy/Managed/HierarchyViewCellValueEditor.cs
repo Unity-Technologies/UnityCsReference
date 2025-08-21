@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy
@@ -11,6 +12,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Class providing utility functions to set/get Model values on a UITk Control (i.e editor) in a HierarchyViewCell.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed class HierarchyViewCellValueEditor<TModel, TEditor, TValue> where TEditor : VisualElement, INotifyValueChanged<TValue>, new()
     {
         readonly Func<HierarchyViewCellValueEditor<TModel, TEditor, TValue>, TValue> m_GetModelValue;

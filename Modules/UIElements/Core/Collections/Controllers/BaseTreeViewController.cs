@@ -189,10 +189,11 @@ namespace UnityEngine.UIElements
             {
                 foreach (var flattenedNode in m_HierarchyFlattened)
                 {
-                    if (flattenedNode.Node == m_Hierarchy.Root)
+                    var node = flattenedNode.Node;
+                    if (node == m_Hierarchy.Root || !m_Hierarchy.Exists(node))
                         continue;
 
-                    yield return m_TreeViewDataProperty.GetValue(flattenedNode.Node);
+                    yield return m_TreeViewDataProperty.GetValue(node);
                 }
 
                 yield break;
@@ -200,7 +201,11 @@ namespace UnityEngine.UIElements
 
             foreach (var id in rootIds)
             {
-                var flattenedNodeChildren = m_HierarchyFlattened.EnumerateChildren(m_IdToNodeDictionary[id]);
+                var parentNode = m_IdToNodeDictionary[id];
+                if (!m_Hierarchy.Exists(parentNode))
+                    continue;
+
+                var flattenedNodeChildren = m_HierarchyFlattened.EnumerateChildren(parentNode);
 
                 foreach (var node in flattenedNodeChildren)
                     yield return m_TreeViewDataProperty.GetValue(node);
@@ -288,7 +293,7 @@ namespace UnityEngine.UIElements
         /// Removes an item by id.
         /// </summary>
         /// <param name="id">The item id.</param>
-        /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to <c>false</c> when doing multiple operations and call <see cref="TreeViewController.RebuildTree()"/>.</param>
+        /// <param name="rebuildTree">Whether to refresh the tree data. Set to <c>false</c> when doing multiple operations and call <see cref="BaseVerticalCollectionView.RefreshItems()"/>.</param>
         /// <returns>Whether the item was successfully found and removed.</returns>
         public abstract bool TryRemoveItem(int id, bool rebuildTree = true);
 
@@ -448,7 +453,7 @@ namespace UnityEngine.UIElements
         /// <returns>Whether the item with the specified ID has one or more child.</returns>
         public virtual bool HasChildren(int id)
         {
-            if (m_IdToNodeDictionary.TryGetValue(id, out var node))
+            if (m_IdToNodeDictionary.TryGetValue(id, out var node) && m_Hierarchy.Exists(node))
                 return m_Hierarchy.GetChildrenCount(node) > 0;
 
             return false;
@@ -856,6 +861,8 @@ namespace UnityEngine.UIElements
 
         internal void UpdateIdToNodeDictionary(int id, in HierarchyNode node, bool isAdd = true)
         {
+            m_HierarchyHasPendingChanged = true;
+
             if (isAdd)
             {
                 m_TreeViewDataProperty.SetValue(node, id);
@@ -969,7 +976,7 @@ namespace UnityEngine.UIElements
 
         internal HierarchyNode GetHierarchyNodeById(int id)
         {
-            return m_IdToNodeDictionary.TryGetValue(id, out var node) ? node : HierarchyNode.Null;
+            return m_IdToNodeDictionary.TryGetValue(id, out var node) && m_Hierarchy.Exists(node) ? node : HierarchyNode.Null;
         }
 
         internal HierarchyNode GetHierarchyNodeByIndex(int index)

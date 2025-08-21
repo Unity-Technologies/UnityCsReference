@@ -363,18 +363,23 @@ namespace UnityEditor.StyleSheets
             {
                 options = new UssExportOptions();
             }
+
             var sb = new StringBuilder();
-            if (sheet.complexSelectors != null)
+
+            for (var ruleIndex = 0; ruleIndex < sheet.rules.Length; ruleIndex++)
             {
-                for (var complexSelectorIndex = 0; complexSelectorIndex < sheet.complexSelectors.Length; ++complexSelectorIndex)
+                var rule = sheet.rules[ruleIndex];
+                for (var complexSelectorIndex = 0; complexSelectorIndex < rule.complexSelectors.Length; ++complexSelectorIndex)
                 {
-                    var complexSelector = sheet.complexSelectors[complexSelectorIndex];
+                    var complexSelector = rule.complexSelectors[complexSelectorIndex];
                     ToUssString(sheet, options, complexSelector, sb);
-                    if (complexSelectorIndex != sheet.complexSelectors.Length - 1)
+                    if (complexSelectorIndex != rule.complexSelectors.Length - 1)
                     {
                         sb.Append("\n");
                     }
                 }
+                if (ruleIndex != sheet.rules.Length - 1)
+                    sb.Append("\n");
             }
 
             return sb.ToString();

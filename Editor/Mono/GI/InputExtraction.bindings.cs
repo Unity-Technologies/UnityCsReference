@@ -48,14 +48,14 @@ namespace UnityEditor.LightBaking
                 }
             }
 
-            public extern int GetInstanceIndex(int instanceID);
-            public extern int GetInstanceInstanceID(int instanceIndex);
+            public extern int GetInstanceIndex(UnityEngine.EntityId instanceID);
+            public extern UnityEngine.EntityId GetInstanceInstanceID(int instanceIndex);
 
             public extern int GetTreeCount();
             public extern int GetTreeInstanceIndex(int treeIndex);
 
-            public extern int GetLightIndex(int instanceID);
-            public extern int GetLightInstanceID(int lightIndex);
+            public extern int GetLightIndex(UnityEngine.EntityId instanceID);
+            public extern UnityEngine.EntityId GetLightInstanceID(int lightIndex);
 
             static extern IntPtr Internal_Create();
 

@@ -45,6 +45,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private FrameDebuggerWindow m_FrameDebugger = null;
         private Lazy<FrameDebuggerEventData> m_CurEventData = new Lazy<FrameDebuggerEventData>(() => new FrameDebuggerEventData());
         private RenderTexture m_RenderTargetRenderTextureCopy = null;
+        private RenderTexture m_ShadingRateImageTextureCopy = null;
 
         // Constants / Readonly
         private const int k_NumberGUISections = 11;
@@ -311,7 +312,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             SelectedColorChannel channelToDisplay = SelectedColorChannel.None;
 
             bool forceUpdate = false;
-            
+
             // Negative RT index: display depth or stencil buffer
             bool isDepthOrStencilSelected = m_RTIndexLastSet < 0;
 
@@ -657,6 +658,57 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUILayout.EndHorizontal();
         }
 
+        private void DrawShadingRateImage()
+        {
+            if (m_CachedEventData.m_ShadingRateImageTexture == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(m_CachedEventData.m_ShadingRateImageDetails, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle);
+                EditorGUILayout.EndHorizontal();
+            }
+            else
+            {
+                // Blit to the copy first
+                if (m_ShadingRateImageTextureCopy == null)
+                {
+                    int renderTargetWidthInt = m_CachedEventData.m_ShadingRateImageTexture.width * ShadingRateInfo.imageTileSize.x;
+                    int renderTargetHeightInt = m_CachedEventData.m_ShadingRateImageTexture.height * ShadingRateInfo.imageTileSize.y;
+                    m_ShadingRateImageTextureCopy = RenderTexture.GetTemporary(renderTargetWidthInt, renderTargetHeightInt);
+
+                    // Convert from the unviewable SRI texture to a visualized color version using Blit
+                    FrameDebuggerHelper.ConvertShadingRateImage(
+                        ref m_CachedEventData.m_ShadingRateImageTexture,
+                        ref m_ShadingRateImageTextureCopy,
+                        m_CachedEventData.m_ShadingRateImageTexture.width,
+                        m_CachedEventData.m_ShadingRateImageTexture.height
+                    );
+                }
+
+                // Set up the Texture Preview
+                Rect previewRect = GUILayoutUtility.GetRect(10, 10);
+                previewRect.width = 10;
+                previewRect.height = 10;
+                previewRect.x += 180f;
+                previewRect.y += 47f;
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(m_CachedEventData.m_ShadingRateImageDetails, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle, GUILayout.MinWidth(m_CachedEventData.m_DetailsGUIWidth), GUILayout.MinHeight(60));
+                
+                Texture previewTexture = m_ShadingRateImageTextureCopy;
+                GUI.DrawTexture(previewRect, previewTexture, ScaleMode.StretchToFill, false);
+
+                if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(previewRect))
+                {
+                    PopupWindowWithoutFocus.Show(
+                        previewRect,
+                        new ObjectPreviewPopup(m_ShadingRateImageTextureCopy),
+                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right }
+                    );
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+
         private void DrawDetails(Rect rect)
         {
             bool isFoldoutOpen = BeginFoldoutBox(1, true, FrameDebuggerStyles.EventDetails.s_FoldoutEventDetailsText, out float fadePercent, () => m_CachedEventData.detailsCopyString);
@@ -672,6 +724,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(m_CachedEventData.details, style, GUILayout.MinWidth(m_CachedEventData.m_DetailsGUIWidth), GUILayout.MinHeight(m_CachedEventData.m_DetailsGUIHeight));
             EditorGUILayout.EndHorizontal();
+
+            // Variable rate shading (VRS)
+            DrawShadingRateImage();
 
             // Shader
             if (m_CachedEventData.m_ShouldDisplayRealAndOriginalShaders)

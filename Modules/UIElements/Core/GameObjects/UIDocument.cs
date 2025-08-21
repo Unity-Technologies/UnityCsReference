@@ -574,6 +574,9 @@ namespace UnityEngine.UIElements
                 UpdateRenderer();
                 if (panelSettings.colliderUpdateMode != ColliderUpdateMode.Keep
                     && Application.isPlaying
+                    // UUM-108898: don't add components that get saved while in edit prefab mode and
+                    // play mode at the same time, otherwise it won't get removed correctly when leaving play mode.
+                    && UIElementsRuntimeUtility.IsEditingPrefab?.Invoke() != true
                     )
                 {
                     UpdateWorldSpaceCollider(panelSettings.colliderUpdateMode);
@@ -598,7 +601,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            renderer.hideFlags = HideFlags.HideInInspector;
+            renderer.hideFlags = HideFlags.HideInInspector | HideFlags.DontSave;
             if (renderer.sharedMaterial)
             {
                 renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector;
@@ -1198,14 +1201,6 @@ namespace UnityEngine.UIElements
             AddRootVisualElementToTree();
 
             SetupRootClassList();
-        }
-
-        private void OnGUI()
-        {
-            if (m_PanelSettings != null)
-            {
-                m_PanelSettings.UpdateScreenDPI();
-            }
         }
 
         private void SetupVisualTreeAssetTracker()

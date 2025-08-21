@@ -82,7 +82,7 @@ namespace UnityEngine
         [NativeName("m_Data[15]")]
         public float m33;
 
-        public Matrix4x4(Vector4 column0, Vector4 column1, Vector4 column2, Vector4 column3)
+        public Matrix4x4(in Vector4 column0, in Vector4 column1, in Vector4 column2, in Vector4 column3)
         {
             this.m00 = column0.x; this.m01 = column1.x; this.m02 = column2.x; this.m03 = column3.x;
             this.m10 = column0.y; this.m11 = column1.y; this.m12 = column2.y; this.m13 = column3.y;
@@ -94,22 +94,17 @@ namespace UnityEngine
         public float this[int row, int column]
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get
-            {
-                return this[row + column * 4];
-            }
+            readonly get => this[row + column * 4];
 
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            set
-            {
-                this[row + column * 4] = value;
-            }
+            set => this[row + column * 4] = value;
         }
 
         // Access element at sequential index (0..15 inclusive).
         public float this[int index]
         {
-            get
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            readonly get
             {
                 switch (index)
                 {
@@ -134,6 +129,7 @@ namespace UnityEngine
                 }
             }
 
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             set
             {
                 switch (index)
@@ -163,14 +159,11 @@ namespace UnityEngine
 
         // used to allow Matrix4x4s to be used as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            return GetColumn(0).GetHashCode() ^ (GetColumn(1).GetHashCode() << 2) ^ (GetColumn(2).GetHashCode() >> 2) ^ (GetColumn(3).GetHashCode() >> 1);
-        }
+        public readonly override int GetHashCode() => GetColumn(0).GetHashCode() ^ (GetColumn(1).GetHashCode() << 2) ^ (GetColumn(2).GetHashCode() >> 2) ^ (GetColumn(3).GetHashCode() >> 1);
 
         // also required for being able to use Matrix4x4s as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override bool Equals(object other)
+        public readonly override bool Equals(object other)
         {
             if (other is Matrix4x4 m)
                 return Equals(m);
@@ -178,16 +171,14 @@ namespace UnityEngine
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Equals(Matrix4x4 other)
-        {
-            return GetColumn(0).Equals(other.GetColumn(0))
+        public readonly bool Equals(Matrix4x4 other) => GetColumn(0).Equals(other.GetColumn(0))
                 && GetColumn(1).Equals(other.GetColumn(1))
                 && GetColumn(2).Equals(other.GetColumn(2))
                 && GetColumn(3).Equals(other.GetColumn(3));
-        }
 
         // Multiplies two matrices.
-        public static Matrix4x4 operator*(Matrix4x4 lhs, Matrix4x4 rhs)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 operator*(in Matrix4x4 lhs, in Matrix4x4 rhs)
         {
             Matrix4x4 res;
             res.m00 = lhs.m00 * rhs.m00 + lhs.m01 * rhs.m10 + lhs.m02 * rhs.m20 + lhs.m03 * rhs.m30;
@@ -209,12 +200,12 @@ namespace UnityEngine
             res.m31 = lhs.m30 * rhs.m01 + lhs.m31 * rhs.m11 + lhs.m32 * rhs.m21 + lhs.m33 * rhs.m31;
             res.m32 = lhs.m30 * rhs.m02 + lhs.m31 * rhs.m12 + lhs.m32 * rhs.m22 + lhs.m33 * rhs.m32;
             res.m33 = lhs.m30 * rhs.m03 + lhs.m31 * rhs.m13 + lhs.m32 * rhs.m23 + lhs.m33 * rhs.m33;
-
             return res;
         }
 
         // Transforms a [[Vector4]] by a matrix.
-        public static Vector4 operator*(Matrix4x4 lhs, Vector4 vector)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Vector4 operator*(in Matrix4x4 lhs, in Vector4 vector)
         {
             Vector4 res;
             res.x = lhs.m00 * vector.x + lhs.m01 * vector.y + lhs.m02 * vector.z + lhs.m03 * vector.w;
@@ -225,24 +216,22 @@ namespace UnityEngine
         }
 
         //*undoc*
-        public static bool operator==(Matrix4x4 lhs, Matrix4x4 rhs)
-        {
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator==(in Matrix4x4 lhs, in Matrix4x4 rhs) =>
             // Returns false in the presence of NaN values.
-            return lhs.GetColumn(0) == rhs.GetColumn(0)
+            lhs.GetColumn(0) == rhs.GetColumn(0)
                 && lhs.GetColumn(1) == rhs.GetColumn(1)
                 && lhs.GetColumn(2) == rhs.GetColumn(2)
                 && lhs.GetColumn(3) == rhs.GetColumn(3);
-        }
 
         //*undoc*
-        public static bool operator!=(Matrix4x4 lhs, Matrix4x4 rhs)
-        {
+        public static bool operator!=(in Matrix4x4 lhs, in Matrix4x4 rhs) =>
             // Returns true in the presence of NaN values.
-            return !(lhs == rhs);
-        }
+            !(lhs == rhs);
 
         // Get a column of the matrix.
-        public Vector4 GetColumn(int index)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector4 GetColumn(int index)
         {
             switch (index)
             {
@@ -256,7 +245,8 @@ namespace UnityEngine
         }
 
         // Returns a row of the matrix.
-        public Vector4 GetRow(int index)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector4 GetRow(int index)
         {
             switch (index)
             {
@@ -269,13 +259,16 @@ namespace UnityEngine
             }
         }
 
-        public Vector3 GetPosition()
-        {
-            return new Vector3(m03, m13, m23);
-        }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 GetPosition() => new Vector3(m03, m13, m23);
 
         // Sets a column of the matrix.
-        public void SetColumn(int index, Vector4 column)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetColumn(int index, Vector4 column) => SetColumn(index, in column);
+
+        // Sets a column of the matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetColumn(int index, in Vector4 column)
         {
             this[0, index] = column.x;
             this[1, index] = column.y;
@@ -284,7 +277,12 @@ namespace UnityEngine
         }
 
         // Sets a row of the matrix.
-        public void SetRow(int index, Vector4 row)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetRow(int index, Vector4 row) => SetRow(index, in row);
+
+        // Sets a row of the matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetRow(int index, in Vector4 row)
         {
             this[index, 0] = row.x;
             this[index, 1] = row.y;
@@ -293,7 +291,12 @@ namespace UnityEngine
         }
 
         // Transforms a position by this matrix, with a perspective divide. (generic)
-        public Vector3 MultiplyPoint(Vector3 point)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 MultiplyPoint(Vector3 point) => MultiplyPoint(in point);
+
+        // Transforms a position by this matrix, with a perspective divide. (generic)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 MultiplyPoint(in Vector3 point)
         {
             Vector3 res;
             float w;
@@ -310,7 +313,12 @@ namespace UnityEngine
         }
 
         // Transforms a position by this matrix, without a perspective divide. (fast)
-        public Vector3 MultiplyPoint3x4(Vector3 point)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 MultiplyPoint3x4(Vector3 point) => MultiplyPoint3x4(in point);
+
+        // Transforms a position by this matrix, without a perspective divide. (fast)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 MultiplyPoint3x4(in Vector3 point)
         {
             Vector3 res;
             res.x = this.m00 * point.x + this.m01 * point.y + this.m02 * point.z + this.m03;
@@ -320,7 +328,12 @@ namespace UnityEngine
         }
 
         // Transforms a direction by this matrix.
-        public Vector3 MultiplyVector(Vector3 vector)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 MultiplyVector(Vector3 vector) => MultiplyVector(in vector);
+
+        // Transforms a direction by this matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Vector3 MultiplyVector(in Vector3 vector)
         {
             Vector3 res;
             res.x = this.m00 * vector.x + this.m01 * vector.y + this.m02 * vector.z;
@@ -330,9 +343,14 @@ namespace UnityEngine
         }
 
         // Transforms a plane by this matrix.
-        public Plane TransformPlane(Plane plane)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Plane TransformPlane(Plane plane) => TransformPlane(in plane);
+
+        // Transforms a plane by this matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Plane TransformPlane(in Plane plane)
         {
-            var ittrans = this.inverse;
+            var ittrans = inverse;
 
             float x = plane.normal.x, y = plane.normal.y, z = plane.normal.z, w = plane.distance;
             // note: a transpose is part of this transformation
@@ -345,7 +363,12 @@ namespace UnityEngine
         }
 
         // Creates a scaling matrix.
-        public static Matrix4x4 Scale(Vector3 vector)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 Scale(Vector3 vector) => Scale(in vector);
+
+        // Creates a scaling matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 Scale(in Vector3 vector)
         {
             Matrix4x4 m;
             m.m00 = vector.x; m.m01 = 0F; m.m02 = 0F; m.m03 = 0F;
@@ -356,7 +379,12 @@ namespace UnityEngine
         }
 
         // Creates a translation matrix.
-        public static  Matrix4x4 Translate(Vector3 vector)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 Translate(Vector3 vector) => Translate(in vector);
+
+        // Creates a translation matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 Translate(in Vector3 vector)
         {
             Matrix4x4 m;
             m.m00 = 1F; m.m01 = 0F; m.m02 = 0F; m.m03 = vector.x;
@@ -367,7 +395,12 @@ namespace UnityEngine
         }
 
         // Creates a rotation matrix. Note: Assumes unit quaternion
-        public static Matrix4x4 Rotate(Quaternion q)
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 Rotate(Quaternion q) => Rotate(in q);
+
+        // Creates a rotation matrix. Note: Assumes unit quaternion
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static Matrix4x4 Rotate(in Quaternion q)
         {
             // Precalculate coordinate products
             float x = q.x * 2.0F;
@@ -396,36 +429,40 @@ namespace UnityEngine
         //  1. it's consistent with other Math structs in Unity such as Vector2, Vector3 and Vector4,
         //  2. "Matrix4x4.zero" is arguably more readable than "new Matrix4x4()",
         //  3. it's already in the API ..
-        static readonly Matrix4x4 zeroMatrix = new Matrix4x4(new Vector4(0, 0, 0, 0),
+        static readonly Matrix4x4 zeroMatrix = new Matrix4x4(
+            new Vector4(0, 0, 0, 0),
             new Vector4(0, 0, 0, 0),
             new Vector4(0, 0, 0, 0),
             new Vector4(0, 0, 0, 0));
 
         // Returns a matrix with all elements set to zero (RO).
-        public static Matrix4x4 zero { get { return zeroMatrix; } }
+        public static Matrix4x4 zero
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => zeroMatrix;
+        }
 
-        static readonly Matrix4x4 identityMatrix = new Matrix4x4(new Vector4(1, 0, 0, 0),
+        static readonly Matrix4x4 identityMatrix = new Matrix4x4(
+            new Vector4(1, 0, 0, 0),
             new Vector4(0, 1, 0, 0),
             new Vector4(0, 0, 1, 0),
             new Vector4(0, 0, 0, 1));
 
         // Returns the identity matrix (RO).
-        public static Matrix4x4 identity    { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return identityMatrix; } }
-
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override string ToString()
+        public static Matrix4x4 identity
         {
-            return ToString(null, null);
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => identityMatrix;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly override string ToString() => ToString(null, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format) => ToString(format, null);
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F5";

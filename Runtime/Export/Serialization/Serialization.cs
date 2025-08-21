@@ -10,6 +10,45 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 using System;
 namespace UnityEngine
 {
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class MakeSerializableAttribute : Attribute
+    {
+        public MakeSerializableAttribute(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentException($"{nameof(type)} is null.");
+            }
+
+            if (type.IsValueType)
+            {
+                throw new ArgumentException($"{nameof(type)} Type cannot be a value type.");
+            }
+
+            if (type.IsInterface)
+            {
+                throw new ArgumentException($"{nameof(type)} Type cannot be an interface type.");
+            }
+
+            if (!type.IsClass)
+            {
+                throw new ArgumentException($"{nameof(type)} Type must be a class");
+            }
+
+            serializableType = type;
+        }
+
+        private System.Type serializableType;
+
+        [RequiredByNativeCode]
+        private System.Type GetSerializableType()
+        {
+            return serializableType;
+        }
+    }
+
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
     public sealed partial class SerializeField : Attribute

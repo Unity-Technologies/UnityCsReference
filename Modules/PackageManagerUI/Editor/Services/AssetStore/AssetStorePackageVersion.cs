@@ -18,8 +18,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private string m_Category;
         [SerializeField]
-        private List<UIError> m_Errors;
-        [SerializeField]
         private string m_LocalPath;
         [SerializeField]
         private long m_UploadId;
@@ -49,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool isFullyFetched => true;
 
-        public override IEnumerable<UIError> errors => m_Errors;
+        public override IEnumerable<UIError> errors => Enumerable.Empty<UIError>();
 
         public override bool isDirectDependency => true;
 
@@ -69,7 +67,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AssetStorePackageVersion(AssetStoreProductInfo productInfo, long uploadId = 0, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
         {
-            m_Errors = new List<UIError>();
             m_Tag = PackageTag.LegacyFormat;
 
             // m_Description is the version level description from PackageInfo, so we set this field to empty here deliberately

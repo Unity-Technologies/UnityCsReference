@@ -104,6 +104,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CrashReport_Bindings::GetReports", IsThreadSafe = true)]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern private static string[] GetReports();
 
         [FreeFunction(Name = "CrashReport_Bindings::GetReportData", IsThreadSafe = true)]

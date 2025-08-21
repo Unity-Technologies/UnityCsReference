@@ -1278,7 +1278,7 @@ namespace UnityEditor
         bool CanFrameAsset(int instanceID)
         {
             var path = AssetDatabase.GetAssetPath((EntityId)instanceID);
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path) || IsBuiltinResource(path))
                 return false;
 
             var h = new HierarchyIterator(HierarchyType.Assets, false);
@@ -2976,6 +2976,12 @@ namespace UnityEditor
                     ShowFolderContents(folderInstanceID, true);
                 m_ListArea.Frame(instanceID, frame, ping);
             }
+        }
+        
+        static bool IsBuiltinResource(string resPath)
+        {
+            return string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(resPath, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
         }
 
         // Also called from C++ (used for AssetSelection overriding)

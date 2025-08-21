@@ -12,7 +12,7 @@ internal interface IBatchedUxmlChangesListener
     void NotifyAllChangesProcessed();
     void AttributeValueChanged(VisualElement field, string value, UxmlAsset uxmlAsset = null);
     void UxmlObjectChanged(VisualElement element);
-    BuilderUxmlAttributesView.SynchronizePathResult SynchronizePath(string propertyPath, bool changeUxmlAssets);
+    SynchronizePathResult SynchronizePath(string propertyPath, bool changeUxmlAssets);
     void ToggleUxmlChangeFlagForView(bool enabled);
 
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -117,10 +118,10 @@ namespace Unity.UI.Builder
             // Add VisualElement to Canvas.
             m_DragPreviewElement.RemoveFromClassList(s_DragPreviewElementClassName);
 
-            if (m_DragPreviewLastParent is ToggleButtonGroup && m_DragPreviewElement is not Button)
-            {
+            // Prevent action if attempting to drag invalid element as child of another element.
+            // For example, dragging something other than a Tab inside the TabView.
+            if (!BuilderAssetUtilities.IsSupportedChildType(m_DragPreviewLastParent, m_DragPreviewElement.GetType()))
                 return;
-            }
 
             for (var i = 0; i < index; ++i)
             {

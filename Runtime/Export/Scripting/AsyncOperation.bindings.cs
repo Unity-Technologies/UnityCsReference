@@ -21,7 +21,7 @@ namespace UnityEngine
 
         [NativeMethod(IsThreadSafe = true)]
         [StaticAccessor("AsyncOperationBindings", StaticAccessorType.DoubleColon)]
-        private static extern void InternalSetManagedObject(IntPtr ptr, [Unmarshalled] AsyncOperation self);
+        private static extern void InternalSetManagedObject(IntPtr ptr, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AsyncOperation self);
 
         public AsyncOperation() {}
 

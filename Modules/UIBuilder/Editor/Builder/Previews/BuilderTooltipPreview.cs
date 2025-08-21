@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine;
 
@@ -10,6 +11,11 @@ namespace Unity.UI.Builder
 {
     internal class BuilderTooltipPreview : VisualElement
     {
+        public const string UssPath = BuilderConstants.UIBuilderPackagePath + "/BuilderTooltipPreview.uss";
+        public const string UssPath_Dark = BuilderConstants.UIBuilderPackagePath + "/BuilderTooltipPreviewDark.uss";
+        public const string UssPath_Light = BuilderConstants.UIBuilderPackagePath + "/BuilderTooltipPreviewLight.uss";
+        public static string UssPath_Themed => EditorGUIUtility.isProSkin ? UssPath_Dark : UssPath_Light;
+
         static readonly string s_UssClassName = "unity-builder-tooltip-preview";
         static readonly string s_EnablerClassName = "unity-builder-tooltip-preview__enabler";
         static readonly string s_ContainerClassName = "unity-builder-tooltip-preview__container";
@@ -34,6 +40,8 @@ namespace Unity.UI.Builder
         public BuilderTooltipPreview()
         {
             AddToClassList(s_UssClassName);
+            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(UssPath));
+            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(UssPath_Themed));
 
             m_Enabler = new VisualElement();
             m_Enabler.name = s_EnabledElementName;

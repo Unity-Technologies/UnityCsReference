@@ -312,6 +312,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         FontStyle unityFontStyleAndWeight { get; }
         /// <summary>
+        /// Custom material to use on the element.
+        /// </summary>
+        MaterialDefinition unityMaterial { get; }
+        /// <summary>
         /// Increases or decreases the space between paragraphs.
         /// </summary>
         float unityParagraphSpacing { get; }

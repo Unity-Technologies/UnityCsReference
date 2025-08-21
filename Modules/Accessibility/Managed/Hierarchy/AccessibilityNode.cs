@@ -45,11 +45,11 @@ namespace UnityEngine.Accessibility
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
-    ///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
-    ///- [TalkBack gestures on Android](https://support.google.com/accessibility/android/answer/6151827)
-    ///- [VoiceOver gestures on iPhone](https://support.apple.com/en-us/guide/iphone/iph3e2e2281/ios)
-    ///- [Narrator commands on Windows](https://support.microsoft.com/en-us/windows/chapter-2-narrator-basics-5ff4591e-7b6d-245e-c95d-ce83c0a1a8d4)
-    ///- [VoiceOver commands on Mac](https://support.apple.com/en-us/guide/voiceover/vo14111/mac)
+    ///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
+    ///- &lt;a href="https://support.google.com/accessibility/android/answer/6151827" &gt;TalkBack gestures on Android&lt;/a&gt;
+    ///- &lt;a href="https://support.apple.com/en-us/guide/iphone/iph3e2e2281/ios" &gt;VoiceOver gestures on iPhone&lt;/a&gt;
+    ///- &lt;a href="https://support.microsoft.com/en-us/windows/chapter-2-narrator-basics-5ff4591e-7b6d-245e-c95d-ce83c0a1a8d4" &gt;Narrator commands on Windows&lt;/a&gt;
+    ///- &lt;a href="https://support.apple.com/en-us/guide/voiceover/vo14111/mac" &gt;VoiceOver commands on Mac&lt;/a&gt;
     /// </para>
     /// </remarks>
     public partial class AccessibilityNode
@@ -459,6 +459,13 @@ namespace UnityEngine.Accessibility
         ///  - <see cref="AccessibilityRole.Slider"/>
         ///  - <see cref="AccessibilityRole.TextField"/>
         ///  - <see cref="AccessibilityRole.Dropdown"/>
+        ///  - <see cref="AccessibilityRole.ScrollView"/>
+        ///
+        ///- On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have a value containing a
+        /// number between 0 and 100 to accurately communicate the scroll percentage to the screen reader. For scroll
+        /// views that support both vertical and horizontal scrolling, the value must contain two numbers, with the
+        /// vertical scroll percentage listed first. For example, a value of `50, 75` indicates that the scroll view
+        /// represented by the node is scrolled 50% vertically and 75% horizontally.
         /// </para>
         /// </remarks>
         public string value
@@ -737,28 +744,6 @@ namespace UnityEngine.Accessibility
             }
         }
 
-        SystemLanguage m_Language = SystemLanguage.Unknown;
-
-        // TODO: A11Y-242
-        internal SystemLanguage language
-        {
-            get => m_Language;
-            set
-            {
-                if (m_Language == value)
-                {
-                    return;
-                }
-
-                m_Language = value;
-
-                if (IsInActiveHierarchy())
-                {
-                    AccessibilityNodeManager.SetLanguage(id, value);
-                }
-            }
-        }
-
         bool m_IsActive = true;
 
         /// <summary>
@@ -911,8 +896,6 @@ namespace UnityEngine.Accessibility
             nodeData.role = role;
             nodeData.state = state;
 
-            nodeData.language = language;
-
             nodeData.isActive = isActive;
             nodeData.allowsDirectInteraction = allowsDirectInteraction;
 
@@ -941,8 +924,6 @@ namespace UnityEngine.Accessibility
 
                 role = role,
                 state = state,
-
-                language = language,
 
                 isActive = isActive,
                 allowsDirectInteraction = allowsDirectInteraction,

@@ -159,6 +159,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.unityFontDefinition;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return computedStyle.unityFontStyleAndWeight;
+                case StylePropertyId.UnityMaterial:
+                    return computedStyle.unityMaterial;
                 case StylePropertyId.UnityOverflowClipBox:
                     return computedStyle.unityOverflowClipBox;
                 case StylePropertyId.UnityParagraphSpacing:
@@ -345,6 +347,8 @@ namespace UnityEngine.UIElements
                     return typeof(FontDefinition);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return typeof(FontStyle);
+                case StylePropertyId.UnityMaterial:
+                    return typeof(MaterialDefinition);
                 case StylePropertyId.UnityOverflowClipBox:
                     return typeof(OverflowClipBox);
                 case StylePropertyId.UnityParagraphSpacing:
@@ -555,6 +559,8 @@ namespace UnityEngine.UIElements
                     return style.unityFontDefinition;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return style.unityFontStyleAndWeight;
+                case StylePropertyId.UnityMaterial:
+                    return style.unityMaterial;
                 case StylePropertyId.UnityOverflowClipBox:
                     return style.unityOverflowClipBox;
                 case StylePropertyId.UnityParagraphSpacing:
@@ -809,6 +815,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     style.unityFontStyleAndWeight = (StyleEnum<FontStyle>)value;
+                    break;
+                case StylePropertyId.UnityMaterial:
+                    style.unityMaterial = (StyleMaterialDefinition)value;
                     break;
                 case StylePropertyId.UnityOverflowClipBox:
                     style.unityOverflowClipBox = (StyleEnum<OverflowClipBox>)value;
@@ -1081,6 +1090,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFontStyleAndWeight:
                     style.unityFontStyleAndWeight = keyword;
                     break;
+                case StylePropertyId.UnityMaterial:
+                    style.unityMaterial = keyword;
+                    break;
                 case StylePropertyId.UnityOverflowClipBox:
                     style.unityOverflowClipBox = keyword;
                     break;
@@ -1352,6 +1364,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return new()
                     {};
+                case StylePropertyId.UnityMaterial:
+                    return new()
+                    {StyleKeyword.None};
                 case StylePropertyId.UnityOverflowClipBox:
                     return new()
                     {};
@@ -1553,6 +1568,8 @@ namespace UnityEngine.UIElements
                     return (StyleFontDefinition)(FontDefinition)value;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return (StyleEnum<FontStyle>)(FontStyle)value;
+                case StylePropertyId.UnityMaterial:
+                    return (StyleMaterialDefinition)(MaterialDefinition)value;
                 case StylePropertyId.UnityOverflowClipBox:
                     return (StyleEnum<OverflowClipBox>)(OverflowClipBox)value;
                 case StylePropertyId.UnityParagraphSpacing:
@@ -1739,6 +1756,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleFontDefinition);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return typeof(StyleEnum<FontStyle>);
+                case StylePropertyId.UnityMaterial:
+                    return typeof(StyleMaterialDefinition);
                 case StylePropertyId.UnityOverflowClipBox:
                     return typeof(StyleEnum<OverflowClipBox>);
                 case StylePropertyId.UnityParagraphSpacing:
@@ -1868,6 +1887,8 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return true;
+                case StylePropertyId.UnityMaterial:
+                    return true;
                 case StylePropertyId.UnityParagraphSpacing:
                     return true;
                 case StylePropertyId.UnityTextAlign:
@@ -1891,7 +1912,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityEditorTextRenderingMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityEditorTextRenderingMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
 
         public static bool IsDiscreteTypeProperty(StylePropertyId id)

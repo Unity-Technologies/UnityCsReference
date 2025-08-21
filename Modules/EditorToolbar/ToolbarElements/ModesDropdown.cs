@@ -9,7 +9,7 @@ namespace UnityEditor.Toolbars
 {
     static class ModesDropdown
     {
-        const string k_Path = "Editor Utility/Modes";
+        const string k_Path = "Editor Controls/Modes";
 
         static ModesDropdown()
         {

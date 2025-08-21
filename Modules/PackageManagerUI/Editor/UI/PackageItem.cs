@@ -299,9 +299,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("There are assets in your project that are imported from this {0}."),
             L10n.Tr("This {0} is in development."),
             L10n.Tr("A newer version of this {0} is available."),
-            "",
             L10n.Tr("There are errors with this {0}. Read the {0} details for further guidance."),
-            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance.")
+            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance."),
+            L10n.Tr("This {0} is restricted. Read the {0} details for further guidance."),
         };
 
         public string GetTooltipByState(PackageState state)
@@ -318,7 +318,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("{0} resuming in progress."),
             L10n.Tr("{0} installing in progress."),
             L10n.Tr("{0} resetting in progress."),
-            L10n.Tr("{0} removing in progress.")
+            L10n.Tr("{0} removing in progress."),
+            L10n.Tr("{0} exporting in progress."),
         };
 
         public string GetTooltipByProgress(PackageProgress progress)

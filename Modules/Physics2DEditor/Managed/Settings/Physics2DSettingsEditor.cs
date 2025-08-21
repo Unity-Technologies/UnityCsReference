@@ -4,13 +4,14 @@
 
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.LowLevelPhysics2D;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(Physics2DSettings))]
     internal class Physics2DSettingsEditor : ProjectSettingsBaseEditor
     {
-        private static class Content
+        internal static class Content
         {
             public static readonly GUIContent kMultithreadingLabel = EditorGUIUtility.TrTextContent("Multithreading", "Allows the configuration of multi-threaded physics using the job system.");
             public static readonly GUIContent kGizmosLabel = EditorGUIUtility.TrTextContent("Gizmos", "Allows the configuration of 2D physics gizmos shown in the Editor.");
@@ -21,6 +22,7 @@ namespace UnityEditor
 
             public static readonly GUIContent kGeneralLabel = EditorGUIUtility.TrTextContent("General Settings", "General Settings");
             public static readonly GUIContent kCollisionLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Collision Settings");
+            public static readonly GUIContent kLowLevelLabel = EditorGUIUtility.TrTextContent("Low Level", "Low Level");
         }
 
         class Styles
@@ -30,7 +32,8 @@ namespace UnityEditor
 
         // These are to maintain UI selection.
         const string UniqueSettingsKey = "UnityEditor.U2D.Physics/";
-        const string GeneralSettingsSelectedKey = UniqueSettingsKey + "GeneralSettingsSelected";
+        const string Physics2DSettingsTabKey = UniqueSettingsKey + "Physics2DSettingsTabSelected";
+        const string PhysicsLowLevelSettingsKey = "PhysicsLowLevel2D";
 
         SerializedProperty m_ReuseCollisionCallbacks;
         SerializedProperty m_AutoSyncTransforms;
@@ -44,6 +47,8 @@ namespace UnityEditor
         SerializedProperty m_MinSubStepFPS;
         SerializedProperty m_MaxSubStepCount;
 
+        SerializedProperty m_PhysicsLowLevelSettings;
+
         public void OnEnable()
         {
             m_ReuseCollisionCallbacks = serializedObject.FindProperty("m_ReuseCollisionCallbacks");
@@ -56,148 +61,246 @@ namespace UnityEditor
             m_MaxSubStepCount = serializedObject.FindProperty("m_MaxSubStepCount");
             m_MinSubStepFPS = serializedObject.FindProperty("m_MinSubStepFPS");
             m_GizmoOptions = serializedObject.FindProperty("m_GizmoOptions");
+
+            m_PhysicsLowLevelSettings = serializedObject.FindProperty("m_PhysicsLowLevelSettings");
+
+            // Register to be notified of undo/redo.
+            Undo.undoRedoEvent += OnUndoRedo;
         }
 
-        private bool generalSettingsSelected
+        public void OnDisable()
         {
-            get { return EditorPrefs.GetBool(GeneralSettingsSelectedKey, true); }
-            set { EditorPrefs.SetBool(GeneralSettingsSelectedKey, value); }
+            // Remove any undo for the preference state.
+            Undo.ClearUndo(this);
+
+            // Unregister undo/redo notifications.
+            Undo.undoRedoEvent -= OnUndoRedo;
+        }
+
+        private void OnUndoRedo(in UndoRedoInfo info)
+        {
+            if (info.undoName == PhysicsLowLevelSettingsKey)
+                LowLevelPhysics2D.PhysicsEditor.ReadProjectSettings();
+        }
+
+        private enum Physics2DSettingsTab : int
+        {
+            General = 0,
+            CollisionMatrix = 1,
+            LowLevel = 2,
+
+            TabCount = 3
+        }
+
+        private Physics2DSettingsTab settingsTabSelected
+        {
+            get { return (Physics2DSettingsTab)EditorPrefs.GetInt(Physics2DSettingsTabKey, (int)Physics2DSettingsTab.General); }
+            set { EditorPrefs.SetInt(Physics2DSettingsTabKey, (int)value); }
         }
 
         static GUIStyle s_TabFirst;
+        static GUIStyle s_TabMiddle;
         static GUIStyle s_TabLast;
 
-        static Rect GetTabSelection(Rect rect, int tabIndex, out GUIStyle tabStyle)
+        static Rect GetTabSelection(Rect rect, Physics2DSettingsTab tabSelected, out GUIStyle tabStyle)
         {
+            const int tabCount = (int)Physics2DSettingsTab.TabCount;
+            int tabIndex = (int)tabSelected;
+
             if (s_TabFirst == null)
             {
                 s_TabFirst = "Tab first";
+                s_TabMiddle = "Tab middle";
                 s_TabLast = "Tab last";
             }
 
-            if (tabIndex == 0)
-                tabStyle = s_TabFirst;
-            else
-                tabStyle = s_TabLast;
+            tabStyle = s_TabMiddle;
 
-            var tabWidth = rect.width / 2;
+            if (tabIndex == 0)
+            {
+                tabStyle = s_TabFirst;
+            }
+            else if (tabIndex == tabCount-1)
+            {
+                tabStyle = s_TabLast;
+            }
+            else
+            {
+                tabStyle = s_TabMiddle;
+            }
+
+            var tabWidth = rect.width / tabCount;
             var left = Mathf.RoundToInt(tabIndex * tabWidth);
             var right = Mathf.RoundToInt((tabIndex + 1) * tabWidth);
             return new Rect(rect.x + left, rect.y, right - left, EditorGUI.kTabButtonHeight);
-        }
+        }          
 
         public override void OnInspectorGUI()
         {
-            // Tabs.
-            {
-                // Select tabs.
-                EditorGUI.BeginChangeCheck();
-                var rect = EditorGUILayout.BeginVertical(Styles.kSettingsFramebox);
+            var rect = EditorGUILayout.BeginVertical(Styles.kSettingsFramebox);
 
+            // Select tabs.
+            EditorGUI.BeginChangeCheck();
+
+            GUIStyle buttonStyle = null;
+
+            {
                 // Draw General Settings Tab.
-                GUIStyle buttonStyle = null;
-                var buttonRect = GetTabSelection(rect, 0, out buttonStyle);
-                if (GUI.Toggle(buttonRect, generalSettingsSelected, Content.kGeneralLabel, buttonStyle))
-                    generalSettingsSelected = true;
+                var buttonRect = GetTabSelection(rect, Physics2DSettingsTab.General, out buttonStyle);
+                if (GUI.Toggle(buttonRect, settingsTabSelected == Physics2DSettingsTab.General, Content.kGeneralLabel, buttonStyle))
+                    settingsTabSelected = Physics2DSettingsTab.General;
+            }
 
+            {
                 // Draw Collision Settings Tab.
-                buttonRect = GetTabSelection(rect, 1, out buttonStyle);
-                if (GUI.Toggle(buttonRect, !generalSettingsSelected, Content.kCollisionLabel, buttonStyle))
-                    generalSettingsSelected = false;
-
-                GUILayoutUtility.GetRect(10, EditorGUI.kTabButtonHeight);
-                EditorGUI.EndChangeCheck();
+                var buttonRect = GetTabSelection(rect, Physics2DSettingsTab.CollisionMatrix, out buttonStyle);
+                if (GUI.Toggle(buttonRect, settingsTabSelected == Physics2DSettingsTab.CollisionMatrix, Content.kCollisionLabel, buttonStyle))
+                    settingsTabSelected = Physics2DSettingsTab.CollisionMatrix;
             }
 
-            // Draw tab selection.
-            if (generalSettingsSelected)
             {
-                // Update object.
-                serializedObject.Update();
-
-                // Draw standard property settings.
-                EditorGUILayout.Space();
-                EditorGUILayout.Space();
-                DrawPropertiesExcluding(
-                    serializedObject,
-                    m_ReuseCollisionCallbacks.name,
-                    m_AutoSyncTransforms.name,
-                    m_SimulationMode.name,
-                    m_SimulationLayers.name,
-                    m_UseSubStepping.name,
-                    m_UseSubStepContacts.name,
-                    m_MaxSubStepCount.name,
-                    m_MinSubStepFPS.name,
-                    m_GizmoOptions.name,
-                    m_Multithreading.name);
-
-                // Reuse Collision Callbacks.
-                EditorGUILayout.PropertyField(m_ReuseCollisionCallbacks);
-                if (!m_ReuseCollisionCallbacks.boolValue)
-                {
-                    EditorGUILayout.HelpBox(Content.kReuseCollisionCallbacksLabel.ToString(), MessageType.Warning, false);
-                    EditorGUILayout.Space();
-                }
-
-                // Auto Sync Transforms.
-                EditorGUILayout.PropertyField(m_AutoSyncTransforms);
-                if (m_AutoSyncTransforms.boolValue)
-                {
-                    EditorGUILayout.HelpBox(Content.kAutoSyncTransformsLabel.ToString(), MessageType.Warning, false);
-                    EditorGUILayout.Space();
-                }
-
-                // Draw the Simulation Mode options.
-                var simulationMode = (SimulationMode2D)EditorGUILayout.EnumPopup(Content.kSimulationModeLabel, (SimulationMode2D)m_SimulationMode.enumValueIndex);
-                m_SimulationMode.enumValueIndex = (int)simulationMode;
-
-                // If the simulation mode is "Update" or "Script" then present the sub-stepping options.
-                if (simulationMode == SimulationMode2D.Update || simulationMode == SimulationMode2D.Script)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(m_UseSubStepping);
-                    EditorGUILayout.PropertyField(m_UseSubStepContacts);
-                    EditorGUILayout.PropertyField(m_MaxSubStepCount);
-
-                    GUILayout.BeginHorizontal();
-                    EditorGUILayout.PropertyField(m_MinSubStepFPS);
-                    EditorGUILayout.LabelField(string.Format($"{(1f / m_MinSubStepFPS.floatValue).ToString("0.00000 seconds")} (delta time)"));
-                    GUILayout.EndHorizontal();
-
-                    EditorGUI.indentLevel--;
-                }
-
-                // If the simulation mode is "FixedUpdate" or "Update" then present the simulation layers.
-                if (simulationMode == SimulationMode2D.FixedUpdate || simulationMode == SimulationMode2D.Update)
-                {
-                    EditorGUILayout.PropertyField(m_SimulationLayers);
-                }
-
-                // Draw the Gizmo options.
-                Physics2D.GizmoOptions gizmoOptions = (Physics2D.GizmoOptions)m_GizmoOptions.intValue;
-                gizmoOptions = (Physics2D.GizmoOptions)EditorGUILayout.EnumFlagsField(Content.kGizmosLabel, gizmoOptions);
-                m_GizmoOptions.intValue = (int)gizmoOptions;
-
-                // Multithreading.
-                GUILayout.BeginHorizontal();
-                GUILayout.Space(0);
-                EditorGUILayout.PropertyField(m_Multithreading, Content.kMultithreadingLabel, true);
-                GUILayout.EndHorizontal();
-
-                // Padding.
-                EditorGUILayout.Space();
-
-                // Apply changes.
-                serializedObject.ApplyModifiedProperties();
+                // Low Level Settings Tab.
+                var buttonRect = GetTabSelection(rect, Physics2DSettingsTab.LowLevel, out buttonStyle);
+                if (GUI.Toggle(buttonRect, settingsTabSelected == Physics2DSettingsTab.LowLevel, Content.kLowLevelLabel, buttonStyle))
+                    settingsTabSelected = Physics2DSettingsTab.LowLevel;
             }
-            else
+
+            GUILayoutUtility.GetRect(10, EditorGUI.kTabButtonHeight);
+            EditorGUI.EndChangeCheck();
+
+            switch (settingsTabSelected)
             {
-                // Layer Collision Matrix.
-                LayerCollisionMatrixGUI2D.Draw(
-                    Content.kLayerCollisionMatrixLabel,
-                    (int layerA, int layerB) => { return !Physics2D.GetIgnoreLayerCollision(layerA, layerB); },
-                    (int layerA, int layerB, bool val) => { Physics2D.IgnoreLayerCollision(layerA, layerB, !val); }
-                    );
+                case Physics2DSettingsTab.General:
+                    {
+                        // Update object.
+                        serializedObject.Update();
+
+                        // Padding.
+                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing * 2f);
+                        EditorGUI.indentLevel++;
+
+                        // Draw standard property settings.
+                        DrawPropertiesExcluding(
+                            serializedObject,
+                            m_ReuseCollisionCallbacks.name,
+                            m_AutoSyncTransforms.name,
+                            m_SimulationMode.name,
+                            m_SimulationLayers.name,
+                            m_UseSubStepping.name,
+                            m_UseSubStepContacts.name,
+                            m_MaxSubStepCount.name,
+                            m_MinSubStepFPS.name,
+                            m_GizmoOptions.name,
+                            m_Multithreading.name,
+                            m_PhysicsLowLevelSettings.name);
+
+                        // Reuse Collision Callbacks.
+                        EditorGUILayout.PropertyField(m_ReuseCollisionCallbacks);
+                        if (!m_ReuseCollisionCallbacks.boolValue)
+                        {
+                            EditorGUILayout.HelpBox(Content.kReuseCollisionCallbacksLabel.ToString(), MessageType.Warning, false);
+                            EditorGUILayout.Space();
+                        }
+
+                        // Auto Sync Transforms.
+                        EditorGUILayout.PropertyField(m_AutoSyncTransforms);
+                        if (m_AutoSyncTransforms.boolValue)
+                        {
+                            EditorGUILayout.HelpBox(Content.kAutoSyncTransformsLabel.ToString(), MessageType.Warning, false);
+                            EditorGUILayout.Space();
+                        }
+
+                        // Draw the Simulation Mode options.
+                        var simulationMode = (SimulationMode2D)EditorGUILayout.EnumPopup(Content.kSimulationModeLabel, (SimulationMode2D)m_SimulationMode.enumValueIndex);
+                        m_SimulationMode.enumValueIndex = (int)simulationMode;
+
+                        // If the simulation mode is "Update" or "Script" then present the sub-stepping options.
+                        if (simulationMode == SimulationMode2D.Update || simulationMode == SimulationMode2D.Script)
+                        {
+                            EditorGUI.indentLevel++;
+                            EditorGUILayout.PropertyField(m_UseSubStepping);
+                            EditorGUILayout.PropertyField(m_UseSubStepContacts);
+                            EditorGUILayout.PropertyField(m_MaxSubStepCount);
+
+                            GUILayout.BeginHorizontal();
+                            EditorGUILayout.PropertyField(m_MinSubStepFPS);
+                            EditorGUILayout.LabelField(string.Format($"{(1f / m_MinSubStepFPS.floatValue).ToString("0.00000 seconds")} (delta time)"));
+                            GUILayout.EndHorizontal();
+
+                            EditorGUI.indentLevel--;
+                        }
+
+                        // If the simulation mode is "FixedUpdate" or "Update" then present the simulation layers.
+                        if (simulationMode == SimulationMode2D.FixedUpdate || simulationMode == SimulationMode2D.Update)
+                        {
+                            EditorGUILayout.PropertyField(m_SimulationLayers);
+                        }
+
+                        // Draw the Gizmo options.
+                        Physics2D.GizmoOptions gizmoOptions = (Physics2D.GizmoOptions)m_GizmoOptions.intValue;
+                        gizmoOptions = (Physics2D.GizmoOptions)EditorGUILayout.EnumFlagsField(Content.kGizmosLabel, gizmoOptions);
+                        m_GizmoOptions.intValue = (int)gizmoOptions;
+
+                        // Multithreading.
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Space(0);
+                        EditorGUILayout.PropertyField(m_Multithreading, Content.kMultithreadingLabel, true);
+                        GUILayout.EndHorizontal();
+
+                        // Padding.
+                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing * 2f);
+                        EditorGUI.indentLevel--;
+
+                        // Apply changes.
+                        serializedObject.ApplyModifiedProperties();
+                    }
+                    break;
+
+                case Physics2DSettingsTab.CollisionMatrix:
+                    {
+                        // Padding.
+                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing * 2f);
+
+                        // Layer Collision Matrix.
+                        LayerCollisionMatrixGUI2D.Draw(
+                            Content.kLayerCollisionMatrixLabel,
+                            (int layerA, int layerB) => { return !Physics2D.GetIgnoreLayerCollision(layerA, layerB); },
+                            (int layerA, int layerB, bool val) => { Physics2D.IgnoreLayerCollision(layerA, layerB, !val); }
+                            );
+                    }
+                    break;
+
+                case Physics2DSettingsTab.LowLevel:
+                    {
+                        EditorGUI.BeginChangeCheck();
+
+                        // Update object.
+                        serializedObject.Update();
+                    
+                        EditorGUI.indentLevel++;
+
+                        // Low Level Settings.
+                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing);
+                        EditorGUILayout.ObjectField(m_PhysicsLowLevelSettings, typeof(PhysicsLowLevelSettings2D));
+
+                        // Padding.
+                        EditorGUILayout.Space(EditorGUI.kDefaultSpacing * 2f);
+
+                        EditorGUI.indentLevel--;
+
+                        // Apply changes.
+                        serializedObject.ApplyModifiedProperties();
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(this, PhysicsLowLevelSettingsKey);
+                            LowLevelPhysics2D.PhysicsEditor.ReadProjectSettings();
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
             }
 
             EditorGUILayout.EndVertical();

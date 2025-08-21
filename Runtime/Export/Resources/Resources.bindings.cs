@@ -45,6 +45,7 @@ namespace UnityEngine
     {
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("Resources_Bindings::FindObjectsOfTypeAll")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         public extern static Object[] FindObjectsOfTypeAll(Type type);
 
         [FreeFunction("GetShaderNameRegistry().FindShader")]

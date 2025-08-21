@@ -100,15 +100,27 @@ namespace UnityEditor
                     var classicEngineHelpboxWarning = rootElement.Q<HelpBox>(name: "classic-helpbox-warning");
 
                     int currentChoiceIndex = 0;
+                    int choiceCount = 0;
                     uint currentSerializedId = serializedObject.FindProperty("m_CurrentBackendId").uintValue;
                     uint currentId = Physics.GetCurrentIntegrationInfo().id;
+
+                    Dictionary<string, uint> choiceToId = new Dictionary<string, uint>();
+                    classicEngineDropdown.userData = choiceToId;
 
                     for (int i = 0; i < infos.Length; ++i)
                     {
                         IntegrationInfo info = infos[i];
-                        classicEngineDropdown.choices.Add(info.name);
-                        if (currentSerializedId == info.id)
-                            currentChoiceIndex = i;
+                        if (info.HasRequiredEntitlements())
+                        {
+                            string choiceName = info.isExperimental ? $"{info.name} (Experimental)" : info.name;
+                            classicEngineDropdown.choices.Add(choiceName);
+                            choiceToId.Add(choiceName, info.id);
+
+                            if (currentSerializedId == info.id)
+                                currentChoiceIndex = choiceCount;
+
+                            choiceCount++;
+                        }
                     }
 
                     classicEngineDropdown.value = classicEngineDropdown.choices[currentChoiceIndex];
@@ -122,18 +134,9 @@ namespace UnityEditor
                         if (evt.newValue == evt.previousValue)
                             return;
 
-                        uint oldIntegrationId = Physics.GetCurrentIntegrationInfo().id;
-                        uint newIntegrationId = 0;
-                        ReadOnlySpan<IntegrationInfo> integrationInfos = Physics.GetIntegrationInfos();
-                        for (int i = 0; i < integrationInfos.Length; ++i)
-                        {
-                            IntegrationInfo info = integrationInfos[i];
-                            if (info.name == evt.newValue)
-                            {
-                                newIntegrationId = info.id;
-                            }
-                        }
-
+                        var choiceToIdMapping = (Dictionary<string, uint>)classicEngineDropdown.userData;
+                        uint newIntegrationId = choiceToIdMapping.GetValueOrDefault(evt.newValue, IntegrationInfo.k_FallbackIntegrationId);
+                        
                         var idProp = serializedObject.FindProperty("m_CurrentBackendId");
                         idProp.uintValue = newIntegrationId;
 

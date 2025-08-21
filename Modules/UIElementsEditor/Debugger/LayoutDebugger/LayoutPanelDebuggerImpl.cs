@@ -66,9 +66,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
         SearchInfo m_SearchInfo;
 
-        static UIRLayoutUpdater GetLayoutUpdater(IPanel panel)
+        static VisualTreeLayoutUpdater GetLayoutUpdater(IPanel panel)
         {
-            return (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Layout) as UIRLayoutUpdater;
+            return (panel as BaseVisualElementPanel)?.GetUpdater(VisualTreeUpdatePhase.Layout) as VisualTreeLayoutUpdater;
         }
 
         internal void SetRecord(List<LayoutDebuggerItem> _recordLayout)
@@ -423,7 +423,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
                     if (e.newValue == false)
                     {
-                        UnityEditor.EditorApplication.update -= UIRLayoutUpdater.IncrementMainLoopCount;
+                        UnityEditor.EditorApplication.update -= VisualTreeLayoutUpdater.IncrementMainLoopCount;
 
                         m_RecordLayoutToggle.text = "Record Layout Updates (" + layoutUpdater.recordLayoutCount + ")";
                         m_Interface.SetEnabled(true);
@@ -433,7 +433,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                     }
                     else
                     {
-                        UnityEditor.EditorApplication.update += UIRLayoutUpdater.IncrementMainLoopCount;
+                        UnityEditor.EditorApplication.update += VisualTreeLayoutUpdater.IncrementMainLoopCount;
                     }
                 }
             });
@@ -445,11 +445,11 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             {
                 if (e.newValue)
                 {
-                    UIRLayoutUpdater.s_StopRecording = this;
+                    VisualTreeLayoutUpdater.s_StopRecording = this;
                 }
                 else
                 {
-                    UIRLayoutUpdater.s_StopRecording = null;
+                    VisualTreeLayoutUpdater.s_StopRecording = null;
                 }
             });
             m_Toolbar.Add(m_StopRecordingOnError);

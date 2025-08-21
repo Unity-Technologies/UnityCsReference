@@ -54,6 +54,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string removeSettings = L10n.Tr("Remove Settings");
         public static readonly string resetMessage = L10n.Tr("Are you sure you want to reset these settings? This operation cannot be undone.");
         public static readonly string removeMessage = L10n.Tr("Are you sure you want to remove these settings? This operation cannot be undone.");
+        public static readonly string diagnostics = L10n.Tr("Diagnostics");
 
         // Build Profile Player Settings
         public static readonly string playerSettingsInfo =
@@ -95,6 +96,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string selectAll = L10n.Tr("Select All");
         public static readonly string deselectAll = L10n.Tr("Deselect All");
         public static readonly string buildProfileNameLabel = L10n.Tr("Name");
+        public static readonly string buildProfileConfigurationLabel = L10n.Tr("Build Profile Configurations");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");
@@ -103,6 +105,12 @@ namespace UnityEditor.Build.Profile
         public static readonly string textureCompressionLabel = L10n.Tr("Texture Compression");
         public static readonly string assetImportOverrideDescription =
             L10n.Tr("These settings allow you to override the compression\nand max resolution for textures in your project. This is\nuseful for local development, to speed up texture\nimporting or build target switching.");
+
+        // Platform Configuration Descriptions
+        public static readonly string webMobileDevelopmentDescription = L10n.Tr("Optimized for mobile builds with settings that enable fast build times for rapid development iteration.");
+        public static readonly string webMobileReleaseDescription = L10n.Tr("Optimized for mobile builds with settings that compress and optimize the build for fast load times, ideal for final release builds.");
+        public static readonly string webDesktopDevelopmentDescription = L10n.Tr("Optimized for desktop builds with settings that enable fast build times for rapid development iteration.");
+        public static readonly string webDesktopReleaseDescription = L10n.Tr("Optimized for desktop builds with settings that compress and optimize the build for fast load times, ideal for final release builds.");
 
         public static string GetSettingsSectionName(string platform) => L10n.Tr($"Platform Settings ({platform})");
     }

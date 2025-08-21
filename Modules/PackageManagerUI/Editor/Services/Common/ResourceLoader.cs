@@ -19,6 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         StyleSheet inProgressDropdownStyleSheet { get; }
         StyleSheet selectionWindowStyleSheet { get; }
         StyleSheet customDisplayDialogStyleSheet { get; }
+        StyleSheet exportWindowStyleSheet { get; }
         VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true);
     }
 
@@ -72,6 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             internal static readonly string inputDropdown = "StyleSheets/PackageManager/InputDropdown.uss";
             internal static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
             internal static readonly string customDisplayDialog = "StyleSheets/PackageManager/CustomDisplayDialog.uss";
+            internal static readonly string exportWindowStyleSheet = "StyleSheets/PackageManager/ExportWindow.uss";
 
             internal static readonly string selectionWindowCommon = "StyleSheets/PackageManager/SelectionWindow.uss";
             internal static string selectionWindowVariables => EditorGUIUtility.isProSkin ?
@@ -88,6 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             InProgressDropdown,
             SelectionWindow,
             CustomDisplayDialog,
+            ExportWindow,
 
             Count
         }
@@ -193,6 +196,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             ?? ResolveStyleSheets(StyleSheetType.CustomDisplayDialog,
                         StyleSheetPath.packageManagerVariables,
                         StyleSheetPath.customDisplayDialog);
+
+        public StyleSheet exportWindowStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.ExportWindow)
+            ?? ResolveStyleSheets(StyleSheetType.ExportWindow,
+            StyleSheetPath.packageManagerVariables,
+            StyleSheetPath.exportWindowStyleSheet);
 
         public StyleSheet selectionWindowStyleSheet
         {

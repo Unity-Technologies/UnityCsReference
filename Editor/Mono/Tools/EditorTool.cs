@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -26,6 +27,10 @@ namespace UnityEditor.EditorTools
         [HideInInspector]
         [SerializeField]
         internal UnityObject m_Target;
+
+        [HideInInspector]
+        [SerializeField]
+        bool m_Hidden;
 
         public IEnumerable<UnityObject> targets
         {
@@ -56,6 +61,10 @@ namespace UnityEditor.EditorTools
         {
             get { return false; }
         }
+
+        public bool isHidden => m_Hidden;
+        
+        internal static event Action<EditorTool> stateChanged;
 
         internal void Activate()
         {
@@ -89,6 +98,12 @@ namespace UnityEditor.EditorTools
         public virtual bool IsAvailable()
         {
             return true;
+        }
+        
+        public void SetHidden(bool hidden)
+        {
+            m_Hidden = hidden;
+            stateChanged?.Invoke(this);
         }
 
         void IEditor.SetTarget(UnityObject value)

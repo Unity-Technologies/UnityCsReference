@@ -29,6 +29,17 @@ namespace UnityEngine.UIElements
         public static extern Gradient GetStrokeGradient(IntPtr handle);
         public static extern void SetStrokeGradient(IntPtr handle, Gradient gradient);
 
+        public static extern FillGradient GetFillGradient(IntPtr handle);
+        public static extern void SetFillGradient(IntPtr handle, FillGradient gradient);
+        public static extern bool HasFillGradient(IntPtr handle);
+
+        public static extern void SetHasFillTexture(IntPtr handle, bool hasFillTexture);
+        public static extern bool HasFillTexture(IntPtr handle);
+
+        internal static extern void SetFillTransform(IntPtr handle, Matrix4x4 fillTransform);
+
+        internal static extern void SetOpacity(IntPtr handle, float opacity);
+
         public static extern Color GetFillColor(IntPtr handle);
         public static extern void SetFillColor(IntPtr handle, Color value);
 
@@ -120,5 +131,151 @@ namespace UnityEngine.UIElements
 
         /// <summary>A counter-clockwise direction.</summary>
         CounterClockwise
+    }
+
+    /// <summary>
+    /// Describes a fill gradient used for rendering filled shapes in <see cref="Painter2D"/>.
+    /// The start, end , center, focus, and radius properties are pixel coordinate relative to the painter's coordinate system.
+    /// </summary>
+    /// <remarks>
+    /// This struct encapsulates the data required to define a gradient fill, including the gradient itself,
+    /// the type of gradient (linear or radial), and the parameters that control the direction or focus of the gradient.
+    /// </remarks>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FillGradient
+    {
+        /// <summary>The color gradient used for the fill.</summary>
+        public Gradient gradient { get; set; }
+
+        /// <summary>The type of gradient to use (linear or radial).</summary>
+        public GradientType gradientType { get; set; }
+
+        /// <summary>Specifies how the gradient is sampled when UV coordinates are outside the [0, 1] range.</summary>
+        public AddressMode addressMode { get; set; }
+
+        /// <summary>The start point for a linear gradient.</summary>
+        public Vector2 start { get; set; }
+
+        /// <summary>The end point for a linear gradient.</summary>
+        public Vector2 end { get; set; }
+
+        /// <summary>The center point for a radial gradient.</summary>
+        public Vector2 center { get; set; }
+
+        /// <summary>The Focus point for radial gradient.</summary>
+        public Vector2 focus { get; set; }
+
+        /// <summary>The radius for a radial gradient.</summary>
+        public float radius { get; set; }
+
+        /// <summary>
+        /// Helper method to create a linear gradient fill, using startColor and endColor to define the gradient.
+        /// </summary>
+        /// <param name="startColor"></param>
+        /// <param name="endColor"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="addressMode"></param>
+        static public FillGradient MakeLinearGradient(
+            Color startColor,
+            Color endColor,
+            Vector2 start,
+            Vector2 end,
+            AddressMode addressMode = AddressMode.Clamp)
+        {
+            Gradient gradient = new Gradient()
+            {
+                colorKeys = new GradientColorKey[] {
+                        new GradientColorKey() { color = startColor, time = 0.0f },
+                        new GradientColorKey() { color = endColor, time = 1.0f }
+                    }
+            };
+
+            return MakeLinearGradient(gradient, 
+            start,
+            end,
+            addressMode);
+        }
+
+        /// <summary>
+        /// Helper method to create a linear gradient fill.
+        /// </summary>
+        /// <param name="gradient"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="addressMode"></param>
+        static public FillGradient MakeLinearGradient(
+           Gradient gradient,
+           Vector2 start,
+           Vector2 end,
+           AddressMode addressMode = AddressMode.Clamp)
+        {
+            FillGradient fillGradient = new FillGradient();
+            fillGradient.gradient = gradient;
+            fillGradient.gradientType = GradientType.Linear;
+            fillGradient.addressMode = addressMode;
+            fillGradient.start = start;
+            fillGradient.end = end;
+            fillGradient.center = Vector2.zero;
+            fillGradient.focus = Vector2.zero;
+            fillGradient.radius = 0f;
+            return fillGradient;
+        }
+
+        /// <summary>
+        /// Helper method to create a radial gradient fill, using startColor and endColor to define the gradient.
+        /// </summary>
+        /// <param name="startColor"></param>
+        /// <param name="endColor"></param>
+        /// <param name="center"></param>
+        /// <param name="radius"></param>
+        /// <param name="focus"></param>
+        /// <param name="addressMode"></param>
+        static public FillGradient MakeRadialGradient(
+            Color startColor,
+            Color endColor,
+            Vector2 center,
+            float radius,
+            Vector2 focus,
+            AddressMode addressMode = AddressMode.Clamp)
+        {
+            Gradient gradient = new Gradient()
+            {
+                colorKeys = new GradientColorKey[] {
+                        new GradientColorKey() { color = startColor, time = 0.0f },
+                        new GradientColorKey() { color = endColor, time = 1.0f }
+                    }
+            };
+
+            return MakeRadialGradient(gradient, center, radius, focus, addressMode);
+        }
+
+
+        /// <summary>
+        /// Helper method to create a radial gradient fill.
+        /// </summary>
+        /// <param name="gradient"></param>
+        /// <param name="center"></param>
+        /// <param name="radius"></param>
+        /// <param name="focus"></param>
+        /// <param name="addressMode"></param>
+        static public FillGradient MakeRadialGradient(
+            Gradient gradient,
+            Vector2 center,
+            float radius,
+            Vector2 focus,
+            AddressMode addressMode = AddressMode.Clamp)
+        {
+            FillGradient fillGradient = new FillGradient();
+            fillGradient.gradient = gradient;
+            fillGradient.gradientType = GradientType.Radial;
+            fillGradient.addressMode = addressMode;
+            fillGradient.start = Vector2.zero;
+            fillGradient.end = Vector2.zero;
+            fillGradient.center = center;
+            fillGradient.focus = focus;
+            fillGradient.radius = radius;
+            return fillGradient;
+        }
     }
 }

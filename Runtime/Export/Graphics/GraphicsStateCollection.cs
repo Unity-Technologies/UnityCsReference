@@ -11,7 +11,7 @@ namespace UnityEngine.Experimental.Rendering
     public sealed partial class GraphicsStateCollection : Object
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct GraphicsState
+        public partial struct GraphicsState
         {
             public VertexAttributeDescriptor[] vertexAttributes;
             public AttachmentDescriptor[] attachments;
@@ -29,6 +29,7 @@ namespace UnityEngine.Experimental.Rendering
             public int shadingRateIndex;
             public int multiviewCount;
             public int sampleCount;
+            public bool hasEyeTexture;
             public bool wireframe;
             public bool invertCulling;
             public bool negativeScale;
@@ -41,6 +42,20 @@ namespace UnityEngine.Experimental.Rendering
             public Shader shader;
             public PassIdentifier passId;
             public LocalKeyword[] keywords;
+
+            public ShaderVariant(Shader shader, PassIdentifier passId, LocalKeyword[] keywords)
+            {
+                this.shader = shader;
+                this.passId = passId;
+                this.keywords = keywords;
+            }
+
+            public ShaderVariant(Material material, PassIdentifier passId)
+            {
+                this.shader = material.shader;
+                this.passId = passId;
+                this.keywords = material.enabledKeywords;
+            }
         }
     }
 
@@ -56,6 +71,18 @@ namespace UnityEngine.Experimental.Rendering
         public int GetGraphicsStateCountForVariant(ShaderVariant variant)
         {
             return GetGraphicsStateCountForVariant(variant.shader, variant.passId, variant.keywords);
+        }
+        public bool AddGraphicsStateForVariant(ShaderVariant variant, GraphicsState setup)
+        {
+            return AddGraphicsStateForVariant(variant.shader, variant.passId, variant.keywords, setup);
+        }
+        public bool RemoveGraphicsStatesForVariant(ShaderVariant variant)
+        {
+            return RemoveGraphicsStatesForVariant(variant.shader, variant.passId, variant.keywords);
+        }
+        public bool CopyGraphicsStatesForVariant(ShaderVariant srcVariant, ShaderVariant dstVariant)
+        {
+            return CopyGraphicsStatesForVariant(srcVariant.shader, srcVariant.passId, srcVariant.keywords, dstVariant.shader, dstVariant.passId, dstVariant.keywords);
         }
     }
 }

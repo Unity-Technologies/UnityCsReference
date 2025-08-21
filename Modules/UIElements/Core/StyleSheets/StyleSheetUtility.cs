@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements
         {
             {"nowrap", "NoWrap"},
             {"sdf", "SDF"},
+            {"uv", "UV"},
         };
 
         public static StyleSheet CreateInstanceWithHideFlags()
@@ -142,8 +143,7 @@ namespace UnityEngine.UIElements
                 handles.Add(new StyleValueHandle(index, type));
             }
 
-            toStyleProperty.isCustomProperty |= toStyleProperty.isCustomProperty;
-            toStyleProperty.requireVariableResolve |= toStyleProperty.requireVariableResolve;
+            toStyleProperty.requireVariableResolve |= fromStyleProperty.requireVariableResolve;
 
             toStyleProperty.values = handles.ToArray();
         }
@@ -211,23 +211,6 @@ namespace UnityEngine.UIElements
             finally
             {
                 Pool.GenericPool<StringBuilder>.Release(sb.Clear());
-            }
-        }
-
-        public static void GetRuleSelectors(
-            StyleSheet styleSheet,
-            StyleRule styleRule,
-            List<StyleComplexSelector> selectors)
-        {
-            var ruleIndex = Array.IndexOf(styleSheet.rules, styleRule);
-            if (ruleIndex < 0)
-                return;
-
-            for (var i = 0; i < styleSheet.complexSelectors.Length; ++i)
-            {
-                var selector = styleSheet.complexSelectors[i];
-                if (selector.ruleIndex == ruleIndex)
-                    selectors.Add(selector);
             }
         }
 

@@ -810,10 +810,10 @@ namespace Unity.UI.Builder
                     "Always Use UxmlTraits Attribute fields",
                 a =>
                 {
-                    BuilderUxmlAttributesView.alwaysUseUxmlTraits = !BuilderUxmlAttributesView.alwaysUseUxmlTraits;
+                    Builder.alwaysUseUxmlTraits = !Builder.alwaysUseUxmlTraits;
                     builder.inspector.RefreshUI();
                 },
-                a => BuilderUxmlAttributesView.alwaysUseUxmlTraits ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                a => Builder.alwaysUseUxmlTraits ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
 
             m_SettingsMenu.menu.AppendAction("Settings"

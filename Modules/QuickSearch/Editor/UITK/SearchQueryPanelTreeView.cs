@@ -74,7 +74,7 @@ namespace UnityEditor.Search
             m_Label.text = label;
 
             m_CountLabel.style.display = count < 0 ? DisplayStyle.None : DisplayStyle.Flex;
-            m_CountLabel.text = count.ToString();
+            SetFormattedCount(count < 0 ? 0 : count);
         }
 
         public void Unbind()
@@ -144,7 +144,7 @@ namespace UnityEditor.Search
             UpdateSearchQueryItemCount(count);
         }
 
-        void UpdateSearchQueryItemCount(int itemCount)
+        internal void UpdateSearchQueryItemCount(int itemCount)
         {
             var hidden = itemCount < 0;
             m_CountLabel.style.display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
@@ -152,6 +152,11 @@ namespace UnityEditor.Search
             if (hidden)
                 return;
 
+            SetFormattedCount(itemCount);
+        }
+
+        void SetFormattedCount(int itemCount)
+        {
             var formattedCount = Utils.FormatCount(Convert.ToUInt64(itemCount));
             m_CountLabel.text = string.Format(formattedCount);
         }

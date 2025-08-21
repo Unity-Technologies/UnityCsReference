@@ -16,7 +16,6 @@ namespace UnityEditor
 #pragma warning disable 169
 
         private static PaneDragTab s_Get;
-        private float m_TargetAlpha = 1.0f;
         private DropInfo.Type m_Type = (DropInfo.Type)(-1);
         private GUIContent m_Content;
 
@@ -24,7 +23,6 @@ namespace UnityEditor
         [SerializeField] Vector2 m_FullWindowSize = new Vector2(80, 60);
         [SerializeField] Rect m_TargetRect;
         [SerializeField] internal ContainerWindow m_Window;
-        [SerializeField] ContainerWindow m_InFrontOfWindow = null;
 
         private static class Styles
         {
@@ -59,22 +57,11 @@ namespace UnityEditor
             }
         }
 
-        public void SetDropInfo(DropInfo di, Vector2 mouseScreenPos, ContainerWindow inFrontOf)
+        public void SetDropInfo(DropInfo di, Vector2 mouseScreenPos)
         {
             if (m_Type != di.type || (di.type == DropInfo.Type.Pane && di.rect != m_TargetRect))
             {
                 m_Type = di.type;
-
-                switch (di.type)
-                {
-                    case DropInfo.Type.Window:
-                        m_TargetAlpha = 0.6f;
-                        break;
-                    case DropInfo.Type.Pane:
-                    case DropInfo.Type.Tab:
-                        m_TargetAlpha = 1.0f;
-                        break;
-                }
             }
 
             switch (di.type)
@@ -93,9 +80,6 @@ namespace UnityEditor
             m_TargetRect.y = Mathf.Floor(m_TargetRect.y);
             m_TargetRect.width = Mathf.Floor(m_TargetRect.width);
             m_TargetRect.height = Mathf.Floor(m_TargetRect.height);
-
-            m_InFrontOfWindow = inFrontOf;
-            m_Window.MoveInFrontOf(m_InFrontOfWindow);
 
             // On Windows, repainting without setting proper size first results in one garbage frame... For some reason.
             SetWindowPos(m_TargetRect);
@@ -178,9 +162,6 @@ namespace UnityEditor
                 Styles.view.Draw(viewRect, GUIContent.none, false, false, true, true);
                 GUI.Label(tabPositionRect, m_Content, Styles.tabLabel);
             }
-
-            // We currently only support this on macOS
-            m_Window.SetAlpha(m_TargetAlpha);
         }
     }
 } // namespace

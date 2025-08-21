@@ -58,7 +58,7 @@ namespace UnityEngine.UIElements.StyleSheets
             Debug.Assert(m_BuilderState == BuilderState.Init);
             m_BuilderState = BuilderState.Rule;
 
-            m_CurrentRule = new StyleRule { line = ruleLine };
+            m_CurrentRule = new StyleRule(null) { line = ruleLine };
 
             return m_CurrentRule;
         }
@@ -199,7 +199,9 @@ namespace UnityEngine.UIElements.StyleSheets
             Debug.Assert(m_BuilderState == BuilderState.Rule);
             m_BuilderState = BuilderState.Init;
 
-            m_CurrentRule.properties = m_CurrentProperties.ToArray();
+            m_CurrentRule.SetSelectors(m_ComplexSelectors.ToArray());
+            m_ComplexSelectors.Clear();
+            m_CurrentRule.SetProperties(m_CurrentProperties.ToArray());
             m_Rules.Add(m_CurrentRule);
             m_CurrentRule = null;
             m_CurrentProperties.Clear();
@@ -214,14 +216,14 @@ namespace UnityEngine.UIElements.StyleSheets
             writeTo.dimensions = m_Dimensions.ToArray();
             writeTo.colors = m_Colors.ToArray();
             writeTo.strings = m_Strings.ToArray();
-            writeTo.rules = m_Rules.ToArray();
             writeTo.assets = m_Assets.ToArray();
             writeTo.scalableImages = m_ScalableImages.ToArray();
-            writeTo.complexSelectors = m_ComplexSelectors.ToArray();
 
             writeTo.imports = m_Imports.ToArray();
             if (writeTo.imports.Length > 0)
                 writeTo.FlattenImportedStyleSheetsRecursive();
+
+            writeTo.SetRules(m_Rules.ToArray());
         }
 
         void RegisterVariable(string value)

@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.TerrainTools
 {
-    [Overlay(typeof(SceneView), "Brush Attributes", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.TopToolbar, defaultDockIndex = 0)]
+    [Overlay(typeof(SceneView), "Brush Attributes", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.TopToolbar, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("TerrainOverlays/BrushSettingIcons/BrushAttributes.png")]
     internal class BrushAttributes : ToolbarOverlay, ITransientOverlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {

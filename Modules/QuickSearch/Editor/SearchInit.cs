@@ -20,7 +20,8 @@ namespace UnityEditor.Search
             EditorApplication.wantsToQuit += UnityQuit;
 
             // IndexingOnEditorStartup_Started is Used to signal that we already have started indexing and that further domain reload shouldn't restart it.
-            if (EditorUtility.isInSafeMode || !SearchSettings.indexOnEditorStartup || SessionState.GetBool("IndexingOnEditorStartup_Started", false))
+            // Do not run indexing on startup if we are in a secondary process.
+            if (!Utils.IsMainProcess() || EditorUtility.isInSafeMode || !SearchSettings.indexOnEditorStartup || SessionState.GetBool("IndexingOnEditorStartup_Started", false))
             {
                 return;
             }

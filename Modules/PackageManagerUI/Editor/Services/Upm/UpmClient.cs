@@ -13,11 +13,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IUpmClient : IService
     {
+        event Action<string> onSpecialInstallStart;
+        event Action<string, string> onSpecialInstallFinalize;
         event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange;
         event Action<string, UIError> onPackageOperationError;
         event Action<IOperation> onListOperation;
         event Action<IOperation> onSearchAllOperation;
-        event Action<IOperation> onAddOperation;
+        event Action<IOperation> onPackOperation;
 
         bool isAddOrRemoveInProgress { get; }
         bool isEmbedInProgress { get; }
@@ -41,17 +43,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null);
         void ClearCache();
         void Resolve(bool delayCall = false);
+        void Pack(string packageName, string packageFolder, string exportPath, string orgId);
     }
 
     [Serializable]
     internal class UpmClient : BaseService<IUpmClient>, IUpmClient, ISerializationCallbackReceiver
     {
+        // SpecialInstall refers to installation of packages that are not already in the PackageDatabase, and not through directly clicking "Install" button in the UI and in most cases
+        // we don't know the final packageId until the installation is finalized, hence we need to do some special handling. Those specially install packages are usually from git/local/tarball,
+        // but since in the "Add package by git url" UI, we don't restrict people to only install git packages, non git packages can go through this special install flow as well
+        public event Action<string> onSpecialInstallStart = delegate {};
+        public event Action<string, string> onSpecialInstallFinalize = delegate {};
+
         public event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
         public event Action<string, UIError> onPackageOperationError = delegate { };
 
         public event Action<IOperation> onListOperation = delegate {};
         public event Action<IOperation> onSearchAllOperation = delegate {};
-        public event Action<IOperation> onAddOperation = delegate {};
+        public event Action<IOperation> onPackOperation;
 
         [SerializeField]
         private UpmSearchOperation m_SearchOperation;
@@ -67,17 +76,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmListOperation listOfflineOperation => CreateOperation(ref m_ListOfflineOperation);
 
         [SerializeField]
-        private UpmAddOperation m_AddOperation;
-        private UpmAddOperation addOperation => CreateOperation(ref m_AddOperation);
-        [SerializeField]
         private UpmAddAndRemoveOperation m_AddAndRemoveOperation;
         private UpmAddAndRemoveOperation addAndRemoveOperation => CreateOperation(ref m_AddAndRemoveOperation);
         [SerializeField]
-        private UpmRemoveOperation m_RemoveOperation;
-        private UpmRemoveOperation removeOperation => CreateOperation(ref m_RemoveOperation);
-        [SerializeField]
         private UpmEmbedOperation m_EmbedOperation;
         private UpmEmbedOperation embedOperation => CreateOperation(ref m_EmbedOperation);
+
+        [SerializeField]
+        private UpmPackOperation m_PackOperation;
+        private UpmPackOperation packOperation => CreateOperation(ref m_PackOperation);
 
         [SerializeField]
         private UpmSearchOperation[] m_SerializedInProgressExtraFetchOperations = Array.Empty<UpmSearchOperation>();
@@ -118,13 +125,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
             m_ListOperation?.ResolveDependencies(m_ClientProxy, m_Application);
             m_ListOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_AddOperation?.ResolveDependencies(m_ClientProxy, m_Application);
-            m_RemoveOperation?.ResolveDependencies(m_ClientProxy, m_Application);
             m_AddAndRemoveOperation?.ResolveDependencies(m_ClientProxy, m_Application);
+            m_PackOperation?.ResolveDependencies(m_ClientProxy, m_Application);
         }
 
-        public bool isAddOrRemoveInProgress => m_AddOperation?.isInProgress == true ||
-            m_RemoveOperation?.isInProgress == true || m_AddAndRemoveOperation?.isInProgress == true;
+        public bool isAddOrRemoveInProgress => m_AddAndRemoveOperation?.isInProgress == true;
 
         public bool isEmbedInProgress => m_EmbedOperation?.isInProgress == true;
 
@@ -132,8 +137,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (m_AddOperation?.isInProgress == true)
-                    yield return m_AddOperation.packageIdOrName;
                 if (m_AddAndRemoveOperation?.isInProgress == true)
                     foreach (var id in m_AddAndRemoveOperation.packageIdsToAdd)
                         yield return id;
@@ -142,55 +145,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool IsRemoveInProgress(string packageName)
         {
-            return (m_RemoveOperation?.isInProgress == true && m_RemoveOperation.packageName == packageName) ||
-                (m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName));
+            return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packagesNamesToRemove.Contains(packageName);
         }
 
         public bool IsAddInProgress(string packageId)
         {
-            return (m_AddOperation?.isInProgress == true && m_AddOperation.packageIdOrName == packageId) ||
-                (m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId));
+            return m_AddAndRemoveOperation?.isInProgress == true && m_AddAndRemoveOperation.packageIdsToAdd.Contains(packageId);
         }
 
         public void AddById(string packageId)
         {
             if (isAddOrRemoveInProgress)
                 return;
-            addOperation.Add(packageId);
-            SetupAddOperation();
-        }
-
-        private void SetupAddOperation()
-        {
-            onPackagesProgressChange?.Invoke(new[] { (addOperation.packageName, PackageProgress.Installing) });
-
-            addOperation.onProcessResult += OnProcessAddResult;
-            addOperation.onOperationError += (_, error) => onPackageOperationError?.Invoke(addOperation.packageName, error);
-            addOperation.onOperationFinalized += _ =>
-                onPackagesProgressChange?.Invoke(new[] { (addOperation.packageName, PackageProgress.None) });
-
-            addOperation.logErrorInConsole = true;
-            onAddOperation?.Invoke(addOperation);
-        }
-
-        private void OnProcessAddResult(Request<PackageInfo> request)
-        {
-            var packageInfo = request.Result;
-            var installedInfoUpdated = m_UpmCache.SetInstalledPackageInfo(packageInfo, addOperation.packageName);
-            if (!installedInfoUpdated && packageInfo.source == PackageSource.Git)
-            {
-                Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), packageInfo.displayName));
-                return;
-            }
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageAddedOrUpdated(packageInfo);
-            });
-
-            // do a list offline to refresh all the dependencies
-            List(true);
+            addAndRemoveOperation.AddById(packageId);
+            SetupAddAndRemoveOperation();
         }
 
         public bool AddByPath(string path, out string tempPackageId)
@@ -202,11 +170,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 tempPackageId = GetTempPackageIdFromPath(path);
-                var packageTag = path.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase)
-                    ? PackageTag.Tarball
-                    : PackageTag.Local;
-                addOperation.AddByUrlOrPath(tempPackageId, packageTag);
-                SetupAddOperation();
+                addAndRemoveOperation.AddByPathOrUrl(tempPackageId);
+                SetupAddAndRemoveOperation();
                 return true;
             }
             catch (System.IO.IOException e)
@@ -227,8 +192,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var relativePathToProjectRoot = path.Substring(projectPath.Length);
             if (relativePathToProjectRoot.StartsWith(packageFolderPrefix, StringComparison.InvariantCultureIgnoreCase))
                 return $"file:{relativePathToProjectRoot.Substring(packageFolderPrefix.Length)}";
-            else
-                return $"file:../{relativePathToProjectRoot}";
+
+            return $"file:../{relativePathToProjectRoot}";
         }
 
         public void AddByUrl(string url)
@@ -236,8 +201,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isAddOrRemoveInProgress)
                 return;
 
-            addOperation.AddByUrlOrPath(url, PackageTag.Git);
-            SetupAddOperation();
+            addAndRemoveOperation.AddByPathOrUrl(url);
+            SetupAddAndRemoveOperation();
         }
 
         public void AddByIds(IEnumerable<string> versionIds)
@@ -279,6 +244,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 .Concat(addAndRemoveOperation.packagesNamesToRemove.Select(name => (name, PackageProgress.Removing)));
             onPackagesProgressChange?.Invoke(progressUpdates);
 
+            if (addAndRemoveOperation.isSpecialInstall)
+                onSpecialInstallStart?.Invoke(addAndRemoveOperation.packageIdOrName);
+
             addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
             addAndRemoveOperation.onOperationError += (_, error) =>
             {
@@ -291,7 +259,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(packageName))
                     onPackageOperationError?.Invoke(packageName, error);
             };
-            addAndRemoveOperation.onOperationFinalized += (_) =>
+            addAndRemoveOperation.onOperationFinalized += _ =>
             {
                 var allIdOrNames = addAndRemoveOperation.packageIdsToAdd.Concat(addAndRemoveOperation.packageIdsToReset).Concat(addAndRemoveOperation.packagesNamesToRemove);
                 onPackagesProgressChange?.Invoke(allIdOrNames.Select(idOrName => (idOrName, PackageProgress.None)));
@@ -301,21 +269,30 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
         {
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var packageInfo in addAndRemoveOperation.packagesNamesToRemove.Select(name => m_UpmCache.GetInstalledPackageInfo(name)).Where(p => p != null))
-                    foreach (var extension in PackageManagerExtensions.Extensions)
-                        extension.OnPackageRemoved(packageInfo);
-            });
+            var updatedInfos = m_UpmCache.SetInstalledPackageInfos(request.Result);
 
-            m_UpmCache.SetInstalledPackageInfos(request.Result);
+            var mainPackageInfo = addAndRemoveOperation.FindMainPackageInfoFromResult();
+            if (addAndRemoveOperation.isSpecialInstall)
+                onSpecialInstallFinalize?.Invoke(addAndRemoveOperation.packageIdOrName, mainPackageInfo?.name ?? string.Empty);
 
-            PackageManagerExtensions.ExtensionCallback(() =>
+            if (updatedInfos.Count == 0 && mainPackageInfo?.source == PackageSource.Git)
+                Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), mainPackageInfo.displayName));
+            else if (updatedInfos.Count > 0)
             {
-                foreach (var packageInfo in addAndRemoveOperation.packageIdsToAdd.Select(id => m_UpmCache.GetInstalledPackageInfoById(id)).Where(p => p != null))
+                PackageManagerExtensions.ExtensionCallback(() =>
+                {
                     foreach (var extension in PackageManagerExtensions.Extensions)
-                        extension.OnPackageAddedOrUpdated(packageInfo);
-            });
+                    {
+                        foreach (var (oldInfo, newInfo) in updatedInfos)
+                        {
+                            if (newInfo == null)
+                                extension.OnPackageRemoved(oldInfo);
+                            else
+                                extension.OnPackageAddedOrUpdated(newInfo);
+                        }
+                    }
+                });
+            }
         }
 
         public void List(bool offlineMode = false)
@@ -345,8 +322,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddOrRemoveInProgress)
                 return;
-            removeOperation.Remove(packageName);
-            SetupRemoveOperation();
+            addAndRemoveOperation.RemoveByNames(new [] {packageName});
+            SetupAddAndRemoveOperation();
         }
 
         public void RemoveEmbeddedByName(string packageName)
@@ -380,34 +357,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             embedOperation.Embed(packageName);
         }
 
-        private void SetupRemoveOperation()
-        {
-            onPackagesProgressChange?.Invoke(new[] { (removeOperation.packageName, progress: PackageProgress.Removing) });
-
-            removeOperation.onProcessResult += OnProcessRemoveResult;
-            removeOperation.onOperationError += (_, error) => onPackageOperationError?.Invoke(removeOperation.packageName, error);
-            removeOperation.onOperationFinalized += (_) =>
-                onPackagesProgressChange?.Invoke(new[] { (removeOperation.packageName, progress: PackageProgress.None) });
-
-            removeOperation.logErrorInConsole = true;
-        }
-
-        private void OnProcessRemoveResult(RemoveRequest request)
-        {
-            var installedPackage = m_UpmCache.GetInstalledPackageInfo(request.PackageIdOrName);
-            if (installedPackage == null)
-                return;
-            m_UpmCache.RemoveInstalledPackageInfo(installedPackage.name);
-
-            PackageManagerExtensions.ExtensionCallback(() =>
-            {
-                foreach (var extension in PackageManagerExtensions.Extensions)
-                    extension.OnPackageRemoved(installedPackage);
-            });
-
-            // do a list offline to refresh all the dependencies
-            List(true);
-        }
 
         public void SearchAll(bool offlineMode = false)
         {
@@ -473,22 +422,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Restore operations that's interrupted by domain reloads
         private void RestoreInProgressOperations()
         {
-            if (m_AddOperation?.isInProgress ?? false)
-            {
-                SetupAddOperation();
-                m_AddOperation.RestoreProgress();
-            }
-
-            if (m_RemoveOperation?.isInProgress ?? false)
-            {
-                SetupRemoveOperation();
-                m_RemoveOperation.RestoreProgress();
-            }
-
             if (m_AddAndRemoveOperation?.isInProgress ?? false)
             {
                 SetupAddAndRemoveOperation();
                 m_AddAndRemoveOperation.RestoreProgress();
+            }
+
+            if (m_PackOperation?.isInProgress ?? false)
+            {
+                SetupPackOperation();
+                m_PackOperation.RestoreProgress();
             }
 
             if (m_ListOperation?.isInProgress ?? false)
@@ -525,6 +468,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 EditorApplication.delayCall += () => m_ClientProxy.Resolve();
             else
                 m_ClientProxy.Resolve();
+        }
+
+        public void Pack(string packageName, string packageFolder, string exportPath, string orgId)
+        {
+            packOperation.Pack(packageName, packageFolder, exportPath, orgId);
+            SetupPackOperation();
+        }
+
+        private void SetupPackOperation()
+        {
+            onPackagesProgressChange?.Invoke(new[] { (packOperation.packageName, PackageProgress.Exporting) });
+            packOperation.onOperationFinalized += _ => onPackagesProgressChange?.Invoke(new[] { (packOperation.packageName, PackageProgress.None) });
+
+            onPackOperation?.Invoke(packOperation);
         }
 
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()

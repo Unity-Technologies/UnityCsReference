@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         Resuming,
         Installing,
         Resetting,
-        Removing
+        Removing,
+        Exporting
     }
 }

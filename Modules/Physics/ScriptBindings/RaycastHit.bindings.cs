@@ -18,10 +18,14 @@ namespace UnityEngine
         [NativeName("faceID")] internal uint m_FaceID;
         [NativeName("distance")] internal float m_Distance;
         [NativeName("uv")] internal Vector2 m_UV;
-        [NativeName("collider")] internal int m_Collider;
+        [NativeName("collider")] internal EntityId m_Collider;
 
         public Collider collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider; } }
+
+
+        [System.Obsolete("RaycastHit.colliderInstanceID is obsolete. Use RaycastHit.colliderEntityId instead.")]
         public int colliderInstanceID { get { return m_Collider; } }
+        public EntityId colliderEntityId { get { return m_Collider; } }
 
         public Vector3 point { get { return m_Point; } set { m_Point = value; } }
         public Vector3 normal { get { return m_Normal; } set { m_Normal = value; } }
@@ -30,7 +34,7 @@ namespace UnityEngine
         public int triangleIndex { get { return (int)m_FaceID; } }
 
         [NativeMethod("CalculateRaycastTexCoord", true, true)]
-        extern static private Vector2 CalculateRaycastTexCoord(int colliderInstanceID, Vector2 uv, Vector3 pos, uint face, int textcoord);
+        extern static private Vector2 CalculateRaycastTexCoord(EntityId colliderInstanceID, Vector2 uv, Vector3 pos, uint face, int textcoord);
 
         public Vector2 textureCoord { get { return CalculateRaycastTexCoord(m_Collider, m_UV, m_Point, m_FaceID, 0); } }
         public Vector2 textureCoord2 { get { return CalculateRaycastTexCoord(m_Collider, m_UV, m_Point, m_FaceID, 1); } }

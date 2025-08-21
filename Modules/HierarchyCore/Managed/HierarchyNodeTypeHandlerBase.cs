@@ -194,7 +194,7 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType", IsThreadSafe = true, ThrowsException = true)]
         static extern int GetNodeTypeFromType(Type type);
 
-        #region Called From Native
+        #region Called from native
         [RequiredByNativeCode]
         static IntPtr CreateNodeTypeHandlerFromType(IntPtr nativePtr, Type handlerType, IntPtr hierarchyPtr, IntPtr cmdListPtr)
         {

@@ -26,7 +26,7 @@ namespace UnityEngine.Accessibility;
 /// SA:
 ///
 ///- [[wiki:accessibility|Accessibility for mobile applications]]
-///- [Sample project using the accessibility APIs](https://github.com/Unity-Technologies/a11y-public-sample)
+///- &lt;a href="https://github.com/Unity-Technologies/a11y-public-sample" &gt;Sample project using the accessibility APIs&lt;/a&gt;
 /// </para>
 /// </remarks>
 public static partial class AccessibilitySettings

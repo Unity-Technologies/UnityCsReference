@@ -520,7 +520,7 @@ namespace UnityEditor
                     enumerator = null;
                     break;
                 }
-                var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(enumerator.Current.GetEntityIdIfImported()) as Material;
+                var child = InternalEditorUtility.GetLoadedObjectFromEntityId(enumerator.Current.GetEntityIdIfImported()) as Material;
                 if (!child)
                 {
                     // First check guid from file to avoid loading material in memory

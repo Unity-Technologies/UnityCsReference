@@ -697,18 +697,26 @@ namespace UnityEditor.UIElements.Debugger
             {
                 
                 var textElement = m_SelectedElement as TextElement;
-                if (textElement == null || textElement.uitkTextHandle.IsAdvancedTextEnabledForElement())
+                if (textElement == null)
                 {
                     if (m_SelectedElement == null)
                         m_GenerationSettings.text = "No Element selected";
                     else if(textElement == null)
                         m_GenerationSettings.text = "No Text Element selected";
-                    else
-                        m_GenerationSettings.text = "Advanced Text is not yet supported by this foldout";
 
                     m_fontAsset.value = null;
                     m_textSettings.value = null;
                     m_CacheInfo.text = null;
+                    m_UnicodeResult.text = null;
+                    m_SizeInfo.text = null;
+                }
+                else if (textElement.uitkTextHandle.IsAdvancedTextEnabledForElement())
+                {
+                    m_GenerationSettings.text = "Advanced Text is not yet supported by this foldout";
+                    var handle = textElement.uitkTextHandle;
+                    m_fontAsset.value = null;
+                    m_textSettings.value = null;
+                    m_CacheInfo.text = handle.ATGMeasuredWidth.HasValue ? $"Measured:{handle.ATGMeasuredWidth} Rounded:{handle.ATGRoundedWidth} PixelPerPoint:{handle.LastPixelPerPoint}" : "No cache";
                     m_UnicodeResult.text = null;
                     m_SizeInfo.text = null;
                 }
@@ -772,8 +780,10 @@ namespace UnityEditor.UIElements.Debugger
             UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged -= (_) => Refresh();
         }
 
-        void EditorUpdate()
+        public override void EditorUpdate()
         {
+            base.EditorUpdate();
+
             (panelDebug?.debuggerOverlayPanel as Panel)?.UpdateAnimations();
         }
 

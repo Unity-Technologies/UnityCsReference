@@ -16,21 +16,6 @@ namespace Unity.UI.Builder
     /// </summary>
     class BuilderDocumentModelEditor
     {
-        // Helper class used to create uxml object and edit attributes
-        class UxmlAttributesView : BuilderInspectorAttributes
-        {
-            public UxmlAttributesView(BuilderInspector inspector) : base(inspector)
-            {
-                // Do not generate any fields
-                attributesContainer = null;
-
-                // This view should not handle any batched changes, the main attributes view of the inspector will do it.
-                this.inspector.batchedChangesController.deserializeElement -= DeserializeElement;
-                this.inspector.batchedChangesController.notifyAllChangesProcessed -= NotifyAllChangesProcessed;
-                this.inspector.batchedChangesController.onUndoRedoPerformedByController -= CallDeserializeOnElementActionWrapper;
-            }
-        }
-
         static readonly string k_BindingProperty = nameof(DataBinding.property);
         static readonly string k_BindingMode = nameof(DataBinding.bindingMode);
         static readonly string k_BindingDataSource = nameof(DataBinding.dataSource);
@@ -38,6 +23,7 @@ namespace Unity.UI.Builder
         static readonly string k_BindingDataSourcePathString = nameof(DataBinding.dataSourcePathString);
         static readonly string k_BindingUiToSourceConvertersString = nameof(DataBinding.uiToSourceConvertersString);
         static readonly string k_BindingSourceToUIConvertersString = nameof(DataBinding.sourceToUiConvertersString);
+
         static readonly Dictionary<string, object> s_DataBindingValues = new()
         {
             { k_BindingDataSourcePathString, null },
@@ -47,9 +33,10 @@ namespace Unity.UI.Builder
             { k_BindingUiToSourceConvertersString, null },
             { k_BindingSourceToUIConvertersString, null }
         };
+
         static readonly Dictionary<string, object> s_TempAllBindingValues = new();
 
-        UxmlAttributesView m_AttributeView;
+        BuilderUxmlAttributesEditingContext m_UxmlEditingContext = new();
         UxmlElementAssetHandleBase m_DocumentRootElementHandle;
         UxmlElementAssetHandleBase m_ActiveRootElementHandle;
         VisualTreeAsset m_LastActiveVisualTreeAsset;
@@ -99,7 +86,7 @@ namespace Unity.UI.Builder
             set
             {
                 m_ActiveRootElementHandle = value;
-                m_AttributeView.SetAttributesOwner(document.visualTreeAsset, value.element);
+                m_UxmlEditingContext.Set(document, document.visualTreeAsset, value.element, builder.inspector.batchedChangesController);
             }
         }
 
@@ -144,11 +131,7 @@ namespace Unity.UI.Builder
         public BuilderDocumentModelEditor(BuilderDocument document)
         {
             this.document = document;
-
-            var builder = document.primaryViewportWindow.viewport.paneWindow as Builder;
-            // Creates an attribute view only to be able to call AddUxmlObjectToSerializedData.
-            // TODO: Remove usage of attribute view when UIT-2802 is addressed.
-            m_AttributeView = new UxmlAttributesView(builder.inspector);
+            m_UxmlEditingContext.notifyAttributesChanged += NotifyAttributesChanged;
         }
 
         /// <summary>
@@ -345,8 +328,8 @@ namespace Unity.UI.Builder
         /// <param name="convertersToUi">The identifier of the converter group used when trying to convert data from the data source to a UI property</param>
         /// <returns>The handle to the created binding uxml asset</returns>
         public UxmlObjectAssetHandle AddDataBinding(UxmlElementAssetHandleBase element, string bindingPropertyPath,
-                UnityEngine.Object dataSource = null, Type dataSourceType = null, string path = null, BindingMode bindingMode = BindingMode.TwoWay,
-                string convertersToSource = null, string convertersToUi = null)
+            UnityEngine.Object dataSource = null, Type dataSourceType = null, string path = null, BindingMode bindingMode = BindingMode.TwoWay,
+            string convertersToSource = null, string convertersToUi = null)
         {
             s_DataBindingValues[k_BindingDataSource] = dataSource;
             s_DataBindingValues[k_BindingDataSourcePathString] = path;
@@ -392,6 +375,11 @@ namespace Unity.UI.Builder
             return objectAdded;
         }
 
+        void SetContext(VisualTreeAsset asset, VisualElement element)
+        {
+            m_UxmlEditingContext.Set(document, asset, element, builder.inspector.batchedChangesController);
+        }
+
         /// <summary>
         /// Removes the binding instance that binds the specified property of the specified element.
         /// </summary>
@@ -399,8 +387,7 @@ namespace Unity.UI.Builder
         /// <param name="property">The property to unbind.</param>
         public void RemoveBinding(UxmlElementAssetHandleBase element, string property)
         {
-            m_AttributeView.SetAttributesOwner(element.visualTree, element.element);
-            m_AttributeView.serializedRootPath = element.serializedPath;
+            SetContext(element.visualTree, element.element);
 
             VisualElement sourceField = null;
 
@@ -409,7 +396,7 @@ namespace Unity.UI.Builder
                 sourceField = builder.inspector.FindFieldAtPath(property);
             }
 
-            BuilderBindingUtility.DeleteBinding(sourceField, property, builder, m_AttributeView);
+            BuilderBindingUtility.DeleteBinding(m_UxmlEditingContext, property, sourceField);
         }
 
         /// <summary>
@@ -436,11 +423,9 @@ namespace Unity.UI.Builder
             else
                 ownerElement = (parentHandle as UxmlObjectAssetHandle).owner;
 
-            m_AttributeView.SetAttributesOwner(parentHandle.visualTree, ownerElement.element);
-
-            var res = m_AttributeView.AddUxmlObjectToSerializedData(serializedProperty, description.serializedDataType,
+            SetContext(parentHandle.visualTree, ownerElement.element);
+            var res = BuilderAssetUtilities.AddUxmlObjectToSerializedData(m_UxmlEditingContext, serializedProperty, description.serializedDataType,
                 values);
-
             var relativePath = res.propertyPath.Replace(ownerElement.serializedPath + ".", "");
 
             return new UxmlObjectAssetHandle(activeVisualTreeAsset, res.uxmlAsset as UxmlObjectAsset, res.serializedData as UxmlSerializedData,
@@ -469,6 +454,12 @@ namespace Unity.UI.Builder
                 throw new ArgumentNullException(nameof(styleSheet));
 
             return builder.styleSheets.CreateNewSelector(styleSheet, selectorStr);
+        }
+
+        void NotifyAttributesChanged(string attributeName)
+        {
+            var changeType = attributeName == UXMLConstants.NameAttributeName ? BuilderHierarchyChangeType.ElementName : BuilderHierarchyChangeType.Attributes;
+            builder.selection.NotifyOfHierarchyChange(null, m_UxmlEditingContext.element, changeType);
         }
     }
 }

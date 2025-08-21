@@ -73,6 +73,14 @@ namespace UnityEngine.TextCore.LowLevel
         public uint markFilteringSet;
     }
 
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct GlyphIndexCodePointMap
+    {
+        public uint glyphIndex;
+        public uint unicode;
+    }
+
     /// <summary>
     ///  Structure used for marshalling glyphs between managed and native code.
     /// </summary>

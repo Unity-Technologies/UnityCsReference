@@ -204,7 +204,7 @@ namespace UnityEditor
                             GUIUtility.hotControl = 0;
                             PrepareStartDrag();
                             entityIds = new[] { entityIdToDrag };
-                            StartDrag(ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromInstanceID(entityIdToDrag)));
+                            StartDrag(ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(entityIdToDrag)));
                             return true;
                         }
                     }
@@ -278,7 +278,7 @@ namespace UnityEditor
                 var objects = new List<Object>(entityIds.Length);
                 for (int i = 0; i < ids.Length; ++i)
                 {
-                    var o = InternalEditorUtility.GetObjectFromInstanceID(ids[i]);
+                    var o = InternalEditorUtility.GetObjectFromEntityId(ids[i]);
                     if (o != null)
                         objects.Add(o);
                 }

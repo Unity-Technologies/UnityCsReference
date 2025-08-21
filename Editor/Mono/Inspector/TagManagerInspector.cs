@@ -505,17 +505,7 @@ namespace UnityEditor
 
             // One line for text field, one for the button, and two for HelpBox
             public override Vector2 GetWindowSize()
-            {
-                const int width = 400;
-                var minHeight = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + 14;
-
-                if (!m_IsExistingTag)
-                    return new Vector2(width, minHeight);
-
-                // Additional dynamic height for the HelpBox (if m_IsExistingTag is true)
-                var helpBoxHeight = Math.Max(EditorGUI.kSingleLineHeight * 2, EditorStyles.helpBox.CalcHeight(new GUIContent(string.Format(Styles.existingTagMessage.text, m_NewTagName)), width));
-                return new Vector2(width, minHeight + helpBoxHeight);
-            }
+                => new(400, EditorGUI.kSingleLineHeight * (m_IsExistingTag? 4 : 2) + EditorGUI.kControlVerticalSpacing + 14);
 
             public override void OnGUI(Rect windowRect)
             {
@@ -534,7 +524,7 @@ namespace UnityEditor
 
                 if (m_IsExistingTag)
                 {
-                    EditorGUILayout.HelpBox(string.Format(Styles.existingTagMessage.text, m_NewTagName), MessageType.Error);
+                    EditorGUILayout.HelpBox(string.Format(Styles.existingTagMessage.text, m_NewTagName.Length < 42 ? m_NewTagName : m_NewTagName[..39] + "..."), MessageType.Error);
                 }
 
                 if (m_NeedsFocus)

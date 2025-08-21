@@ -129,6 +129,9 @@ namespace UnityEngine.XR
         extern internal static float renderViewportScaleInternal { get; set; }
 
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        extern public static float appliedRenderViewportScale { get; }
+
+        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static float occlusionMaskScale { get; set; }
 
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]

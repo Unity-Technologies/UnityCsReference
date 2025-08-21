@@ -272,6 +272,12 @@ namespace UnityEngine
             get;
         }
 
+        public extern TransformHandle transformHandle
+        {
+            [FreeFunction("GameObjectBindings::GetTransformHandle", HasExplicitThis = true)]
+            get;
+        }
+
         public extern int layer { get; set; }
 
         [Obsolete("GameObject.active is obsolete. Use GameObject.SetActive(), GameObject.activeSelf or GameObject.activeInHierarchy.")]
@@ -341,7 +347,7 @@ namespace UnityEngine
         public static extern GameObject[] FindGameObjectsWithTag(string tag);
 
         [FreeFunction(Name = "Scripting::SendScriptingMessageUpwards", HasExplicitThis = true)]
-        extern public void SendMessageUpwards(string methodName, [uei.DefaultValue("null")]  object value , [uei.DefaultValue("SendMessageOptions.RequireReceiver")]  SendMessageOptions options);
+        extern public void SendMessageUpwards(string methodName, [uei.DefaultValue("null")] object value, [uei.DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
 
         [uei.ExcludeFromDocs]
         public void SendMessageUpwards(string methodName, object value)
@@ -359,7 +365,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Scripting::SendScriptingMessage", HasExplicitThis = true)]
-        extern public void SendMessage(string methodName, [uei.DefaultValue("null")]  object value , [uei.DefaultValue("SendMessageOptions.RequireReceiver")]  SendMessageOptions options);
+        extern public void SendMessage(string methodName, [uei.DefaultValue("null")] object value, [uei.DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
 
         [uei.ExcludeFromDocs]
         public void SendMessage(string methodName, object value)
@@ -377,7 +383,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Scripting::BroadcastScriptingMessage", HasExplicitThis = true)]
-        extern public void BroadcastMessage(string methodName, [uei.DefaultValue("null")]  object parameter , [uei.DefaultValue("SendMessageOptions.RequireReceiver")]  SendMessageOptions options);
+        extern public void BroadcastMessage(string methodName, [uei.DefaultValue("null")] object parameter, [uei.DefaultValue("SendMessageOptions.RequireReceiver")] SendMessageOptions options);
 
         [uei.ExcludeFromDocs]
         public void BroadcastMessage(string methodName, object parameter)
@@ -447,10 +453,10 @@ namespace UnityEngine
         [Obsolete("Obsolete. Please use GameObject.SetGameObjectsActive(ReadOnlySpan<EntityId>, bool) instead.")]
         public static unsafe void SetGameObjectsActive(ReadOnlySpan<int> instanceIDs, bool active)
         {
-            if(instanceIDs.Length == 0)
+            if (instanceIDs.Length == 0)
                 return;
 
-            fixed(int* instanceIDsPtr = instanceIDs)
+            fixed (int* instanceIDsPtr = instanceIDs)
             {
                 SetGameObjectsActive((IntPtr)instanceIDsPtr, instanceIDs.Length, active);
             }
@@ -459,17 +465,17 @@ namespace UnityEngine
         public static unsafe void SetGameObjectsActive(ReadOnlySpan<EntityId> entityIds, bool active)
         {
             Debug.Assert(sizeof(EntityId) == sizeof(int), "EntityId size mismatch. Please check the definition of EntityId.");
-            if(entityIds.Length == 0)
+            if (entityIds.Length == 0)
                 return;
 
-            fixed(EntityId* instanceIDsPtr = entityIds)
+            fixed (EntityId* instanceIDsPtr = entityIds)
             {
                 SetGameObjectsActive((IntPtr)instanceIDsPtr, entityIds.Length, active);
             }
         }
 
         [FreeFunction("GameObjectBindings::InstantiateGameObjectsByInstanceID")]
-        extern private static void InstantiateGameObjects(int sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
+        extern private static void InstantiateGameObjects(EntityId sourceInstanceID, IntPtr newInstanceIDs, IntPtr newTransformInstanceIDs, int count, Scene destinationScene);
 
         [Obsolete("Obsolete. Please use GameObject.InstantiateGameObjects(EntityId, int, NativeArray<EntityId>, NativeArray<EntityId>, Scene) instead.")]
         public static unsafe void InstantiateGameObjects(int sourceInstanceID, int count, NativeArray<int> newInstanceIDs, NativeArray<int> newTransformInstanceIDs, Scene destinationScene = default)
@@ -502,9 +508,8 @@ namespace UnityEngine
             InstantiateGameObjects(sourceEntityId, (IntPtr)newEntityIds.GetUnsafeReadOnlyPtr(), (IntPtr)newTransformEntityIds.GetUnsafeReadOnlyPtr(), newEntityIds.Length, destinationScene);
         }
 
-        [FreeFunction(Name = "GameObjectBindings::GetSceneByInstanceID")]
         [Obsolete("Obsolete. Please use GameObject.GetScene(EntityId entityId) instead.")]
-        public static extern Scene GetScene(int instanceID);
+        public static Scene GetScene(int instanceID) => GetSceneInternal((EntityId)instanceID);
 
         [FreeFunction(Name = "GameObjectBindings::GetSceneByEntityId")]
         static extern Scene GetSceneInternal(EntityId entityId);

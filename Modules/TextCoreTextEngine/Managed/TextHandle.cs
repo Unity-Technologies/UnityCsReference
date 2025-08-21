@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
@@ -140,13 +139,112 @@ namespace UnityEngine.TextCore.Text
         private float m_LineHeightDefault; //real pixel
         private bool m_IsPlaceholder;
         protected bool m_IsElided;
+
+        private int m_CreateGenerationIteration;
+        private IntPtr m_TextGenerationInfo;
+
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal IntPtr textGenerationInfo = IntPtr.Zero;
+        internal IntPtr textGenerationInfo
+        {
+            get
+            {
+                if (IsCachedPermanentATG)
+                    Debug.Assert(m_TextGenerationInfo != IntPtr.Zero, "Internal Text Error: element is marked in permanent cache but the cache doesn't exist");
+
+                if (!IsCachedPermanentATG && m_CreateGenerationIteration != TextGenerationInfo.CurrentGenerationIteration)
+                    m_TextGenerationInfo = IntPtr.Zero;
+
+                return m_TextGenerationInfo;
+            }
+            set
+            {
+
+                // We dont want to swap from one info to another without going by null.
+                Debug.Assert((value == IntPtr.Zero) || (m_TextGenerationInfo == IntPtr.Zero), "Internal Text Error: Transitioning from one cache structure to another directly. This might cause a memory leak");
+
+                m_TextGenerationInfo = value;
+
+                //skip the flag getter as it does checks and they would fail while we are doing the setup
+                bool isCachePermanentATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
+                //Set the generation to something that would be higly unprobable instead of the current one to see if it makes a difference
+                m_CreateGenerationIteration = TextGenerationInfo.CurrentGenerationIteration;
+            }
+        }
 
         internal LinkedListNode<TextCacheEntry> TextInfoNode { get; set; }
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool IsCachedPermanent { get; set; }
+        internal bool IsCachedPermanent
+        {
+            get => m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanent);
+            set
+            {
+                if(value)
+                    m_TextHandleFlags |= TextHandleFlags.IsCachedPermanent;
+                else
+                    m_TextHandleFlags ^= TextHandleFlags.IsCachedPermanent;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool IsCachedPermanentATG {
+            get
+            {
+                bool isCacheATG = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentATG);
+
+                //For ATG, textInfo can be allocated during the frame generation wihout being in permanent cache
+                if (isCacheATG)
+                {
+                    Debug.Assert(m_TextGenerationInfo != IntPtr.Zero, "Internal Text Error : The element is marked as being in the permanent cache without having the cache assigned");
+                    Debug.Assert(IsCachedPermanent, "Internal Text Error: Element has a ATG cache but is not marked to be in the permanent cache");
+                }
+
+                return isCacheATG;
+            }
+            set
+            {
+                if (value)
+                    m_TextHandleFlags |= TextHandleFlags.IsCachedPermanentATG;
+                else
+                    m_TextHandleFlags ^= TextHandleFlags.IsCachedPermanentATG;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool IsCachedPermanentTextCore
+        {
+            get
+            {
+                bool isCacheTextCore = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentTextCore);
+                Debug.Assert(isCacheTextCore ? IsCachedPermanent : true, "Internal Text Error: Element has a TextCore cache but is not marked to be in the permanent cache");
+                if ( !IsCachedTemporary)
+                    Debug.AssertFormat(isCacheTextCore == (TextInfoNode != null), "TextHandle : TextCore Permananent cache mismatch. isCache {0} but {1}", isCacheTextCore, TextInfoNode == null ? " has no node": "has a node");
+
+                return isCacheTextCore;
+            }
+            set
+            {
+                if (value)
+                    m_TextHandleFlags |= TextHandleFlags.IsCachedPermanentTextCore;
+                else
+                    m_TextHandleFlags ^= TextHandleFlags.IsCachedPermanentTextCore;
+            }
+
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool IsCachedTemporary { get; set; }
+
+        [Flags]
+        protected private enum TextHandleFlags
+        {
+            IsCachedPermanent = 1,
+            IsCachedPermanentTextCore = 1<<1,
+            IsCachedPermanentATG = 1<<2,
+        }
+
+        protected private TextHandleFlags m_TextHandleFlags;
+
 
         internal bool useAdvancedText
         {
@@ -165,6 +263,8 @@ namespace UnityEngine.TextCore.Text
 
         public virtual void AddToPermanentCacheAndGenerateMesh()
         {
+            // IsCachedPermanent = true; should be set here, but the method is overriden for ATG and there is a different way to add to the permanent cache in ATG that would not generate immediatly the mesh. 
+
             if (useAdvancedText)
             {
                 throw new InvalidOperationException("Method is virtual and should be overriden in ATGTextHanle, the only valid handle for ATG");
@@ -189,16 +289,15 @@ namespace UnityEngine.TextCore.Text
 
         public void RemoveFromPermanentCache()
         {
-            if (textGenerationInfo != IntPtr.Zero)
+            if (IsCachedPermanentATG)
             {
                 TextGenerationInfo.Destroy(textGenerationInfo);
                 textGenerationInfo = IntPtr.Zero;
-                IsCachedPermanent = false;
+                IsCachedPermanentATG = false;
             }
-            else
-            {
-                s_PermanentCache.RemoveFromCache(this);
-            }
+
+            s_PermanentCache.RemoveFromCache(this);
+            IsCachedPermanent = false;
         }
 
         public static void UpdateCurrentFrame()

@@ -82,6 +82,11 @@ namespace UnityEngine.UIElements.HierarchyV2
         {
             return enableReordering;
         }
+        
+        public virtual bool CanDrop()
+        {
+            return true;
+        }
 
         public StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIndices, bool skipText = false)
         {

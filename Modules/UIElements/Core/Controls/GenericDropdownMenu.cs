@@ -8,13 +8,68 @@ using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
-    internal interface IGenericMenu
+    /// <summary>
+    /// Mode used to calculate the width of a dropdown.
+    /// </summary>
+    public enum DropdownMenuSizeMode
     {
-        void AddItem(string itemName, bool isChecked, Action action);
-        void AddItem(string itemName, bool isChecked, Action<object> action, object data);
-        void AddDisabledItem(string itemName, bool isChecked);
-        void AddSeparator(string path);
-        void DropDown(Rect position, VisualElement targetElement, bool anchored = false);
+        /// <summary>
+        /// The width of the dropdown matches the width of the provided Rect, but if the content is wider, it expands to fit the content.
+        /// This is the only supported mode for OS menus.
+        /// </summary>
+        Auto,
+        /// <summary>
+        /// The width of the dropdown matches the width the provided Rect.
+        /// </summary>
+        Fixed,
+        /// <summary>
+        /// The width of the dropdown menu matches the width of the content.
+        /// </summary>
+        Content,
+    }
+
+    /// <summary>
+    /// Base class for menu functionality.
+    /// </summary>
+    public abstract class AbstractGenericMenu
+    {
+        /// <summary>
+        /// Adds an item to this menu.
+        /// </summary>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
+        /// <param name="action">The callback to invoke when the item is selected by the user.</param>
+        public abstract void AddItem(string itemName, bool isChecked, Action action);
+
+        /// <summary>
+        /// Adds an item to this menu.
+        /// </summary>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
+        /// <param name="action">The callback to invoke when the item is selected by the user.</param>
+        /// <param name="data">The object to pass to the callback as a parameter.</param>
+        public abstract void AddItem(string itemName, bool isChecked, Action<object> action, object data);
+
+        /// <summary>
+        /// Adds a disabled item to this menu.
+        /// </summary>
+        /// <param name="itemName">The text to display to the user.</param>
+        /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
+        public abstract void AddDisabledItem(string itemName, bool isChecked);
+
+        /// <summary>
+        /// Adds a visual separator to this menu.
+        /// </summary>
+        /// <param name="path">The text to display to the user.</param>
+        public abstract void AddSeparator(string path);
+
+        /// <summary>
+        /// Displays the menu at the specified position.
+        /// </summary>
+        /// <param name="position">The position in the coordinate space of the panel.</param>
+        /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
+        /// <param name="dropdownMenuSizeMode">Indicates how to format the menu size.</param>
+        public abstract void DropDown(Rect position, VisualElement targetElement, DropdownMenuSizeMode dropdownMenuSizeMode = DropdownMenuSizeMode.Auto);
     }
 
     /// <summary>
@@ -28,7 +83,7 @@ namespace UnityEngine.UIElements
     /// the width of the dropdown menu with the @@DropDown@@ method.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/MenuExample.cs"/>
     /// </example>
-    public class GenericDropdownMenu : IGenericMenu
+    public class GenericDropdownMenu : AbstractGenericMenu
     {
         internal class MenuItem
         {
@@ -404,7 +459,7 @@ namespace UnityEngine.UIElements
         /// <param name="itemName">The text to display to the user.</param>
         /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
         /// <param name="action">The callback to invoke when the item is selected by the user.</param>
-        public void AddItem(string itemName, bool isChecked, Action action)
+        public override void AddItem(string itemName, bool isChecked, Action action)
         {
             var menuItem = AddItem(itemName, isChecked, true);
 
@@ -424,7 +479,7 @@ namespace UnityEngine.UIElements
         /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
         /// <param name="action">The callback to invoke when the item is selected by the user.</param>
         /// <param name="data">The object to pass to the callback as a parameter.</param>
-        public void AddItem(string itemName, bool isChecked, Action<object> action, object data)
+        public override void AddItem(string itemName, bool isChecked, Action<object> action, object data)
         {
             var menuItem = AddItem(itemName, isChecked, true, data);
 
@@ -442,7 +497,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="itemName">The text to display to the user.</param>
         /// <param name="isChecked">Indicates whether a checkmark next to the item is displayed.</param>
-        public void AddDisabledItem(string itemName, bool isChecked)
+        public override void AddDisabledItem(string itemName, bool isChecked)
         {
             AddItem(itemName, isChecked, false);
         }
@@ -451,7 +506,7 @@ namespace UnityEngine.UIElements
         /// Adds a visual separator after the previously added items in this menu.
         /// </summary>
         /// <param name="path">Not used.</param>
-        public void AddSeparator(string path)
+        public override void AddSeparator(string path)
         {
             // TODO path is not used. This is because IGenericMenu requires it, but this is not great.
             var separator = new VisualElement();
@@ -523,7 +578,28 @@ namespace UnityEngine.UIElements
         }
 
         [Obsolete("This version of Dropdown is deprecated. To ensure the dropdown is positioned correctly, please provide a reference to the targetElement.", false)]
-        public void DropDown(Rect position) => DropDown(position, null, false);
+        public void DropDown(Rect position) => DropDown(position, null, DropdownMenuSizeMode.Content);
+
+        [Obsolete("This version of Dropdown is deprecated. Please use DropDown(Rect position, VisualElement targetElement, DropdownMenuSizeMode dropdownMenuSizeMode).", false)]
+        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false) => DropDown(position, targetElement, anchored ? DropdownMenuSizeMode.Fixed : DropdownMenuSizeMode.Content);
+
+        [Obsolete("This version of Dropdown is deprecated. Please use DropDown(Rect position, VisualElement targetElement, DropdownMenuSizeMode dropdownMenuSizeMode).", false)]
+        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false, bool fitContentWidthIfAnchored = false)
+        {
+            if (anchored && fitContentWidthIfAnchored)
+            {
+                DropDown(position, targetElement, DropdownMenuSizeMode.Auto);
+            }
+            else if (anchored)
+            {
+                DropDown(position, targetElement, DropdownMenuSizeMode.Fixed);
+            }
+            else
+            {
+                DropDown(position, targetElement, DropdownMenuSizeMode.Content);
+
+            }
+        }
 
         /// <summary>
         /// Displays the menu at the specified position.
@@ -534,12 +610,38 @@ namespace UnityEngine.UIElements
         ///- For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
         ///- For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
         ///
-        /// The @@anchored@@ parameter determines the width of the menu. Refer to <see cref="GenericDropdownMenu"/> for example usages.
+        /// The @@dropdownMenuSizeMode@@ parameter determines the width of the menu.
         /// </remarks>
         /// <param name="position">The position in the coordinate space of the panel.</param>
         /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
-        /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands to the container's full width.</param>
-        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false)
+        /// <param name="dropdownMenuSizeMode">Indicates how to format the menu. Refer to <see cref="DropdownMenuSizeMode"/> for more information. Defaults to Auto.</param>
+        public override void DropDown(Rect position, VisualElement targetElement, DropdownMenuSizeMode dropdownMenuSizeMode = DropdownMenuSizeMode.Auto)
+        {
+            var anchored = false;
+            switch (dropdownMenuSizeMode)
+            {
+                // anchored = true, fitContentWidthIfAnchored = true
+                case DropdownMenuSizeMode.Auto:
+                    SetFitContentWidth(true);
+                    anchored = true;
+                    break;
+
+                // anchored = true, fitContentWidthIfAnchored = false
+                case DropdownMenuSizeMode.Fixed:
+                    SetFitContentWidth(false);
+                    anchored = true;
+                    break;
+
+                // anchored = false, fitContentWidthIfAnchored = false
+                case DropdownMenuSizeMode.Content:
+                    SetFitContentWidth(false);
+                    anchored = false;
+                    break;
+            }
+            DoDropDown(position, targetElement, anchored);
+        }
+
+        void DoDropDown(Rect position, VisualElement targetElement, bool anchored)
         {
             if (targetElement == null)
             {
@@ -609,29 +711,10 @@ namespace UnityEngine.UIElements
             contentContainer.userData = this;
         }
 
-        /// <summary>
-        /// Displays the menu at the specified position.
-        /// </summary>
-        /// <remarks>
-        /// The parent element that displays the menu:
-        ///
-        ///- For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
-        ///- For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
-        ///
-        /// The @@anchored@@ and @@fitContentWidthIfAnchored@@ parameters determine the width of the menu. Refer to <see cref="GenericDropdownMenu"/> for example usages.
-        ///
-        /// </remarks>
-        /// <param name="position">The position in the coordinate space of the panel.</param>
-        /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
-        /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands
-        /// to the container's full width.</param>
-        /// <param name="fitContentWidthIfAnchored">If true and the menu is anchored, the menu's width matches its content's width;
-        /// otherwise, the menu's width matches the width of the @@position@@. If the menu is unanchored, this parameter is ignored.</param>
-        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false, bool fitContentWidthIfAnchored = false)
+        void SetFitContentWidth(bool fit)
         {
-            m_FitContentWidth = anchored && fitContentWidthIfAnchored;
+            m_FitContentWidth = fit;
             m_OuterContainer.EnableInClassList(contentWidthUssClassName, m_FitContentWidth);
-            DropDown(position, targetElement, anchored);
         }
 
         private void OnTargetElementDetachFromPanel(DetachFromPanelEvent evt)

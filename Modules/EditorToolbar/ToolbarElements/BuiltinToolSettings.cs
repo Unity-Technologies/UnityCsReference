@@ -2,112 +2,218 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Tool Settings/Pivot Mode")]
-    sealed class PivotModeDropdown : EditorToolbarDropdown
+    abstract class PivotSettingDropdown : EditorToolbarDropdown
     {
-        readonly GUIContent m_Center;
-        readonly GUIContent m_Pivot;
-
-        public PivotModeDropdown()
+        protected readonly Dictionary<PivotSettingDefinition, GUIContent> m_DefToGUIContent = new();
+        
+        public PivotSettingDropdown()
         {
-            name = "Pivot Mode";
-
-            m_Center = EditorGUIUtility.TrTextContentWithIcon("Center",
-                "Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.",
-                "ToolHandleCenter");
-            m_Pivot = EditorGUIUtility.TrTextContentWithIcon("Pivot",
-                "Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.",
-                "ToolHandlePivot");
-
+            RefreshAvailableSettings();
+            
             RegisterCallback<AttachToPanelEvent>(AttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(DetachedFromPanel);
-
+            
             clicked += OpenContextMenu;
-
-            PivotModeChanged();
+        }
+        
+        void OnAvailablePivotSettingsChanged()
+        {
+            RefreshAvailableSettings();
         }
 
-        void OpenContextMenu()
+        protected abstract void OpenContextMenu();
+        
+        // It's assumed that pivotSettingDefs list is presorted by priority + built-in/custom
+        protected void OpenContextMenu(List<PivotSettingDefinition> pivotSettingDefs)
         {
             var menu = new GenericMenu();
-            menu.AddItem(m_Center, Tools.pivotMode == PivotMode.Center, () => Tools.pivotMode = PivotMode.Center);
-            menu.AddItem(m_Pivot, Tools.pivotMode == PivotMode.Pivot, () => Tools.pivotMode = PivotMode.Pivot);
+            for (int i = 0; i < pivotSettingDefs.Count; ++i)
+            {
+                var settingDef = pivotSettingDefs[i];
+                if (!EditorPivotManager.IsPivotSettingAvailable(settingDef))
+                    continue;
+                
+                var settingGUIContent = m_DefToGUIContent[settingDef];
+                menu.AddItem(settingGUIContent, IsSettingActivated(settingDef), GetMenuItemFunction(settingDef));
+                
+                if (EditorPivotManager.IsBuiltInPivotSetting(settingDef.type))
+                {
+                    var nextIdx = i + 1;
+                    if (nextIdx != pivotSettingDefs.Count && 
+                        !EditorPivotManager.IsBuiltInPivotSetting(pivotSettingDefs[nextIdx].type))
+                    {
+                        menu.AddSeparator(string.Empty);
+                    }
+                }
+            }
             menu.DropDown(worldBound);
         }
 
-        void PivotModeChanged()
+        protected abstract bool IsSettingActivated(PivotSettingDefinition pivotSettingDef);
+
+        protected abstract GenericMenu.MenuFunction GetMenuItemFunction(PivotSettingDefinition pivotSettingDef);
+
+        protected abstract GUIContent GetGUIContentForPivotSetting(PivotSettingDefinition pivotSettingDef);
+
+        protected abstract void RefreshAvailableSettings();
+
+        protected void RefreshAvailableSettings(List<PivotSettingDefinition> pivotSettingDefs)
         {
-            var content = Tools.pivotMode == PivotMode.Center ? m_Center : m_Pivot;
-            text = content.text;
-            tooltip = content.tooltip;
-            icon = content.image as Texture2D;
+            m_DefToGUIContent.Clear();
+            for (int i = 0; i < pivotSettingDefs.Count; ++i)
+            {
+                var settingDef = pivotSettingDefs[i];
+                if (EditorPivotManager.availablePivotSettings.Contains(settingDef))
+                {
+                    var guiContent = GetGUIContentForPivotSetting(settingDef);
+                    m_DefToGUIContent.Add(settingDef, guiContent);
+                }
+            }
+            
+            RefreshActiveSettingUI(pivotSettingDefs);
+        }
+        
+        protected abstract void RefreshActiveSettingUI();
+        protected void RefreshActiveSettingUI(List<PivotSettingDefinition> pivotSettingDefs)
+        {
+            for (int i = 0; i < pivotSettingDefs.Count; ++i)
+            {
+                if (IsSettingActivated(pivotSettingDefs[i]) && 
+                    m_DefToGUIContent.TryGetValue(pivotSettingDefs[i], out var content))
+                {
+                    text = content.text;
+                    tooltip = content.tooltip;
+                    icon = content.image as Texture2D;
+                    break;
+                }
+            }
+        }
+        
+        protected virtual void AttachedToPanel(AttachToPanelEvent evt)
+        {
+            EditorPivotManager.availableSettingsChanged += OnAvailablePivotSettingsChanged;
+            RefreshAvailableSettings();
         }
 
-        void AttachedToPanel(AttachToPanelEvent evt)
+        protected virtual void DetachedFromPanel(DetachFromPanelEvent evt)
         {
-            Tools.pivotModeChanged += PivotModeChanged;
+            EditorPivotManager.availableSettingsChanged -= OnAvailablePivotSettingsChanged;
+        }
+    }
+    
+    [EditorToolbarElement("Tool Settings/Pivot Mode")]
+    sealed class PivotModeDropdown : PivotSettingDropdown
+    {
+        public PivotModeDropdown()
+        {
+            name = "Pivot Mode";
         }
 
-        void DetachedFromPanel(DetachFromPanelEvent evt)
+        protected override GUIContent GetGUIContentForPivotSetting(PivotSettingDefinition pivotSettingDef)
         {
-            Tools.pivotModeChanged -= PivotModeChanged;
+            var guiContent = EditorGUIUtility.TrTextContentWithIcon(pivotSettingDef.attribute.displayName,
+                $"Toggle Tool Handle Position\n\n{pivotSettingDef.attribute.tooltip}",
+                pivotSettingDef.icon);
+
+            return guiContent;
+        }
+
+        protected override void OpenContextMenu()
+        {
+            OpenContextMenu(EditorPivotManager.pivotModeDefs);
+        }
+
+        protected override bool IsSettingActivated(PivotSettingDefinition pivotSettingDef)
+        {
+            return PivotManager.GetActivePivotMode().GetType() == pivotSettingDef.type;
+        }
+        
+        protected override GenericMenu.MenuFunction GetMenuItemFunction(PivotSettingDefinition pivotSettingDef)
+        {
+            return () => PivotManager.SetActivePivotMode(pivotSettingDef.type);
+        }
+        
+        protected override void RefreshAvailableSettings()
+        {
+            RefreshAvailableSettings(EditorPivotManager.pivotModeDefs);
+        }
+
+        protected override void RefreshActiveSettingUI()
+        {
+            RefreshActiveSettingUI(EditorPivotManager.pivotModeDefs);
+        }
+
+        protected override void AttachedToPanel(AttachToPanelEvent evt)
+        {
+            base.AttachedToPanel(evt);
+            PivotManager.activePivotModeChanged += RefreshActiveSettingUI;
+        }
+
+        protected override void DetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            base.DetachedFromPanel(evt);
+            PivotManager.activePivotModeChanged -= RefreshActiveSettingUI;
         }
     }
 
     [EditorToolbarElement("Tool Settings/Pivot Rotation")]
-    sealed class PivotRotationDropdown : EditorToolbarDropdown
+    sealed class PivotRotationDropdown : PivotSettingDropdown
     {
-        readonly GUIContent m_Local;
-        readonly GUIContent m_Global;
-
         public PivotRotationDropdown()
         {
             name = "Pivot Rotation";
+        }
+        
+        protected override GUIContent GetGUIContentForPivotSetting(PivotSettingDefinition pivotSettingDef)
+        {
+            var guiContent = EditorGUIUtility.TrTextContentWithIcon(pivotSettingDef.attribute.displayName,
+                $"Toggle Tool Handle Rotation\n\n{pivotSettingDef.attribute.tooltip}",
+                pivotSettingDef.icon);
 
-            m_Local = EditorGUIUtility.TrTextContent("Local",
-                "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.",
-                "ToolHandleLocal");
-            m_Global = EditorGUIUtility.TrTextContent("Global",
-                "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.",
-                "ToolHandleGlobal");
-
-            RegisterCallback<AttachToPanelEvent>(AttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(DetachedFromPanel);
-
-            clicked += OpenContextMenu;
-
-            PivotRotationChanged();
+            return guiContent;
         }
 
-        void OpenContextMenu()
+        protected override void OpenContextMenu()
         {
-            var menu = new GenericMenu();
-            menu.AddItem(m_Global, Tools.pivotRotation == PivotRotation.Global, () => Tools.pivotRotation = PivotRotation.Global);
-            menu.AddItem(m_Local, Tools.pivotRotation == PivotRotation.Local, () => Tools.pivotRotation = PivotRotation.Local);
-            menu.DropDown(worldBound);
+            OpenContextMenu(EditorPivotManager.pivotRotationsDefs);
+        }
+        
+        protected override bool IsSettingActivated(PivotSettingDefinition pivotSettingDef)
+        {
+            return PivotManager.GetActivePivotRotation().GetType() == pivotSettingDef.type;
+        }
+        
+        protected override GenericMenu.MenuFunction GetMenuItemFunction(PivotSettingDefinition pivotSettingDef)
+        {
+            return () => PivotManager.SetActivePivotRotation(pivotSettingDef.type);
+        }
+        
+        protected override void RefreshAvailableSettings()
+        {
+            RefreshAvailableSettings(EditorPivotManager.pivotRotationsDefs);
+        }
+        
+        protected override void RefreshActiveSettingUI()
+        {
+            RefreshActiveSettingUI(EditorPivotManager.pivotRotationsDefs);
+        }
+        
+        protected override void AttachedToPanel(AttachToPanelEvent evt)
+        {
+            base.AttachedToPanel(evt);
+            PivotManager.activePivotRotationChanged += RefreshActiveSettingUI;
         }
 
-        void PivotRotationChanged()
+        protected override void DetachedFromPanel(DetachFromPanelEvent evt)
         {
-            var content = Tools.pivotRotation == PivotRotation.Global ? m_Global : m_Local;
-            text = content.text;
-            tooltip = content.tooltip;
-            icon = content.image as Texture2D;
-        }
-
-        void AttachedToPanel(AttachToPanelEvent evt)
-        {
-            Tools.pivotRotationChanged += PivotRotationChanged;
-        }
-
-        void DetachedFromPanel(DetachFromPanelEvent evt)
-        {
-            Tools.pivotRotationChanged -= PivotRotationChanged;
+            base.DetachedFromPanel(evt);
+            PivotManager.activePivotRotationChanged -= RefreshActiveSettingUI;
         }
     }
 }

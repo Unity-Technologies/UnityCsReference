@@ -11,12 +11,13 @@ namespace Unity.PlayMode.Editor
 {
     class PlaymodeDropdownButton : EditorToolbarButton
     {
-        const string k_Stylesheet = "PlayMode/UI/PlaymodeDropdownButton.uss";
+        const string k_Stylesheet = "PlayMode/UI/Framework.uss";
         const string k_PlaymodeDropdownName = "playmode-dropdown";
 
         public PlaymodeDropdownButton()
         {
             name = k_PlaymodeDropdownName;
+            this.AddToClassList("unity-scenarios-playmode-dropdown-button");
             var arrow = new VisualElement();
             icon = EditorGUIUtility.FindTexture("UnityLogo");
             arrow.AddToClassList("unity-icon-arrow");

@@ -126,7 +126,7 @@ namespace UnityEditor
         // The BuildReport object returned by BuildPipeline.BuildPlayer will contain more details (about build times and contents), at the cost of a slightly (typically, a few percents) longer build time
         DetailedBuildReport = 1 << 29,
 
-        [Obsolete("Shader LiveLink is no longer supported.")]
+        [Obsolete("Shader LiveLink is no longer supported.", true)]
         ShaderLivelinkSupport = 0,
 
     }
@@ -142,18 +142,18 @@ namespace UnityEditor
         UncompressedAssetBundle = 1, // 1 << 0
 
         // Includes all dependencies.
-        [Obsolete("This has been made obsolete. It is always enabled in the new AssetBundle build system introduced in 5.0.")]
+        [Obsolete("This has been made obsolete. It is always enabled in the new AssetBundle build system introduced in 5.0.", true)]
         CollectDependencies = 2, // 1 << 1
 
         // Forces inclusion of the entire asset.
-        [Obsolete("This has been made obsolete. It is always disabled in the new AssetBundle build system introduced in 5.0.")]
+        [Obsolete("This has been made obsolete. It is always disabled in the new AssetBundle build system introduced in 5.0.", true)]
         CompleteAssets = 4, // 1 << 2
 
         // Do not include type information within the AssetBundle.
         DisableWriteTypeTree = 8, // 1 << 3
 
         // Builds an asset bundle using a hash for the id of the object stored in the asset bundle.
-        [Obsolete("This has been made obsolete. It is always enabled in the new AssetBundle build system introduced in 5.0.")]
+        [Obsolete("This has been made obsolete. It is always enabled in the new AssetBundle build system introduced in 5.0.", true)]
         DeterministicAssetBundle = 16, // 1 << 4
 
         // Force rebuild the asset bundle.
@@ -291,14 +291,6 @@ namespace UnityEditor
         [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerHelpers.h")]
         [FreeFunction]
         internal static extern void ShowBuildProfileWindow();
-
-        [Obsolete("PushAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        [FreeFunction]
-        public static extern void PushAssetDependencies();
-
-        [Obsolete("PopAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        [FreeFunction]
-        public static extern void PopAssetDependencies();
 
         private static void LogBuildExceptionAndExit(string buildFunctionName, System.Exception exception)
         {
@@ -487,38 +479,6 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern bool IsFeatureSupported(string define, BuildTarget platform);
 
-        // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, BuildOptions options) { return ""; }
-
-        // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target) { return ""; }
-
-        // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, out uint crc, BuildOptions options)
-        {
-            crc = 0;
-            return "";
-        }
-
-        // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        internal static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, out uint crc, BuildOptions options)
-        {
-            crc = 0;
-            return "";
-        }
-
-        // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, out uint crc)
-        {
-            crc = 0;
-            return "";
-        }
-
         private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines)
         {
             if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName, out var msg))
@@ -572,36 +532,6 @@ namespace UnityEditor
         }
 
         private static extern BuildPlayerDataResult BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions);
-#pragma warning disable 618
-
-        // Builds an AssetBundle.
-        [Obsolete("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform) { return false; }
-
-        [Obsolete("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
-        {
-            crc = 0;
-            return false;
-        }
-
-        // Builds an AssetBundle, with custom names for the assets.
-        [Obsolete("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
-        {
-            return false;
-        }
-
-        // Builds an AssetBundle, with custom names for the assets.
-        [Obsolete("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-        public static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
-        {
-            crc = 0;
-            return false;
-        }
-
-#pragma warning restore 618
-
 
         public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {

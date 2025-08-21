@@ -2,113 +2,154 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
-    sealed class OverlayMenuItem : VisualElement
+    sealed class OverlayGroupMenuItem : Foldout
     {
-        const string k_UxmlPath = "UXML/Overlays/overlay-menu-item.uxml";
-        const string k_VisibilityIconClass = "overlay-menu-item__visibility-icon";
-        const string k_ListItemClass = "unity-list-view__item";
-        const string k_MenuItemClass = "overlay-menu-item";
+        Toggle m_Toggle;
+        List<Overlay> m_Overlays;
 
-
-        readonly Label m_Title;
-        readonly VisualElement m_VisibilityIcon;
-        Overlay m_Overlay;
-
-        static VisualTreeAsset s_TreeAsset;
-
-        public Overlay overlay
+        public OverlayGroupMenuItem(string name, List<Overlay> overlays)
         {
-            get => m_Overlay;
-            set
+            m_Overlays = overlays;
+            text = name;
+
+            var label = this.Q<Label>();
+            label.parent.Insert(label.parent.IndexOf(label), m_Toggle = new Toggle());
+
+            m_Toggle.RegisterValueChangedCallback(ValueChanged);
+            var foldoutToggle = this.Q<Toggle>(classes: toggleUssClassName);
+            foldoutToggle.RegisterCallback<MouseOverEvent>(OnMouseEnter);
+            foldoutToggle.RegisterCallback<MouseOutEvent>(OnMouseLeave);
+            RegisterCallback<AttachToPanelEvent>(AttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(DetachFromPanel);
+        }
+
+        void AttachToPanel(AttachToPanelEvent evt)
+        {
+            foreach (var overlay in m_Overlays)
+                overlay.displayedChanged += OnDisplayChanged;
+
+            UpdateToggleState();
+        }
+
+        void DetachFromPanel(DetachFromPanelEvent evt)
+        {
+            foreach (var overlay in m_Overlays)
+                overlay.displayedChanged -= OnDisplayChanged;
+        }
+
+        void OnDisplayChanged(bool displayed)
+        {
+            UpdateToggleState();
+        }
+
+        void UpdateToggleState()
+        {
+            bool allDisplayed = true;
+            bool allHidden = true;
+
+            foreach (var overlay in m_Overlays)
             {
-                if (m_Overlay != null)
-                {
-                    m_Overlay.displayedChanged -= OnOverlayDisplayChanged;
-                    if (m_Overlay.canvas != null)
-                        m_Overlay.canvas.overlaysEnabledChanged -= OnOverlayEnabledChanged;
-                }
-
-                m_Overlay = value;
-                name = overlay.rootVisualElement.name;
-                m_Title.text = string.IsNullOrEmpty(overlay.displayName)
-                    ? m_Overlay.GetType().Name
-                    : overlay.displayName;
-
-                UpdateIconVisibilityState();
-
-                if (m_Overlay != null)
-                {
-                    m_Overlay.displayedChanged += OnOverlayDisplayChanged;
-                    if (m_Overlay.canvas != null)
-                    {
-                        OnOverlayEnabledChanged(m_Overlay.canvas.overlaysEnabled);
-                        m_Overlay.canvas.overlaysEnabledChanged += OnOverlayEnabledChanged;
-                    }
-                }
+                var display = overlay.displayed;
+                allDisplayed &= display;
+                allHidden &= !display;
             }
+
+            m_Toggle.showMixedValue = !allDisplayed && !allHidden;
+            m_Toggle.SetValueWithoutNotify(allDisplayed);
         }
 
-        public OverlayMenuItem()
+        void ValueChanged(ChangeEvent<bool> evt)
         {
-            if (s_TreeAsset == null)
-                s_TreeAsset = EditorGUIUtility.Load(k_UxmlPath) as VisualTreeAsset;
-
-            s_TreeAsset.CloneTree(this);
-
-            m_Title = this.Q<Label>("DisplayName");
-            m_VisibilityIcon = this.Q("VisibilityIcon");
-
-            RegisterCallback<MouseOverEvent>(OnMouseEnter);
-            RegisterCallback<MouseOutEvent>(OnMouseLeave);
-            this.AddManipulator(new Clickable(OnClick));
-        }
-
-        void OnOverlayDisplayChanged(bool state)
-        {
-            UpdateIconVisibilityState();
-        }
-
-        void UpdateIconVisibilityState()
-        {
-            if (m_Overlay == null)
-                return;
-
-            m_VisibilityIcon.EnableInClassList(k_VisibilityIconClass + "--visible", m_Overlay.displayed);
-            m_VisibilityIcon.EnableInClassList(k_VisibilityIconClass + "--invisible", !m_Overlay.displayed);
-        }
-
-        void OnOverlayEnabledChanged(bool visibility)
-        {
-            SetEnabled(visibility);
-
-            //Icon highlighted
-            m_VisibilityIcon.EnableInClassList(k_VisibilityIconClass + "-enabled", visibility);
-            //Text color
-            EnableInClassList(k_MenuItemClass + "-enabled", visibility);
-            //Background highlighted
-            EnableInClassList(k_ListItemClass + "-enabled", visibility);
-        }
-
-        void OnClick()
-        {
-            if (m_Overlay == null)
-                return;
-
-            m_Overlay.displayed = !m_Overlay.displayed;
+            foreach (var overlay in m_Overlays)
+                overlay.displayed = evt.newValue;
         }
 
         void OnMouseLeave(MouseOutEvent evt)
         {
-            m_Overlay?.SetHighlightEnabled(false);
+            foreach (var overlay in m_Overlays)
+                overlay.SetHighlightEnabled(false);
         }
 
         void OnMouseEnter(MouseOverEvent evt)
         {
-            m_Overlay?.SetHighlightEnabled(enabledSelf);
+            foreach (var overlay in m_Overlays)
+                overlay.SetHighlightEnabled(enabledSelf); // We don't highlight if the item is disabled
+        }
+    }
+
+    sealed class OverlayMenuItem : Toggle
+    {
+        const string k_MenuItemClass = "overlay-menu-item";
+
+        readonly Label m_Title;
+        VisualElement m_Toggle;
+        Overlay m_Overlay;
+
+        public OverlayMenuItem(Overlay overlay)
+        {
+            m_Overlay = overlay;
+
+            AddToClassList(k_MenuItemClass);
+
+            var container = new VisualElement();
+            container.AddToClassList(k_MenuItemClass + "__container");
+
+            m_Title = new Label(string.IsNullOrEmpty(overlay.displayName) ? overlay.GetType().Name : overlay.displayName) { name = "DisplayName" };
+            m_Title.AddToClassList(k_MenuItemClass + "__display-name");
+            container.Add(m_Title);
+
+            tooltip = m_Title.text;
+
+            Add(container);
+
+            m_Toggle = this.Q<VisualElement>(className: "unity-toggle__input");
+            if (m_Toggle != null)
+                m_Toggle.AddToClassList(k_MenuItemClass + "__toggle");
+
+            Insert(0, m_Toggle); // Move toggle before label
+
+            RegisterCallback<MouseOverEvent>(OnMouseEnter);
+            RegisterCallback<MouseOutEvent>(OnMouseLeave);
+
+            this.RegisterValueChangedCallback((evt) => overlay.displayed = evt.newValue);
+            SetValueWithoutNotify(overlay.displayed);
+            RegisterCallback<AttachToPanelEvent>(AttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(DetachFromPanel);
+        }
+
+        void AttachToPanel(AttachToPanelEvent evt)
+        {
+            m_Overlay.displayedChanged += OnDisplayChanged;
+        }
+
+        void DetachFromPanel(DetachFromPanelEvent evt)
+        {
+            m_Overlay.displayedChanged -= OnDisplayChanged;
+        }
+
+        void OnDisplayChanged(bool displayed)
+        {
+            UpdateToggleState();
+        }
+
+        void UpdateToggleState()
+        {
+            SetValueWithoutNotify(m_Overlay.displayed);
+        }
+
+        void OnMouseLeave(MouseOutEvent evt)
+        {
+            m_Overlay.SetHighlightEnabled(false);
+        }
+
+        void OnMouseEnter(MouseOverEvent evt)
+        {
+            m_Overlay.SetHighlightEnabled(enabledSelf); // We don't highlight if the item is disabled
         }
     }
 }

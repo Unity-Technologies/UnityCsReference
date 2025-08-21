@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Profile
 {
@@ -44,7 +45,8 @@ namespace UnityEditor.Build.Profile
         /// <exception cref="ArgumentException">
         /// Thrown when a sub asset of the same type already exists in the build profile.
         /// </exception>
-        internal T CreateComponent<T>() where T : UnityEngine.Object
+        [VisibleToOtherModules]
+        public T CreateComponent<T>() where T : UnityEngine.Object
         {
             var found = GetComponent<T>();
             if (found != null)
@@ -99,7 +101,8 @@ namespace UnityEditor.Build.Profile
         /// <param name="objectToAdd"></param>
         /// <exception cref="ArgumentNullException">Thrown when objectToAdd is null.</exception>
         /// <exception cref="ArgumentException">Thrown if adding a sub-asset of an existing component type.</exception>
-        internal void AddComponent<T>(T objectToAdd) where T : UnityEngine.Object
+        [VisibleToOtherModules]
+        public void AddComponent<T>(T objectToAdd) where T : UnityEngine.Object
         {
             if (objectToAdd == null)
             {
@@ -128,7 +131,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Removes the first occurence of a component of type T from the build profile.
         /// </summary>
-        internal void RemoveComponent<T>() where T : UnityEngine.Object
+        public void RemoveComponent<T>() where T : UnityEngine.Object
         {
             var found = GetComponent<T>();
             if (found == null)
@@ -146,7 +149,8 @@ namespace UnityEditor.Build.Profile
         /// <param name="objectToRemove">Object to remove.</param>
         /// <exception cref="ArgumentNullException">objectToRemove is null.</exception>
         /// <exception cref="ArgumentException">objectToRemove is not part of the build profile.</exception>
-        internal void RemoveComponent<T>(T objectToRemove) where T : UnityEngine.Object
+        [VisibleToOtherModules]
+        public void RemoveComponent<T>(T objectToRemove) where T : UnityEngine.Object
         {
             if (objectToRemove == null)
             {

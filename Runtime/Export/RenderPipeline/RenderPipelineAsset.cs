@@ -65,6 +65,8 @@ namespace UnityEngine.Rendering
 
         public virtual Material default2DMaskMaterial => null;
 
+        public virtual Material defaultRenderAs2DMaterial => null;
+
         public virtual Shader defaultShader => null;
 
         public virtual Shader defaultSpeedTree7Shader => null;

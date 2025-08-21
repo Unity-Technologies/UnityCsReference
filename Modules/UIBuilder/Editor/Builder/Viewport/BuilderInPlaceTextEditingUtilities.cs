@@ -295,7 +295,7 @@ namespace Unity.UI.Builder
             if (newValue != oldValue)
             {
                 // UxmlSerializedData
-                if (!BuilderUxmlAttributesView.alwaysUseUxmlTraits && vea.serializedData != null && UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName) is {} description)
+                if (!Builder.alwaysUseUxmlTraits && vea.serializedData != null && UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName) is {} description)
                 {
                     var attributeDescription = description.FindAttributeWithUxmlName(uxmlAttributeName);
                     if (attributeDescription != null)

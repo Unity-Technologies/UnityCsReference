@@ -99,6 +99,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.inheritedData.Write().unityFont = default(Font);
             s_InitialStyle.inheritedData.Write().unityFontDefinition = default(FontDefinition);
             s_InitialStyle.inheritedData.Write().unityFontStyleAndWeight = FontStyle.Normal;
+            s_InitialStyle.inheritedData.Write().unityMaterial = default(MaterialDefinition);
             s_InitialStyle.rareData.Write().unityOverflowClipBox = OverflowClipBox.PaddingBox;
             s_InitialStyle.inheritedData.Write().unityParagraphSpacing = 0f;
             s_InitialStyle.rareData.Write().unitySliceBottom = 0;
@@ -188,6 +189,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static Font unityFont => s_InitialStyle.inheritedData.Read().unityFont;
         public static FontDefinition unityFontDefinition => s_InitialStyle.inheritedData.Read().unityFontDefinition;
         public static FontStyle unityFontStyleAndWeight => s_InitialStyle.inheritedData.Read().unityFontStyleAndWeight;
+        public static MaterialDefinition unityMaterial => s_InitialStyle.inheritedData.Read().unityMaterial;
         public static OverflowClipBox unityOverflowClipBox => s_InitialStyle.rareData.Read().unityOverflowClipBox;
         public static Length unityParagraphSpacing => s_InitialStyle.inheritedData.Read().unityParagraphSpacing;
         public static int unitySliceBottom => s_InitialStyle.rareData.Read().unitySliceBottom;

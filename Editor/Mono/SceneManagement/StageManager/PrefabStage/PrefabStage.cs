@@ -945,7 +945,7 @@ namespace UnityEditor.SceneManagement
                     if (targetID == lastTargetID)
                         targetInContent = lastTargetInContent;
                     else
-                        targetInContent = UnityEditorInternal.InternalEditorUtility.GetObjectFromInstanceID(targetID);
+                        targetInContent = UnityEditorInternal.InternalEditorUtility.GetObjectFromEntityId(targetID);
 
                     // Assign the struct back to the array if it worked.
                     if (targetInContent != null)

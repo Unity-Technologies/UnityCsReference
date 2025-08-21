@@ -454,7 +454,7 @@ namespace UnityEditor.Search.Providers
                 "Do not cap asset provider results limit", priority: 0, moveCursor: TextCursorPlacement.MoveAutoComplete, icon: Icons.toggles,
                 color: QueryColors.toggle);
 
-            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir=\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
+            yield return new SearchProposition(category: "Filters", label: "Directory (Name)", replacement: "dir:\"folder name\"", help:"Assets in a specific folder",icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "File Size", replacement: "size>=8096", help: "Assets with a specific size in bytes", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "File Extension", replacement: "ext:png", help:"Assets with a specific extension", icon: Icons.quicksearch, color: QueryColors.filter);
             yield return new SearchProposition(category: "Filters", label: "Age", replacement: "age>=1.5", help: "In days, when was the file last modified?", icon: Icons.quicksearch, color: QueryColors.filter);
@@ -558,7 +558,7 @@ namespace UnityEditor.Search.Providers
             return TaskEvaluatorManager.EvaluateMainThread(() =>
             {
                 var assetInstanceId = Utils.GetMainAssetInstanceID(assetPath);
-                return GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceId);
+                return GlobalObjectId.GetGlobalObjectIdSlow((EntityId)assetInstanceId);
             });
         }
 

@@ -134,12 +134,7 @@ namespace UnityEditor.Search
         [NativeMethod(IsThreadSafe = true)]
         public extern void RemoveDocuments(string[] documentsToRemove);
 
-        public void AddWord(string word, int minVariations, int maxVariations, int score, int documentIndex)
-        {
-            Internal_AddWord(word, score, documentIndex);
-        }
-
-        public void AddExactWord(string word, int score, int documentIndex)
+        public void AddWord(string word, int score, int documentIndex)
         {
             Internal_AddWord(word, score, documentIndex);
         }
@@ -149,12 +144,7 @@ namespace UnityEditor.Search
             Internal_AddPropertyDouble(name, value, score, documentIndex);
         }
 
-        public void AddProperty(string name, string value, int minVariations, int maxVariations, int score, int documentIndex, bool exact, bool saveKeyword)
-        {
-            Internal_AddPropertyString(name, value, score, documentIndex, saveKeyword);
-        }
-
-        public void AddExactProperty(string name, string value, int score, int documentIndex, bool saveKeyword)
+        public void AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword)
         {
             Internal_AddPropertyString(name, value, score, documentIndex, saveKeyword);
         }
@@ -252,21 +242,22 @@ namespace UnityEditor.Search
             Internal_MergeArtifactsBatch(m_Ptr, removedDocuments, artifactPaths, baseScore, progressId, batchSize);
         }
 
-        public void ApplyFrom(SearchIndexer source)
-        {
-            throw new NotSupportedException("Do not use ApplyFrom. Use Merge instead.");
-        }
-
         public void Write(Stream stream)
         {
-            throw new NotSupportedException("Do not use Write.");
+            stream.Write(SaveToArtifactBytes());
         }
 
         public bool Read(Stream stream, bool checkVersionOnly)
         {
-            throw new NotSupportedException("Do not use Read.");
-        }
+            if (stream == null || stream.Length == 0)
+                return false;
 
+            var bytes = new byte[stream.Length];
+            if (stream.Read(bytes, 0, bytes.Length) != bytes.Length)
+                return false;
+
+            return LoadFromArtifactBytes(bytes, checkVersionOnly);
+        }
 
         public IEnumerable<SearchResult> SearchTerm(string name, object value, SearchIndexOperator op, bool exclude, SearchResultCollection subset)
         {
@@ -277,7 +268,7 @@ namespace UnityEditor.Search
         public extern void StartGlobalTransaction_Unsafe();
 
         [NativeMethod(IsThreadSafe = false)]
-        public extern bool StopGlobalTransaction_Unsafe();
+        public extern bool StopGlobalTransaction_Unsafe(LMDBTransactionEndAction endAction);
 
         [NativeMethod(IsThreadSafe = true)]
         public extern void PrintAllContent();
@@ -287,7 +278,11 @@ namespace UnityEditor.Search
             if (!string.IsNullOrEmpty(name))
             {
                 // EvaluateSearchNode can send us a value that is already converted to a numerical value.
-                if (value is double d)
+                if (value is float f)
+                {
+                    return SearchPropertyDouble(name, f, op);
+                }
+                else if (value is double d)
                 {
                     return SearchPropertyDouble(name, d, op);
                 }
@@ -443,5 +438,11 @@ namespace UnityEditor.Search
 
         [NativeMethod(IsThreadSafe = true)]
         extern void Sync();
+
+        [NativeMethod(IsThreadSafe = true)]
+        extern byte[] SaveToArtifactBytes();
+
+        [NativeMethod(IsThreadSafe = true)]
+        extern bool LoadFromArtifactBytes(ReadOnlySpan<byte> bytes, bool checkVersionOnly);
     }
 }

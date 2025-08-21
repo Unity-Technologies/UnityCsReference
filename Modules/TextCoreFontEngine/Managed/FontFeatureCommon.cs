@@ -171,6 +171,15 @@ namespace UnityEngine.TextCore.LowLevel
         Extension_Positioning = OTL_TableType.GPOS | 9,
     }
 
+    internal enum OTL_Direction
+    {
+        DIRECTION_INVALID = 0,
+        DIRECTION_LTR = 4,
+        DIRECTION_RTL,
+        DIRECTION_TTB,
+        DIRECTION_BTT
+    }
+
     [Flags]
     public enum FontFeatureLookupFlags
     {

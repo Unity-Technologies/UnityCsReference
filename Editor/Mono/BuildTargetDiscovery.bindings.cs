@@ -140,10 +140,13 @@ namespace UnityEditor
 
         internal static bool TryGetBuildTarget(NamedBuildTarget named, out IBuildTarget outTarget)
         {
-            var direct = BuildPipeline.GetBuildTargetByName(named.TargetName);
-            // name.BuildTarget => enum.IBuildTarget
-            if (TryGetBuildTarget(direct, out outTarget))
-                return true;
+            // For standalone, skip direct lookup and go straight to the detailed search
+            if (named.TargetName != "Standalone")
+            {
+                var direct = BuildPipeline.GetBuildTargetByName(named.TargetName);
+                if (TryGetBuildTarget(direct, out outTarget) && outTarget.IconPlatformProperties != null)
+                    return true;
+            }
 
             // look through every known platform
             foreach (var info in BuildTargetDiscovery.GetBuildTargetInfoList())
@@ -270,7 +273,8 @@ namespace UnityEditor
             public string description = L10n.Tr("");
             public string instructions = L10n.Tr("*standard install form hub");
             public string iconName = "BuildSettings.Editor";
-            public string subtitle = "";
+            public string subtitle = string.Empty;
+            public string settingsDocsLink = string.Empty;
             public List<NameAndLink> nameAndLinkToShowUnderTitle = null;
 
             // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
@@ -297,13 +301,15 @@ namespace UnityEditor
             public string qualifiedName { get; }
             public string description { get; }
             public string publisher { get; }
+            public bool hasThumbnail { get; }
 
-            public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "")
+            public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "", bool hasThumbnail = false)
             {
                 this.displayName = displayName;
                 this.qualifiedName = qualifiedName;
                 this.description = description;
                 this.publisher = publisher;
+                this.hasThumbnail = hasThumbnail;
             }
         }
 
@@ -434,6 +440,14 @@ namespace UnityEditor
                         new NameAndLink{name = L10n.Tr("Unity Android Manual"),  linkUrl = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/android.html"},
                     },
                     iconName = "BuildSettings.Android",
+                    internalPackages = new PlatformPackageList
+                    {
+                        recommendedPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("In-App Purchasing"), "com.unity.purchasing",
+                                L10n.Tr("With Unity IAP, setting up in-app purchases for your game across multiple app stores has never been easier."))
+                        }
+                    },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -446,6 +460,14 @@ namespace UnityEditor
                     description =  L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
                     buildTarget = BuildTarget.iOS,
                     iconName = "BuildSettings.iPhone",
+                    internalPackages = new PlatformPackageList
+                    {
+                        recommendedPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("In-App Purchasing"), "com.unity.purchasing",
+                                L10n.Tr("With Unity IAP, setting up in-app purchases for your game across multiple app stores has never been easier."))
+                        }
+                    },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -556,6 +578,7 @@ namespace UnityEditor
                     description =  L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers."),
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.WebGL",
+                    settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -572,6 +595,7 @@ namespace UnityEditor
                     subtitle = "From <color=\"white\"><b>Meta</b></color>",
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.Facebook",
+                    settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
                     internalPackages = new PlatformPackageList
                     {
                         requiredPackages = new[]
@@ -613,34 +637,34 @@ namespace UnityEditor
                         {
                             new PlatformPackageInfo(L10n.Tr("Meta XR All-in-one SDK"), "com.meta.xr.sdk.all",
                                 L10n.Tr("Meta XR All-in-One SDK is a wrapper package that depends on the latest version of all Meta XR SDKs, making it easy to get started with VR development."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Core SDK"), "com.meta.xr.sdk.core",
                                 L10n.Tr("Meta XR Core SDK package provides the latest features to create immersive experiences for Meta XR devices."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Audio SDK"), "com.meta.xr.sdk.audio",
                                 L10n.Tr("Comprehensive spatial audio features for immersive applications, including a spatial audio renderer with HRTF, ambisonic audio playback, and room acoustics for creating immersive environments."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Haptics SDK"), "com.meta.xr.sdk.haptics",
                                 L10n.Tr("SDK for playback of haptics created in Meta Haptics Studio on Quest devices."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK Essentials"), "com.meta.xr.sdk.interaction",
                                 L10n.Tr("Provides the core implementations of all the provided interaction models along with necessary shaders, materials, and prefabs."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK"), "com.meta.xr.sdk.interaction.ovr",
                                 L10n.Tr("This package allows Interaction SDK to interface with OVRPlugin. Use this package if you are using OVRPlugin or the Core SDK package."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Platform SDK"), "com.meta.xr.sdk.platform",
                                 L10n.Tr("Use the Platform SDK to create social VR applications. Add Matchmaking, DLC,In-App Purchases, Cloud Storage, and more to your experience using the individual components of the SDK."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Voice SDK"), "com.meta.xr.sdk.voice",
                                 L10n.Tr("Voice SDK enables natural voice interactions for AR/VR apps, powered by Wit.ai."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR Simulator"), "com.meta.xr.simulator",
                                 L10n.Tr("Meta XR Simulator allows developers to preview their VR changes without needing a physical device."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                             new PlatformPackageInfo(L10n.Tr("Meta XR MR Utility Kit"), "com.meta.xr.mrutilitykit",
                                 L10n.Tr("Helper tools & functions to simplify development with Scene API. Works on Mac & PC, without a device attached."),
-                                L10n.Tr("Meta")),
+                                L10n.Tr("Meta"), true),
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
@@ -675,6 +699,23 @@ namespace UnityEditor
                     buildTarget = BuildTarget.WSAPlayer,
                     iconName = "BuildSettings.Metro",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget
+                }
+            },
+            {
+                new("1e09bd9b55c8d45e9a11b4727bf18e88"),
+                new PlatformInfo
+                {
+                    displayName = "Android Render Service",
+                    buildTarget = BuildTarget.Android,
+                    iconName = "BuildSettings.Android",
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Unity Render Service Support"), "com.unity.android.render-service", L10n.Tr("Enables you to build a Unity Render Service on Android and integrate into Android Applications. Contact your sales representative to get access."))
+                        }
+                    },
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
             {
@@ -1017,6 +1058,30 @@ namespace UnityEditor
             return new PlatformPackageList();
         }
 
+        public static string[] GetAllPlatformPackageNames()
+        {
+            var allPackageNames = new HashSet<string>();
+            foreach (var platform in allPlatforms)
+            {
+                var internalPackages = platform.Value.internalPackages;
+                var partnerPackages = platform.Value.partnerPackages;
+                if (internalPackages.packageCount == 0 && partnerPackages.packageCount == 0)
+                    continue;
+
+                foreach (var package in internalPackages.requiredPackages)
+                    allPackageNames.Add(package.qualifiedName);
+                foreach (var package in internalPackages.recommendedPackages)
+                    allPackageNames.Add(package.qualifiedName);
+                foreach (var package in partnerPackages.requiredPackages)
+                    allPackageNames.Add(package.qualifiedName);
+                foreach (var package in partnerPackages.recommendedPackages)
+                    allPackageNames.Add(package.qualifiedName);
+            }
+            var result = new string[allPackageNames.Count];
+            allPackageNames.CopyTo(result);
+            return result;
+        }
+
         [System.Obsolete("BuildPlatformDescription(BuildTarget) is obsolete. Use BuildPlatformDescription(IBuildTarget) instead.", false)]
 
         public static string BuildPlatformDescription(BuildTarget platform) => BuildPlatformDescription(GetGUIDFromBuildTarget(platform));
@@ -1035,6 +1100,14 @@ namespace UnityEditor
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
                 return platformInfo.nameAndLinkToShowUnderTitle;
+
+            return null;
+        }
+
+        public static string BuildPlatformSettingsDocsLink(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.settingsDocsLink;
 
             return null;
         }

@@ -16,7 +16,7 @@ namespace UnityEngine.Networking
     {
         private NativeArray<byte> m_NativeData;
 
-        private extern static IntPtr Create([Unmarshalled] DownloadHandlerAudioClip obj, string url, AudioType audioType);
+        private extern static IntPtr Create([UnityMarshalAs(NativeType.ScriptingObjectPtr)] DownloadHandlerAudioClip obj, string url, AudioType audioType);
 
         private void InternalCreateAudioClip(string url, AudioType audioType)
         {

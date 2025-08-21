@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
     /// To create buttons, add <see cref="Button"/> elements directly to the ToggleButtonGroup. This will automatically
     /// style and configure the button to work properly.
     /// </remarks>
+    [UxmlElement(null, typeof(Button))]
     [Icon("UIToolkit/Icons/ToggleButtonGroup.png")]
     public class ToggleButtonGroup : BaseField<ToggleButtonGroupState>
     {
@@ -237,19 +238,25 @@ namespace UnityEngine.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
-            visualInput = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName }, delegatesFocus = true};
+            visualInput = new ButtonGroupContainer(this) { name = containerUssClassName, classList = { buttonGroupClassName }, delegatesFocus = true};
             m_ButtonGroupContainer = visualInput;
+
+            SetValueWithoutNotify(toggleButtonGroupState);
+        }
+
+        class ButtonGroupContainer : VisualElement
+        {
+            private readonly ToggleButtonGroup m_Group;
+            public ButtonGroupContainer(ToggleButtonGroup group) { m_Group = group; }
 
             // Note: We are changing the workflow through these series of callback. The desired workflow is when a user
             //       adds a new button, we would take the button and apply the necessary style and give it the designed
             //       functionality for a ToggleButtonGroup's button. Because we are not overwriting the contentContainer
-            //       of this control, we need to make sure that elementAdded is hooked for ToggleButtonGroup and its
+            //       of this control, we need to make sure that OnChildAdded is hooked for ToggleButtonGroup and its
             //       internal contentContainer separately, otherwise it would not receive the expected workflow when a
             //       control is added into this.
-            m_ButtonGroupContainer.elementAdded += OnButtonGroupContainerElementAdded;
-            m_ButtonGroupContainer.elementRemoved += OnButtonGroupContainerElementRemoved;
-
-            SetValueWithoutNotify(toggleButtonGroupState);
+            internal override void OnChildAdded(VisualElement ve) => m_Group.OnButtonGroupContainerElementAdded(ve);
+            internal override void OnChildRemoved(VisualElement ve) => m_Group.OnButtonGroupContainerElementRemoved(ve);
         }
 
         public override VisualElement contentContainer => m_ButtonGroupContainer ?? this;
@@ -309,7 +316,7 @@ namespace UnityEngine.UIElements
             return m_Buttons[index];
         }
 
-        void OnButtonGroupContainerElementAdded(VisualElement ve, int index)
+        void OnButtonGroupContainerElementAdded(VisualElement ve)
         {
             if (ve is not Button button)
             {

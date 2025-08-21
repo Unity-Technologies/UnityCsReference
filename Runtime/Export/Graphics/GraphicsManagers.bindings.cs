@@ -87,6 +87,11 @@ namespace UnityEngine
         [FreeFunction("GetRenderSettings")] extern internal static Object GetRenderSettings();
         [StaticAccessor("RenderSettingsScripting", StaticAccessorType.DoubleColon)] extern internal static void Reset();
 
+        [NativeProperty("DefaultSpotCookie")]
+        extern internal static Texture2D spotCookieTexture { get; set; }
+        
+        extern internal static Texture2D haloTexture { get; set; }
+
         extern internal static bool WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
     }
 

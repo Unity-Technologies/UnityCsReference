@@ -39,6 +39,8 @@ namespace UnityEditor
 
         static internal event Action onAnimationRecordingStart;
         static internal event Action onAnimationRecordingStop;
+        static internal event Action onAnimationPlaybackStart;
+        static internal event Action onAnimationPlaybackStop;
 
         static private PrefColor s_AnimatedPropertyColor = new PrefColor("Animation/Property Animated", 0.82f, 0.97f, 1.00f, 1.00f, 0.54f, 0.85f, 1.00f, 1.00f);
         static private PrefColor s_RecordedPropertyColor = new PrefColor("Animation/Property Recorded", 1.00f, 0.60f, 0.60f, 1.00f, 1.00f, 0.50f, 0.50f, 1.00f);
@@ -49,6 +51,8 @@ namespace UnityEditor
         static public Color candidatePropertyColor { get { return s_CandidatePropertyColor; } }
 
         static private AnimationModeDriver s_DummyDriver;
+
+        static internal AnimationModeDriver GetDriver() => Internal_GetDriver() as AnimationModeDriver;
         static private AnimationModeDriver DummyDriver()
         {
             if (s_DummyDriver == null)
@@ -61,6 +65,7 @@ namespace UnityEditor
 
         extern public static bool IsPropertyAnimated(Object target, string propertyPath);
         extern internal static bool IsPropertyCandidate(Object target, string propertyPath);
+
 
         // Stops animation mode, as used by the animation editor.
         public static void StopAnimationMode()
@@ -102,6 +107,8 @@ namespace UnityEditor
         internal static void StopAnimationPlaybackMode()
         {
             s_InAnimationPlaybackMode = false;
+
+            onAnimationPlaybackStop?.Invoke();
         }
 
         // Returns true if the editor is currently in animation playback mode.
@@ -114,6 +121,7 @@ namespace UnityEditor
         internal static void StartAnimationPlaybackMode()
         {
             s_InAnimationPlaybackMode = true;
+            onAnimationPlaybackStart?.Invoke();
         }
 
         internal static void StopAnimationRecording()
@@ -208,5 +216,7 @@ namespace UnityEditor
 
         [NativeThrows]
         extern private static void Internal_StartCandidateRecording(Object driver);
+
+        extern internal static Object Internal_GetDriver();
     }
 }

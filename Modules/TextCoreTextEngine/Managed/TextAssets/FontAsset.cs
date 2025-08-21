@@ -620,7 +620,16 @@ namespace UnityEngine.TextCore.Text
             return null;
         }
 
-        internal static FontAsset? CreateFontAsset(string familyName, string styleName, int pointSize, int padding, GlyphRenderMode renderMode)
+         /// <summary>
+        /// Creates a new font asset instance from the given family name, style, point size, padding and render mode.
+        /// </summary>
+        /// <param name="familyName">The family name of the source font.</param>
+        /// <param name="styleName">The style name of the source font face.</param>
+        /// <param name="pointSize">The desired point size.</param>
+        /// <param name="padding">The font padding.</param>
+        /// <param name="renderMode">The glyph render mode (ie. sdf vs. bitmap).</param>
+        /// <returns>An instance of the newly created font asset.</returns>
+        public static FontAsset? CreateFontAsset(string familyName, string styleName, int pointSize, int padding, GlyphRenderMode renderMode)
         {
             if (FontEngine.TryGetSystemFontReference(familyName, styleName, out FontReference fontRef))
                 return CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, padding, renderMode, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
@@ -992,6 +1001,7 @@ namespace UnityEngine.TextCore.Text
                 UpdateFallbacks();
                 UpdateWeightFallbacks();
                 UpdateFaceInfo();
+                UpdateRenderMode();
             }
         }
 

@@ -454,6 +454,7 @@ namespace UnityEditor
         internal extern SourceAssetIdentifier[] sourceMaterials
         {
             [FreeFunction(Name = "ModelImporterBindings::GetSourceMaterials", HasExplicitThis = true)]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]    
             get;
         }
 
@@ -1053,15 +1054,17 @@ namespace UnityEditor
             set { SetClipAnimations(this, value); }
         }
         [FreeFunction("ModelImporterBindings::GetClipAnimations")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ModelImporterClipAnimation[] GetClipAnimations(ModelImporter self);
         [FreeFunction("ModelImporterBindings::SetClipAnimations", ThrowsException = true)]
-        private extern static void SetClipAnimations([NotNull] ModelImporter self, [Unmarshalled] ModelImporterClipAnimation[] value);
+        private extern static void SetClipAnimations([NotNull] ModelImporter self, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] ModelImporterClipAnimation[] value);
 
         public ModelImporterClipAnimation[] defaultClipAnimations
         {
             get { return GetDefaultClipAnimations(this); }
         }
         [FreeFunction("ModelImporterBindings::GetDefaultClipAnimations")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         private extern static ModelImporterClipAnimation[] GetDefaultClipAnimations(ModelImporter self);
 
         internal extern bool isAssetOlderOr42

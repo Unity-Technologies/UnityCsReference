@@ -31,7 +31,7 @@ internal class InProjectPage : SimplePage
     {
         return package != null
             && !package.versions.All(v => v.HasTag(PackageTag.BuiltIn))
-            && (package.progress == PackageProgress.Installing || package.versions.installed != null || package.versions.Any(v => v.importedAssets?.Any() == true));
+            && (package.progress == PackageProgress.Installing || package.versions.installed != null || package.versions.imported != null);
     }
 
     public override string GetGroupName(IPackage package)

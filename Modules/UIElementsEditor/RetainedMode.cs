@@ -85,10 +85,6 @@ namespace UnityEditor
                 HashSet<VisualTreeAsset> uxmlModifiedAssets = null;
                 if (uxmlImportedAssets.Count > 0)
                 {
-                    // the inline stylesheet cache might get out of date.
-                    // Usually called by the USS importer, which might not get called here
-                    StyleSheetCache.ClearCaches();
-
                     uxmlModifiedAssets = new HashSet<VisualTreeAsset>();
                     foreach (var assetPath in uxmlImportedAssets)
                     {
@@ -126,9 +122,6 @@ namespace UnityEditor
 
         public static void FlagStyleSheetChange()
         {
-            // clear caches that depend on loaded style sheets
-            StyleSheetCache.ClearCaches();
-
             // for now we don't bother tracking which panel depends on which style sheet
             var iterator = UIElementsUtility.GetPanelsIterator();
             while (iterator.MoveNext())

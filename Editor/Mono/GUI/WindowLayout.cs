@@ -267,102 +267,85 @@ namespace UnityEditor
 
         internal static ContainerWindow ShowWindowWithDynamicLayout(string windowId, string layoutDataPath)
         {
-            try
+            if (!File.Exists(layoutDataPath))
             {
-                ContainerWindow.SetFreezeDisplay(true);
-                if (!File.Exists(layoutDataPath))
-                {
-                    Debug.LogError($"Failed to find layout data file at path {layoutDataPath}");
-                    return null;
-                }
-
-                var layoutDataJson = File.ReadAllText(layoutDataPath);
-                var layoutData = SJSON.LoadString(layoutDataJson);
-
-                var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
-
-                LayoutViewInfo topViewInfo = new LayoutViewInfo(k_TopViewClassName, MainView.kToolbarHeight, false);
-                LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, false);
-
-                // Supports both view and center_view.
-                var centerViewKey = "view";
-                if (!layoutData.Contains(centerViewKey))
-                {
-                    centerViewKey = "center_view";
-                }
-                LayoutViewInfo centerViewInfo = new LayoutViewInfo(centerViewKey, 0, true);
-                if (!GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref centerViewInfo))
-                {
-                    Debug.LogError("Failed to load window layout; no view defined");
-                    return null;
-                }
-
-                GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
-                GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
-
-                var window = Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.windowID == windowId);
-                InitContainerWindow(ref window, windowId, layoutData);
-                GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
-                window.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
-                return window;
+                Debug.LogError($"Failed to find layout data file at path {layoutDataPath}");
+                return null;
             }
-            finally
+
+            var layoutDataJson = File.ReadAllText(layoutDataPath);
+            var layoutData = SJSON.LoadString(layoutDataJson);
+
+            var availableEditorWindowTypes = TypeCache.GetTypesDerivedFrom<EditorWindow>().ToArray();
+
+            LayoutViewInfo topViewInfo = new LayoutViewInfo(k_TopViewClassName, MainView.kToolbarHeight, false);
+            LayoutViewInfo bottomViewInfo = new LayoutViewInfo(k_BottomViewClassName, MainView.kStatusbarHeight, false);
+
+            // Supports both view and center_view.
+            var centerViewKey = "view";
+            if (!layoutData.Contains(centerViewKey))
             {
-                ContainerWindow.SetFreezeDisplay(false);
+                centerViewKey = "center_view";
             }
+            LayoutViewInfo centerViewInfo = new LayoutViewInfo(centerViewKey, 0, true);
+            if (!GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref centerViewInfo))
+            {
+                Debug.LogError("Failed to load window layout; no view defined");
+                return null;
+            }
+
+            GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref topViewInfo);
+            GetLayoutViewInfo(layoutData, availableEditorWindowTypes, ref bottomViewInfo);
+
+            var window = Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.windowID == windowId);
+            InitContainerWindow(ref window, windowId, layoutData);
+            GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
+            window.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
+            return window;
         }
 
         private static void GenerateLayout(ContainerWindow window, ShowMode showMode, Type[] availableEditorWindowTypes,
             LayoutViewInfo center, LayoutViewInfo top, LayoutViewInfo bottom, JSONObject layoutData)
         {
-            try
+            var width = window.position.width;
+            var height = window.position.height;
+
+            // Create center view
+            View centerView = LoadLayoutView<DockArea>(availableEditorWindowTypes, center, width, height);
+            var topView = LoadLayoutView<Toolbar>(availableEditorWindowTypes, top, width, height);
+            var bottomView = LoadLayoutView<AppStatusBar>(availableEditorWindowTypes, bottom, width, height);
+
+            var main = ScriptableObject.CreateInstance<MainView>();
+            main.useTopView = top.used;
+            main.useBottomView = bottom.used;
+            main.topViewHeight = top.size;
+            main.bottomViewHeight = bottom.size;
+
+            // Top View
+            if (topView)
             {
-                ContainerWindow.SetFreezeDisplay(true);
-                var width = window.position.width;
-                var height = window.position.height;
-
-                // Create center view
-                View centerView = LoadLayoutView<DockArea>(availableEditorWindowTypes, center, width, height);
-                var topView = LoadLayoutView<Toolbar>(availableEditorWindowTypes, top, width, height);
-                var bottomView = LoadLayoutView<AppStatusBar>(availableEditorWindowTypes, bottom, width, height);
-
-                var main = ScriptableObject.CreateInstance<MainView>();
-                main.useTopView = top.used;
-                main.useBottomView = bottom.used;
-                main.topViewHeight = top.size;
-                main.bottomViewHeight = bottom.size;
-
-                // Top View
-                if (topView)
-                {
-                    topView.position = new Rect(0, 0, width, top.size);
-                    main.AddChild(topView);
-                }
-
-                // Center View
-                var centerViewHeight = height - bottom.size - top.size;
-                centerView.position = new Rect(0, top.size, width, centerViewHeight);
-                main.AddChild(centerView);
-
-                // Bottom View
-                if (bottomView)
-                {
-                    bottomView.position = new Rect(0, height - bottom.size, width, bottom.size);
-                    main.AddChild(bottomView);
-                }
-
-                if (window.rootView)
-                    ScriptableObject.DestroyImmediate(window.rootView, true);
-
-                window.rootView = main;
-                window.rootView.position = new Rect(0, 0, width, height);
-                window.Show(showMode, true, true, true);
-                window.DisplayAllViews();
+                topView.position = new Rect(0, 0, width, top.size);
+                main.AddChild(topView);
             }
-            finally
+
+            // Center View
+            var centerViewHeight = height - bottom.size - top.size;
+            centerView.position = new Rect(0, top.size, width, centerViewHeight);
+            main.AddChild(centerView);
+
+            // Bottom View
+            if (bottomView)
             {
-                ContainerWindow.SetFreezeDisplay(false);
+                bottomView.position = new Rect(0, height - bottom.size, width, bottom.size);
+                main.AddChild(bottomView);
             }
+
+            if (window.rootView)
+                ScriptableObject.DestroyImmediate(window.rootView, true);
+
+            window.rootView = main;
+            window.rootView.position = new Rect(0, 0, width, height);
+            window.Show(showMode, true, true, true);
         }
 
         private static bool GetLayoutViewInfo(JSONObject layoutData, Type[] availableEditorWindowTypes, ref LayoutViewInfo viewInfo)
@@ -973,8 +956,6 @@ namespace UnityEditor
 
             try
             {
-                ContainerWindow.SetFreezeDisplay(true);
-
                 // Put the loaded SplitView where the MaximizedHostView was
                 if (maximizedHostView.parent)
                 {
@@ -1022,29 +1003,11 @@ namespace UnityEditor
                 var gv = win as GameView;
                 if (gv != null)
                     gv.m_Parent.EnableVSync(gv.vSyncEnabled);
-
-                parentWindow.DisplayAllViews();
-                win.m_Parent.MakeVistaDWMHappyDance();
             }
             catch (Exception ex)
             {
                 Debug.Log("Maximization failed: " + ex);
                 ResetAllLayouts();
-            }
-
-            try
-            {
-                // Weird bug on AMD graphic cards under OSX Lion: Sometimes when unmaximizing we get stray white rectangles.
-                // work around that by issuing an extra repaint (case 438764)
-                if (Application.platform == RuntimePlatform.OSXEditor && SystemInfo.operatingSystem.Contains("10.7") && SystemInfo.graphicsDeviceVendor.Contains("ATI"))
-                {
-                    foreach (GUIView v in Resources.FindObjectsOfTypeAll(typeof(GUIView)))
-                        v.Repaint();
-                }
-            }
-            finally
-            {
-                ContainerWindow.SetFreezeDisplay(false);
             }
         }
 
@@ -1205,18 +1168,9 @@ namespace UnityEditor
 
         public static void MaximizePresent(EditorWindow win)
         {
-            ContainerWindow.SetFreezeDisplay(true);
-
             win.Focus();
 
             CheckWindowConsistency();
-
-            ContainerWindow parentWindow = win.m_Parent.window;
-            parentWindow.DisplayAllViews();
-
-            win.m_Parent.MakeVistaDWMHappyDance();
-
-            ContainerWindow.SetFreezeDisplay(false);
 
             win.OnMaximized();
         }
@@ -1338,8 +1292,6 @@ namespace UnityEditor
             // Load new windows and show them
             try
             {
-                ContainerWindow.SetFreezeDisplay(true);
-
                 CloseWindows(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow));
 
                 ContainerWindow mainWindowToSetSize = null;
@@ -1424,8 +1376,6 @@ namespace UnityEditor
                         if (mainWindowPosition.width != 0.0)
                         {
                             mainWindowToSetSize = cur;
-                            // This is the same reference as the mainwindow, so need to freeze it too on for Linux during reload.
-                            mainWindowToSetSize.SetFreeze(true);
                             mainWindowToSetSize.position = mainWindowPosition;
                         }
 
@@ -1456,7 +1406,6 @@ namespace UnityEditor
 
                 if (mainWindowToSetSize)
                 {
-                    mainWindowToSetSize.SetFreeze(true);
                     mainWindowToSetSize.position = mainWindowPosition;
                 }
                 // Always show main window before other windows. So that other windows can
@@ -1472,13 +1421,9 @@ namespace UnityEditor
                         throw new LayoutException("Error while reading window layout: no root view on main window.");
                     }
 
-                    // Don't adjust height to prevent main window shrink during layout on Linux.
-                    mainWindow.SetFreeze(true);
                     mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
                     if (mainWindowToSetSize && mainWindow.maximized != mainWindowMaximized)
                         mainWindow.ToggleMaximize();
-                    // Unfreeze to make sure resize work properly.
-                    mainWindow.SetFreeze(false);
 
                     // Make sure to restore the save to layout flag when loading a layout from a file.
                     if (flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow))
@@ -1531,8 +1476,6 @@ namespace UnityEditor
             }
             finally
             {
-                ContainerWindow.SetFreezeDisplay(false);
-
                 if (flags.HasFlag(LoadWindowLayoutFlags.SetLastLoadedLayoutName) && Path.GetExtension(path) == ".wlt")
                     lastLoadedLayoutName = Path.GetFileNameWithoutExtension(path);
                 else

@@ -610,6 +610,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, FontStyle value) => throw new System.InvalidOperationException();
         }
 
+        class UnityMaterialProperty : ResolvedMaterialDefinitionProperty
+        {
+            public override string Name => nameof(IResolvedStyle.unityMaterial);
+            public override string ussName => "-unity-material";
+            public override bool IsReadOnly => true;
+            public override MaterialDefinition GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unityMaterial;
+            public override void SetValue(ref ResolvedStyleAccess container, MaterialDefinition value) => throw new System.InvalidOperationException();
+        }
+
         class UnityParagraphSpacingProperty : ResolvedFloatProperty
         {
             public override string Name => nameof(IResolvedStyle.unityParagraphSpacing);
@@ -756,8 +765,8 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(82);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(246);
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(83);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(249);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -824,6 +833,7 @@ namespace UnityEngine.UIElements
             AddProperty(new UnityFontProperty());
             AddProperty(new UnityFontDefinitionProperty());
             AddProperty(new UnityFontStyleAndWeightProperty());
+            AddProperty(new UnityMaterialProperty());
             AddProperty(new UnityParagraphSpacingProperty());
             AddProperty(new UnitySliceBottomProperty());
             AddProperty(new UnitySliceLeftProperty());

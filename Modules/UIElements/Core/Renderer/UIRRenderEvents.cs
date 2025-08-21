@@ -385,7 +385,7 @@ namespace UnityEngine.UIElements.UIR
             renderData.lastChild = null;
             renderData.renderTree = null;
 
-            renderTreeManager.ResetTextures(renderData);
+            renderTreeManager.ResetGraphicEntries(renderData);
             if (renderData.hasExtraData)
             {
                 renderTreeManager.FreeExtraMeshes(renderData);

@@ -30,7 +30,6 @@ namespace UnityEditor.Connect
         const string k_InsightsNoCloudNodeName = "insights-analytics-no-cloud-visualelement";
         const string k_InsightsSettingsContainerName = "InsightsContentContainer";
         const string k_DropdownFieldNodeName = "DataReportingDropdown";
-        const string k_InsightsBuildProfileHeader = "insights-analytics-label";
 
         const string k_InsightsSettingsTitleLabelNodeName = "project-settings-title";
         const string k_InsightsSettingsTitleDescriptionLabelNodeName = "project-settings-title-description";
@@ -138,9 +137,6 @@ namespace UnityEditor.Connect
             // UXML document is shared -> perform small adjustments before usage in ProjectSettings
             var noCloudVisualElement = rootVisualElement.Q<VisualElement>(k_InsightsNoCloudNodeName);
             noCloudVisualElement.RemoveFromHierarchy();
-
-            var buildProfileHeader = rootVisualElement.Q<Label>(k_InsightsBuildProfileHeader);
-            buildProfileHeader.RemoveFromHierarchy();
 
             // UI setup
             var defaultBuildSettingsTitle = rootVisualElement.Q<Label>(k_InsightsBuildSettingsDefaultTitleNodeName);

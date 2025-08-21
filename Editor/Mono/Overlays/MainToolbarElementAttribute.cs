@@ -24,11 +24,13 @@ namespace UnityEditor.Toolbars
         // default left, middle, right dock zone
         // default dock index/order
         // display by default
-
+        public const int defaultMenuPriority = 1000;
+        
         string m_Path;
         bool m_DefaultDisplay;
         int m_DefaultDockIndex = 100;
         MainToolbarDockPosition m_DefaultDropZone;
+        int m_MenuPriority = defaultMenuPriority;
 
         public string path
         {
@@ -46,6 +48,12 @@ namespace UnityEditor.Toolbars
         {
             get => m_DefaultDropZone;
             set => m_DefaultDropZone = value;
+        }
+        
+        public int menuPriority
+        {
+            get => m_MenuPriority;
+            set => m_MenuPriority = value;
         }
 
         internal string displayName

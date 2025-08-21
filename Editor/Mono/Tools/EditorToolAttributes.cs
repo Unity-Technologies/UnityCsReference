@@ -9,12 +9,14 @@ namespace UnityEditor.EditorTools
     public abstract class ToolAttribute : Attribute
     {
         public const int defaultPriority = 1000;
-
+        
         string m_DisplayName;
         Type m_TargetContext, m_TargetType;
         Type m_VariantGroup;
+        Type m_Group;
         int m_ToolPriority = defaultPriority;
         int m_VariantPriority = defaultPriority;
+        bool m_AllowPersistentTargets;
 
         public string displayName
         {
@@ -45,13 +47,25 @@ namespace UnityEditor.EditorTools
             get => m_VariantGroup;
             set => m_VariantGroup = value;
         }
-
+        
+        public Type group
+        {
+            get => m_Group;
+            set => m_Group = value;
+        }
+        
         public int variantPriority
         {
             get => m_VariantPriority;
             set => m_VariantPriority = value;
         }
-
+        
+        public bool allowPersistentTargets
+        {
+            get => m_AllowPersistentTargets;
+            set => m_AllowPersistentTargets = value;
+        }
+        
         ToolAttribute() {}
 
         protected ToolAttribute(string displayName, Type targetType = null, Type editorToolContext = null)
@@ -64,6 +78,7 @@ namespace UnityEditor.EditorTools
             m_TargetContext = editorToolContext;
             m_VariantGroup = variantGroup;
             m_ToolPriority = toolPriority;
+            m_Group = group;
         }
     }
 

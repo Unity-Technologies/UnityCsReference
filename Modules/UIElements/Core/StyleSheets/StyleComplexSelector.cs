@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
-using UnityEngine.UIElements.StyleSheets;
 using System.Linq;
 
 namespace UnityEngine.UIElements
@@ -29,8 +28,6 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleComplexSelector
     {
-        private const string k_DescendantSymbol = ">";
-
         // Hash keys for the most relevant parts of a complex selector to use against the style sheet's Bloom filter.
         [NonSerialized] public Hashes ancestorHashes;
 
@@ -45,6 +42,7 @@ namespace UnityEngine.UIElements
         }
 
         // This reference is set at runtime as convenience, but is not serialized
+        [field:NonSerialized]
         public StyleRule rule
         {
             get;
@@ -55,7 +53,7 @@ namespace UnityEngine.UIElements
         public bool isSimple => selectors?.Length == 1;
 
         [SerializeField]
-        StyleSelector[] m_Selectors;
+        StyleSelector[] m_Selectors = Array.Empty<StyleSelector>();
 
         public StyleSelector[] selectors
         {
@@ -64,62 +62,16 @@ namespace UnityEngine.UIElements
             internal set => m_Selectors = value;
         }
 
+        internal StyleComplexSelector()
+        {
+        }
+
         public bool TrySetSelectorsFromString(string complexSelectorStr, out string error)
         {
-            var selectorSplit = complexSelectorStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-            var fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelectorStr);
-            if (fullSpecificity == 0)
-            {
-                error = $"Selector '{complexSelectorStr}' is invalid: failed to calculate selector specificity.";
+            if (!SelectorUtility.ExtractSelectorsAndSpecificityFromString(complexSelectorStr, out var newSelectors, out var newSpecificity, out error))
                 return false;
-            }
-
-            var simpleSelectors = new List<StyleSelector>();
-            var previousRelationship = StyleSelectorRelationship.None;
-            foreach (var simpleSelectorStr in selectorSplit)
-            {
-                if (simpleSelectorStr == k_DescendantSymbol)
-                {
-                    previousRelationship = StyleSelectorRelationship.Child;
-                    continue;
-                }
-
-                if (!CSSSpec.ParseSelector(simpleSelectorStr, out var parts))
-                {
-                    error = $"Selector '{complexSelectorStr}' is invalid: the selector could not be parsed.";
-                    return false;
-                }
-
-                for (var i = 0; i < parts.Length; ++i)
-                {
-                    var part = parts[i];
-                    switch (part.type)
-                    {
-                        case StyleSelectorType.Unknown:
-                            error = $"Selector '{complexSelectorStr}' is invalid: the selector contains unknown parts.";
-                            return false;
-                        case StyleSelectorType.RecursivePseudoClass:
-                            error = $"Selector '{complexSelectorStr}' is invalid: the selector contains recursive parts.";
-                            return false;
-                        default:
-                            break;
-                    }
-                }
-
-                var simpleSelector = new StyleSelector
-                {
-                    parts = parts,
-                    previousRelationship = previousRelationship
-                };
-                simpleSelectors.Add(simpleSelector);
-
-                // This is the default (if no > came before).
-                previousRelationship = StyleSelectorRelationship.Descendent;
-            }
-
-            selectors = simpleSelectors.ToArray();
-            specificity = fullSpecificity;
+            selectors = newSelectors;
+            specificity = newSpecificity;
             error = null;
             return true;
         }
@@ -128,7 +80,6 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal int ruleIndex;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         // Points to the possible next selector that indexes to the same lookup table in StyleSheet
         internal StyleComplexSelector nextInTable;

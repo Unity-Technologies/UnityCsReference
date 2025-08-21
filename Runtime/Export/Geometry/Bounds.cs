@@ -26,7 +26,7 @@ namespace UnityEngine
 
         // Creates new Bounds with a given /center/ and total /size/. Bound ::ref::extents will be half the given size.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Bounds(Vector3 center, Vector3 size)
+        public Bounds(in Vector3 center, in Vector3 size)
         {
             m_Center = center;
             m_Extents = size * 0.5F;
@@ -34,145 +34,152 @@ namespace UnityEngine
 
         // used to allow Bounds to be used as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            return center.GetHashCode() ^ (extents.GetHashCode() << 2);
-        }
+        public override readonly int GetHashCode() => m_Center.GetHashCode() ^ (m_Extents.GetHashCode() << 2);
 
         // also required for being able to use Vector4s as keys in hash tables
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override bool Equals(object other)
+        public override readonly bool Equals(object other)
         {
-            if (!(other is Bounds)) return false;
+            if (other is Bounds bounds)
+                return Equals(bounds);
 
-            return Equals((Bounds)other);
+            return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Equals(Bounds other)
-        {
-            return center.Equals(other.center) && extents.Equals(other.extents);
-        }
+        public readonly bool Equals(Bounds other) => m_Center.Equals(other.m_Center) && m_Extents.Equals(other.m_Extents);
 
         // The center of the bounding box.
         public Vector3 center
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Center; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Center = value; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Center;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Center = value;
         }
 
         // The total size of the box. This is always twice as large as the ::ref::extents.
         public Vector3 size
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Extents * 2.0F; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Extents = value * 0.5F; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Extents * 2.0F;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Extents = value * 0.5F;
         }
 
         // The extents of the box. This is always half of the ::ref::size.
         public Vector3 extents
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Extents; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Extents = value; }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Extents;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Extents = value;
         }
 
         // The minimal point of the box. This is always equal to ''center-extents''.
         public Vector3 min
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return center - extents; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { SetMinMax(value, max); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => center - extents;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => SetMinMax(value, max);
         }
 
         // The maximal point of the box. This is always equal to ''center+extents''.
         public Vector3 max
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return center + extents; }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { SetMinMax(min, value); }
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => center + extents;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => SetMinMax(min, value);
         }
 
         //*undoc*
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(Bounds lhs, Bounds rhs)
-        {
+        public static bool operator==(in Bounds lhs, in Bounds rhs) =>
             // Returns false in the presence of NaN values.
-            return (lhs.center == rhs.center && lhs.extents == rhs.extents);
-        }
+            (lhs.m_Center == rhs.m_Center && lhs.m_Extents == rhs.m_Extents);
 
         //*undoc*
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(Bounds lhs, Bounds rhs)
-        {
+        public static bool operator!=(in Bounds lhs, in Bounds rhs) =>
             // Returns true in the presence of NaN values.
-            return !(lhs == rhs);
-        }
+            !(lhs == rhs);
 
         // Sets the bounds to the /min/ and /max/ value of the box.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetMinMax(Vector3 min, Vector3 max)
+        public void SetMinMax(Vector3 min, Vector3 max) => SetMinMax(in min, in max);
+
+        // Sets the bounds to the /min/ and /max/ value of the box.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void SetMinMax(in Vector3 min, in Vector3 max)
         {
-            extents = (max - min) * 0.5F;
-            center = min + extents;
+            m_Extents = (max - min) * 0.5F;
+            m_Center = min + extents;
         }
 
         // Grows the Bounds to include the /point/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Encapsulate(Vector3 point)
-        {
-            SetMinMax(Vector3.Min(min, point), Vector3.Max(max, point));
-        }
+        public void Encapsulate(Vector3 point) => Encapsulate(in point);
+
+        // Grows the Bounds to include the /point/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Encapsulate(in Vector3 point) => SetMinMax(Vector3.Min(min, in point), Vector3.Max(max, in point));
 
         // Grows the Bounds to include the /Bounds/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Encapsulate(Bounds bounds)
+        public void Encapsulate(Bounds bounds) => Encapsulate(in bounds);
+
+        // Grows the Bounds to include the /Bounds/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Encapsulate(in Bounds bounds)
         {
-            Encapsulate(bounds.center - bounds.extents);
-            Encapsulate(bounds.center + bounds.extents);
+            Encapsulate(bounds.min);
+            Encapsulate(bounds.max);
         }
 
         // Expand the bounds by increasing its /size/ by /amount/ along each side.
         public void Expand(float amount)
         {
-            amount *= .5f;
-            extents += new Vector3(amount, amount, amount);
+            amount *= 0.5f;
+            m_Extents += new Vector3(amount, amount, amount);
         }
 
         // Expand the bounds by increasing its /size/ by /amount/ along each side.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Expand(Vector3 amount)
-        {
-            extents += amount * .5f;
-        }
+        public void Expand(Vector3 amount) => Expand(in amount);
+
+        // Expand the bounds by increasing its /size/ by /amount/ along each side.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public void Expand(in Vector3 amount) => m_Extents += amount * 0.5f;
 
         // Does another bounding box intersect with this bounding box?
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool Intersects(Bounds bounds)
+        public readonly bool Intersects(Bounds bounds) => Intersects(in bounds);
+
+        // Does another bounding box intersect with this bounding box?
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Intersects(in Bounds bounds)
         {
-            return (min.x <= bounds.max.x) && (max.x >= bounds.min.x) &&
-                (min.y <= bounds.max.y) && (max.y >= bounds.min.y) &&
-                (min.z <= bounds.max.z) && (max.z >= bounds.min.z);
+            Vector3 thisMin = min;
+            Vector3 thisMax = max;
+            Vector3 otherMin = bounds.min;
+            Vector3 otherMax = bounds.max;
+            return (thisMin.x <= otherMax.x) && (thisMax.x >= otherMin.x) &&
+                   (thisMin.y <= otherMax.y) && (thisMax.y >= otherMin.y) &&
+                   (thisMin.z <= otherMax.z) && (thisMax.z >= otherMin.z);
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool IntersectRay(Ray ray) { float dist; return IntersectRayAABB(ray, this, out dist); }
+        public readonly bool IntersectRay(Ray ray) => IntersectRay(in ray);
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public bool IntersectRay(Ray ray, out float distance) { return IntersectRayAABB(ray, this, out distance); }
+        public readonly bool IntersectRay(in Ray ray) => IntersectRayAABB(in ray, in this, out float _);
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool IntersectRay(Ray ray, out float distance) => IntersectRay(in ray, out distance);
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool IntersectRay(in Ray ray, out float distance) => IntersectRayAABB(in ray, in this, out distance);
 
         /// *listonly*
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        override public string ToString()
-        {
-            return ToString(null, null);
-        }
+        override public readonly string ToString() => ToString(null, null);
 
         // Returns a nicely formatted string for the bounds.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format)
-        {
-            return ToString(format, null);
-        }
+        public readonly string ToString(string format) => ToString(format, null);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 format = "F2";

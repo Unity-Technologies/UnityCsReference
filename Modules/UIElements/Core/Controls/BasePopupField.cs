@@ -39,8 +39,8 @@ namespace UnityEngine.UIElements
         internal Func<TValueChoice, string> m_FormatListItemCallback;
 
         // Set this callback to provide a specific implementation of the menu.
-        internal Func<IGenericMenu> createMenuCallback;
-        internal IGenericMenu m_GenericMenu;
+        internal Func<AbstractGenericMenu> createMenuCallback;
+        internal AbstractGenericMenu m_GenericMenu;
         internal bool m_AutoCloseMenu = true;
 
         // This is the value to display to the user
@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
         internal abstract string GetListItemToDisplay(TValueType item);
 
         // This method is used when the menu is built to fill up all the choices.
-        internal abstract void AddMenuItems(IGenericMenu menu);
+        internal abstract void AddMenuItems(AbstractGenericMenu menu);
 
         /// <summary>
         /// The list of choices to display in the popup menu.
@@ -202,7 +202,7 @@ namespace UnityEngine.UIElements
         {
             m_GenericMenu = createMenuCallback != null ? createMenuCallback.Invoke() : elementPanel.CreateMenu();
             AddMenuItems(m_GenericMenu);
-            m_GenericMenu.DropDown(visualInput.worldBound, this, true);
+            m_GenericMenu.DropDown(visualInput.worldBound, this, DropdownMenuSizeMode.Fixed);
         }
 
         private class PopupTextElement : TextElement

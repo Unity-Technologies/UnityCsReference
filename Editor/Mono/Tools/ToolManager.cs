@@ -105,8 +105,10 @@ namespace UnityEditor.EditorTools
                 if (tool == null)
                     throw new InvalidOperationException("The current selection does not contain any objects editable " +
                         $"by the component tool of type: {type}");
-                if (!tool.IsAvailable())
-                    throw new InvalidOperationException($"Cannot activate {type} tool because it is currently not available (the tool's IsAvailable() method returned false).");
+                if (!tool.IsAvailable() || tool.isHidden)
+                    throw new InvalidOperationException($"Cannot activate {type} tool because it is currently not " + 
+                                                        "available (either the tool's IsAvailable() method returned " +
+                                                        "false or IsHidden() method returned true).");
                 SetActiveTool(tool);
                 return;
             }
@@ -176,33 +178,36 @@ namespace UnityEditor.EditorTools
                 return;
 
             var active = EditorToolManager.activeToolContext;
-            using var all = allContextsExceptGameObject.GetEnumerator();
+            var sortedAvailableCtxs = EditorToolUtility.sortedContextsDataCache.allAvailableContextAssociations;
 
-            if (!all.MoveNext())
+            var ctxIdx = 0;
+            if (sortedAvailableCtxs.Count <= 1)
                 return;
 
+            ctxIdx++;
             if (active is GameObjectToolContext)
             {
-                SetActiveContext(all.Current);
+                // GO ctx is always idx 0 in sorted context association list, therefore if it's active, we can immediately cycle into idx 1 context.
+                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor);
                 return;
             }
 
-            // Select the next available context after the active
-            while (all.Current != active.GetType())
+            // Iterate over context associations until we reach the currently active type
+            while (sortedAvailableCtxs[ctxIdx].editor != active.GetType())
             {
-                // The active context is not registered with an attribute. We'll just return the last available context
-                // in that case.
-                if (!all.MoveNext())
+                // If we've reached end of associations list, the active context is not registered with an attribute.
+                // We'll just return the last available context in that case.
+                if (++ctxIdx == sortedAvailableCtxs.Count)
                 {
-                    SetActiveContext(all.Current);
+                    SetActiveContext(sortedAvailableCtxs[^1].editor);
                     return;
                 }
             }
 
             // If we can advance from the active context, that is the next context. If not, we're at the end of the list
             // and need to circle back around to the first available context.
-            if (all.MoveNext())
-                SetActiveContext(all.Current);
+            if (++ctxIdx < sortedAvailableCtxs.Count)
+                SetActiveContext(sortedAvailableCtxs[ctxIdx].editor);
             else
                 SetActiveContext(typeof(GameObjectToolContext));
         }

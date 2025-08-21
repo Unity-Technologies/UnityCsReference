@@ -44,7 +44,7 @@ namespace UnityEditor.Build.Profile
             }
 
             bool isInstalled = PackageManager.PackageInfo.IsPackageRegistered(k_PackageId);
-            bool hasCloudSettings = BuildAutomationSettingsEditor.GetSubAssetFromBuildProfile(profile) != null;
+            bool hasCloudSettings = profile.GetComponent<BuildAutomationSettings>() != null;
             if (isInstalled && hasCloudSettings)
             {
                 BuildAutomation.OnCloudBuildClicked(profile);
@@ -120,7 +120,7 @@ namespace UnityEditor.Build.Profile
         void OnInstall()
         {
             var request = PackageManager.Client.Add(k_PackageId);
-            if (BuildAutomationSettingsEditor.GetSubAssetFromBuildProfile(m_TargetProfile) == null)
+            if (m_TargetProfile.GetComponent<BuildAutomationSettings>() is not null)
             {
                 BuildAutomationSettingsEditor.AddBuildAutomationSettings(m_TargetProfile);
                 m_ParentWindow.RepaintBuildProfileInspector();
@@ -131,7 +131,7 @@ namespace UnityEditor.Build.Profile
 
         void OnAddCredentialsObject()
         {
-            if (BuildAutomationSettingsEditor.GetSubAssetFromBuildProfile(m_TargetProfile) == null)
+            if (m_TargetProfile.GetComponent<BuildAutomationSettings>() is not null)
             {
                 BuildAutomationSettingsEditor.AddBuildAutomationSettings(m_TargetProfile);
                 m_ParentWindow.RepaintBuildProfileInspector();

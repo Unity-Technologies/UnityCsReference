@@ -240,7 +240,7 @@ namespace Unity.UI.Builder
         internal void UnsetName()
         {
             // Link the attribute description
-            var attributeDesc = m_Inspector.attributesSection.m_SerializedDataDescription.FindAttributeWithPropertyName("name");
+            var attributeDesc = m_Inspector.attributesSection.context.uxmlSerializedDataDescription.FindAttributeWithPropertyName("name");
             m_TextField.SetLinkedAttributeDescription(attributeDesc);
             m_Inspector.attributesSection.UnsetAttributeProperty(m_TextField, true);
 

@@ -145,17 +145,17 @@ namespace UnityEditor
             return GetRow(id) != -1;
         }
 
-        private bool IsValidHierarchyInstanceID(int instanceID)
+        private bool IsValidHierarchyInstanceID(EntityId entityId)
         {
             //Get is persistent without loading object
-            var obj = InternalEditorUtility.GetObjectFromInstanceID(instanceID);
-            if (obj != null ? EditorUtility.IsPersistent(obj) : AssetDatabase.Contains((EntityId)instanceID))
+            var obj = InternalEditorUtility.GetObjectFromEntityId(entityId);
+            if (obj != null ? EditorUtility.IsPersistent(obj) : AssetDatabase.Contains(entityId))
                 return false;
 
-            if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(SceneHandle.From(instanceID))))
+            if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(SceneHandle.From(entityId))))
                 return true;
 
-            if (InternalEditorUtility.GetTypeWithoutLoadingObject(instanceID) == typeof(GameObject))
+            if (InternalEditorUtility.GetTypeWithoutLoadingObject(entityId) == typeof(GameObject))
                 return true;
 
             return false;

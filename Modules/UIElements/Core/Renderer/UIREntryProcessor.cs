@@ -100,7 +100,7 @@ namespace UnityEngine.UIElements.UIR
             if (renderData.hasExtraMeshes)
                 renderTreeManager.FreeExtraMeshes(renderData);
 
-            renderTreeManager.ResetTextures(renderData);
+            renderTreeManager.ResetGraphicEntries(renderData);
 
             var parent = renderData.parent;
             bool isGroupTransform = renderData.isGroupTransform;
@@ -257,6 +257,7 @@ namespace UnityEngine.UIElements.UIR
 
                         // The vector image has embedded textures/gradients and we have a manager that can accept the settings.
                         // Register the settings and assume that it works.
+                        m_RenderTreeManager.InsertVectorImage(m_CurrentRenderData, entry.gradientsOwner);
                         var gradientRemap = m_RenderTreeManager.vectorImageManager.AddUser(entry.gradientsOwner, m_CurrentRenderData.owner);
                         m_GradientSettingIndexOffset = gradientRemap.destIndex;
                         if (gradientRemap.atlas != TextureId.invalid)
@@ -442,6 +443,15 @@ namespace UnityEngine.UIElements.UIR
                 bool shapeWindingIsClockwise = UIRUtility.ShapeWindingIsClockwise(m_MaskDepth, m_StencilRef);
                 bool transformFlipsWinding = m_CurrentRenderData.worldFlipsWinding;
 
+                Material currentMaterial = null;
+                if (entry.material != null)
+                {
+                    currentMaterial = entry.material;
+                }
+                else
+                {
+                    currentMaterial = m_CurrentRenderData.owner.resolvedStyle.unityMaterial.material;
+                }
 
                 var job = new ConvertMeshJobData
                 {
@@ -469,6 +479,7 @@ namespace UnityEngine.UIElements.UIR
 
                     remapUVs = m_RemapUVs ? 1 : 0,
                     atlasRect = m_AtlasRect,
+                    layoutSize = (currentMaterial != null) ? new Vector2(m_CurrentRenderData.owner.layout.width, m_CurrentRenderData.owner.layout.height) : new Vector2(0, 0)
                 };
                 m_RenderTreeManager.jobManager.Add(ref job);
 

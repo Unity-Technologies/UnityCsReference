@@ -673,11 +673,11 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "AnimatorBindings::GetCurrentAnimatorClipInfo", HasExplicitThis = true)]
-        [return: Unmarshalled]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public AnimatorClipInfo[] GetCurrentAnimatorClipInfo(int layerIndex);
 
         [FreeFunction(Name = "AnimatorBindings::GetNextAnimatorClipInfo", HasExplicitThis = true)]
-        [return:Unmarshalled]
+        [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         extern public AnimatorClipInfo[] GetNextAnimatorClipInfo(int layerIndex);
 
         // Gets the list of AnimatorClipInfo currently played by the current state
@@ -705,6 +705,7 @@ namespace UnityEngine
         extern public AnimatorControllerParameter[] parameters
         {
             [FreeFunction(Name = "AnimatorBindings::GetParameters", HasExplicitThis = true)]
+            [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
             get;
         }
 

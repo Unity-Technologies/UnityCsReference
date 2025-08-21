@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.UIElements.StyleComplexSelector>;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -34,6 +35,17 @@ namespace UnityEngine.UIElements
     [Serializable]
     public class StyleSheet : ScriptableObject
     {
+        [Flags]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal enum RebuildOptions
+        {
+            None,
+            Synchronous
+        }
+
+        [NonSerialized]
+        bool m_RequiresRebuild = true;
+
         [SerializeField]
         bool m_ImportedWithErrors;
 
@@ -61,29 +73,10 @@ namespace UnityEngine.UIElements
         [SerializeField]
         StyleRule[] m_Rules = Array.Empty<StyleRule>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleRule[] rules
         {
-            get { return m_Rules; }
-            set
-            {
-                m_Rules = value;
-                SetupReferences();
-            }
-        }
-
-        [SerializeField]
-        StyleComplexSelector[] m_ComplexSelectors = Array.Empty<StyleComplexSelector>();
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal StyleComplexSelector[] complexSelectors
-        {
-            get { return m_ComplexSelectors; }
-            set
-            {
-                m_ComplexSelectors = value;
-                SetupReferences();
-            }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_Rules;
         }
 
         // Only the importer should write to these fields
@@ -149,7 +142,17 @@ namespace UnityEngine.UIElements
         }
 
         [NonSerialized]
-        internal TableType[] tables;
+        internal TableType[] m_Tables;
+
+        internal TableType[] tables => m_Tables ??= new[]
+        {
+            // OrderedSelectorType.Name
+            new TableType(StringComparer.Ordinal),
+            // OrderedSelectorType.Type
+            new TableType(StringComparer.Ordinal),
+            // OrderedSelectorType.Class
+            new TableType(StringComparer.Ordinal)
+        };
 
         [NonSerialized] internal int nonEmptyTablesMask;
 
@@ -176,8 +179,6 @@ namespace UnityEngine.UIElements
                 }
             }
         }
-
-        static string kCustomPropertyMarker = "--";
 
         bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle, out T value)
         {
@@ -237,24 +238,182 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal StyleRule AddRule() => AddRuleAtIndex(-1);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal StyleRule AddRuleAtIndex(int index) => AddRuleAtIndex(index, null);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal StyleRule AddRule(string selector) => AddRuleAtIndex(-1, selector);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal StyleRule AddRuleAtIndex(int index, string selector)
+        {
+            if (index == -1)
+                index = rules.Length;
+
+            var rule = new StyleRule(this);
+            if (!string.IsNullOrEmpty(selector))
+                rule.AddSelector(selector);
+            InsertValueInArray(ref m_Rules, index, rule);
+            RequestRebuild();
+            return rule;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool RemoveRule(StyleRule rule)
+        {
+            if (rule.styleSheet != this)
+                return false;
+
+            var index = Array.IndexOf(m_Rules, rule);
+            if (index < 0)
+                return false;
+
+            RemoveRule(index);
+            return false;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void RemoveRule(int ruleIndex)
+        {
+            if (ruleIndex < 0 || ruleIndex >= m_Rules.Length)
+                throw new ArgumentOutOfRangeException(nameof(ruleIndex));
+
+            var rule = rules[ruleIndex];
+            Unity.Collections.CollectionExtensions.RemoveFromArray(ref m_Rules, ruleIndex);
+
+            rule.styleSheet = null;
+            RequestRebuild();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void SetRules(StyleRule[] newRules)
+        {
+            m_Rules = newRules;
+            SetupReferences();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void RequestRebuild(RebuildOptions options = RebuildOptions.None)
+        {
+            m_RequiresRebuild = true;
+            MarkAsChanged();
+            if ((options & RebuildOptions.Synchronous) == RebuildOptions.Synchronous)
+                RebuildIfNecessary();
+        }
+
+        internal void RebuildIfNecessary()
+        {
+            if (m_RequiresRebuild)
+                SetupReferences();
+        }
+
         internal void SetupReferences()
         {
-            if (complexSelectors == null || rules == null || (complexSelectors.Length == 0 && rules.Length == 0))
-                return;
-
-            foreach (var selector in complexSelectors)
-                selector.nextInTable = null;
-
-            // Setup rules and properties for var
-            foreach (var rule in rules)
+            if (tables != null)
             {
+                tables[(int)OrderedSelectorType.Name].Clear();
+                tables[(int)OrderedSelectorType.Type].Clear();
+                tables[(int)OrderedSelectorType.Class].Clear();
+            }
+
+            nonEmptyTablesMask = 0;
+            firstRootSelector = null;
+            firstWildCardSelector = null;
+
+            if (rules == null || rules.Length == 0)
+            {
+                m_RequiresRebuild = false;
+                return;
+            }
+
+            var orderInStyleSheet = 0;
+            for (var index = 0; index < rules.Length; index++)
+            {
+                var rule = rules[index];
+                rule.styleSheet = this;
+                if (rule.complexSelectors == null)
+                    continue;
+
+                foreach (var complexSelector in rule.complexSelectors)
+                {
+                    complexSelector.rule = rule;
+                    complexSelector.ruleIndex = index;
+                    complexSelector.nextInTable = null;
+                    complexSelector.CachePseudoStateMasks(this);
+                    complexSelector.CalculateHashes();
+                    complexSelector.orderInStyleSheet = orderInStyleSheet++;
+                    // Here we set-up runtime-only pointers
+
+                    var lastSelector = complexSelector.selectors[^1];
+                    var part = lastSelector.parts[0];
+
+                    var key = part.value;
+
+                    var tableToUse = OrderedSelectorType.None;
+
+                    switch (part.type)
+                    {
+                        case StyleSelectorType.Class:
+                            tableToUse = OrderedSelectorType.Class;
+                            break;
+                        case StyleSelectorType.ID:
+                            tableToUse = OrderedSelectorType.Name;
+                            break;
+                        case StyleSelectorType.Type:
+                            key = part.value;
+                            tableToUse = OrderedSelectorType.Type;
+                            break;
+
+                        case StyleSelectorType.Wildcard:
+                            if (firstWildCardSelector != null)
+                                complexSelector.nextInTable = firstWildCardSelector;
+                            firstWildCardSelector = complexSelector;
+                            break;
+
+                        case StyleSelectorType.PseudoClass:
+                            // :root selector are put separately because they apply to very few elements
+                            if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
+                            {
+                                if (firstRootSelector != null)
+                                    complexSelector.nextInTable = firstRootSelector;
+                                firstRootSelector = complexSelector;
+                            }
+                            // in this case we assume a wildcard selector
+                            // since a selector such as ":selected" applies to all elements
+                            else
+                            {
+                                if (firstWildCardSelector != null)
+                                    complexSelector.nextInTable = firstWildCardSelector;
+                                firstWildCardSelector = complexSelector;
+                            }
+
+                            break;
+                        default:
+                            Debug.LogError($"Invalid first part type {part.type}", this);
+                            break;
+                    }
+
+                    if (tableToUse != OrderedSelectorType.None)
+                    {
+                        var table = tables[(int)tableToUse];
+                        if (table.TryGetValue(key, out var previous))
+                        {
+                            complexSelector.nextInTable = previous;
+                        }
+
+                        nonEmptyTablesMask |= (1 << (int)tableToUse);
+                        table[key] = complexSelector;
+                    }
+                }
+
                 rule.customPropertiesCount = 0;
                 foreach (var property in rule.properties)
                 {
-                    if (StringUtils.StartsWith(property.name, kCustomPropertyMarker))
+                    if (property.isCustomProperty)
                     {
                         ++rule.customPropertiesCount;
-                        property.isCustomProperty = true;
                     }
 
                     foreach (var handle in property.values)
@@ -268,109 +427,28 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            for (int i = 0, count = complexSelectors.Length; i < count; i++)
-            {
-                complexSelectors[i].CachePseudoStateMasks(this);
-            }
-
-            tables = new TableType[(int)OrderedSelectorType.Length];
-            tables[(int)OrderedSelectorType.Name] = new TableType(StringComparer.Ordinal);
-            tables[(int)OrderedSelectorType.Type] = new TableType(StringComparer.Ordinal);
-            tables[(int)OrderedSelectorType.Class] = new TableType(StringComparer.Ordinal);
-
-            nonEmptyTablesMask = 0;
-
-            firstRootSelector = null;
-            firstWildCardSelector = null;
-
-            for (int i = 0; i < complexSelectors.Length; i++)
-            {
-                // Here we set-up runtime-only pointers
-                StyleComplexSelector complexSel = complexSelectors[i];
-
-                if (complexSel.ruleIndex < rules.Length)
-                {
-                    complexSel.rule = rules[complexSel.ruleIndex];
-                }
-
-                complexSel.CalculateHashes();
-
-                complexSel.orderInStyleSheet = i;
-
-                StyleSelector lastSelector = complexSel.selectors[complexSel.selectors.Length - 1];
-                StyleSelectorPart part = lastSelector.parts[0];
-
-                string key = part.value;
-
-                OrderedSelectorType tableToUse = OrderedSelectorType.None;
-
-                switch (part.type)
-                {
-                    case StyleSelectorType.Class:
-                        tableToUse = OrderedSelectorType.Class;
-                        break;
-                    case StyleSelectorType.ID:
-                        tableToUse = OrderedSelectorType.Name;
-                        break;
-                    case StyleSelectorType.Type:
-                        key = part.value;
-                        tableToUse = OrderedSelectorType.Type;
-                        break;
-
-                    case StyleSelectorType.Wildcard:
-                        if (firstWildCardSelector != null)
-                            complexSel.nextInTable = firstWildCardSelector;
-                        firstWildCardSelector = complexSel;
-                        break;
-
-                    case StyleSelectorType.PseudoClass:
-                        // :root selector are put separately because they apply to very few elements
-                        if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
-                        {
-                            if (firstRootSelector != null)
-                                complexSel.nextInTable = firstRootSelector;
-                            firstRootSelector = complexSel;
-                        }
-                        // in this case we assume a wildcard selector
-                        // since a selector such as ":selected" applies to all elements
-                        else
-                        {
-                            if (firstWildCardSelector != null)
-                                complexSel.nextInTable = firstWildCardSelector;
-                            firstWildCardSelector = complexSel;
-                        }
-                        break;
-                    default:
-                        Debug.LogError($"Invalid first part type {part.type}", this);
-                        break;
-                }
-
-                if (tableToUse != OrderedSelectorType.None)
-                {
-                    StyleComplexSelector previous;
-                    TableType table = tables[(int)tableToUse];
-                    if (table.TryGetValue(key, out previous))
-                    {
-                        complexSel.nextInTable = previous;
-                    }
-                    nonEmptyTablesMask |= (1 << (int)tableToUse);
-                    table[key] = complexSel;
-                }
-            }
+            m_RequiresRebuild = false;
         }
 
         int AddValueToArray<T>(ref T[] array, T value)
         {
             Unity.Collections.CollectionExtensions.AddToArray(ref array, value);
-            SetTemporaryContentHash();
+            MarkAsChanged();
             return array.Length - 1;
+        }
+
+        int InsertValueInArray<T>(ref T[] array, int index, T value)
+        {
+            Unity.Collections.CollectionExtensions.InsertIntoArray(ref array, index, value);
+            MarkAsChanged();
+            return index;
         }
 
         internal int AddValue(StyleValueKeyword keyword)
         {
             // Keywords are not stored as a regular enum. Instead, we use the
             // integer value of the keyword as the index.
-            SetTemporaryContentHash();
+            MarkAsChanged();
             return (int)keyword;
         }
 
@@ -378,7 +456,7 @@ namespace UnityEngine.UIElements
         {
             // Functions are not stored as a regular enum. Instead, we use the
             // integer value of the function as the index.
-            SetTemporaryContentHash();
+            MarkAsChanged();
             return (int)function;
         }
 
@@ -509,7 +587,7 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TEnum ReadEnum<TEnum>(StyleValueHandle handle)
-            where TEnum: struct, Enum
+            where TEnum : struct, Enum
         {
             var enumStr = ReadEnum(handle);
             return Enum.TryParse(StyleSheetUtility.ConvertDashToHungarian(enumStr), out TEnum value)
@@ -518,7 +596,7 @@ namespace UnityEngine.UIElements
         }
 
         internal bool TryReadEnum<TEnum>(StyleValueHandle handle, out TEnum value)
-            where TEnum: struct, Enum
+            where TEnum : struct, Enum
         {
             if (TryReadEnum(handle, out var enumString) &&
                 Enum.TryParse(StyleSheetUtility.ConvertDashToHungarian(enumString), out value))
@@ -741,7 +819,7 @@ namespace UnityEngine.UIElements
         {
             handle.valueType = StyleValueType.Keyword;
             handle.valueIndex = (int)value;
-            SetTemporaryContentHash();
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -757,7 +835,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.Float;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -773,7 +852,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.Dimension;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -790,7 +870,7 @@ namespace UnityEngine.UIElements
                 handle.valueIndex = valueIndex;
             }
 
-            SetTemporaryContentHash();
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -806,7 +886,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.String;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -830,7 +911,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.Enum;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -846,7 +928,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.Variable;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -862,7 +945,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.ResourcePath;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -878,7 +962,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.AssetReference;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -894,7 +979,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.MissingAssetReference;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -902,7 +988,7 @@ namespace UnityEngine.UIElements
         {
             handle.valueType = StyleValueType.Function;
             handle.valueIndex = (int)function;
-            SetTemporaryContentHash();
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -918,7 +1004,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.ScalableImage;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -937,7 +1024,8 @@ namespace UnityEngine.UIElements
                 handle.valueType = StyleValueType.Enum;
                 handle.valueIndex = valueIndex;
             }
-            SetTemporaryContentHash();
+
+            MarkAsChanged();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -945,7 +1033,7 @@ namespace UnityEngine.UIElements
         {
             handle.valueIndex = 0;
             handle.valueType = StyleValueType.CommaSeparator;
-            SetTemporaryContentHash();
+            MarkAsChanged();
         }
 
         internal void WriteLength(ref StyleValueHandle handle, Length value)
@@ -971,8 +1059,7 @@ namespace UnityEngine.UIElements
             WriteDimension(ref handle, value.ToDimension());
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void SetTemporaryContentHash()
+        private void MarkAsChanged()
         {
             // Set the contentHash to 0 if the style sheet is empty
             if (rules == null || rules.Length == 0)
@@ -983,6 +1070,8 @@ namespace UnityEngine.UIElements
                 // since contentHash is used internally as a optimized way to compare style sheets.
                 // However, note that the real contentHash will still be computed on import.
                 contentHash = UnityEngine.Random.Range(1, int.MaxValue);
+
+            UIElementsUtility.MarkStyleSheetAsChanged(this);
         }
     }
 }

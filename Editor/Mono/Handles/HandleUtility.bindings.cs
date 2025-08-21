@@ -18,7 +18,7 @@ namespace UnityEditor
 
         internal static extern GameObject Internal_FindNearestVertex(Camera cam, Vector2 screenPoint, Transform[] objectsToSearch, Transform[] ignoreObjects, out Vector3 vertex, out bool found);
 
-        internal static extern uint Internal_GetClosestPickingID(
+        internal static extern ulong Internal_GetClosestPickingID(
             Camera cam,
             int layers,
             Vector2 position,

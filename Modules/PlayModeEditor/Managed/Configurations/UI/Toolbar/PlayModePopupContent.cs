@@ -17,7 +17,9 @@ namespace Unity.PlayMode.Editor
     class PlaymodePopupContent : PopupWindowContent
     {
         public static readonly Vector2 windowSize = new Vector2(220, 114);
-        const string k_Stylesheet = "PlayMode/UI/PlayModePopupContent.uss";
+        const string k_Stylesheet = "PlayMode/UI/Framework.uss";
+
+        public static Action OpenPlayModeConfigurationsWindowDelegate;
 
         // Name is used in tests to identify the element.
         public const string listElementName = "playmode-config-list";
@@ -58,32 +60,15 @@ namespace Unity.PlayMode.Editor
             m_ListView = new ListView { fixedItemHeight = 20, selectionType = SelectionType.Single, enabledSelf = enableListView };
             m_ListView.selectionChanged += OnItemSelected;
             m_ListView.name = listElementName;
+            m_ListView.AddToClassList("unity-scenarios-playmode-popup__config-list");
             root.Add(m_ListView);
 
             var statusButton = new Label() { name = "open-playmode-status-button", text = "Play Mode Status Window" };
-            statusButton.RegisterCallback<ClickEvent>(evt =>
-            {
-                // Ideally PlayModePopupContent (this window) should be in the same assembly as PlaymodeStatusWindow
-                // MTT-12386: To move UI components/classes to appropriate assemblies
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                System.Reflection.Assembly assembly = null;
-                foreach (var a in assemblies)
-                {
-                    if (a.GetName().Name == "Unity.Multiplayer.PlayMode.Editor")
-                    {
-                        assembly = a;
-                        break;
-                    }
-                }
-                if (assembly == null)
-                {
-                    Debug.LogError("Could not find assembly for PlaymodeStatusWindow.");
-                    return;
-                }
-                EditorWindow.GetWindow(assembly.GetType("Unity.Multiplayer.PlayMode.Scenarios.Editor.Views.PlaymodeStatusWindow", true));
-            });
+            statusButton.AddToClassList("unity-scenarios-playmode-popup__status-button");
+            statusButton.RegisterCallback<ClickEvent>(evt => OpenPlayModeConfigurationsWindowDelegate?.Invoke());
 
             var manageButton = new Label() { name = "manage-playmode-scenarios-configs-button", text = "Configure Play Mode Scenarios" };
+            manageButton.AddToClassList("unity-scenarios-playmode-popup__manage-button");
             manageButton.RegisterCallback<ClickEvent>(evt => PlayModeConfigurationsWindow.ShowWindow());
 
             root.Add(statusButton);
@@ -126,11 +111,12 @@ namespace Unity.PlayMode.Editor
             m_ListView.makeItem = () =>
             {
                 var container = new VisualElement();
-                container.AddToClassList("playmode-list-item");
+                container.AddToClassList("unity-scenarios-playmode-list-view__item--scenario-window");
                 container.style.flexDirection = FlexDirection.Row;
                 container.Add(new Image() { name = "type-icon" });
                 container.Add(new Label() { displayTooltipWhenElided = false });
                 var warnIcon = new Image() { name = "warn-icon" };
+                warnIcon.AddToClassList("unity-scenarios-playmode-popup__warn-icon");
                 warnIcon.image = EditorGUIUtility.FindTexture("console.warnicon");
                 container.Add(warnIcon);
                 return container;
@@ -144,10 +130,10 @@ namespace Unity.PlayMode.Editor
                 var config = configs[i];
 
                 var configIsValid = config.IsConfigurationValid(out var reason);
-                element.RemoveFromClassList("has-warning");
+                element.RemoveFromClassList("unity-scenarios-playmode-popup__item--has-warning");
                 if (!configIsValid)
                 {
-                    element.AddToClassList("has-warning");
+                    element.AddToClassList("unity-scenarios-playmode-popup__item--has-warning");
                 }
 
                 warningIcon.tooltip = reason;

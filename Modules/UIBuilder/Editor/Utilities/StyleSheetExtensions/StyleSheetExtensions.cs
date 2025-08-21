@@ -5,10 +5,12 @@
 using System.Linq;
 using System;
 using UnityEditor;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -42,7 +44,7 @@ namespace Unity.UI.Builder
             var json = JsonUtility.ToJson(styleSheet);
             JsonUtility.FromJsonOverwrite(json, other);
 
-            other.SetupReferences();
+            other.RequestRebuild();
 
             other.name = styleSheet.name;
         }
@@ -79,7 +81,8 @@ namespace Unity.UI.Builder
             var selectorSplit = selectorStr.Split(' ');
             selectorStr = String.Join(" ", selectorSplit);
 
-            foreach (var complexSelector in styleSheet.complexSelectors)
+            foreach (var rule in styleSheet.rules)
+            foreach (var complexSelector in rule.complexSelectors)
             {
                 var str = BuilderStyleSheetExporter.GetSelectorString(complexSelector);
 
@@ -101,9 +104,16 @@ namespace Unity.UI.Builder
                 undoMessage = "Delete UI Style Selector";
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            var selectorList = styleSheet.complexSelectors.ToList();
-            selectorList.Remove(selector);
-            styleSheet.complexSelectors = selectorList.ToArray();
+            var rule = selector.rule;
+            // If this was the last selector for the rule, we remove the rule instead.
+            if (rule.complexSelectors.Length == 1 && rule.complexSelectors[0] == selector)
+            {
+                styleSheet.RemoveRule(selector.rule);
+            }
+            else
+            {
+                rule.RemoveSelector(selector);
+            }
         }
 
         internal static void RemoveSelector(
@@ -116,20 +126,6 @@ namespace Unity.UI.Builder
             RemoveSelector(styleSheet, selector, undoMessage);
         }
 
-        public static int AddRule(this StyleSheet styleSheet)
-        {
-            var rule = new StyleRule { line = -1 };
-            rule.properties = new StyleProperty[0];
-
-            // Add rule to StyleSheet.
-            var rulesList = styleSheet.rules.ToList();
-            var index = rulesList.Count;
-            rulesList.Add(rule);
-            styleSheet.rules = rulesList.ToArray();
-
-            return index;
-        }
-
         public static StyleRule GetRule(this StyleSheet styleSheet, int index)
         {
             if (styleSheet.rules.Length <= index)
@@ -138,39 +134,21 @@ namespace Unity.UI.Builder
             return styleSheet.rules[index];
         }
 
-        public static StyleComplexSelector AddSelector(
-            this StyleSheet styleSheet, string complexSelectorStr, string undoMessage = null)
+        public static StyleComplexSelector AddSelector(this StyleSheet styleSheet, string complexSelectorStr, string undoMessage = null)
         {
-            if (!SelectorUtility.TryCreateSelector(complexSelectorStr, out var complexSelector, out var error))
+            if (!CSSSpec.ValidateSelector(complexSelectorStr) &&
+                !SelectorUtility.ExtractSelectorsAndSpecificityFromString(complexSelectorStr, out var s, out var sp, out var error))
             {
-                Builder.ShowWarning(error);
-                return null;
+                    Builder.ShowWarning(error);
+                    return null;
             }
 
-            return styleSheet.AddSelector(complexSelector, undoMessage);
-        }
-
-        public static StyleComplexSelector AddSelector(
-            this StyleSheet styleSheet, StyleComplexSelector complexSelector, string undoMessage = null)
-        {
-            // Undo/Redo
             if (string.IsNullOrEmpty(undoMessage))
-                undoMessage = "New UI Style Selector";
+                undoMessage = BuilderConstants.AddNewSelectorUndoMessage;
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            // Add rule to StyleSheet.
-            var rulesList = styleSheet.rules.ToList();
-            rulesList.Add(complexSelector.rule);
-            styleSheet.rules = rulesList.ToArray();
-            complexSelector.ruleIndex = styleSheet.rules.Length - 1;
-
-            // Add complex selector to list in stylesheet.
-            var complexSelectorsList = styleSheet.complexSelectors.ToList();
-            complexSelectorsList.Add(complexSelector);
-            styleSheet.complexSelectors = complexSelectorsList.ToArray();
-            styleSheet.SetTemporaryContentHash();
-
-            return complexSelector;
+            var rule = styleSheet.AddRule();
+            return rule.AddSelector(complexSelectorStr);
         }
 
         public static void TransferRulePropertiesToSelector(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleSheet fromStyleSheet, StyleRule fromRule)
@@ -241,7 +219,8 @@ namespace Unity.UI.Builder
 
         public static void Swallow(this StyleSheet toStyleSheet, StyleSheet fromStyleSheet)
         {
-            foreach (var fromSelector in fromStyleSheet.complexSelectors)
+            foreach(var fromRule in fromStyleSheet.rules)
+            foreach (var fromSelector in fromRule.complexSelectors)
             {
                 Swallow(toStyleSheet, fromStyleSheet, fromSelector);
             }

@@ -257,9 +257,7 @@ namespace UnityEditor.Overlays
     {
         internal static readonly string ussClassName = "unity-overlay-canvas";
         const string k_UxmlPathDropZone = "UXML/Overlays/overlay-toolbar-dropzone.uxml";
-        internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
-        internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
-        internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
+        internal const int k_OverlayMinVisibleArea = 24;
 
         const string k_FloatingContainer = "overlay-container--floating";
         const string k_ToolbarArea = "overlay-toolbar-area";
@@ -375,16 +373,20 @@ namespace UnityEditor.Overlays
         internal event Action<bool> overlaysEnabledChanged;
         internal event Action<bool> overlaysSupportEnabledChanged;
         internal event Action presetChanged;
-
-
         internal event Action overlayListChanged;
 
         public bool overlaysEnabled
         {
-            get => m_Containers != null && m_OverlaysVisible;
+            get => containerWindow != null && m_OverlaysVisible;
 
             set
             {
+                if (containerWindow == null)
+                {
+                    Debug.LogError($"Trying to access the property {nameof(OverlayCanvas)}.{nameof(overlaysEnabled)} before the canvas has been initialize");
+                    return;
+                }
+
                 var changed = m_OverlaysVisible != value;
                 if (changed)
                     m_OverlaysVisible = value;
@@ -420,20 +422,7 @@ namespace UnityEditor.Overlays
                 {
                     m_OverlaysSupportEnabled = value;
 
-                    if (!m_OverlaysSupportEnabled)
-                    {
-                        // Ensure no lingering popup is left open
-                        ClosePopupOverlay();
-                        // Hide all overlay containers
-                        foreach (var container in m_Containers)
-                            container.style.display = DisplayStyle.None;
-                    }
-                    // Unhide overlay containers if they're enabled when reactivating support
-                    else if (overlaysEnabled)
-                    {
-                        foreach (var container in m_Containers)
-                            container.style.display = DisplayStyle.Flex;
-                    }
+                    UpdateCanvasVisibility();
 
                     overlaysSupportEnabledChanged?.Invoke(value);
                 }
@@ -476,21 +465,10 @@ namespace UnityEditor.Overlays
         VisualElement CreateRoot()
         {
             var ve = new VisualElement();
-
             ve.AddToClassList(ussClassName);
-
-            StyleSheet sheet;
-            sheet = EditorGUIUtility.Load(k_StyleCommon) as StyleSheet;
-            ve.styleSheets.Add(sheet);
-
-            if (EditorGUIUtility.isProSkin)
-                sheet = EditorGUIUtility.Load(k_StyleDark) as StyleSheet;
-            else
-                sheet = EditorGUIUtility.Load(k_StyleLight) as StyleSheet;
+            OverlayUtilities.AddStyleSheets(ve);
 
             m_ModeDefinition = CreateModeDefinition(m_Mode);
-
-            ve.styleSheets.Add(sheet);
 
             var uxml = m_ModeDefinition.GetUXML();
             if (uxml != null)
@@ -547,7 +525,7 @@ namespace UnityEditor.Overlays
                 ve.Add(dockArea);
             }
 
-            overlaysEnabled = m_OverlaysVisible;
+            UpdateCanvasVisibility();
 
             return ve;
         }
@@ -643,7 +621,8 @@ namespace UnityEditor.Overlays
             rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             EditorWindow.windowFocusChanged += OnFocusedWindowChanged;
-
+            OverlayPrefs.styleSheetChanged += OnPreferenceStylesheetChanged;
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
@@ -652,6 +631,8 @@ namespace UnityEditor.Overlays
             rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
             rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
             EditorWindow.windowFocusChanged -= OnFocusedWindowChanged;
+            OverlayPrefs.styleSheetChanged -= OnPreferenceStylesheetChanged;
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
         }
 
         internal void OnContainerWindowDisabled()
@@ -723,6 +704,15 @@ namespace UnityEditor.Overlays
             }
         }
 
+        void OnPreferenceStylesheetChanged()
+        {
+            var sheet = OverlayPrefs.instance?.styleSheet;
+            if (sheet != null && !rootVisualElement.styleSheets.Contains(sheet))
+                rootVisualElement.styleSheets.Add(sheet);
+
+            rootVisualElement.IncrementVersion(VersionChangeType.StyleSheet);
+        }
+
         void OnMouseLeaveOverlay(MouseLeaveEvent evt)
         {
             m_HoveredOverlay = null;
@@ -767,7 +757,7 @@ namespace UnityEditor.Overlays
                     OverlayAttribute defaultOverlayAttrib = new OverlayAttribute();
                     MainToolbarOverlay mainToolbarOverlay = new MainToolbarOverlay();
                     mainToolbarOverlay.createElementMethod = definition.method;
-                    mainToolbarOverlay.Initialize(definition.attr.path, definition.attr.ussName, definition.attr.displayName, defaultOverlayAttrib.defaultSize, defaultOverlayAttrib.minSize, defaultOverlayAttrib.maxSize);
+                    mainToolbarOverlay.Initialize(definition.attr.path, definition.attr.ussName, definition.attr.displayName, defaultOverlayAttrib.defaultSize, defaultOverlayAttrib.minSize, defaultOverlayAttrib.maxSize, defaultOverlayAttrib.priority, defaultOverlayAttrib.group);
                     AddOverlay(mainToolbarOverlay);
                 }
             }
@@ -834,6 +824,13 @@ namespace UnityEditor.Overlays
             if (dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow)
                 DisplaceWindow();
 
+            var prefsSheet = OverlayPrefs.instance?.styleSheet;
+            if (prefsSheet != null && !rootVisualElement.styleSheets.Contains(prefsSheet))
+                rootVisualElement.styleSheets.Add(prefsSheet);
+            rootVisualElement.AddToClassList(OverlayPrefs.GetPreferenceCanvasClass(window.GetType()));
+
+            UpdateCanvasVisibility();
+
             Profiler.EndSample();
         }
 
@@ -887,6 +884,18 @@ namespace UnityEditor.Overlays
                     }
                 }
             }
+        }
+
+        void UpdateCanvasVisibility()
+        {
+            if (!m_OverlaysSupportEnabled)
+                ClosePopupOverlay(); // Ensure no lingering popup is left open
+
+            bool enabled = m_OverlaysSupportEnabled && overlaysEnabled;
+            StyleEnum<DisplayStyle> targetState = enabled ? StyleKeyword.Null : DisplayStyle.None;
+
+            foreach (var container in m_Containers)
+                container.style.display = targetState;
         }
 
         public void OnAfterDeserialize() {}
@@ -1125,7 +1134,7 @@ namespace UnityEditor.Overlays
                 return overlay;
 
             overlay = new T();
-            overlay.Initialize(id, attrib.ussName, attrib.displayName, attrib.defaultSize, attrib.minSize, attrib.maxSize);
+            overlay.Initialize(id, attrib.ussName, attrib.displayName, attrib.defaultSize, attrib.minSize, attrib.maxSize, attrib.priority, attrib.group);
 
             if (overlay is LegacyOverlay legacy)
                 legacy.dontSaveInLayout = true;
@@ -1179,6 +1188,14 @@ namespace UnityEditor.Overlays
             }
 
             return data;
+        }
+
+        internal void ClearHighlights()
+        {
+            foreach (var overlay in overlays)
+            {
+                overlay.SetHighlightEnabled(false);
+            }
         }
 
         public void ResetOverlay(Overlay overlay)

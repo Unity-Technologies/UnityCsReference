@@ -166,7 +166,7 @@ namespace UnityEngine
             lightProbeProxyVolume = null;
             overrideSceneCullingMask = false;
             sceneCullingMask = 0;
-            instanceID = 0;
+            entityId = EntityId.None;
             forceMeshLod = -1;
             meshLodSelectionBias = 0.0f;
         }
@@ -174,7 +174,9 @@ namespace UnityEngine
         public int layer {get; set;}
         public uint renderingLayerMask {get; set;}
         public int rendererPriority {get; set;}
-        public int instanceID {get; set;}
+        [System.Obsolete(@"Please use entityId instead.", false)]
+        public int instanceID {get => entityId; set => entityId = value;}
+        public EntityId entityId {get; set;}
         public Bounds worldBounds {get; set;}
         public Camera camera {get; set;}
         public MotionVectorGenerationMode motionVectorMode {get; set;}

@@ -151,5 +151,13 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
             throw new NotImplementedException("Patching this method failed");
         }
+
+        // The address of the memory where the struct resides in memory
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe internal static void* AsPointer<T>(ref T output)
+        {
+            // @patched at compile time
+            throw new NotImplementedException("Patching this method failed");
+        }
     }
 }

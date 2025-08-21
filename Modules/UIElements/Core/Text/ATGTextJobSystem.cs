@@ -30,6 +30,8 @@ internal class ATGTextJobSystem
         public List<GlyphRenderMode> renderModes;
         public List<List<List<int>>> textElementIndicesByMesh;
         public List<bool> hasMultipleColorsByMesh;
+        // Key: FontAsset ID
+        // Value: Set of missing glyphs (glyphID) for that font asset.
         public Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset;
         public bool hasMissingGlyphs;
 
@@ -149,6 +151,7 @@ internal class ATGTextJobSystem
 
     static readonly ProfilerMarker k_GenerateTextMarker = new("ATGTextJob.GenerateText");
     static readonly ProfilerMarker k_ATGTextJobMarker = new("ATGTextJob");
+    static readonly ProfilerMarker k_PrepareShapingMarker = new("LayoutUpdater.PrepareShaping");
 
     static readonly bool k_IsMultiThreaded = (bool)Debug.GetDiagnosticSwitch("EnableMultiThreadingForATG").value;
 
@@ -157,6 +160,72 @@ internal class ATGTextJobSystem
         m_GenerateTextJobifiedCallback = GenerateTextJobified;
         m_PopulateGlyphsCallback = PopulateGlyphs;
         m_AddDrawEntriesCallback = AddDrawEntries;
+    }
+
+    List<TextElement> m_PrepareShapingDataList = new();
+
+    struct PrepareShapingJob : IJobFor
+    {
+        public GCHandle managedJobDataHandle;
+        public void Execute(int index)
+        {
+            var managedJobDatas = (List<TextElement>)managedJobDataHandle.Target;
+            TextElement textElement = managedJobDatas[index];
+            textElement.uitkTextHandle.ShapeText();
+        }
+    }
+
+    // The goal of this method is to prepare the text shaping for all TextElements
+    // that will get measured in the following layout pass
+    // This is not currently perfectly accurate, but the rest of the system accounts for that.
+    // What matters is not elements are picked up in the common case to improve performance
+    internal void PrepareShapingBeforeLayout(BaseVisualElementPanel panel)
+    {
+        m_PrepareShapingDataList.Clear();
+
+        // Depending on ATG configuration, it's possible that no TextElements have been registered.
+        if (!panel.textElementRegistry.IsValueCreated)
+            return;
+
+        using var _ = k_PrepareShapingMarker.Auto();
+
+        foreach (TextElement textElement in panel.textElementRegistry.Value)
+        {
+            // Note about display: none
+            // Setting display: none on a LayoutNode will not mark its children dirty
+            // This means that we could accidentally pre-shape elements that are not displayed and won't be measured
+            // However, there is no direct way to compute this information from a node.
+            // We would need a pretraversal of the hierarchy to update "areAncestorsAndSelfDisplayed" before the layout pass
+            // However usage of display: none for large hierarchies is usually to hide elements after they were displayed
+            // In which case they layoutNode will not be dirty so this code path would not be hit.
+            if (textElement.layoutNode.IsDirty)
+            {
+                if (TextUtilities.IsAdvancedTextEnabledForElement(textElement) // Only advanced text elements need shaping
+                    && TextElement.AnySizeAutoOrNone(textElement.computedStyle)) // Only elements without fixed width/height get measured
+                {
+                    textElement.uitkTextHandle.EnsureIsReadyForJobs();
+                    // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
+                    if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
+                        textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+  
+                    m_PrepareShapingDataList.Add(textElement);
+                }
+            }
+        }
+        if (m_PrepareShapingDataList.Count > 0)
+        {
+            FontAsset.CreateHbFaceIfNeeded();
+
+            var handle = GCHandle.Alloc(m_PrepareShapingDataList);
+
+            var job = new PrepareShapingJob
+            {
+                managedJobDataHandle = handle
+            };
+            var jobHandle = job.ScheduleParallelByRef(m_PrepareShapingDataList.Count, 1, default);
+            jobHandle.Complete();
+            handle.Free();
+        }
     }
 
     public void GenerateText(MeshGenerationContext mgc, TextElement textElement)
@@ -179,7 +248,7 @@ internal class ATGTextJobSystem
         mgc.AddMeshGenerationCallback(m_GenerateTextJobifiedCallback, null, mgct, false);
     }
 
-    struct GenerateTextJobData : IJobParallelFor
+    struct GenerateTextJobData : IJobFor
     {
         public GCHandle managedJobDataHandle;
         [ReadOnly] public TempMeshAllocator alloc;
@@ -193,23 +262,23 @@ internal class ATGTextJobSystem
             var shouldGenerateNativeTextSettings = ve.computedStyle.unityFontDefinition.fontAsset != null;
             if (ve.PostProcessTextVertices != null)
                 ve.uitkTextHandle.CacheTextGenerationInfo();
-                
-            (managedJobData.textInfo, managedJobData.success, bool uvsAreGenerated) = ve.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
+
+            (managedJobData.textInfo, managedJobData.success) = ve.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
 
             managedJobData.hasMissingGlyphs = managedJobData.textElement.uitkTextHandle.HasMissingGlyphs(managedJobData.textInfo, ref managedJobData.missingGlyphsPerFontAsset);
 
             // No missing glyphs means we do not need to return to main thread before converting to UIR
             if (!managedJobData.hasMissingGlyphs)
             {
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh, uvsAreGenerated);
+                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh);
                 ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
-            }   
+            }
 
             k_GenerateTextMarker.End();
         }
     }
 
-    struct ConvertToUIRVertexJobData : IJobParallelFor
+    struct ConvertToUIRVertexJobData : IJobFor
     {
         public GCHandle managedJobDataHandle;
         [ReadOnly] public TempMeshAllocator alloc;
@@ -222,7 +291,7 @@ internal class ATGTextJobSystem
 
             if (managedJobData.hasMissingGlyphs)
             {
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh, false);
+                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(managedJobData.textInfo, ref managedJobData.textElementIndicesByMesh, ref managedJobData.hasMultipleColorsByMesh);
                 ConvertMeshInfoToUIRVertex(managedJobData.textInfo.meshInfos, alloc, managedJobData.textElement, managedJobData.textElementIndicesByMesh, managedJobData.hasMultipleColorsByMesh, ref managedJobData.atlases, ref managedJobData.vertices, ref managedJobData.indices, ref managedJobData.renderModes, ref managedJobData.sdfScales);
             }
         }
@@ -239,27 +308,24 @@ internal class ATGTextJobSystem
             alloc = alloc
         };
 
-        if (textJobDatas.Count > 0)
-            textJobDatas[0].textElement.uitkTextHandle.InitTextLib();
-
-        FontAsset.CreateHbFaceIfNeeded();
-
         for (int i = 0; i < textJobDatas.Count; i++)
         {
             var textData = textJobDatas[i];
             var textElement = textData.textElement;
-            var fa = TextUtilities.GetFontAsset(textElement);
-            TextUtilities.GetTextSettingsFrom(textElement).UpdateNativeTextSettings();
-            fa.EnsureNativeFontAssetIsCreated();
+            textElement.uitkTextHandle.EnsureIsReadyForJobs();
+
             // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
             if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
                 textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
             textData.AcquirePooledData();
         }
 
+        // This ensures Fallbacks are properly created.
+        FontAsset.CreateHbFaceIfNeeded();
+
         if (k_IsMultiThreaded)
         {
-            var jobHandle = textJob.Schedule(textJobDatas.Count, 1);
+            var jobHandle = textJob.ScheduleParallelByRef(textJobDatas.Count, 1, default);
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_PopulateGlyphsCallback, null, MeshGenerationCallbackType.Work, true);
         }
@@ -307,7 +373,7 @@ internal class ATGTextJobSystem
             AddDrawEntries(mgc, _);
             return;
         }
-            
+
 
         foreach (var entry in allUniqueMissingGlyphs)
         {
@@ -331,7 +397,7 @@ internal class ATGTextJobSystem
             alloc = alloc
         };
 
-        JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
+        JobHandle jobHandle = textJob.ScheduleParallelByRef(textJobDatas.Count, 1, default);
         mgc.AddMeshGenerationJob(jobHandle);
         mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
     }
@@ -351,13 +417,6 @@ internal class ATGTextJobSystem
                 managedJobData.textElement.uitkTextHandle.UpdateATGTextEventHandler();
 
                 mgc.End();
-            }
-
-            // We don't need native informations anymore, clear the memory.
-            if (!managedJobData.textElement.uitkTextHandle.IsCachedPermanent)
-            {
-                TextGenerationInfo.Destroy(managedJobData.textElement.uitkTextHandle.textGenerationInfo);
-                managedJobData.textElement.uitkTextHandle.textGenerationInfo = IntPtr.Zero;
             }
 
             managedJobData.Release();
@@ -418,7 +477,7 @@ internal class ATGTextJobSystem
 
                     if (isSprite)
                     {
-                        atlases.Add((Texture2D)sa.material.mainTexture);
+                        atlases.Add((Texture2D)sa.spriteSheet);
                         renderModes.Add(GlyphRenderMode.COLOR);
                     }
                     else

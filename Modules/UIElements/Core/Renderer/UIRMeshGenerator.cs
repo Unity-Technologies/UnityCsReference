@@ -35,6 +35,9 @@ namespace UnityEngine.UIElements.UIR
 
     class MeshGenerator : IMeshGenerator, IDisposable
     {
+        const string k_MemoryLabelName = $"Renderer.{nameof(MeshGenerator)}";
+        static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), k_MemoryLabelName);
+
         struct RepeatRectUV
         {
             public Rect rect;
@@ -1354,7 +1357,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     if (m_BackgroundRepeatInstanceList == null)
                     {
-                        m_BackgroundRepeatInstanceList = new NativePagedList<BackgroundRepeatInstance>(8, Allocator.Persistent, Allocator.TempJob);
+                        m_BackgroundRepeatInstanceList = new NativePagedList<BackgroundRepeatInstance>(8, k_MemoryLabelName, Allocator.Persistent, Allocator.TempJob);
                     }
                     rectParams.backgroundRepeatInstanceList = m_BackgroundRepeatInstanceList;
                     rectParams.backgroundRepeatInstanceListStartIndex = m_BackgroundRepeatInstanceList.GetCount();
@@ -1585,7 +1588,7 @@ namespace UnityEngine.UIElements.UIR
             if (m_JobParameters.Length < parameterCount)
             {
                 m_JobParameters.Dispose();
-                m_JobParameters = new NativeArray<TessellationJobParameters>(parameterCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                m_JobParameters = new NativeArray<TessellationJobParameters>(parameterCount, k_MemoryLabel, NativeArrayOptions.UninitializedMemory);
             }
 
             for (int i = 0; i < parameterCount; ++i)

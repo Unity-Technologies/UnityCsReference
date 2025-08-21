@@ -591,28 +591,28 @@ sealed class VisualManager : IDisposable
     internal extern void SetPanel(in VisualNodeHandle handle, in VisualPanelHandle panel);
 
     [NativeThrows]
-    [return: Unmarshalled]
+    [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
     internal extern PseudoStates GetPseudoStates(in VisualNodeHandle handle);
 
     [NativeThrows]
     internal extern void SetPseudoStates(in VisualNodeHandle handle, PseudoStates states);
 
     [NativeThrows]
-    [return: Unmarshalled]
+    [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
     internal extern RenderHints GetRenderHints(in VisualNodeHandle handles);
 
     [NativeThrows]
     internal extern void SetRenderHints(in VisualNodeHandle handle, RenderHints hints);
 
     [NativeThrows]
-    [return: Unmarshalled]
+    [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
     internal extern LanguageDirection GetLanguageDirection(in VisualNodeHandle handle);
 
     [NativeThrows]
     internal extern void SetLanguageDirection(in VisualNodeHandle handle, LanguageDirection direction);
 
     [NativeThrows]
-    [return: Unmarshalled]
+    [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
     internal extern LanguageDirection GetLocalLanguageDirection(in VisualNodeHandle handle);
 
     [NativeThrows]

@@ -28,6 +28,7 @@ namespace Unity.UI.Builder
         VisualElement m_Viewport;
         VisualElement m_Surface;
         BuilderCanvas m_Canvas;
+        VisualElement m_ContentContainerWrapper;
         VisualElement m_SharedStylesAndDocumentElement;
         VisualElement m_StyleSelectorElementContainer;
         VisualElement m_DocumentRootElement;
@@ -212,6 +213,7 @@ namespace Unity.UI.Builder
             m_Canvas = this.Q<BuilderCanvas>("canvas");
             m_Canvas.document = paneWindow.document;
             m_Canvas.SetSelection(selection);
+            m_ContentContainerWrapper = m_Canvas.Q<VisualElement>("content-container-wrapper");
             m_SharedStylesAndDocumentElement = this.Q("shared-styles-and-document");
             m_SharedStylesAndDocumentElement.pseudoStates |= PseudoStates.Root; // To apply variables of the active theme that are defined in the :root selector
 
@@ -248,9 +250,9 @@ namespace Unity.UI.Builder
 
             m_BuilderMover.parentTracker = m_BuilderParentTracker;
 
-            m_PickOverlay.RegisterCallback<MouseDownEvent>(OnPick);
-            m_PickOverlay.RegisterCallback<MouseMoveEvent>(OnHover);
-            m_PickOverlay.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            m_ContentContainerWrapper.RegisterCallback<MouseDownEvent>(OnPick);
+            m_ContentContainerWrapper.RegisterCallback<MouseMoveEvent>(OnHover);
+            m_ContentContainerWrapper.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             m_BuilderViewportDragger.RegisterCallbacksOnTarget(m_PickOverlay);
             m_Viewport.RegisterCallback<MouseDownEvent>(OnMissPick);
             m_Canvas.header.AddManipulator(new Clickable(OnCanvasHeaderClick));
@@ -370,7 +372,9 @@ namespace Unity.UI.Builder
             CenterCanvas();
         }
 
-        public void FitViewport(VisualElement target = null)
+        public void FitViewport() => FitViewport(selection.selection.FirstOrDefault());
+
+        public void FitViewport(VisualElement target)
         {
             float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
             float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
@@ -437,6 +441,10 @@ namespace Unity.UI.Builder
 
         void OnPick(MouseDownEvent evt)
         {
+            // UUM-74631: Previously, OnPick was handled by the Pick Overlay which is hidden in preview mode.
+            if (isPreviewEnabled)
+                return;
+
             // Do not prevent zoom and pan
             if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)) || evt.button == 0 && evt.ctrlKey)
                 return;
@@ -497,6 +505,10 @@ namespace Unity.UI.Builder
 
         void OnHover(MouseMoveEvent evt)
         {
+            // UUM-74631: Previously, OnHover was handled by the Pick Overlay which is hidden in preview mode.
+            if (isPreviewEnabled)
+                return;
+
             // UUM-107380 - Don't pick elements under the selection header.
             if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
                 return;
@@ -551,6 +563,10 @@ namespace Unity.UI.Builder
 
         void OnMouseLeave(MouseLeaveEvent evt)
         {
+            // UUM-74631: Previously, OnMouseLeave was handled by the Pick Overlay which is hidden in preview mode.
+            if (isPreviewEnabled)
+                return;
+
             if (evt.button == 2)
                 return;
 
@@ -579,7 +595,7 @@ namespace Unity.UI.Builder
         static void OnFrameSelectedShortcut(ShortcutArguments args)
         {
             var builderViewPort = args.context as BuilderViewport;
-            builderViewPort.FitViewport(builderViewPort.selection.selection.FirstOrDefault());
+            builderViewPort.FitViewport();
         }
 
         public void SetPreviewMode(bool mode)

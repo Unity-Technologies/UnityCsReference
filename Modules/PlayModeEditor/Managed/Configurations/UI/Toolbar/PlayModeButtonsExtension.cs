@@ -20,30 +20,15 @@ namespace Unity.PlayMode.Editor
         internal static PlayModeButtonsView PlayModeButtons => m_PlayModeButtons;
 
         [InitializeOnLoadMethod]
-        private static void Initialize()
+        internal static void Initialize()
         {
-            if (!IsAnyConfigurationTypeAvailable())
+            if (PlayModeConfigurationUtils.ConfigurationTypesCount == 0)
                 return;
 
-            foreach (var type in TypeCache.GetTypesDerivedFrom<PlayModeConfiguration>())
-            {
-                UnityEngine.Debug.Log($"Found PlayModeConfiguration type: {type.Name}");
-            }
-
+            UnityEditor.Toolbars.PlayModeButtons.onPlayModeButtonsCreated -= CreatePlayModeButtons;
             UnityEditor.Toolbars.PlayModeButtons.onPlayModeButtonsCreated += CreatePlayModeButtons;
+            PlayModeManager.instance.ConfigAssetChanged -= RefreshPlayModeConfigUI;
             PlayModeManager.instance.ConfigAssetChanged += RefreshPlayModeConfigUI;
-        }
-
-        private static bool IsAnyConfigurationTypeAvailable()
-        {
-            var configTypes = TypeCache.GetTypesDerivedFrom<PlayModeConfiguration>();
-            if (configTypes.Count > 1)
-                return true;
-
-            Assert.IsTrue(configTypes.Count == 1 && configTypes[0] == typeof(DefaultPlayModeConfiguration),
-                "DefaultPlayModeConfiguration should be the only configuration type available.");
-
-            return false;
         }
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
@@ -87,9 +72,6 @@ namespace Unity.PlayMode.Editor
         /// <summary>
         /// Makes changes to the play mode buttons UI based on the current play mode config.
         /// </summary>
-        /// <param name="config">
-        /// The current play mode config.
-        /// </param>
         internal static void RefreshPlayModeConfigUI()
         {
             if (m_PlayModeConfigUI == null)

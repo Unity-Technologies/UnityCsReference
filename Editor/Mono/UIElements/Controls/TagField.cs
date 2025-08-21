@@ -190,7 +190,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        internal override void AddMenuItems(IGenericMenu menu)
+        internal override void AddMenuItems(AbstractGenericMenu menu)
         {
             if (menu == null)
             {
