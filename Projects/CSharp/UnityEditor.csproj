@@ -9390,9 +9390,6 @@
     <Compile Include="..\..\Modules\UIElementsEditor\GameObjects\UIDocumentHierarchyWatcher.cs">
       <Link>Modules\UIElementsEditor\GameObjects\UIDocumentHierarchyWatcher.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElementsEditor\Legacy\ProgressBar.cs">
-      <Link>Modules\UIElementsEditor\Legacy\ProgressBar.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\PanelDebug.cs">
       <Link>Modules\UIElementsEditor\PanelDebug.cs</Link>
     </Compile>

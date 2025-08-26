@@ -369,6 +369,12 @@ namespace UnityEditor.UIElements.Debugger
                 evt.elementTarget = this;
                 SendEvent(evt);
             }
+
+            // Toggling "All Events" or a group of events will modify the appearance of individual items below it
+            if (choice.TypeId <= 0)
+            {
+                m_ListView.RefreshItems();
+            }
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)

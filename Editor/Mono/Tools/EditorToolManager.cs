@@ -826,6 +826,7 @@ namespace UnityEditor.EditorTools
             foreach (var tool in instance.componentTools)
                 if ((tool.typeAssociation.targetContext == null ||
                      tool.typeAssociation.targetContext == context.GetType())
+                    && tool.editorType != null // The editor type can be null on domain reload after renaming an EditorTool (UUM-113403)
                     && !tool.lockedInspector
                     && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
                     AddToolEntry(tool.editorType, ToolEntry.Scope.Component);

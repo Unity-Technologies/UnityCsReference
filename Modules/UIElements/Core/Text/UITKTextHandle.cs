@@ -212,7 +212,8 @@ namespace UnityEngine.UIElements
 
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
-            tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
+            tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode(m_TextElement.isInputField && !m_TextElement.edition.multiline);
+
             tgs.richText = m_TextElement.enableRichText;
             tgs.overflowMode = GetTextOverflowMode();
             tgs.characterSpacing = style.letterSpacing.value;

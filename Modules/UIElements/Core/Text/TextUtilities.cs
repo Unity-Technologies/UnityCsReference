@@ -207,8 +207,17 @@ namespace UnityEngine.UIElements
             };
         }
 
-        public static TextWrappingMode toTextWrappingMode(this WhiteSpace whiteSpace)
+        public static TextWrappingMode toTextWrappingMode(this WhiteSpace whiteSpace, bool isSingleLineInputField)
         {
+            if (isSingleLineInputField)
+            {
+                return whiteSpace switch
+                {
+                    WhiteSpace.Normal or WhiteSpace.NoWrap => TextWrappingMode.NoWrap,
+                    WhiteSpace.Pre or WhiteSpace.PreWrap => TextWrappingMode.PreserveWhitespaceNoWrap,
+                    _ => TextWrappingMode.NoWrap
+                };
+            }
             return whiteSpace switch
             {
                 WhiteSpace.Normal => TextWrappingMode.Normal,

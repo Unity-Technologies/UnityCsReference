@@ -189,10 +189,11 @@ namespace UnityEngine.UIElements
             {
                 foreach (var flattenedNode in m_HierarchyFlattened)
                 {
-                    if (flattenedNode.Node == m_Hierarchy.Root)
+                    var node = flattenedNode.Node;
+                    if (node == m_Hierarchy.Root || !m_Hierarchy.Exists(node))
                         continue;
 
-                    yield return m_TreeViewDataProperty.GetValue(flattenedNode.Node);
+                    yield return m_TreeViewDataProperty.GetValue(node);
                 }
 
                 yield break;
@@ -200,7 +201,11 @@ namespace UnityEngine.UIElements
 
             foreach (var id in rootIds)
             {
-                var flattenedNodeChildren = m_HierarchyFlattened.EnumerateChildren(m_IdToNodeDictionary[id]);
+                var parentNode = m_IdToNodeDictionary[id];
+                if (!m_Hierarchy.Exists(parentNode))
+                    continue;
+
+                var flattenedNodeChildren = m_HierarchyFlattened.EnumerateChildren(parentNode);
 
                 foreach (var node in flattenedNodeChildren)
                     yield return m_TreeViewDataProperty.GetValue(node);
@@ -448,7 +453,7 @@ namespace UnityEngine.UIElements
         /// <returns>Whether the item with the specified ID has one or more child.</returns>
         public virtual bool HasChildren(int id)
         {
-            if (m_IdToNodeDictionary.TryGetValue(id, out var node))
+            if (m_IdToNodeDictionary.TryGetValue(id, out var node) && m_Hierarchy.Exists(node))
                 return m_Hierarchy.GetChildrenCount(node) > 0;
 
             return false;
@@ -965,7 +970,7 @@ namespace UnityEngine.UIElements
 
         internal HierarchyNode GetHierarchyNodeById(int id)
         {
-            return m_IdToNodeDictionary.TryGetValue(id, out var node) ? node : HierarchyNode.Null;
+            return m_IdToNodeDictionary.TryGetValue(id, out var node) && m_Hierarchy.Exists(node) ? node : HierarchyNode.Null;
         }
 
         internal HierarchyNode GetHierarchyNodeByIndex(int index)

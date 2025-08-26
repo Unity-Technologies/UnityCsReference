@@ -392,7 +392,6 @@ namespace UnityEngine.UIElements
                 case TextureFormat.RG32:                // HDR
                 case TextureFormat.RGB48:               // HDR
                 case TextureFormat.RGBA64:              // HDR
-
                 case TextureFormat.R8_SIGNED:           // Signed
                 case TextureFormat.RG16_SIGNED:         // Signed
                 case TextureFormat.RGB24_SIGNED:        // Signed

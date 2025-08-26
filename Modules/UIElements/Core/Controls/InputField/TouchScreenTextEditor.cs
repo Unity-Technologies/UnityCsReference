@@ -69,7 +69,7 @@ namespace UnityEngine.UIElements
 
                     // If we update the text while the placeholder is active, it may get overridden by the field's default (e.g., 0).
                     showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
-                    if (!showPlaceholderText)
+                    if (!showPlaceholderText && !edition.isDelayed)
                     {
                         edition.UpdateTextFromValue?.Invoke();
                     }
@@ -135,7 +135,7 @@ namespace UnityEngine.UIElements
 
                 // If we update the text while the placeholder is active, it may get overridden by the field's default (e.g., 0).
                 showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
-                if (!showPlaceholderText)
+                if (!showPlaceholderText && !edition.isDelayed)
                 {
                     edition.UpdateTextFromValue?.Invoke();
                 }

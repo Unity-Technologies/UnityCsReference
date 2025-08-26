@@ -39,6 +39,8 @@ namespace UnityEditor
 
         static internal event Action onAnimationRecordingStart;
         static internal event Action onAnimationRecordingStop;
+        static internal event Action onAnimationPlaybackStart;
+        static internal event Action onAnimationPlaybackStop;
 
         static private PrefColor s_AnimatedPropertyColor = new PrefColor("Animation/Property Animated", 0.82f, 0.97f, 1.00f, 1.00f, 0.54f, 0.85f, 1.00f, 1.00f);
         static private PrefColor s_RecordedPropertyColor = new PrefColor("Animation/Property Recorded", 1.00f, 0.60f, 0.60f, 1.00f, 1.00f, 0.50f, 0.50f, 1.00f);
@@ -102,6 +104,8 @@ namespace UnityEditor
         internal static void StopAnimationPlaybackMode()
         {
             s_InAnimationPlaybackMode = false;
+
+            onAnimationPlaybackStop?.Invoke();
         }
 
         // Returns true if the editor is currently in animation playback mode.
@@ -114,6 +118,7 @@ namespace UnityEditor
         internal static void StartAnimationPlaybackMode()
         {
             s_InAnimationPlaybackMode = true;
+            onAnimationPlaybackStart?.Invoke();
         }
 
         internal static void StopAnimationRecording()

@@ -140,7 +140,7 @@ namespace UnityEngine.UIElements
 
             k_PrepareMainThreadMarker.End();
             TextCore.Text.TextGenerator.IsExecutingJob = true;
-            JobHandle jobHandle = prepareJob.Schedule(textJobDatas.Count, 1);
+            JobHandle jobHandle = prepareJob.ScheduleOrRunJob(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_GenerateTextJobifiedCallback, null, MeshGenerationCallbackType.Work, true);
         }
@@ -196,7 +196,7 @@ namespace UnityEngine.UIElements
             TextHandle.UpdateCurrentFrame();
 
             TextCore.Text.TextGenerator.IsExecutingJob = true;
-            JobHandle jobHandle = textJob.Schedule(textJobDatas.Count, 1);
+            JobHandle jobHandle = textJob.ScheduleOrRunJob(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         }
