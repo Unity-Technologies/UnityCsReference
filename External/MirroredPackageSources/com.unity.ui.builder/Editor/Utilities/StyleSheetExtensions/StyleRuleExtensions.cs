@@ -25,12 +25,17 @@ namespace Unity.UI.Builder
 
         public static StyleProperty AddProperty(
             this StyleSheet styleSheet, StyleRule rule, string name,
-            string undoMessage = null)
+            string undoMessage = null,
+            bool undo = true)
         {
             // Undo/Redo
-            if (string.IsNullOrEmpty(undoMessage))
-                undoMessage = "Change UI Style Value";
-            Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
+            if (undo)
+            {
+                if (string.IsNullOrEmpty(undoMessage))
+                    undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
+
+                Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
+            }
 
             var newProperty = new StyleProperty
             {

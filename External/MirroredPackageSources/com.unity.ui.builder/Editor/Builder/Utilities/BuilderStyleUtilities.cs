@@ -23,11 +23,11 @@ namespace Unity.UI.Builder
             styleRule = vta.GetOrCreateInlineStyleRule(vea);
         }
 
-        static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName)
+        static StyleProperty GetOrCreateStylePropertyByStyleName(StyleSheet styleSheet, StyleRule styleRule, string styleName, bool undo = true)
         {
             var styleProperty = styleSheet.FindLastProperty(styleRule, styleName);
             if (styleProperty == null)
-                styleProperty = styleSheet.AddProperty(styleRule, styleName);
+                styleProperty = styleSheet.AddProperty(styleRule, styleName, null, undo);
 
             return styleProperty;
         }
@@ -41,10 +41,10 @@ namespace Unity.UI.Builder
             element?.UpdateInlineRule(styleSheet, styleRule);
         }
 
-        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, float value)
+        public static void SetInlineStyleValue(VisualTreeAsset vta, VisualElementAsset vea, VisualElement element, string styleName, float value, bool undo = true)
         {
             GetInlineStyleSheetAndRule(vta, vea, out StyleSheet styleSheet, out StyleRule styleRule);
-            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value);
+            SetStyleSheetRuleValue(styleSheet, styleRule, styleName, value, undo);
             element?.UpdateInlineRule(styleSheet, styleRule);
         }
 
@@ -64,13 +64,13 @@ namespace Unity.UI.Builder
 
         // StyleSheet Value Setters
 
-        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value)
+        static void SetStyleSheetRuleValue(StyleSheet styleSheet, StyleRule styleRule, string styleName, float value, bool undo = true)
         {
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName);
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleSheet, styleRule, styleName, undo);
             var isNewValue = styleProperty.values.Length == 0;
 
             if (isNewValue)
-                styleSheet.AddValue(styleProperty, value);
+                styleSheet.AddValue(styleProperty, value, null, undo);
             else // TODO: Assume only one value.
                 styleSheet.SetValue(styleProperty.values[0], value);
         }

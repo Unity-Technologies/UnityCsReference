@@ -250,8 +250,7 @@ namespace Unity.UI.Builder
                         const int visualElementStyled = (int)BuilderLibrary.DefaultVisualElementType.Styled;
                         if (EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, visualElementStyled) == visualElementStyled)
                         {
-                            BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow",
-                                k_DefaultVisualElementFlexGrow);
+                            BuilderStyleUtilities.SetInlineStyleValue(inVta, vea, ve, "flex-grow", k_DefaultVisualElementFlexGrow, false);
                         }
 
                         return vea;

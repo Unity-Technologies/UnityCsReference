@@ -509,6 +509,8 @@ namespace UnityEngine
         internal void OnBlur()
         {
             revealCursor = false;
+            isCompositionActive = false;
+            RestoreCursorState();
             m_TextSelectingUtility.SelectNone();
         }
 
