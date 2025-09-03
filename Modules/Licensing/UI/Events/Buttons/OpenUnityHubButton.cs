@@ -23,7 +23,6 @@ class OpenUnityHubButton : TemplateEventsButton
     {
         m_CloseAction?.Invoke();
 
-        m_NativeApiWrapper.InvokeLicenseUpdateCallbacks();
         m_NativeApiWrapper.OpenHubLicenseManagementWindow();
     }
 }
