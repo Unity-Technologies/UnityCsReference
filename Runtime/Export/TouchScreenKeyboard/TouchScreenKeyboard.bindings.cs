@@ -308,9 +308,14 @@ namespace UnityEngine
             }
             set
             {
-                if (value.start < 0 || value.length < 0 || value.start + value.length > text.Length)
+                // UUM-104765 : While the TouchScreenKeyboard is empty, the displayed text might not be if the field has a default value. Should not throw an error.
+                // (ex: IntField has "0" as default, making the string longer and indices out of range)
+                if (string.IsNullOrEmpty(text))
+                    SetSelection(0, 0);
+                else if (value.start < 0 || value.length < 0 || value.start + value.length > text.Length)
                     throw new ArgumentOutOfRangeException(nameof(selection), "Selection is out of range.");
-                SetSelection(value.start, value.length);
+                else
+                    SetSelection(value.start, value.length);
             }
         }
 

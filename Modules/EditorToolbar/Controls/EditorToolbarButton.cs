@@ -5,49 +5,29 @@
 using System;
 using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
     public class EditorToolbarButton : ToolbarButton
     {
-        internal const string textClassName = EditorToolbar.elementLabelClassName;
-        internal const string iconClassName = EditorToolbar.elementIconClassName;
-
-        readonly Image m_IconElement;
-        TextElement m_TextElement;
+        EditorToolbarContent m_Content;
 
         public new string text
         {
-            get => m_TextElement?.text;
+            get => m_Content.text;
+            set => m_Content.text = value;
+        }
 
-            set
-            {
-                if (string.IsNullOrEmpty(value))
-                {
-                    m_TextElement?.RemoveFromHierarchy();
-                    m_TextElement = null;
-                    return;
-                }
-
-                if (m_TextElement == null)
-                {
-                    Insert(IndexOf(m_IconElement)+1, m_TextElement = new TextElement());
-                    m_TextElement.AddToClassList(textClassName);
-                }
-
-                m_TextElement.text = value;
-            }
+        internal string textIcon
+        {
+            get => m_Content.icon.textIcon;
+            set => m_Content.icon = new EditorToolbarIcon(value);
         }
 
         public Texture2D icon
         {
-            get => m_IconElement.image as Texture2D;
-            set
-            {
-                m_IconElement.image = value;
-                m_IconElement.style.display = value != null ? DisplayStyle.Flex : DisplayStyle.None;
-            }
+            get => m_Content.icon.textureIcon;
+            set => m_Content.icon = new EditorToolbarIcon(value);
         }
 
         public EditorToolbarButton() : this(string.Empty, null, null) {}
@@ -57,11 +37,8 @@ namespace UnityEditor.Toolbars
 
         public EditorToolbarButton(string text, Texture2D icon, Action clickEvent) : base(clickEvent)
         {
-            m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit };
-            m_IconElement.AddToClassList(iconClassName);
-            this.icon = icon;
-            Add(m_IconElement);
-            this.text = text;
+            AddToClassList(EditorToolbar.elementClassName);
+            m_Content = new EditorToolbarContent(this, text, new EditorToolbarIcon(icon));
         }
     }
 }

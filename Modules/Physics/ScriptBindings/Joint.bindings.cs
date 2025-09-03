@@ -10,7 +10,14 @@ namespace UnityEngine
     [NativeClass("Unity::Joint")]
     public class Joint : Component
     {
-        extern public Rigidbody connectedBody { get; set; }
+        extern public Rigidbody connectedBody
+        {
+            [NativeName("GetConnectedRigidbody")]
+            get;
+            [NativeName("SetConnectedRigidbody")]
+            set;
+        }
+
         extern public ArticulationBody connectedArticulationBody { get; set; }
         extern public Vector3 axis { get; set; }
         extern public Vector3 anchor { get; set; }

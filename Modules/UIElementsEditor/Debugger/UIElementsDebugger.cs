@@ -441,8 +441,10 @@ namespace UnityEditor.UIElements.Debugger
                 DebuggerEventDispatchUtilities.s_GlobalPanelDebug = null;
         }
 
-        void EditorUpdate()
+        public override void EditorUpdate()
         {
+            base.EditorUpdate();
+
             (panelDebug?.debuggerOverlayPanel as Panel)?.UpdateAnimations();
         }
 

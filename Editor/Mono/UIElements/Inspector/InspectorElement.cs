@@ -182,6 +182,11 @@ namespace UnityEditor.UIElements
         VisualElement m_ContextWidthElement;
 
         /// <summary>
+        /// Event handler for animation recording events.
+        /// </summary>
+        System.Action m_AnimationRecordingHandler;
+
+        /// <summary>
         /// Gets or sets the editor backing this inspector element.
         /// </summary>
         internal Editor editor => m_Editor;
@@ -432,6 +437,16 @@ namespace UnityEditor.UIElements
 
         void ClearInspectorElement()
         {
+            // Unregister animation recording event handler
+            if (m_AnimationRecordingHandler != null)
+            {
+                AnimationMode.onAnimationRecordingStart -= m_AnimationRecordingHandler;
+                AnimationMode.onAnimationRecordingStop -= m_AnimationRecordingHandler;
+                AnimationMode.onAnimationPlaybackStart -= m_AnimationRecordingHandler;
+                AnimationMode.onAnimationPlaybackStop -= m_AnimationRecordingHandler;
+                m_AnimationRecordingHandler = null;
+            }
+
             // Clear any previously generated element.
             m_InspectorElement?.RemoveFromHierarchy();
 
@@ -658,6 +673,17 @@ namespace UnityEditor.UIElements
 
             // Always try to re-use the imgui container if possible.
             var inspector = m_InspectorElement as IMGUIContainer ?? new IMGUIContainer();
+
+            // Register for animation recording events to repaint this specific IMGUI inspector
+            if (inspector != m_InspectorElement) // Only register for new containers
+            {
+                m_AnimationRecordingHandler = () => inspector.MarkDirtyRepaint();
+                
+                AnimationMode.onAnimationRecordingStart += m_AnimationRecordingHandler;
+                AnimationMode.onAnimationRecordingStop += m_AnimationRecordingHandler;
+                AnimationMode.onAnimationPlaybackStart += m_AnimationRecordingHandler;
+                AnimationMode.onAnimationPlaybackStop += m_AnimationRecordingHandler;
+            }
 
             m_IgnoreOnInspectorGUIErrors = false;
             inspector.onGUIHandler = () =>

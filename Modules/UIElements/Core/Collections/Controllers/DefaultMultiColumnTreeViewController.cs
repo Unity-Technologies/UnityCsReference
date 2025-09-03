@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements
         /// <param name="item">Item to add.</param>
         /// <param name="parentId">The parent id for the item.</param>
         /// <param name="childIndex">The child index in the parent's children list.</param>
-        /// <param name="rebuildTree">Whether the tree data should be rebuilt right away. Call <see cref="TreeViewController.RebuildTree()"/> when <c>false</c>.</param>
+        /// <param name="rebuildTree">Whether to refresh the tree data immediately. If <c>false</c>, call <see cref="BaseVerticalCollectionView.RefreshItems()"/>.</param>
         public virtual void AddItem(in TreeViewItemData<T> item, int parentId, int childIndex, bool rebuildTree = true)
         {
             HierarchyNode node;
@@ -117,7 +117,6 @@ namespace UnityEngine.UIElements
 
             treeDataController.AddItem(item, node);
             UpdateIdToNodeDictionary(item.id, node);
-            UpdateHierarchy();
 
             // If the item being added contains children, we want to convert them into HierarchyNode(s). For example,
             // users can drive their TreeView solely with the AddItem and TryRemoveItem APIs
@@ -131,7 +130,6 @@ namespace UnityEngine.UIElements
                     (id, newNode) =>
                 {
                     UpdateIdToNodeDictionary(id, newNode);
-                    UpdateHierarchy();
                 });
             }
 
@@ -140,6 +138,9 @@ namespace UnityEngine.UIElements
 
             if (childIndex != -1)
                 UpdateSortOrder(m_Hierarchy.GetParent(node), node, childIndex);
+
+            if (rebuildTree)
+                baseTreeView.RefreshItems();
         }
 
         /// <summary>
@@ -188,7 +189,9 @@ namespace UnityEngine.UIElements
                 treeDataController.RemoveItem(node);
                 UpdateIdToNodeDictionary(id, node, false);
                 m_Hierarchy.Remove(node);
-                UpdateHierarchy();
+
+                if (rebuildTree)
+                    baseTreeView.RefreshItems();
 
                 return true;
             }

@@ -33,14 +33,14 @@ namespace UnityEditor.Search
         }
 
         public AssetIndexChangeSet(IEnumerable<string> updated, IEnumerable<string> removed, IEnumerable<string> moved, Func<string, bool> predicate)
-            : this(updated.Concat(moved).Distinct(), removed, predicate)
+            : this(updated?.Concat(moved).Distinct(), removed, predicate)
         {
         }
 
         public AssetIndexChangeSet(IEnumerable<string> updated, IEnumerable<string> removed, Func<string, bool> predicate)
         {
-            this.updated = updated.Except(removed).Where(predicate).ToArray();
-            this.removed = removed.Distinct().Where(predicate).ToArray();
+            this.updated = updated?.Except(removed).Where(predicate).ToArray() ?? s_EmptyStrings;
+            this.removed = removed?.Distinct().Where(predicate).ToArray() ?? s_EmptyStrings;
         }
 
         public bool empty => updated == null || removed == null || (updated.Length == 0 && removed.Length == 0);
@@ -54,7 +54,7 @@ namespace UnityEditor.Search
             if (!Utils.IsMainProcess())
                 return;
 
-            SearchMonitor.RaiseContentRefreshed(imported, deleted.Concat(movedFrom).Distinct().ToArray(), movedTo);
+            SearchMonitor.RaiseContentRefreshed(imported, deleted?.Concat(movedFrom).Distinct().ToArray(), movedTo);
         }
     }
 

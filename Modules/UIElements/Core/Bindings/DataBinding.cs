@@ -230,13 +230,14 @@ namespace UnityEngine.UIElements
         {
             var target = context.targetElement;
 
-            // When a field is delayed, we should avoid setting the value.
+            // When a field is delayed or touchScreen, we should avoid setting the value.
             var focusController = target.focusController;
-            if (null != focusController && focusController.IsFocused(target) && target is IDelayedField {isDelayed: true})
+            if (null != focusController && focusController.IsFocused(target))
             {
                 // Only skip setting the value when the actual input field is focused.
                 var leaf = focusController.GetLeafFocusedElement();
-                if (leaf is TextElement textElement && textElement.ClassListContains("unity-text-element--inner-input-field-component"))
+                if (leaf is TextElement textElement && textElement.ClassListContains("unity-text-element--inner-input-field-component") &&
+                    (target is IDelayedField { isDelayed: true } || textElement.edition.touchScreenKeyboard != null))
                 {
                     return new BindingResult(BindingStatus.Pending);
                 }

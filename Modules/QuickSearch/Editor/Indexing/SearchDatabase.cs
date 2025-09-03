@@ -1192,6 +1192,9 @@ namespace UnityEditor.Search
 
         static bool KeepChangesetPredicate(string path, ObjectIndexer index)
         {
+            if (string.IsNullOrEmpty(path) || index == null || index.settings.options.disabled)
+                return false;
+
             if (index.SkipEntry(path, true))
                 return false;
 

@@ -66,7 +66,11 @@ namespace UnityEngine.UIElements
                     if (!edition.isDelayed)
                         edition.UpdateValueFromText?.Invoke();
 
-                    edition.UpdateTextFromValue?.Invoke();
+                    if (!edition.isDelayed)
+                    {
+                        edition.UpdateTextFromValue?.Invoke();
+                    }
+                    
                     textElement.Blur();
 
                     return;
@@ -126,7 +130,10 @@ namespace UnityEngine.UIElements
                 if (!edition.isDelayed)
                     edition.UpdateValueFromText?.Invoke();
 
-                edition.UpdateTextFromValue?.Invoke();
+                if (!edition.isDelayed)
+                {
+                    edition.UpdateTextFromValue?.Invoke();
+                }
                 textElement.edition.UpdateScrollOffset?.Invoke(false);
             }
             else

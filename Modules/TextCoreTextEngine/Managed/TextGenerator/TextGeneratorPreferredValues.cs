@@ -1017,9 +1017,13 @@ namespace UnityEngine.TextCore.Text
                     }
 
                     // Special handling for Latin characters followed by a CJK character.
-                    else if (m_IsNonBreakingSpace == false && m_CharacterCount + 1 < totalCharacterCount && TextGeneratorUtilities.IsCJK(textInfo.textElementInfo[m_CharacterCount + 1].character))
+                    else if (!m_IsNonBreakingSpace && (m_CharacterCount + 1) < totalCharacterCount && TextGeneratorUtilities.IsCJK(textInfo.textElementInfo[m_CharacterCount + 1].character))
                     {
-                        shouldSaveHardLineBreak = true;
+                        uint nextChar = textInfo.textElementInfo[m_CharacterCount + 1].character;
+                        bool prevIsLeading = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(charCode);
+                        bool nextIsFollowing = textSettings.lineBreakingRules.leadingCharactersLookup.Contains(nextChar);
+                        if (!prevIsLeading && !nextIsFollowing)
+                            shouldSaveHardLineBreak = true;
                     }
                     else if (isFirstWordOfLine)
                     {

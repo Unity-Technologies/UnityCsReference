@@ -766,6 +766,22 @@ namespace UnityEngine.TextCore.Text
                     continue;
                 }
 
+                // Handle Windows CRLF as a single LF
+                if (c == CodePoint.CARRIAGE_RETURN && readIndex + 1 < srcLength && m_TextBackingArray[readIndex + 1] == CodePoint.LINE_FEED)
+                {
+                    m_TextProcessingArray[writeIndex] = new TextProcessingElement
+                    {
+                        elementType = TextProcessingElementType.TextCharacterElement,
+                        stringIndex = readIndex,
+                        length = 2,
+                        unicode = CodePoint.LINE_FEED
+                    };
+
+                    readIndex += 1;
+                    writeIndex += 1;
+                    continue;
+                }
+
                 // Handle inline replacement of <style> and <br> tags.
                 if (c == '<' && generationSettings.richText)
                 {

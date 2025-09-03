@@ -22,14 +22,26 @@ namespace UnityEditor.ShortcutManagement
 
     class ShortcutProfileStore : IShortcutProfileStore
     {
+        public const int k_MaxProfileIdSize = 127;
+
+        public static bool ValidateLength(string id)
+        {
+            return id.Length <= k_MaxProfileIdSize;
+        }
+
+        public static bool ValidateCharacters(string id)
+        {
+            return id.IndexOfAny(EditorUtility.GetInvalidFilenameChars().ToCharArray()) == -1 &&
+                   id.IndexOfAny("_%#^".ToCharArray()) == -1 &&
+                   id.Trim(" ".ToCharArray()).Length == id.Length;
+        }
+
         public bool ValidateProfileId(string id)
         {
             return !string.IsNullOrEmpty(id) &&
-                id.Length <= 127 &&
-                id.IndexOfAny(EditorUtility.GetInvalidFilenameChars().ToCharArray()) == -1 &&
+                ValidateLength(id) &&
                 id != ShortcutManager.defaultProfileId &&
-                id.IndexOfAny("_%#^".ToCharArray()) == -1 &&
-                id.Trim(" ".ToCharArray()).Length == id.Length;
+                ValidateCharacters(id);
         }
 
         public bool ProfileExists(string id)

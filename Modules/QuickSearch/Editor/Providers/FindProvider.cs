@@ -326,16 +326,22 @@ namespace UnityEditor.Search.Providers
             {
                 foreach (var kvp in s_RootFilePaths)
                 {
-                    foreach (var u in updated.Concat(moved))
+                    if (updated != null)
                     {
-                        if (u.StartsWith(kvp.Key, StringComparison.Ordinal))
-                            kvp.Value.TryAdd(new SearchDocument(u), 0);
+                        foreach (var u in updated.Concat(moved))
+                        {
+                            if (!string.IsNullOrEmpty(u) && u.StartsWith(kvp.Key, StringComparison.Ordinal))
+                                kvp.Value.TryAdd(new SearchDocument(u), 0);
+                        }
                     }
 
-                    foreach (var u in deleted)
+                    if (deleted != null)
                     {
-                        if (u.StartsWith(kvp.Key, StringComparison.Ordinal))
-                            kvp.Value.TryRemove(new SearchDocument(u), out _);
+                        foreach (var u in deleted)
+                        {
+                            if (!string.IsNullOrEmpty(u) && u.StartsWith(kvp.Key, StringComparison.Ordinal))
+                                kvp.Value.TryRemove(new SearchDocument(u), out _);
+                        }
                     }
                 }
             }
