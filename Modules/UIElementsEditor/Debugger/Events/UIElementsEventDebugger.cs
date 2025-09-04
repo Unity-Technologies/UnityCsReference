@@ -721,8 +721,10 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             }
         }
 
-        void EditorUpdate()
+        public override void EditorUpdate()
         {
+            base.EditorUpdate();
+
             var overlayPanel = m_Debugger.panelDebug?.debuggerOverlayPanel as Panel;
             overlayPanel?.UpdateAnimations();
 

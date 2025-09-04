@@ -69,6 +69,8 @@ namespace UnityEngine.UIElements
             m_Target.RegisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
             m_Target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
             m_Target.RegisterCallback<PointerOutEvent>(OnPointerOutEvent);
+            // Register to event when display style is changed to clear any drag UI.
+            m_Target.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_Target.RegisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.RegisterCallback<DragExitedEvent>(OnDragExitedEvent);
@@ -94,6 +96,7 @@ namespace UnityEngine.UIElements
             m_Target.UnregisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
             m_Target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
             m_Target.UnregisterCallback<PointerOutEvent>(OnPointerOutEvent);
+            m_Target.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_Target.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.UnregisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.UnregisterCallback<DragExitedEvent>(OnDragExitedEvent);
@@ -170,22 +173,34 @@ namespace UnityEngine.UIElements
 
         void OnPointerCancelEvent(PointerCancelEvent evt)
         {
-            if (!useDragEvents)
-                ClearDragAndDropUI(true);
-
-            m_Target.ReleasePointer(evt.pointerId);
-            ClearDragAndDropUI(m_DragState == DragState.Dragging);
-            dragAndDrop.DragCleanup();
-            m_DragState = DragState.None;
-            m_PendingPerformDrag = false;
+            CancelDragAndDrop(evt.pointerId);
         }
 
         private void OnPointerCapturedOut(PointerCaptureOutEvent evt)
         {
+            CancelDragAndDrop();
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            // Clear any drag UI when the target becomes invisible.
+            if (m_Target.resolvedStyle.display == DisplayStyle.None)
+            {
+                CancelDragAndDrop();
+            }
+        }
+
+        void CancelDragAndDrop(int releaseCapturePointerId = -1)
+        {
+            if (m_DragState == DragState.None && !m_PendingPerformDrag)
+                return;
+
             // Whenever the pointer is captured by another element, like a text input, we should reset the drag state.
             if (!useDragEvents)
                 ClearDragAndDropUI(true);
 
+            if (releaseCapturePointerId != -1)
+                m_Target.ReleasePointer(releaseCapturePointerId);
             ClearDragAndDropUI(m_DragState == DragState.Dragging);
             dragAndDrop.DragCleanup();
             m_DragState = DragState.None;

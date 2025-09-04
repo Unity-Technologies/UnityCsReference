@@ -40,6 +40,8 @@ namespace UnityEditor.UIElements.Debugger
     {
         [SerializeField]
         private string m_LastVisualTreeName;
+        [SerializeField]
+        private string m_LastOwnerObjectName;
 
         protected EditorWindow m_DebuggerWindow;
         private EditorWindow m_WindowToDebug;
@@ -105,25 +107,29 @@ namespace UnityEditor.UIElements.Debugger
             m_Toolbar.Insert(0, m_PanelSelect);
 
             if (!string.IsNullOrEmpty(m_LastVisualTreeName))
-                m_RestoreSelectionScheduledItem = m_Toolbar.schedule.Execute(RestorePanelSelection).Every(500);
+                m_RestoreSelectionScheduledItem = m_Toolbar.schedule.Execute(() => RestorePanelSelection(true)).Every(500);
         }
 
         public void OnDisable()
         {
             var lastTreeName = m_LastVisualTreeName;
+            var lastOwnerObjectName = m_LastOwnerObjectName;
             panelDebug?.DetachDebugger(this);
             SelectPanelToDebug((IPanelChoice)null);
 
             m_LastVisualTreeName = lastTreeName;
+            m_LastOwnerObjectName = lastOwnerObjectName;
         }
 
         public void Disconnect()
         {
             var lastTreeName = m_LastVisualTreeName;
+            var lastOwnerObjectName = m_LastOwnerObjectName;
             m_SelectedPanel = null;
             SelectPanelToDebug((IPanelChoice)null);
 
             m_LastVisualTreeName = lastTreeName;
+            m_LastOwnerObjectName = lastOwnerObjectName;
         }
 
         public void ScheduleWindowToDebug(EditorWindow window)
@@ -170,6 +176,48 @@ namespace UnityEditor.UIElements.Debugger
 
         public virtual void Refresh()
         {}
+
+        public virtual void EditorUpdate()
+        {
+            if (!IsSelectedPanelValid())
+            {
+                RestorePanelSelection(false);
+            }
+        }
+
+        private bool IsSelectedPanelValid()
+        {
+            if (m_LastOwnerObjectName == null && m_LastVisualTreeName == null)
+                return m_SelectedPanel == null;
+            if (m_SelectedPanel == null || m_SelectedPanel.panel.disposed || m_SelectedPanel.panel.ownerObject == null)
+                return false;
+            return m_SelectedPanel.panel.ownerObject.name == m_LastOwnerObjectName ||
+                   m_SelectedPanel.ToString() == m_LastVisualTreeName;
+        }
+
+        private IPanelChoice RelocateLastSelectedPanel()
+        {
+            if (m_LastOwnerObjectName == null && m_LastVisualTreeName == null)
+                return null;
+
+            IPanelChoice matchingPanel = null;
+            IPanelChoice matchingName = null;
+            for (int i = 0; i < m_PanelChoices.Count; i++)
+            {
+                var vt = m_PanelChoices[i];
+                if (matchingPanel == null && vt.panel?.disposed == false && vt.panel.ownerObject != null &&
+                    vt.panel.ownerObject.name == m_LastOwnerObjectName)
+                {
+                    matchingPanel = vt;
+                }
+                if (matchingName == null && vt.ToString() == m_LastVisualTreeName)
+                {
+                    matchingName = vt;
+                }
+            }
+
+            return matchingPanel ?? matchingName;
+        }
 
         protected virtual bool ValidateDebuggerConnection(IPanel panelConnection)
         {
@@ -225,37 +273,24 @@ namespace UnityEditor.UIElements.Debugger
 
         private void OnSelectPanel(DropdownMenuAction action)
         {
-            if (m_RestoreSelectionScheduledItem != null && m_RestoreSelectionScheduledItem.isActive)
-                m_RestoreSelectionScheduledItem.Pause();
+            m_RestoreSelectionScheduledItem?.Pause();
 
             SelectPanelToDebug(action.userData as IPanelChoice);
         }
 
-        private void RestorePanelSelection()
+        private void RestorePanelSelection(bool clearSelectionIfNothingFound)
         {
             RefreshPanelChoices();
             if (m_PanelChoices.Count > 0)
             {
-                if (!string.IsNullOrEmpty(m_LastVisualTreeName))
-                {
-                    // Try to retrieve last selected VisualTree
-                    for (int i = 0; i < m_PanelChoices.Count; i++)
-                    {
-                        var vt = m_PanelChoices[i];
-                        if (vt.ToString() == m_LastVisualTreeName)
-                        {
-                            SelectPanelToDebug((IPanelChoice)vt);
-                            break;
-                        }
-                    }
-                }
+                IPanelChoice match = RelocateLastSelectedPanel();
+                if (match != null || clearSelectionIfNothingFound)
+                    SelectPanelToDebug(match);
 
                 if (m_SelectedPanel != null)
                     OnRestorePanelSelection();
-                else
-                    SelectPanelToDebug((IPanelChoice)null);
 
-                m_RestoreSelectionScheduledItem.Pause();
+                m_RestoreSelectionScheduledItem?.Pause();
             }
         }
 
@@ -273,6 +308,7 @@ namespace UnityEditor.UIElements.Debugger
 
                 m_SelectedPanel = pc;
                 m_LastVisualTreeName = pc.ToString();
+                m_LastOwnerObjectName = pc.panel.ownerObject.name;
 
                 OnSelectPanelDebug(panelDebug);
                 menuText = pc.ToString();
@@ -282,6 +318,7 @@ namespace UnityEditor.UIElements.Debugger
                 // No tree selected
                 m_SelectedPanel = null;
                 m_LastVisualTreeName = null;
+                m_LastOwnerObjectName = null;
 
                 OnSelectPanelDebug(null);
                 menuText = "Select a panel";

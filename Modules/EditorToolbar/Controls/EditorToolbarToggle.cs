@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor.Overlays;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,57 +10,34 @@ namespace UnityEditor.Toolbars
 {
     public class EditorToolbarToggle : ToolbarToggle
     {
-        internal const string textIconClassName = EditorToolbar.elementTextIconClassName;
-        internal const string textClassName = EditorToolbar.elementLabelClassName;
-        internal const string iconClassName = EditorToolbar.elementIconClassName;
-
-        internal const string textIconElementName = "EditorToolbarToggleTextIcon";
-        internal const string textElementName = "EditorToolbarToggleText";
-
         public new const string ussClassName = "unity-editor-toolbar-toggle";
 
-        Image m_IconElement;
-        TextElement m_TextIconElement;
-        TextElement m_TextElement;
-
+        EditorToolbarContent m_Content;
         Texture2D m_OnIcon;
         Texture2D m_OffIcon;
 
-        string m_TextIcon;
-        string m_Text;
-
         public new string text
         {
-            get => m_Text;
-            set
-            {
-                if (m_Text == value)
-                    return;
-                m_Text = value;
-                if (m_TextElement != null)
-                    m_TextElement.text = m_Text;
-                UpdateIcon();
-            }
+            get => m_Content.text;
+            set => m_Content.text = value;
         }
 
         public string textIcon
         {
-            get => m_TextIcon;
+            get => m_Content.icon.textIcon;
             set
             {
-                if (m_TextIcon == value)
-                    return;
-                m_TextIcon = value;
-                UpdateIcon();
+                m_Content.icon = new EditorToolbarIcon(value);
+                m_OnIcon = m_OffIcon = null;
             }
         }
 
         public Texture2D icon
         {
-            get => offIcon;
+            get => value ? m_OnIcon : m_OffIcon;
             set
             {
-                offIcon = onIcon = value;
+                m_OnIcon = m_OffIcon = value;
                 UpdateIcon();
             }
         }
@@ -87,11 +62,11 @@ namespace UnityEditor.Toolbars
             }
         }
 
-        public EditorToolbarToggle() : this(string.Empty, null, null) {}
-        public EditorToolbarToggle(string text) : this(text, null, null) {}
+        public EditorToolbarToggle() : this(string.Empty, null, null) { }
+        public EditorToolbarToggle(string text) : this(text, null, null) { }
 
-        public EditorToolbarToggle(Texture2D icon) : this(string.Empty, icon, icon) {}
-        public EditorToolbarToggle(Texture2D onIcon, Texture2D offIcon) : this(string.Empty, onIcon, offIcon) {}
+        public EditorToolbarToggle(Texture2D icon) : this(string.Empty, icon, icon) { }
+        public EditorToolbarToggle(Texture2D onIcon, Texture2D offIcon) : this(string.Empty, onIcon, offIcon) { }
 
         public EditorToolbarToggle(string textIcon, string label) : this(label, null, null)
         {
@@ -100,7 +75,15 @@ namespace UnityEditor.Toolbars
 
         public EditorToolbarToggle(string text, Texture2D onIcon, Texture2D offIcon)
         {
-            InitializeToggle(text, onIcon, offIcon, textIcon);
+            AddToClassList(ussClassName);
+            AddToClassList(EditorToolbar.elementClassName);
+
+
+            m_OnIcon = onIcon;
+            m_OffIcon = offIcon;
+
+            m_Content = new EditorToolbarContent(this.Q<VisualElement>(className: inputUssClassName), text);
+            UpdateIcon();
         }
 
 
@@ -112,49 +95,9 @@ namespace UnityEditor.Toolbars
                 UpdateIcon();
         }
 
-        void InitializeToggle(string text, Texture2D onIcon, Texture2D offIcon, string textIcon)
-        {
-            AddToClassList(ussClassName);
-
-            m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit };
-            m_IconElement.AddToClassList(iconClassName);
-
-            m_TextIconElement = new TextElement { name = textIconElementName };
-            m_TextIconElement.AddToClassList(textIconClassName);
-
-            m_TextElement = new TextElement { name = textElementName };
-            m_TextElement.AddToClassList(textClassName);
-
-            var container = this.Q<VisualElement>(className: Toggle.inputUssClassName);
-            container.Add(m_IconElement);
-            container.Add(m_TextIconElement);
-            container.Add(m_TextElement);
-
-            this.onIcon = onIcon;
-            this.offIcon = offIcon;
-            this.text = text;
-            this.textIcon = textIcon;
-
-            UpdateIcon();
-            RegisterCallback<GeometryChangedEvent>(GeometryChanged);
-        }
-
-        // Since it is possible that a toggle icon is set through styling, we want to update again when layout/styling is done.
-        void GeometryChanged(GeometryChangedEvent evt)
-        {
-            UpdateIcon();
-        }
-
         void UpdateIcon()
         {
-            EditorToolbarUtility.UpdateIconContent(
-                m_Text,
-                m_TextIcon,
-                value ? onIcon : offIcon,
-                m_TextElement,
-                m_TextIconElement,
-                m_IconElement
-            );
+            m_Content.icon = new EditorToolbarIcon(textIcon, value ? onIcon : offIcon);
         }
     }
 }

@@ -238,6 +238,8 @@ namespace UnityEditor.UIElements.Debugger
             };
         }
 
+        static string k_noAssetText = L10n.Tr("No source available for already imported asset");
+
         bool showStylesheet = false;
         bool showSelectors = false;
         private void DrawMatchingRules()
@@ -255,9 +257,14 @@ namespace UnityEditor.UIElements.Debugger
                     EditorGUILayout.BeginVertical();
                     foreach (string sheet in m_MatchedRulesExtractor.selectedElementStylesheets)
                     {
-                        if (GUILayout.Button(sheet) && CanOpenStyleSheet(sheet))
-                            InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
+                        bool canOpen = CanOpenStyleSheet(sheet);
+                        using (new EditorGUI.DisabledScope(!canOpen))
+                        {
+                            if (GUILayout.Button(new GUIContent(sheet, canOpen ? null : k_noAssetText)))
+                                InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
+                        }
                     }
+                
                     EditorGUILayout.EndVertical();
                     EditorGUILayout.EndHorizontal();
                 }
@@ -314,8 +321,12 @@ namespace UnityEditor.UIElements.Debugger
                         bool expanded = m_CurFoldout.Contains(i);
                         EditorGUILayout.BeginHorizontal();
                         bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
-                        if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(250)) && CanOpenStyleSheet(rule.fullPath))
-                            InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
+                        bool canOpen = CanOpenStyleSheet(rule.fullPath);
+                        using (new EditorGUI.DisabledScope(!canOpen))
+                        {
+                            if (rule.displayPath != null && GUILayout.Button(new GUIContent(rule.displayPath, canOpen ? null : k_noAssetText), EditorStyles.miniButton, GUILayout.MaxWidth(250)) )
+                                InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
+                        }
                         EditorGUILayout.EndHorizontal();
 
                         if (expanded && !foldout)

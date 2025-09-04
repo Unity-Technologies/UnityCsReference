@@ -15,15 +15,15 @@ namespace UnityEditor.Toolbars
         internal new static readonly string ussClassName = "unity-dropdown-toggle";
         internal static readonly string dropdownClassName = ussClassName + "__dropdown";
         internal static readonly string toggleClassName = ussClassName + "__toggle";
+        internal static readonly string toggleNoDropdownClassName = toggleClassName + "-no-dropdown";
         internal static readonly string toggleIconClassName = ussClassName + "__icon";
         internal static readonly string toggleTextClassName = ussClassName + "__text";
-        internal static readonly string toggleNoIconClassName = ussClassName + "-noicon";
-        internal static readonly string toggleNoDropdownClassName = toggleClassName + "-no-dropdown";
 
-        readonly Image m_IconElement;
+
+        EditorToolbarContent m_Content;
+
         readonly Button m_Toggle;
         readonly Button m_DropdownButton;
-        TextElement m_TextElement;
 
         public event Action dropdownClicked
         {
@@ -35,35 +35,14 @@ namespace UnityEditor.Toolbars
 
         public Texture2D icon
         {
-            get => m_IconElement.image as Texture2D;
-            set
-            {
-                m_IconElement.image = value;
-                UpdateIconState();
-            }
+            get => m_Content.icon.textureIcon;
+            set => m_Content.icon = new EditorToolbarIcon(value);
         }
 
         public string text
         {
-            get => m_TextElement?.text;
-
-            set
-            {
-                if (string.IsNullOrEmpty(value))
-                {
-                    m_TextElement?.RemoveFromHierarchy();
-                    m_TextElement = null;
-                    return;
-                }
-
-                if (m_TextElement == null)
-                    m_Toggle.Add(m_TextElement = new TextElement());
-
-                m_TextElement.AddToClassList(toggleTextClassName);
-                m_TextElement.AddToClassList(EditorToolbar.elementLabelClassName);
-                m_TextElement.text = value;
-                UpdateIconState();
-            }
+            get => m_Content.text;
+            set => m_Content.text = value;
         }
 
         public EditorToolbarDropdownToggle() : this("", null) {}
@@ -76,17 +55,10 @@ namespace UnityEditor.Toolbars
             AddToClassList(ussClassName);
 
             focusable = false;
+            AddToClassList(EditorToolbar.elementClassName);
 
             m_Toggle = new Button(ToggleValue);
             m_Toggle.AddToClassList(toggleClassName);
-
-            m_IconElement = new Image {scaleMode = ScaleMode.ScaleToFit, image = icon};
-            m_IconElement.AddToClassList(EditorToolbar.elementIconClassName);
-            m_IconElement.AddToClassList(toggleIconClassName);
-            if (icon == null && !(text == null || text == string.Empty))
-                m_IconElement.AddToClassList(toggleNoIconClassName);
-            m_IconElement.pickingMode = PickingMode.Ignore;
-            m_Toggle.Add(m_IconElement);
 
             m_DropdownButton = new Button(dropdownClickEvent);
             m_DropdownButton.AddToClassList(dropdownClassName);
@@ -99,15 +71,9 @@ namespace UnityEditor.Toolbars
             Add(m_Toggle);
             Add(m_DropdownButton);
 
-            this.text = text;
-        }
-
-        void UpdateIconState()
-        {
-            if (icon == null && !string.IsNullOrEmpty(text))
-                m_IconElement.AddToClassList(toggleNoIconClassName);
-            else if (icon)
-                m_IconElement.RemoveFromClassList(toggleNoIconClassName);
+            m_Content = new EditorToolbarContent(m_Toggle, text, new EditorToolbarIcon(icon));
+            m_Content.iconElement.AddToClassList(toggleIconClassName);
+            m_Content.textElement.AddToClassList(toggleTextClassName);
         }
 
         void ToggleValue()

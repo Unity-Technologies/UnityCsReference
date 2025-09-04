@@ -64,8 +64,9 @@ namespace UnityEngine.UIElements
         public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
         {
             var scale = GetPixelsPerPoint();
-            width = Mathf.Round(width * scale);
-            height = Mathf.Round(height * scale);
+            // We need to Floor instead of Round here to make sure we don't overflow the maximum rect.
+            width = Mathf.Floor(width * scale);
+            height = Mathf.Floor(height * scale);
 
             if (TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {

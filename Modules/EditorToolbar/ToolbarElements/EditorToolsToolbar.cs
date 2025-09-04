@@ -108,11 +108,11 @@ namespace UnityEditor.Toolbars
                             componentTools = new VisualElement() { name = "Component Tools" };
                             componentTools.AddToClassList("toolbar-contents");
 
-                            var header = new EditorToolbarIcon();
-                            if ((header.icon = EditorGUIUtility.FindTexture(currentComponentHeaderType)) == null)
-                                header.textIcon = currentComponentHeaderType.Name;
+                            VisualElement groupHeader = new VisualElement();
+                            // The content is created under the given root
+                            new EditorToolbarContent(groupHeader, new EditorToolbarIcon(currentComponentHeaderType.Name, EditorGUIUtility.FindTexture(currentComponentHeaderType)));
 
-                            componentToolButtons.Add(header);
+                            componentToolButtons.Add(groupHeader);
                             componentToolButtons.Add(componentTools);
                         }
                         componentTools.Add(new ToolButton(entry.tools));

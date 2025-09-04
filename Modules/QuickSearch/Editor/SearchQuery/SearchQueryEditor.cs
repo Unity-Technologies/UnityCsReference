@@ -192,7 +192,7 @@ namespace UnityEditor.Search
         public void OnDisable()
         {
             // Clear body to prevent accessing disposed properties.
-            m_Body.Clear();
+            m_Body?.Clear();
 
             m_ResultView?.Dispose();
             m_DescriptionProperty?.Dispose();

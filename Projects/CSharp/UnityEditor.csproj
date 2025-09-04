@@ -4809,6 +4809,9 @@
     <Compile Include="..\..\Modules\EditorToolbar\Controls\EditorToolbarButton.cs">
       <Link>Modules\EditorToolbar\Controls\EditorToolbarButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\EditorToolbar\Controls\EditorToolbarContent.cs">
+      <Link>Modules\EditorToolbar\Controls\EditorToolbarContent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\Controls\EditorToolbarDropdown.cs">
       <Link>Modules\EditorToolbar\Controls\EditorToolbarDropdown.cs</Link>
     </Compile>
@@ -5106,6 +5109,15 @@
     <Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs">
       <Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs">
+      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs">
+      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingInstaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs">
+      <Link>Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\BuildProfileInsightsSettingsContainer.cs">
       <Link>Modules\InsightsEditor\BuildProfileInsightsSettingsContainer.cs</Link>
     </Compile>
@@ -5132,6 +5144,15 @@
     </Compile>
     <Compile Include="..\..\Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs">
       <Link>Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs">
+      <Link>Modules\LevelPlay\Editor\LevelPlayInstallAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayInstaller.cs">
+      <Link>Modules\LevelPlay\Editor\LevelPlayInstaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LevelPlay\Editor\LevelPlayMenuItem.cs">
+      <Link>Modules\LevelPlay\Editor\LevelPlayMenuItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>

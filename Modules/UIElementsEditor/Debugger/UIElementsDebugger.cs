@@ -746,8 +746,10 @@ namespace UnityEditor.UIElements.Debugger
             UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged -= (_) => Refresh();
         }
 
-        void EditorUpdate()
+        public override void EditorUpdate()
         {
+            base.EditorUpdate();
+
             (panelDebug?.debuggerOverlayPanel as Panel)?.UpdateAnimations();
         }
 
