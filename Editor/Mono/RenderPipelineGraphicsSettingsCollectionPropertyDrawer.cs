@@ -19,6 +19,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
     internal class RenderPipelineGraphicsSettingsCollectionPropertyDrawer : PropertyDrawer
     {
         const string k_LineClass = "contextual-menu-button--handler";
+        const string k_MoreOptionsButtonClass = "more-options-button";
         const string k_GraphicsSettingsClass = "project-settings-section__graphics-settings";
         const string k_GraphicsSettingsHighlightableClass = "graphics-settings__highlightable";
         const string k_GraphicsSettingsContentFollowupClass = "project-settings-section__content-followup";
@@ -99,7 +100,8 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
         void DrawContextualMenuButton(VisualElement root, LeafElement<SettingsInfo> settingsInfo)
         {
-            var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
+            var button = new Button();
+            button.AddToClassList(k_MoreOptionsButtonClass);
             button.clicked += () => ShowContextualMenu(button.worldBound, settingsInfo.parent.content);
             root.Add(button);
         }

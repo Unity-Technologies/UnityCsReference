@@ -18,7 +18,7 @@ class AIDropdown : EditorToolbarDropdown
 
     public AIDropdown()
     {
-        SetVisibility(EditorPrefs.GetBool("HideAIMenu", false));
+        SetVisibility(EditorPrefs.GetBool("HideAIMenu", true));
         PreferencesProvider.hideMenuChanged += SetVisibility;
 
         name = "AIDropdown";

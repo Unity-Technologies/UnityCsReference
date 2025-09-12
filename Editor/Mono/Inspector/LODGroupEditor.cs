@@ -455,6 +455,7 @@ namespace UnityEditor
                 {
                     serializedObject.ApplyModifiedProperties();
                     ResetValuesAfterLODObjectIsModified();
+                    UpdateEnabledMeshLods();
                 }
             }
 
@@ -720,6 +721,10 @@ namespace UnityEditor
                 CalculatePrimitiveCountForRenderers();
                 ResetFoldoutLists();
             }
+
+            // Flush this editor's mesh LOD state if it's out of sync with serialized data
+            if (m_EnabledMeshLods.Length != m_LODs.arraySize)
+                UpdateEnabledMeshLods();
 
             EditorGUILayout.PropertyField(m_FadeMode);
 
@@ -1134,6 +1139,7 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
             m_LODGroup.RecalculateBounds();
             ResetValuesAfterLODObjectIsModified();
+            UpdateEnabledMeshLods();
             ExpandSelectedHeaderAndCloseRemaining(activeLOD);
         }
 
@@ -1225,11 +1231,18 @@ namespace UnityEditor
             }
         }
 
-        private void DeletedLOD()
+        void OnInsertLOD()
+        {
+            ResetValuesAfterLODObjectIsModified();
+            UpdateEnabledMeshLods();
+        }
+
+        void OnDeleteLOD()
         {
             m_SelectedLOD--;
 
             ResetValuesAfterLODObjectIsModified();
+            UpdateEnabledMeshLods();
         }
 
         // Set the camera distance so that the current LOD group covers the desired percentage of the screen
@@ -1303,7 +1316,7 @@ namespace UnityEditor
                         else
                         {
                             pm.AddItem(EditorGUIUtility.TrTextContent("Insert Before"), false,
-                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, ResetValuesAfterLODObjectIsModified).
+                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, OnInsertLOD).
                                 InsertLOD);
                         }
 
@@ -1316,7 +1329,7 @@ namespace UnityEditor
                             pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
                         else
                             pm.AddItem(EditorGUIUtility.TrTextContent("Delete"), false,
-                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, DeletedLOD).
+                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, OnDeleteLOD).
                                 DeleteLOD);
                         pm.ShowAsContext();
 

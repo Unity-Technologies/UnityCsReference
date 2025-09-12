@@ -759,7 +759,7 @@ namespace UnityEditor
                 if (validPath && (rootFolder || readOnly))
                     continue;
 
-                GUID guid = GUIDFromAssetPath(path);
+                GUID guid = GUIDFromExistingAssetPath(path);
 
                 if (!guid.Empty())
                 {

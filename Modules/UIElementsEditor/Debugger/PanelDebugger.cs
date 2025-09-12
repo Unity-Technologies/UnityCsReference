@@ -179,7 +179,8 @@ namespace UnityEditor.UIElements.Debugger
 
         public virtual void EditorUpdate()
         {
-            if (!IsSelectedPanelValid())
+            // Do not attempt to restore the selection if we are waiting on a window to be selected or that this window is not ready, or that it has been disposed
+            if (m_WindowToDebug==null && m_DebuggerWindow != null && m_DebuggerWindow.m_IsPresented && !IsSelectedPanelValid())
             {
                 RestorePanelSelection(false);
             }
@@ -253,7 +254,8 @@ namespace UnityEditor.UIElements.Debugger
             List<Panel> panels = GetPanels();
             foreach (var p in panels)
             {
-                panelChoices.Add(new PanelChoice(p));
+                if(p != null && !p.disposed)
+                    panelChoices.Add(new PanelChoice(p));
             }
         }
 

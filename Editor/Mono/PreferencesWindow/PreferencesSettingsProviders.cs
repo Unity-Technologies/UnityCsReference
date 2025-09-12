@@ -804,7 +804,7 @@ By default, Windows will combine these under a single taskbar item.");
         void DrawHideAIMenu()
         {
             const string key = "HideAIMenu";
-            var value = EditorPrefs.GetBool(key, false);
+            var value = EditorPrefs.GetBool(key, true);
 
             EditorGUI.BeginChangeCheck();
             value = EditorGUILayout.Toggle(GeneralProperties.hideAIMenu, value);
