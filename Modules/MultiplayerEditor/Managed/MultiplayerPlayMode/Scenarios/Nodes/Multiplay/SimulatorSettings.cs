@@ -19,7 +19,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [Tooltip("Whether to automatically allocate the server on startup.")]
         public bool AutoAllocate;
 
-        [Tooltip("The protocol used to query information from a server.")]
-        public ProtocolType QueryProtocol;
+        public static SimulatorSettings Default => new()
+        {
+            AutoAllocate = true,
+        };
     }
 }

@@ -68,13 +68,13 @@ namespace UnityEditor.LightBaking
             }
         }
 
-        public static extern bool ExtractFromScene(string outputFolderPath, LightBaker.BakeInput input, LightBaker.LightmapRequests lightmapRequests, LightBaker.LightProbeRequests lightProbeRequests, SourceMap map);
+        public static extern bool ExtractFromScene(string outputFolderPath, BakeInput input, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, SourceMap map);
 
         [NativeMethod(IsThreadSafe = true)]
-        public static extern int[] ComputeOcclusionLightIndicesFromBakeInput(LightBaker.BakeInput bakeInput, UnityEngine.Vector3[] probePositions, uint maxLightsPerProbe);
+        public static extern int[] ComputeOcclusionLightIndicesFromBakeInput(BakeInput bakeInput, UnityEngine.Vector3[] probePositions, uint maxLightsPerProbe);
 
         [NativeMethod(IsThreadSafe = true)]
-        public static extern int[] GetShadowmaskChannelsFromLightIndices(LightBaker.BakeInput bakeInput, int[] lightIndices);
+        public static extern int[] GetShadowmaskChannelsFromLightIndices(BakeInput bakeInput, int[] lightIndices);
 
         private static string LookupGameObjectName(SourceMap map, int instanceIndex)
         {
@@ -97,7 +97,7 @@ namespace UnityEditor.LightBaking
             return "";
         }
 
-        public static string LogInstances(LightBaker.BakeInput bakeInput, SourceMap map)
+        public static string LogInstances(BakeInput bakeInput, SourceMap map)
         {
             if (bakeInput is null)
                 return string.Empty;
@@ -109,11 +109,11 @@ namespace UnityEditor.LightBaking
                     message += $"         Instance [{i}]:\n";
                 else
                     message += $"         Instance [{i}] [{LookupGameObjectName(map, i)}]:\n";
-                LightBaker.Instance instance = bakeInput.instance((uint)i);
+                Instance instance = bakeInput.instance((uint)i);
                 message += $"            mesh type\t\t\t: {instance.meshType}\n";
-                if (instance.meshType == LightBaker.MeshType.MeshRenderer)
+                if (instance.meshType == MeshType.MeshRenderer)
                     message += $"            mesh index\t\t\t: {instance.meshIndex}\n";
-                else if (instance.meshType == LightBaker.MeshType.Terrain)
+                else if (instance.meshType == MeshType.Terrain)
                     message += $"            terrain index\t\t: {instance.terrainIndex}\n";
                 message += $"            transform\t\t\t: {instance.transform.GetRow(0)}\n";
                 message += $"                     \t\t\t: {instance.transform.GetRow(1)}\n";
@@ -121,7 +121,7 @@ namespace UnityEditor.LightBaking
                 message += $"                     \t\t\t: {instance.transform.GetRow(3)}\n";
                 message += $"            cast shadows\t\t: {instance.castShadows}\n";
                 message += $"            receive shadows\t: {instance.receiveShadows}\n";
-                if (instance.meshType == LightBaker.MeshType.MeshRenderer)
+                if (instance.meshType == MeshType.MeshRenderer)
                 {
                     message += $"            odd neg scale\t\t: {instance.oddNegativeScale}\n";
                     message += $"            lod group\t\t\t: {instance.lodGroup}\n";
@@ -142,7 +142,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogSceneMaterials(LightBaker.BakeInput bakeInput)
+        public static string LogSceneMaterials(BakeInput bakeInput)
         {
             if (bakeInput is null)
                 return string.Empty;
@@ -158,7 +158,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogSceneCookies(LightBaker.BakeInput bakeInput)
+        public static string LogSceneCookies(BakeInput bakeInput)
         {
             if (bakeInput is null)
                 return string.Empty;
@@ -167,7 +167,7 @@ namespace UnityEditor.LightBaking
             message += $"      cookie tex count\t: {bakeInput.GetCookieCount()}\n";
             for (int i = 0; i < bakeInput.GetCookieCount(); ++i)
             {
-                LightBaker.CookieData cookie = bakeInput.GetCookieData((uint)i);
+                CookieData cookie = bakeInput.GetCookieData((uint)i);
                 message += $"         CookieTexture [{i}]:\n";
                 message += $"            resolution\t\t: {cookie.resolution.width} x {cookie.resolution.height}\n";
                 message += $"            pixelStride\t\t: {cookie.pixelStride}\n";
@@ -177,7 +177,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogSceneLights(LightBaker.BakeInput bakeInput)
+        public static string LogSceneLights(BakeInput bakeInput)
         {
             if (bakeInput is null)
                 return string.Empty;
@@ -185,7 +185,7 @@ namespace UnityEditor.LightBaking
             message += $"      light count\t\t: {bakeInput.GetLightCount()}\n";
             for (int i = 0; i < bakeInput.GetLightCount(); ++i)
             {
-                LightBaker.Light light = bakeInput.GetLight((uint)i);
+                Light light = bakeInput.GetLight((uint)i);
                 message += $"         Light [{i}]:\n";
                 message += $"            color\t\t\t\t\t: {light.color}\n";
                 message += $"            indirect color\t\t: {light.indirectColor}\n";
@@ -208,7 +208,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogSampleCounts(LightBaker.SampleCount sampleCount)
+        public static string LogSampleCounts(SampleCount sampleCount)
         {
             string message = string.Empty;
             message += $"            direct\t\t: {sampleCount.directSampleCount}\n";
@@ -217,7 +217,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogSceneSettings(LightBaker.BakeInput bakeInput)
+        public static string LogSceneSettings(BakeInput bakeInput)
         {
             if (bakeInput is null)
                 return string.Empty;
@@ -237,7 +237,7 @@ namespace UnityEditor.LightBaking
             return message;
         }
 
-        public static string LogScene(LightBaker.BakeInput bakeInput, LightBaker.LightmapRequests lightmapRequests, LightBaker.LightProbeRequests lightProbeRequests, SourceMap map)
+        public static string LogScene(BakeInput bakeInput, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, SourceMap map)
         {
             if (bakeInput is null)
                 return string.Empty;

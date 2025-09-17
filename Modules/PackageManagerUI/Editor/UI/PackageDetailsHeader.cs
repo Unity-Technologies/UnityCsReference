@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Package = package;
             m_Version = package.versions.primary;
 
-            detailTitle.SetValueWithoutNotify(m_Version.displayName);
+            detailTitle.text = m_Version.displayName;
             detailsLinks.Refresh(m_Version);
             versionInfoIcon.Refresh(m_Package);
             
@@ -240,9 +240,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var releaseDateString = m_Version.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
-            detailVersion.SetValueWithoutNotify(string.IsNullOrEmpty(releaseDateString)
+            detailVersion.text = string.IsNullOrEmpty(releaseDateString)
                 ? versionString
-                : string.Format(L10n.Tr("{0} · {1}"), versionString, releaseDateString));
+                : string.Format(L10n.Tr("{0} · {1}"), versionString, releaseDateString);
         }
 
         private bool TryShowAuthorLink()

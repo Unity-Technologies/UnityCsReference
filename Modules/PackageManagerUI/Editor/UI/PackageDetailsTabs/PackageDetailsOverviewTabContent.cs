@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var hasSupportedVersions = supportedVersion != null;
             if (hasSupportedVersions)
             {
-                detailUnityVersions.SetValueWithoutNotify(string.Format(L10n.Tr("{0} or higher"), supportedVersion));
+                detailUnityVersions.text = string.Format(L10n.Tr("{0} or higher"), supportedVersion);
 
                 var tooltip = supportedVersion.ToString();
                 if (version.supportedVersions?.Any() == true)
@@ -65,14 +65,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (showSizes)
             {
                 var sizeInfo = version.sizes.FirstOrDefault(info => info.supportedUnityVersion == version.supportedVersion) ?? version.sizes.Last();
-                detailSizes.SetValueWithoutNotify(string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount));
+                detailSizes.text = string.Format(L10n.Tr("Size: {0} (Number of files: {1})"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount);
             }
             UIUtils.SetElementDisplay(detailSizesContainer, showSizes);
         }
 
         private void RefreshPurchasedDate(IPackageVersion version)
         {
-            detailPurchasedDate.SetValueWithoutNotify(version.package.product?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
+            detailPurchasedDate.text = version.package.product?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty;
             UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
         }
 
@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (desc.Length > k_maxDescriptionCharacters)
                 desc = desc.Substring(0, k_maxDescriptionCharacters);
             detailDescription.EnableInClassList(k_EmptyDescriptionClass, !hasProductDescription);
-            detailDescription.SetValueWithoutNotify(desc);
+            detailDescription.text = desc;
         }
 
         private readonly VisualElementCache m_Cache;

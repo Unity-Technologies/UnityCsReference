@@ -59,7 +59,13 @@ namespace UnityEngine.UIElements
             }
 
             if (ShouldDeferScrollToItem(index))
+            {
                 ScheduleDeferredScrollToItem();
+            }
+            else
+            {
+                StopDeferredScrollToItem();
+            }
 
             var pixelAlignedItemHeight = resolvedItemHeight;
             m_ForcedScroll = true;

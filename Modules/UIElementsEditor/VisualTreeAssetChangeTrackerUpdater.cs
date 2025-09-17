@@ -12,7 +12,6 @@ using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using Object = System.Object;
-using TextElement = UnityEngine.UIElements.TextElement;
 
 namespace UnityEditor.UIElements
 {
@@ -47,7 +46,6 @@ namespace UnityEditor.UIElements
             TextEventManager.COLOR_GRADIENT_PROPERTY_EVENT.Add(m_ColorGradientChange);
 
             m_PreviousInMemoryAssetsHierarchyVersion = UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
-            m_PreviousInMemoryAssetsStyleVersion = UIElementsUtility.m_InMemoryAssetsStyleVersion;
         }
 
         protected override void Dispose(bool disposing)
@@ -91,7 +89,6 @@ namespace UnityEditor.UIElements
         }
 
         private int m_PreviousInMemoryAssetsHierarchyVersion = 0;
-        private int m_PreviousInMemoryAssetsStyleVersion = 0;
 
         private const int kMinUpdateDelayMs = 1000; // TODO this should probably be a setting at some point
         private long m_LastUpdateTimeMs = 0;
@@ -105,6 +102,9 @@ namespace UnityEditor.UIElements
         // List to help with the Update() and avoid creating and destroying the list.
         private HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_TrackersToRefresh = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>();
 
+        // Contains style sheets that were changed through code.
+        private readonly HashSet<StyleSheet> m_ChangedStyleSheets = new HashSet<StyleSheet>();
+
         private ILiveReloadAssetTracker<StyleSheet> m_LiveReloadStyleSheetAssetTracker;
 
         // Depending on the panel context type either m_EditorVisualTreeAssetTracker or m_RuntimeVisualTreeAssetTrackers will be set.
@@ -115,7 +115,13 @@ namespace UnityEditor.UIElements
 
         public bool enable { get; set; }
 
-        public LiveReloadTrackers enabledTrackers { get; set; } = (LiveReloadTrackers)(~0);
+        public LiveReloadTrackers enabledTrackers { get; set; } = LiveReloadTrackers.All;
+
+        // For testing purposes.
+        internal bool AnyTrackedStyleSheetsChangedThroughCode()
+        {
+            return m_ChangedStyleSheets.Count > 0;
+        }
 
         public void RegisterVisualTreeAssetTracker(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualElement rootElement)
         {
@@ -164,7 +170,7 @@ namespace UnityEditor.UIElements
                         tracker = FindTracker(ve);
                     }
 
-                    if(tracker != null)
+                    if (tracker != null)
                         StartVisualTreeAssetTracking(tracker, ve.visualTreeAssetSource);
                 }
 
@@ -175,6 +181,9 @@ namespace UnityEditor.UIElements
                         m_LiveReloadStyleSheetAssetTracker.StartTrackingAsset(styleSheet);
                     }
                 }
+
+                if (ve.hasInlineStyle && ve.inlineStyleAccess.inlineRule.rule != null)
+                    m_LiveReloadStyleSheetAssetTracker.StartTrackingAsset(ve.inlineStyleAccess.inlineRule.sheet);
             }
         }
 
@@ -195,6 +204,7 @@ namespace UnityEditor.UIElements
                         currentAsset = ve.visualTreeAssetSource;
                         tracker = FindTracker(ve);
                     }
+
                     StopVisualTreeAssetTracking(tracker, ve.visualTreeAssetSource);
                 }
 
@@ -205,6 +215,9 @@ namespace UnityEditor.UIElements
                         m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(styleSheet);
                     }
                 }
+
+                if (ve.hasInlineStyle && ve.inlineStyleAccess.inlineRule.rule != null)
+                    m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(ve.inlineStyleAccess.inlineRule.sheet);
             }
         }
 
@@ -216,6 +229,20 @@ namespace UnityEditor.UIElements
         public void StopStyleSheetAssetTracking(StyleSheet styleSheet)
         {
             m_LiveReloadStyleSheetAssetTracker.StopTrackingAsset(styleSheet);
+        }
+
+        public void OnStyleSheetChanged(List<StyleSheet> styleSheets)
+        {
+            foreach (var styleSheet in styleSheets)
+                if (m_LiveReloadStyleSheetAssetTracker.IsTrackingAsset(styleSheet))
+                    m_ChangedStyleSheets.Add(styleSheet);
+        }
+
+        public void OnStyleSheetChanged(List<string> styleSheetPaths)
+        {
+            foreach (var styleSheetPath in styleSheetPaths)
+                if (m_LiveReloadStyleSheetAssetTracker.IsTrackingAsset(styleSheetPath))
+                    m_ChangedStyleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>(styleSheetPath));
         }
 
         public void OnStyleSheetAssetsImported(HashSet<StyleSheet> changedAssets, HashSet<string> deletedAssets)
@@ -242,6 +269,7 @@ namespace UnityEditor.UIElements
                 };
                 m_AssetToTrackerMap[asset] = trackers;
             }
+
             trackers.m_Trackers.Add(tracker);
         }
 
@@ -284,7 +312,9 @@ namespace UnityEditor.UIElements
                 return;
 
             UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
-            UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
+            if (changedAssets != null)
+                foreach (var visualTreeAsset in changedAssets)
+                    UIElementsUtility.MarkStyleSheetAsChanged(visualTreeAsset.inlineSheet);
 
             // Player panel require an update here or else it will only update when Unity is focused
             if (panel.contextType == ContextType.Player)
@@ -433,19 +463,25 @@ namespace UnityEditor.UIElements
             {
                 tracker.OnTrackedAssetChanged();
             }
+
             m_TrackersToRefresh.Clear();
         }
 
         private void UpdateStyleSheets()
         {
-            var shouldRefreshStyles = m_PreviousInMemoryAssetsStyleVersion != UIElementsUtility.m_InMemoryAssetsStyleVersion;
-            if (shouldRefreshStyles || m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty())
+            if ((enabledTrackers & LiveReloadTrackers.StyleSheet) == 0)
+                return;
+
+            var shouldRefreshStyles = m_ChangedStyleSheets.Count > 0 ||
+                                      m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty();
+
+            if (shouldRefreshStyles)
             {
                 panel.DirtyStyleSheets();
                 panel.UpdateInlineStylesRecursively();
             }
 
-            m_PreviousInMemoryAssetsStyleVersion = UIElementsUtility.m_InMemoryAssetsStyleVersion;
+            m_ChangedStyleSheets.Clear();
         }
     }
 }

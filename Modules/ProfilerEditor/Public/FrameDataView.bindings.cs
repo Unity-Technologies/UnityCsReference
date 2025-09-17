@@ -354,7 +354,7 @@ namespace UnityEditor.Profiling
             [NativeName("name")]
             readonly string m_Name;
             [NativeName("relatedGameObjectInstanceId")]
-            readonly EntityId m_RelatedGameObjectInstanceId;
+            readonly EntityId m_RelatedGameObjectEntityId;
             [NativeName("nativeTypeIndex")]
             readonly int m_NativeTypeIndex;
             [NativeName("rootId")]
@@ -363,8 +363,8 @@ namespace UnityEditor.Profiling
             public string name => m_Name;
             public int nativeTypeIndex => m_NativeTypeIndex;
             [Obsolete("relatedGameObjectInstanceId is obsolete. Use relatedGameObjectEntityId instead.")]
-            public int relatedGameObjectInstanceId => m_RelatedGameObjectInstanceId;
-            public EntityId relatedGameObjectEntityId => m_RelatedGameObjectInstanceId;
+            public int relatedGameObjectInstanceId => m_RelatedGameObjectEntityId;
+            public EntityId relatedGameObjectEntityId => m_RelatedGameObjectEntityId;
             public ulong allocationRootId => m_RootId;
         }
 

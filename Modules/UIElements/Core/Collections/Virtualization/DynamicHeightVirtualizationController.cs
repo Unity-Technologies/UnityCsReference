@@ -211,7 +211,14 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            ShouldDeferScrollToItem(index);
+            if (ShouldDeferScrollToItem(index))
+            {
+                ScheduleDeferredScrollToItem();
+            }
+            else
+            {
+                StopDeferredScrollToItem();
+            }
 
             var currentContentHeight = m_ScrollView.contentContainer.layout.height;
             var viewportHeight = m_ScrollView.contentViewport.layout.height;

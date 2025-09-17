@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Unity.Properties;
@@ -24,6 +25,7 @@ namespace UnityEngine.UIElements
     [Flags]
     internal enum PseudoStates
     {
+        None = 0,
         Active    = 1 << 0,     // control is currently pressed in the case of a button
         Hover     = 1 << 1,     // mouse is over control, set and removed from dispatcher automatically
         Checked   = 1 << 3,     // usually associated with toggles of some kind to change visible style
@@ -226,12 +228,8 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
-        static VisualElement()
-        {
-            // This is an empty call to prevent the initialization from being stripped out of a build
-            // if VisualElement is included.
-            UIElementsInitialization.SoftPreserve();
-        }
+
+
         internal static class Testing
         {
             public static void SetDefaultMaterial(VisualElement ve, Material material) => ve.defaultMaterial = material;
@@ -1853,6 +1851,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         ///  Initializes and returns an instance of VisualElement.
         /// </summary>
+        [DynamicDependency(nameof(UIElementsInitialization.InitializeUIElementsManaged), typeof(UIElementsInitialization))]
         public VisualElement()
         {
             m_Children = s_EmptyList;

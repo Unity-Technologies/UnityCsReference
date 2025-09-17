@@ -73,7 +73,7 @@ namespace UnityEditor.Profiling
         {
             get
             {
-                string folderPath = ProfilerUserSettings.ProfilerCaptureStoragePath;
+                string folderPath = ProfilerCaptureStoragePath;
                 //split the string
                 var pathTokens = folderPath.Split(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
                 if (pathTokens.Length == 0)
@@ -82,7 +82,7 @@ namespace UnityEditor.Profiling
                 StringBuilder pathSb = new StringBuilder();
                 if (!pathTokens[0].StartsWith(".")) //ensure that we are a relative path
                 {
-                    Debug.LogError(folderPath + " Is not a valid relative path, as it doesn't start with './'. Please change the path for memory snapshots in the Preferences.");
+                    Debug.LogError(folderPath + " Is not a valid relative path, as it doesn't start with './'. Please change the path for profiler captures in the Preferences.");
                     return null;
                 }
 
@@ -105,7 +105,7 @@ namespace UnityEditor.Profiling
                 }
                 catch (Exception)
                 {
-                    Debug.LogError(folderPath + " Is not a valid relative path, it has more instances of '../' than folders above the project folder. Please change the path for memory snapshots in the Preferences.");
+                    Debug.LogError(folderPath + " Is not a valid relative path, it has more instances of '../' than folders above the project folder. Please change the path for profiler captures in the Preferences.");
                     return null;
                 }
 

@@ -110,29 +110,17 @@ namespace UnityEditor
 
                 if (ussImportedAssets.Count > 0 || ussDeletedAssets.Count > 0)
                 {
-                    FlagStyleSheetChange();
+                    foreach(var styleSheetPath in ussImportedAssets)
+                        UIElementsUtility.MarkStyleSheetAsChanged(styleSheetPath);
+
+                    foreach(var styleSheetPath in ussDeletedAssets)
+                        UIElementsUtility.MarkStyleSheetAsChanged(styleSheetPath);
                 }
             }
 
             private static bool MatchesFileExtension(string assetPath, string fileExtension)
             {
                 return assetPath.EndsWithIgnoreCaseFast(fileExtension);
-            }
-        }
-
-        public static void FlagStyleSheetChange()
-        {
-            // for now we don't bother tracking which panel depends on which style sheet
-            var iterator = UIElementsUtility.GetPanelsIterator();
-            while (iterator.MoveNext())
-            {
-                var panel = iterator.Current.Value;
-
-                panel.DirtyStyleSheets();
-
-                var guiView = panel.ownerObject as GUIView;
-                if (guiView != null)
-                    guiView.Repaint();
             }
         }
     }

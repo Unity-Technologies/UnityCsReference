@@ -69,7 +69,7 @@ namespace UnityEditorInternal
             };
         }
 
-        // Called from BuildEditorAssetBundles
+        // Called from BuildEditorResources
         [RequiredByNativeCode]
         public static void GenerateAllIconsWithMipLevels()
         {

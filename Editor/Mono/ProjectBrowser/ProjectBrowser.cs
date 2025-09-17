@@ -26,6 +26,13 @@ namespace UnityEditor
         public const int kPackagesFolderInstanceId = int.MaxValue;
         public const int kAssetCreationInstanceID_ForNonExistingAssets = Int32.MaxValue - 1;
 
+        internal static readonly SavedBool k_ShowFoldersFirst = new SavedBool("ShowFoldersFirst", Application.platform != RuntimePlatform.OSXEditor);
+
+        static void ToggleShowFoldersFirst()
+        {
+            k_ShowFoldersFirst.value = !k_ShowFoldersFirst.value;
+        }
+
         private static readonly Color kFadedOutAssetsColor = new Color(1, 1, 1, 0.5f);
 
         public static Color GetAssetItemColor(int instanceID)
@@ -269,6 +276,8 @@ namespace UnityEditor
 
             SearchService.SearchService.syncSearchChanged += OnSyncSearchChanged;
 
+            k_ShowFoldersFirst.valueChanged += OnShowFoldersFirstChanged;
+
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
         }
@@ -289,6 +298,7 @@ namespace UnityEditor
             EditorApplication.assetLabelsChanged -= OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
+            k_ShowFoldersFirst.valueChanged -= OnShowFoldersFirstChanged;
             s_ProjectBrowsers.Remove(this);
         }
 
@@ -345,6 +355,13 @@ namespace UnityEditor
         {
             if (m_ListArea != null)
                 InitListArea();
+        }
+
+        void OnShowFoldersFirstChanged()
+        {
+            m_ListArea.foldersFirst = k_ShowFoldersFirst.value;
+            InitViewMode(m_ViewMode);
+            ResetViews();
         }
 
         void Awake()
@@ -516,7 +533,7 @@ namespace UnityEditor
             m_ListArea.allowBuiltinResources = false;
             m_ListArea.allowUserRenderingHook = true;
             m_ListArea.allowFindNextShortcut = true;
-            m_ListArea.foldersFirst = GetShouldShowFoldersFirst();
+            m_ListArea.foldersFirst = k_ShowFoldersFirst.value;
             m_ListArea.repaintCallback += Repaint;
             m_ListArea.itemSelectedCallback += ListAreaItemSelectedCallback;
             m_ListArea.keyboardCallback += ListAreaKeyboardCallback;
@@ -769,7 +786,7 @@ namespace UnityEditor
             m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
 
             var data = new AssetsTreeViewDataSource(m_AssetTree, m_SkipHiddenPackages);
-            data.foldersFirst = GetShouldShowFoldersFirst();
+            data.foldersFirst = k_ShowFoldersFirst.value;
 
             m_AssetTree.Init(m_TreeViewRect,
                 data,
@@ -821,11 +838,6 @@ namespace UnityEditor
 
             minSize = new Vector2(minWidth, k_MinHeight);
             maxSize = new Vector2(10000, 10000);
-        }
-
-        private bool GetShouldShowFoldersFirst()
-        {
-            return Application.platform != RuntimePlatform.OSXEditor;
         }
 
         // Called when user changes view mode
@@ -2308,6 +2320,12 @@ namespace UnityEditor
         {
             if (m_EnableOldAssetTree)
             {
+                if (Application.platform == RuntimePlatform.OSXEditor)
+                {
+                    GUIContent showFoldersFirstText = EditorGUIUtility.TrTextContent("Keep folders on top"); // Matches macOS preference name
+                    menu.AddItem(showFoldersFirstText, k_ShowFoldersFirst.value, ToggleShowFoldersFirst);
+                }
+
                 GUIContent assetTreeText = EditorGUIUtility.TrTextContent("One Column Layout");
                 GUIContent assetBrowserText = EditorGUIUtility.TrTextContent("Two Column Layout");
 

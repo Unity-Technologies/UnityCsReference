@@ -82,8 +82,11 @@ namespace UnityEditor.Animations
         [FreeFunction("FindStateMachineBehaviourContext")]
         extern internal static StateMachineBehaviourContext[] Internal_FindStateMachineBehaviourContext(ScriptableObject behaviour);
 
-        [FreeFunction("AnimatorControllerBindings::Internal_CreateStateMachineBehaviour")]
-        extern public static int CreateStateMachineBehaviour(MonoScript script);
+        [FreeFunction("AnimatorControllerBindings::Internal_CreateNewStateMachineBehaviour")]
+        extern public static EntityId CreateNewStateMachineBehaviour(MonoScript script);
+
+        [Obsolete("CreateStateMachineBehaviour is deprecated. Use CreateNewStateMachineBehaviour instead.", false)]
+        public static int CreateStateMachineBehaviour(MonoScript script) => (int)CreateNewStateMachineBehaviour(script);
 
         [FreeFunction("AnimatorControllerBindings::CanAddStateMachineBehaviours")]
         extern internal static  bool CanAddStateMachineBehaviours();
@@ -130,7 +133,7 @@ namespace UnityEditor.Animations
             get;
         }
 
-        extern internal void AddStateEffectiveBehaviour([NotNull] AnimatorState state, int layerIndex, int instanceID);
+        extern internal void AddStateEffectiveBehaviour([NotNull] AnimatorState state, int layerIndex, EntityId entityId);
         extern internal void RemoveStateEffectiveBehaviour([NotNull] AnimatorState state, int layerIndex, int behaviourIndex);
 
         [FreeFunction(Name = "AnimatorControllerBindings::Internal_GetEffectiveBehaviours", HasExplicitThis = true)]

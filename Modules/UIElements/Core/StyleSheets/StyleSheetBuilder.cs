@@ -224,6 +224,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 writeTo.FlattenImportedStyleSheetsRecursive();
 
             writeTo.SetRules(m_Rules.ToArray());
+            UIElementsUtility.MarkStyleSheetAsChanged(writeTo);
         }
 
         void RegisterVariable(string value)

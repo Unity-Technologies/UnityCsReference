@@ -194,7 +194,7 @@ namespace UnityEditor.Search.Providers
             var info = GetInfo(item);
             if (info.gid.targetObjectId == 0)
                 return AssetDatabase.GetMainAssetEntityId(GetInfo(item).source);
-            return GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(info.gid);
+            return GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(info.gid);
         }
 
         private static ulong GetDocumentKey(SearchItem item)
@@ -339,7 +339,7 @@ namespace UnityEditor.Search.Providers
         private static int GetInstanceId(SearchItem item)
         {
             var gid = GetGID(item);
-            return GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid);
+            return GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid);
         }
 
         private static Type GetItemAssetType(in SearchItem item, in Type constrainedType)

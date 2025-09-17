@@ -13,6 +13,14 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
 {
+    [Icon(k_IconPath)]
+    public sealed class CreationToolsGroup
+    {
+        const string k_IconPath = "Icons/Toolbars/CreationToolsGroup.png";
+        internal static readonly string k_Tooltip = L10n.Tr("Creation Tools");
+        CreationToolsGroup() {}
+    }
+    
     sealed class EditorToolManager : ScriptableSingleton<EditorToolManager>
     {
         [SerializeField]
@@ -841,24 +849,55 @@ namespace UnityEditor.EditorTools
             foreach(var global in EditorToolUtility.GetCustomEditorToolsForType(null))
                 if (global.targetContext == null || global.targetContext == ToolManager.activeContextType)
                     AddToolEntry(global.editor, global.group == null ? ToolEntry.Scope.CustomGlobal : ToolEntry.Scope.Grouped);
-            
+
             // 4. component tools
             foreach (var tool in instance.componentTools)
                 if ((tool.typeAssociation.targetContext == null ||
                      tool.typeAssociation.targetContext == context.GetType())
+                    && tool.editorType != null // The editor type can be null on domain reload after renaming an EditorTool (UUM-113403)
                     && !tool.lockedInspector
                     && !tools.Any(entry => entry.tools.Any(x => x == tool.editor)))
                     AddToolEntry(tool.editorType, tool.typeAssociation.group == null ? ToolEntry.Scope.Component : ToolEntry.Scope.Grouped);
         }
 
-        internal static List<ToolEntry> OrderAvailableTools(List<ToolEntry> tools)
+        internal static void OrderAvailableTools(List<ToolEntry> tools)
         {
-            return tools.OrderBy(x => x.scope) // Group by scope (Built-in, additional, global, grouped, component)
-                .ThenBy(x => (x.group == null ? string.Empty : x.group.Name)) // Ensure tools of same group stay adjacent
-                .ThenBy(x => (x.targetBehaviour == null ? string.Empty : x.targetBehaviour.Name)) // Ensure tools targeting same components stay adjacent
-                .ThenBy(x => x.priority)
-                .ThenBy(x => x.GetHashCode())
-                .ToList();
+            tools.Sort((a, b) =>
+            {
+                // Sort by scope first
+                var result = a.scope.CompareTo(b.scope);
+                if (result != 0)
+                    return result;
+                
+                // For tool groups, ensure CreationToolGroups appears first
+                if (a.scope == ToolEntry.Scope.Grouped && b.scope == ToolEntry.Scope.Grouped)
+                {
+                    if (a.group == typeof(CreationToolsGroup) && b.group != typeof(CreationToolsGroup))
+                        return -1;
+                    if (a.group != typeof(CreationToolsGroup) && b.group == typeof(CreationToolsGroup))
+                        return 1;
+                }
+                
+                // Ensure tools of same group stay adjacent
+                result = String.Compare(a.group == null ? string.Empty : a.group.Name, 
+                                        b.group == null ? string.Empty : b.group.Name, StringComparison.Ordinal);
+                if (result != 0)
+                    return result;
+                
+                // Ensure tools targeting same components stay adjacent
+                result = String.Compare(a.targetBehaviour == null ? string.Empty : a.targetBehaviour.Name, 
+                                        b.targetBehaviour == null ? string.Empty : b.targetBehaviour.Name, StringComparison.Ordinal);
+                if (result != 0)
+                    return result;
+                
+                // Sort by priority next
+                result = a.priority.CompareTo(b.priority);
+                if (result != 0)
+                    return result;
+                
+                // Finally by hash code
+                return a.GetHashCode().CompareTo(b.GetHashCode());
+            });
         }
     }
 }

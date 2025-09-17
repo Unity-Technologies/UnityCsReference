@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static SelectableLabel BuildSelectableLabel(string text, string clazz)
         {
             var label = new SelectableLabel();
-            label.SetValueWithoutNotify(text);
+            label.text = text;
             label.AddToClassList(clazz);
             label.tooltip = text;
             return label;

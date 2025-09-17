@@ -31,8 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             nameLabel.text = sample.displayName;
             nameLabel.tooltip = sample.displayName; // add tooltip for when the label text is cut off
             sizeLabel.text = sample.size;
-            descriptionLabel.SetValueWithoutNotify(sample.description);
-            descriptionLabel.multiline = true;
+            descriptionLabel.text = sample.description;
             RefreshImportStatus();
             importButton.clickable.clicked += OnImportButtonClicked;
         }

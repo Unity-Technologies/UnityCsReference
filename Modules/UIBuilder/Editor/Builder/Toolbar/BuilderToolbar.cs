@@ -359,9 +359,6 @@ namespace Unity.UI.Builder
             if (!userConfirmed)
                 return;
 
-            // Update any uses out there of the currently edited and saved USS.
-            RetainedMode.FlagStyleSheetChange();
-
             // Save last save path.
             m_LastSavePath = Path.GetDirectoryName(document.uxmlPath);
 

@@ -172,14 +172,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
                 item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageName);
 
-            dependencyTitle.value = version?.displayName ?? selectedDependencyPackageName;
-            dependencyDesc.value =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
+            dependencyTitle.text = version?.displayName ?? selectedDependencyPackageName;
+            dependencyDesc.text =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
 
             if (!showElementsInDetailsView)
                 return;
 
             var installedPackageVersion = version.package?.versions.installed;
-            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
+            dependencyVersion.text = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
             var featureDependencyState = GetFeatureDependencyState(version);
             versionState.ClearClassList();

@@ -19,6 +19,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         [SerializeField] internal ServerDeployMode DeployMode;
         [SerializeField] internal SimulatorSettings SimulatorSettings;
+        [SerializeField] internal ServerCliSettings CliSettings;
 
         /// <summary>
         /// Returns a string representation of the given <see cref="ServerSettings.ServerDeployMode"/>

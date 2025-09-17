@@ -54,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (desc.Length > k_maxDescriptionCharacters)
                 desc = desc.Substring(0, k_maxDescriptionCharacters);
             detailDescription.EnableInClassList(k_EmptyDescriptionClass, !hasVersionDescription);
-            detailDescription.SetValueWithoutNotify(desc);
+            detailDescription.text = desc;
         }
 
         private void RefreshSourcePath(IPackageVersion version)
@@ -63,14 +63,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(detailSourcePathContainer, !string.IsNullOrEmpty(sourcePath));
 
             if (!string.IsNullOrEmpty(sourcePath))
-                detailSourcePath.SetValueWithoutNotify(sourcePath.EscapeBackslashes());
+                detailSourcePath.text = sourcePath.EscapeBackslashes();
         }
 
         void RefreshTechnicalName(IPackageVersion version)
         {
             // We use package.name instead of version.name because `version.name` would be empty for a PlaceholderPackageVersion
             var technicalName = version?.package?.name ?? string.Empty;
-            detailTechnicalName.SetValueWithoutNotify(technicalName);
+            detailTechnicalName.text = technicalName;
             copyIcon.SetTextToCopy(technicalName);
         }
 
@@ -84,7 +84,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var minimumUnityVersion = !string.IsNullOrEmpty(version.minimumUnityVersion) ? version.minimumUnityVersion : L10n.Tr("Not set");
-            detailMinimumUnityVersion.SetValueWithoutNotify(minimumUnityVersion);
+            detailMinimumUnityVersion.text = minimumUnityVersion;
         }
 
         private void RefreshOverviewFoldout(IPackageVersion version)

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.PlayMode.Editor;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -29,7 +30,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private bool m_HasCompleted;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] public string m_BuildTarget;
+        [SerializeField] private RunModeState m_RunModeState;
         [SerializeField] public string m_MultiplayerRole;
+        [SerializeReference] private PlayModeController m_PlayModeController;
 
         // TODO: MTT-10016 Migrate towards a single Monitoring Task per instance.
         private List<Task> m_CurrentMonitoringTasks = new List<Task>();
@@ -41,6 +44,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal List<NodeStatus> GetCurrentNodeStatus() => m_CurrentStatus;
         internal ExecutionStage GetCurrentStage() => m_CurrentStage;
         internal bool HasDeployedAndRun() => m_HasDeployedAndRun;
+
+        internal RunModeState RunModeState
+        {
+            set
+            {
+                if (IsActive())
+                {
+                    Debug.LogWarning("Cannot set RunModeState while the instance is active.");
+                    return;
+                }
+
+                m_RunModeState = value;
+            }
+        }
 
         // Listeners for the notification of Execution updates.
         private event Action<Instance, Node> m_InstanceExecutionEventListener;
@@ -64,21 +81,31 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_InstanceExecutionEventListener?.Invoke(this, node);
         }
 
-        internal static Instance Create(InstanceDescription description = null)
+        internal Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
         {
-            // Instance are configured as MainEditorInstanceDescription by default
-            if (description == null)
-            {
-                description = new MainEditorInstanceDescription();
-                description.Name = "Main Editor";
-            }
+            return m_PlayModeController.ValidateForRunningAsync(cancellationToken);
+        }
+
+        internal static Instance Create()
+        {
+            var description = new MainEditorInstanceDescription();
+            var controller = new EditorInstanceController(description);
+            return Create(description, controller);
+        }
+
+        internal static Instance Create(InstanceDescription description, PlayModeController playModeController)
+        {
+            Assert.IsNotNull(description);
+            Assert.IsNotNull(playModeController);
 
             // For each instance, wire up an Execution Graph
             var instance = new Instance();
             var executionGraph = new ExecutionGraph();
             executionGraph.SetNodeExecutionEventListener(instance.OnNodeExecutionEventUpdate);
+            instance.m_PlayModeController = playModeController;
             instance.m_ExecutionGraph = executionGraph;
             instance.m_InstanceDescriptionType = description.InstanceTypeName;
+            instance.m_RunModeState = description.RunModeState;
             instance.m_BuildTarget = description.BuildTargetType;
             instance.m_MultiplayerRole = description.MultiplayerRole;
             instance.m_Name = description.Name;
@@ -133,8 +160,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsFreeRunMode()
         {
-            var config = GetInstanceDescription();
-            return config != null && config.RunModeState == RunModeState.ManualControl;
+            return m_RunModeState == RunModeState.ManualControl;
         }
 
         // This is used for the Analytics OnPlayFromScenario event's UseMultiplay data
@@ -149,6 +175,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 RemoteInstanceDescription remoteInstanceDescription => "Multiplay",
                 _ => string.Empty
             };
+        }
+
+        // Returns the array of analytics InstanceData from Instances
+        internal static InstanceData[] GetAnalyticsDataArray(List<Instance> instances)
+        {
+            var result = new List<InstanceData>();
+            foreach (var instance in instances)
+            {
+                var data = instance.GetAnalyticsData();
+                result.Add(data);
+            }
+            return result.ToArray();
         }
 
         // Returns the analytics InstanceData from Instance
@@ -215,14 +253,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal async Task StartOrResumeAsFreeRunning(bool shouldResume)
         {
+            // Create a cancellation source by which to stop the Free run instance
+            m_FreeRunCancelTokenSource = new CancellationTokenSource();
+
+            // Check instance setup before it starts running
+            var preStartCheck = await TryRunPreStartChecksAsync(m_FreeRunCancelTokenSource.Token);
+            if (!preStartCheck)
+            {
+                StopAsFreeRunning();
+                return;
+            }
+
             // Refresh this instance if starting for the first time.
             if (!shouldResume)
                 Reset();
 
             RefreshInstanceStatus();
-
-            // Create a cancellation source by which to stop the Free run instance
-            m_FreeRunCancelTokenSource = new CancellationTokenSource();
 
             // Prepare the stages that this Instance, once started, will execute on.
             var executionStages = new Queue<ExecutionStage>(new ExecutionStage[]
@@ -251,6 +297,48 @@ namespace Unity.Multiplayer.PlayMode.Editor
                                $"please refer to the Editor logs for more information.");
                 break;
             }
+        }
+
+        private async Task<bool> TryRunPreStartChecksAsync(CancellationToken cancellationToken)
+        {
+            Scenario.ValidationResult validationResult;
+            try
+            {
+                validationResult = await ValidateForRunningAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+
+            if (!validationResult.IsValid)
+            {
+                var instanceData = new[] { GetAnalyticsData() };
+                var errorData = GetValidationErrorData(validationResult);
+
+                AnalyticsOnPlayFromScenarioEvent.SendValidationErrorData(
+                    instanceData,
+                    new[] { errorData }
+                );
+
+                EditorUtility.DisplayDialog(
+                    "Play Mode Scenario - Manual Control Instance Setup Error",
+                    $"{validationResult.Message}. Please check the console for more details.",
+                    "OK"
+                );
+                return false;
+            }
+            return true;
+        }
+
+        internal static ErrorData GetValidationErrorData(Scenario.ValidationResult result)
+        {
+            // Create an ErrorData object from the validation result
+            return new ErrorData
+            {
+                ExceptionType = typeof(InvalidOperationException).ToString(),
+                Message = result.Message,
+            };
         }
 
         internal void StopAsFreeRunning()
@@ -409,6 +497,74 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 state = ExecutionState.Idle;
             else if (completedNodes == nodes.Count)
                 state = ExecutionState.Completed;
+        }
+
+        internal ExecutionState GetInstanceExecutionState()
+        {
+            var nodes = m_ExecutionGraph.GetAllNodes();
+            var executionStates = new List<ExecutionState>();
+
+            foreach (var node in nodes)
+            {
+                executionStates.Add(node.State);
+            }
+            return ComputeInstanceState(executionStates);
+        }
+
+        internal static ExecutionState ComputeInstanceState(List<ExecutionState> nodeStates)
+        {
+            var totalNodes = nodeStates.Count;
+            var errorNodes = 0;
+            var idleNodes = 0;
+            var runningNodes = 0;
+            var activeNodes = 0;
+            var completeNodes = 0;
+            var abortedNodes = 0;
+
+            foreach (var nodeState in nodeStates)
+            {
+                switch (nodeState)
+                {
+                    case ExecutionState.Failed:
+                        errorNodes++;
+                        break;
+                    case ExecutionState.Idle:
+                        idleNodes++;
+                        break;
+                    case ExecutionState.Running:
+                        runningNodes++;
+                        break;
+                    case ExecutionState.Active:
+                        activeNodes++;
+                        break;
+                    case ExecutionState.Completed:
+                        completeNodes++;
+                        break;
+                    case ExecutionState.Aborted:
+                        abortedNodes++;
+                        break;
+                    default:
+                        UnityEngine.Debug.LogError($"Invalid node state {nodeState}");
+                        return ExecutionState.Invalid;
+                }
+            }
+
+            if (errorNodes > 0)
+                return ExecutionState.Failed;
+
+            if (idleNodes == totalNodes)
+                return ExecutionState.Idle;
+
+            if (abortedNodes > 0)
+                return ExecutionState.Aborted;
+
+            if (completeNodes == totalNodes)
+                return ExecutionState.Completed;
+
+            if (activeNodes > 0 && activeNodes + completeNodes == totalNodes)
+                return ExecutionState.Active;
+
+            return ExecutionState.Running;
         }
     }
 }

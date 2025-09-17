@@ -1068,6 +1068,9 @@ namespace UnityEngine
         }
 
         [StaticAccessor("GetPhysicsManager()")]
+        public static extern void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions);
+
+        [StaticAccessor("GetPhysicsManager()")]
         [ThreadSafe]
         public static extern void BakeMesh(EntityId meshEntityId, bool convex, MeshColliderCookingOptions cookingOptions);
 

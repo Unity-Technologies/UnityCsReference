@@ -11,12 +11,6 @@ namespace UnityEngine.UIElements
 {
     static class UIElementsInitialization
     {
-        public static void SoftPreserve()
-        {
-            // Intentionally left empty.
-            // This will prevent this class from being stripped if VisualElement is also not stripped.
-        }
-
         [RequiredByNativeCode(optional:true)]
         [RequiredMember]
         public static void InitializeUIElementsManaged()

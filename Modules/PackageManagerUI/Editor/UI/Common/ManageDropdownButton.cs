@@ -20,8 +20,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IPageManager m_PageManager;
         private readonly IIOProxy m_IOProxy;
-        private readonly ISelectionProxy m_SelectionProxy;
-        private readonly IAssetDatabaseProxy m_AssetDatabaseProxy;
 
         public ManageDropdownButton(IApplicationProxy applicationProxy,
                                     IUpmCache upmCache,
@@ -29,9 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                     IPackageDatabase packageDatabase,
                                     IPackageOperationDispatcher operationDispatcher,
                                     IPageManager pageManager,
-                                    IIOProxy ioProxy,
-                                    ISelectionProxy selectionProxy,
-                                    IAssetDatabaseProxy assetDatabaseProxy)
+                                    IIOProxy ioProxy)
         {
             m_Application = applicationProxy;
             m_UpmCache = upmCache;
@@ -40,13 +36,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
             m_IOProxy = ioProxy;
-            m_SelectionProxy = selectionProxy;
-            m_AssetDatabaseProxy = assetDatabaseProxy;
 
             m_Actions = new List<PackageAction>
             {
 				new CustomizeAction(m_OperationDispatcher, m_Application),
-                new OpenManifestAction(m_IOProxy, m_SelectionProxy, m_AssetDatabaseProxy),
+                new OpenManifestAction(m_OperationDispatcher),
                 new OpenManifestExternallyAction(m_IOProxy),
                 new RemoveAction(m_OperationDispatcher, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager),
                 new RemoveCustomAction(m_OperationDispatcher, m_Application),

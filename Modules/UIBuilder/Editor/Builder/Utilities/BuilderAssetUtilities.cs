@@ -666,8 +666,6 @@ namespace Unity.UI.Builder
         {
             if ((changes & LiveReloadChanges.Hierarchy) != 0)
                 UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
-            if ((changes & LiveReloadChanges.Styles) != 0)
-                UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
         }
 
         // Check if VisualElement will support type as a child. Assume true by default, unless explicitly false.

@@ -464,8 +464,8 @@ namespace UnityEditor
         // used by tests
         internal bool m_WasFocused = false;
 
-        static int[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
-        static HashSet<int> s_CachedChildRenderersForOutliningHashSet;
+        static EntityId[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
+        static HashSet<EntityId> s_CachedChildRenderersForOutliningHashSet;
 
         [Serializable]
         public class SceneViewState
@@ -2335,7 +2335,7 @@ namespace UnityEditor
                 {
                     if (s_SelectionCacheDirty)
                     {
-                        HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
+                        HandleUtility.FilterEntityIds(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
                         s_SelectionCacheDirty = false;
                     }
 
@@ -2454,7 +2454,7 @@ namespace UnityEditor
             {
                 if (s_SelectionCacheDirty)
                 {
-                    HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
+                    HandleUtility.FilterEntityIds(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
                     s_SelectionCacheDirty = false;
                 }
 

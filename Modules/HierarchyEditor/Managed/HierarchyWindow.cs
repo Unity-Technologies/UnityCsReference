@@ -14,6 +14,7 @@ using UnityEditor.SearchService;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using static UnityEditor.SearchableEditorWindow;
@@ -178,7 +179,7 @@ namespace Unity.Hierarchy.Editor
             query = query ?? string.Empty;
             var clearSearchText = !string.IsNullOrEmpty(m_HierarchyView.Filter) && string.IsNullOrEmpty(query);
             ((ISearchView)m_SearchView).SetSearchText(query, TextCursorPlacement.Default);
-            m_SearchField.searchTextInput.SetValueWithoutNotify(query);
+            m_SearchField.SetValueWithoutNotify(query);
             m_HierarchyView.Filter = query;
 
             SynchronizeSearchWithSearchableWindows(query);
@@ -1159,7 +1160,7 @@ namespace Unity.Hierarchy.Editor
             menu.AddSeparator("");
 
             menu.AddItem(new GUIContent("Reset Columns"), false, () => ResetColumns());
-            menu.AddItem(new GUIContent("Copy to Clipboard"), false, () => CopyQueryToClipboard());
+            menu.AddItem(new GUIContent("Copy Search Text"), false, () => CopyQueryToClipboard());
         }
 
         internal void OnToggleQueryBuilder()
@@ -1173,7 +1174,6 @@ namespace Unity.Hierarchy.Editor
         void CopyQueryToClipboard()
         {
             var trimmedQuery = Utils.TrimText(m_HierarchyView.Filter);
-            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, trimmedQuery);
             EditorGUIUtility.systemCopyBuffer = Utils.TrimText(trimmedQuery);
         }
 

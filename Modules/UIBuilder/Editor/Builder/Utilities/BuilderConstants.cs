@@ -349,7 +349,7 @@ namespace Unity.UI.Builder
             {"-unity-slice-type", "Determines how the center and sides of a sprite are filled when slices are applied."},
             {"-unity-slice-top", "Size of the 9-slice's top edge when painting an element's background image."},
             {"-unity-text-align", "Horizontal and vertical text alignment in the element's box."},
-            {"-unity-text-auto-size", "Enable to override the set font size and dynamically scale text with Best Fit, using Min and Max font sizes to fit the container." },
+            { "-unity-text-auto-size", "Enable to override the set font size and dynamically scale text with Best Fit, using Min and Max font sizes to fit the container. This impacts performance; use sparingly." },
             {"-unity-text-generator", "The Advanced Text Generator supports comprehensive Unicode and text shaping for various languages and scripts, including RTL languages, but some features are still under development."},
             {"-unity-text-outline", "Outline width and color of the text."},
             {"-unity-text-outline-color", "Outline color of the text."},

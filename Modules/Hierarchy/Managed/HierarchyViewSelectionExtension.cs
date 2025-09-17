@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System;
+using UnityEngine.Pool;
 
 namespace Unity.Hierarchy
 {

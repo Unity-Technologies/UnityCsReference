@@ -109,23 +109,27 @@ namespace UnityEditor.Build.Profile.Handlers
             if (string.IsNullOrEmpty(path))
                 return null;
 
-            BuildProfile duplicatedProfile = buildProfile.Duplicate();
-
-            // If it's a classic profile we need to copy the scenes from the editor build settings
-            // since classic profiles share scenes
-            if (isClassic)
-                duplicatedProfile.scenes = EditorBuildSettings.GetEditorBuildSettingsSceneIgnoreProfile();
-
             EnsureCustomBuildProfileFolderExists();
-
             string uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(path);
-            AssetDatabase.CreateAsset(duplicatedProfile, uniqueFilePath);
 
-            if (duplicatedProfile.graphicsSettings != null)
-                AssetDatabase.AddObjectToAsset(duplicatedProfile.graphicsSettings, duplicatedProfile);
+            BuildProfile duplicatedProfile;
+            if (isClassic)
+            {
+                // If it's a classic profile we need to copy the scenes from the
+                // editor build settings since classic profiles share scenes
+                duplicatedProfile = ScriptableObject.Instantiate(buildProfile);
+                duplicatedProfile.scenes = EditorBuildSettings.GetEditorBuildSettingsSceneIgnoreProfile();
+                AssetDatabase.CreateAsset(duplicatedProfile, uniqueFilePath);
+            }
+            else
+            {
+                if (!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(buildProfile), uniqueFilePath))
+                {
+                    return null;
+                }
 
-            if (buildProfile.qualitySettings != null)
-                AssetDatabase.AddObjectToAsset(duplicatedProfile.qualitySettings, duplicatedProfile);
+                duplicatedProfile = AssetDatabase.LoadAssetAtPath<BuildProfile>(uniqueFilePath);
+            }
 
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {

@@ -8,34 +8,19 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class OpenManifestAction : PackageAction
 {
-    private readonly IIOProxy m_IOProxy;
-    private readonly ISelectionProxy m_SelectionProxy;
-    private readonly IAssetDatabaseProxy m_AssetDatabaseProxy;
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
 
-    public OpenManifestAction(IIOProxy ioProxy, ISelectionProxy selectionProxy, IAssetDatabaseProxy AssetDatabaseProxy)
+    public OpenManifestAction(IPackageOperationDispatcher operationDispatcher)
     {
-        m_IOProxy = ioProxy;
-        m_SelectionProxy = selectionProxy;
-        m_AssetDatabaseProxy = AssetDatabaseProxy;
+        m_OperationDispatcher = operationDispatcher;
     }
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        var path = m_IOProxy.PathsCombine("Packages", version.name, "package.json");
-        var folderObject = m_AssetDatabaseProxy.LoadAssetAtPath<Object>(path);
-        if (folderObject == null)
-            return false;
-        m_SelectionProxy.activeObject = folderObject;
-        var inspectorWindow = EditorWindow.GetWindow<InspectorWindow>();
-        if (inspectorWindow.isLocked)
-        {
-            var newInspectorWindow = EditorWindow.CreateWindow<InspectorWindow>();
-            newInspectorWindow.Show(true);
-        }
-        else
-            inspectorWindow.Show(true);
-        PackageManagerWindowAnalytics.SendEvent("openManifest", version);
-        return true;
+        var result = m_OperationDispatcher.OpenManifest(version);
+        if (result)
+            PackageManagerWindowAnalytics.SendEvent("openManifest", version);
+        return result;
     }
 
     public override bool IsInProgress(IPackageVersion version) => false;

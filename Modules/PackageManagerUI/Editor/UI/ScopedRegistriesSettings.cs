@@ -143,9 +143,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (string.IsNullOrEmpty(registryName))
                 return false;
-            if (!m_UpmCache.installedPackageInfos.Any())
-                m_UpmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
-            return m_UpmCache.installedPackageInfos.Any(p => p.registry?.name == registryName);
+            var installedPackageInfos = m_UpmCache.installedPackageInfosReady ? m_UpmCache.installedPackageInfos : PackageInfo.GetAllRegisteredPackages();
+            return installedPackageInfos.AnyMatches(p => p.registry?.name == registryName);
         }
 
         private void RemoveRegistryClicked()
@@ -207,6 +206,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ApplyChanges()
         {
+            if (!draft.Validate())
+            {
+                RefreshErrorBox();
+                return;
+            }
+
             CheckRegistryDraftCompliance(
                successCallback: registryInfo =>
                {
@@ -220,7 +225,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                            headerInfoBoxText = k_RestrictedRegistry,
                            bodyText = registryInfo.compliance.violations[0]?.message,
                            readMoreUrl = registryInfo.compliance.violations[0]?.readMoreLink,
-                           readMoreClickedAnalyticsId = "restricted-registry-read-more-clicked"
+                           readMoreClickedAnalyticsId = "restricted-registry-read-more-clicked",
+                           headerColor = HeaderColor.Red
                        };
                        m_CustomDisplayDialog.Show(displayDialogArgs);
                        return;
@@ -233,17 +239,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                            L10n.Tr("OK"), L10n.Tr("Cancel")))
                        return;
 
-                   if (draft.Validate())
-                   {
-                       if (draft.original is not null)
-                           m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray());
-                       else
-                           m_UpmRegistryClient.AddRegistry(draft.name, draft.url, draft.sanitizedScopes.ToArray());
-                   }
+                   if (draft.original is not null)
+                       m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray());
                    else
-                   {
-                       RefreshErrorBox();
-                   }
+                       m_UpmRegistryClient.AddRegistry(draft.name, draft.url, draft.sanitizedScopes.ToArray());
                },
                errorCallback: error =>
                {

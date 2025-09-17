@@ -12,8 +12,27 @@ using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 
 namespace UnityEngine.Audio
 {
+    /// <summary>
+    /// An audio <see cref="Processor"/> with extra callbacks intended to allow scheduling different management and compute work
+    /// over the course of a mixframe. Finally, additional audio can be appended to the final audio output.
+    /// </summary>
+    /// <remarks>
+    /// Usage of this is generally very low level, and intended to provide integration points for internal or external audio middleware,
+    /// that share the same input/output resources as the host audio system.
+    /// Create instances of these using <see cref="ControlContext.AllocateRootOutput"/>.
+    /// </remarks>
     public unsafe struct RootOutput
     {
+        /// <summary>
+        /// The control interface an implementation of a <see cref="RootOutput"/> must implement on a struct to be fully formed.
+        /// </summary>
+        /// <remarks>
+        /// The control side of a <see cref="Audio.Processor"/> receives various callbacks from a <see cref="ControlContext"/>
+        /// from the logical control thread.
+        /// You can annotate this with <see cref="Unity.Burst.BurstCompileAttribute"/> to have it compiled with Burst.
+        /// </remarks>
+        /// <typeparam name="TProcessor">The tandem processing counterpart.</typeparam>
+        /// <seealso cref="Audio.Processor.IControl{TProcessor}"/>
         [JobProducerType(typeof(IRootOutputControlExtensions.JobStruct<,>))]
         public interface IControl<TProcessor> : Processor.IControl<TProcessor>
             where TProcessor : unmanaged, Processor.IProcessor
@@ -21,67 +40,82 @@ namespace UnityEngine.Audio
             /// <summary>
             /// Called to configure the <see cref="RootOutput"/> before it is used, and when the audio system reconfigures.
             /// </summary>
-            /// <remarks>
-            /// In case of reconfiguration, the <typeparamref name="TProcessor"/> is temporarily suspended from processing,
+            /// <returns>
+            /// Optionally you can return a non-default <see cref="JobHandle"/> allowing you to do heavier configuration/setup on a worker thread.
+            /// </returns>
+            /// <param name="processor">
+            /// The processor instance that will be used in the processing thread.
+            /// In case of reconfiguration, the <paramref name="processor"/> is temporarily suspended from processing,
             /// and you can safely modify its properties.
-            /// </remarks>
+            /// </param>
+            /// <param name="configuration">
+            /// The updated system configuration. This is the same as <see cref="ControlContext"/> runs with.
+            /// </param>
+            /// <seealso cref="AudioSettings.Reset"/>
+            /// <param name="context">The context this <see cref="RootOutput"/> is being configured from.</param>
             public JobHandle Configure(ControlContext context, ref TProcessor processor, in DSPConfiguration configuration);
         }
 
         /// <summary>
-        /// An audio processor with extra callbacks intended to allow scheduling different management work over the course of a mixframe.
-        ///
-        /// Finally, additional audio can be appended to the final audio output.
+        /// The processing interface an implementation of a <see cref="RootOutput"/> must implement on a struct to be fully formed.
         /// </summary>
         /// <remarks>
-        /// Usage of this is generally very low level, and intended to provide integration points for internal audio middleware,
-        /// that share the same input/output resources as the host audio system.
-        /// Create instances of these using <see cref="ControlContext.AllocateRootOutput{T}(in T)"/>.
+        /// The processing side of a <see cref="Audio.Processor"/> receives various callbacks from a <see cref="ProcessingContext"/>
+        /// from the logical processing thread.
+        /// You can annotate this with <see cref="Unity.Burst.BurstCompileAttribute"/> to have it compiled with Burst.
         /// </remarks>
+        /// <seealso cref="Processor.IProcessor"/>
         [JobProducerType(typeof(IRootOutputProcessorExtensions.JobStruct<>))]
         public interface IProcessor : Audio.Processor.IProcessor
         {
             /// <summary>
-            /// Perform any tasks necessary before any other resource managed by this <see cref="IProcessor"/> is being used
-            /// by anything else.
+            /// Perform any tasks necessary before any other resource managed by this <see cref="RootOutput"/> is being used by anything else.
             /// </summary>
             /// <remarks>
-            /// For instance, a generator hardware input may sample its data here once, and that would then be available afterwards
+            /// For instance, a <see cref="Generator"/> hardware input may sample its data here once, and that would then be available afterwards
             /// without changing for this mixing update.
             /// </remarks>
             /// <returns>
-            /// Optionally an async dependency that will be fed into every other <see cref="Process"/>
+            /// Optionally an async dependency that will be fed into every other <see cref="RootOutput.IProcessor.Process"/>
             /// </returns>
             public JobHandle EarlyProcessing(in ProcessingContext context, Processor.Pipe pipe);
+
             /// <summary>
             /// Schedule your main body of work in parallel to everything else.
-            /// If you are using jobs, you are required to manually keep track of dependencies.
+            /// If you are using jobs, you are required to manually keep track of dependencies and finish them later.
             /// </summary>
-            /// <param name="context"></param>
             /// <param name="input">
-            /// The complete dependency of all other <see cref="EarlyProcessing(in ProcessingContext)"/> for all other <see cref="IProcessor"/>s.
-            /// If you are using referencing other/foreign scriptable processors, your work must depend on or complete this parameter.
+            /// The complete dependency of all other <see cref="EarlyProcessing"/> for all other <see cref="Audio.Processor"/>s.
+            /// If you are using other/foreign scriptable <see cref="Audio.Processor"/>s, your work must depend on or complete this parameter.
             /// </param>
             public void Process(in ProcessingContext context, Processor.Pipe pipe, JobHandle input);
+
             /// <summary>
             /// Return the main result of your computation to the system in <paramref name="output"/>.
             /// </summary>
+            /// <param name="output">
+            /// A buffer with the same size as the <see cref="DSPConfiguration"/> passed into <see cref="RootOutput.IControl{TProcessor}.Configure"/>.
+            /// </param>
             /// <remarks>
             /// The contents written to <paramref name="output"/> will be additively added to the main audio output.
             /// </remarks>
             public void EndProcessing(in ProcessingContext context, Processor.Pipe pipe, ChannelBuffer output);
 
             /// <summary>
-            /// Called potentially after a sequence of <see cref="Audio.IProcessor.DataAvailable"/>,
-            /// when a <see cref="Audio.Processor.IProcessor"/> has been disposed from eg. <see cref="RootOutput.Dispose"/>.
+            /// Called potentially after a sequence of <see cref="Processor.IProcessor.Update"/>,
+            /// when a <see cref="Audio.Processor"/> has been disposed from eg. <see cref="ControlContext.Destroy(RootOutput)"/>.
             /// </summary>
             /// <remarks>
             /// This is a chance to sync any work done or ongoing before leaving the processing thread.
-            /// This will always be called after <see cref="EndProcessing(in ProcessingContext, ChannelBuffer)/>.
+            /// This will always be called after <see cref="EndProcessing"/>.
             /// </remarks>
             public void RemovedFromProcessing();
         }
 
+        /// <summary>
+        /// Convert this <see cref="RootOutput"/> to its more general <see cref="Audio.Processor"/> representation.
+        /// </summary>
+        /// <see cref="Audio.Processor"/>s are unowned and can safely handed out to other users.
         public static implicit operator Processor(in RootOutput root) => root.Processor;
 
         internal RootOutput(ProcessorHeader* header)

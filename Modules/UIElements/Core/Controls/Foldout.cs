@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        readonly Toggle m_Toggle = new Toggle();
+        readonly Toggle m_Toggle = new() { acceptClicksIfDisabled = true };
 
         internal Toggle toggle
         {

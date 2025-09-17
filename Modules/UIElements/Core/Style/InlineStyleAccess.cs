@@ -240,8 +240,13 @@ namespace UnityEngine.UIElements
 
         public void SetInlineRule(StyleSheet sheet, StyleRule rule)
         {
+            if (m_InlineRule.sheet && m_InlineRule.rule != null)
+                ve.elementPanel?.liveReloadSystem.StopStyleSheetAssetTracking(m_InlineRule.sheet);
+
             m_InlineRule.sheet = sheet;
             m_InlineRule.rule = rule;
+            if (m_InlineRule.sheet && m_InlineRule.rule != null)
+                ve.elementPanel?.liveReloadSystem.StartStyleSheetAssetTracking(m_InlineRule.sheet);
 
             ApplyInlineStyles(ref ve.computedStyle);
         }

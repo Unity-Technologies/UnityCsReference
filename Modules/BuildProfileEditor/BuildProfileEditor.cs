@@ -256,6 +256,8 @@ namespace UnityEditor.Build.Profile
                     settings,
                     this.ShowSettingsFoldouts));
             }
+
+            m_AddSettingsButton.SetEnabled(!m_AddSettingsDataSource.AllProfileSettingsInUse());
         }
 
         void OnAddSettingsClicked(int key)

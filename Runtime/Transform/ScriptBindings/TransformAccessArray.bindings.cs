@@ -252,6 +252,12 @@ namespace UnityEngine.Jobs
             SetTransforms(m_TransformArray, transforms);
         }
 
+        public unsafe TransformAccessArray(NativeArray<TransformHandle> transformHandles, int desiredJobCount = -1)
+        {
+            Allocate(transformHandles.Length, desiredJobCount, out this);
+            SetTransformHandles(m_TransformArray, transformHandles.GetUnsafeReadOnlyPtr(), transformHandles.Length);
+        }
+
         public TransformAccessArray(int capacity, int desiredJobCount = -1)
         {
             Allocate(capacity, desiredJobCount, out this);
@@ -302,6 +308,18 @@ namespace UnityEngine.Jobs
             }
         }
 
+        public TransformHandle GetTransformHandle(int index)
+        {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+            return GetTransformHandleInternal(m_TransformArray, index);
+        }
+
+        public void SetTransformHandle(int index, TransformHandle transformHandle)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            SetTransformHandleInternal(m_TransformArray, index, transformHandle);
+        }
+
         public int capacity
         {
             get
@@ -343,6 +361,12 @@ namespace UnityEngine.Jobs
             AddInstanceId(m_TransformArray, instanceId);
         }
 
+        public void Add(TransformHandle transformHandle)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            AddTransformHandle(m_TransformArray, transformHandle);
+        }
+
         public void Add(EntityId entityId)
         {
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -364,6 +388,13 @@ namespace UnityEngine.Jobs
             SetTransforms(m_TransformArray, transforms);
         }
 
+        public unsafe void SetTransformHandles(NativeArray<TransformHandle> transformHandles)
+        {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            SetTransformHandles(m_TransformArray, transformHandles.GetUnsafeReadOnlyPtr(), transformHandles.Length);
+        }
+
         [NativeMethod(Name = "TransformAccessArrayBindings::Create", IsFreeFunction = true)]
         private static extern IntPtr Create(int capacity, int desiredJobCount);
 
@@ -373,8 +404,14 @@ namespace UnityEngine.Jobs
         [NativeMethod(Name = "TransformAccessArrayBindings::SetTransforms", IsFreeFunction = true)]
         private static extern void SetTransforms(IntPtr transformArrayIntPtr, Transform[] transforms);
 
+        [NativeMethod(Name = "TransformAccessArrayBindings::SetTransformHandles", IsFreeFunction = true)]
+        private static extern unsafe void SetTransformHandles(IntPtr transformArrayIntPtr, void* transformHandles, int count);
+
         [NativeMethod(Name = "TransformAccessArrayBindings::AddTransform", IsFreeFunction = true)]
         private static extern void Add(IntPtr transformArrayIntPtr, Transform transform);
+
+        [NativeMethod(Name = "TransformAccessArrayBindings::AddTransformHandle", IsFreeFunction = true)]
+        private static extern void AddTransformHandle(IntPtr transformArrayIntPtr, TransformHandle transformHandle);
 
         [NativeMethod(Name = "TransformAccessArrayBindings::AddTransformInstanceId", IsFreeFunction = true)]
         private static extern void AddInstanceId(IntPtr transformArrayIntPtr, EntityId instanceId);
@@ -402,5 +439,11 @@ namespace UnityEngine.Jobs
 
         [NativeMethod(Name = "TransformAccessArrayBindings::SetTransform", IsFreeFunction = true, ThrowsException = true)]
         internal static extern void SetTransform(IntPtr transformArrayIntPtr, int index, Transform transform);
+
+        [NativeMethod(Name = "TransformAccessArrayBindings::GetTransformHandle", IsFreeFunction = true, ThrowsException = true)]
+        internal static extern TransformHandle GetTransformHandleInternal(IntPtr transformArrayIntPtr, int index);
+
+        [NativeMethod(Name = "TransformAccessArrayBindings::SetTransformHandle", IsFreeFunction = true, ThrowsException = true)]
+        internal static extern void SetTransformHandleInternal(IntPtr transformArrayIntPtr, int index, TransformHandle transformHandle);
     }
 }

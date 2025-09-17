@@ -71,7 +71,7 @@ namespace UnityEditor.LowLevelPhysics2D
                 foldout.Add(contacts);
 
                 var groupIndex = new IntegerField(groupIndexProperty.displayName) { bindingPath = groupIndexBindingPath };
-                groupIndex.AddToClassList(Mask64Field.alignedFieldUssClassName);
+                groupIndex.AddToClassList(IntegerField.alignedFieldUssClassName);
                 foldout.Add(groupIndex);
 
                 return root;

@@ -1893,6 +1893,8 @@ namespace UnityEngine.UIElements
                     return true;
                 case StylePropertyId.UnityTextAlign:
                     return true;
+                case StylePropertyId.UnityTextAutoSize:
+                    return true;
                 case StylePropertyId.UnityTextGenerator:
                     return true;
                 case StylePropertyId.UnityTextOutlineColor:
@@ -1912,7 +1914,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityEditorTextRenderingMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityEditorTextRenderingMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityMaterial, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextAutoSize, StylePropertyId.UnityTextGenerator, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
 
         public static bool IsDiscreteTypeProperty(StylePropertyId id)

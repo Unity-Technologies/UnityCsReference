@@ -377,7 +377,7 @@ namespace UnityEditor.Search
             var sourceContext = searchViewState?.context ?? searchContext;
 
             var newContext = new SearchContext(sourceContext.providers, sourceContext.searchText, sourceContext.options, runtimeContext);
-            var title = $"{objectType.Name}";
+            var title = ObjectNames.NicifyVariableName(objectType.Name);
             SearchViewState newSearchViewState = SearchViewState.CreatePickerState(title, newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType, searchViewFlags);
             if (searchViewState != null)
             {
@@ -957,13 +957,19 @@ namespace UnityEditor.Search
             return null;
         }
 
+        internal static string GenerateTitle(SerializedProperty property, Type objType)
+        {
+            var niceType = ObjectNames.NicifyVariableName(objType.Name);
+            return property != null ? $"{property.displayName} ({niceType})" : niceType;
+        }
+
         static void ShowSearchPicker(SearchContext context, SearchViewFlags searchViewFlags, SerializedProperty property, Object originalObject, int id, Event evt, Type objType)
         {
             s_DelegateWindow = EditorWindow.focusedWindow;
             s_ModalUndoGroup = Undo.GetCurrentGroup();
             s_OriginalItem = originalObject;
 
-            var title = property != null ? $"{property.displayName} ({objType.Name})" : objType.Name;
+            var title = GenerateTitle(property, objType);
             var searchViewState = SearchViewState.CreatePickerState(title, context,
                 (item, canceled) => SendSelectionEvent(item, canceled, id),
                 item => SendTrackingEvent(item, id), objType.ToString(), objType, searchViewFlags);

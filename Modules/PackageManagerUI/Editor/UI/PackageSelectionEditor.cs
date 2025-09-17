@@ -13,9 +13,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     [CustomEditor(typeof(PackageSelectionObject)), CanEditMultipleObjects]
     internal sealed class PackageEditor : Editor
     {
-        private const float kMinHeightForAssetStore = 192f;
-        private const float kMinHeightForOther = 96f;
-        private const float kLabelMinWidth = 64f;
+        private const float k_MinHeightForAssetStore = 192f;
+        private const float k_MinHeightForOther = 96f;
+        private const float k_LabelMinWidth = 64f;
 
         private static readonly string k_PackageNotAccessibleMessage = L10n.Tr("This package is not accessible anymore.");
         private static readonly string k_MultiPackagesSelectionMessage = L10n.Tr("Multi-object editing not supported.");
@@ -23,12 +23,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (packageSelectionObject == null)
+                if (packageSelectionObject is null)
                     return base.targetTitle;
 
-                return string.Format(L10n.Tr("{0} '{1}' Manifest"), m_Version?.GetDescriptor(true), m_Version != null ?
-                    string.IsNullOrEmpty(m_Version.displayName) ? m_Version.name : m_Version.displayName :
-                    packageSelectionObject.displayName);
+                if (m_Version == null)
+                    return string.Format(L10n.Tr("Package '{0}' Manifest"), packageSelectionObject.displayName);
+
+                var descriptor = m_Version.GetDescriptor(true);
+                var displayName = string.IsNullOrEmpty(m_Version.displayName) ? m_Version.name : m_Version.displayName;
+                return string.Format(L10n.Tr("{0} '{1}' Manifest"), descriptor, displayName);
             }
         }
 
@@ -54,6 +57,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public static readonly GUIContent description = EditorGUIUtility.TrTextContent("Description", "Description");
             public static readonly GUIContent package = EditorGUIUtility.TrTextContent("Package name", "Package name");
+
+            public static readonly GUIContent packagesIncluded = EditorGUIUtility.TrTextContent("Packages included", "Packages included");
+            public static readonly GUIContent dependencies = EditorGUIUtility.TrTextContent("Dependencies", "Dependencies");
+
             public static readonly GUIContent editPackage = EditorGUIUtility.TrTextContent("Edit", "Edit");
             public static readonly GUIContent viewInPackageManager = EditorGUIUtility.TrTextContent("View in Package Manager", "View in Package Manager");
         }
@@ -69,23 +76,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ReorderableList m_List;
 
         [NonSerialized]
-        private IPackage m_Package;
-
-        [NonSerialized]
         private IPackageVersion m_Version;
 
         [NonSerialized]
         private PackageInfo m_PackageInfo;
 
-        private ISelectionProxy m_Selection;
-        private IAssetDatabaseProxy m_AssetDatabase;
+        private IPackageOperationDispatcher m_OperationDispatcher;
         private IUpmCache m_UpmCache;
         private IPackageDatabase m_PackageDatabase;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
-            m_Selection = container.Resolve<ISelectionProxy>();
-            m_AssetDatabase = container.Resolve<IAssetDatabaseProxy>();
+            m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
             m_UpmCache = container.Resolve<IUpmCache>();
             m_PackageDatabase = container.Resolve<IPackageDatabase>();
         }
@@ -102,10 +104,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         }
 
-        private void GetPackageAndVersion(PackageSelectionObject packageSelectionObject)
+        private void GetPackageVersionFromSelection(string selectedPackageUniqueId)
         {
-            m_Package = m_PackageDatabase.GetPackage(packageSelectionObject.packageUniqueId);
-            m_Version = m_Package?.versions.primary;
+            m_Version = m_PackageDatabase.GetPackage(selectedPackageUniqueId)?.versions.primary;
             m_PackageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version?.name, m_Version?.isInstalled ?? false, m_Version?.versionString);
         }
 
@@ -114,9 +115,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var selectedPackageUniqueId = packageSelectionObject?.packageUniqueId;
             if (string.IsNullOrEmpty(selectedPackageUniqueId))
                 return;
-            if (args.added.Concat(args.removed).Concat(args.updated).Any(p => p.uniqueId == selectedPackageUniqueId))
+
+            if (args.added.Concat(args.removed).Concat(args.updated).AnyMatches(p => p.uniqueId == selectedPackageUniqueId))
             {
-                GetPackageAndVersion(packageSelectionObject);
+                GetPackageVersionFromSelection(selectedPackageUniqueId);
                 isInspectorDirty = true;
             }
         }
@@ -129,20 +131,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (packageSelectionObject == null)
+            var selectedPackageUniqueId = packageSelectionObject?.packageUniqueId;
+            if (m_Version == null && !string.IsNullOrEmpty(selectedPackageUniqueId))
+                GetPackageVersionFromSelection(selectedPackageUniqueId);
+
+            if (m_Version == null)
             {
                 EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
                 return;
-            }
-
-            if (m_Package == null || m_Version == null)
-            {
-                GetPackageAndVersion(packageSelectionObject);
-                if (m_Package == null || m_Version == null)
-                {
-                    EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
-                    return;
-                }
             }
 
             var dependencies = new List<DependencyInfo>();
@@ -156,30 +152,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             var previousEnabled = GUI.enabled;
-            GUI.enabled = true;
+            GUI.enabled = false;
 
-            // Package information
-            GUILayout.Label(Styles.packageInformationTitle, EditorStyles.boldLabel);
             DoPackageInformationLayout();
-
-            // Author information
             DoAuthorInformationLayout();
-
-            // Minimum unity version
-            if (!m_Version.HasTag(PackageTag.Feature) && !m_Version.HasTag(PackageTag.BuiltIn))
-                DoMinimumUnityVersionLayout();
-
-            // Package description
-            GUILayout.Label(Styles.description, EditorStyles.boldLabel);
+            DoMinimumUnityVersionLayout();
             DoPackageDescriptionLayout();
+            DoPackageDependenciesLayout();
 
-            // Dependencies or Packages included section
-            var dependenciesTitleText = EditorGUIUtility.TrTextContent(
-                m_Version.HasTag(PackageTag.Feature) ? "Packages included" : "Dependencies");
-            GUILayout.Label(dependenciesTitleText, EditorStyles.boldLabel);
-
-            GUI.enabled = IsPackageEditable();
-            m_List.DoLayoutList();
             GUI.enabled = previousEnabled;
         }
 
@@ -200,33 +180,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var previousEnabled = GUI.enabled;
 
-            PackageManifest manifest = null;
-            if (m_Version != null && m_Version.HasTag(PackageTag.Custom | PackageTag.Local) && m_PackageInfo != null)
-            {
-                manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{m_PackageInfo.assetPath}/package.json");
-            }
-            GUI.enabled =  manifest != null;
+            GUI.enabled = m_Version != null && m_Version.HasTag(PackageTag.Custom | PackageTag.Local);
             if (GUILayout.Button(Styles.editPackage, EditorStyles.miniButton))
-                m_Selection.activeObject = manifest;
+                m_OperationDispatcher.OpenManifest(m_Version);
 
-            GUI.enabled = m_Package != null && m_Version != null;
+            GUI.enabled = m_Version != null;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
-            {
-                PackageManagerWindow.OpenAndSelectPackage(m_Version.HasTag(PackageTag.LegacyFormat) ? m_Version.package.uniqueId : m_Version.uniqueId);
-            }
+                PackageManagerWindow.OpenAndSelectPackage(m_Version.package.uniqueId);
+
             GUI.enabled = previousEnabled;
-        }
-
-        internal override void OnForceReloadInspector()
-        {
-            base.OnForceReloadInspector();
-
-            var packageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-            if (packageSelectionObject != null && (m_Package == null || m_Version == null))
-            {
-                m_Package = packageDatabase.GetPackage(packageSelectionObject.packageUniqueId);
-                m_Version = m_Package?.versions.primary;
-            }
         }
 
         internal override bool HasLargeHeader()
@@ -280,152 +242,101 @@ namespace UnityEditor.PackageManager.UI.Internal
             EditorGUI.SelectableLabel(rect, versionString);
         }
 
-        private bool IsPackageEditable()
-        {
-            if (m_Version == null || !m_Version.HasTag(PackageTag.Custom) || m_PackageInfo == null)
-                return false;
-
-            var manifest = m_AssetDatabase.LoadAssetAtPath<PackageManifest>($"{m_PackageInfo.assetPath}/package.json");
-
-            return m_Selection.activeObject == manifest;
-        }
-
         private void DoPackageInformationLayout()
         {
+            GUILayout.Label(Styles.packageInformationTitle, EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                var labels = new List<GUIContent>();
+                var items = new List<(GUIContent label, string content)>();
                 if (!string.IsNullOrEmpty(m_Version.name))
-                    labels.Add(Styles.name);
-                labels.Add(Styles.displayName);
+                    items.Add((Styles.name, m_Version.name));
+                items.Add((Styles.displayName, m_Version.displayName));
                 if (!m_Version.HasTag(PackageTag.Feature))
-                    labels.Add(Styles.version);
+                    items.Add((Styles.version, m_Version.version.ToString()));
                 if (!string.IsNullOrEmpty(m_Version.category))
-                    labels.Add(Styles.category);
+                    items.Add((Styles.category, m_Version.category));
                 if (!string.IsNullOrEmpty(m_PackageInfo?.documentationUrl))
-                    labels.Add(Styles.documentationUrl);
+                    items.Add((Styles.documentationUrl, m_PackageInfo.documentationUrl));
                 if (!string.IsNullOrEmpty(m_PackageInfo?.licensesUrl))
-                    labels.Add(Styles.licensesUrl);
+                    items.Add((Styles.licensesUrl, m_PackageInfo.licensesUrl));
                 if (!string.IsNullOrEmpty(m_PackageInfo?.changelogUrl))
-                    labels.Add(Styles.changelogUrl);
-
-                var contents = new List<string>();
-                if (!string.IsNullOrEmpty(m_Version.name))
-                    contents.Add(m_Version.name);
-                contents.Add(m_Version.displayName);
-                if (!m_Version.HasTag(PackageTag.Feature))
-                    contents.Add(m_Version.version.ToString());
-                if (!string.IsNullOrEmpty(m_Version.category))
-                    contents.Add(m_Version.category);
-                if (!string.IsNullOrEmpty(m_PackageInfo?.documentationUrl))
-                    contents.Add(m_PackageInfo.documentationUrl);
-                if (!string.IsNullOrEmpty(m_PackageInfo?.licensesUrl))
-                    contents.Add(m_PackageInfo.licensesUrl);
-                if (!string.IsNullOrEmpty(m_PackageInfo?.changelogUrl))
-                    contents.Add(m_PackageInfo.changelogUrl);
-
-                var previousEnabled = GUI.enabled;
-                GUI.enabled = IsPackageEditable();
-
-                SelectableLabelFields(labels, contents);
-
-                GUI.enabled = previousEnabled;
+                    items.Add((Styles.changelogUrl, m_PackageInfo.changelogUrl));
+                SelectableLabelFields(items);
             }
         }
 
         private void DoAuthorInformationLayout()
         {
-            if (m_Version.author == null || (string.IsNullOrEmpty(m_Version.author.name) && string.IsNullOrEmpty(m_Version.author.url) && string.IsNullOrEmpty(m_Version.author.email)))
+            if (m_Version.author == null)
+                return;
+
+            var items = new List<(GUIContent label, string content)>();
+            if (!string.IsNullOrEmpty(m_Version.author.name))
+                items.Add((Styles.authorName, m_Version.author.name));
+            if (!string.IsNullOrEmpty(m_Version.author.url))
+                items.Add((Styles.authorUrl, m_Version.author.url));
+            if (!string.IsNullOrEmpty(m_Version.author.email))
+                items.Add((Styles.authorEmail, m_Version.author.email));
+
+            if (items.Count == 0)
                 return;
 
             GUILayout.Label(Styles.authorInformationTitle, EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
-            {
-                var labels = new List<GUIContent>();
-                if (!string.IsNullOrEmpty(m_Version.author.name))
-                    labels.Add(Styles.authorName);
-                if (!string.IsNullOrEmpty(m_Version.author.url))
-                    labels.Add(Styles.authorUrl);
-                if (!string.IsNullOrEmpty(m_Version.author.email))
-                    labels.Add(Styles.authorEmail);
-
-                var contents = new List<string>();
-                if (!string.IsNullOrEmpty(m_Version.author.name))
-                    contents.Add(m_Version.author.name);
-                if (!string.IsNullOrEmpty(m_Version.author.url))
-                    contents.Add(m_Version.author.url);
-                if (!string.IsNullOrEmpty(m_Version.author.email))
-                    contents.Add(m_Version.author.email);
-
-                var previousEnabled = GUI.enabled;
-                GUI.enabled = IsPackageEditable();
-
-                SelectableLabelFields(labels, contents);
-
-                GUI.enabled = previousEnabled;
-            }
+                SelectableLabelFields(items);
         }
 
         private void DoMinimumUnityVersionLayout()
         {
-            if (string.IsNullOrEmpty(m_Version.minimumUnityVersion))
+            if (m_Version.HasTag(PackageTag.Feature | PackageTag.BuiltIn) || string.IsNullOrEmpty(m_Version.minimumUnityVersion))
+                return;
+
+            var minimumUnityVersionSplit = m_Version.minimumUnityVersion.Split('.');
+            var items = new List<(GUIContent label, string content)>();
+            if (minimumUnityVersionSplit.Length >= 2)
+                items.Add((Styles.unityVersion, minimumUnityVersionSplit[0] + "." + minimumUnityVersionSplit[1]));
+            if (minimumUnityVersionSplit.Length == 3)
+                items.Add((Styles.unityReleaseVersion, minimumUnityVersionSplit[2]));
+
+            if (items.Count == 0)
                 return;
 
             GUILayout.Label(Styles.minimumUnityVersionTitle, EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
-            {
-                var minimumUnityVersionSplit = m_Version.minimumUnityVersion.Split('.');
-                var labels = new List<GUIContent>();
-                if (minimumUnityVersionSplit.Length >= 2)
-                    labels.Add(Styles.unityVersion);
-                if (minimumUnityVersionSplit.Length == 3)
-                    labels.Add(Styles.unityReleaseVersion);
-
-                var contents = new List<string>();
-                if (minimumUnityVersionSplit.Length >= 2)
-                    contents.Add(minimumUnityVersionSplit[0] + "." + minimumUnityVersionSplit[1]);
-                if (minimumUnityVersionSplit.Length == 3)
-                    contents.Add(minimumUnityVersionSplit[2]);
-
-                var previousEnabled = GUI.enabled;
-                GUI.enabled = IsPackageEditable();
-
-                SelectableLabelFields(labels, contents);
-
-                GUI.enabled = previousEnabled;
-            }
-        }
-
-        private void DoPackageDescriptionLabel()
-        {
-            var descriptionStyle = EditorStyles.textArea;
-            var description = !string.IsNullOrEmpty(m_Package.product?.description) ? m_Package.product.description : m_Version.description;
-            var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-            EditorGUI.SelectableLabel(descriptionRect, description, descriptionStyle);
+                SelectableLabelFields(items);
         }
 
         private void DoPackageDescriptionLayout()
         {
+            GUILayout.Label(Styles.description, EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
-            {
                 using (var scrollView = new EditorGUILayout.VerticalScrollViewScope(m_ScrollPosition,
-                    GUILayout.MinHeight(m_Version.HasTag(PackageTag.LegacyFormat) ? kMinHeightForAssetStore : kMinHeightForOther)))
+                    GUILayout.MinHeight(m_Version.HasTag(PackageTag.LegacyFormat) ? k_MinHeightForAssetStore : k_MinHeightForOther)))
                 {
                     m_ScrollPosition = scrollView.scrollPosition;
-                    DoPackageDescriptionLabel();
+                    var descriptionStyle = EditorStyles.textArea;
+                    var description = !string.IsNullOrEmpty(m_Version.package.product?.description) ? m_Version.package.product.description : m_Version.description;
+                    var descriptionRect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(description), descriptionStyle, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+                    EditorGUI.SelectableLabel(descriptionRect, description, descriptionStyle);
                 }
-            }
         }
 
-        private static void SelectableLabelFields(IEnumerable<GUIContent> labels, IEnumerable<string> contents)
+        private void DoPackageDependenciesLayout()
+        {
+            var dependenciesTitleText = m_Version.HasTag(PackageTag.Feature) ? Styles.packagesIncluded : Styles.dependencies;
+            GUILayout.Label(dependenciesTitleText, EditorStyles.boldLabel);
+            m_List.DoLayoutList();
+        }
+
+        private static void SelectableLabelFields(IReadOnlyCollection<(GUIContent label, string content)> items)
         {
             GUILayout.BeginHorizontal();
             GUILayout.BeginVertical(GUILayout.Width(150));
-            foreach (var label in labels)
-                GUILayout.Label(label, GUILayout.MinWidth(kLabelMinWidth), GUILayout.Height(EditorGUI.kSingleLineHeight));
+            foreach (var (label, _) in items)
+                GUILayout.Label(label, GUILayout.MinWidth(k_LabelMinWidth), GUILayout.Height(EditorGUI.kSingleLineHeight));
             GUILayout.EndVertical();
             GUILayout.BeginVertical();
-            foreach (var content in contents)
+            foreach (var (_, content) in items)
                 EditorGUILayout.SelectableLabel(content, EditorStyles.textField, GUILayout.Height(EditorGUI.kSingleLineHeight));
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();

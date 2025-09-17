@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEngine.Accessibility
 {
@@ -54,116 +55,6 @@ namespace UnityEngine.Accessibility
     /// </remarks>
     public partial class AccessibilityNode
     {
-        private class ObservableList<T> : IList<T>, IReadOnlyList<T>, IList
-        {
-            readonly List<T> m_Items;
-
-            public object SyncRoot => (m_Items as IList)?.SyncRoot ?? false;
-            public int Count => m_Items.Count;
-            public bool IsSynchronized => (m_Items as IList)?.IsSynchronized ?? false;
-            public bool IsReadOnly => (m_Items as IList)?.IsReadOnly ?? false;
-
-            object IList.this[int index]
-            {
-                get => m_Items[index];
-                set => throw new NotImplementedException();
-            }
-
-            public ObservableList()
-            {
-                m_Items = new();
-            }
-
-            public ObservableList(IEnumerable<T> enumerable)
-            {
-                m_Items = new List<T>(enumerable);
-            }
-
-            public void CopyTo(Array array, int index) => (m_Items as IList)?.CopyTo(array, index);
-
-            public void Add(T item)
-            {
-                m_Items.Add(item);
-                listChanged?.Invoke();
-            }
-
-            public void Insert(int index, T item)
-            {
-                m_Items.Insert(index, item);
-                listChanged?.Invoke();
-            }
-
-            public void Remove(T item)
-            {
-                m_Items.Remove(item);
-                listChanged?.Invoke();
-            }
-
-            bool ICollection<T>.Remove(T item)
-            {
-                var removed = m_Items.Remove(item);
-
-                if (removed)
-                {
-                    listChanged?.Invoke();
-                }
-
-                return removed;
-            }
-
-            public void Remove(object value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void RemoveAt(int index)
-            {
-                m_Items.RemoveAt(index);
-                listChanged?.Invoke();
-            }
-
-            public bool IsFixedSize { get; }
-
-            public int Add(object value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Clear()
-            {
-                m_Items.Clear();
-                listChanged?.Invoke();
-            }
-
-            public bool Contains(object value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public int IndexOf(object value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Insert(int index, object value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public T this[int index]
-            {
-                get => m_Items[index];
-                set => m_Items[index] = value;
-            }
-
-            public int IndexOf(T item) => m_Items.IndexOf(item);
-            public bool Contains(T item) => m_Items.Contains(item);
-            public void CopyTo(T[] array, int arrayIndex) => m_Items.CopyTo(array, arrayIndex);
-            public IEnumerator<T> GetEnumerator() => m_Items.GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => m_Items.GetEnumerator();
-            public event Action listChanged;
-        }
-
         /// <summary>
         /// Event invoked on the main thread when the accessibility node gains or loses screen reader focus.
         /// </summary>
@@ -171,7 +62,6 @@ namespace UnityEngine.Accessibility
         /// Subscribe to this event if you need to know when the node gains or loses screen reader focus. For example,
         /// to select a text field when the user navigates to it, so that it can receive keyboard input.
         /// </remarks>
-        // TODO: A11Y-829
         public event Action<AccessibilityNode, bool> focusChanged;
 
         /// <summary>
@@ -332,13 +222,7 @@ namespace UnityEngine.Accessibility
 
         AccessibilityHierarchy m_Hierarchy;
 
-        ObservableList<AccessibilityNode> m_Children = new();
-
-        internal IList<AccessibilityNode> childList
-        {
-            get => m_Children;
-            set => m_Children = new ObservableList<AccessibilityNode>(value);
-        }
+        internal List<AccessibilityNode> childList = new();
 
         /// <summary>
         /// The node's children in the accessibility hierarchy.
@@ -350,7 +234,7 @@ namespace UnityEngine.Accessibility
         /// <see cref="AccessibilityHierarchy.MoveNode"/>. To remove a child, call
         /// <see cref="AccessibilityHierarchy.RemoveNode"/>.
         /// </remarks>
-        public IReadOnlyList<AccessibilityNode> children => m_Children;
+        public IReadOnlyList<AccessibilityNode> children => childList;
 
         /// <summary>
         /// The node's parent in the accessibility hierarchy.
@@ -782,7 +666,6 @@ namespace UnityEngine.Accessibility
         /// <summary>
         /// Whether the accessibility node is currently focused by the screen reader.
         /// </summary>
-        // TODO: A11Y-829
         public bool isFocused => IsInActiveHierarchy() && AccessibilityNodeManager.GetIsFocused(id);
 
         bool m_AllowsDirectInteraction;
@@ -823,7 +706,6 @@ namespace UnityEngine.Accessibility
         public bool allowsDirectInteraction
         {
             get => m_AllowsDirectInteraction;
-
             set
             {
                 if (m_AllowsDirectInteraction == value)
@@ -860,14 +742,22 @@ namespace UnityEngine.Accessibility
 
         void CreateNativeNodeWithData(ref AccessibilityNodeData nodeData)
         {
-            // Ignore unsupported platforms because AccessibilityNodeManager.CreateNativeNodeWithData returns false.
+            // Ignore unsupported platforms, where AccessibilityNodeManager.CreateNativeNodeWithData returns false.
             if (AccessibilityManager.isSupportedPlatform)
             {
                 while (AccessibilityNodeManager.CreateNativeNodeWithData(nodeData) == false)
                 {
-                    Debug.LogWarning($"AccessibilityNode.CreateNativeNodeWithData: id '{nodeData.nodeId}' is already used");
+                    Debug.LogWarning($"{nameof(CreateNativeNodeWithData)}: Node ID '{nodeData.nodeId}' is already " +
+                        "used. Trying to create a node with an incremented node ID.");
 
-                    nodeData.nodeId++;
+                    if (nodeData.nodeId == int.MaxValue)
+                    {
+                        nodeData.nodeId = 0;
+                    }
+                    else
+                    {
+                        nodeData.nodeId++;
+                    }
                 }
             }
 
@@ -876,10 +766,11 @@ namespace UnityEngine.Accessibility
 
         internal void GetNodeData(ref AccessibilityNodeData nodeData)
         {
-            var nodeChildIds = new int[m_Children.Count];
-            for (var i = 0; i < m_Children.Count; ++i)
+            var nodeChildIds = new int[children.Count];
+
+            for (var i = 0; i < children.Count; ++i)
             {
-                nodeChildIds[i] = m_Children[i].id;
+                nodeChildIds[i] = children[i].id;
             }
 
             nodeData.childIds = nodeChildIds;
@@ -935,7 +826,7 @@ namespace UnityEngine.Accessibility
 
             CreateNativeNodeWithData(ref nodeData);
 
-            foreach (var child in m_Children)
+            foreach (var child in children)
             {
                 child.AllocateNative();
             }
@@ -945,7 +836,7 @@ namespace UnityEngine.Accessibility
         {
             if (freeChildren)
             {
-                foreach (var child in m_Children)
+                foreach (var child in children)
                 {
                     child.FreeNative(true);
                 }
@@ -976,7 +867,7 @@ namespace UnityEngine.Accessibility
             {
                 foreach (var child in childList)
                 {
-                    // Even if the parent is null (i.e. the node is a root) we need to assign it as the children's
+                    // Even if the parent is null (i.e. the node is a root), we need to assign it as the children's
                     // parent because that happens when this method is called by AccessibilityHierarchy.RemoveNode and
                     // that can happen with a root node with destroyChildren being false (therefore, the children became
                     // roots themselves).
@@ -984,6 +875,7 @@ namespace UnityEngine.Accessibility
                     parent?.childList.Add(child);
                 }
             }
+
             childList.Clear();
 
             m_Hierarchy = null;
@@ -996,9 +888,9 @@ namespace UnityEngine.Accessibility
 
         internal void SetParent(AccessibilityNode nodeParent, int index = -1)
         {
-            // Even if the parent is not changing, the index may have changed, so update the native node.
             parent = nodeParent;
 
+            // Even if the parent is not changing, the index may have changed, so update the native node.
             if (IsInActiveHierarchy())
             {
                 var parentId = nodeParent?.id ?? AccessibilityNodeManager.k_InvalidNodeId;
@@ -1021,7 +913,7 @@ namespace UnityEngine.Accessibility
         /// <returns>A string containing the accessibility node ID and generational version.</returns>
         public override string ToString()
         {
-            return $"AccessibilityNode(ID: {id}, Label: {label})";
+            return $"AccessibilityNode(ID: {id}, Label: \"{label}\")";
         }
 
         internal void NotifyFocusChanged(bool isNodeFocused)
@@ -1042,6 +934,7 @@ namespace UnityEngine.Accessibility
         {
             return invoked?.Invoke() ?? false;
         }
+
         internal bool InvokeIncremented()
         {
             if (incremented == null)

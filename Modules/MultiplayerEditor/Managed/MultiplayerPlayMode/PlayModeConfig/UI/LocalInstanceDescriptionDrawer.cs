@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.Build.Profile;
 using UnityEditor.Multiplayer.Internal;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 using Image = UnityEngine.UIElements.Image;
 
@@ -132,6 +133,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private VisualElement CreateBuildProfileField(SerializedProperty instanceProperty, out TextField roleFieldOut)
         {
+            instanceProperty = instanceProperty.Copy();
             var buildProfileProperty = instanceProperty.FindPropertyRelative("m_BuildProfile");
             var container = new VisualElement();
             var objectField = new ObjectField() { label = "Build Profile", objectType = typeof(BuildProfile) };
@@ -219,22 +221,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var warnIcon = ((VisualElement)evt.target).Q<Image>(className: k_WarnIconClass);
                 SetBuildProfileWarnIcon(warnIcon, evt.newValue as BuildProfile, instanceProperty);
 
-            });
-
-            // Todo remove this hack, as soon as we can track the serialized object of BuildProfile
-            //https://unity.slack.com/archives/C06KY1VAH63/p1717485694720109
-            objectField.schedule.Execute(() =>
-            {
                 SetRoleDisplay(roleField, buildProfileProp.objectReferenceValue as BuildProfile);
-            }).Every(1000);
-
-            objectField.schedule.Execute(() =>
-            {
                 SetDeviceRunDisplay(runDeviceField, buildProfileProp.objectReferenceValue as BuildProfile, instanceProperty);
                 SetButtonRefreshDisplay(buildProfileProp.objectReferenceValue as BuildProfile,
                     refreshButton);
-            }).Every(100);
 
+            });
 
             var buildProfileButton = new Button(() => EditorApplication.ExecuteMenuItem("File/Build Profiles")) { name = "build-profile-button", text = "Open Build Profiles" };
             objectField.Add(buildProfileButton);
@@ -360,7 +352,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var canRun = InternalUtilities.BuildProfileCanRunOnCurrentPlatform(newProfile);
             if (instance is LocalInstanceDescription && !canRun)
             {
-                error = "BuildProfile cannot be run as local instance";
+                var currenPlatform = Application.platform;
+                error = $"Build Profile is not supported on the current platform: {currenPlatform}.";
                 return false;
             }
 

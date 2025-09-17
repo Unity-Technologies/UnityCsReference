@@ -9,10 +9,10 @@ using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
-namespace Unity.Hierarchy
+namespace UnityEngine.Pool
 {
-    [VisibleToOtherModules("UnityEngine.HierarchyModule", "UnityEditor.HierarchyModule")]
-    internal readonly ref struct RentSpanUnmanaged<T> where T : unmanaged
+    [VisibleToOtherModules]
+    readonly ref struct RentSpanUnmanaged<T> where T : unmanaged
     {
         readonly byte[] m_Array;
         public readonly Span<T> Span;

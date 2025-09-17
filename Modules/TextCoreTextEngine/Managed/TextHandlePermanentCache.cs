@@ -39,7 +39,6 @@ namespace UnityEngine.TextCore.Text
             }
 
             textHandle.IsCachedPermanentTextCore = true;
-            textHandle.IsCachedPermanent = true;
             textHandle.SetDirty();
             textHandle.Update();
         }

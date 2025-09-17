@@ -75,7 +75,7 @@ namespace UnityEditor
         {
             GenericMenu gm = new GenericMenu();
 
-            int selectedInstanceID = serializedProperty.objectReferenceValue != null ? serializedProperty.objectReferenceValue.GetInstanceID() : 0;
+            EntityId selectedEntityId = serializedProperty.objectReferenceValue != null ? serializedProperty.objectReferenceValue.GetEntityId() : EntityId.None;
 
 
             bool foundDefaultAsset = false;
@@ -91,7 +91,7 @@ namespace UnityEditor
                 {
                     if (resource.m_Name == defaultFieldName)
                     {
-                        gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
+                        gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedEntityId, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
                         resourceList = resourceList.Where(x => x != resource).ToArray();
                         foundDefaultAsset = true;
                         break;
@@ -102,13 +102,13 @@ namespace UnityEditor
             // If no defalut asset was found, add defualt null value.
             if (!foundDefaultAsset)
             {
-                gm.AddItem(new GUIContent(defaultFieldName), selectedInstanceID == 0, AssetPopupMenuCallback, new object[] { 0, serializedProperty });
+                gm.AddItem(new GUIContent(defaultFieldName), selectedEntityId == 0, AssetPopupMenuCallback, new object[] { EntityId.None, serializedProperty });
             }
 
             // Add items from asset database
             foreach (var property in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { typeName } }))
             {
-                gm.AddItem(new GUIContent(property.name), property.entityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { property.entityId, serializedProperty });
+                gm.AddItem(new GUIContent(property.name), property.entityId == selectedEntityId, AssetPopupMenuCallback, new object[] { property.entityId, serializedProperty });
             }
 
             // Add builtin items, except for the already added default item.
@@ -116,7 +116,7 @@ namespace UnityEditor
             {
                 foreach (var resource in resourceList)
                 {
-                    gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
+                    gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedEntityId, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
                 }
             }
 
@@ -148,7 +148,7 @@ namespace UnityEditor
         static void AssetPopupMenuCallback(object userData)
         {
             var data = userData as object[];
-            var instanceID = (int)data[0];
+            var instanceID = (EntityId)data[0];
             var serializedProperty = (SerializedProperty)data[1];
 
             serializedProperty.objectReferenceValue = EditorUtility.EntityIdToObject(instanceID);

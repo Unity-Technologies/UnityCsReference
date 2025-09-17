@@ -438,6 +438,7 @@ namespace UnityEngine
                     || platform == RuntimePlatform.PS4
                     || platform == RuntimePlatform.PS5
                     || platform == RuntimePlatform.Switch
+                    || platform == RuntimePlatform.Switch2
                     || platform == RuntimePlatform.XboxOne;
             }
         }

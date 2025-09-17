@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
         public MaterialDefinition unityMaterial;
         public Length unityParagraphSpacing;
         public TextAnchor unityTextAlign;
+        public TextAutoSize unityTextAutoSize;
         public TextGeneratorType unityTextGenerator;
         public Color unityTextOutlineColor;
         public float unityTextOutlineWidth;
@@ -63,6 +64,7 @@ namespace UnityEngine.UIElements
                 lhs.unityMaterial == rhs.unityMaterial &&
                 lhs.unityParagraphSpacing == rhs.unityParagraphSpacing &&
                 lhs.unityTextAlign == rhs.unityTextAlign &&
+                lhs.unityTextAutoSize == rhs.unityTextAutoSize &&
                 lhs.unityTextGenerator == rhs.unityTextGenerator &&
                 lhs.unityTextOutlineColor == rhs.unityTextOutlineColor &&
                 lhs.unityTextOutlineWidth == rhs.unityTextOutlineWidth &&
@@ -104,6 +106,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ (unityMaterial == null ? 0 : unityMaterial.GetHashCode());
                 hashCode = (hashCode * 397) ^ unityParagraphSpacing.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextAlign;
+                hashCode = (hashCode * 397) ^ unityTextAutoSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextGenerator;
                 hashCode = (hashCode * 397) ^ unityTextOutlineColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ unityTextOutlineWidth.GetHashCode();
@@ -273,7 +276,6 @@ namespace UnityEngine.UIElements
         public float unitySliceScale;
         public int unitySliceTop;
         public SliceType unitySliceType;
-        public TextAutoSize unityTextAutoSize;
         public TextOverflowPosition unityTextOverflowPosition;
 
         public RareData Copy()
@@ -298,7 +300,6 @@ namespace UnityEngine.UIElements
                 lhs.unitySliceScale == rhs.unitySliceScale &&
                 lhs.unitySliceTop == rhs.unitySliceTop &&
                 lhs.unitySliceType == rhs.unitySliceType &&
-                lhs.unityTextAutoSize == rhs.unityTextAutoSize &&
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
 
@@ -334,7 +335,6 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ unitySliceScale.GetHashCode();
                 hashCode = (hashCode * 397) ^ unitySliceTop;
                 hashCode = (hashCode * 397) ^ (int)unitySliceType;
-                hashCode = (hashCode * 397) ^ unityTextAutoSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextOverflowPosition;
                 return hashCode;
             }

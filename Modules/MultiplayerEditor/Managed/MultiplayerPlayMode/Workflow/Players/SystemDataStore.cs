@@ -24,6 +24,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal const string Filename = "SystemData.json";
         const string SystemDataKey = "SystemData";
 
+        private static SystemDataStore s_SystemDataStoreMain;
         static readonly string DataStorePathRelativeToMainEditor = Paths.CurrentProjectVirtualProjectsFolder;
         static readonly string DataStorePathRelativeToCloneEditor = Paths.GetCurrentProjectDataPath("..", "..");
         static FileSystemDelegates s_FileSystemDelegates;
@@ -46,8 +47,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal static SystemDataStore GetMain()
         {
+            s_SystemDataStoreMain ??= new SystemDataStore(MainPath);
             var directoryPath = DataStorePathRelativeToMainEditor;
-            var dataStore = new SystemDataStore(MainPath);
+            var dataStore = s_SystemDataStoreMain;
             s_FileSystemDelegates.CreateDirectoryFunc(directoryPath);
 
             var hasNoSystemDataOnDisk = !s_FileSystemDelegates.ExistsFileFunc(dataStore.m_FullPath);

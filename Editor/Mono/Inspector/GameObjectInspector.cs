@@ -12,6 +12,7 @@ using UnityEditor.SceneManagement;
 using UnityObject = UnityEngine.Object;
 using UnityEditor.Experimental;
 using System.IO;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
@@ -374,7 +375,7 @@ namespace UnityEditor
             ClearPreviewCache();
             m_PreviewCache = null;
 
-            if (string.IsNullOrEmpty(m_Name.stringValue) && !(string.IsNullOrEmpty(m_GOPreviousName)))
+            if (m_Name != null && string.IsNullOrEmpty(m_Name.stringValue) && !(string.IsNullOrEmpty(m_GOPreviousName)))
             {
                 Debug.LogWarning("A GameObject name cannot be set to an empty string.");
                 m_Name.stringValue = m_GOPreviousName;
@@ -415,7 +416,7 @@ namespace UnityEditor
 
         private static StaticEditorFlags[] s_StaticEditorFlagValues;
 
-        private static bool ShowMixedStaticEditorFlags(StaticEditorFlags mask)
+        internal static bool ShowMixedStaticEditorFlags(StaticEditorFlags mask)
         {
             uint countedBits = 0;
             uint numFlags = 0;
@@ -833,13 +834,17 @@ namespace UnityEditor
             int layer = EditorGUI.LayerField(layerRect, Styles.layerContent, go.layer, Styles.layerPopup);
             if (EditorGUI.EndChangeCheck())
             {
-                GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targets.OfType<GameObject>(),
-                    L10n.Tr("Change Layer"), string.Format(L10n.Tr("Do you want to set layer to {0} for all child objects as well?"), InternalEditorUtility.GetLayerName(layer)));
-                if (includeChildren != GameObjectUtility.ShouldIncludeChildren.Cancel)
+                // filter out non gameobject targets
+                using var r = new RentSpan<GameObject>(targets.Length);
+                var goCount = 0;
+                foreach (var obj in targets)
                 {
-                    m_Layer.intValue = layer;
-                    SetLayer(layer, includeChildren == GameObjectUtility.ShouldIncludeChildren.IncludeChildren);
+                    if (obj is GameObject g)
+                        r.Span[goCount++] = g;
                 }
+
+                SceneModeUtility.SetLayer(r.Span[..goCount], layer, targetTitle);
+
                 // Displaying the dialog to ask the user whether to update children nukes the gui state
                 EditorGUIUtility.ExitGUI();
             }
@@ -911,22 +916,6 @@ namespace UnityEditor
                 EditorGUIUtility.ExitGUI();
             }
             EditorGUI.EndProperty();
-        }
-
-        UnityObject[] GetObjects(bool includeChildren)
-        {
-            return SceneModeUtility.GetObjects(targets, includeChildren);
-        }
-
-        void SetLayer(int layer, bool includeChildren)
-        {
-            UnityObject[] objects = GetObjects(includeChildren);
-            Undo.RecordObjects(objects, "Change Layer of " + targetTitle);
-            foreach (var o in objects)
-            {
-                var go = (GameObject)o;
-                go.layer = layer;
-            }
         }
 
         void ReloadPreviewInstance(string prefabAssetPath)

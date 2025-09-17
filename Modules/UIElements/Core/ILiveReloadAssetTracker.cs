@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
         int StartTrackingAsset(T asset);
         void StopTrackingAsset(T asset);
         bool IsTrackingAsset(T asset);
+        bool IsTrackingAsset(string assetPath);
         bool IsTrackingAssets();
         bool CheckTrackedAssetsDirty();
         void UpdateAssetTrackerCounts(T asset, int newDirtyCount, int newElementCount, int newInlinePropertiesCount, int newAttributePropertiesDirtyCount);

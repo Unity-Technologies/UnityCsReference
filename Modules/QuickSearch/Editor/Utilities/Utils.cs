@@ -131,7 +131,10 @@ namespace UnityEditor.Search
 
         internal static Hash128 GetSourceAssetFileHash(string guid)
         {
-            return AssetDatabase.GetSourceAssetFileHash(guid);
+            var assetHash = AssetDatabase.GetSourceAssetFileHash(guid);
+            var metaHash = AssetDatabase.GetSourceAssetMetaFileHash(guid);
+            HashUtilities.AppendHash(ref metaHash, ref assetHash);
+            return assetHash;
         }
 
         public static Texture2D GetAssetThumbnailFromPath(SearchContext ctx, string path)

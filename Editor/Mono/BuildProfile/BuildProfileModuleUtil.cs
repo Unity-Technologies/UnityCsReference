@@ -48,6 +48,7 @@ namespace UnityEditor.Build.Profile
         static HashSet<string> s_BuildProfileIconModules = new()
         {
             "Switch",
+            "Switch2",
         };
 
         /// <summary>

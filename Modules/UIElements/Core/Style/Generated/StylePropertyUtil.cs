@@ -1203,7 +1203,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StylePropertyId.UnityFontDefinition:
                     return FontDefinition.allowedAssetTypes;
                 case StylePropertyId.UnityMaterial:
-                    return MaterialDefinition.allowedAssetTypes;
+                    return new[]{typeof(MaterialDefinition)};
                 case StylePropertyId.Custom:
                     return new[]{typeof(UnityEngine.Object)};
                 default:

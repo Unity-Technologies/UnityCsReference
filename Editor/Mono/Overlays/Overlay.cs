@@ -935,7 +935,7 @@ namespace UnityEditor.Overlays
         internal void Initialize(string _id, string _uss, string _display, Vector2 defaultSize, Vector2 minSize, Vector2 maxSize, int menuPriority, string menuGroup)
         {
             m_RootVisualElementName = _uss;
-            string name = string.IsNullOrEmpty(_display) ? m_RootVisualElementName : _display;
+            string name = string.IsNullOrEmpty(_display) ? GetType().Name : _display;
             m_Id = string.IsNullOrEmpty(_id) ? name : _id;
             displayName = L10n.Tr(name);
             rootVisualElement.style.display = DisplayStyle.None;

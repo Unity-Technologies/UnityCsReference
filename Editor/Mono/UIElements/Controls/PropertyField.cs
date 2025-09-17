@@ -693,10 +693,7 @@ namespace UnityEditor.UIElements
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
 
-            // Make PropertyField foldout react even when disabled, like EditorGUILayout.Foldout.
             var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
-            foldoutToggle.acceptClicksIfDisabled = true;
-
             // Get Foldout label.
             var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
             if (hasCustomLabel)
@@ -909,11 +906,6 @@ namespace UnityEditor.UIElements
             {
                 ConfigureListViewDebugHelpers(listView);
             }
-
-            // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
-            var toggle = listView.headerFoldout?.toggle;
-            if (toggle != null)
-                toggle.acceptClicksIfDisabled = true;
 
             return listView;
         }

@@ -11,8 +11,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     static class LocalDeploymentUtility
     {
-        private const int DefaultPort = 9000;
-        private const int DefaultQueryPort = 9010;
         private const string DefaultHost = "127.0.0.1";
 
         internal static Node[] SetupExecutionGraph(LocalInstanceDescription settings, ExecutionGraph graph, bool hasEditorInstance)
@@ -28,10 +26,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             graph.AddNode(initialiseFleetNode, ExecutionStage.Deploy);
             graph.AddNode(setupWebSocketNode, ExecutionStage.Run);
 
+            settings.ServerSettings.CliSettings.ComputeFinalArguments(out var port, out var queryType, out var queryPort);
+
             graph.ConnectConstant(initialiseFleetNode.AutoAllocate, settings.ServerSettings.SimulatorSettings.AutoAllocate);
-            graph.ConnectConstant(initialiseFleetNode.QueryType, settings.ServerSettings.SimulatorSettings.QueryProtocol);
-            graph.ConnectConstant(initialiseFleetNode.QueryPort, DefaultQueryPort);
-            graph.ConnectConstant(initialiseFleetNode.LocalPort, DefaultPort);
+            graph.ConnectConstant(initialiseFleetNode.QueryType, queryType);
+            graph.ConnectConstant(initialiseFleetNode.QueryPort, queryPort);
+            graph.ConnectConstant(initialiseFleetNode.LocalPort, port);
             graph.ConnectConstant(initialiseFleetNode.LocalHost, DefaultHost);
             graph.ConnectConstant(setupWebSocketNode.WaitForEditorPlaying, hasEditorInstance);
 

@@ -21,7 +21,8 @@ namespace Unity.Hierarchy
         {
             foreach (var handler in view.Source.EnumerateNodeTypeHandlers())
             {
-                handler.Cut(view);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanCut(view))
+                    editorHandler.OnCut(view);
             }
         }
 
@@ -33,7 +34,8 @@ namespace Unity.Hierarchy
         {
             foreach (var handler in view.Source.EnumerateNodeTypeHandlers())
             {
-                handler.Copy(view);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanCopy(view))
+                    editorHandler.OnCopy(view);
             }
         }
 
@@ -45,7 +47,8 @@ namespace Unity.Hierarchy
         {
             foreach (var handler in view.Source.EnumerateNodeTypeHandlers())
             {
-                handler.Paste(view);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanPaste(view))
+                    editorHandler.OnPaste(view);
             }
         }
 
@@ -53,11 +56,13 @@ namespace Unity.Hierarchy
         /// Paste copied nodes as child.
         /// </summary>
         /// <param name="view">View accepting the operation</param>
-        public static void OnPasteAsChild(this HierarchyView view)
+        /// <param name="keepWorldPos">If true, the pasted nodes will keep their world position, otherwise they will be placed at the local position of the parent.</param>
+        public static void OnPasteAsChild(this HierarchyView view, bool keepWorldPos)
         {
             foreach (var handler in view.Source.EnumerateNodeTypeHandlers())
             {
-                handler.PasteAsChild(view);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanPasteAsChild(view))
+                    editorHandler.OnPasteAsChild(view, keepWorldPos);
             }
         }
 
@@ -69,7 +74,8 @@ namespace Unity.Hierarchy
         {
             foreach (var handler in view.Source.EnumerateNodeTypeHandlers())
             {
-                handler.Duplicate(view);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanDuplicate(view))
+                    editorHandler.OnDuplicate(view);
             }
         }
 
@@ -81,7 +87,8 @@ namespace Unity.Hierarchy
         {
             foreach (var handler in view.Source.EnumerateNodeTypeHandlers())
             {
-                handler.Delete(view);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler && editorHandler.CanDelete(view))
+                    editorHandler.OnDelete(view);
             }
         }
 

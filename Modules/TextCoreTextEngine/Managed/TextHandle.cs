@@ -174,17 +174,7 @@ namespace UnityEngine.TextCore.Text
         internal LinkedListNode<TextCacheEntry> TextInfoNode { get; set; }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool IsCachedPermanent
-        {
-            get => m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanent);
-            set
-            {
-                if(value)
-                    m_TextHandleFlags |= TextHandleFlags.IsCachedPermanent;
-                else
-                    m_TextHandleFlags ^= TextHandleFlags.IsCachedPermanent;
-            }
-        }
+        protected internal bool IsCachedPermanent => (m_TextHandleFlags & (TextHandleFlags.IsCachedPermanentTextCore | TextHandleFlags.IsCachedPermanentATG)) != 0;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool IsCachedPermanentATG {
@@ -194,10 +184,7 @@ namespace UnityEngine.TextCore.Text
 
                 //For ATG, textInfo can be allocated during the frame generation wihout being in permanent cache
                 if (isCacheATG)
-                {
                     Debug.Assert(m_TextGenerationInfo != IntPtr.Zero, "Internal Text Error : The element is marked as being in the permanent cache without having the cache assigned");
-                    Debug.Assert(IsCachedPermanent, "Internal Text Error: Element has a ATG cache but is not marked to be in the permanent cache");
-                }
 
                 return isCacheATG;
             }
@@ -216,8 +203,7 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 bool isCacheTextCore = m_TextHandleFlags.HasFlag(TextHandleFlags.IsCachedPermanentTextCore);
-                Debug.Assert(isCacheTextCore ? IsCachedPermanent : true, "Internal Text Error: Element has a TextCore cache but is not marked to be in the permanent cache");
-                if ( !IsCachedTemporary)
+                if (!IsCachedTemporary)
                     Debug.AssertFormat(isCacheTextCore == (TextInfoNode != null), "TextHandle : TextCore Permananent cache mismatch. isCache {0} but {1}", isCacheTextCore, TextInfoNode == null ? " has no node": "has a node");
 
                 return isCacheTextCore;
@@ -238,7 +224,6 @@ namespace UnityEngine.TextCore.Text
         [Flags]
         protected private enum TextHandleFlags
         {
-            IsCachedPermanent = 1,
             IsCachedPermanentTextCore = 1<<1,
             IsCachedPermanentATG = 1<<2,
         }
@@ -263,7 +248,7 @@ namespace UnityEngine.TextCore.Text
 
         public virtual void AddToPermanentCacheAndGenerateMesh()
         {
-            // IsCachedPermanent = true; should be set here, but the method is overriden for ATG and there is a different way to add to the permanent cache in ATG that would not generate immediatly the mesh. 
+            // IsCachedPermanent = true; should be set here, but the method is overriden for ATG and there is a different way to add to the permanent cache in ATG that would not generate immediatly the mesh.
 
             if (useAdvancedText)
             {
@@ -289,15 +274,23 @@ namespace UnityEngine.TextCore.Text
 
         public void RemoveFromPermanentCache()
         {
+            RemoveFromPermanentCacheATG();
+            RemoveFromPermanentCacheTextCore();
+        }
+
+        public void RemoveFromPermanentCacheTextCore()
+        {
+            s_PermanentCache.RemoveFromCache(this);
+        }
+
+        public void RemoveFromPermanentCacheATG()
+        {
             if (IsCachedPermanentATG)
             {
                 TextGenerationInfo.Destroy(textGenerationInfo);
                 textGenerationInfo = IntPtr.Zero;
                 IsCachedPermanentATG = false;
             }
-
-            s_PermanentCache.RemoveFromCache(this);
-            IsCachedPermanent = false;
         }
 
         public static void UpdateCurrentFrame()
@@ -675,7 +668,7 @@ namespace UnityEngine.TextCore.Text
                 LineInfo li = GetLineInfoFromCharacterIndex( currentIndex);
                 return li.lastCharacterIndex;
             }
-            return TextSelectionService.GetLastCharacterIndexOnLine(textGenerationInfo, currentIndex);
+            return TextSelectionService.GetLastCharacterIndexOnLine(textGenerationInfo, currentIndex) /* This is a patch that works for LTR only */ + 1;
         }
 
         /// <summary>

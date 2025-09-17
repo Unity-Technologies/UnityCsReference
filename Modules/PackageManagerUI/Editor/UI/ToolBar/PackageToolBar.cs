@@ -26,8 +26,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPageManager m_PageManager;
         private IUnityConnectProxy m_UnityConnect;
         private IIOProxy m_IOProxy;
-        private ISelectionProxy m_SelectionProxy;
-        private IAssetDatabaseProxy m_AssetDatabaseProxy;
         private IModalManager m_ModalManager;
         private void ResolveDependencies()
         {
@@ -41,8 +39,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = container.Resolve<IPageManager>();
             m_UnityConnect = container.Resolve<IUnityConnectProxy>();
             m_IOProxy = container.Resolve<IIOProxy>();
-            m_SelectionProxy = container.Resolve<ISelectionProxy>();
-            m_AssetDatabaseProxy = container.Resolve<IAssetDatabaseProxy>();
             m_ModalManager = container.Resolve<IModalManager>();
         }
 
@@ -100,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 new PackageToolBarSimpleButton(new ExportAction(m_ModalManager)),
                 new PackageToolBarSimpleButton(new AddAction(m_OperationDispatcher, m_Application, m_PackageDatabase)),
                 new LegacyFormatDropdownButton(m_OperationDispatcher, m_AssetStoreDownloadManager, m_UnityConnect, m_Application),
-                new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_IOProxy, m_SelectionProxy, m_AssetDatabaseProxy)
+                new ManageDropdownButton(m_Application, m_UpmCache, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_IOProxy)
             };
 
             foreach (var button in m_BuiltInToolBarButtons)

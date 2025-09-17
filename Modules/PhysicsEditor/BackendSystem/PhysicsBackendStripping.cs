@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.PhysicsEditor;
 
 [InitializeOnLoad]
-[NativeHeader("Modules/Physics/CommandLayer/PhysicsBackendSystem.h")]
+[NativeHeader("Modules/Physics/PhysicsBackendSystem.h")]
 internal class PhysicsBackendStripping
 {
     const string k_PhysicsModuleName = "Physics";

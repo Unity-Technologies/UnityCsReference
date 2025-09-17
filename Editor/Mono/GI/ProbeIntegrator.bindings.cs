@@ -100,7 +100,7 @@ namespace UnityEngine.LightTransport
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -109,7 +109,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write radiance to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
+                lightBakerResult = new Result {type = ResultType.IOFailed, message = "Failed to write radiance to context."};
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -139,7 +139,7 @@ namespace UnityEngine.LightTransport
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, wmContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -148,7 +148,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write radiance to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
+                lightBakerResult = new Result {type = ResultType.IOFailed, message = "Failed to write radiance to context."};
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -175,7 +175,7 @@ namespace UnityEngine.LightTransport
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, validityPtr);
             
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -184,7 +184,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write validity to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context."};
+                lightBakerResult = new Result {type = ResultType.IOFailed, message = "Failed to write validity to context."};
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -222,7 +222,7 @@ namespace UnityEngine.LightTransport
                 _pushoff, _bounceCount, directSampleCount, giSampleCount, envSampleCount, wmContext, _progress, occlusionPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -231,7 +231,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write validity to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result { type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context." };
+                lightBakerResult = new Result { type = ResultType.IOFailed, message = "Failed to write validity to context." };
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -288,7 +288,7 @@ namespace UnityEngine.LightTransport
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -297,7 +297,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write radiance to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
+                lightBakerResult = new Result { type = ResultType.IOFailed, message = "Failed to write radiance to context." };
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -327,7 +327,7 @@ namespace UnityEngine.LightTransport
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, ignoreDirectEnvironment, ignoreIndirectEnvironment, rrContext, _progress, shPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -336,7 +336,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write radiance to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write radiance to context."};
+                lightBakerResult = new Result { type = ResultType.IOFailed, message = "Failed to write radiance to context." };
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -363,7 +363,7 @@ namespace UnityEngine.LightTransport
                 _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, validityPtr);
 
             // TODO: Fix this in LIGHT-1479, synchronization and read-back should be done by the user.
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -372,7 +372,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write validity to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result {type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context."};
+                lightBakerResult = new Result { type = ResultType.IOFailed, message = "Failed to write validity to context." };
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }
@@ -409,7 +409,7 @@ namespace UnityEngine.LightTransport
             var lightBakerResult = LightBaker.IntegrateProbeOcclusionRadeonRays(positionsPtr, perProbeLightIndicesPtr, positionCount,
                 _pushoff, _bounceCount, directSampleCount, giSampleCount, envSampleCount, rrContext, _progress, occlusionPtr);
 
-            if (lightBakerResult.type != LightBaker.ResultType.Success)
+            if (lightBakerResult.type != ResultType.Success)
                 return lightBakerResult.ConvertToIProbeIntegratorResult();
 
             eventId = context.CreateEvent();
@@ -419,7 +419,7 @@ namespace UnityEngine.LightTransport
             Debug.Assert(waitResult, "Failed to write validity to context.");
             context.DestroyEvent(eventId);
             if (!waitResult)
-                lightBakerResult = new LightBaker.Result { type = LightBaker.ResultType.IOFailed, message = "Failed to write validity to context." };
+                lightBakerResult = new Result { type = ResultType.IOFailed, message = "Failed to write validity to context." };
 
             return lightBakerResult.ConvertToIProbeIntegratorResult();
         }

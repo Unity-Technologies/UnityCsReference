@@ -31,8 +31,8 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(nativeSettings.text) && m_TextElement.isInputField)
                 nativeSettings.text = "\u200B";
 
-            nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
-            nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
+            nativeSettings.screenWidth = (float.IsNaN(width) || float.IsNegative(width)) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
+            nativeSettings.screenHeight = (float.IsNaN(height) || float.IsNegative(height)) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
 
             if (textGenerationInfo == IntPtr.Zero)
             {
@@ -90,7 +90,6 @@ namespace UnityEngine.UIElements
             }
 
             IsCachedPermanentATG = true;
-            IsCachedPermanent = true;
             textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
         }
 
@@ -201,7 +200,7 @@ namespace UnityEngine.UIElements
                 nativeSettings.text = textToMeasure;
             if (nativeSettings.text == null)
                 nativeSettings.text = "";
-            var effectiveFontsize = (int)( ( fontsize ?? style.fontSize.value) * scale);
+            var effectiveFontsize = (int)Math.Round((fontsize ?? style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
             nativeSettings.fontSize = effectiveFontsize * 64;
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);

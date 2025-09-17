@@ -173,7 +173,7 @@ class HierarchyViewDragHandler
 
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
-            if (!handler.Internal_CanStartDrag(m_HierarchyView, draggedNodes))
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler && !editorHandler.CanStartDrag(m_HierarchyView, draggedNodes))
                 return false;
         }
 
@@ -192,7 +192,8 @@ class HierarchyViewDragHandler
         var setupData = new HierarchyViewDragAndDropSetupData(draggedNodes, allEntityIds, paths, m_HierarchyView, genericData);
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
-            handler.Internal_OnStartDrag(setupData);
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                editorHandler.OnStartDrag(setupData);
         }
 
         var startDragArgs = new StartDragArgs(args.startDragArgs.title, args.startDragArgs.visualMode);
@@ -246,14 +247,14 @@ class HierarchyViewDragHandler
 
         HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
-        var parentNodeTypeHandler = parentNode == Hierarchy.Root ? null : Hierarchy.GetNodeTypeHandler(in parentNode);
+        var parentNodeTypeHandler = parentNode == Hierarchy.Root ? null : Hierarchy.GetNodeTypeHandler(in parentNode) as IHierarchyEditorNodeTypeHandler;
         for (var i = 0; i < draggedNodes.Span.Length; ++i)
         {
             var draggedNode = draggedNodes.Span[i];
             if (IsDescendant(parentNode, draggedNode))
                 return HierarchyViewDragAndDropTargets.Rejected;
 
-            var draggedNodeTypeHandler = Hierarchy.GetNodeTypeHandler(in draggedNode);
+            var draggedNodeTypeHandler = Hierarchy.GetNodeTypeHandler(in draggedNode) as IHierarchyEditorNodeTypeHandler;
             if (!parentNodeTypeHandler?.AcceptChild(m_HierarchyView, in draggedNode) ?? false)
                 return HierarchyViewDragAndDropTargets.Rejected;
             if (!draggedNodeTypeHandler?.AcceptParent(m_HierarchyView, in parentNode) ?? false)
@@ -289,11 +290,14 @@ class HierarchyViewDragHandler
 
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
-            var visualMode = perform ? handler.Internal_OnDrop(handlingData) : handler.Internal_CanDrop(handlingData);
-            if (visualMode != DragVisualMode.None)
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
             {
-                dragAndDropTargets.dragVisualMode = visualMode;
-                return dragAndDropTargets;
+                var visualMode = perform ? editorHandler.OnDrop(handlingData) : editorHandler.CanDrop(handlingData);
+                if (visualMode != DragVisualMode.None)
+                {
+                    dragAndDropTargets.dragVisualMode = visualMode;
+                    return dragAndDropTargets;
+                }
             }
         }
 

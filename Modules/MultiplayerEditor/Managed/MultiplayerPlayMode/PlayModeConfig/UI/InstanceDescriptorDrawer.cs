@@ -298,6 +298,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return false;
             }
 
+            // Check that remote instances do not have a client role
+            if (isServerInstance && !LocalDeploymentUtility.IsServerProfileOrRole(newProfile))
+            {
+                error = "Build profile has a client profile or role, remote instances are intended for uploading a Dedicated Game Server to the cloud and is not compatible with a client instance";
+                return false;
+            }
+
+
             error = null;
             return true;
         }

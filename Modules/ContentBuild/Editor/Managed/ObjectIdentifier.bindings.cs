@@ -119,8 +119,10 @@ namespace UnityEditor.Build.Content
         [FreeFunction("GetObjectFromObjectIdentifier")]
         public static extern UnityEngine.Object ToObject(ObjectIdentifier objectId);
 
+        [Obsolete("Deprecated, use ToEntityId instead.")]
+        public static int ToInstanceID(ObjectIdentifier objectId) => ToEntityId(objectId);
         [FreeFunction("GetEntityIdFromObjectIdentifier")]
-        public static extern int ToInstanceID(ObjectIdentifier objectId);
+        public static extern EntityId ToEntityId(ObjectIdentifier objectId);
 
         public static bool TryGetObjectIdentifier(UnityEngine.Object targetObject, out ObjectIdentifier objectId)
         {

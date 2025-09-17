@@ -48,6 +48,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 // TODO: put this in a style sheet
                 m_ModeSettings.style.marginLeft = 18;
+                m_ModeSettings.style.marginBottom = 8;
 
                 m_ModeToggleGroup.TrackPropertyValue(m_ModeProperty, UpdateModeFieldValue);
                 m_ModeToggleGroup.RegisterValueChangedCallback(OnModeValueChanged);
@@ -95,6 +96,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         break;
                     case ServerSettings.ServerDeployMode.Simulated:
                         m_ModeSettings.Add(new PlainPropertyField(m_Property.FindPropertyRelative(nameof(ServerSettings.SimulatorSettings))));
+
+                        var cliSettingsFoldout = new Foldout()
+                        {
+                            text = "Server CLI Arguments",
+                        };
+                        m_ModeSettings.Add(cliSettingsFoldout);
+                        cliSettingsFoldout.Add(new PropertyField(m_Property.FindPropertyRelative(nameof(ServerSettings.CliSettings))));
                         break;
                 }
 

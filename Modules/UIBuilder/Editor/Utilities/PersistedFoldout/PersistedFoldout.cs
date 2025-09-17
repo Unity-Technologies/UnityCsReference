@@ -141,7 +141,8 @@ namespace Unity.UI.Builder
 
             m_Toggle = new Toggle
             {
-                value = true
+                value = true,
+                acceptClicksIfDisabled = true
             };
             m_Toggle.RegisterValueChangedCallback((evt) =>
             {

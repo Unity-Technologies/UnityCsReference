@@ -74,5 +74,22 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             return s_InternalSettings[key];
         }
+
+        /// <summary>
+        /// Checks if all available profile settings are in use.
+        /// </summary>
+        /// <returns><see langword="true"/> if all profile settings are in use; otherwise, <see langword="false"/>.</returns>
+        public bool AllProfileSettingsInUse()
+        {
+            foreach (var provider in s_InternalSettings)
+            {
+                if (!provider.CanAddSettings(m_BuildProfile) || provider.HasSettings(m_BuildProfile))
+                    continue;
+
+                return false;
+            }
+
+            return true;
+        }
     }
 }

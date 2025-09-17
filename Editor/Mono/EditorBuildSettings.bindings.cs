@@ -149,6 +149,7 @@ namespace UnityEditor
             FailedTypeMismatch
         }
 
+        [Obsolete("UseParallelAssetBundleBuilding is obsolete and will be removed.")]
         public static extern bool UseParallelAssetBundleBuilding { get; set; }
 
         [NativeMethod("AddConfigObject")]

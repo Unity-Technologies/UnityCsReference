@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.Scripting;
@@ -182,13 +183,14 @@ namespace UnityEngine.Accessibility
 
         [RequiredByNativeCode]
         [VisibleToOtherModules("UnityEditor.AccessibilityModule")]
+        [ExcludeFromCodeCoverage] // not reachable by the code coverage analysis
         internal static void Internal_Initialize()
         {
             AssistiveSupport.Initialize();
         }
 
         [RequiredByNativeCode]
-        static void Internal_Update()
+        internal static void Internal_Update()
         {
             instance.Internal_Update_Impl();
         }
@@ -256,7 +258,7 @@ namespace UnityEngine.Accessibility
         }
 
         [RequiredByNativeCode]
-        static void Internal_LateUpdate()
+        internal static void Internal_LateUpdate()
         {
             if (instance.m_RefreshNodeFramesRequested)
             {
@@ -423,7 +425,7 @@ namespace UnityEngine.Accessibility
         /// Called when the player window is moved or resized either programmatically or by the user.
         /// </summary>
         [RequiredByNativeCode]
-        static void Internal_OnWindowGeometryChanged()
+        internal static void Internal_OnWindowGeometryChanged()
         {
             instance.m_RefreshNodeFramesRequested = true;
         }

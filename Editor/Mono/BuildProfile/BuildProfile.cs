@@ -230,23 +230,6 @@ namespace UnityEditor.Build.Profile
             return BuildProfileModuleUtil.GetLastRunnableBuildKeyFromAssetPath(assetPath, key);
         }
 
-        /// <summary>
-        /// Duplicate the build profile. Note this does not create a new asset.
-        /// </summary>
-        [VisibleToOtherModules]
-        internal BuildProfile Duplicate()
-        {
-            var duplicatedProfile = Instantiate(this);
-
-            if (graphicsSettings != null)
-                duplicatedProfile.graphicsSettings = Instantiate(graphicsSettings);
-
-            if (qualitySettings != null)
-                duplicatedProfile.qualitySettings = Instantiate(qualitySettings);
-
-            return duplicatedProfile;
-        }
-
         [VisibleToOtherModules]
         internal void ResetToGlobalQualitySettingsValues()
         {

@@ -10,6 +10,7 @@ using UnityEditor.Build.Profile;
 using UnityEditor.Connect;
 using UnityEditor.EngineDiagnostics;
 using UnityEditor.InsightsEditor.EditorAnalytics;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
@@ -24,7 +25,7 @@ namespace UnityEditor.InsightsEditor
 
         // UXML elements
         const string k_InsightsNoCloudVisualElementNodeName = "insights-analytics-no-cloud-visualelement";
-        const string k_DataReportingLevelDropdownName = "DataReportingDropdown";
+        internal const string k_DataReportingLevelDropdownName = "DataReportingDropdown";
         const string k_HideElementClassName = "display-none";
         const string k_InsightsProjectSettingsHeaderNodeName = "insights-project-settings-header";
         const string k_InsightsNoCloudLabelNodeName = "insights-analytics-no-cloud-projectsettings-label";
@@ -60,6 +61,9 @@ namespace UnityEditor.InsightsEditor
         {
             [VisibleToOtherModules]
             set => m_buildProfile = value;
+
+            [VisibleToOtherModules]
+            get => m_buildProfile;
         }
 
         internal string platformGuid
@@ -79,14 +83,15 @@ namespace UnityEditor.InsightsEditor
         }
 
         // Change to ordering in UI warrants mapping
-        static ReadOnlyDictionary<int, BuildProfileEngineDiagnosticsState> k_IndexToBuildProfileEngineDiagnosticsState =
+        [VisibleToOtherModules]
+        internal static readonly ReadOnlyDictionary<int, BuildProfileEngineDiagnosticsState> k_IndexToBuildProfileEngineDiagnosticsState =
             new(new Dictionary<int, BuildProfileEngineDiagnosticsState>
         {
             { 0, BuildProfileEngineDiagnosticsState.ProjectSettings },
             { 1, BuildProfileEngineDiagnosticsState.Disabled },
             { 2, BuildProfileEngineDiagnosticsState.Enabled }
         });
-        static ReadOnlyDictionary<BuildProfileEngineDiagnosticsState, int> k_BuildProfileEngineDiagnosticsStateToIndex = new(
+        static readonly ReadOnlyDictionary<BuildProfileEngineDiagnosticsState, int> k_BuildProfileEngineDiagnosticsStateToIndex = new(
             new Dictionary<BuildProfileEngineDiagnosticsState, int>
         {
             { BuildProfileEngineDiagnosticsState.ProjectSettings, 0 },
@@ -169,9 +174,7 @@ namespace UnityEditor.InsightsEditor
                     k_IndexToBuildProfileEngineDiagnosticsState[selectedIndex]);
                 if (revertSelectionAndShowDisablementPopup)
                 {
-                    buildProfileEngineDiagnosticsState = k_IndexToBuildProfileEngineDiagnosticsState[previousIndex];
-                    m_DataReportingLevelDropdown.SetIndexWithoutNotify(previousIndex);
-                    m_PreviousIndexValue = previousIndex;
+                    SetDropdownValueAndUnderlyingStateWithoutNotify(previousIndex);
                     ShowDisabledConfirmationDialog(k_IndexToBuildProfileEngineDiagnosticsState[selectedIndex]);
                     return;
                 }
@@ -187,6 +190,13 @@ namespace UnityEditor.InsightsEditor
             UnityConnect.instance.ProjectStateChanged += OnCloudProjectStateChanged;
         }
 
+        internal void SetDropdownValueAndUnderlyingStateWithoutNotify(int previousIndex)
+        {
+            buildProfileEngineDiagnosticsState = k_IndexToBuildProfileEngineDiagnosticsState[previousIndex];
+            m_DataReportingLevelDropdown.SetIndexWithoutNotify(previousIndex);
+            m_PreviousIndexValue = previousIndex;
+        }
+
         private void OnLinkClicked(PointerDownLinkTagEvent evt)
         {
             var linkTag = int.Parse(evt.linkID);
@@ -200,22 +210,28 @@ namespace UnityEditor.InsightsEditor
 
         bool ShouldShowPopup(BuildProfileEngineDiagnosticsState previousState, BuildProfileEngineDiagnosticsState newState)
         {
-            var projectSettingsEnabled = EngineDiagnosticsSettings.enabled;
-
-            // Project settings is disabled and we are switching from Build Profile Enabled
-            var shouldShowPopup = !projectSettingsEnabled &&
-                                  previousState == BuildProfileEngineDiagnosticsState.Enabled &&
-                                  newState != BuildProfileEngineDiagnosticsState.Enabled;
-
-            if (shouldShowPopup)
+            var enabledToDisabledFlag =
+                    previousState == BuildProfileEngineDiagnosticsState.Enabled &&
+                    newState == BuildProfileEngineDiagnosticsState.Disabled;
+            if (enabledToDisabledFlag)
+            {
                 return true;
+            }
 
-            // Project settings is enabled and we are switching to Build Profile Disabled
-            shouldShowPopup = projectSettingsEnabled &&
-                              previousState !=BuildProfileEngineDiagnosticsState.Disabled &&
-                              newState == BuildProfileEngineDiagnosticsState.Disabled;
+            var enabledToProjectSettingsDisabledFlag =
+                    previousState == BuildProfileEngineDiagnosticsState.Enabled &&
+                    newState == BuildProfileEngineDiagnosticsState.ProjectSettings &&
+                    !m_ProjectSettingsEngineDiagnosticsEnabled;
+            if (enabledToProjectSettingsDisabledFlag)
+            {
+                return true;
+            }
 
-            return shouldShowPopup;
+            var projectSettingsEnabledToDisabledFlag =
+                    previousState == BuildProfileEngineDiagnosticsState.ProjectSettings &&
+                    newState == BuildProfileEngineDiagnosticsState.Disabled &&
+                    m_ProjectSettingsEngineDiagnosticsEnabled;
+            return projectSettingsEnabledToDisabledFlag;
         }
 
         void ShowDisabledConfirmationDialog(BuildProfileEngineDiagnosticsState targetState)

@@ -293,6 +293,9 @@ namespace UnityEngine.UIElements
             {
                 selectingManipulator.m_SelectingUtilities.cursorIndex = cursorIndex;
                 selectingManipulator.m_SelectingUtilities.selectIndex = selectionIndex;
+
+                if (m_TouchScreenKeyboard != null)
+                    m_TouchScreenKeyboard.selection = new RangeInt(Mathf.Min(cursorIndex, selectionIndex), Mathf.Abs(selectionIndex - cursorIndex));
             }
         }
 

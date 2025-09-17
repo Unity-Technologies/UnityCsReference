@@ -892,13 +892,13 @@ namespace UnityEditorInternal.Profiling
 
         void SelectObjectsInHierarchyView()
         {
-            var instanceIds = m_TreeView.GetSelectedInstanceIds();
-            if (instanceIds == null || instanceIds.Count == 0)
+            var entityIds = m_TreeView.GetSelectedEntityIds();
+            if (entityIds == null || entityIds.Count == 0)
                 return;
 
             var selection = new List<UnityEngine.Object>();
 
-            foreach (int t in instanceIds)
+            foreach (var t in entityIds)
             {
                 var obj = EditorUtility.EntityIdToObject(t);
                 var com = obj as Component;

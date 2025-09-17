@@ -120,8 +120,8 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceWidthField.style.display = display;
             m_WorldSpaceHeightField.style.display = display;
 
-            // Let the UIDocument's LateUpdate method kick in (UUM-105765)
-            EditorUtility.SetDirty(target);
+            // Let the UIDocument update its rendering properties (UUM-105765)
+            uiDocument.DoUpdate();
         }
 
         string GenerateEditorElementsErrorMessage(int maxElements)

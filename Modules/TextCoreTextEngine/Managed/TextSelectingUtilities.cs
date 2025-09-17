@@ -7,13 +7,13 @@ using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.TextEditingUtilities;
-using static UnityEngine.TextEditor;
 
 namespace UnityEngine
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     internal class TextSelectingUtilities
     {
+        public enum DblClickSnapping : byte { WORDS, PARAGRAPHS }
         public DblClickSnapping dblClickSnap = DblClickSnapping.WORDS;
         public int iAltCursorPos = -1;
         public bool hasHorizontalCursorPos = false;
@@ -61,6 +61,8 @@ namespace UnityEngine
                 }
             }
         }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal int cursorIndexNoValidation
         {
             get { return m_CursorIndex; }
@@ -130,13 +132,7 @@ namespace UnityEngine
             this.textHandle = textHandle;
         }
 
-        internal bool HandleKeyEvent(Event e)
-        {
-            return HandleKeyEvent(e.keyCode, e.modifiers);
-        }
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool HandleKeyEvent(KeyCode key, EventModifiers modifiers)
+        public bool HandleKeyEvent(KeyCode key, EventModifiers modifiers)
         {
             var op = TextSelectOpFromEnum(key, modifiers, (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX));
             if (op.HasValue)
@@ -1018,10 +1014,8 @@ namespace UnityEngine
             return NextCodePointIndex(p);
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal Action OnCursorIndexChange;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal Action OnSelectIndexChange;
+        public Action OnCursorIndexChange;
+        public Action OnSelectIndexChange;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal Action OnRevealCursorChange;
 
@@ -1075,7 +1069,7 @@ namespace UnityEngine
             if (selectIndex == cursorIndex)
                 return;
 
-            GUIUtility.systemCopyBuffer = selectedText;
+            StytemCopyBuffer.systemCopyBuffer = selectedText;
         }
 
         enum CharacterType

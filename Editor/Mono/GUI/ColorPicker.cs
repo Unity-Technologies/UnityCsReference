@@ -1401,8 +1401,8 @@ namespace UnityEditor
             return s_LastPickedColor;
         }
 
-        public static bool IsOpened => s_Instance?.m_IsOpened == true;
-        public static bool IsCancelled => s_Instance?.m_IsCancelled == true;
+        public static bool IsOpened => s_Instance != null && s_Instance.m_IsOpened;
+        public static bool IsCancelled => s_Instance != null && s_Instance.m_IsCancelled;
 
         static class Styles
         {

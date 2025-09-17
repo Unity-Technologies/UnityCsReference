@@ -6,98 +6,80 @@ using System;
 using UnityEditor.PackageManager.UI;
 using UnityEditor.PackageManager.UI.Internal;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    sealed class PackageManagerButton : ToolbarButton
+    [InitializeOnLoad]
+    sealed class PackageManagerButton
     {
+        const string k_ElementPath = "Package Management/Package Manager";
+
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement("Package Management/Package Manager", true, defaultDockIndex = 11, defaultDockPosition = MainToolbarDockPosition.Left)]
+        [MainToolbarElement(k_ElementPath, true, defaultDockIndex = 11, defaultDockPosition = MainToolbarDockPosition.Left)]
         static MainToolbarElement Create()
         {
-            return new MainToolbarCustom(() => new PackageManagerButton());
+            var (icon, tooltip, clickAction) = GetContent(s_PackageDatabase);
+            return new MainToolbarButton(new MainToolbarContent(icon, tooltip), clickAction);
         }
 
-        private readonly IPackageDatabase m_PackageDatabase;
-        private readonly VisualElement m_Icon;
-        private Action m_ClickAction;
+        static IPackageDatabase s_PackageDatabase;
 
-        public PackageManagerButton()
+        const string k_DefaultIconPath = "Icons/PackageManagerDefault.png";
+        const string k_WarningIconPath = "Icons/PackageManagerWarning.png";
+        const string k_ErrorIconPath = "Icons/PackageManagerError.png";
+
+        static PackageManagerButton()
         {
-            m_PackageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
-            name = "PackageManager";
-
-            m_Icon = new VisualElement { name = "image" };
-            Add(m_Icon);
-            AddToClassList("unity-toolbar-button-package-manager");
-
-            clicked += OnPackageManagerButtonClicked;
-
-            RefreshState();
+            s_PackageDatabase = ServicesContainer.instance.Resolve<IPackageDatabase>();
+            s_PackageDatabase.onPackagesChanged += OnPackageChanged;
         }
 
-        private void OnAttachedToPanel(AttachToPanelEvent _)
-        {
-            m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
-        }
+        static void OnPackageChanged(PackagesChangeArgs _) => MainToolbar.Refresh(k_ElementPath);
 
-        private void OnPackagesChanged(PackagesChangeArgs _)
+        internal static (Texture2D, string, Action) GetContent(IPackageDatabase packageDatabase)
         {
-            RefreshState();
-        }
+            var state = packageDatabase.GetPackagesInUseState();
 
-        private void OnDetachFromPanel(DetachFromPanelEvent _)
-        {
-            m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
-        }
-
-        private void RefreshState()
-        {
-            var state = m_PackageDatabase.GetPackagesInUseState();
-            m_Icon.ClearClassList();
+            Texture2D icon = null;
+            string tooltip = null;
+            Action clickAction = null;
 
             switch (state)
             {
                 case PackageInUseState.NonCompliant:
-                    m_Icon.AddToClassList("error");
+                    icon = EditorGUIUtility.LoadIcon(k_ErrorIconPath);
                     tooltip = L10n.Tr("Restricted Packages In Use");
-                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectNonCompliancePage.k_Id);
+                    clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectNonCompliancePage.k_Id);
                     break;
 
                 case PackageInUseState.Error:
-                    m_Icon.AddToClassList("error");
+                    icon = EditorGUIUtility.LoadIcon(k_ErrorIconPath);
                     tooltip = L10n.Tr("Project contains packages with errors");
-                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
+                    clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
                     break;
 
                 case PackageInUseState.Warning:
-                    m_Icon.AddToClassList("warning");
+                    icon = EditorGUIUtility.LoadIcon(k_WarningIconPath);
                     tooltip = L10n.Tr("Project contains packages with warnings");
-                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
+                    clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
                     break;
 
                 case PackageInUseState.Experimental:
-                    m_Icon.AddToClassList("warning");
+                    icon = EditorGUIUtility.LoadIcon(k_WarningIconPath);
                     tooltip = L10n.Tr("Experimental Packages In Use");
-                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
+                    clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
                     break;
 
                 case PackageInUseState.None:
                 default:
-                    m_Icon.AddToClassList("default");
+                    icon = EditorGUIUtility.LoadIcon(k_DefaultIconPath);
                     tooltip = L10n.Tr("Package Manager");
-                    m_ClickAction = () => PackageManagerWindow.OpenAndSelectPackage(null);
+                    clickAction = () => PackageManagerWindow.OpenAndSelectPackage(null);
                     break;
             }
-        }
-
-        private void OnPackageManagerButtonClicked()
-        {
-            m_ClickAction?.Invoke();
+            return (icon, tooltip, clickAction);
         }
     }
 }

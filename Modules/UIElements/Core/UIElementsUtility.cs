@@ -600,7 +600,6 @@ namespace UnityEngine.UIElements
         }
 
         internal static int m_InMemoryAssetsHierarchyVersion { get; private set; } = 0;
-        internal static int m_InMemoryAssetsStyleVersion { get; private set; } = 0;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static void InMemoryAssetsHierarchyHaveBeenChanged()
@@ -608,19 +607,37 @@ namespace UnityEngine.UIElements
             m_InMemoryAssetsHierarchyVersion++;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static void InMemoryAssetsStyleHaveBeenChanged()
-        {
-            m_InMemoryAssetsStyleVersion++;
-        }
 
         internal static readonly HashSet<StyleSheet> s_StyleSheetsRequiringRebuilding = new();
+        internal static readonly HashSet<string> s_ReimportedStyleSheetsPath = new();
         internal static readonly List<StyleSheet> s_StyleSheetsRebuildList = new();
+        internal static readonly List<string> s_ReimportedStyleSheetsPathList = new();
 
         internal static void MarkStyleSheetAsChanged(StyleSheet styleSheet)
         {
+            if (!styleSheet)
+                return;
             s_StyleSheetsRequiringRebuilding.Add(styleSheet);
         }
+
+        internal static void MarkStyleSheetAsChanged(string styleSheetPath)
+        {
+            if (string.IsNullOrEmpty(styleSheetPath))
+                return;
+            s_ReimportedStyleSheetsPath.Add(styleSheetPath);
+        }
+
+        static void NotifyPanelsThatStyleSheetChanged(List<StyleSheet> styleSheets, List<string> styleSheetPaths)
+        {
+            var iterator = GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                var panel = iterator.Current.Value;
+                panel.liveReloadSystem.OnStyleSheetChanged(styleSheets);
+                panel.liveReloadSystem.OnStyleSheetChanged(styleSheetPaths);
+            }
+        }
+
 
         internal static void RebuildDirtyStyleSheets()
         {
@@ -629,22 +646,24 @@ namespace UnityEngine.UIElements
 
             try
             {
-                InMemoryAssetsStyleHaveBeenChanged();
-
                 StyleCache.ClearStyleCache();
 
                 // Avoid any side-effects by copying the content before we iterate on it.
                 s_StyleSheetsRebuildList.AddRange(s_StyleSheetsRequiringRebuilding);
+                s_ReimportedStyleSheetsPathList.AddRange(s_ReimportedStyleSheetsPath);
 
                 foreach (var styleSheet in s_StyleSheetsRebuildList)
                 {
                     styleSheet.RebuildIfNecessary();
                 }
+                NotifyPanelsThatStyleSheetChanged(s_StyleSheetsRebuildList, s_ReimportedStyleSheetsPathList);
             }
             finally
             {
                 s_StyleSheetsRebuildList.Clear();
                 s_StyleSheetsRequiringRebuilding.Clear();
+                s_ReimportedStyleSheetsPathList.Clear();
+                s_ReimportedStyleSheetsPath.Clear();
             }
         }
     }

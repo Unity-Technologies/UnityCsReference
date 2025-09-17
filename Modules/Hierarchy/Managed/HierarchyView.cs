@@ -964,12 +964,14 @@ namespace Unity.Hierarchy
                 m_MultiColumnListView.ClearSelection();
                 foreach (var handler in m_Hierarchy.EnumerateNodeTypeHandlers())
                 {
-                    handler.Internal_PopulateContextMenu(this, null, evt.menu);
+                    if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                        editorHandler.PopulateContextMenu(this, null, evt.menu);
                 }
             }
             else
             {
-                item.Handler?.Internal_PopulateContextMenu(this, item, evt.menu);
+                if (item.Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                    editorHandler.PopulateContextMenu(this, item, evt.menu);
             }
 
             PopulateContextMenu?.Invoke(item, evt.menu);
@@ -977,7 +979,8 @@ namespace Unity.Hierarchy
 
         internal void InvokeGetTooltip(HierarchyViewItem item, bool filtering, StringBuilder tooltip)
         {
-            item.Handler?.Internal_GetTooltip(item, filtering, tooltip);
+            if (item.Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                editorHandler.GetTooltip(item, filtering, tooltip);
             GetTooltip?.Invoke(item, filtering, tooltip);
         }
 
@@ -1147,7 +1150,8 @@ namespace Unity.Hierarchy
             {
                 ref readonly var node = ref m_HierarchyViewModel[itemIndex];
                 var handler = m_Hierarchy.GetNodeTypeHandler(in node);
-                handler?.DoubleClick(this, in node);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                    editorHandler.OnDoubleClick(this, in node);
             }
 
             m_LastMouseUpSelectionIndex = itemIndex;

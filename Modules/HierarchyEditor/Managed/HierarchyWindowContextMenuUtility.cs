@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -37,38 +38,49 @@ namespace Unity.Hierarchy.Editor
         /// <param name="view">The <see cref="HierarchyView"/>.</param>
         public static void PopulateCommonContextMenuItems(HierarchyView view, HierarchyNode node, HierarchyNodeTypeHandler handler, DropdownMenu menu)
         {
-            bool hasSelection = view.ViewModel.HasAllFlags(HierarchyNodeFlags.Selected);
+            var selectionCount = view.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+            bool hasSelection = selectionCount > 0;
 
-            menu.AppendAction($"{k_Cut} " + Menu.GetHotkey($"{k_EditFolderName}/{k_Cut}"), _ => view.OnCut(), hasSelection && handler.CanCut(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction($"{k_Copy} " + Menu.GetHotkey($"{k_EditFolderName}/{k_Copy}"), _ => view.OnCopy(), hasSelection && handler.CanCopy(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction($"{k_Paste} " + Menu.GetHotkey($"{k_EditFolderName}/{k_Paste}"), _ => view.OnPaste(), handler.CanPaste(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            if (handler is HierarchyGameObjectHandler gameObjectHandler)
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
             {
-                menu.AppendAction($"{k_PasteSpecialFolderName}/{k_PasteAsChildKeepLocalTransform} " + Menu.GetHotkey($"{k_EditFolderName}/{k_PasteSpecialFolderName}/{k_PasteAsChildKeepLocalTransform}"), _ => ClipboardUtility.PasteGOAsChild(), hasSelection && gameObjectHandler.CanPasteAsChild(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-                menu.AppendAction($"{k_PasteSpecialFolderName}/{k_PasteAsChildKeepWorldTransform}", _ => ClipboardUtility.PasteGOAsChild(true), hasSelection && gameObjectHandler.CanPasteAsChild(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                AppendAction(menu, k_Cut, Menu.GetHotkey($"{k_EditFolderName}/{k_Cut}"), () => editorHandler.OnCut(view), hasSelection && editorHandler.CanCut(view));
+                AppendAction(menu, k_Copy, Menu.GetHotkey($"{k_EditFolderName}/{k_Copy}"), () => editorHandler.OnCopy(view), hasSelection && editorHandler.CanCopy(view));
+                AppendAction(menu, k_Paste, Menu.GetHotkey($"{k_EditFolderName}/{k_Paste}"), () => editorHandler.OnPaste(view), editorHandler.CanPaste(view));
+
+                AppendAction(menu, $"{k_PasteSpecialFolderName}/{k_PasteAsChildKeepLocalTransform}", Menu.GetHotkey($"{k_EditFolderName}/{k_PasteSpecialFolderName}/{k_PasteAsChildKeepLocalTransform}"), () => editorHandler.OnPasteAsChild(view, false), editorHandler.CanPasteAsChild(view));
+                AppendAction(menu, $"{k_PasteSpecialFolderName}/{k_PasteAsChildKeepWorldTransform}", () => editorHandler.OnPasteAsChild(view, true), hasSelection && editorHandler.CanPasteAsChild(view));
+
+                AppendAction(menu, k_Rename, () => view.OnSetName(node), selectionCount == 1 && editorHandler.CanSetName(view, in node));
+                AppendAction(menu, k_Duplicate, Menu.GetHotkey($"{k_EditFolderName}/{k_Duplicate}"), () => editorHandler.OnDuplicate(view), hasSelection && editorHandler.CanDuplicate(view));
+                AppendAction(menu, k_Delete, Menu.GetHotkey($"{k_EditFolderName}/{k_Delete}"), () => editorHandler.OnDelete(view), hasSelection && editorHandler.CanDelete(view));
+
+                menu.AppendSeparator();
+
+                AppendAction(menu, k_SelectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), view.SelectAll);
+                AppendAction(menu, k_DeselectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), view.ClearSelection, hasSelection);
+                AppendAction(menu, k_InvertSelection, Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), view.InvertSelection, hasSelection);
+                AppendAction(menu, k_SelectChildren, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), view.SelectChildrenForSelectedNodes, view.DoesSelectedNodesHaveChildren());
+
+                menu.AppendSeparator();
+
+                AppendAction(menu, k_FindReferenceInScene, () => editorHandler.OnFindReferences(view), hasSelection && editorHandler.CanFindReferences(view));
+
+                menu.AppendSeparator();
             }
+        }
+
+        static void AppendAction(DropdownMenu menu, string name, Action action, bool enabled = true)
+        {
+            AppendAction(menu, name, hotkey: null, action, enabled);
+        }
+
+        static void AppendAction(DropdownMenu menu, string name, string hotkey, Action action, bool enabled = true)
+        {
+            var status = enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+            if (string.IsNullOrEmpty(hotkey))
+                menu.AppendAction(name, _ => action?.Invoke(), status);
             else
-            {
-                menu.AppendAction($"{k_PasteSpecialFolderName}/{k_PasteAsChildKeepLocalTransform} " + Menu.GetHotkey($"{k_EditFolderName}/{k_PasteSpecialFolderName}/{k_PasteAsChildKeepWorldTransform}"), null, DropdownMenuAction.Status.Disabled);
-                menu.AppendAction($"{k_PasteSpecialFolderName}/{k_PasteAsChildKeepWorldTransform}", null, DropdownMenuAction.Status.Disabled);
-            }
-
-            menu.AppendAction($"{k_Rename}", _ => view.OnSetName(node), view.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected) == 1 && handler.CanSetName(view, in node) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction($"{k_Duplicate} " + Menu.GetHotkey($"{k_EditFolderName}/{k_Duplicate}"), _ => view.OnDuplicate(), hasSelection && handler.CanDuplicate(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction($"{k_Delete} " + Menu.GetHotkey($"{k_EditFolderName}/{k_Delete}"), _ => handler.Delete(view), hasSelection && handler.CanDelete(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            menu.AppendSeparator();
-
-            menu.AppendAction($"{k_SelectAll} " + Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), _ => view.SelectAll());
-            menu.AppendAction($"{k_DeselectAll} " + Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), _ => view.ClearSelection(), hasSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction($"{k_InvertSelection} " + Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), _ => view.InvertSelection(), hasSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction($"{k_SelectChildren} " + Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), _ => view.SelectChildrenForSelectedNodes(), view.DoesSelectedNodesHaveChildren() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            menu.AppendSeparator();
-
-            menu.AppendAction($"{k_FindReferenceInScene}", _ => handler.FindReferences(view), hasSelection && handler.CanFindReferences(view) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            menu.AppendSeparator();
+                menu.AppendAction($"{name} {hotkey}", _ => action?.Invoke(), status);
         }
     }
 }

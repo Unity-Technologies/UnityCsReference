@@ -242,6 +242,10 @@ namespace UnityEngine.UIElements
             HandleFocus(recycledItem, previousIndex);
         }
 
+        bool IsContentContainerPanelDirtied() => m_ScrollView.contentContainer.panel is { isDirty: true };
+
+        bool ShouldStopDeferredScrollTo() => !IsContentContainerPanelDirtied();
+
         /// <summary>
         /// If the content container is dirty, we need to defer the scroll to later to ensure we have the correct size.
         /// <see cref="ScheduleDeferredScrollToItem"/> to start the deferred scroll.
@@ -250,7 +254,10 @@ namespace UnityEngine.UIElements
         /// <returns>true if the content container is dirty and the scroll will need to be deferred.</returns>
         protected bool ShouldDeferScrollToItem(int index)
         {
-            if (m_ScrollView.contentContainer.panel.isDirty)
+            if (m_ScheduleDeferredScrollToItem is { isActive: true })
+                return false;
+
+            if (IsContentContainerPanelDirtied())
             {
                 m_DeferredScrollToItemIndex = index;
                 return true;
@@ -268,21 +275,35 @@ namespace UnityEngine.UIElements
                 return;
 
             if (m_ScheduleDeferredScrollToItem == null)
-                m_ScheduleDeferredScrollToItem = m_CollectionView.schedule.Execute(m_PerformDeferredScrollToItem);
-            else
-            {
-                m_ScheduleDeferredScrollToItem.Pause();
+                m_ScheduleDeferredScrollToItem = m_CollectionView.schedule.Execute(m_PerformDeferredScrollToItem).Until(ShouldStopDeferredScrollTo);
+            else if (!m_ScheduleDeferredScrollToItem.isActive)
                 m_ScheduleDeferredScrollToItem.Resume();
-            }
         }
 
         void PerformDeferredScrollToItem()
         {
             if (m_DeferredScrollToItemIndex != null)
             {
-                var index = m_DeferredScrollToItemIndex.Value;
-                m_DeferredScrollToItemIndex = null;
-                ScrollToItem(index);
+                ScrollToItem(m_DeferredScrollToItemIndex.Value);
+            }
+            else
+            {
+                m_ScheduleDeferredScrollToItem.Pause();
+            }
+        }
+
+        protected void StopDeferredScrollToItem()
+        {
+            m_DeferredScrollToItemIndex = null;
+
+            if (m_ScheduleDeferredScrollToItem == null)
+            {
+                return;
+            }
+
+            if (m_ScheduleDeferredScrollToItem.isActive)
+            {
+                m_ScheduleDeferredScrollToItem.Pause();
             }
         }
 

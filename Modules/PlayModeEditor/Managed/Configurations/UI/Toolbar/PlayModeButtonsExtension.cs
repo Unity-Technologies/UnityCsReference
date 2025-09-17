@@ -67,6 +67,9 @@ namespace Unity.PlayMode.Editor
             m_PlayModeConfigUI = new VisualElement();
             m_PlayModeConfigUI.style.flexDirection = FlexDirection.Row;
             m_PlayModeButtons.Insert(0, m_PlayModeConfigUI);
+            
+            // Restore the dropdown after toolbar recreation
+            RefreshPlayModeConfigUI();
         }
 
         /// <summary>

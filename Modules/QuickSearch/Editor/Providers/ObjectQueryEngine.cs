@@ -381,6 +381,10 @@ namespace UnityEditor.Search.Providers
                 }
 
                 var gocs = go.GetComponents<Component>();
+                if (gocs.Length > 1)
+                {
+                    refs.Add(obj.GetInstanceID());
+                }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
@@ -395,8 +399,6 @@ namespace UnityEditor.Search.Providers
                     BuildReferences(c, ref god, refs);
                 }
             }
-
-            refs.Remove(obj.GetInstanceID());
             god.refs = refs;
         }
 
@@ -561,7 +563,7 @@ namespace UnityEditor.Search.Providers
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
                 return ParseResult<int>.none;
 
-            return new ParseResult<int>(true, GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid));
+            return new ParseResult<int>(true, GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid));
         }
 
         static ParseResult<int> AssetPathTypeParser(string filterValue)

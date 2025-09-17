@@ -38,6 +38,10 @@ namespace UnityEditor.Build
     {
         void OnPreprocessBuild(BuildReport report);
     }
+    public interface IPreprocessBuildWithContext : IOrderedCallback
+    {
+        void OnPreprocessBuild(BuildCallbackContext ctx);
+    }
 
     public interface IFilterBuildAssemblies : IOrderedCallback
     {
@@ -53,6 +57,10 @@ namespace UnityEditor.Build
     public interface IPostprocessBuildWithReport : IOrderedCallback
     {
         void OnPostprocessBuild(BuildReport report);
+    }
+    public interface IPostprocessBuildWithContext : IOrderedCallback
+    {
+        void OnPostprocessBuild(BuildCallbackContext ctx);
     }
 
     public interface IPostBuildPlayerScriptDLLs : IOrderedCallback
@@ -162,6 +170,8 @@ namespace UnityEditor.Build
 
             public List<IPreprocessBuildWithReport> buildPreprocessorsWithReport;
             public List<IPostprocessBuildWithReport> buildPostprocessorsWithReport;
+            public List<IPreprocessBuildWithContext> buildPreprocessorsWithContext;
+            public List<IPostprocessBuildWithContext> buildPostprocessorsWithContext;
             public List<IPostprocessLaunch> launchPostprocessors;
             public List<IProcessSceneWithReport> sceneProcessorsWithReport;
 
@@ -297,8 +307,10 @@ namespace UnityEditor.Build
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPlayerProcessors);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPreprocessors);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPreprocessorsWithReport);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPreprocessorsWithContext);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPostprocessors);
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPostprocessorsWithReport);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPostprocessorsWithContext);
                 }
 
                 if (findSceneProcessors)
@@ -362,10 +374,14 @@ namespace UnityEditor.Build
                 processors.buildPreprocessors.Sort(CompareICallbackOrder);
             if (processors.buildPreprocessorsWithReport != null)
                 processors.buildPreprocessorsWithReport.Sort(CompareICallbackOrder);
+            if (processors.buildPreprocessorsWithContext != null)
+                processors.buildPreprocessorsWithContext.Sort(CompareICallbackOrder);
             if (processors.buildPostprocessors != null)
                 processors.buildPostprocessors.Sort(CompareICallbackOrder);
             if (processors.buildPostprocessorsWithReport != null)
                 processors.buildPostprocessorsWithReport.Sort(CompareICallbackOrder);
+            if (processors.buildPostprocessorsWithContext != null)
+                processors.buildPostprocessorsWithContext.Sort(CompareICallbackOrder);
             if (processors.buildTargetProcessors != null)
                 processors.buildTargetProcessors.Sort(CompareICallbackOrder);
             if (processors.sceneProcessors != null)
@@ -525,6 +541,27 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
+        internal static void OnBuildPreProcessWithContext(BuildCallbackContext context)
+        {
+            if (processors.buildPreprocessorsWithContext != null)
+            {
+                foreach (var processor in processors.buildPreprocessorsWithContext)
+                {
+                    try
+                    {
+                        processor.OnPreprocessBuild(context);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                        if (context.Report != null && ((context.Report.summary.options & BuildOptions.StrictMode) != 0 || (context.Report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0))
+                            return;
+                    }
+                }
+            }
+        }
+
+        [RequiredByNativeCode]
         internal static void OnSceneProcess(UnityEngine.SceneManagement.Scene scene, BuildReport report)
         {
 #pragma warning disable 618
@@ -586,6 +623,27 @@ namespace UnityEditor.Build
                 processors.buildPostprocessorsWithReport, bpp => bpp.OnPostprocessBuild(report),
                 (report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0);
 #pragma warning restore 618
+        }
+
+        [RequiredByNativeCode]
+        internal static void OnBuildPostProcessWithContext(BuildCallbackContext context)
+        {
+            if (processors.buildPostprocessorsWithContext != null)
+            {
+                foreach (var processor in processors.buildPostprocessorsWithContext)
+                {
+                    try
+                    {
+                        processor.OnPostprocessBuild(context);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                        if (context.Report != null && ((context.Report.summary.options & BuildOptions.StrictMode) != 0 || (context.Report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0))
+                            return;
+                    }
+                }
+            }
         }
 
 
@@ -752,7 +810,9 @@ namespace UnityEditor.Build
             processors.buildPostprocessors = null;
             processors.sceneProcessors = null;
             processors.buildPreprocessorsWithReport = null;
+            processors.buildPreprocessorsWithContext = null;
             processors.buildPostprocessorsWithReport = null;
+            processors.buildPostprocessorsWithContext = null;
             processors.sceneProcessorsWithReport = null;
             processors.filterBuildAssembliesProcessor = null;
             processors.unityLinkerProcessors = null;

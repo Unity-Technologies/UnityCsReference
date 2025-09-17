@@ -66,8 +66,10 @@ namespace Unity.UI.Builder
         const float m_PreviewMinHeight = 20;
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
-        VisualElement m_TextGeneratorStyle;
-        VisualElement m_TextAutoSizeStyle;
+        TextAutoSizeStyleField m_TextAutoSizeField;
+        EnumField m_TextGeneratorField;
+        BuilderStyleRow m_AtgWarningRow;
+        BuilderStyleRow m_AutoSizeWarningRow;
 
         // Controllers
         public UxmlBatchedChangesController batchedChangesController { get; }
@@ -106,6 +108,8 @@ namespace Unity.UI.Builder
 
         public BuilderInspectorCanvas canvasInspector => m_CanvasSection;
         public BuilderInspectorAttributes attributesSection => m_AttributesSection;
+        public BuilderInspectorLocalStyles localStyles => m_LocalStylesSection;
+        public BuilderInspectorInheritedStyles inheritedStyles => m_InheritedStyleSection;
 
         // Constants
         static readonly string s_UssClassName = "unity-builder-inspector";
@@ -259,12 +263,7 @@ namespace Unity.UI.Builder
                 BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uxml");
             template.CloneTree(this);
 
-            m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
-            m_TextAutoSizeStyle = this.Q<BuilderStyleRow>(null, "unity-text-auto-size");
-
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
-            m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
-            m_TextAutoSizeStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            BindAdvancedTextUI();
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -381,6 +380,29 @@ namespace Unity.UI.Builder
             m_RefreshAttributesAction = RefreshAttributesSection;
         }
 
+        void BindAdvancedTextUI()
+        {
+            m_TextGeneratorField   = this.Q<EnumField>("textgenerator-field");
+            m_TextAutoSizeField    = this.Q<TextAutoSizeStyleField>("text-auto-size");
+            m_AtgWarningRow        = this.Q<BuilderStyleRow>("atg-warning-row");
+            m_AutoSizeWarningRow   = this.Q<BuilderStyleRow>("autosize-warning-row");
+
+            m_TextAutoSizeField?.RegisterValueChangedCallback(_ => UpdateAdvancedTextHelpBox());
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged += _ => UpdateAdvancedTextHelpBox();
+        }
+
+        internal void UpdateAdvancedTextHelpBox()
+        {
+            bool isAdvanced = m_TextGeneratorField?.value != null && (TextGeneratorType)m_TextGeneratorField.value == TextGeneratorType.Advanced;
+
+            bool showAtg = isAdvanced && !UIToolkitProjectSettings.enableAdvancedText;
+            m_AtgWarningRow.style.display = showAtg ? DisplayStyle.Flex : DisplayStyle.None;
+
+            bool bestFit = m_TextAutoSizeField != null && m_TextAutoSizeField.IsBestFit;
+            bool showAutoSize = !isAdvanced && bestFit;
+            m_AutoSizeWarningRow.style.display = showAutoSize ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         public void Dispose()
         {
             m_LocalStylesSection.Dispose();
@@ -388,7 +410,6 @@ namespace Unity.UI.Builder
             m_HeaderSection.Dispose();
             m_PreviewWindow?.Close();
             batchedChangesController.Dispose();
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
@@ -1939,12 +1960,6 @@ namespace Unity.UI.Builder
                     e.StopImmediatePropagation();
                 }
             });
-        }
-
-        void ChangeTextGeneratorStyleVisibility(bool show)
-        {
-            m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-            m_TextAutoSizeStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

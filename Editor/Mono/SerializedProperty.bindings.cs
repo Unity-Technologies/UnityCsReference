@@ -1438,7 +1438,7 @@ namespace UnityEditor
         private extern int GetPPtrValueFromInstanceIDInternal();
 
         [FreeFunction(Name = "SerializedPropertyBindings::SetPPtrValueFromInstanceIDInternal", HasExplicitThis = true)]
-        private extern void SetPPtrValueFromInstanceIDInternal(int instanceID);
+        private extern void SetPPtrValueFromInstanceIDInternal(EntityId instanceID);
 
         internal string objectReferenceStringValue
         {

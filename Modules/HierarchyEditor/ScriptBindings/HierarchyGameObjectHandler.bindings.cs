@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
@@ -26,7 +27,12 @@ namespace Unity.Hierarchy.Editor
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchyGameObjectHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchyGameObjectHandlerBindings.h")]
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-    internal sealed class HierarchyGameObjectHandler : HierarchyNodeTypeHandler, IHierarchySearchPropositionProvider, IHierarchyEntityIdConverter, IHierarchyExtendCreateMenu
+    internal sealed class HierarchyGameObjectHandler :
+        HierarchyNodeTypeHandler,
+        IHierarchyEntityIdConverter,
+        IHierarchyEditorNodeTypeHandler,
+        IHierarchySearchPropositionProvider,
+        IHierarchyExtendCreateMenu
     {
         const string k_GameObjectUssClass = "hierarchy-item__gameobject-node";
         const string k_GameObjectDisabledUssClass = "unity-disabled";
@@ -128,117 +134,6 @@ namespace Unity.Hierarchy.Editor
             return m_State.NodeType;
         }
 
-        /// <summary>
-        /// Determines if the nodes of this hierarchy node type handler accepts the given node as parent.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="parent">The hierarchy parent node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a parent, <see langword="false"/> otherwise.</returns>
-        public override bool AcceptParent(HierarchyView view, in HierarchyNode parent)
-        {
-            var gameObjectNodeType = GetNodeType();
-            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
-            var parentNodeType = Hierarchy.GetNodeType(in parent);
-            return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType || parentNodeType == subSceneNodeType;
-        }
-
-        /// <summary>
-        /// Determines if the nodes of this hierarchy node type handler accepts the given node as child.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="child">The hierarchy child node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
-        public override bool AcceptChild(HierarchyView view, in HierarchyNode child)
-        {
-            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
-            var childNodeType = Hierarchy.GetNodeType(in child);
-            return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
-        }
-
-        /// <summary>
-        /// Determine if the node type handler accept the naming action.
-        /// </summary>
-        /// <param name="view">The parent <see cref="HierarchyView"/>.</param>
-        /// <param name="node">The <see cref="HierarchyNode"/>.</param>
-        /// <returns><see langword="true"/> if the node can be renamed, <see langword="false"/> otherwise.</returns>
-        public override bool CanSetName(HierarchyView view, in HierarchyNode node)
-        {
-            if (node == HierarchyNode.Null) return false;
-
-            var gameObject = GetGameObject(in node);
-            if ((gameObject.hideFlags & HideFlags.NotEditable) != 0)
-                return false;
-
-            return true;
-        }
-
-        /// <summary>
-        /// Determines if selected nodes can be copied.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
-        public override bool CanCopy(HierarchyView view)
-        {
-            return AllowCutCopyAndDuplicate(view);
-        }
-
-        /// <summary>
-        /// Determines if selected nodes can be cut.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
-        public override bool CanCut(HierarchyView view)
-        {
-            return AllowCutCopyAndDuplicate(view);
-        }
-
-        /// <summary>
-        /// Determines if selected nodes can be deleted.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
-        public override bool CanDelete(HierarchyView view)
-        {
-            if (m_State.CustomParentForNewGameObjects == null)
-                return true;
-
-            // In prefab stage, CustomParentForNewGameObjects and it's ancestors cannot be deleted.
-            var node = GetOrCreateNode(m_State.CustomParentForNewGameObjects.gameObject);
-            return !HierarchyViewSelectionExtension.IsChildOfSelectionOrSelected(view, in node);
-        }
-
-        /// <summary>
-        /// Determines if the selected nodes can be pasted.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if selected nodes can be pasted, <see langword="false"/> otherwise.</returns>
-        public override bool CanPaste(HierarchyView view)
-        {
-            return (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard());
-        }
-
-        /// <summary>
-        /// Determines if the selected nodes can be pasted as child.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if selected nodes can be pasted as child, <see langword="false"/> otherwise.</returns>
-        public override bool CanPasteAsChild(HierarchyView view)
-        {
-            return ClipboardUtility.CanPasteAsChild();
-        }
-
-        /// <summary>
-        /// Determines if selected nodes can be duplicated.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
-        public override bool CanDuplicate(HierarchyView view)
-        {
-            return AllowCutCopyAndDuplicate(view);
-        }
-
         protected override void OnBindItem(HierarchyViewItem item)
         {
             item.AddToClassList(k_GameObjectUssClass);
@@ -259,24 +154,163 @@ namespace Unity.Hierarchy.Editor
                 HierarchyViewPrefabStyleUtility.CleanUpNodePrefabStyle(item);
         }
 
-        protected override void PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
-        {
-            HierarchyWindowContextMenuUtility.PopulateCommonContextMenuItems(view, item?.Node ?? HierarchyNode.Null, this, menu);
-            BuildGameObjectContextMenu(view, item?.Node ?? HierarchyNode.Null, GetGameObject(item?.Node ?? HierarchyNode.Null), menu);
-        }
-
         void IHierarchyExtendCreateMenu.PopulateCreateMenu(DropdownMenu menu)
         {
             PopulateCreateMenu(menu, null, null);
         }
 
-        /// <summary>
-        /// Action to execute when starting a drag operation.
-        /// Used to setup a drag operation with the specified nodes by populating the <see cref="HierarchyViewDragAndDropSetupData"/> container.
-        /// The <see cref="HierarchyViewDragAndDropSetupData"/> container contains lists of <see cref="UnityEngine.EntityId"/> and paths that can be populated to store information about the drag operation.
-        /// </summary>
-        /// <param name="data">Container holding the data needed to start a drag and drop operation. <see cref="HierarchyNodeTypeHandler"/>s can populate this container.</param>
-        protected override void OnStartDrag(in HierarchyViewDragAndDropSetupData data)
+        #region IHierarchyEditorNodeTypeHandler
+        bool IHierarchyEditorNodeTypeHandler.CanCut(HierarchyView view)
+        {
+            return AllowCutCopyAndDuplicate(view);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnCut(HierarchyView view)
+        {
+            ClipboardUtility.CutGO();
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanCopy(HierarchyView view)
+        {
+            return AllowCutCopyAndDuplicate(view);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnCopy(HierarchyView view)
+        {
+            ClipboardUtility.CopyGO();
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view)
+        {
+            return CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard();
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
+        {
+            ClipboardUtility.PasteGO(m_State.CustomParentForNewGameObjects);
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view)
+        {
+            return ClipboardUtility.CanPasteAsChild();
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos)
+        {
+            ClipboardUtility.PasteGOAsChild(keepWorldPos);
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node)
+        {
+            if (node == HierarchyNode.Null) return false;
+
+            var gameObject = GetGameObject(in node);
+            if ((gameObject.hideFlags & HideFlags.NotEditable) != 0)
+                return false;
+
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name)
+        {
+            var go = GetGameObject(in node);
+            if (go == null)
+                return false;
+
+            Undo.RecordObject(go, "Rename");
+            go.name = name;
+            return true;
+        }
+
+        string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+        {
+            return Hierarchy.GetName(in node);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
+        {
+            return AllowCutCopyAndDuplicate(view);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view)
+        {
+            ClipboardUtility.DuplicateGO(m_State.CustomParentForNewGameObjects);
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanDelete(HierarchyView view)
+        {
+            if (m_State.CustomParentForNewGameObjects == null)
+                return true;
+
+            // In prefab stage, CustomParentForNewGameObjects and it's ancestors cannot be deleted.
+            var node = GetOrCreateNode(m_State.CustomParentForNewGameObjects.gameObject);
+            return !HierarchyViewSelectionExtension.IsChildOfSelectionOrSelected(view, in node);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view)
+        {
+            Unsupported.DeleteGameObjectSelection();
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanFindReferences(HierarchyView view) => true;
+
+        bool IHierarchyEditorNodeTypeHandler.OnFindReferences(HierarchyView view)
+        {
+            if (!Selection.activeGameObject)
+                return false;
+
+            SearchableEditorWindow.SearchForReferencesToInstanceID(Selection.activeGameObject.GetEntityId());
+            return true;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanDoubleClick(HierarchyView view, in HierarchyNode node) => true;
+
+        bool IHierarchyEditorNodeTypeHandler.OnDoubleClick(HierarchyView view, in HierarchyNode node)
+        {
+            return GetGameObject(in node) != null && SceneView.lastActiveSceneView?.FrameSelected() == true;
+        }
+
+        void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
+        {
+            // By default only show tooltip when filtering
+            if (!isFiltering)
+                return;
+
+            tooltip.Append(Hierarchy.GetPath(in item.Node));
+        }
+
+        void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
+        {
+            HierarchyWindowContextMenuUtility.PopulateCommonContextMenuItems(view, item?.Node ?? HierarchyNode.Null, this, menu);
+            BuildGameObjectContextMenu(view, item?.Node ?? HierarchyNode.Null, GetGameObject(item?.Node ?? HierarchyNode.Null), menu);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.AcceptParent(HierarchyView view, in HierarchyNode parent)
+        {
+            var gameObjectNodeType = GetNodeType();
+            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var parentNodeType = Hierarchy.GetNodeType(in parent);
+            return parentNodeType == gameObjectNodeType || parentNodeType == sceneNodeType || parentNodeType == subSceneNodeType;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
+        {
+            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var childNodeType = Hierarchy.GetNodeType(in child);
+            return childNodeType != sceneNodeType && childNodeType != subSceneNodeType;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
+
+        void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
         {
             var nodeSpan = data.Nodes;
             for (var i = 0; i < nodeSpan.Length; ++i)
@@ -291,36 +325,16 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        /// <summary>
-        /// Determines if a drop operation can be performed based on the <see cref="HierarchyViewDragAndDropHandlingData"/>.
-        /// </summary>
-        /// <param name="data">Data relative to the current drag and drop operation.</param>
-        /// <returns>The status of the drag and drop operation.</returns>
-        protected override DragVisualMode CanDrop(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data)
         {
             return DoHandleDrop(data, false);
         }
 
-        /// <summary>
-        /// Action to execute when handling a drop operation based on the <see cref="HierarchyViewDragAndDropHandlingData"/>.
-        /// </summary>
-        /// <param name="data">Data relative to the current drag and drop operation.</param>
-        /// <returns>The status of the drag and drop operation.</returns>
-        protected override DragVisualMode OnDrop(in HierarchyViewDragAndDropHandlingData data)
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data)
         {
             return DoHandleDrop(data, true);
         }
-
-        /// <summary>
-        /// Action to execute when double clicking on the <see cref="HierarchyNode"/>.
-        /// </summary>
-        /// <param name="node">The <see cref="HierarchyNode"/> to perform double click on.</param>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if the action was successful, <see langword="false"/> otherwise.</returns>
-        protected override bool OnDoubleClick(HierarchyView view, in HierarchyNode node)
-        {
-            return GetGameObject(in node) != null && SceneView.lastActiveSceneView?.FrameSelected() == true;
-        }
+        #endregion
 
         void BuildGameObjectContextMenu(HierarchyView view, in HierarchyNode node, GameObject gameObject, DropdownMenu menu)
         {
@@ -395,56 +409,6 @@ namespace Unity.Hierarchy.Editor
 
             // In Prefab stage, CustomParentForNewGameObjects's ancestors cannot be cut, copied nor duplicated.
             return customParentNode != HierarchyNode.Null && !HierarchyViewSelectionExtension.IsChildOfSelectionOrSelected(view, Hierarchy.GetParent(in customParentNode));
-        }
-
-        protected override bool OnCut(HierarchyView view)
-        {
-            ClipboardUtility.CutGO();
-            return true;
-        }
-
-        protected override bool OnCopy(HierarchyView view)
-        {
-            ClipboardUtility.CopyGO();
-            return true;
-        }
-
-        protected override bool OnPaste(HierarchyView view)
-        {
-            ClipboardUtility.PasteGO(m_State.CustomParentForNewGameObjects);
-            return true;
-        }
-
-        protected override bool OnSetName(HierarchyView view, in HierarchyNode node, string name)
-        {
-            var go = GetGameObject(in node);
-            if (go == null)
-                return false;
-
-            Undo.RecordObject(go, "Rename");
-            go.name = name;
-            return true;
-        }
-
-        protected override bool OnDuplicate(HierarchyView view)
-        {
-            ClipboardUtility.DuplicateGO(m_State.CustomParentForNewGameObjects);
-            return true;
-        }
-
-        protected override bool OnDelete(HierarchyView view)
-        {
-            Unsupported.DeleteGameObjectSelection();
-            return true;
-        }
-
-        protected override bool OnFindReferences(HierarchyView view)
-        {
-            if (!Selection.activeGameObject)
-                return false;
-
-            SearchableEditorWindow.SearchForReferencesToInstanceID(Selection.activeGameObject.GetEntityId());
-            return true;
         }
 
         bool IsSelectPrefabRootAvailable(HierarchyView view)
@@ -674,6 +638,7 @@ namespace Unity.Hierarchy.Editor
             return m_State.ParsedQuery.Test(go);
         }
 
+        #region IHierarchySearchPropositionProvider
         IEnumerable<SearchProposition> IHierarchySearchPropositionProvider.FetchPropositions(HierarchyViewModel viewModel, SearchContext context, SearchPropositionOptions options)
         {
             using (new EditorPerformanceTracker($"{nameof(HierarchyGameObjectHandler)}.FetchPropositions"))
@@ -681,6 +646,7 @@ namespace Unity.Hierarchy.Editor
                 return SceneProvider.FetchQueryBuilderPropositions(QueryEngine, null);
             }
         }
+        #endregion
 
         DragVisualMode DoHandleDrop(in HierarchyViewDragAndDropHandlingData data, bool perform)
         {

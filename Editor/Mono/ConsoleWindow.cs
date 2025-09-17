@@ -447,6 +447,14 @@ namespace UnityEditor
             return Constants.StatusLog;
         }
 
+        void ResetActiveEntry()
+        {
+            SetActiveEntry(null);
+            DestroyLatestRestoreEntry();
+            m_ListView.row = -1;
+            m_ListView.selectedItems = null;
+        }
+
         void SetActiveEntry(LogEntry entry)
         {
             if (entry != null)
@@ -531,6 +539,8 @@ namespace UnityEditor
             {
                 LogEntries.Clear();
                 GUIUtility.keyboardControl = 0;
+                //Reset active selection
+                ResetActiveEntry();
             }
 
             int currCount = LogEntries.GetCount();
@@ -553,6 +563,9 @@ namespace UnityEditor
             bool collapsedChanged = (wasCollapsed != HasFlag(ConsoleFlags.Collapse));
             if (collapsedChanged)
             {
+                //Reset selected elements
+                ResetActiveEntry();
+
                 // unselect if collapsed flag changed
                 m_ListView.row = -1;
 
@@ -588,7 +601,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 SetActiveEntry(null);
-                m_LastActiveEntryIndex = -1;
+                DestroyLatestRestoreEntry();
             }
 
             SetFlag(ConsoleFlags.LogLevelLog, setLogFlag);
@@ -700,14 +713,14 @@ namespace UnityEditor
                             textRect.x += offset;
 
                             if (string.IsNullOrEmpty(m_SearchText))
-                                errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
+                                errorModeStyle.Draw(textRect, tempContent, id, entryIsSelected);
                             else if (text != null)
                             {
                                 //the whole text contains the searchtext, we have to know where it is
                                 int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
                                 if (startIndex == -1
                                 ) // the searchtext is not in the visible text, we don't show the selection
-                                    errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
+                                    errorModeStyle.Draw(textRect, tempContent, id, entryIsSelected);
                                 else // the searchtext is visible, we show the selection
                                 {
                                     int endIndex = startIndex + m_SearchText.Length;
@@ -902,6 +915,10 @@ namespace UnityEditor
             var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
             if (m_SearchText != filteringText)
             {
+                //Reset console selection when entering filter mode
+                if(String.IsNullOrEmpty(m_SearchText))
+                    ResetActiveEntry();
+
                 SetFilter(filteringText);
             }
         }

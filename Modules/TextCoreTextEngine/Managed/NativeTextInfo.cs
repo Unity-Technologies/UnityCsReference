@@ -24,7 +24,7 @@ namespace UnityEngine.TextCore.Text
         {
             get
             {
-                if (m_MeshInfosPtr == IntPtr.Zero || meshInfoCount == 0)
+                if (m_MeshInfosPtr == IntPtr.Zero || meshInfoCount <= 0)
                     return default;
                 return new Span<ATGMeshInfo>(m_MeshInfosPtr.ToPointer(), meshInfoCount);
             }

@@ -19,7 +19,7 @@ namespace UnityEditor.Toolbars
         
         // builtin, global, grouped, component
         const int k_ToolbarSections = 4;
-
+        
         VisualElement[] m_Toolbars;
         List<ToolEntry> m_AvailableTools = new();
 
@@ -76,7 +76,7 @@ namespace UnityEditor.Toolbars
             foreach (var toolbar in m_Toolbars)
                 toolbar.Clear();
 
-            m_AvailableTools = EditorToolManager.OrderAvailableTools(m_AvailableTools);
+            EditorToolManager.OrderAvailableTools(m_AvailableTools);
             VisualElement curGroupContent = null;
             Type curGroupType = null;
             
@@ -139,7 +139,6 @@ namespace UnityEditor.Toolbars
                 var outline = new VisualElement();
                 outline.AddToClassList(k_ToolGroupOutlineClassName);
                 outline.pickingMode = PickingMode.Ignore;
-                groupContainer.Add(outline);
                 
                 if (curGroupContent != null)
                     EditorToolbarUtility.SetupChildrenAsButtonStrip(curGroupContent);
@@ -147,16 +146,20 @@ namespace UnityEditor.Toolbars
                 curGroupContent = new VisualElement() { name = groupContentName };
                 curGroupContent.AddToClassList("toolbar-contents");
                 curGroupContent.AddToClassList(k_ToolGroupHeaderContainerClassName);
-
-                var headerToolbarIcon = new EditorToolbarIcon(curGroupType.Name, EditorGUIUtility.FindTexture(curGroupType));
+                curGroupContent.Add(outline);
+                
+                var iconTexture = EditorToolUtility.GetIcon(curGroupType)?.image as Texture2D;
+                var headerToolbarIcon = new EditorToolbarIcon(curGroupType.Name, iconTexture);
                 var groupHeader = new EditorToolbarHeader(headerToolbarIcon);
                 
                 groupHeader.tooltip = ObjectNames.NicifyVariableName(curGroupType.Name);
+                if (curGroupType == typeof(CreationToolsGroup))
+                    groupHeader.tooltip = CreationToolsGroup.k_Tooltip;
                 groupHeader.userData = curGroupType;
                 groupHeader.collapsed = EditorToolsSettings.IsGroupCollapsed(groupType);
                 
                 groupHeader.clicked += OnGroupHeaderClicked;
-                groupContainer.Add(groupHeader);
+                curGroupContent.Add(groupHeader);
                 groupContainer.Add(curGroupContent);
             }
             

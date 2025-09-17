@@ -82,7 +82,7 @@ namespace UnityEditor.Search
 
         public ToolbarSearchField searchField { get; private set; }
         internal QueryBuilder queryBuilder => (m_SearchTextInput as SearchQueryBuilderView)?.builder;
-        internal string queryString => viewState.queryBuilderEnabled ? queryBuilder.BuildQuery() : searchField.value;
+        internal string queryString => viewState.queryBuilderEnabled ? queryBuilder.searchText : searchField.value;
         internal Texture2D addNewBlockIcon { get; set; }
 
         List<VisualMessage> m_VisualMessages = new();
@@ -113,6 +113,15 @@ namespace UnityEditor.Search
                     return null;
                 return tf;
             }
+        }
+
+        public void SetValueWithoutNotify(string newValue)
+        {
+            searchTextInput.SetValueWithoutNotify(newValue);
+            UpdateCancelButton();
+            UpdatePlaceholders();
+            UpdateQueryErrors();
+            UpdateMultiline();
         }
 
         public bool supportsMultiline => !viewState.queryBuilderEnabled;
@@ -667,6 +676,7 @@ namespace UnityEditor.Search
                 hideCancelBtn = string.CompareOrdinal(simplifiedQueryString, simplifiedInitialQuery) == 0;
             }
             m_CancelButton.EnableInClassList(SearchFieldBase<TextField, string>.cancelButtonOffVariantUssClassName, hideCancelBtn);
+            m_CancelButton.style.display = hideCancelBtn ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         internal void UpdateInternalTextData()

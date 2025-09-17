@@ -565,6 +565,7 @@ namespace UnityEditor
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
                     buildTarget = BuildTarget.Switch2,
+                    iconName = "BuildSettings.Switch2",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
                 }
             },

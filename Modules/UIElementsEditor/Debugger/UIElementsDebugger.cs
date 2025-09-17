@@ -256,8 +256,7 @@ namespace UnityEditor.UIElements.Debugger
                 TextureAtlasViewer.UIElementsDebugger = debuggerWindow;
             }
 
-            if (window != null)
-                debuggerWindow.m_DebuggerImpl.ScheduleWindowToDebug(window);
+            debuggerWindow.ScheduleWindowToDebug(window);
         }
 
         private static UIElementsDebugger CreateDebuggerWindow()
@@ -267,15 +266,38 @@ namespace UnityEditor.UIElements.Debugger
             return window;
         }
 
+        EditorWindow editorWindowScheduledToBeDebugged;
+        private void ScheduleWindowToDebug(EditorWindow window)
+        {
+            if (window == null)
+                return;
+
+            if (m_DebuggerImpl == null)
+            {
+                //Before CreateGUI, defer the callback registration
+                editorWindowScheduledToBeDebugged = window;
+            }
+            else
+            {
+                m_DebuggerImpl.ScheduleWindowToDebug(window);
+            }
+        }
+
         public void OnEnable()
         {
             if (m_DebuggerContext == null)
                 m_DebuggerContext = new DebuggerContext();
+        }
 
+        public void CreateGUI()
+        {
             if (m_DebuggerImpl == null)
                 m_DebuggerImpl = new UIElementsDebuggerImpl();
 
             m_DebuggerImpl.Initialize(this, rootVisualElement, m_DebuggerContext);
+
+            if(editorWindowScheduledToBeDebugged)
+                m_DebuggerImpl.ScheduleWindowToDebug(editorWindowScheduledToBeDebugged);
         }
 
         public void OnDisable()
@@ -470,21 +492,23 @@ namespace UnityEditor.UIElements.Debugger
         {
             DebuggerSelection m_DebuggerSelection;
             protected VisualElement m_SelectedElement;
+            private readonly bool m_IsLowLevel;
 
 
-            public DebuggerFoldout(string name, DebuggerSelection debuggerSelection) :base()
+            public DebuggerFoldout(string name, DebuggerSelection debuggerSelection, bool isLowLevel) :base()
             {
                 text = name;
                 viewDataKey = name;
+                m_IsLowLevel = isLowLevel;
 
                 m_DebuggerSelection = debuggerSelection;
 
                 m_DebuggerSelection.onSelectedElementChanged += element => selectedElement = element;
                 selectedElement = m_DebuggerSelection.element;
 
-                this.RegisterValueChangedCallback( e=> Refresh());
+                this.RegisterValueChangedCallback( e=> RefreshIfNeeded());
                 this.value = false;
-                updateVisiblity();
+                UpdateVisiblity();
             }
 
             protected VisualElement selectedElement
@@ -512,13 +536,13 @@ namespace UnityEditor.UIElements.Debugger
 
             bool IsActive()
             {
-                updateVisiblity();
+                UpdateVisiblity();
                 return value && style.display == DisplayStyle.Flex;
             }
 
-            void updateVisiblity()
+            protected virtual void UpdateVisiblity()
             {
-                style.display = UIToolkitProjectSettings.EnableLowLevelDebugger ? DisplayStyle.Flex : DisplayStyle.None;
+                style.display = (m_SelectedElement != null) && (!m_IsLowLevel || UIToolkitProjectSettings.EnableLowLevelDebugger) ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             protected abstract void Refresh();
@@ -529,7 +553,7 @@ namespace UnityEditor.UIElements.Debugger
             TextField m_layout;
             TextField m_isManual;
             TextField m_cache;
-            public LayoutDebuggerTab(DebuggerSelection debuggerSelection) : base("Layout", debuggerSelection)
+            public LayoutDebuggerTab(DebuggerSelection debuggerSelection) : base("Layout", debuggerSelection, true)
             {
                 Add(m_layout = new TextField("Layout") { isReadOnly = true, multiline = true });
                 Add(m_isManual = new TextField("Is Manual") { isReadOnly = true });
@@ -576,7 +600,7 @@ namespace UnityEditor.UIElements.Debugger
             TextField m_ClipMethod;
             TextField m_ChildrenStencilRef;
             TextField m_ChildrenMaskDepth;
-            public RenderDataDebuggerTab(DebuggerSelection debuggerSelection) : base("RenderData", debuggerSelection)
+            public RenderDataDebuggerTab(DebuggerSelection debuggerSelection) : base("RenderData", debuggerSelection, true)
             {
                 Add(m_ClippingRect = new("Clipping Rect") { isReadOnly = true });
                 Add(m_ClippingRectMinusGroup = new("Clipping Rect Minus Group") { isReadOnly = true });
@@ -627,7 +651,7 @@ namespace UnityEditor.UIElements.Debugger
             readonly TextField cacheSummary;
 
 
-            public PanelTab(DebuggerSelection debuggerSelection) : base("Panel", debuggerSelection)
+            public PanelTab(DebuggerSelection debuggerSelection) : base("Panel", debuggerSelection, true )
             {
                 Add(nameField = new TextField("Owner Name") { isReadOnly = true });
                 Add(panelSettings = new ObjectField("Owner/Panel Settings") { allowSceneObjects = false});
@@ -677,7 +701,7 @@ namespace UnityEditor.UIElements.Debugger
             TextField m_CursorInfo;
 
 
-            public TextDebugger(DebuggerSelection debuggerSelection):base("Text", debuggerSelection)
+            public TextDebugger(DebuggerSelection debuggerSelection):base("Text", debuggerSelection, true)
             {
 
                 
@@ -935,7 +959,10 @@ namespace UnityEditor.UIElements.Debugger
 
         protected override bool ValidateDebuggerConnection(IPanel panelConnection)
         {
-            var p = m_Root.panel as Panel;
+            if (panelConnection is RuntimePanel)
+                return true;
+
+            EditorPanel p = m_Root.panel as EditorPanel;
             var debuggers = p.panelDebug.GetAttachedDebuggers();
 
             foreach (var dbg in debuggers)
@@ -1185,6 +1212,9 @@ namespace UnityEditor.UIElements.Debugger
 
                     foreach (var document in runtimePanel.documents)
                     {
+                        if (document == null) // The UIdocument might have been expliclty disposed.
+                            continue;
+
                         // We don't account for PanelInputConfiguration settings, but we do only want visible content.
                         if ((camera.cullingMask & (1 << document.gameObject.layer)) == 0)
                             continue;

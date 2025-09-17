@@ -20,8 +20,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.UIToolkit")]
 
 // Input testing
-[assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
-[assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]
 
 // UITK testing
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
@@ -29,6 +30,3 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
 
-// other testing
-[assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
-[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]

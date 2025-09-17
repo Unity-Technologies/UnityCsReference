@@ -142,6 +142,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void OnSetFreeRunningModeSelected(ChangeEvent<RunModeState> evt)
         {
+            // If a runtime instance is already available, update its mode.
+            var instance = GetInstanceForThisElement();
+            if (instance != null)
+                instance.RunModeState = evt.newValue;
+
             m_InstanceDescription.RunModeState = evt.newValue;
             UpdateUI();
         }

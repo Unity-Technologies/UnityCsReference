@@ -57,6 +57,7 @@ namespace UnityEngine.UIElements
             get => m_Label;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool acceptClicksIfDisabled
         {
             get => m_Clickable.acceptClicksIfDisabled;

@@ -3,12 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine.Rendering;
 using UnityEngine;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
@@ -125,18 +123,23 @@ namespace UnityEditor
         {
             public static readonly float buttonWidth = 200;
 
-            public static readonly int[] bakeBackendValues =
+            static readonly int[] k_BakeBackendValues =
             {
                 (int)LightingSettings.Lightmapper.ProgressiveCPU,
-                (int)LightingSettings.Lightmapper.ProgressiveGPU,
-                //(int)LightingSettings.Lightmapper.UnityComputeGPU
+                (int)LightingSettings.Lightmapper.ProgressiveGPU
             };
-            public static readonly GUIContent[] bakeBackendStrings =
+            static readonly int[] k_BakeBackendValuesWithUnityComputeGPU =
+                k_BakeBackendValues.ConcatValue(3); // Cannot make LightingSettings.Lightmapper.UnityComputeGPU public just yet
+            public static int[] bakeBackendValues => Lightmapping.UnifiedBaker ? k_BakeBackendValuesWithUnityComputeGPU : k_BakeBackendValues;
+
+            public static readonly GUIContent[] k_BakeBackendStrings =
             {
                 EditorGUIUtility.TrTextContent("Progressive CPU"),
-                EditorGUIUtility.TrTextContent("Progressive GPU"),
-                //EditorGUIUtility.TrTextContent("Unity Compute (GPU)"),
+                EditorGUIUtility.TrTextContent("Progressive GPU")
             };
+            static readonly GUIContent[] k_BakeBackendStringsWithUnityComputeGPU =
+                k_BakeBackendStrings.ConcatValue(EditorGUIUtility.TrTextContent("Unity Compute (GPU)"));
+            public static GUIContent[] bakeBackendStrings => Lightmapping.UnifiedBaker ? k_BakeBackendStringsWithUnityComputeGPU : k_BakeBackendStrings;
 
             public static readonly int[] lightmapDirectionalModeValues = { (int)LightmapsMode.NonDirectional, (int)LightmapsMode.CombinedDirectional };
             public static readonly GUIContent[] lightmapDirectionalModeStrings =
@@ -1067,6 +1070,19 @@ namespace UnityEditor
             maxIndirectSamples = Mathf.Max(m_PVRSampleCount.intValue, 8192);
             maxEnvironmentSamples = Mathf.Max(m_PVREnvironmentSampleCount.intValue, 2048);
             maxXAtlasPackingAttempts = Mathf.Max(m_XAtlasPackingAttempts.intValue, 131072);
+        }
+    }
+
+    // Extension methods for concatenating arrays with a single value (since we cannot use LINQ)
+    static class LocalExtensions
+    {
+        public static T[] ConcatValue<T>(this T[] array, T value)
+        {
+            var result = new T[array.Length + 1];
+            Array.Copy(array, result, array.Length);
+            result[array.Length] = value;
+
+            return result;
         }
     }
 }

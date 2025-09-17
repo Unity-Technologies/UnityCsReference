@@ -23,114 +23,58 @@ internal class ATGTextJobSystem
         public NativeTextInfo textInfo;
         public bool success;
 
-        public List<Texture2D> atlases;
-        public List<float> sdfScales;
-        public List<NativeSlice<Vertex>> vertices;
-        public List<NativeSlice<ushort>> indices;
-        public List<GlyphRenderMode> renderModes;
-        public List<List<List<int>>> textElementIndicesByMesh;
-        public List<bool> hasMultipleColorsByMesh;
+        public List<Texture2D> atlases = new();
+        public List<float> sdfScales = new();
+        public List<NativeSlice<Vertex>> vertices = new();
+        public List<NativeSlice<ushort>> indices = new();
+        public List<GlyphRenderMode> renderModes = new();
+        public List<List<List<int>>> textElementIndicesByMesh = new();
+        public List<bool> hasMultipleColorsByMesh = new();
         // Key: FontAsset ID
         // Value: Set of missing glyphs (glyphID) for that font asset.
-        public Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset;
+        public Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset = new();
         public bool hasMissingGlyphs;
 
-        public void AcquirePooledData()
+        public void Clear()
         {
-            missingGlyphsPerFontAsset = s_MissingGlyphsPool.Get();
-            textElementIndicesByMesh = s_TextElementIndicesByMeshPool.Get();
-            hasMultipleColorsByMesh = s_HasMultipleColorsByMeshPool.Get();
-            atlases = s_AtlasesPool.Get();
-            vertices = s_VerticesPool.Get();
-            indices = s_IndicesPool.Get();
-            renderModes = s_RenderModesPool.Get();
-            sdfScales = s_SdfScalesPool.Get();
-        }
+            textElement = null;
+            node = default;
+            textInfo = default;
+            success = false;
+            hasMissingGlyphs = false;
 
-        public void Release()
-        {
-            s_JobDataPool.Release(this);
-            s_AtlasesPool.Release(atlases);
-            s_SdfScalesPool.Release(sdfScales);
-            s_VerticesPool.Release(vertices);
-            s_IndicesPool.Release(indices);
-            s_RenderModesPool.Release(renderModes);
-            s_MissingGlyphsPool.Release(missingGlyphsPerFontAsset);
-            s_TextElementIndicesByMeshPool.Release(textElementIndicesByMesh);
-            s_HasMultipleColorsByMeshPool.Release(hasMultipleColorsByMesh);
-        }
-    }
-    GCHandle textJobDatasHandle;
-    List<ManagedJobData> textJobDatas = new List<ManagedJobData>();
-    bool hasPendingTextWork;
+            atlases.Clear();
+            sdfScales.Clear();
+            vertices.Clear();
+            indices.Clear();
+            renderModes.Clear();
+            hasMultipleColorsByMesh.Clear();
 
-    static UnityEngine.Pool.ObjectPool<ManagedJobData> s_JobDataPool =
-        new(() => new ManagedJobData(), null, inst => inst.textElement = null, null, false);
-
-    static UnityEngine.Pool.ObjectPool<List<Texture2D>> s_AtlasesPool = new(() =>
-    {
-        var inst = new List<Texture2D>();
-        return inst;
-    }, null, list => list.Clear(), null, false);
-
-    static UnityEngine.Pool.ObjectPool<List<float>> s_SdfScalesPool = new(() =>
-    {
-        var inst = new List<float>();
-        return inst;
-    }, null, list => list.Clear(), null, false);
-
-    static UnityEngine.Pool.ObjectPool<List<GlyphRenderMode>> s_RenderModesPool = new(() =>
-    {
-        var inst = new List<GlyphRenderMode>();
-        return inst;
-    }, null, list => list.Clear(), null, false);
-
-    static UnityEngine.Pool.ObjectPool<List<NativeSlice<Vertex>>> s_VerticesPool = new(() =>
-    {
-        var inst = new List<NativeSlice<Vertex>>();
-        return inst;
-    }, null, list => list.Clear(), null, false);
-
-    static UnityEngine.Pool.ObjectPool<List<NativeSlice<ushort>>> s_IndicesPool = new(() =>
-    {
-        var inst = new List<NativeSlice<ushort>>();
-        return inst;
-    }, null, list => list.Clear(), null, false);
-
-    static UnityEngine.Pool.ObjectPool<List<List<List<int>>>> s_TextElementIndicesByMeshPool = new(() =>
-    {
-        var inst = new List<List<List<int>>>();
-        return inst;
-    },  null,
-        (listOfMeshes) =>
-        {
-            foreach (var listOfAtlases in listOfMeshes)
+            foreach (var listOfAtlases in textElementIndicesByMesh)
             {
                 foreach (var listOfIndices in listOfAtlases)
                 {
                     listOfIndices.Clear();
                 }
             }
-        }, null, false);
 
-    static UnityEngine.Pool.ObjectPool<List<bool>> s_HasMultipleColorsByMeshPool = new(() =>
-    {
-        var inst = new List<bool> ();
-        return inst;
-    }, null, list => list.Clear(), null, false);
-
-    static UnityEngine.Pool.ObjectPool<Dictionary<int, HashSet<uint>>> s_MissingGlyphsPool = new(() =>
-    {
-        var inst = new Dictionary<int, HashSet<uint>>();
-        return inst;
-    },  null,
-        (dict) =>
-        {
-            foreach (var hashSet in dict.Values)
+            foreach (var hashSet in missingGlyphsPerFontAsset.Values)
             {
                 hashSet.Clear();
             }
-    },  null, false);
+        }
+    }
+
+    GCHandle textJobDatasHandle;
+    List<ManagedJobData> textJobDatas = new List<ManagedJobData>();
+    bool hasPendingTextWork;
+
+    static readonly UnityEngine.Pool.ObjectPool<ManagedJobData> s_JobDataPool =
+       new(() => new ManagedJobData(),   // Creates a new instance with its own collections
+           null,                          // No action needed on get
+           inst => inst.Clear(),          // On release, just clear the internal data
+           null,
+           false);
 
     static UnityEngine.Pool.ObjectPool<Dictionary<int, HashSet<uint>>> s_AggregatedMissingGlyphsPool = new(() =>
     {
@@ -181,7 +125,9 @@ internal class ATGTextJobSystem
     // What matters is not elements are picked up in the common case to improve performance
     internal void PrepareShapingBeforeLayout(BaseVisualElementPanel panel)
     {
-        m_PrepareShapingDataList.Clear();
+        // Nothing to do if the layout is not dirty
+        if (!panel.visualTree.layoutNode.IsDirty)
+            return;
 
         // Depending on ATG configuration, it's possible that no TextElements have been registered.
         if (!panel.textElementRegistry.IsValueCreated)
@@ -225,6 +171,7 @@ internal class ATGTextJobSystem
             var jobHandle = job.ScheduleParallelByRef(m_PrepareShapingDataList.Count, 1, default);
             jobHandle.Complete();
             handle.Free();
+            m_PrepareShapingDataList.Clear();
         }
     }
 
@@ -317,7 +264,6 @@ internal class ATGTextJobSystem
             // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
             if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
                 textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
-            textData.AcquirePooledData();
         }
 
         // This ensures Fallbacks are properly created.
@@ -411,7 +357,7 @@ internal class ATGTextJobSystem
                 var textInfo = managedJobData.textInfo;
 
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
-				managedJobData.textElement.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, textInfo.meshInfos));
+                managedJobData.textElement.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(managedJobData.textElement, managedJobData.vertices, textInfo.meshInfos));
                 mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.atlases, managedJobData.renderModes, managedJobData.sdfScales);
                 managedJobData.textElement.OnGenerateTextOverNative(mgc);
                 managedJobData.textElement.uitkTextHandle.UpdateATGTextEventHandler();
@@ -419,7 +365,7 @@ internal class ATGTextJobSystem
                 mgc.End();
             }
 
-            managedJobData.Release();
+            s_JobDataPool.Release(managedJobData);
         }
 
         // get ready for next batch

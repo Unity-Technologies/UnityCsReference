@@ -146,7 +146,7 @@ namespace UnityEditor.Search
         internal virtual void AddContextualMenuItems(GenericMenu menu) {}
         internal virtual string FormatUIValue(string originalValue)
         {
-            return originalValue;
+            return SearchUtils.GetNiceDisplayLabel(originalValue);
         }
 
         private bool OpenEditor(Event evt, in Rect rect)

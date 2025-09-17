@@ -29,7 +29,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_Title = "Instances Status";
 
         public static readonly Vector2 windowSize = new Vector2(300, 175);
-        static Dictionary<InstanceView, Node> m_ViewToNode = new();
+        static Dictionary<InstanceView, Instance> m_ViewToInstance = new();
 
         public override Vector2 GetWindowSize()
         {
@@ -63,43 +63,35 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var stylesheet = EditorGUIUtility.isProSkin ? k_StylesheetDark : k_StylesheetLight;
             container.styleSheets.Add(EditorGUIUtility.LoadRequired(stylesheet) as StyleSheet);
 
-            m_ViewToNode.Clear();
+            m_ViewToInstance.Clear();
             var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
 
             if (currentConfig == null)
                 return new VisualElement() { name = "no content" };
 
-            var instances = currentConfig.GetAllInstances();
-            foreach (var instance in instances)
+            var instanceDescriptions = currentConfig.GetAllInstances();
+
+            foreach (var instanceDescription in instanceDescriptions)
             {
-                var instanceView = new InstanceView(instance);
-                m_ViewToNode.Add(instanceView, GetRunNodeForNodeName(instance.CorrespondingNodeId));
+                var instance = GetInstanceFromDescription(instanceDescription);
+                if (instance == null)
+                    continue;
+
+                var instanceView = new InstanceView(instanceDescription);
+                m_ViewToInstance.Add(instanceView, instance);
                 container.Add(instanceView);
             }
 
             return container;
         }
 
-        Node GetRunNodeForNodeName(string nodeName)
-        {
-            if (ScenarioRunner.instance.ActiveScenario == null)
-                return null;
-
-            var runNodes = ScenarioRunner.instance.ActiveScenario.GetNodes(ExecutionStage.Run);
-            foreach (var node in runNodes)
-            {
-                if (node.Name == nodeName)
-                    return node;
-            }
-
-            return null;
-        }
-
         static void UpdateInstanceStatus()
         {
-            foreach (var (view, node) in m_ViewToNode)
+            foreach (var (view, instance) in m_ViewToInstance)
             {
-                view.SetStatus(node?.State ?? ExecutionState.Idle);
+                var state = instance.GetInstanceExecutionState();
+
+                view.SetStatus(state);
                 view.RefreshRunMode();
             }
         }
@@ -119,6 +111,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             const string k_ActiveClass = "active";
             const string k_ErrorClass = "error";
+            const string k_LoadingClass = "loading";
             const string k_IdleClass = "idle";
 
             internal InstanceView(InstanceDescription instance)
@@ -195,12 +188,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 RemoveFromClassList(k_ActiveClass);
                 RemoveFromClassList(k_ErrorClass);
+                RemoveFromClassList(k_LoadingClass);
                 RemoveFromClassList(k_IdleClass);
                 switch (status)
                 {
                     case ExecutionState.Active:
                         AddToClassList(k_ActiveClass);
                         m_StatusIndicator.tooltip = "active";
+                        break;
+                    case ExecutionState.Running:
+                        AddToClassList(k_LoadingClass);
+                        m_StatusIndicator.tooltip = "loading";
                         break;
                     case ExecutionState.Failed:
                         AddToClassList(k_ErrorClass);
@@ -250,5 +248,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        private Instance GetInstanceFromDescription(InstanceDescription instanceDescription)
+        {
+            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            if (currentConfig == null || currentConfig.Scenario == null)
+                return null;
+
+            return currentConfig.Scenario.GetInstanceByName(instanceDescription.Name);
+        }
     }
 }

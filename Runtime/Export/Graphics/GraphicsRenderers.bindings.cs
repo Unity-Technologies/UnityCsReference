@@ -428,6 +428,8 @@ namespace UnityEngine
 
         [FreeFunction(Name = "SkinnedMeshRendererScripting::SetShaderUserValue", HasExplicitThis = true)] extern internal void Internal_SetShaderUserValueUInt( UInt32 v);
         public void SetShaderUserValue(UInt32 v) => Internal_SetShaderUserValueUInt(v);
+        [FreeFunction(Name = "SkinnedMeshRendererScripting::GetShaderUserValue", HasExplicitThis = true)] extern internal UInt32 Internal_GetShaderUserValueUInt();
+        public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]
@@ -442,6 +444,8 @@ namespace UnityEngine
 
         [FreeFunction(Name = "MeshRendererScripting::SetShaderUserValue", HasExplicitThis = true)] extern internal void Internal_SetShaderUserValueUInt( UInt32 v);
         public void SetShaderUserValue(UInt32 v) => Internal_SetShaderUserValueUInt(v);
+        [FreeFunction(Name = "MeshRendererScripting::GetShaderUserValue", HasExplicitThis = true)] extern internal UInt32 Internal_GetShaderUserValueUInt();
+        public UInt32 GetShaderUserValue() { return Internal_GetShaderUserValueUInt(); }
 
         extern public float scaleInLightmap { get; set; }
         extern public ReceiveGI receiveGI { get; set; }

@@ -569,7 +569,7 @@ namespace UnityEditor
             }
         }
 
-        [RequiredByNativeCode]
+        [VisibleToOtherModules("UnityEditor.PlayModeModule")]
         internal static void TogglePlaying()
         {
             isPlaying = !isPlaying;

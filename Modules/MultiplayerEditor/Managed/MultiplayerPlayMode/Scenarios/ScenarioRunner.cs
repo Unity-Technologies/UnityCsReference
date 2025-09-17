@@ -24,6 +24,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Hook up Unity Editor Exit callbacks to clean up Scenario's Instances.
             EditorApplication.wantsToQuit += OnApplicationQuit;
 
+            // Listen for cases where the Play Mode Manager may flush its config, so that we stop the active scenario.
+            PlayModeManager.instance.ConfigAssetChanged += () =>
+            {
+                var playModeManager = PlayModeManager.instance;
+                var hasNoSecenarioConfig = playModeManager.ActivePlayModeConfig is not ScenarioConfig;
+                if (hasNoSecenarioConfig && instance.m_Scenario != null)
+                    LoadScenario(null);
+            };
+
             if (instance.m_Scenario == null)
                 return;
 
@@ -48,7 +57,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // If clearing the scenario, ensure all Free Run instances with this scenario are terminated
             if (scenario == null && instance.m_Scenario != null)
+            {
                 instance.m_Scenario.TerminateAllFreeRunningInstancesAsync().Forget();
+
+                // If the Scenario is running, ensure it is stopped.
+                if (instance.IsRunning)
+                    StopScenario();
+            }
 
             instance.m_Scenario = scenario;
         }
@@ -60,15 +75,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 StopScenario();
 
             // If no Free Running Instances are active, we are done - return true and resume Editor exit.
-            if (!instance.m_Scenario.HasActiveFreeRunInstance())
+            if (!instance.m_Scenario.HasActiveFreeRunInstance() && instance.m_Scenario.Status.State != ScenarioState.Running)
                 return true;
 
             // Else, Stop all Active Free Running Instances as per usual (without "Force kill")
             // Create the tasks to do so and run them async.
-            var freeRunStopTask = instance.m_Scenario.TerminateAllFreeRunningInstancesAsync();
+            var stopTask = Task.WhenAll(
+                instance.m_Scenario.TerminateAllFreeRunningInstancesAsync(),
+                UntilScenarioIsNotRunning()
+            );
             var freeRunStopTimeoutTask = Task.Delay(5000);
 
-            Task.WhenAny(freeRunStopTask, freeRunStopTimeoutTask)
+            Task.WhenAny(stopTask, freeRunStopTimeoutTask)
                 .ContinueWith((result) =>
                 {
                     // If the timeout occurs, mark that as a failure and continue with Editor Exit.
@@ -81,6 +99,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }, TaskScheduler.FromCurrentSynchronizationContext());
 
             return false;
+        }
+
+        private async Task UntilScenarioIsNotRunning()
+        {
+            while (instance.m_Scenario.Status.State == ScenarioState.Running)
+            {
+                await Task.Delay(100);
+            }
         }
 
         private static bool OnApplicationQuit()

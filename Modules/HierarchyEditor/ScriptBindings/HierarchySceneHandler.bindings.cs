@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -22,7 +23,10 @@ namespace Unity.Hierarchy.Editor
     [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchySceneHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchySceneHandlerBindings.h")]
-    internal sealed partial class HierarchySceneHandler : HierarchyNodeTypeHandler, IHierarchyEntityIdConverter
+    internal sealed partial class HierarchySceneHandler :
+        HierarchyNodeTypeHandler,
+        IHierarchyEntityIdConverter,
+        IHierarchyEditorNodeTypeHandler
     {
         const string k_SceneNodeUssClass = "hierarchy-item__scene-node";
         const string k_NonMainStageSceneNodeUssClass = "hierarchy-item__scene-node--stage";
@@ -76,30 +80,6 @@ namespace Unity.Hierarchy.Editor
         }
 
         /// <summary>
-        /// Get a node display name. Default is the node name property.
-        /// </summary>
-        /// <param name="view">The parent <see cref="HierarchyView"/>.</param>
-        /// <param name="node">The <see cref="HierarchyNode"/>.</param>
-        /// <returns>Display name</returns>
-        public override string GetDisplayName(HierarchyView view, in HierarchyNode node)
-        {
-            var name = base.GetDisplayName(view, node);
-            var scene = GetScene(node);
-            if (scene.IsValid())
-            {
-                if (!scene.isLoaded)
-                {
-                    name += " (not loaded)";
-                }
-                if (scene.isDirty)
-                {
-                    name += "*";
-                }
-            }
-            return name;
-        }
-
-        /// <summary>
         /// Gets or creates the hierarchy node corresponding to the given scene.
         /// </summary>
         /// <remarks>
@@ -131,114 +111,6 @@ namespace Unity.Hierarchy.Editor
             return m_State.NodeType;
         }
 
-        /// <summary>
-        /// Determines if the nodes of this hierarchy node type handler accepts the given node as parent.
-        /// </summary>
-        /// <param name="view"> The hierarchy view.</param>
-        /// <param name="parent">The hierarchy parent node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a parent, <see langword="false"/> otherwise.</returns>
-        public override bool AcceptParent(HierarchyView view, in HierarchyNode parent) => parent == Hierarchy.Root;
-
-        /// <summary>
-        /// Determines if the nodes of this hierarchy node type handler accepts the given node as child.
-        /// </summary>
-        /// <param name="view"> The hierarchy view.</param>
-        /// <param name="child">The hierarchy child node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
-        public override bool AcceptChild(HierarchyView view, in HierarchyNode child)
-        {
-            var gameObjectNodeType = Hierarchy.GetNodeType<HierarchyGameObjectHandler>();
-            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
-            var childNodeType = Hierarchy.GetNodeType(in child);
-            return childNodeType == gameObjectNodeType || childNodeType == subSceneNodeType;
-        }
-
-        /// <summary>
-        /// Whether or not this hierarchy node type handler accepts renaming its nodes.
-        /// </summary>
-        /// <param name="view"> The hierarchy view.</param>
-        /// <param name="node">The <see cref="HierarchyNode"/>.</param>
-        /// <returns><see langword="true"/> if nodes can be renamed, <see langword="false"/> otherwise.</returns>
-        public override bool CanSetName(HierarchyView view, in HierarchyNode node) => false;
-
-        protected override void PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
-        {
-            if (StageUtility.GetCurrentStage() is not MainStage)
-                return;
-
-            var scene = item == null ? default : GetScene(item.Node);
-            BuildSceneContextMenu(menu, scene);
-
-            // Let users add extra items.
-            using var poolHandle = GenericMenu.Pool.Get(out var genericMenu);
-            SceneHierarchyHooks.AddCustomSceneHeaderContextMenuItems(genericMenu, scene);
-            menu.AppendFromGenericMenu(genericMenu);
-        }
-
-        /// <summary>
-        /// Action to execute when starting a drag operation.
-        /// Used to setup a drag operation with the specified nodes by populating the <see cref="HierarchyViewDragAndDropSetupData"/> container.
-        /// The <see cref="HierarchyViewDragAndDropSetupData"/> container contains lists of <see cref="UnityEngine.Object"/> references and paths that can be populated to store information about the drag operation.
-        /// </summary>
-        /// <param name="data">Container holding the data needed to start a drag and drop operation. <see cref="HierarchyNodeTypeHandler"/>s can populate this container.</param>
-        protected override void OnStartDrag(in HierarchyViewDragAndDropSetupData data)
-        {
-            var nodeSpan = data.Nodes;
-            for (var i = 0; i < nodeSpan.Length; ++i)
-            {
-                var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || Hierarchy.GetNodeTypeHandler(in node) != this)
-                    continue;
-                var scene = GetScene(in node);
-                if (!string.IsNullOrEmpty(scene.path))
-                    data.Paths.Add(scene.path);
-            }
-        }
-
-        /// <summary>
-        /// Determines if a drop operation can be performed based on the <see cref="HierarchyViewDragAndDropHandlingData"/>.
-        /// </summary>
-        /// <param name="data">Data relative to the current drag and drop operation.</param>
-        /// <returns>The status of the drag and drop operation.</returns>
-        protected override DragVisualMode CanDrop(in HierarchyViewDragAndDropHandlingData data)
-        {
-            return DoHandleDrop(data, false);
-        }
-
-        /// <summary>
-        /// Action to execute when handling a drop operation based on the <see cref="HierarchyViewDragAndDropHandlingData"/>.
-        /// </summary>
-        /// <param name="data">Data relative to the current drag and drop operation.</param>
-        /// <returns>The status of the drag and drop operation.</returns>
-        protected override DragVisualMode OnDrop(in HierarchyViewDragAndDropHandlingData data)
-        {
-            return DoHandleDrop(data, true);
-        }
-
-        /// <summary>
-        /// Determines if a double click operation can be performed on the <see cref="HierarchyNode"/>.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="node">The <see cref="HierarchyNode"/> to perform double click on.</param>
-        /// <returns><see langword="true"/> if action is supported, <see langword="false"/> otherwise.</returns>
-        public override bool CanDoubleClick(HierarchyView view, in HierarchyNode node)
-        {
-            var scene = GetScene(in node);
-            return !PrefabStageUtility.IsPrefabStageScene(scene) && SceneManager.CanSetAsActiveScene(scene);
-        }
-
-        /// <summary>
-        /// Action to execute when double clicking on the <see cref="HierarchyNode"/>.
-        /// </summary>
-        /// <param name="node">The <see cref="HierarchyNode"/> to perform double click on.</param>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <returns><see langword="true"/> if the action was successful, <see langword="false"/> otherwise.</returns>
-        protected override bool OnDoubleClick(HierarchyView view, in HierarchyNode node)
-        {
-            var scene = GetScene(in node);
-            return SceneManager.SetActiveScene(scene);
-        }
-
         protected override void OnBindItem(HierarchyViewItem item)
         {
             item.RowContainer?.AddToClassList(k_SceneNodeContainerUssClass);
@@ -261,6 +133,111 @@ namespace Unity.Hierarchy.Editor
             // that the HierarchyViewItem will be reused in the same row container.
             item.RowContainer?.RemoveFromClassList(k_SceneNodeContainerUssClass);
         }
+
+        #region IHierarchyEditorNodeTypeHandler
+        bool IHierarchyEditorNodeTypeHandler.CanCut(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnCut(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanCopy(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnCopy(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name) => false;
+
+        string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+        {
+            var name = Hierarchy.GetName(in node);
+            var scene = GetScene(node);
+            if (scene.IsValid())
+            {
+                if (!scene.isLoaded)
+                    name += " (not loaded)";
+                if (scene.isDirty)
+                    name += "*";
+            }
+            return name;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanDelete(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanFindReferences(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnFindReferences(HierarchyView view) => false;
+
+        bool IHierarchyEditorNodeTypeHandler.CanDoubleClick(HierarchyView view, in HierarchyNode node)
+        {
+            var scene = GetScene(in node);
+            return !PrefabStageUtility.IsPrefabStageScene(scene) && SceneManager.CanSetAsActiveScene(scene);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.OnDoubleClick(HierarchyView view, in HierarchyNode node)
+        {
+            var scene = GetScene(in node);
+            return SceneManager.SetActiveScene(scene);
+        }
+
+        void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
+        {
+            // By default only show tooltip when filtering
+            if (!isFiltering)
+                return;
+
+            tooltip.Append(Hierarchy.GetPath(in item.Node));
+        }
+
+        void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
+        {
+            if (StageUtility.GetCurrentStage() is not MainStage)
+                return;
+
+            var scene = item == null ? default : GetScene(item.Node);
+            BuildSceneContextMenu(menu, scene);
+
+            // Let users add extra items.
+            using var poolHandle = GenericMenu.Pool.Get(out var genericMenu);
+            SceneHierarchyHooks.AddCustomSceneHeaderContextMenuItems(genericMenu, scene);
+            menu.AppendFromGenericMenu(genericMenu);
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.AcceptParent(HierarchyView view, in HierarchyNode parent) => parent == Hierarchy.Root;
+
+        bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
+        {
+            var gameObjectNodeType = Hierarchy.GetNodeType<HierarchyGameObjectHandler>();
+            var subSceneNodeType = Hierarchy.GetNodeType<HierarchySubSceneHandler>();
+            var childNodeType = Hierarchy.GetNodeType(in child);
+            return childNodeType == gameObjectNodeType || childNodeType == subSceneNodeType;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
+
+        void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
+        {
+            var nodeSpan = data.Nodes;
+            for (var i = 0; i < nodeSpan.Length; ++i)
+            {
+                var node = nodeSpan[i];
+                if (node == HierarchyNode.Null || Hierarchy.GetNodeTypeHandler(in node) != this)
+                    continue;
+                var scene = GetScene(in node);
+                if (!string.IsNullOrEmpty(scene.path))
+                    data.Paths.Add(scene.path);
+            }
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data)
+        {
+            return DoHandleDrop(data, false);
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data)
+        {
+            return DoHandleDrop(data, true);
+        }
+        #endregion
 
         void OnSceneDirty(Scene scene)
         {

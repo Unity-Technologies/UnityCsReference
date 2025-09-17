@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private IResourceLoader m_ResourceLoader;
-        internal IApplicationProxy m_Application;
+        private IApplicationProxy m_Application;
         private IUnityConnectProxy m_UnityConnect;
         private IPackageDatabase m_PackageDatabase;
         private IPackageOperationDispatcher m_OperationDispatcher;
@@ -28,8 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private IProjectSettingsProxy m_SettingsProxy;
         private IIOProxy m_IOProxy;
-        private IPackageCreator m_PackageCreator;
-        private ICustomDisplayDialog m_CustomDisplayDialog;
+        private IDropdownHandler m_DropdownHandler;
 
         private void ResolveDependencies()
         {
@@ -44,8 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
             m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IIOProxy>();
-            m_PackageCreator = container.Resolve<IPackageCreator>();
-            m_CustomDisplayDialog = container.Resolve<ICustomDisplayDialog>();
+            m_DropdownHandler = container.Resolve<IDropdownHandler>();
         }
 
         public PackageManagerToolbar()
@@ -223,9 +221,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!inProgressSpinner.started)
                     return;
 
-                var position = EditorMenuExtensions.GUIToScreenRect(spinnerButtonContainer, spinnerButtonContainer.worldBound);
-                var dropdown = new InProgressDropdown(m_ResourceLoader, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = position };
-                DropdownContainer.ShowDropdown(dropdown);
+                m_DropdownHandler.ShowInProgressDropdown(spinnerButtonContainer);
             });
         }
 
@@ -353,9 +349,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
-                var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, PackageManagerWindow.instance) { position = position };
-                DropdownContainer.ShowDropdown(dropdown);
+                m_DropdownHandler.ShowAddPackageByNameDropdown(addMenu);
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
@@ -364,9 +358,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.insertSeparatorBefore = true;
             dropdownItem.action = () =>
             {
-                var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
-                var dropdown = new CreatePackageDropdown(m_ResourceLoader, m_PackageCreator, PackageManagerWindow.instance) { position = position };
-                DropdownContainer.ShowDropdown(dropdown);
+                m_DropdownHandler.ShowCreatePackageDropdown(addMenu);
             };
         }
 

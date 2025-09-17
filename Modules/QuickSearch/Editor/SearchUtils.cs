@@ -1887,6 +1887,20 @@ namespace UnityEditor.Search
 
             return false;
         }
+        
+        internal static string UnescapeLiteralString(in string value)
+        {
+            if (value != null && value.Length > 2 && value[0] == '"' && value[value.Length - 1] == '"')
+                return value.Substring(1, value.Length - 2);
+            return value;
+        }
+
+        internal static string GetNiceDisplayLabel(string label)
+        {
+            label = SearchUtils.UnescapeLiteralString(label);
+            label = ObjectNames.NicifyVariableName(label);
+            return label;
+        }
     }
 }
 

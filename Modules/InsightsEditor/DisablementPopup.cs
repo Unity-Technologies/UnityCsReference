@@ -15,7 +15,7 @@ internal class DisablementPopup : EditorWindow
     const string k_TemplatePath = "Insights/UXML/ServicesWindow/InsightsDisablementPopup.uxml";
     const string k_StylePath = "Insights/StyleSheets/ServicesWindow/InsightsDisablementPopup.uss";
 
-    const string k_ButtonAgreeName = "ButtonAgree";
+    internal const string k_ButtonAgreeName = "ButtonAgree";
     const string k_ButtonCancelName = "ButtonCancel";
     const string k_LabelCtaNodeName = "DisablementCta";
     const string k_HelpBoxNodeName = "DisablementHelpBox";

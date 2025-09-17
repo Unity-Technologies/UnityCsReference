@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditorInternal
@@ -88,13 +89,16 @@ namespace UnityEditorInternal
             get;
         }
 
-        [Obsolete("Use instanceId instead", false)]
+        [Obsolete("Use entityId instead, this will be removed in a future version", false)]
         public int id
         {
             get { return instanceId; }
         }
 
-        public extern int instanceId
+        [Obsolete("Use entityId instead, this will be removed in a future version", false)]
+        public int instanceId => entityId;
+
+        public extern EntityId entityId
         {
             get;
         }

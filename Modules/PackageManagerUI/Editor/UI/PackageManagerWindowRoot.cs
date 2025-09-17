@@ -27,10 +27,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUpmClient m_UpmClient;
         private readonly IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         private readonly IPageRefreshHandler m_PageRefreshHandler;
-        private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
-        private readonly ICustomDisplayDialog m_CustomDisplayDialog;
-        private readonly IPackageCreator m_PackageCreator;
+        private readonly IDropdownHandler m_DropdownHandler;
 
         public PackageManagerWindowRoot(IResourceLoader resourceLoader,
             IExtensionManager extensionManager,
@@ -43,10 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IUpmClient upmClient,
             IAssetStoreCachePathProxy assetStoreCachePathProxy,
             IPageRefreshHandler pageRefreshHandler,
-            IPackageOperationDispatcher packageOperationDispatcher,
             IDelayedSelectionHandler delayedSelectionHandler,
-            ICustomDisplayDialog customDisplayDialog,
-            IPackageCreator packageCreator)
+            IDropdownHandler dropdownHandler)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -59,10 +55,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmClient = upmClient;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
             m_PageRefreshHandler = pageRefreshHandler;
-            m_OperationDispatcher = packageOperationDispatcher;
             m_DelayedSelectionHandler = delayedSelectionHandler;
-            m_CustomDisplayDialog = customDisplayDialog;
-            m_PackageCreator = packageCreator;
+            m_DropdownHandler = dropdownHandler;
         }
 
         public void OnEnable()
@@ -301,10 +295,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RemoveFromClassList(k_SelectedInInspectorClassName);
         }
 
-        public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
+        public void OpenAddPackageByNameDropdown(string url)
         {
-            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, anchorWindow);
-
             var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
             var packageName = string.Empty;
             var packageVersion = string.Empty;
@@ -321,20 +313,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 packageName = packageNameAndVersion;
 
-            DropdownElement.ShowDropdown(this, dropdown);
-
-            // We need to set the name and version after the dropdown is shown,
-            // so that the OnTextFieldChange of placeholder gets called
-            dropdown.packageNameField.value = packageName;
-            dropdown.packageVersionField.value = packageVersion;
-            return dropdown;
+            m_DropdownHandler.ShowAddPackageByNameDropdown(packageManagerToolbar.addMenu, packageName, packageVersion);
         }
 
-        public CreatePackageDropdown OpenCreatePackageDropdown(EditorWindow anchorWindow)
+        public void OpenCreatePackageDropdown()
         {
-            var dropdown = new CreatePackageDropdown(m_ResourceLoader, m_PackageCreator, anchorWindow);
-            DropdownElement.ShowDropdown(this, dropdown);
-            return dropdown;
+            m_DropdownHandler.ShowCreatePackageDropdown(packageManagerToolbar.addMenu);
         }
 
         public IDetailsExtension AddDetailsExtension()

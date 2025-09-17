@@ -385,7 +385,7 @@ namespace UnityEditor
         // which leads to managed null references (unity null) even though we have a native object. See handling for missing
         // scripts for Prefab instances in GenericInspector.cs
         [FreeFunction]
-        extern internal static bool IsInstanceIDPartOfNonAssetPrefabInstance(int componentOrGameObjectInstanceID);
+        extern internal static bool IsInstanceIDPartOfNonAssetPrefabInstance(EntityId componentOrGameObjectInstanceID);
 
         // Returns true if the object is from a regular prefab or instance of regular prefab
         [FreeFunction]
@@ -438,7 +438,7 @@ namespace UnityEditor
         extern internal static void ShowCyclicNestingWarningDialog();
 
         [NativeMethod("PrefabUtilityBindings::GetVariantParentGUID_Internal", IsFreeFunction = true, ThrowsException = true)]
-        extern internal static string GetVariantParentGUID(int prefabAssetInstanceID);
+        extern internal static string GetVariantParentGUID(EntityId prefabAssetInstanceID);
 
         internal static string GetVariantParentGUID(GameObject prefabAsset)
         {

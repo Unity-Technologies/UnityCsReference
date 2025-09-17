@@ -589,7 +589,7 @@ namespace UnityEditor.Build.Profile
         void OnCloudBuildClicked()
         {
             var profile = m_BuildProfileSelection.Get(0);
-            if (profile == null) 
+            if (profile == null)
                 return;
 
             BuildAutomationModalWindow.OnCloudBuildClicked(profile, this);

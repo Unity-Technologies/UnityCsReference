@@ -12,20 +12,33 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Audio
 {
-    /// <summary>
-    /// Internal tag interface for dispatching implementations.
-    /// </summary>
+    /// <undoc/>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public unsafe interface IAudioScriptingContext
+    public unsafe interface IAudioScriptingContext // Internal tag interface for dispatching implementations.
     {
+        /// <undoc/>
         internal Processor.AvailableData GetAvailableData(Handle handle);
+        /// <undoc/>
         internal bool SendData(Handle handle, void* data, int size, int align, long typehash);
     }
 
+    /// <summary>
+    /// A temporary context tied to a particular mix cycle, and generally passed along when processing <see cref="Processor"/>s.
+    /// </summary>
+    /// <remarks>
+    /// This also gives access to communicating data together with a <see cref="Processor.Pipe"/>.
+    /// </remarks>
+    /// <seealso cref="ControlContext.Manual.BeginMix"/>
     public unsafe struct ProcessingContext : IAudioScriptingContext
     {
+        /// <summary>
+        /// The DSP time at which the mix cycle began.
+        /// </summary>
         public readonly UInt64 dspTime => m_DSPClock;
 
+        /// <summary>
+        /// True if this context was ever created.
+        /// </summary>
         public readonly bool isCreated => Access.IsCreated;
 
         internal RealtimeAccess Access;
@@ -50,15 +63,22 @@ namespace UnityEngine.Audio
     /// </remarks>
     public readonly struct Processor
     {
+        /// <summary>
+        /// A context giving access to data that is currently available for the <see cref="Processor"/> this was passed to.
+        /// </summary>
+        /// <seealso cref="Processor.IProcessor.Update"/>
+        /// <seealso cref="Processor.AvailableData"/>
+        /// <seealso cref="Processor.Pipe"/>
         public unsafe struct UpdatedDataContext : IAudioScriptingContext
         {
             internal readonly RealtimeAccess Access;
 
-            /// <summary>
-            /// Empty implementation: This is currently only used in a callback where <see cref="Pipe.Head"/> is already set.
-            /// </summary>
-            AvailableData IAudioScriptingContext.GetAvailableData(Handle handle) => default;
+            /// <undoc/>
+            AvailableData IAudioScriptingContext.GetAvailableData(Handle handle)
+                // Empty implementation: This is currently only used in a callback where <see cref="Pipe.Head"/> is already set.
+                => default;
 
+            /// <undoc/>
             bool IAudioScriptingContext.SendData(Handle handle, void* data, int size, int align, long typehash)
             {
                 ScriptableProcessorBindings.ReturnDataFromProcessor(Access, handle, data, size, align, typehash);
@@ -68,23 +88,49 @@ namespace UnityEngine.Audio
             internal UpdatedDataContext(in RealtimeAccess access) => Access = access;
         }
 
+        /// <summary>
+        /// Base interface for the common processing logic of a <see cref="Processor"/>.
+        /// </summary>
+        /// <remarks>
+        /// All <see cref="Processor"/>s must implement this interface to be fully formed,
+        /// though usually each specific <see cref="Processor"/> implements a more specific interface inheriting from this one.
+        /// </remarks>
+        /// <seealso cref="Generator.IProcessor"/>"/>
+        /// <seealso cref="Audio.Processor.IControl{TProcessor}"/>"/>
         public interface IProcessor
         {
+            /// <summary>
+            /// Implement this function to react to data sent to the <see cref="Processor"/> or communicate something back.
+            /// </summary>
+            /// <remarks>
+            /// By default, this is called when there's data sent to your <see cref="Processor"/>.
+            /// This can be changed by setting flags in <see cref="ControlContext.ProcessorCreationParameters.controlUpdateSetting"/>
+            /// when initially creating the <see cref="Processor"/>.
+            /// </remarks>
+            /// <param name="context">The context giving access to available data.</param>
+            /// <param name="pipe">Cross-thread communications pipe.</param>
+            /// <seealso cref="Audio.Processor.IControl{TProcessor}.Update"/>
             public void Update(UpdatedDataContext context, Pipe pipe);
         }
 
         /// <summary>
-        /// Base interface for controlling a <see cref="IProcessor"/>.
+        /// Base interface for common functionality of controlling a <see cref="Processor"/>.
         /// </summary>
         /// <remarks>
         /// Here you can implement any control logic that is required for the processor,
         /// that will run outside of the real time thread.
+        ///
+        /// <para/>
+        /// 
+        /// All <see cref="Processor"/>s must implement this interface to be fully formed,
+        /// though usually each specific <see cref="Processor"/> implements a more specific interface inheriting from this one.
         /// </remarks>
+        /// <seealso cref="Audio.Generator.IControl{TProcessor}"/>
         public interface IControl<TProcessor>
             where TProcessor : unmanaged, IProcessor
         {
             /// <summary>
-            /// Called when the generator is destroyed, after having left the real time thread.
+            /// Called when the generator is destroyed, after having left the processing thread.
             /// </summary>
             /// <remarks>
             /// Here you can clean up any resources that were allocated for the control or realtime thread.
@@ -98,7 +144,7 @@ namespace UnityEngine.Audio
 
             /// <summary>
             /// Called if you have subscribed to continuous updates from the control thread, or if there is
-            /// data returned from the <typeparamref name="TProcessor"/>.
+            /// data returned from the <typeparamref name="TProcessor"/> counterpart.
             /// </summary>
             /// <remarks>
             /// This is guaranteed to be invoked before <see cref="Dispose"/> if there's any data that's been sent
@@ -110,24 +156,40 @@ namespace UnityEngine.Audio
             public void Update(ControlContext context, Pipe pipe);
 
             /// <summary>
-            /// Called immediately from <see cref="ControlContext.SendMessage{T}(Processor, ref T)"/> when a message was sent to this <see cref="Processor"/>.
+            /// Called immediately from <see cref="ControlContext.SendMessage"/> when a message was sent to this <see cref="Processor"/>.
             /// </summary>
             /// <returns>
             /// <see cref="MessageStatus.Handled"/> if this <see cref="Processor"/> acknowledged and processed the message,
             /// <see cref="MessageStatus.Unhandled"/> if not or ignored.
             /// </returns>
+            /// <param name="context">Context the processor is in.</param>
+            /// <param name="pipe">Cross-thread communications pipe.</param>
+            /// <param name="message">
+            /// The message someone sent to you through <see cref="ControlContext.SendMessage"/>.
+            /// The contents are sent by reference, so you can modify them and the sender will see the changes.
+            /// </param>
             public MessageStatus OnMessage(ControlContext context, Pipe pipe, Message message);
-
         }
 
+        /// <summary>
+        /// A bi-directional communication system typically between two logical threads.
+        /// </summary>
+        /// <remarks>
+        /// One thread is referred to as "control" (main thread typically) and one as "realtime" (audio thread typically).
+        /// Using <see cref="ControlContext"/> and <see cref="ProcessingContext"/> as keys to the APIs,
+        /// you can read data the other thread sent you or send data back.
+        /// </remarks>
         public unsafe ref struct Pipe
         {
             internal readonly AvailableData.Element* Head;
             internal readonly Handle DualThreadHandle;
 
             /// <summary>
-            /// Enumerate the available data during an <see cref="IProcessor.Update"/> call.
+            /// Access an enumerator to the currently available data.
             /// </summary>
+            /// <param name="context">The context key which provides data access from the respective thread.</param>
+            /// <returns>A temporary collection of available data.</returns>
+            /// <seealso cref="Processor.AvailableData"/>
             public readonly AvailableData GetAvailableData<TAudioContext>(TAudioContext context)
                 where TAudioContext : unmanaged, IAudioScriptingContext
             {
@@ -138,11 +200,14 @@ namespace UnityEngine.Audio
             }
 
             /// <summary>
-            /// Send data from <see cref="IProcessor"/> to <see cref="IControl{TProcessor}"/> or vice versa
+            /// Send data from <see cref="IProcessor"/> to <see cref="IControl{TProcessor}"/> or vice versa.
             /// </summary>
+            /// <param name="context">The context key which targets the other logical thread receiver.</param>
+            /// <param name="data">The data to be received in the other logical thread.</param>
             /// <returns>
             /// True if this operation is currently possible. This can fail for instance when the <see cref="Processor"/>
-            /// is being disposed, so you must guard against this.
+            /// is being in process of being disposed through <see cref="ControlContext.DestroyProcessor"/>,
+            /// so you must guard against this if you are transferring resources.
             /// </returns>
             public readonly bool SendData<TAudioContext, T>(TAudioContext context, in T data)
                 where TAudioContext : unmanaged, IAudioScriptingContext
@@ -170,10 +235,10 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// A by-reference wrapper around something sent from <see cref="ControlContext.SendMessage{T}(Processor, ref T)"/>.
+        /// A by-reference wrapper around something sent from <see cref="ControlContext.SendMessage"/>.
         /// </summary>
         /// <remarks>
-        /// Since this has no defined type, you will need to test with <see cref="Is{T}"/> to discern between different
+        /// Since this has no defined type, you will need to test with <see cref="Message.Is"/> to discern between different
         /// message types being delivered to you.
         /// </remarks>
         public unsafe ref struct Message
@@ -190,6 +255,9 @@ namespace UnityEngine.Audio
             /// Return a reference to the inner piece of data. You can modify this and the effects will be visible to the
             /// original message sender.
             /// </summary>
+            /// <remarks>
+            /// Use <see cref="Processor.Message.Is"/> to figure out if you can call this function with a particular type.
+            /// </remarks>
             /// <exception cref="InvalidCastException">
             /// Thrown if the inner piece of data doesn't match the type of <typeparamref name="T"/>.
             /// </exception>
@@ -208,19 +276,54 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// A return value from <see cref="Processor.IControl{TProcessor}.OnMessage(ControlContext, Processor.Message)"/>
+        /// A return value from <see cref="Audio.Processor.IControl{TProcessor}.OnMessage"/>
         /// that lets the message sender know if the message was handled or not.
         /// </summary>
         public enum MessageStatus
         {
-            Unhandled, Handled
+            /// <summary>
+            /// Indicates the message wasn't handled.
+            /// </summary>
+            Unhandled,
+            /// <summary>
+            /// Indicates the message was recognized and handled.
+            /// </summary>
+            Handled
         }
-        
-        #pragma warning disable 0169,0649
+
+#pragma warning disable 0169, 0649
+        /// <summary>
+        /// A temporary collection of data available for enumeration.
+        /// </summary>
+        /// <remarks>
+        /// You can enumerate the <see cref="Element"/>s within using a __foreach__ loop over this collection.
+        /// </remarks>
+        /// <seealso cref="ControlContext.SendData"/>
+        /// <seealso cref="Pipe.SendData"/>
+        /// <example>
+        /// <code source="../../../../../Tests/EditModeAndPlayModeTests/Audio/Assets/DocCodeExamples/SAP_HowToUseGetAvailableData.cs"/>
+        /// </example>
         public unsafe ref struct AvailableData
         {
+            /// <summary>
+            /// A piece of temporary immutable type-erased data that was sent from an API like
+            /// <see cref="ControlContext.SendData"/> or <see cref="Processor.Pipe.SendData"/>, received on likely another thread.
+            /// </summary>
+            /// <remarks>
+            /// You can use <see cref="Processor.AvailableData.Element.TryGetData"/> to test and extract a piece of typed data,
+            /// if the current element matches it.
+            /// </remarks>
             public unsafe ref struct Element
             {
+                /// <summary>
+                /// Test and return a piece of typed data if this <see cref="Processor.AvailableData.Element"/> matches the type given.
+                /// </summary>
+                /// <param name="data">The typed piece of data to be extracted.</param>
+                /// <returns>
+                /// Whether this <see cref="Processor.AvailableData.Element"/> is of the same type as <typeparamref name="T"/>, and if so,
+                /// whether the <paramref name="data"/> parameter was updated.
+                /// </returns>
+                /// <seealso cref="Processor.AvailableData"/>
                 public bool TryGetData<T>(out T data) where T : unmanaged
                 {
                     var attemptedTypeHash = BurstRuntime.GetHashCode64<T>();
@@ -245,13 +348,16 @@ namespace UnityEngine.Audio
                 Element* m_NextElement;
             }
 
+            /// <undoc/>
             public Element Current => *m_CurrentElement;
 
+            /// <undoc/>
             public AvailableData GetEnumerator()
             {
                 return this;
             }
 
+            /// <undoc/>
             public bool MoveNext()
             {
                 if (m_MoveNextCalled)

@@ -251,20 +251,77 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 CreateAndLoadScenario();
         }
 
-        public override Task ExecuteStartAsync(CancellationToken cancellationToken)
+        public override async Task ExecuteStartAsync(CancellationToken cancellationToken)
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                return Task.FromCanceled(new CancellationToken(true));
+                throw new TaskCanceledException();
 
             // Quick Sanity check.
             if (m_Scenario == null)
                 Debug.LogError("Attempted to start Scenario with none set.");
 
+            // Check instance(s) setup before starting the scenario
+            await RunPreStartChecksAsync(cancellationToken);
+
             ScenarioRunner.StartScenario();
 
             LaunchingScenarioWindow.OnScenarioStarted(this);
+        }
 
-            return Task.CompletedTask;
+        /// <summary>
+        /// Performs validation checks on the scenario instance(s) before starting scenario
+        /// If validation fails, displays an error dialog, sends an analytics event,
+        /// and throws a InvalidOperationException
+        /// </summary>
+        private async Task RunPreStartChecksAsync(CancellationToken cancellationToken)
+        {
+            var validationResult = await m_Scenario.ValidateForRunningAsync(cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                var instances = GetInstancesFromDescriptions(GetAllInstances());
+                //  Sanity check
+                if (instances == null || instances.Count == 0)
+                {
+                    return;
+                }
+
+                var instancesData = Instance.GetAnalyticsDataArray(instances);
+                var errorData = Instance.GetValidationErrorData(validationResult);
+
+                // if the validation fails before StartScenario(), send simplified Instances data and validation result as Errors
+                AnalyticsOnPlayFromScenarioEvent.SendValidationErrorData(
+                    instancesData,
+                    new[] { errorData }
+                );
+
+                EditorUtility.DisplayDialog(
+                    $"Play Mode Scenario - Scenario Setup Error ",
+                    $"{validationResult.Message}. Please check the console for more details.",
+                    "OK"
+                );
+                throw new InvalidOperationException($"Scenario validation failed. {validationResult.Message}");
+            }
+        }
+
+        private static List<Instance> GetInstancesFromDescriptions(List<InstanceDescription> instanceDescriptions)
+        {
+            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            if (currentConfig == null || currentConfig.Scenario == null)
+                return new List<Instance>();
+
+            var result = new List<Instance>();
+
+            // Get the instances from the list of instance descriptions
+            foreach (var desc in instanceDescriptions)
+            {
+                var instance = currentConfig.Scenario.GetInstanceByName(desc.Name);
+                if (instance != null)
+                {
+                    result.Add(instance);
+                }
+            }
+            return result;
         }
 
         public override void ExecuteStop()
@@ -415,6 +472,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (!remoteBuildTargetsCorrect)
                 reasonForInvalidConfiguration += "\nRemote instance(s) have incorrect build target.";
 
+            // Check if remote instances have incorrect multiplayer role
+            var remoteInstancesHaveServerRole = m_RemoteInstances.Count == 0 || IsConditionMetForAll(instance =>
+                instance != null && LocalDeploymentUtility.IsServerProfileOrRole(instance.BuildProfile),
+                m_RemoteInstances);
+
+            if (!remoteInstancesHaveServerRole)
+                reasonForInvalidConfiguration += "\nRemote instance(s) must have Server Role or a Server Build Profile.";
+
             // Check if we have more than one server role.
             var configHasMoreServerInstances = ConfigurationHasMaxOneServer();
             if (!configHasMoreServerInstances)
@@ -423,7 +488,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             reasonForInvalidConfiguration = reasonForInvalidConfiguration.Trim('\n');
             return localBuildTargetsAreSupported && remoteBuildTargetsCorrect && localBuildTargetsCanRunOnPlatform &&
                    configHasMoreServerInstances && localMobileDevicesSelected && !containsTakenName &&
-                   !containsTakenDeviceID;
+                   !containsTakenDeviceID && remoteInstancesHaveServerRole;
         }
 
         bool ConfigurationHasMaxOneServer()

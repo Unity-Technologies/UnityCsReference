@@ -71,6 +71,16 @@ namespace UnityEditor.UIElements
             return m_TrackedAssets.ContainsKey(asset.GetInstanceID());
         }
 
+        public bool IsTrackingAsset(string assetPath)
+        {
+            foreach (var value in m_TrackedAssets.Values)
+            {
+                if (value.m_AssetPath == assetPath)
+                    return true;
+            }
+            return false;
+        }
+
         public bool IsTrackingAssets()
         {
             return m_TrackedAssets.Count > 0;

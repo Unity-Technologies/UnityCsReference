@@ -17,27 +17,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public SelectableLabel()
         {
-            SetAsSelectableAndElided();
-        }
-
-        public void SetAsSelectableAndElided()
-        {
             selection.isSelectable = true;
             focusable = true;
             displayTooltipWhenElided = true;
-        }
-
-        public void SetValueWithoutNotify(string value)
-        {
-            text = value;
-        }
-
-        public bool multiline { get; set; }
-
-        public string value
-        {
-            get => text;
-            set => text = value;
         }
     }
 }

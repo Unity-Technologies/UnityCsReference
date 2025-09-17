@@ -255,7 +255,7 @@ namespace UnityEditor
         public const float ToolbarHeight = 36f;
 
         internal static Toolbar instance => s_Instance;
-        internal const string k_MainToolbarAPIDocumentationLink = "https://docs.unity3d.com/ScriptingReference/Toolbars.MainToolbar.html";
+        internal static readonly string k_MainToolbarAPIDocumentationLink = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/ScriptReference/Toolbars.MainToolbar.html";
 
         Toolbar()
         {

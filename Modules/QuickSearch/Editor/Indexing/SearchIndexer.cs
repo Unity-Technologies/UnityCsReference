@@ -254,7 +254,8 @@ namespace UnityEditor.Search
 
         // 1- Initial version after removing the old SearchIndexEntry
         // 2- Fix Search Areas for sub assets and sub objects
-        internal const int version = 2;
+        // 3- Add metadata to document hash.
+        internal const int version = 3;
 
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>

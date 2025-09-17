@@ -140,15 +140,14 @@ namespace Unity.PlayMode.Editor
                 task = transitionAction(CurrentState, to, cancellationToken);
                 await task;
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
                 AbortTransition();
                 return;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 AbortTransition();
-                Debug.LogException(e);
                 throw;
             }
 

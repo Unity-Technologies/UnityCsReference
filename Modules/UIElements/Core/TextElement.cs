@@ -566,7 +566,7 @@ namespace UnityEngine.UIElements
         /// <param name="heightMode">Height restrictions.</param>
         /// <param name="fontsize">Optional parameter that override the fontSize that would be applied on the visualElement.</param>
         /// <returns>The horizontal and vertical size needed to display the text string.</returns>
-        internal Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
+        public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, fontsize);
         }
@@ -645,6 +645,19 @@ namespace UnityEngine.UIElements
             // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
             if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
+        }
+
+        /// <summary>
+        /// Marks that the <see cref="TextElement"/> forces a layout and repaint.
+        /// </summary>
+        /// <remarks>
+        /// Call this method if you modify assets that influence text generation at runtime, 
+        /// such as a <see cref="FontAsset"/>.
+        /// </remarks>
+        public void MarkDirtyText()
+        {
+            IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
+            uitkTextHandle.SetDirty();
         }
     }
 }

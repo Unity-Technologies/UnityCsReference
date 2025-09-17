@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -14,12 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static readonly Vector2 k_DefaultWindowSize = new(320, 72);
         private static readonly Vector2 k_WindowSizeWithError = new(320, 114);
-        internal override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
-
-        private EditorWindow m_AnchorWindow;
-
-        private TextFieldPlaceholder m_PackageNamePlaceholder;
-        private TextFieldPlaceholder m_PackageVersionPlaceholder;
+        public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
         private IResourceLoader m_ResourceLoader;
         private IUpmClient m_UpmClient;
@@ -27,6 +23,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPageManager m_PageManager;
         private IPackageOperationDispatcher m_OperationDispatcher;
         private ICustomDisplayDialog m_CustomDisplayDialog;
+
+        // We save the initial values and only set the field values when `OnDropdownShown` is called because
+        // if we set it too early before the VisualElement is visible, the placeholder text will not show up correctly.
+        public string packageNameInitialValue { get; set; }
+        public string packageVersionInitialValue { get; set; }
 
         private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
         {
@@ -38,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_CustomDisplayDialog = displayDialogCustom;
         }
 
-        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
         {
             ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager, packageOperationDispatcher, displayDialogCustom);
 
@@ -48,31 +49,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            Init(anchorWindow);
-        }
-
-        private void Init(EditorWindow anchorWindow)
-        {
-            m_AnchorWindow = anchorWindow;
-
-            packageNameField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            packageNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
-            packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
-
-            m_PackageNamePlaceholder = new TextFieldPlaceholder(packageNameField, L10n.Tr("Name"));
-            m_PackageVersionPlaceholder = new TextFieldPlaceholder(packageVersionField, L10n.Tr("Version (optional)"));
+            packageNameField.textEdition.placeholder = L10n.Tr("Name");
+            packageVersionField.textEdition.placeholder = L10n.Tr("Version (optional)");
 
             submitButton.clickable.clicked += SubmitClicked;
         }
 
-        internal override void OnDropdownShown()
+        public override void OnDropdownShown()
         {
+            packageNameField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
+            packageNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+            packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+
             inputForm.SetEnabled(true);
-
-            // If we show a DropdownElement (dropdown filled with url values), we don't use the anchor window
-            if (container != null)
-                m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
-
+            packageNameField.value = packageNameInitialValue ?? string.Empty;
+            packageVersionField.value = packageVersionInitialValue ?? string.Empty;
             if (string.IsNullOrEmpty(errorInfoBox.text) || packageNameField.ClassListContains("error"))
                 packageNameField.Focus();
             else
@@ -80,22 +71,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageNameField.value));
         }
 
-        internal override void OnDropdownClosed()
+        public override void OnDropdownClosed()
         {
-            m_PackageNamePlaceholder.OnDisable();
-            m_PackageVersionPlaceholder.OnDisable();
-
             packageNameField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
             packageNameField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
             packageVersionField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
-
-            if (m_AnchorWindow != null)
-            {
-                m_AnchorWindow.rootVisualElement.SetEnabled(true);
-                m_AnchorWindow = null;
-            }
-
-            submitButton.clickable.clicked -= SubmitClicked;
         }
 
         private void SetError(bool isNameError = false, bool isVersionError = false)
@@ -194,7 +174,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     headerInfoBoxText = k_NonCompliantDialogTitle,
                     bodyText = compliance.violation.message,
                     readMoreUrl = compliance.violation.readMoreLink,
-                    readMoreClickedAnalyticsId = "restricted-package-read-more-clicked"
+                    readMoreClickedAnalyticsId = "restricted-package-read-more-clicked",
+                    headerColor = HeaderColor.Red
                 };
                 m_CustomDisplayDialog.Show(displayDialogArgs);
                 Close();

@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Threading.Tasks;
 using System.Threading;
+using UnityEngine.Scripting;
 
 namespace Unity.PlayMode.Editor
 {
@@ -20,6 +21,15 @@ namespace Unity.PlayMode.Editor
         {
             if (instance.m_StateMachine.CurrentState == PlayModeState.Running)
                 instance.Resume();
+        }
+
+        [RequiredByNativeCode]
+        internal static void TogglePlayingShortcut()
+        {
+            if (instance.ActivePlayModeConfig == instance.DefaultConfig)
+                EditorApplication.TogglePlaying();
+            else
+                instance.TogglePlaying();
         }
 
         private StateMachine<PlayModeState> m_StateMachine;
@@ -74,11 +84,8 @@ namespace Unity.PlayMode.Editor
             get
             {
                 if (m_Config == null)
-                {
-                    m_Config = DefaultConfig;
-                    m_Config.OnConfigSelected();
-                    ConfigAssetChanged?.Invoke();
-                }
+                    AssignActiveConfig(PlayModeUserSettings.instance.LastActiveConfiguration);
+
                 return m_Config;
             }
             set
@@ -94,11 +101,20 @@ namespace Unity.PlayMode.Editor
                     m_Config.OnConfigDeselected();
 
                 // Select the new one if set
-                m_Config = value;
-                if (m_Config != null)
-                    m_Config.OnConfigSelected();
-                ConfigAssetChanged?.Invoke();
+                AssignActiveConfig(value);
             }
+        }
+
+        void AssignActiveConfig(PlayModeConfiguration config)
+        {
+            if (config == null)
+                config = DefaultConfig;
+
+            m_Config = config;
+            PlayModeUserSettings.instance.LastActiveConfiguration = m_Config;
+
+            m_Config.OnConfigSelected();
+            ConfigAssetChanged?.Invoke();
         }
 
         /// <summary>
@@ -127,6 +143,14 @@ namespace Unity.PlayMode.Editor
             }
 
             return m_StateMachine;
+        }
+
+        private void TogglePlaying()
+        {
+            if (CurrentState == PlayModeState.Running)
+                Stop();
+            else
+                Start();
         }
 
         /// <summary>

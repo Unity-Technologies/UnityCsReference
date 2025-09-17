@@ -14,9 +14,7 @@ internal class CreatePackageDropdown : DropdownContent
     private static readonly Vector2 k_WindowSizeWithError = new(320, 94);
     private static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occured while creating the package. See console for more details.");
 
-    internal override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
-    private TextFieldPlaceholder m_PackageNamePlaceholder;
-    private EditorWindow m_AnchorWindow;
+    public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
     private IResourceLoader m_ResourceLoader;
     private IPackageCreator m_PackageCreator;
@@ -26,7 +24,7 @@ internal class CreatePackageDropdown : DropdownContent
         m_PackageCreator = packageCreator;
     }
 
-    public CreatePackageDropdown(IResourceLoader resourceLoader, IPackageCreator packageCreator, EditorWindow anchorWindow)
+    public CreatePackageDropdown(IResourceLoader resourceLoader, IPackageCreator packageCreator)
     {
         ResolveDependencies(resourceLoader, packageCreator);
 
@@ -36,49 +34,28 @@ internal class CreatePackageDropdown : DropdownContent
         Add(root);
         cache = new VisualElementCache(root);
 
-        Init(anchorWindow);
-    }
+        packageDisplayNameField.textEdition.placeholder = L10n.Tr("Package display name");
 
-    private void Init(EditorWindow anchorWindow)
-    {
-        m_AnchorWindow = anchorWindow;
-
-        packageDisplayNameField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-        packageDisplayNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
-        m_PackageCreator.onPackageCreated += OnPackageCreated;
-
-        m_PackageNamePlaceholder = new TextFieldPlaceholder(packageDisplayNameField, L10n.Tr("Package display name"));
 
         submitButton.clickable.clicked += SubmitClicked;
     }
 
-    internal override void OnDropdownShown()
+    public override void OnDropdownShown()
     {
+        packageDisplayNameField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
+        packageDisplayNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+        m_PackageCreator.onPackageCreated += OnPackageCreated;
+
         inputForm.SetEnabled(true);
-
-        // If we show a DropdownElement (dropdown filled with url values), we don't use the anchor window
-        if (container != null)
-            m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
-
         packageDisplayNameField.Focus();
         submitButton.SetEnabled(!string.IsNullOrWhiteSpace(packageDisplayNameField.value));
     }
 
-    internal override void OnDropdownClosed()
+    public override void OnDropdownClosed()
     {
-        m_PackageNamePlaceholder.OnDisable();
-
         packageDisplayNameField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
         packageDisplayNameField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
         m_PackageCreator.onPackageCreated -= OnPackageCreated;
-
-        if (m_AnchorWindow != null)
-        {
-            m_AnchorWindow.rootVisualElement.SetEnabled(true);
-            m_AnchorWindow = null;
-        }
-
-        submitButton.clickable.clicked -= SubmitClicked;
     }
 
     private void OnTextFieldChange(ChangeEvent<string> evt)

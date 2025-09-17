@@ -219,17 +219,17 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// No bits set in the PhysicsMask, effectively zero.
         /// </summary>
-        public static PhysicsMask None = default;
+        public static readonly PhysicsMask None = default;
 
         /// <summary>
         /// Bit #0 set (1) in the PhysicsMask. The remaining bits are reset (0).
         /// </summary>
-        public static PhysicsMask One = new() { bitMask = 0x1 };
+        public static readonly PhysicsMask One = new() { bitMask = 0x1 };
 
         /// <summary>
         /// All 64 bits set (1) in the PhysicsMask.
         /// </summary>
-        public static PhysicsMask All = new() { bitMask = UInt64.MaxValue };
+        public static readonly PhysicsMask All = new() { bitMask = UInt64.MaxValue };
 
         /// <summary>
         /// An interator that will iterate only the bits that are reset (0) in a <see cref="LowLevelPhysics2D.PhysicsMask"/>

@@ -177,6 +177,42 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return activeInstanceNames;
         }
 
+        internal struct ValidationResult
+        {
+            public bool IsValid;
+            public string Message;
+
+            public ValidationResult(bool isValid, string message)
+            {
+                IsValid = isValid;
+                Message = message;
+            }
+        }
+
+        /// <summary>
+        /// Validates each instance sequentially to ensure it is ready to run
+        /// Stops and returns immediately if any instance fails validation checks
+        /// </summary>
+        internal async Task<ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
+        {
+            foreach (var instance in m_Instances)
+            {
+                // Skip validation for Free Run instances from scenario
+                if (instance.IsFreeRunMode())
+                {
+                    continue;
+                }
+
+                var result = await instance.ValidateForRunningAsync(cancellationToken);
+                if (!result.IsValid)
+                {
+                    return result;
+                }
+            }
+
+            return new ValidationResult(true, string.Empty);
+        }
+
         internal void ResumeFreeRunInstances()
         {
             foreach (var instance in m_Instances)

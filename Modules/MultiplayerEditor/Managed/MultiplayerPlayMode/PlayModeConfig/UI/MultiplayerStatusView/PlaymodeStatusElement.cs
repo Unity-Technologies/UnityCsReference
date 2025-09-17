@@ -556,62 +556,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return nodesStatus;
             }
 
-            private ExecutionState ComputeInstanceState(List<NodeStatus> nodesStatus)
-            {
-                var totalNodes = nodesStatus.Count;
-                var errorNodes = 0;
-                var idleNodes = 0;
-                var runningNodes = 0;
-                var activeNodes = 0;
-                var completeNodes = 0;
-                var abortedNodes = 0;
-
-                foreach (var nodeStatus in nodesStatus)
-                {
-                    switch (nodeStatus.State)
-                    {
-                        case ExecutionState.Failed:
-                            errorNodes++;
-                            break;
-                        case ExecutionState.Idle:
-                            idleNodes++;
-                            break;
-                        case ExecutionState.Running:
-                            runningNodes++;
-                            break;
-                        case ExecutionState.Active:
-                            activeNodes++;
-                            break;
-                        case ExecutionState.Completed:
-                            completeNodes++;
-                            break;
-                        case ExecutionState.Aborted:
-                            abortedNodes++;
-                            break;
-                        default:
-                            UnityEngine.Debug.LogError($"Invalid node state {nodeStatus.State}");
-                            return ExecutionState.Invalid;
-                    }
-                }
-
-                if (errorNodes > 0)
-                    return ExecutionState.Failed;
-
-                if (idleNodes == totalNodes)
-                    return ExecutionState.Idle;
-
-                if (abortedNodes > 0)
-                    return ExecutionState.Aborted;
-
-                if (completeNodes == totalNodes)
-                    return ExecutionState.Completed;
-
-                if (activeNodes > 0 && activeNodes + completeNodes == totalNodes)
-                    return ExecutionState.Active;
-
-                return ExecutionState.Running;
-            }
-
             private void AssignStatusIconClass(ExecutionState state, ExecutionStage stage)
             {
                 if (stage == ExecutionStage.Run)
@@ -898,7 +842,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 CleanUpStatus();
 
-                var instanceExecutionState = ComputeInstanceState(nodesStatus);
+                var nodeStates = new List<ExecutionState>();
+                foreach (var node in nodesStatus)
+                {
+                    nodeStates.Add(node.State);
+                }
+                var instanceExecutionState = Instance.ComputeInstanceState(nodeStates);
+
                 AssignStatusIconClass(instanceExecutionState, currentStage);
 
                 AssignStatusTooltip(instanceExecutionState);

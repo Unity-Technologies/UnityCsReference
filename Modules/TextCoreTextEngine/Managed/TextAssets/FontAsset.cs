@@ -215,7 +215,14 @@ namespace UnityEngine.TextCore.Text
         public FaceInfo faceInfo
         {
             get { return m_FaceInfo; }
-            set { m_FaceInfo = value; }
+            set
+            {
+                m_FaceInfo = value;
+                if (m_NativeFontAsset != IntPtr.Zero)
+                {
+                    UpdateFaceInfo();
+                }
+            }
         }
         [SerializeField]
         internal FaceInfo m_FaceInfo;

@@ -1226,7 +1226,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        // If isEntity is false, then pickingID stores the object instanceID.
+                        // If isEntity is false, then pickingID stores the object EntityId.
                         EntityId entityId = EntityId.From(pickingID);
                         pickedObject = EditorUtility.EntityIdToObject(entityId);
                     }
@@ -1932,30 +1932,30 @@ namespace UnityEditor
             return false;
         }
 
-        internal static void FilterRendererIDs(Renderer[] renderers, out int[] parentRendererIDs, out int[] childRendererIDs)
+        internal static void FilterRendererIDs(Renderer[] renderers, out EntityId[] parentRendererIDs, out EntityId[] childRendererIDs)
         {
             if (renderers == null)
             {
                 Debug.LogWarning("The Renderer array is null. Handles.DrawOutline will not be rendered.");
-                parentRendererIDs = new int[0];
-                childRendererIDs = new int[0];
+                parentRendererIDs = new EntityId[0];
+                childRendererIDs = new EntityId[0];
                 return;
             }
 
             var parentIndex = 0;
-            parentRendererIDs = new int[renderers.Length];
+            parentRendererIDs = new EntityId[renderers.Length];
 
             foreach (var renderer in renderers)
-                parentRendererIDs[parentIndex++] = renderer.GetInstanceID();
+                parentRendererIDs[parentIndex++] = renderer.GetEntityId();
 
-            var tempChildRendererIDs = new HashSet<int>();
+            var tempChildRendererIDs = new HashSet<EntityId>();
             foreach (var renderer in renderers)
             {
                 var children = renderer.GetComponentsInChildren<Renderer>();
                 for (int i = 1; i < children.Length; i++)
                 {
-                    var id = children[i].GetInstanceID();
-                    if (!HasMatchingInstanceID(parentRendererIDs, id, parentIndex))
+                    var id = children[i].GetEntityId();
+                    if (!HasMatchingEntityId(parentRendererIDs, id, parentIndex))
                         tempChildRendererIDs.Add(id);
                 }
             }
@@ -1963,44 +1963,44 @@ namespace UnityEditor
             childRendererIDs = tempChildRendererIDs.ToArray();
         }
 
-        internal static void FilterInstanceIDs(IEnumerable<GameObject> gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs, out HashSet<int> childInstanceIDsHashSet)
+        internal static void FilterEntityIds(IEnumerable<GameObject> gameObjects, out EntityId[] parentEntityIds, out EntityId[] childEntityIds, out HashSet<EntityId> childEntityIdsHashSet)
         {
             if (gameObjects.Count() == 0)
             {
-                parentInstanceIDs = new int[0];
-                childInstanceIDs = new int[0];
-                childInstanceIDsHashSet = null;
+                parentEntityIds = new EntityId[0];
+                childEntityIds = new EntityId[0];
+                childEntityIdsHashSet = null;
                 return;
             }
 
-            var tempParentInstanceIDs = new HashSet<int>();
+            var tempParentEntityIds = new HashSet<EntityId>();
             foreach (var go in gameObjects)
             {
                 if (go.TryGetComponent(out Renderer renderer))
-                    tempParentInstanceIDs.Add(renderer.GetInstanceID());
+                    tempParentEntityIds.Add(renderer.GetEntityId());
                 else if (go.TryGetComponent(out Terrain terrain))
-                    tempParentInstanceIDs.Add(terrain.GetInstanceID());
-                // Render commands from the Graphics API can use the gameobject instance ID for selection and outline rendering
-                tempParentInstanceIDs.Add(go.GetInstanceID());
+                    tempParentEntityIds.Add(terrain.GetEntityId());
+                // Render commands from the Graphics API can use the gameobject entity ID for selection and outline rendering
+                tempParentEntityIds.Add(go.GetEntityId());
             }
 
-            childInstanceIDsHashSet = new HashSet<int>();
+            childEntityIdsHashSet = new HashSet<EntityId>();
             foreach (var go in gameObjects)
             {
                 var childRenderers = go.GetComponentsInChildren<Renderer>();
                 for (int i = 0; i < childRenderers.Length; i++)
                 {
-                    var id = childRenderers[i].GetInstanceID();
-                    if (!tempParentInstanceIDs.Contains(id))
-                        childInstanceIDsHashSet.Add(id);
+                    var id = childRenderers[i].GetEntityId();
+                    if (!tempParentEntityIds.Contains(id))
+                        childEntityIdsHashSet.Add(id);
                 }
 
                 var childTerrains = go.GetComponentsInChildren<Terrain>();
                 for (int i = 0; i < childTerrains.Length; i++)
                 {
-                    var id = childTerrains[i].GetInstanceID();
-                    if (!tempParentInstanceIDs.Contains(id))
-                        childInstanceIDsHashSet.Add(id);
+                    var id = childTerrains[i].GetEntityId();
+                    if (!tempParentEntityIds.Contains(id))
+                        childEntityIdsHashSet.Add(id);
                 }
 
                 // Script components can issue Render commands that are rendered in the outline so we need to take that in account
@@ -2010,17 +2010,17 @@ namespace UnityEditor
                     var script = userScriptObjects[i];
                     if (script == null)
                         continue;
-                    var id = script.gameObject.GetInstanceID();
-                    if (!tempParentInstanceIDs.Contains(id))
-                        childInstanceIDsHashSet.Add(id);
+                    var id = script.gameObject.GetEntityId();
+                    if (!tempParentEntityIds.Contains(id))
+                        childEntityIdsHashSet.Add(id);
                 }
             }
 
-            parentInstanceIDs = tempParentInstanceIDs.ToArray();
-            childInstanceIDs = childInstanceIDsHashSet.ToArray();
+            parentEntityIds = tempParentEntityIds.ToArray();
+            childEntityIds = childEntityIdsHashSet.ToArray();
         }
 
-        static bool HasMatchingInstanceID(int[] ids, int id, int cutoff)
+        static bool HasMatchingEntityId(EntityId[] ids, EntityId id, int cutoff)
         {
             for (int i = 0; i < ids.Length; i++)
             {
@@ -2154,7 +2154,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static int ResolvePickingObject(int pickingIndex, Vector3 worldPos, float depth)
+        static void ResolvePickingObject(int pickingIndex, Vector3 worldPos, float depth, out EntityId result)
         {
             foreach (var (begin, end, resolver, resolverWithWorldPos) in s_RenderPickingResults)
             {
@@ -2162,10 +2162,12 @@ namespace UnityEditor
                 {
                     Debug.Assert((resolver == null) != (resolverWithWorldPos == null));
                     var obj = resolver != null ? resolver(pickingIndex - begin) : resolverWithWorldPos(pickingIndex - begin, worldPos, depth);
-                    return obj != null ? obj.GetInstanceID() : 0;
+                    result = obj != null ? obj.GetEntityId() : EntityId.None;
+                    return;
                 }
             }
-            return 0;
+
+            result = EntityId.None;
         }
 
         [RequiredByNativeCode]

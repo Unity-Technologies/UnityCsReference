@@ -11,6 +11,7 @@ internal abstract class CustomDialogArgsBase
     public readonly string windowTitle;
     public readonly string idForAnalytics;
     public Icon headerIcon;
+    public HeaderColor headerColor;
     public string headerMainText;
     public string headerSubText;
     public Icon headerInfoBoxIcon;
@@ -25,6 +26,7 @@ internal abstract class CustomDialogArgsBase
     {
         this.windowTitle = windowTitle;
         this.idForAnalytics = idForAnalytics;
+        headerColor = HeaderColor.Default;
     }
 }
 

@@ -534,7 +534,7 @@ namespace UnityEditorInternal
             return newSelectedId;
         }
 
-        public IList<int> GetSelectedInstanceIds()
+        public IList<EntityId> GetSelectedEntityIds()
         {
             if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return null;
@@ -542,14 +542,14 @@ namespace UnityEditorInternal
             if (selection == null || selection.Count == 0)
                 return null;
 
-            var allInstanceIds = new List<int>();
-            var instanceIds = new List<int>();
+            var allEntityIds = new List<EntityId>();
+            var entityId = new List<EntityId>();
             foreach (var selectedId in selection)
             {
-                m_FrameDataView.GetItemMergedSamplesInstanceID(selectedId, instanceIds);
-                allInstanceIds.AddRange(instanceIds);
+                m_FrameDataView.GetItemMergedSamplesEntityId(selectedId, entityId);
+                allEntityIds.AddRange(entityId);
             }
-            return allInstanceIds;
+            return allEntityIds;
         }
 
         public void Clear()

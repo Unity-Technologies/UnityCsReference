@@ -76,7 +76,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public bool enableMotor { readonly get => m_EnableMotor; set => m_EnableMotor = value; }
 
         /// <summary>
-        /// The desired motor speed, usually in meters per second.
+        /// The desired motor speed, usually in degrees per second.
         /// </summary>
         public float motorSpeed { readonly get => m_MotorSpeed; set => m_MotorSpeed = value; }
 

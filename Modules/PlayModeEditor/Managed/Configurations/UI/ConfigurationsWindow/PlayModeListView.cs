@@ -108,6 +108,10 @@ namespace Unity.PlayMode.Editor
                 labelAndIcon.Unbind();
                 labelAndIcon.TrackSerializedObjectValue(so, _ =>
                 {
+                    // If the config was manually removed from file system, return.
+                    if (config == null)
+                        return;
+
                     var configIsValid = config.IsConfigurationValid(out var tooltipText);
                     labelAndIcon.ShowWarningIcon(!configIsValid, tooltipText);
                 });

@@ -132,6 +132,42 @@ namespace UnityEditor.Search
 
             public Options options;
             public int baseScore = 100;
+
+            public static bool IsPackages(string path)
+            {
+                return !string.IsNullOrEmpty(path) && (path.Equals("Packages", StringComparison.InvariantCultureIgnoreCase) || path.Equals("Packages/", StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            public bool IsPackagesIndexingEnabled()
+            {
+                return roots != null && roots.Any(r => IsPackages(r));
+            }
+
+            public void EnablePackagesIndexing(bool enable)
+            {
+                if (IsPackagesIndexingEnabled() == enable)
+                    return;
+
+                if (enable)
+                {
+                    var newRoots = new string[roots.Length + 1];
+                    Array.Copy(roots, newRoots, roots.Length);
+                    newRoots[newRoots.Length - 1] = "Packages";
+                    roots = newRoots;
+                }
+                else
+                {
+                    var newRoots = new string[roots.Length - 1];
+                    var newRootIndex = 0;
+                    foreach (var root in roots)
+                    {
+                        if (IsPackages(root))
+                            continue;
+                        newRoots[newRootIndex++] = root;
+                    }
+                    roots = newRoots;
+                }
+            }
         }
 
         class IndexArtifact : IEquatable<IndexArtifact>

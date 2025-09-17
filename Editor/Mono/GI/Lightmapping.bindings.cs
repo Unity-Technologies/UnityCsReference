@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -12,8 +13,12 @@ using System.Runtime.InteropServices;
 using Scene = UnityEngine.SceneManagement.Scene;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.LightBaking;
 using UnityEngine.Rendering;
+using Light = UnityEngine.Light;
+using LightingSettings = UnityEngine.LightingSettings;
+using Terrain = UnityEngine.Terrain;
 
 namespace UnityEditor
 {
@@ -145,6 +150,7 @@ namespace UnityEditor
             get { return GetLightingSettingsOrDefaultsFallback().albedoBoost; }
             set { GetOrCreateLightingsSettings().albedoBoost = value; }
         }
+        internal static bool UnifiedBaker { get; set; } = false;
 
         [RequiredByNativeCode]
         internal static bool ShouldBakeInteractively()
@@ -365,15 +371,15 @@ namespace UnityEditor
 
         // This event is fired when BakeInput has been populated, but before passing it to Bake().
         // Do not store and access BakeInput beyond the call-back.
-        internal static event Action<LightBaker.BakeInput, LightBaker.LightmapRequests, LightBaker.LightProbeRequests, InputExtraction.SourceMap> createdBakeInput;
+        internal static event Action<BakeInput, LightmapRequests, LightProbeRequests, InputExtraction.SourceMap> createdBakeInput;
 
         internal static void Internal_CallOnCreatedBakeInput(IntPtr p_BakeInput, IntPtr p_LightmapRequests, IntPtr LightProbeRequests, IntPtr p_SourceMap)
         {
             if (createdBakeInput != null)
             {
-                using var bakeInput = new LightBaker.BakeInput(p_BakeInput);
-                using var lightmapRequests = new LightBaker.LightmapRequests(p_LightmapRequests);
-                using var lightProbeRequests = new LightBaker.LightProbeRequests(LightProbeRequests);
+                using var bakeInput = new BakeInput(p_BakeInput);
+                using var lightmapRequests = new LightmapRequests(p_LightmapRequests);
+                using var lightProbeRequests = new LightProbeRequests(LightProbeRequests);
                 using var sourceMap = new InputExtraction.SourceMap(p_SourceMap);
                 createdBakeInput(bakeInput, lightmapRequests, lightProbeRequests, sourceMap);
             }
@@ -411,6 +417,30 @@ namespace UnityEditor
         {
             if (bakeAnalytics != null)
                 bakeAnalytics(analytics);
+        }
+
+        public delegate void InputExtractionFunction(UnityEngine.LightTransport.InputExtraction.BakeInput bakeInput);
+
+        [AutoStaticsCleanupOnCodeReload]
+        public static event InputExtractionFunction inputExtraction;
+
+        [RequiredByNativeCode]
+        private static void Internal_CallInputExtractionFunctions(IntPtr p_BakeInput, IntPtr p_LightmapRequests, IntPtr LightProbeRequests, IntPtr p_PostProcessRequests)
+        {
+            if (inputExtraction != null)
+            {
+                using var lightBakerBakeInput = new UnityEditor.LightBaking.BakeInput(p_BakeInput);
+                using var lightmapRequests = new UnityEditor.LightBaking.LightmapRequests(p_LightmapRequests);
+                using var lightProbeRequests = new UnityEditor.LightBaking.LightProbeRequests(LightProbeRequests);
+                var postProcessRequests = new UnityEditor.LightBaking.PostProcessRequests(p_PostProcessRequests);
+
+                var wrappedBakeInput = new UnityEngine.LightTransport.InputExtraction.BakeInput(lightBakerBakeInput);
+                wrappedBakeInput.lightmapRequests = lightmapRequests;
+                wrappedBakeInput.lightProbeRequests = lightProbeRequests;
+                wrappedBakeInput.postProcessRequests = postProcessRequests;
+
+                inputExtraction(wrappedBakeInput);
+            }
         }
 
         // Returns the progress of a build when the bake job is running, returns 0 when no bake job is running.
@@ -668,6 +698,14 @@ namespace UnityEditor
         [RequiredByNativeCode]
         public static void SetAdditionalBakeDelegate(AdditionalBakeDelegate del) { s_AdditionalBakeDelegate = del != null ? del : s_DefaultAdditionalBakeDelegate; }
 
+        public delegate void BakeDelegate(ref float progress, out bool done, UnityEngine.LightTransport.InputExtraction.BakeInput bakeInput);
+
+        [RequiredByNativeCode]
+        public static void AddBakeDelegate(BakeDelegate del) => s_BakeDelegates.Add(del);
+
+        [RequiredByNativeCode]
+        public static void RemoveBakeDelegate(BakeDelegate del) => s_BakeDelegates.RemoveAll(d => d.GetHashCode() == del.GetHashCode());
+
         [RequiredByNativeCode]
         public static AdditionalBakeDelegate GetAdditionalBakeDelegate() { return s_AdditionalBakeDelegate; }
 
@@ -680,6 +718,31 @@ namespace UnityEditor
             s_AdditionalBakeDelegate(ref progress, ref done);
         }
 
+        // We want to control the order of delegate invocations, and we want to explicitly provide the logic for handling each delegate's potential change of ref values
+        //  - done is true iff all delegates return true
+        //  - progress is the reported progress by delegates, averaged
+        [RequiredByNativeCode]
+        private static void Internal_CallBakeWithBakeInputFunctions(ref float progress, out bool done, IntPtr pBakeInput)
+        {
+            bool retVal = true;
+            List<BakeDelegate> bakeDelegates = new() { }; // A copy of the list which will not be modified during iteration, whereas s_BakeDelegates could be modified during iteration
+            bakeDelegates.AddRange(s_BakeDelegates);
+            float progressSum = 0.0f;
+            foreach (BakeDelegate bakeDelegate in bakeDelegates)
+            {
+                using var lightBakerBakeInput = new UnityEditor.LightBaking.BakeInput(pBakeInput);
+
+                var wrappedBakeInput = new UnityEngine.LightTransport.InputExtraction.BakeInput(lightBakerBakeInput);
+                float progressValue = 0.0f;
+                bakeDelegate(ref progressValue, out bool thisDelegateIsDone, wrappedBakeInput);
+                progressSum += progressValue;
+                retVal = retVal && thisDelegateIsDone;
+            }
+            if (bakeDelegates.Count > 0)
+                progress = progressSum / bakeDelegates.Count;
+            done = retVal;
+        }
+
         [RequiredByNativeCode]
         private static readonly AdditionalBakeDelegate s_DefaultAdditionalBakeDelegate = (ref float progress, ref bool done) =>
         {
@@ -688,6 +751,9 @@ namespace UnityEditor
         };
         [RequiredByNativeCode]
         private static AdditionalBakeDelegate s_AdditionalBakeDelegate = s_DefaultAdditionalBakeDelegate;
+        [RequiredByNativeCode]
+        [AutoStaticsCleanupOnCodeReload]
+        private static List<BakeDelegate> s_BakeDelegates = new() { };
     }
 }
 

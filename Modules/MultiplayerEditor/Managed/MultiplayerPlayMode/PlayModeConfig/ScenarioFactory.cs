@@ -130,10 +130,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         static Instance CreateEditorInstance(EditorInstanceDescription editorInstanceDescription)
         {
-            var instance = Instance.Create(editorInstanceDescription);
+            var editorController = new EditorInstanceController(editorInstanceDescription);
+            var instance = Instance.Create(editorInstanceDescription, editorController);
             var executionGraph = instance.GetExecutionGraph();
 
-            var editorController = new EditorInstanceController(editorInstanceDescription);
             editorController.SetupExecutionGraph(executionGraph);
 
             return instance;
@@ -141,10 +141,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private static Instance CreateLocalInstance(LocalInstanceDescription description, bool hasMainEditor)
         {
-            var instance = Instance.Create(description);
+            var localController = new LocalInstanceController(description, hasMainEditor);
+            var instance = Instance.Create(description, localController);
             var executionGraph = instance.GetExecutionGraph();
 
-            var localController = new LocalInstanceController(description, hasMainEditor);
             localController.SetupExecutionGraph(executionGraph);
 
             return instance;
@@ -152,10 +152,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private static Instance CreateRemoteInstance(RemoteInstanceDescription description)
         {
-            var instance = Instance.Create(description);
+            var remoteController = new RemoteInstanceController(description);
+            var instance = Instance.Create(description, remoteController);
             var executionGraph = instance.GetExecutionGraph();
 
-            var remoteController = new RemoteInstanceController(description);
             remoteController.SetupExecutionGraph(executionGraph);
 
             return instance;

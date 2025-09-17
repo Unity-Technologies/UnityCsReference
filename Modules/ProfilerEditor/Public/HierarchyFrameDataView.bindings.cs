@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Profiling.LowLevel;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Profiling
@@ -85,8 +86,11 @@ namespace UnityEditor.Profiling
         [ThreadSafe]
         public extern string GetItemName(int id);
 
+        [Obsolete("Use GetItemEntityId(int id) instead. This method will be removed in a future version.")]
+        public int GetItemInstanceID(int id) => GetItemEntityId(id);
+
         [ThreadSafe]
-        public extern int GetItemInstanceID(int id);
+        public extern EntityId GetItemEntityId(int id);
 
         [ThreadSafe]
         public extern string GetItemColumnData(int id, int column);
@@ -180,6 +184,7 @@ namespace UnityEditor.Profiling
         [ThreadSafe]
         extern void GetItemMergedSamplesColumnDataAsDoublesInternal(int id, int column, List<double> outValues);
 
+        [Obsolete("Deprecated, use GetItemMergedSamplesEntityId instead. This method will be removed in a future version.")]
         public void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds)
         {
             if (outInstanceIds == null)
@@ -191,6 +196,18 @@ namespace UnityEditor.Profiling
         [NativeMethod("GetItemMergedSamplesInstanceID")]
         [ThreadSafe]
         extern void GetItemMergedSamplesInstanceIDInternal(int id, List<int> outInstanceIds);
+
+        public void GetItemMergedSamplesEntityId(int id, List<EntityId> outEntityIds)
+        {
+            if (outEntityIds == null)
+                throw new ArgumentNullException(nameof(outEntityIds));
+
+            GetItemMergedSamplesEntityIdInternal(id, outEntityIds);
+        }
+
+        [NativeMethod("GetItemMergedSamplesEntityId")]
+        [ThreadSafe]
+        extern void GetItemMergedSamplesEntityIdInternal(int id, List<EntityId> outEntityIds);
 
         public void GetItemMergedSampleCallstack(int id, int sampleIndex, List<ulong> outCallstack)
         {

@@ -9,15 +9,14 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using ExCSS;
 using Unity.Profiling;
 using UnityEditor.AssetImporters;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
-using Object = UnityEngine.Object;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 using StyleSheet = UnityEngine.UIElements.StyleSheet;
 
 namespace UnityEditor.UIElements
@@ -453,6 +452,9 @@ namespace UnityEditor.UIElements
                 {
                     if (asset is VisualTreeAsset treeAsset)
                     {
+                        if (validationResponse.resolvedUrlChanged)
+                            vta.importerWithUpdatedUrls = true;
+
                         vta.RegisterTemplate(name, treeAsset);
                     }
                     else
@@ -761,25 +763,19 @@ namespace UnityEditor.UIElements
             }
             else if (hasSrc)
             {
-                string errorMessage, projectRelativePath;
-
-                URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, srcAttr.Value, out errorMessage, out projectRelativePath);
-
-                if (result != URIValidationResult.OK)
+                var validationResponse = ValidateAndLoadResource(styleElt, vta, srcAttr.Value).response;
+                if (validationResponse.result == URIValidationResult.OK)
                 {
-                    LogError(vta, ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, styleElt);
-                }
-                else
-                {
-                    Object asset = DeclareDependencyAndLoad(projectRelativePath);
-
-                    if (asset is StyleSheet)
+                    var asset = DeclareDependencyAndLoad(validationResponse.resolvedProjectRelativePath);
+                    if (asset is StyleSheet styleSheet)
                     {
-                        vea.stylesheets.Add(asset as StyleSheet);
+                        if (validationResponse.resolvedUrlChanged)
+                            vta.importerWithUpdatedUrls = true;
+                        vea.stylesheets.Add(styleSheet);
                     }
                     else
                     {
-                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, styleElt);
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, validationResponse.resolvedProjectRelativePath, styleElt);
                     }
                 }
             }
@@ -999,7 +995,7 @@ namespace UnityEditor.UIElements
                 return (response, asset);
             }
 
-            return (default, null);
+            return (response, null);
         }
 
         static bool IsBuiltinResource(string path)

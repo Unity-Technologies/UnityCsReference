@@ -100,6 +100,7 @@ namespace UnityEngine
                     case RuntimePlatform.tvOS:
                     case RuntimePlatform.Android:
                     case RuntimePlatform.Switch:
+                    case RuntimePlatform.Switch2:
                     case RuntimePlatform.PS4:
                     case RuntimePlatform.PS5:
                     case RuntimePlatform.WebGLPlayer:

@@ -162,15 +162,13 @@ namespace UnityEditor.PackageManager.UI
         public static IEnumerable<Sample> FindByPackage(string packageName, string packageVersion)
         {
             var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
-            if (upmCache.installedPackageInfos.Count() == 0)
-                upmCache.SetInstalledPackageInfos(PackageInfo.GetAllRegisteredPackages());
+            var packageInfo = upmCache.installedPackageInfosReady ? upmCache.GetInstalledPackageInfo(packageName) : PackageInfo.GetAllRegisteredPackages().FirstOrDefault(p => p.name == packageName);
 
-            var package = upmCache.GetInstalledPackageInfo(packageName);
-            if (package?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
+            if (packageInfo?.version == packageVersion || string.IsNullOrEmpty(packageVersion))
             {
                 var ioProxy = ServicesContainer.instance.Resolve<IIOProxy>();
                 var assetDatabaseProxy = ServicesContainer.instance.Resolve<IAssetDatabaseProxy>();
-                return FindByPackage(package, upmCache, ioProxy, assetDatabaseProxy);
+                return FindByPackage(packageInfo, upmCache, ioProxy, assetDatabaseProxy);
             }
             return Enumerable.Empty<Sample>();
         }

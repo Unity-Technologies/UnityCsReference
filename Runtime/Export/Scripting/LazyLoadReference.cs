@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using UnityEngine.Serialization;
 using UnityEngineInternal;
 using uei = UnityEngine.Internal;
 
@@ -33,8 +34,6 @@ namespace UnityEngine
     [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct LazyLoadReference<T> where T : UnityEngine.Object
     {
-        private const int kInstanceID_None = 0;
-
         [SerializeField]
         private int m_InstanceID;
 
@@ -42,13 +41,13 @@ namespace UnityEngine
         /// Determines if the reference is linked to an asset, loaded or not, valid or not.
         /// Calling this never triggers a load.
         /// </summary>
-        public bool isSet => m_InstanceID != kInstanceID_None;
+        public bool isSet => m_InstanceID != EntityId.None;
 
         /// <summary>
         /// Convenience property that checks if the reference is broken: is set to something, but that something is not available/loadable at the moment for whatever reason.
         /// May trigger loading the referenced object into memory if the object is not already loaded.
         /// </summary>
-        public bool isBroken => m_InstanceID != kInstanceID_None && !UnityEngine.Object.DoesObjectWithInstanceIDExist(m_InstanceID);
+        public bool isBroken => m_InstanceID != EntityId.None && !UnityEngine.Object.DoesObjectWithInstanceIDExist(m_InstanceID);
 
         /// <summary>
         /// Accessor to the referenced asset.
@@ -58,7 +57,7 @@ namespace UnityEngine
         {
             get
             {
-                if (m_InstanceID == kInstanceID_None)
+                if (m_InstanceID == EntityId.None)
                 {
                     return null;
                 }
@@ -71,7 +70,7 @@ namespace UnityEngine
             {
                 if (value == null)
                 {
-                    m_InstanceID = kInstanceID_None;
+                    m_InstanceID = EntityId.None;
                 }
                 else
                 {
@@ -79,19 +78,26 @@ namespace UnityEngine
                     {
                         throw new ArgumentException("Object that does not belong to a persisted asset cannot be set as the target of a LazyLoadReference.");
                     }
-                    m_InstanceID = value.GetInstanceID();
+                    m_InstanceID = value.GetEntityId();
                 }
             }
         }
 
         /// <summary>
-        /// InstanceID of the referenced asset.
+        /// EntityId of the referenced asset.
         /// Getting or setting this never triggers a load.
         /// </summary>
-        public int instanceID
+        public EntityId entityId
         {
             get => m_InstanceID;
             set => m_InstanceID = value;
+        }
+
+        [Obsolete("Use entityId instead, this will be removed in a future version", false)]
+        public int instanceID
+        {
+            get => entityId;
+            set => entityId = value;
         }
 
         /// <summary>
@@ -103,7 +109,7 @@ namespace UnityEngine
         {
             if (asset == null)
             {
-                m_InstanceID = kInstanceID_None;
+                m_InstanceID = EntityId.None;
             }
             else
             {
@@ -111,15 +117,21 @@ namespace UnityEngine
                 {
                     throw new ArgumentException("Object that does not belong to a persisted asset cannot be set as the target of a LazyLoadReference.");
                 }
-                m_InstanceID = asset.GetInstanceID();
+                m_InstanceID = asset.GetEntityId();
             }
         }
 
         /// <summary>
-        /// Construct a <see cref="LazyLoadReference{T}"/> from asset instance ID.
+        /// Construct a <see cref="LazyLoadReference{T}"/> from asset EntityId.
         /// Calling this never triggers a load.
         /// </summary>
-        /// <param name="instanceID"></param>
+        /// <param name="entityId"></param>
+        public LazyLoadReference(EntityId entityId)
+        {
+            m_InstanceID = entityId;
+        }
+
+        [Obsolete("Use LazyLoadReference(EntityId entityId) instead, this will be removed in a future version", false)]
         public LazyLoadReference(int instanceID)
         {
             m_InstanceID = instanceID;
@@ -136,13 +148,24 @@ namespace UnityEngine
         }
 
         /// <summary>
+        /// Implicit conversion from asset entity ID to <see cref="LazyLoadReference{T}"/>.
+        /// Calling this never triggers a load.
+        /// </summary>
+        /// <param name="entityId">The asset entity ID.</param>
+        public static implicit operator LazyLoadReference<T>(EntityId entityId)
+        {
+            return new LazyLoadReference<T> { m_InstanceID = entityId };
+        }
+
+        /// <summary>
         /// Implicit conversion from asset instance ID to <see cref="LazyLoadReference{T}"/>.
         /// Calling this never triggers a load.
         /// </summary>
         /// <param name="instanceID">The asset instance ID.</param>
+        [Obsolete("Use LazyLoadReference(EntityId entityId) instead, this will be removed in a future version", false)]
         public static implicit operator LazyLoadReference<T>(int instanceID)
         {
-            return new LazyLoadReference<T> { instanceID = instanceID };
+            return new LazyLoadReference<T> { m_InstanceID = instanceID };
         }
     }
 }

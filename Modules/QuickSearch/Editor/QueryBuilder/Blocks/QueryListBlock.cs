@@ -103,7 +103,7 @@ namespace UnityEditor.Search
 
             if (icon != null)
                 AddIcon(container, icon);
-            AddLabel(container, label ?? value);
+            AddLabel(container, FormatUIValue(label ?? value));
             AddOpenEditorArrow(container);
         }
 
@@ -160,7 +160,7 @@ namespace UnityEditor.Search
 
             foreach (var choice in m_Choices)
             {
-                yield return new SearchProposition(category: null, label: ObjectNames.NicifyVariableName(choice), replacement: choice, icon: icon, color: m_BackgroundColor ?? default);
+                yield return new SearchProposition(category: null, label: SearchUtils.GetNiceDisplayLabel(choice), replacement: choice, icon: icon, color: m_BackgroundColor ?? default);
             }
         }
 
@@ -516,7 +516,7 @@ namespace UnityEditor.Search
 
         internal override string FormatUIValue(string originalValue)
         {
-            return Path.GetFileNameWithoutExtension(originalValue);
+            return SearchUtils.GetNiceDisplayLabel(Path.GetFileNameWithoutExtension(originalValue));
         }
     }
 

@@ -392,6 +392,57 @@ namespace UnityEngine.TextCore
             return new TagValue(new Vector4(paddings[0], paddings[1], paddings[2], paddings[3]), ValueID.Padding);
         }
 
+        static TagValue? ParseHref(ReadOnlySpan<char> attributeSection)
+        {
+            if (TryGetSimpleHref(attributeSection, out string hrefValue))
+            {
+                return new TagValue(hrefValue);
+            }
+            else
+            {
+                // It's a complex link with multiple attributes. Store the entire string
+                var attributes = attributeSection.TrimStart();
+                return new TagValue(attributes.ToString());
+            }
+        }
+
+        static bool TryGetSimpleHref(ReadOnlySpan<char> attributeSection, out string hrefValue)
+        {
+            hrefValue = "";
+            attributeSection = attributeSection.Trim();
+
+            if (!attributeSection.StartsWith("href=".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // We can't simply return true here because <a href=... data=...> is also valid and not a simple href.
+
+            var valueSection = attributeSection.Slice("href=".Length);
+
+            char quote = valueSection.Length > 0 ? valueSection[0] : '\0';
+            if (quote == '"' || quote == '\'')
+            {
+                var valueWithoutQuotes = valueSection.Slice(1);
+                int endQuoteIndex = valueWithoutQuotes.IndexOf(quote);
+                if (endQuoteIndex == -1) return false;
+
+                // Check if there is any other text after the closing quote
+                if (valueWithoutQuotes.Slice(endQuoteIndex + 1).Trim().Length > 0)
+                    return false;
+
+                hrefValue = valueWithoutQuotes.Slice(0, endQuoteIndex).ToString();
+            }
+            else
+            {
+                // If there's a space, it means there are other attributes.
+                if (valueSection.Contains(new ReadOnlySpan<char>(new char[] { ' ' }), StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                hrefValue = valueSection.ToString();
+            }
+
+            return true;
+        }
+
         private static bool ParseSpriteAttributes(ReadOnlySpan<char> attributeSection, TextSettings textSettings, out char unicode, out TagValue? spriteAssetValue, out TagValue? glyphMetricsValue, out TagValue? tintValue, out TagValue? scaleValue, out TagValue? colorValue)
         {
             int spriteIndex = -1;
@@ -651,15 +702,12 @@ namespace UnityEngine.TextCore
                             }
                         }
 
-                        if (tagType == TagType.Link || tagType == TagType.Hyperlink)
+                        if (tagType == TagType.Hyperlink)
                         {
-                            if (tagType == TagType.Hyperlink && attributeSection.StartsWith(" href="))
-                                attributeSection = attributeSection.Slice(" href=".Length);
-
-                            // strip the quotes for both  <link="xxxx"> and <a href="...">
-                            // The length need to be checked so that it is greater than 0
-                            // Quotes are not mandatory for link tag and for url it isn't problematic if they aren't there unless there is a <> in the url.
-                            // We would need to stop parsing from the beginning of the quote until the second one (a bit like for the noparse tags) for supporting <> character in url
+                            value = ParseHref(attributeSection);
+                        }
+                        if (tagType == TagType.Link)
+                        {
                             attributeSection = GetAttributeSpan(attributeSection);
                             var str = attributeSection.ToString();
 
@@ -751,7 +799,7 @@ namespace UnityEngine.TextCore
                                 break; // no closing noparse tag, no need to cleanup
                             }
                             start += pos; //The start index was relative to the span, we need to make it relative to the input
-                            end = start + "</noparse>".Length;
+                            end = start + "</noparse>".Length - 1;
                             result.Add(new Tag { tagType = TagType.NoParse, start = start, end = end, isClosing = true });
                             pos = end + 1;
                         }

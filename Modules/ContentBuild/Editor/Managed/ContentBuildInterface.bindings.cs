@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Content
     }
 
     [NativeHeader("Modules/ContentBuild/Editor/Public/ContentBuildTypes.h")]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/BuildUtilities.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/ContentBuildInterfaceProfile.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/TraceEventProfile.h")]

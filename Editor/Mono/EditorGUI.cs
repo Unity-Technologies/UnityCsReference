@@ -229,6 +229,7 @@ namespace UnityEditor
         static EditorGUI()
         {
             hyperLinkClicked += EditorGUI_OpenFileOnHyperLinkClicked;
+            ATGTextEventHandler.onComplexHyperlinkClicked += HandleComplexHyperlinkClicked;
         }
 
         internal static void BeginHandleMixedValueContentColor()
@@ -1520,6 +1521,14 @@ namespace UnityEditor
                     Application.OpenURL(path);
                 else
                     LogEntries.OpenFileOnSpecificLineAndColumn(path, line, -1);
+            }
+        }
+
+        private static void HandleComplexHyperlinkClicked(Dictionary<string, string> hyperLinkData)
+        {
+            if (hyperLinkData != null)
+            {
+                hyperLinkClicked(null, new HyperLinkClickedEventArgs(hyperLinkData));
             }
         }
 

@@ -144,7 +144,8 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
                 headerMainText = L10n.Tr("This project contains one or more packages that has an invalid signature."),
                 bodyText = L10n.Tr("This might indicate they are unsafe or malicious. Would you like to open the Package Manager to resolve them?"),
                 readMoreUrl = "https://docs.unity3d.com/Manual/upm-errors.html#pkg-invalid-sig",
-                readMoreClickedAnalyticsId = "invalid-signature-in-project-read-more"
+                readMoreClickedAnalyticsId = "invalid-signature-in-project-read-more",
+                headerColor = HeaderColor.Red
             };
             if (m_CustomDisplayDialog.Show(dialogArgs) == DialogResult.DefaultAction)
                 PackageManagerWindow.OpenAndSelectPackage(invalidSignaturePackage.uniqueId, InProjectErrorsAndWarningsPage.k_Id);

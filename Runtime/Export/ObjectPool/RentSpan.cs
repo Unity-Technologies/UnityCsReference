@@ -7,10 +7,10 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 
-namespace Unity.Hierarchy
+namespace UnityEngine.Pool
 {
-    [VisibleToOtherModules("UnityEngine.HierarchyModule", "UnityEditor.HierarchyModule")]
-    internal readonly ref struct RentSpan<T> where T : class
+    [VisibleToOtherModules]
+    readonly ref struct RentSpan<T> where T : class
     {
         readonly T[] m_Array;
         public readonly Span<T> Span;

@@ -51,8 +51,6 @@ namespace UnityEditor
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent buildPipelineHeader = EditorGUIUtility.TrTextContent("Build Pipeline");
-            public static GUIContent ucbpEnableAssetBundles = EditorGUIUtility.TrTextContent("Multi-Process AssetBundle Building", "Enable experimental improvements to the AssetBundle Build Pipeline aimed at reducing build times with multi-process importing and providing more efficient incremental content building");
-            public static readonly GUIContent ucbpLearnMore = new GUIContent("Learn more...", "Review official Unity documentation for important considerations around these experimental improvements.");
 
             public static GUIContent sceneHandlingHeader = EditorGUIUtility.TrTextContent("Scene Handling");
             public static GUIContent forceAssetUnloadAndGCOnSceneLoad = EditorGUIUtility.TrTextContent("Force Asset Unload & GC on Scene Load", "Force a managed heap garbage collection and unload unused assets after loading scenes in single mode in the Editor or exiting Prefab Mode. In complex projects, this can slow down performance. Disable this if you do not require class finalizers to run at the end of scene loading. Note that regular dynamic GC and unused asset unloading still occur when memory usage is high, but without this option, class finalizers might not run immediately after each scene load.");
@@ -461,25 +459,6 @@ namespace UnityEditor
             }
 
             GUILayout.Space(10);
-
-            GUILayout.BeginHorizontal();
-            GUI.enabled = true;
-            GUILayout.Label(Content.buildPipelineHeader, EditorStyles.boldLabel);
-            GUI.enabled = editorEnabled;
-            if (GUILayout.Button(Content.ucbpLearnMore, EditorStyles.linkLabel))
-            {
-                var help = Help.FindHelpNamed("Build-MultiProcess");
-                Application.OpenURL(help);
-            }
-            GUILayout.EndHorizontal();
-
-            EditorGUI.BeginChangeCheck();
-            bool parallelAssetBundleBuilding = EditorBuildSettings.UseParallelAssetBundleBuilding;
-            parallelAssetBundleBuilding = EditorGUILayout.Toggle(Content.ucbpEnableAssetBundles, parallelAssetBundleBuilding);
-            if (EditorGUI.EndChangeCheck())
-                EditorBuildSettings.UseParallelAssetBundleBuilding = parallelAssetBundleBuilding;
-            if(parallelAssetBundleBuilding)
-                EditorGUILayout.HelpBox("Please review official documentation before building any content with these experimental improvements enabled. These improvements apply only to AssetBundles built with BuildPipeline.BuildAssetBundles() and do not apply to AssetBundles built with Scriptable Build Pipeline or Addressables.", MessageType.Info);
 
             GUILayout.Label(Content.sceneHandlingHeader, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
