@@ -262,6 +262,19 @@ namespace UnityEditor.UIElements.Inspector
             }
 
             UpdateForceGammaOutput();
+
+            var ps = target as PanelSettings;
+            if (ps?.m_AttachedUIDocumentsList?.m_AttachedUIDocuments != null)
+            {
+                foreach (var document in ps.m_AttachedUIDocumentsList.m_AttachedUIDocuments)
+                {
+                    if (document != null)
+                    {
+                        // Let the UIDocument update its rendering properties (UUM-105765)
+                        document.DoUpdate();
+                    }
+                }
+            }
         }
 
         public override VisualElement CreateInspectorGUI()

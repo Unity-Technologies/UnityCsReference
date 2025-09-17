@@ -752,13 +752,14 @@ namespace UnityEditor
                 EditorGUI.EndDisabled();
             }
 
+            private static readonly Color s_InvalidColor = new Color(1f, 0f, 0f, 0.66f);
             protected override void NameGUI(Rect position, SerializedNodeInfo node, ref RowGUIArgs args)
             {
                 var serializedNode = node;
-                var color = GUI.contentColor;
-                color = serializedNode.m_State == SerializedNodeInfo.State.Invalid ? new Color(1f, 0f, 0f, 0.66f) : color;
+                var originalColor = GUI.contentColor;
+                GUI.contentColor = serializedNode.m_State == SerializedNodeInfo.State.Invalid ? s_InvalidColor : originalColor;
                 base.NameGUI(position, node, ref args);
-                GUI.contentColor = color;
+                GUI.contentColor = originalColor;
             }
 
             protected override void ToggleAll()

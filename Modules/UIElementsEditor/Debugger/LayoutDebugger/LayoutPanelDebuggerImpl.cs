@@ -45,6 +45,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         SliderInt m_Slider = null;
         TextField m_SearchTextField;
         EnumFlagsField m_SearchModeEnumField;
+        Label m_SearchResultLabel;
 
         [Flags]
         enum SearchMode
@@ -697,6 +698,12 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             histogramCol.Add(row);
 
             row = createNewRow();
+            m_SearchResultLabel = new Label();
+            row.Add(m_SearchResultLabel);
+
+            histogramCol.Add(row);
+
+            row = createNewRow();
 
             m_Info = new MultiColumnListView();
 
@@ -857,13 +864,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         {
             if (m_RecordLayout == null)
             {
-                Debug.LogWarning("No recorded data to search.");
+                m_SearchResultLabel.text = "No recorded data to search.";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(m_SearchTextField.text))
             {
-                Debug.LogWarning("Search field empty.");
+                m_SearchResultLabel.text = "Search field empty.";
                 return;
             }
 
@@ -906,9 +913,12 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             if (m_SearchInfo.m_FoundVE == null)
             {
-                Debug.LogWarning("Last item reached.");
+                m_SearchResultLabel.text = "No VisualElement found.";
             }
-
+            else
+            {
+                m_SearchResultLabel.text = "VisualElement found";
+            }
         }
 
         private void SearchElement(LayoutDebuggerVisualElement ve)

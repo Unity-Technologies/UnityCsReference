@@ -549,8 +549,13 @@ namespace UnityEngine.UIElements
 
         bool m_RootHasWorldTransform;
 
+        void LateUpdate()
+        {
+            DoUpdate();
+        }
+
         // Used by unit tests.
-        internal void LateUpdate()
+        internal void DoUpdate()
         {
             if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
             {

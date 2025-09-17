@@ -225,20 +225,24 @@ namespace UnityEngine.UIElements
         private Result ResolveVarFunction(ref int index, int argc, string varName)
         {
             var result = ResolveVariable(varName);
-            if (result == Result.NotFound && argc > 1)
+
+            // Always consume all tokens and move the index to the end of the var() function
+            if (argc > 1)
             {
-                // var() fallback
-                var h = currentHandles[++index];
-                Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
-                if (h.valueType == StyleValueType.CommaSeparator && index + 1 < currentHandles.Length)
+                var handle = currentHandles[++index];
+                Debug.Assert(handle.valueType == StyleValueType.CommaSeparator,
+                    $"Unexpected value type {handle.valueType} in var() fallback; expected CommaSeparator.");
+                if (handle.valueType == StyleValueType.CommaSeparator && index + 1 < currentHandles.Length)
                 {
                     ++index;
-                    result = ResolveFallback(ref index);
+                    // If variable not found, look for fallback; otherwise skip it
+                    result = ResolveFallback(ref index, appendValues: result == Result.NotFound);
                 }
             }
 
             return result;
         }
+
 
         public bool ValidateResolvedValues()
         {
@@ -296,35 +300,42 @@ namespace UnityEngine.UIElements
             return result;
         }
 
-        private Result ResolveFallback(ref int index)
+        private Result ResolveFallback(ref int index, bool appendValues)
         {
             var result = Result.Valid;
+
             for (; index < currentHandles.Length && result == Result.Valid; ++index)
             {
-                var h = currentHandles[index];
-                if (h.IsVarFunction())
+                var handle = currentHandles[index];
+
+                if (handle.IsVarFunction())
                 {
                     ParseVarFunction(currentSheet, currentHandles, ref index, out var argc, out var varName);
-                    result = ResolveVariable(varName);
 
-                    if (result == Result.NotFound)
+                    if (appendValues)
+                    {
+                        var nestedVarFunctionResult = ResolveVarFunction(ref index, argc, varName);
+                        if (nestedVarFunctionResult != Result.Valid)
+                            result = nestedVarFunctionResult;
+                    }
+                    else
                     {
                         // Nested fallback like : var(--unknown, var(--unknown2, 10px))
                         if (argc > 1)
                         {
-                            h = currentHandles[++index];
-                            Debug.Assert(h.valueType == StyleValueType.CommaSeparator, $"Unexpected value type {h.valueType} in var function");
-                            if (h.valueType == StyleValueType.CommaSeparator && index + 1 < currentHandles.Length)
+                            var separator = currentHandles[++index];
+                            Debug.Assert(separator.valueType == StyleValueType.CommaSeparator);
+                            if (separator.valueType == StyleValueType.CommaSeparator && index + 1 < currentHandles.Length)
                             {
                                 ++index;
-                                result = ResolveFallback(ref index);
+                                ResolveFallback(ref index, appendValues: false);
                             }
                         }
                     }
                 }
-                else
+                else if (appendValues)
                 {
-                    m_ResolvedValues.Add(new StylePropertyValue() { sheet = currentSheet, handle = h});
+                    m_ResolvedValues.Add(new StylePropertyValue() { sheet = currentSheet, handle = handle });
                 }
             }
 

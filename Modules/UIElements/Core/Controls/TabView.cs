@@ -23,6 +23,7 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-TabView|UXML element TabView]].
     /// </remarks>
+    [UxmlElement(null, typeof(Tab))]
     public class TabView : VisualElement
     {
         internal static readonly BindingId reorderableProperty = nameof(reorderable);

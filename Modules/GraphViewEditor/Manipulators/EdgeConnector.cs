@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
+using PointerType = UnityEngine.UIElements.PointerType;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -13,7 +14,7 @@ namespace UnityEditor.Experimental.GraphView
         void OnDrop(GraphView graphView, Edge edge);
     }
 
-    public abstract class EdgeConnector : MouseManipulator
+    public abstract class EdgeConnector : PointerManipulator
     {
         public abstract EdgeDragHelper edgeDragHelper { get; }
     }
@@ -38,22 +39,61 @@ namespace UnityEditor.Experimental.GraphView
 
         protected override void RegisterCallbacksOnTarget()
         {
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+
+            // Obsolete, use pointer events instead to handle touch input properly. Kept for compatibility.
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
             target.RegisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+
+            // Obsolete, should use pointer events instead to handle touch input properly. Kept for compatibility.
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
         }
 
         protected virtual void OnMouseDown(MouseDownEvent e)
+        {
+            if (!CanStartManipulation(e))
+                return;
+
+            OnPointerOrMouseDown(e, e.localMousePosition);
+        }
+
+        /// <summary>
+        /// Called when a pointer down event occurs on the target element.
+        /// </summary>
+        /// <param name="e">The pointer down event.</param>
+        /// <remarks>
+        /// It checks if the manipulation can start and then processes the event accordingly.
+        /// </remarks>
+        protected virtual void OnPointerDown(PointerDownEvent e)
+        {
+            if (e.pointerId != PointerId.mousePointerId && e.pointerType != PointerType.touch)
+                return;
+
+            if (!CanStartManipulation(e))
+                return;
+
+            OnPointerOrMouseDown(e, e.localPosition);
+        }
+
+        void OnPointerOrMouseDown(EventBase e, Vector2 localPosition)
         {
             if (m_Active)
             {
@@ -61,52 +101,104 @@ namespace UnityEditor.Experimental.GraphView
                 return;
             }
 
-            if (!CanStartManipulation(e))
-            {
+            if (target is not Port graphElement)
                 return;
-            }
 
-            var graphElement = target as Port;
-            if (graphElement == null)
-            {
-                return;
-            }
-
-            m_MouseDownPosition = e.localMousePosition;
+            m_MouseDownPosition = localPosition;
 
             m_EdgeCandidate = new TEdge();
             m_EdgeDragHelper.draggedPort = graphElement;
             m_EdgeDragHelper.edgeCandidate = m_EdgeCandidate;
 
-            if (m_EdgeDragHelper.HandleMouseDown(e))
+            switch (e)
             {
-                m_Active = true;
-                target.CaptureMouse();
-
-                e.StopPropagation();
-            }
-            else
-            {
-                m_EdgeDragHelper.Reset();
-                m_EdgeCandidate = null;
+                case PointerDownEvent pointerDownEvent when m_EdgeDragHelper.HandlePointerDown(pointerDownEvent):
+                    m_Active = true;
+                    target.CapturePointer(pointerDownEvent.pointerId);
+                    e.StopPropagation();
+                    break;
+                case MouseDownEvent mouseDownEvent when m_EdgeDragHelper.HandleMouseDown(mouseDownEvent):
+                    m_Active = true;
+                    target.CaptureMouse();
+                    e.StopPropagation();
+                    break;
+                default:
+                    m_EdgeDragHelper.Reset();
+                    m_EdgeCandidate = null;
+                    break;
             }
         }
 
         void OnCaptureOut(MouseCaptureOutEvent e)
+        {
+            OnCaptureOut();
+        }
+
+        void OnPointerCaptureOut(PointerCaptureOutEvent evt)
+        {
+            OnCaptureOut();
+        }
+
+        void OnCaptureOut()
         {
             m_Active = false;
             if (m_EdgeCandidate != null)
                 Abort();
         }
 
+        /// <summary>
+        /// Called when a pointer move event occurs on the target element.
+        /// </summary>
+        /// <param name="e">The pointer move event.</param>
+        /// <remarks>
+        /// It processes the pointer move event and updates the edge candidate's position.
+        /// </remarks>
+        protected virtual void OnPointerMove(PointerMoveEvent e)
+        {
+            OnPointerOrMouseMove(e, e.position);
+        }
+
         protected virtual void OnMouseMove(MouseMoveEvent e)
         {
-            if (!m_Active) return;
+            OnPointerOrMouseMove(e, e.mousePosition);
+        }
 
-            m_EdgeDragHelper.HandleMouseMove(e);
-            m_EdgeCandidate.candidatePosition = e.mousePosition;
+        void OnPointerOrMouseMove(EventBase e, Vector2 position)
+        {
+            if (!m_Active)
+                return;
+
+            switch (e)
+            {
+                case PointerMoveEvent pointerMoveEvent when !target.HasPointerCapture(pointerMoveEvent.pointerId):
+                    return;
+                case PointerMoveEvent pointerMoveEvent:
+                    m_EdgeDragHelper.HandlePointerMove(pointerMoveEvent);
+                    break;
+                case MouseMoveEvent mouseMoveEvent:
+                    m_EdgeDragHelper.HandleMouseMove(mouseMoveEvent);
+                    break;
+            }
+
+            m_EdgeCandidate.candidatePosition = position;
             m_EdgeCandidate.UpdateEdgeControl();
             e.StopPropagation();
+        }
+
+        /// <summary>
+        /// Called when a pointer up event occurs on the target element.
+        /// </summary>
+        /// <param name="e">The pointer up event.</param>
+        /// <remarks>
+        /// It checks if the manipulation can stop and processes the pointer up event accordingly.
+        /// </remarks>
+        protected virtual void OnPointerUp(PointerUpEvent e)
+        {
+            if (!m_Active || !CanStopManipulation(e))
+                return;
+
+            OnPointerOrMouseUp(e, e.localPosition);
+            target.ReleasePointer(e.pointerId);
         }
 
         protected virtual void OnMouseUp(MouseUpEvent e)
@@ -114,14 +206,29 @@ namespace UnityEditor.Experimental.GraphView
             if (!m_Active || !CanStopManipulation(e))
                 return;
 
-            if (CanPerformConnection(e.localMousePosition))
-                m_EdgeDragHelper.HandleMouseUp(e);
+            OnPointerOrMouseUp(e, e.localMousePosition);
+            target.ReleaseMouse();
+        }
+
+        void OnPointerOrMouseUp(EventBase e, Vector2 localPosition)
+        {
+            if (CanPerformConnection(localPosition))
+            {
+                switch (e)
+                {
+                    case PointerUpEvent pointerUpEvent:
+                        m_EdgeDragHelper.HandlePointerUp(pointerUpEvent);
+                        break;
+                    case MouseUpEvent mouseUpEvent:
+                        m_EdgeDragHelper.HandleMouseUp(mouseUpEvent);
+                        break;
+                }
+            }
             else
                 Abort();
 
             m_Active = false;
             m_EdgeCandidate = null;
-            target.ReleaseMouse();
             e.StopPropagation();
         }
 

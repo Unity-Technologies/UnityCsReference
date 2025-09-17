@@ -784,5 +784,21 @@ namespace Unity.UI.Builder
             if ((changes & LiveReloadChanges.Styles) != 0)
                 UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
         }
+
+        // Check if VisualElement will support type as a child. Assume true by default, unless explicitly false.
+        public static bool IsSupportedChildType(VisualElement visualElement, Type type)
+        {
+            var fullName = visualElement?.GetType().FullName;
+            UxmlSerializedDataDescription desc = null;
+            if (!string.IsNullOrEmpty(fullName))
+                desc = UxmlSerializedDataRegistry.GetDescription(fullName);
+
+            if (desc != null && !desc.IsSupportedChild(type))
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

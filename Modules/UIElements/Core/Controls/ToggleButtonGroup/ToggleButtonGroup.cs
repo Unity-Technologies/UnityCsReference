@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
     /// To create buttons, add <see cref="Button"/> elements directly to the ToggleButtonGroup. This will automatically
     /// style and configure the button to work properly.
     /// </remarks>
+    [UxmlElement(null, typeof(Button))]
     public class ToggleButtonGroup : BaseField<ToggleButtonGroupState>
     {
         private static readonly string k_MaxToggleButtonGroupMessage = $"The number of buttons added to ToggleButtonGroup exceeds the maximum allowed ({ToggleButtonGroupState.maxLength}). The newly added button will not be treated as part of this control.";
