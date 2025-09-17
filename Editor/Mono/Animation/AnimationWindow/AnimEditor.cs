@@ -207,8 +207,8 @@ namespace UnityEditor
                 GUILayout.BeginVertical();
 
                 // First row of controls
-                GUILayout.BeginHorizontal(AnimationWindowStyles.animPlayToolBar);
-                PlayControlsOnGUI();
+                Rect playControlsRect = EditorGUILayout.BeginHorizontal(AnimationWindowStyles.animPlayToolBar);
+                PlayControlsOnGUI(playControlsRect);
                 GUILayout.EndHorizontal();
 
                 // Second row of controls
@@ -788,8 +788,14 @@ namespace UnityEditor
             }
         }
 
-        private void PlayControlsOnGUI()
+        private void PlayControlsOnGUI(Rect playControlsRect)
         {
+            // Remove keyfocus when clicking within control to ensure play control shortcuts are received (UUM-113412)
+            if (Event.current.type == EventType.MouseDown && playControlsRect.Contains(Event.current.mousePosition))
+            {
+                 GUIUtility.keyboardControl = 0;
+            }
+
             using (new EditorGUI.DisabledScope(!m_State.canPreview))
             {
                 PreviewButtonOnGUI();

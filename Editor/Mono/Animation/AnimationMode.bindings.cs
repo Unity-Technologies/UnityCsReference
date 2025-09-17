@@ -41,6 +41,8 @@ namespace UnityEditor
         static internal event Action onAnimationRecordingStop;
         static internal event Action onAnimationPlaybackStart;
         static internal event Action onAnimationPlaybackStop;
+        static internal event Action onAnimationSampleEnd;
+        static internal event Action onAnimationModeStop;
 
         static private PrefColor s_AnimatedPropertyColor = new PrefColor("Animation/Property Animated", 0.82f, 0.97f, 1.00f, 1.00f, 0.54f, 0.85f, 1.00f, 1.00f);
         static private PrefColor s_RecordedPropertyColor = new PrefColor("Animation/Property Recorded", 1.00f, 0.60f, 0.60f, 1.00f, 1.00f, 0.50f, 0.50f, 1.00f);
@@ -68,12 +70,16 @@ namespace UnityEditor
         public static void StopAnimationMode()
         {
             Internal_StopAnimationMode(DummyDriver());
+
+            onAnimationModeStop?.Invoke();
         }
 
         // Stops animation mode, as used by the animation editor.
         public static void StopAnimationMode(AnimationModeDriver driver)
         {
             Internal_StopAnimationMode(driver);
+
+            onAnimationModeStop?.Invoke();
         }
 
         // Returns true if the editor is currently in animation mode.
@@ -145,6 +151,18 @@ namespace UnityEditor
             Internal_StartCandidateRecording(driver);
         }
 
+        public static void BeginSampling()
+        {
+            Internal_BeginSampling();
+        }
+
+        public static void EndSampling()
+        {
+            Internal_EndSampling();
+
+            onAnimationSampleEnd?.Invoke();
+        }
+
         [NativeThrows]
         extern internal static void AddCandidate(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
@@ -154,12 +172,6 @@ namespace UnityEditor
         extern internal static void StopCandidateRecording();
 
         extern internal static bool IsRecordingCandidates();
-
-        [NativeThrows]
-        extern public static void BeginSampling();
-
-        [NativeThrows]
-        extern public static void EndSampling();
 
         [NativeThrows]
         extern public static void SampleAnimationClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
@@ -202,6 +214,12 @@ namespace UnityEditor
 
         // Return editor curve bindings for animator hierarhcy that need to be snapshot for animation mode.
         extern internal static EditorCurveBinding[] GetAnimatorBindings([NotNull] GameObject root);
+
+        [NativeThrows]
+        extern private static void Internal_BeginSampling();
+
+        [NativeThrows]
+        extern private static void Internal_EndSampling();
 
         extern private static void Internal_StartAnimationMode(Object driver);
 

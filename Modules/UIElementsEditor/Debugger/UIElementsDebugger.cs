@@ -236,8 +236,7 @@ namespace UnityEditor.UIElements.Debugger
                 TextureAtlasViewer.UIElementsDebugger = debuggerWindow;
             }
 
-            if (window != null)
-                debuggerWindow.m_DebuggerImpl.ScheduleWindowToDebug(window);
+            debuggerWindow.ScheduleWindowToDebug(window);
         }
 
         private static UIElementsDebugger CreateDebuggerWindow()
@@ -247,15 +246,38 @@ namespace UnityEditor.UIElements.Debugger
             return window;
         }
 
+        EditorWindow editorWindowScheduledToBeDebugged;
+        private void ScheduleWindowToDebug(EditorWindow window)
+        {
+            if (window == null)
+                return;
+
+            if (m_DebuggerImpl == null)
+            {
+                //Before CreateGUI, defer the callback registration
+                editorWindowScheduledToBeDebugged = window;
+            }
+            else
+            {
+                m_DebuggerImpl.ScheduleWindowToDebug(window);
+            }
+        }
+
         public void OnEnable()
         {
             if (m_DebuggerContext == null)
                 m_DebuggerContext = new DebuggerContext();
+        }
 
+        public void CreateGUI()
+        {
             if (m_DebuggerImpl == null)
                 m_DebuggerImpl = new UIElementsDebuggerImpl();
 
             m_DebuggerImpl.Initialize(this, rootVisualElement, m_DebuggerContext);
+
+            if(editorWindowScheduledToBeDebugged)
+                m_DebuggerImpl.ScheduleWindowToDebug(editorWindowScheduledToBeDebugged);
         }
 
         public void OnDisable()
@@ -585,7 +607,10 @@ namespace UnityEditor.UIElements.Debugger
 
         protected override bool ValidateDebuggerConnection(IPanel panelConnection)
         {
-            var p = m_Root.panel as Panel;
+            if (panelConnection is RuntimePanel)
+                return true;
+
+            EditorPanel p = m_Root.panel as EditorPanel;
             var debuggers = p.panelDebug.GetAttachedDebuggers();
 
             foreach (var dbg in debuggers)

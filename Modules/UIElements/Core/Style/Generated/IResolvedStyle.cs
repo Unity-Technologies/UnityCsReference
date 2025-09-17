@@ -142,7 +142,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         Wrap flexWrap { get; }
         /// <summary>
-        /// Font size to draw the element's text.
+        /// Font size to draw the element's text, specified in point size.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
@@ -368,9 +368,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         WhiteSpace whiteSpace { get; }
         /// <summary>
-        /// <summary>
-        /// Fixed width of an element for the layout, specified in pixels.
-        /// </summary>
+        /// Fixed width of an element for the layout.
         /// </summary>
         float width { get; }
         /// <summary>

@@ -203,6 +203,13 @@ namespace UnityEditor.Overlays
             return words[0].Substring(0, 1) + words[1].Substring(0, 1);
         }
 
+        internal static void ValidateName(Overlay overlay)
+        {
+            if (overlay == null || !string.IsNullOrEmpty(overlay.displayName))
+                return;
+            overlay.displayName = $"{overlay.GetType().Name}";
+        }
+
         internal static bool EnsureValidId(IEnumerable<Overlay> existing, Overlay overlay)
         {
             if (overlay == null)

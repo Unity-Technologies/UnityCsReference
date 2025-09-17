@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// Reading properties from this object will read from the inline style data for this element.
-    /// To read the style data computed for the element use <see cref="IStyle"/> interface.
+    /// To read the style data computed for the element use <see cref="IComputedStyle"/> interface.
     /// Writing to a property will mask the value coming from USS with the provided value however other properties will still match the values from USS.
     /// </remarks>
     public partial interface IStyle
@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<Wrap> flexWrap { get; set; }
         /// <summary>
-        /// Font size to draw the element's text.
+        /// Font size to draw the element's text, specified in point size.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.

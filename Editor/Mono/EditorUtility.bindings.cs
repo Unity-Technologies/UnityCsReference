@@ -292,6 +292,9 @@ namespace UnityEditor
         [FreeFunction("ReloadPlatformSupportModuleNativeDll")]
         internal static extern void ReloadPlatformSupportModuleNativeDllInternal(string target);
 
+        [FreeFunction("PlatformSupportModuleSetCustomData")]
+        internal static extern void PlatformSupportModuleSetCustomData(string target, int customKey, int customValue);
+
         [FreeFunction("LoadPlatformSupportNativeLibrary")]
         internal static extern void LoadPlatformSupportNativeLibrary(string nativeLibrary);
 

@@ -1674,6 +1674,8 @@ namespace UnityEditor
         // Defines whether the application will request audio focus, muting all other audio sources.
         public static extern bool muteOtherAudioSources { get; set; }
 
+        public static extern AudioSpatialExperience audioSpatialExperience { get; set; }
+
         internal static extern bool playModeTestRunnerEnabled { get; set; }
 
         internal static extern bool runPlayModeTestAsEditModeTest { get; set; }

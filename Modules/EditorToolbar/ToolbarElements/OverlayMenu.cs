@@ -112,6 +112,12 @@ namespace UnityEditor.Overlays
                 m_GlobalToolbar.Clear();
                 m_Overlays.Clear();
 
+                if (!m_Menu.HasOverlaysToShowInMenu())
+                {
+                    m_GlobalToolbar.Add(m_Menu.GetReplacementText(m_GlobalToolbar.resolvedStyle.flexDirection == FlexDirection.Column));
+                    return;
+                }
+
                 foreach (var overlay in m_Menu.canvas.overlays)
                 {
                     if (!m_Menu.ShouldShowOverlay(overlay) || overlay is OverlayMenu)
@@ -147,6 +153,20 @@ namespace UnityEditor.Overlays
         static void AddOverlayToWindowMenu()
         {
             HostView.populateDefaultMenuItems += PopulateDefaultMenuItems;
+        }
+
+        internal bool HasOverlaysToShowInMenu()
+        {
+            if (canvas.HasTransientOverlays())
+                return true;
+
+            // If at least one overlay that is not the Overlay Menu itself
+            foreach (var overlay in canvas.overlays)
+            {
+                if (overlay.userControlledVisibility && overlay.hasMenuEntry && !(overlay is OverlayMenu))
+                    return true;
+            }
+            return false;
         }
 
         static void PopulateDefaultMenuItems(GenericMenu menu, EditorWindow targetWindow)
@@ -261,12 +281,27 @@ namespace UnityEditor.Overlays
             return content;
         }
 
+        internal Label GetReplacementText(bool isVerticalToolbar = false)
+        {
+            var label = new Label(isVerticalToolbar ? "None" : "No Overlays");
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.tooltip = $"No overlays in the current {canvas.containerWindow.name}";
+
+            return label;
+        }
+
         void RebuildList()
         {
             if (m_ListRoot == null)
                 return;
 
             m_ListRoot.Clear();
+
+            if (!HasOverlaysToShowInMenu())
+            {
+                m_ListRoot.Add(GetReplacementText());
+                return;
+            }
 
             var overlays = new List<(Overlay overlay, int priority)>();
             foreach (var overlay in canvas.overlays)

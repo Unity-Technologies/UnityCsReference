@@ -1378,7 +1378,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().whiteSpace != (WhiteSpace)newValue)
                     {
                         inheritedData.Write().whiteSpace = (WhiteSpace)newValue;
-                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -3506,6 +3506,7 @@ namespace UnityEngine.UIElements
                     x.unityTextGenerator != y.unityTextGenerator ||
                     x.fontSize != y.fontSize ||
                     x.unityFontDefinition != y.unityFontDefinition ||
+                    x.whiteSpace != y.whiteSpace ||
                     x.unityFontStyleAndWeight != y.unityFontStyleAndWeight ||
                     x.unityTextOutlineWidth != y.unityTextOutlineWidth ||
                     x.letterSpacing != y.letterSpacing ||
@@ -3526,11 +3527,6 @@ namespace UnityEngine.UIElements
                 if (x.visibility != y.visibility)
                 {
                     changes |= VersionChangeType.Picking | VersionChangeType.Repaint;
-                }
-
-                if (x.whiteSpace != y.whiteSpace)
-                {
-                    changes |= VersionChangeType.Layout;
                 }
             }
 

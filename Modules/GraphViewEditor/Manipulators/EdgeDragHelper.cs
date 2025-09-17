@@ -16,6 +16,36 @@ namespace UnityEditor.Experimental.GraphView
         public abstract bool HandleMouseDown(MouseDownEvent evt);
         public abstract void HandleMouseMove(MouseMoveEvent evt);
         public abstract void HandleMouseUp(MouseUpEvent evt);
+
+        /// <summary>
+        /// Handles when the pointer is pressed down during an edge drag operation.
+        /// </summary>
+        /// <param name="evt">The pointer down event.</param>
+        /// <returns>
+        /// Returns true if the edge drag operation was successfully initiated, false otherwise.
+        /// </returns>
+        /// <remarks>
+        /// This method handles pointer down events and initiates the edge dragging process.
+        /// </remarks>
+        public abstract bool HandlePointerDown(PointerDownEvent evt);
+
+        /// <summary>
+        /// Handles when the pointer moves during an edge drag operation.
+        /// </summary>
+        /// <param name="evt">The pointer move event.</param>
+        /// <remarks>
+        /// This method handles pointer move events and updates the edge candidate's position
+        /// </remarks>
+        public abstract void HandlePointerMove(PointerMoveEvent evt);
+
+        /// <summary>
+        /// Handles when the pointer is released during an edge drag operation.
+        /// </summary>
+        /// <param name="evt">The pointer up event.</param>
+        /// <remarks>
+        /// This method handles pointer up events and finalizes the edge dragging process.
+        /// </remarks>
+        public abstract void HandlePointerUp(PointerUpEvent evt);
         public abstract void Reset(bool didConnect = false);
 
         internal const int k_PanAreaWidth = 100;
@@ -104,10 +134,18 @@ namespace UnityEditor.Experimental.GraphView
             m_GraphView = null;
         }
 
+        public override bool HandlePointerDown(PointerDownEvent evt)
+        {
+            return HandlePointerOrMouseDown(evt.position);
+        }
+
         public override bool HandleMouseDown(MouseDownEvent evt)
         {
-            Vector2 mousePosition = evt.mousePosition;
+            return HandlePointerOrMouseDown(evt.mousePosition);
+        }
 
+        bool HandlePointerOrMouseDown(Vector2 position)
+        {
             if ((draggedPort == null) || (edgeCandidate == null))
             {
                 return false;
@@ -127,7 +165,7 @@ namespace UnityEditor.Experimental.GraphView
 
             bool startFromOutput = (draggedPort.direction == Direction.Output);
 
-            edgeCandidate.candidatePosition = mousePosition;
+            edgeCandidate.candidatePosition = position;
             edgeCandidate.SetEnabled(false);
 
             if (startFromOutput)
@@ -189,11 +227,21 @@ namespace UnityEditor.Experimental.GraphView
             return effectiveSpeed;
         }
 
+        public override void HandlePointerMove(PointerMoveEvent evt)
+        {
+            HandlePointerOrMouseMove(evt, evt.localPosition, evt.position);
+        }
+
         public override void HandleMouseMove(MouseMoveEvent evt)
         {
+            HandlePointerOrMouseMove(evt, evt.localMousePosition, evt.mousePosition);
+        }
+
+        void HandlePointerOrMouseMove(EventBase evt, Vector2 localPosition, Vector2 position)
+        {
             var ve = (VisualElement)evt.target;
-            Vector2 gvMousePos = ve.ChangeCoordinatesTo(m_GraphView.contentContainer, evt.localMousePosition);
-            m_PanDiff = GetEffectivePanSpeed(gvMousePos);
+            Vector2 gvPointerOrMousePos = ve.ChangeCoordinatesTo(m_GraphView.contentContainer, localPosition);
+            m_PanDiff = GetEffectivePanSpeed(gvPointerOrMousePos);
 
             if (m_PanDiff != Vector3.zero)
             {
@@ -204,12 +252,12 @@ namespace UnityEditor.Experimental.GraphView
                 m_PanSchedule.Pause();
             }
 
-            Vector2 mousePosition = evt.mousePosition;
+            Vector2 pointerOrMousePosition = position;
 
-            edgeCandidate.candidatePosition = mousePosition;
+            edgeCandidate.candidatePosition = pointerOrMousePosition;
 
             // Draw ghost edge if possible port exists.
-            Port endPort = GetEndPort(mousePosition);
+            Port endPort = GetEndPort(pointerOrMousePosition);
 
             if (endPort != null)
             {
@@ -266,9 +314,19 @@ namespace UnityEditor.Experimental.GraphView
 
         public override void HandleMouseUp(MouseUpEvent evt)
         {
+            HandlePointerOrMouseUp(evt.mousePosition);
+        }
+
+        public override void HandlePointerUp(PointerUpEvent evt)
+        {
+            HandlePointerOrMouseUp(evt.position);
+        }
+
+        void HandlePointerOrMouseUp(Vector2 position)
+        {
             bool didConnect = false;
 
-            Vector2 mousePosition = evt.mousePosition;
+            Vector2 pointerOrMousePosition = position;
 
             // Reset the highlights.
             m_GraphView.ports.ForEach((p) => {
@@ -289,11 +347,11 @@ namespace UnityEditor.Experimental.GraphView
                 m_GhostEdge = null;
             }
 
-            Port endPort = GetEndPort(mousePosition);
+            Port endPort = GetEndPort(pointerOrMousePosition);
 
             if (endPort == null && m_Listener != null)
             {
-                m_Listener.OnDropOutsidePort(edgeCandidate, mousePosition);
+                m_Listener.OnDropOutsidePort(edgeCandidate, pointerOrMousePosition);
             }
 
             edgeCandidate.SetEnabled(true);

@@ -208,7 +208,8 @@ namespace UnityEditor
             var window = GetWindow(typeof(PhysicsDebugWindow)) as PhysicsDebugWindow;
             if (window != null)
             {
-                window.titleContent.text = "Physics Debug";
+                window.titleContent.text = "Physics Debugger";
+                window.minSize = new Vector2(1000f, 500f);
             }
             return window;
         }

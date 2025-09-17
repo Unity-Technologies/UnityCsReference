@@ -111,7 +111,7 @@ internal class ATGTextJobSystem
 
         if (k_IsMultiThreaded)
         {
-            var jobHandle = textJob.Schedule(textJobDatas.Count, 1);
+            var jobHandle = textJob.ScheduleOrRunJob(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
         }
         else

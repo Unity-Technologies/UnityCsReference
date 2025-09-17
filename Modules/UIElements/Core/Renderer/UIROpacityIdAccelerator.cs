@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements.UIR
                 oldVerts = oldVerts,
                 newVerts = newVerts,
                 opacityData = opacityData
-            }.Schedule(vertexCount, k_VerticesPerBatch);
+            }.ScheduleOrRunJob(vertexCount, k_VerticesPerBatch);
 
             if (m_NextJobIndex == m_Jobs.Length)
             {

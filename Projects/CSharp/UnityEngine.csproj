@@ -2307,6 +2307,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Layout\Native\LayoutProcessorNative.cs">
       <Link>Modules\UIElements\Core\Layout\Native\LayoutProcessorNative.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\ManagedJobExtension.cs">
+      <Link>Modules\UIElements\Core\ManagedJobExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\ManipulatorActivationFilter.cs">
       <Link>Modules\UIElements\Core\ManipulatorActivationFilter.cs</Link>
     </Compile>

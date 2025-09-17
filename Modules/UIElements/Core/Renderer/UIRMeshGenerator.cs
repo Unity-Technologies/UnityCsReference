@@ -1551,7 +1551,7 @@ namespace UnityEngine.UIElements.UIR
             var job = new TessellationJob() { jobParameters = m_JobParameters.Slice(0, parameterCount) };
             mgc.GetTempMeshAllocator(out job.allocator);
 
-            var jobHandle = job.Schedule(parameterCount, 1);
+            var jobHandle = job.ScheduleOrRunJob(parameterCount, 1);
 
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_OnMeshGenerationDelegate, null, MeshGenerationCallbackType.Work, true);

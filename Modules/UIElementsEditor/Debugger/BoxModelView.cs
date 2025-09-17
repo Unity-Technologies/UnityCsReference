@@ -220,14 +220,14 @@ namespace UnityEditor.UIElements.Debugger
             private VisualElement m_CenterContent;
             private VisualElement m_CenterBottom;
 
-            private IntegerField m_LeftTextField;
-            private IntegerField m_RightTextField;
-            private IntegerField m_TopTextField;
-            private IntegerField m_BottomTextField;
+            private FloatField m_LeftTextField;
+            private FloatField m_RightTextField;
+            private FloatField m_TopTextField;
+            private FloatField m_BottomTextField;
 
             // For layout purpose since real TextField are in another layer
-            private IntegerField m_FakeTopTextField;
-            private IntegerField m_FakeBottomTextField;
+            private FloatField m_FakeTopTextField;
+            private FloatField m_FakeBottomTextField;
             private VisualElement m_SelectedElement;
 
             public BoxModelElement(BoxType boxType, VisualElement content,
@@ -255,27 +255,27 @@ namespace UnityEditor.UIElements.Debugger
                 m_CenterContent = content;
                 m_CenterContent.AddToClassList("box-model-center-content");
 
-                m_LeftTextField = new IntegerField();
+                m_LeftTextField = new () { isDelayed = true };
                 m_LeftTextField.AddToClassList("box-model-textfield");
                 m_LeftTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Left));
 
-                m_RightTextField = new IntegerField();
+                m_RightTextField = new () { isDelayed = true };
                 m_RightTextField.AddToClassList("box-model-textfield");
                 m_RightTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Right));
 
-                m_TopTextField = new IntegerField();
+                m_TopTextField = new () { isDelayed = true };
                 m_TopTextField.AddToClassList("box-model-textfield");
                 m_TopTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Top));
 
-                m_FakeTopTextField = new IntegerField();
+                m_FakeTopTextField = new () { isDelayed = true };
                 m_FakeTopTextField.AddToClassList("box-model-textfield");
                 m_FakeTopTextField.visible = false;
 
-                m_BottomTextField = new IntegerField();
+                m_BottomTextField = new() { isDelayed = true };
                 m_BottomTextField.AddToClassList("box-model-textfield");
                 m_BottomTextField.RegisterValueChangedCallback(e => OnTextFieldValueChanged(e, SideChanged.Bottom));
 
-                m_FakeBottomTextField = new IntegerField();
+                m_FakeBottomTextField = new () { isDelayed = true };
                 m_FakeBottomTextField.AddToClassList("box-model-textfield");
                 m_FakeBottomTextField.visible = false;
 
@@ -351,19 +351,19 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var selectedStyle = m_SelectedElement.resolvedStyle;
 
-                var value = (int)selectedStyle.marginLeft;
+                var value = selectedStyle.marginLeft;
                 if (m_LeftTextField.value != value)
                     m_LeftTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.marginRight;
+                value = selectedStyle.marginRight;
                 if (m_RightTextField.value != value)
                     m_RightTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.marginTop;
+                value = selectedStyle.marginTop;
                 if (m_TopTextField.value != value)
                     m_TopTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.marginBottom;
+                value = selectedStyle.marginBottom;
                 if (m_BottomTextField.value != value)
                     m_BottomTextField.SetValueWithoutNotify(value);
             }
@@ -372,19 +372,19 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var selectedStyle = m_SelectedElement.resolvedStyle;
 
-                var value = (int)selectedStyle.borderLeftWidth;
+                var value = selectedStyle.borderLeftWidth;
                 if (m_LeftTextField.value != value)
                     m_LeftTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.borderRightWidth;
+                value = selectedStyle.borderRightWidth;
                 if (m_RightTextField.value != value)
                     m_RightTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.borderTopWidth;
+                value = selectedStyle.borderTopWidth;
                 if (m_TopTextField.value != value)
                     m_TopTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.borderBottomWidth;
+                value = selectedStyle.borderBottomWidth;
                 if (m_BottomTextField.value != value)
                     m_BottomTextField.SetValueWithoutNotify(value);
             }
@@ -393,24 +393,24 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var selectedStyle = m_SelectedElement.resolvedStyle;
 
-                var value = (int)selectedStyle.paddingLeft;
+                var value = selectedStyle.paddingLeft;
                 if (m_LeftTextField.value != value)
                     m_LeftTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.paddingRight;
+                value = selectedStyle.paddingRight;
                 if (m_RightTextField.value != value)
                     m_RightTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.paddingTop;
+                value = selectedStyle.paddingTop;
                 if (m_TopTextField.value != value)
                     m_TopTextField.SetValueWithoutNotify(value);
 
-                value = (int)selectedStyle.paddingBottom;
+                value = selectedStyle.paddingBottom;
                 if (m_BottomTextField.value != value)
                     m_BottomTextField.SetValueWithoutNotify(value);
             }
 
-            private void OnTextFieldValueChanged(ChangeEvent<int> evt, SideChanged sideChanged)
+            private void OnTextFieldValueChanged(ChangeEvent<float> evt, SideChanged sideChanged)
             {
                 var selectedStyle = m_SelectedElement.style;
                 if (boxType == BoxType.Margin)
@@ -481,8 +481,8 @@ namespace UnityEditor.UIElements.Debugger
         class ContentBox : VisualElement
         {
             private VisualElement m_TextContainer;
-            private IntegerField m_WidthTextField;
-            private IntegerField m_HeightTextField;
+            private FloatField m_WidthTextField;
+            private FloatField m_HeightTextField;
             private Label m_XLabel;
 
             private VisualElement m_SelectedElement;
@@ -492,10 +492,10 @@ namespace UnityEditor.UIElements.Debugger
                 m_TextContainer = new VisualElement();
                 m_TextContainer.AddToClassList("box-model-content-text-container");
 
-                m_WidthTextField = new IntegerField();
+                m_WidthTextField = new() { isDelayed = true };
                 m_WidthTextField.AddToClassList("box-model-textfield");
 
-                m_HeightTextField = new IntegerField();
+                m_HeightTextField = new() { isDelayed = true };
                 m_HeightTextField.AddToClassList("box-model-textfield");
 
                 m_XLabel = new Label("x");
@@ -522,8 +522,8 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (ve != null)
                 {
-                    m_WidthTextField.SetValueWithoutNotify((int)m_SelectedElement.contentRect.width);
-                    m_HeightTextField.SetValueWithoutNotify((int)m_SelectedElement.contentRect.height);
+                    m_WidthTextField.SetValueWithoutNotify(m_SelectedElement.contentRect.width);
+                    m_HeightTextField.SetValueWithoutNotify(m_SelectedElement.contentRect.height);
                 }
                 else
                 {
@@ -532,14 +532,14 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            private void OnWidthChanged(ChangeEvent<int> evt)
+            private void OnWidthChanged(ChangeEvent<float> evt)
             {
                 var style = m_SelectedElement.resolvedStyle;
                 var newValue = evt.newValue + style.paddingLeft + style.paddingRight + style.borderLeftWidth + style.borderRightWidth;
                 m_SelectedElement.style.width = newValue;
             }
 
-            private void OnHeightChanged(ChangeEvent<int> evt)
+            private void OnHeightChanged(ChangeEvent<float> evt)
             {
                 var style = m_SelectedElement.resolvedStyle;
                 var newValue = evt.newValue + style.paddingTop + style.paddingBottom + style.borderTopWidth + style.borderBottomWidth;
@@ -550,11 +550,11 @@ namespace UnityEditor.UIElements.Debugger
             {
                 if (m_SelectedElement != null)
                 {
-                    var value = (int)m_SelectedElement.contentRect.width;
+                    var value = m_SelectedElement.contentRect.width;
                     if (m_WidthTextField.value != value)
                         m_WidthTextField.SetValueWithoutNotify(value);
 
-                    value = (int)m_SelectedElement.contentRect.height;
+                    value = m_SelectedElement.contentRect.height;
                     if (m_HeightTextField.value != value)
                         m_HeightTextField.SetValueWithoutNotify(value);
                 }

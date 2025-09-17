@@ -484,14 +484,13 @@ namespace UnityEditor
             readonly EnterDelegate m_EnterCallback;
             string m_NewTagName = "New tag";
             bool m_NeedsFocus = true;
-            readonly List<string> m_ExistingTagNames = new ();
-            private bool m_IsExistingTag;
+            readonly List<string> m_ExistingTagNames = new List<string>(InternalEditorUtility.tags);
+            bool m_IsExistingTag;
 
             public EnterTagNamePopup(SerializedProperty tags, EnterDelegate callback)
             {
                 m_EnterCallback = callback;
 
-                m_ExistingTagNames.Clear();
                 for (var i = 0; i < tags.arraySize; i++)
                 {
                     var tagName = tags.GetArrayElementAtIndex(i).stringValue;
@@ -511,6 +510,7 @@ namespace UnityEditor
                 GUILayout.Space(5);
                 var evt = Event.current;
                 var hitEnter = evt.type == EventType.KeyDown && evt.keyCode is KeyCode.Return or KeyCode.KeypadEnter;
+                bool previousExistingTagState = m_IsExistingTag;
                 GUI.SetNextControlName("TagName");
 
                 // If on previous OnGUI there was attempt saving existing name, show error until name is changed
@@ -542,7 +542,7 @@ namespace UnityEditor
                     m_IsExistingTag = true;
 
                     // Hitting enter won't repaint the window, we need to do it manually
-                    if(hitEnter)
+                    if(hitEnter && previousExistingTagState != m_IsExistingTag)
                         editorWindow.RepaintImmediately();
 
                     return;

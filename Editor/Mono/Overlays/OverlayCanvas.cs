@@ -881,6 +881,7 @@ namespace UnityEditor.Overlays
                 return;
             }
 
+            OverlayUtilities.ValidateName(overlay);
             overlay.canvas = this;
             m_Overlays.Add(overlay);
             if (transient)

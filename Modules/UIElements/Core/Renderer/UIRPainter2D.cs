@@ -517,7 +517,7 @@ namespace UnityEngine.UIElements
             var job = new Painter2DJob { painterHandle = m_Handle, jobParameters = m_JobParameters.Slice(0, snapshotCount) };
             mgc.GetTempMeshAllocator(out job.allocator);
 
-            var jobHandle = job.Schedule(snapshotCount, 1);
+            var jobHandle = job.ScheduleOrRunJob(snapshotCount, 1);
 
             mgc.AddMeshGenerationJob(jobHandle);
             mgc.AddMeshGenerationCallback(m_OnMeshGenerationDelegate, null, MeshGenerationCallbackType.Work, true);
