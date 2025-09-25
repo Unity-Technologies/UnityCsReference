@@ -89,7 +89,18 @@ namespace Unity.UI.Builder
             {
                 if (!inlineStyleChange)
                     hasUnsavedChanges = document.hasUnsavedChanges;
-                GetTargetUss()?.GeneratePreview();
+
+                foreach (var openUSSFile in document.openUSSFiles)
+                    openUSSFile.GeneratePreview();
+
+                var parentDoc = document.activeOpenUXMLFile.openSubDocumentParent;
+                while (parentDoc != null)
+                {
+                    foreach (var openUSSFile in parentDoc.openUSSFiles)
+                        openUSSFile.GeneratePreview();
+                    parentDoc = parentDoc.openSubDocumentParent;
+                }
+
                 RefreshPreviewIfVisible();
             }
         }

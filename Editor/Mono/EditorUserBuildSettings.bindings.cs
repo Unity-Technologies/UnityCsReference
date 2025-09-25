@@ -358,7 +358,7 @@ namespace UnityEditor
     public partial class EditorUserBuildSettings : Object
     {
         internal const string kSettingArchitecture = "Architecture";
-        private EditorUserBuildSettings() {}
+        private EditorUserBuildSettings() { }
 
         internal static extern AppleBuildAndRunType appleBuildAndRunType { get; set; }
         internal static extern string appleDeviceId { get; set; }
@@ -454,7 +454,7 @@ namespace UnityEditor
         public static extern bool needSubmissionMaterials { get; set; }
 
         [Obsolete("EditorUserBuildSettings.compressWithPsArc is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
-        public static bool compressWithPsArc { get => false; set {} }
+        public static bool compressWithPsArc { get => false; set { } }
 
         // Should we force an install on the build package, even if there are validation errors
         public static extern bool forceInstallation { get; set; }
@@ -513,10 +513,10 @@ namespace UnityEditor
 
 
         [Obsolete("xboxOneUsername is deprecated, it is unnecessary and non-functional.")]
-        public static  string xboxOneUsername { get; set; }
+        public static string xboxOneUsername { get; set; }
 
         [Obsolete("xboxOneNetworkSharePath is deprecated, it is unnecessary and non-functional.")]
-        public static  string xboxOneNetworkSharePath { get; set; }
+        public static string xboxOneNetworkSharePath { get; set; }
 
 
         // Transitive property used when adding debug ports to the
@@ -617,7 +617,7 @@ namespace UnityEditor
         public static WSASubtarget wsaSubtarget
         {
             get => WSASubtarget.AnyDevice;
-            set {}
+            set { }
         }
 
         [Obsolete("EditorUserBuildSettings.wsaSDK is obsolete and has no effect.It will be removed in a subsequent Unity release.")]
@@ -911,14 +911,14 @@ namespace UnityEditor
         public static Build.Il2CppCodeGeneration il2CppCodeGeneration
         {
             get { return Build.Il2CppCodeGeneration.OptimizeSpeed; }
-            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneration is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead." ); }
+            set { Debug.LogWarning("EditorUserBuildSettings.il2CppCodeGeneration is obsolete. Please use PlayerSettings.SetIl2CppCodeGeneration and PlayerSettings.GetIl2CppCodeGeneration instead."); }
         }
 
         [Obsolete("Building with pre-built Engine option is no longer supported.", true)]
         public static bool webGLUsePreBuiltUnityEngine
         {
             get { return false; }
-            set {}
+            set { }
         }
 
         // Start the player with a connection to the profiler.
@@ -956,13 +956,17 @@ namespace UnityEditor
 
         public static extern XcodeBuildConfig iOSXcodeBuildConfig
         {
-            [NativeMethod("GetIOSXcodeBuildConfig")] get;
-            [NativeMethod("SetIOSXcodeBuildConfig")] set;
+            [NativeMethod("GetIOSXcodeBuildConfig")]
+            get;
+            [NativeMethod("SetIOSXcodeBuildConfig")]
+            set;
         }
         public static extern XcodeBuildConfig macOSXcodeBuildConfig
         {
-            [NativeMethod("GetMacOSXcodeBuildConfig")] get;
-            [NativeMethod("SetMacOSXcodeBuildConfig")] set;
+            [NativeMethod("GetMacOSXcodeBuildConfig")]
+            get;
+            [NativeMethod("SetMacOSXcodeBuildConfig")]
+            set;
         }
 
         [Obsolete("iOSBuildConfigType is obsolete. Use iOSXcodeBuildConfig instead (UnityUpgradable) -> iOSXcodeBuildConfig", true)]
@@ -1178,7 +1182,8 @@ namespace UnityEditor
         {
             get
             {
-                if (Int32.TryParse(GetPlatformSettings("Editor", BuildProfilePlatformSettingsBase.k_SettingManagedDebuggerFixedPort), out int value)) {
+                if (Int32.TryParse(GetPlatformSettings("Editor", BuildProfilePlatformSettingsBase.k_SettingManagedDebuggerFixedPort), out int value))
+                {
                     if (0 < value && value <= 65535)
                     {
                         return value;
@@ -1208,5 +1213,8 @@ namespace UnityEditor
 
         internal static extern string[] GetActiveProfileScriptingDefines();
         internal static extern void SetActiveProfileScriptingDefines(string[] defines);
+        
+        internal static extern EditorBuildSettingsScene[] GetCachedActiveProfileScenes();
+        internal static extern void SetCachedActiveProfileScenes(EditorBuildSettingsScene[] scenesList);
     }
 }

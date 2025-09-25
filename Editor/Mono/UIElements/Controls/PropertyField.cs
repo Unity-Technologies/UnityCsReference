@@ -1227,6 +1227,9 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.Hash128:
                     return ConfigureField<Hash128Field, Hash128>(originalField as Hash128Field, property, () => new Hash128Field());
 
+                case SerializedPropertyType.EntityId:
+                    return ConfigureField<EntityIdField, EntityId>(originalField as EntityIdField, property, () => new EntityIdField());
+
                 case SerializedPropertyType.Generic:
                     if (property.type == nameof(ToggleButtonGroupState))
                     {

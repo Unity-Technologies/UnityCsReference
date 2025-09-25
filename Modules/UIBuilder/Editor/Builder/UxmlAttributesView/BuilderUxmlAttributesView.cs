@@ -52,6 +52,7 @@ namespace Unity.UI.Builder
         VisualElementAsset m_CurrentUxmlElement;
         protected internal BuilderInspector inspector;
 
+
         // UxmlTraits
         List<UxmlAttributeDescription> m_UxmlTraitAttributes;
         static readonly List<UxmlAttributeDescription> s_EmptyAttributeList = new();
@@ -514,7 +515,7 @@ namespace Unity.UI.Builder
         public void ResetAttributesOwner()
         {
             SetAttributesOwner(null, null);
-            
+
             // For tests, created attribute views are not always cleared.
             inspector.attributesSection.attributesContainer.Clear();
         }
@@ -951,9 +952,9 @@ namespace Unity.UI.Builder
 
             var propertyField = new PropertyField { bindingPath = serializedProperty.propertyPath };
             drawerRoot.Add(propertyField);
-            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, m_UxmlDocument, m_CurrentElement != null );
+            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, m_UxmlDocument, m_CurrentElement != null);
 
-            // The hiearachy is not complete yet so we need to defer the update
+            // The hierarchy is not complete yet so we need to defer the update
             root.schedule.Execute(() => UpdateCustomPropertyDrawerAttributeOverrideStyle(drawerRoot));
         }
 
@@ -1083,6 +1084,9 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
+                    var serializedReferencesFound = TrackPropertySerializedReferences(property, fieldElement);
+
+                    fieldElement.name = property.name;
                     var propertyField = new PropertyField
                     {
                         name = builderSerializedPropertyFieldName,
@@ -1099,7 +1103,16 @@ namespace Unity.UI.Builder
                         TrackElementPropertyValue(propertyField, property);
                     }
 
-                    fieldElement.Add(propertyField);
+                    // if a serialized reference was found, we need to add the property field the CustomPropertyDrawerField,
+                    // which is the child of the UxmlSerializedDataAttributeField.
+                    // This is to ensure that the CustomPropertyDrawerField override can be updated correctly.
+                    if (serializedReferencesFound)
+                    {
+                        var customPropertyDrawerField = fieldElement.Q<CustomPropertyDrawerField>();
+                        customPropertyDrawerField.Insert(0, propertyField);
+                    }
+                    else
+                        fieldElement.Add(propertyField);
 
                     propertyField.Bind(m_CurrentElementSerializedObject);
 
@@ -1123,6 +1136,26 @@ namespace Unity.UI.Builder
             SetupStyleRow(styleRow, fieldElement, attribute);
 
             return styleRow;
+        }
+
+        bool TrackPropertySerializedReferences(SerializedProperty property,
+            UxmlSerializedDataAttributeField fieldElement)
+        {
+            var drawerRoot = new CustomPropertyDrawerField();
+            var attributeDescription = m_SerializedDataDescription.FindAttributeWithPropertyName(property.name);
+            if (attributeDescription == null || !inspector.batchedChangesController.FindSerializedReferenceAndTrackChildProperties((property), p =>
+                {
+                    var attributeField = new UxmlSerializedDataAttributeField { name = p.name };
+                    attributeField.SetLinkedAttributeDescription(attributeDescription);
+                    drawerRoot.Add(attributeField);
+                    inspector.batchedChangesController.TrackPropertyValue(attributeField, p, this, uxmlDocument);
+                }))
+                return false;
+
+            // We found a serialized reference, so we need to add the item root to the FieldElement.
+            drawerRoot.AddManipulator(new ContextualMenuManipulator(BuildCustomPropertyDrawerMenu));
+            fieldElement.Add(drawerRoot);
+            return true;
         }
 
         void OnPropertyFieldBound(SerializedPropertyBindEvent evt)
@@ -1297,7 +1330,7 @@ namespace Unity.UI.Builder
         {
             m_HasUxmlChangeFlag = enabled;
         }
-        
+
         public void DeserializeElement()
         {
             if (!m_HasUxmlChangeFlag)
@@ -2573,7 +2606,7 @@ namespace Unity.UI.Builder
 
                 prop.stringValue = evt.newValue;
                 m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
-                
+
                 // Change is added manually because input validation takes priority over tracking update.
                 inspector.batchedChangesController.AddBatchedChange(field, prop, this, uxmlDocument);
             }

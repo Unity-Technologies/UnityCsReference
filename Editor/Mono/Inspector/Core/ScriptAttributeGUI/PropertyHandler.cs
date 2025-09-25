@@ -442,33 +442,14 @@ namespace UnityEditor
             var propertyPath = property.propertyPath.Replace(" ", "");
             menu.AddItem(new GUIContent("Copy Property Path"), false, () => EditorGUIUtility.systemCopyBuffer = propertyPath);
 
-            if (CanSearchProperty(property))
+            if (SearchUtility.CanSearchProperty(property))
             {
-                menu.AddItem(new GUIContent("Search Same Property Value"), false, () => SearchProperty(property));
-                if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
+                menu.AddItem(new GUIContent("Search Same Property Value"), false, () => SearchUtility.SearchProperty(property));
+                if (SearchUtility.SupportsFindDependenciesInProject(property))
                 {
-                    menu.AddItem(new GUIContent($"Find references to {property.objectReferenceValue.GetType().Name} {property.objectReferenceValue.name}"), false, () => FindReferences(property.objectReferenceValue));
+                    menu.AddItem(new GUIContent($"Find references to {property.objectReferenceValue.GetType().Name} {property.objectReferenceValue.name}"), false, () => SearchUtility.FindReferences(property.objectReferenceValue));
                 }
             }
-        }
-
-        private static void SearchProperty(SerializedProperty property)
-        {
-            CommandService.Execute("OpenToSearchByProperty", CommandHint.Menu, property);
-        }
-
-        private static void FindReferences(UnityEngine.Object obj)
-        {
-            CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
-        }
-
-        internal static bool CanSearchProperty(SerializedProperty property)
-        {
-            if (!CommandService.Exists("OpenToSearchByProperty") || !CommandService.Exists("IsPropertyValidForQuery"))
-                return false;
-
-            var result = CommandService.Execute("IsPropertyValidForQuery", CommandHint.Menu, property);
-            return (bool)result;
         }
 
         public void CallMenuCallback(object[] targets, MethodInfo method)

@@ -222,7 +222,7 @@ namespace UnityEditor
         {
             if (!m_PreviewBackupPosition.HasValue)
             {
-                if (target is TrailRenderer tr)
+                if (target is TrailRenderer tr && tr != null)
                 {
                     m_PreviewBackupPosition = tr.transform.localPosition;
                     m_PreviewIsFirstMove = true;
@@ -246,7 +246,7 @@ namespace UnityEditor
 
             if (m_PreviewBackupPosition.HasValue)
             {
-                if (target is TrailRenderer tr)
+                if (target is TrailRenderer tr && tr != null)
                     tr.Clear();
                 m_PreviewBackupPosition = null;
             }
@@ -309,7 +309,7 @@ namespace UnityEditor
 
                 foreach (var obj in targets)
                 {
-                    if (obj is TrailRenderer trail)
+                    if (obj is TrailRenderer trail && trail != null)
                     {
                         var worldBounds = trail.bounds;
                         Handles.DrawWireCube(worldBounds.center, worldBounds.size);
@@ -320,7 +320,7 @@ namespace UnityEditor
             }
 
             // Move trail using shape
-            if (target is TrailRenderer tr)
+            if (target is TrailRenderer tr && tr != null)
             {
                 if (m_PreviewBackupPosition.HasValue)
                 {
@@ -629,6 +629,9 @@ namespace UnityEditor
 
                 foreach (var tr in targets.OfType<TrailRenderer>())
                 {
+                    if (tr == null)
+                        continue;
+
                     Handles.matrix = GetPreviewMatrix(inspector.m_PreviewBackupPosition, tr.transform);
 
                     switch (s_PreviewShape)

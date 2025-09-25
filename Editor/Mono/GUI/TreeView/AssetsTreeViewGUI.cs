@@ -72,7 +72,7 @@ namespace UnityEditor
         override public void BeginRowGUI()
         {
             s_VCEnabled = VersionControlUtils.isVersionControlConnected;
-            iconLeftPadding = iconRightPadding = s_VCEnabled ? k_IconOverlayPadding : 0f;
+            iconLeftPadding = iconRightPadding = 0f;
             base.BeginRowGUI();
         }
 

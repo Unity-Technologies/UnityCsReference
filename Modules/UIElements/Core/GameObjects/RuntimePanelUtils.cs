@@ -15,6 +15,10 @@ namespace UnityEngine.UIElements
         /// <param name="panel">The local coordinates reference panel.</param>
         /// <param name="screenPosition">The screen position to transform.</param>
         /// <returns>A position in panel coordinates that corresponds to the provided screen position.</returns>
+        /// <example>
+        /// The following example converts the mouse position from screen coordinates to UI Toolkit panel coordinates:
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScreenToPanelConverter.cs"/>
+        /// </example>
         public static Vector2 ScreenToPanel(IPanel panel, Vector2 screenPosition)
         {
             return ((BaseRuntimePanel)panel).ScreenToPanel(screenPosition);

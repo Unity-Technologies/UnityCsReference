@@ -457,7 +457,31 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_InvokeCollisionCallbacks")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_GenerateOnTriggerStayEvents")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ContactPairsMode")));
-            tab.Add(new PropertyField(serializedObject.FindProperty("m_BroadphaseType")));
+
+            var broadPhaseProp = serializedObject.FindProperty("m_BroadphaseType");
+            var broadPhase = new PropertyField(broadPhaseProp);
+            tab.Add(broadPhase);
+
+            //world bounds and subdivisions
+            bool hasMultiBox = broadPhaseProp.intValue == 1; //check if we are using multibox;
+
+            var worldBounds = new PropertyField(serializedObject.FindProperty("m_WorldBounds"));
+            worldBounds.style.display = hasMultiBox ? DisplayStyle.Flex : DisplayStyle.None;
+
+            var subdivisions = new PropertyField(serializedObject.FindProperty("m_WorldSubdivisions"));
+            subdivisions.style.display = hasMultiBox ? DisplayStyle.Flex : DisplayStyle.None;
+
+            tab.Add(worldBounds);
+            tab.Add(subdivisions);
+
+            broadPhase.RegisterValueChangeCallback((evt) =>
+            {
+                bool changedToMultiBox = evt.changedProperty.intValue == 1;
+
+                worldBounds.style.display = changedToMultiBox ? DisplayStyle.Flex : DisplayStyle.None;
+                subdivisions.style.display = changedToMultiBox ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
             tab.Add(new PropertyField(serializedObject.FindProperty("m_FrictionType")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableEnhancedDeterminism")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ImprovedPatchFriction")));

@@ -97,7 +97,9 @@ namespace Unity.UI.Builder
 
         public void GeneratePreview()
         {
+            if (m_StyleSheet.contentHash == m_ContentHash) return;
             m_UssPreview = m_StyleSheet.GenerateUSS();
+            m_ContentHash = m_StyleSheet.contentHash;
         }
 
         public bool SaveToDisk(VisualTreeAsset visualTreeAsset)

@@ -786,7 +786,7 @@ namespace UnityEditor.Overlays
 
         public void ShowPopupAtMouse<T>() where T : Overlay, new()
         {
-            if (!m_MouseInCurrentCanvas)
+            if (EditorWindow.mouseOverWindow != containerWindow && !m_MouseInCurrentCanvas)
             {
                 ClosePopupOverlay();
                 return;
@@ -871,6 +871,7 @@ namespace UnityEditor.Overlays
                 return;
             }
 
+            OverlayUtilities.ValidateName(overlay);
             overlay.canvas = this;
             m_Overlays.Add(overlay);
             if (transient)

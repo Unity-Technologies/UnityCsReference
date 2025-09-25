@@ -624,5 +624,18 @@ namespace UnityEngine.UIElements
             if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
         }
+
+        /// <summary>
+        /// Marks that the <see cref="TextElement"/> forces a layout and repaint.
+        /// </summary>
+        /// <remarks>
+        /// Call this method if you modify assets that influence text generation at runtime, 
+        /// such as a <see cref="FontAsset"/>.
+        /// </remarks>
+        public void MarkDirtyText()
+        {
+            IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
+            uitkTextHandle.SetDirty();
+        }
     }
 }

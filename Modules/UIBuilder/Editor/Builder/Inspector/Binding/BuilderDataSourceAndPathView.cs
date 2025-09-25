@@ -370,8 +370,8 @@ namespace Unity.UI.Builder
                 return CreateTraitsAttributeField(FindAttribute(attribute));
             }
 
-            var fieldElement = new UxmlSerializedDataAttributeField();
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
+            var fieldElement = new UxmlSerializedDataAttributeField{ name = attributeDesc.serializedField.Name };
             var basePath = bindingSerializedPropertyRootPath ?? serializedRootPath;
             var path = $"{basePath}.{attributeDesc.serializedField.Name}";
             var propertyField = new PropertyField

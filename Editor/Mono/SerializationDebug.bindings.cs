@@ -155,6 +155,10 @@ namespace UnityEditor
                     case SerializedPropertyType.Hash128:
                         propertyValue = $"{property.hash128Value}";
                         break;
+
+                    case SerializedPropertyType.EntityId:
+                        propertyValue = $"{property.entityIdValue}";
+                        break;
                 }
 
                 if (property.prefabOverride)
