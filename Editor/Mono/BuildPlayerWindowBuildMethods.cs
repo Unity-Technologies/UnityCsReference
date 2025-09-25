@@ -406,9 +406,10 @@ namespace UnityEditor
                 if (!Directory.Exists(check_dir))
                     Directory.CreateDirectory(check_dir);
 
-                // On OSX we've got replace/update dialog, for other platforms warn about deleting
-                // files in target folder.
-                if ((target == BuildTarget.iOS) && (Application.platform != RuntimePlatform.OSXEditor))
+                // All files are deleted in build path when building iOS/tvOS/visionOS project with replace option on WinEditor or MacEditor, we need to
+                // ask the user if they want to proceed by showing a warning dialog
+                bool isApplePlatform = target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.VisionOS;
+                if (isApplePlatform && !updateExistingBuild)
                     if (!FolderIsEmpty(path) && !UserWantsToDeleteFiles(path))
                         return false;
 

@@ -116,15 +116,13 @@ namespace UnityEditor
             readonly EnterDelegate EnterCB;
             private string m_NewTagName = "New tag";
             private bool m_NeedsFocus = true;
-            readonly List<string> m_ExistingTagNames = new ();
+            readonly List<string> m_ExistingTagNames = new List<string>(InternalEditorUtility.tags);
             private bool m_IsExistingTag;
 
             public EnterNamePopup(SerializedProperty tags, EnterDelegate cb)
             {
                 EnterCB = cb;
 
-
-                m_ExistingTagNames.Clear();
                 for (int i = 0; i < tags.arraySize; i++)
                 {
                     string tagName = tags.GetArrayElementAtIndex(i).stringValue;

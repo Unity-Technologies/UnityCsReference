@@ -1172,9 +1172,13 @@ namespace UnityEditor
 
 
                 if (verticalLayout)
-                    m_CurveEditorAreaHeight = Mathf.Clamp(m_CurveEditorAreaHeight, k_MinCurveAreaSize.y, height - k_MinEmitterAreaSize.y);
+                {
+                    m_CurveEditorAreaHeight = Mathf.Clamp(m_CurveEditorAreaHeight, k_MinCurveAreaSize.y, Mathf.Max(k_MinCurveAreaSize.y, height - k_MinEmitterAreaSize.y));
+                }
                 else
-                    m_EmitterAreaWidth = Mathf.Clamp(m_EmitterAreaWidth, k_MinEmitterAreaSize.x, width - k_MinCurveAreaSize.x);
+                {
+                    m_EmitterAreaWidth = Mathf.Clamp(m_EmitterAreaWidth, k_MinEmitterAreaSize.x, Mathf.Max(k_MinEmitterAreaSize.x, width - k_MinCurveAreaSize.x));
+                }
             }
         }
 

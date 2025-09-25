@@ -128,6 +128,16 @@ namespace UnityEditor
         ForceInternal = 2,
     }
 
+    // Preferred data location
+    public enum AndroidPreferredDataLocation
+    {
+        // Use external storage if available, otherwise use internal storage
+        PreferExternal = 1,
+
+        // Use internal storage only
+        ForceInternal = 2,
+    }
+
     public enum AndroidShowActivityIndicatorOnLoading
     {
         // Large == progressBarStyleLarge
@@ -313,6 +323,15 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidPreferredInstallLocation")]
                 get;
                 [NativeMethod("SetAndroidPreferredInstallLocation")]
+                set;
+            }
+
+            // Preferred data location
+            public static extern AndroidPreferredDataLocation preferredDataLocation
+            {
+                [NativeMethod("GetAndroidPreferredDataLocation")]
+                get;
+                [NativeMethod("SetAndroidPreferredDataLocation")]
                 set;
             }
 
