@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(CommandList)}");
 
         public VisualElement m_Owner; // Might be null if non-initialized or for the default command list.
+        public UIRenderer m_Renderer;
         readonly IntPtr m_VertexDecl;
         readonly IntPtr m_StencilState;
         public MaterialPropertyBlock constantProps = new();
@@ -62,6 +63,7 @@ namespace UnityEngine.UIElements.UIR
         public void Reset()
         {
             m_Owner = null;
+            m_Renderer = null;
             m_Material = null;
             m_Commands.Clear();
             m_DrawRanges.Clear();
@@ -74,6 +76,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(m_Owner == null);
             m_Owner = owner;
+            m_Renderer = (owner as UIDocumentRootElement)?.uiRenderer;
             m_Material = material;
             flags = commandFlags;
 
@@ -160,7 +163,6 @@ namespace UnityEngine.UIElements.UIR
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         protected void Dispose(bool disposing)

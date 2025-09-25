@@ -248,27 +248,6 @@ namespace UnityEngine.UIElements
             };
         }
 
-        public static TextCore.WhiteSpace toTextCore(this WhiteSpace whiteSpace, bool isInputField)
-        {
-            if (isInputField)
-            {
-                return whiteSpace switch
-                {
-                    WhiteSpace.Normal or WhiteSpace.PreWrap => TextCore.WhiteSpace.PreWrap,
-                    WhiteSpace.NoWrap or WhiteSpace.Pre => TextCore.WhiteSpace.Pre,
-                    _ => TextCore.WhiteSpace.Pre
-                };
-            }
-            return whiteSpace switch
-            {
-                WhiteSpace.Normal => TextCore.WhiteSpace.Normal,
-                WhiteSpace.NoWrap => TextCore.WhiteSpace.NoWrap,
-                WhiteSpace.PreWrap => TextCore.WhiteSpace.PreWrap,
-                WhiteSpace.Pre => TextCore.WhiteSpace.Pre,
-                _ => TextCore.WhiteSpace.Normal
-            };
-        }
-
         public static TextCore.TextOverflow toTextCore(this TextOverflow textOverflow, OverflowInternal overflow, TextOverflowPosition position)
         {
             // TextCore and ATG do not support the middle and left ellipsis. In thoses case the TextElement will take care of the ellipsi.

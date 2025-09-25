@@ -150,6 +150,12 @@ namespace UnityEditor
                         p => Clipboard.hasHash128,
                         p => p.hash128Value = Clipboard.hash128Value);
                     break;
+                case SerializedPropertyType.EntityId:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.entityIdValue = p.entityIdValue,
+                        p => Clipboard.hasEntityId,
+                        p => p.entityIdValue = Clipboard.entityIdValue);
+                    break;
                 case SerializedPropertyType.Generic:
                     if (property.type == "MinMaxGradient")
                     {

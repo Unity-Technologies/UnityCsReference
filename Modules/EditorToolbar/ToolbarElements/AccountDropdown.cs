@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Connect;
+using System;
 using UnityEngine;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -22,7 +23,8 @@ namespace UnityEditor.Toolbars
             MainToolbarElement info;
             if (s_LoggedIn)
             {
-                info = new MainToolbarDropdown(new MainToolbarContent(s_AccountIcon), ShowUserMenu);
+                var textContent = GetUserInitials(UnityConnect.instance.userInfo.displayName);
+                info = new MainToolbarDropdown(new MainToolbarContent(textContent, s_AccountIcon, String.Empty), ShowUserMenu);
 
             }
             else

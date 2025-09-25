@@ -1938,6 +1938,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextPreprocessor.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextPreprocessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextRenderingIndices.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextRenderingIndices.bindings.cs</Link>
     </Compile>
@@ -2273,6 +2276,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\DropdownField.cs">
       <Link>Modules\UIElements\Core\Controls\DropdownField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Controls\EntityIdField.cs">
+      <Link>Modules\UIElements\Core\Controls\EntityIdField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Controls\EnumField.cs">
       <Link>Modules\UIElements\Core\Controls\EnumField.cs</Link>

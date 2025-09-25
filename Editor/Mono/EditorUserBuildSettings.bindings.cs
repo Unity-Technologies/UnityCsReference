@@ -1208,5 +1208,8 @@ namespace UnityEditor
 
         internal static extern string[] GetActiveProfileScriptingDefines();
         internal static extern void SetActiveProfileScriptingDefines(string[] defines);
+
+        internal static extern EditorBuildSettingsScene[] GetCachedActiveProfileScenes();
+        internal static extern void SetCachedActiveProfileScenes(EditorBuildSettingsScene[] scenesList);
     }
 }

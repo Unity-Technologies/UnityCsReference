@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+    [Serializable]
     class FallbackSelectionItem : IAnimationWindowSelectionItem
     {
         GameObject m_GameObject;

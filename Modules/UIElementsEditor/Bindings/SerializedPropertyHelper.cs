@@ -133,6 +133,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.hash128Value;
         }
 
+        public static EntityId GetEntityIdPropertyValue(SerializedProperty p)
+        {
+            return p.entityIdValue;
+        }
+
         public static Gradient GetGradientPropertyValue(SerializedProperty p)
         {
             return p.gradientValue;
@@ -357,6 +362,11 @@ namespace UnityEditor.UIElements.Bindings
         public static void SetHash128PropertyValue(SerializedProperty p, Hash128 v)
         {
             p.hash128Value = v;
+        }
+
+        public static void SetEntityIdPropertyValue(SerializedProperty p, EntityId v)
+        {
+            p.entityIdValue = v;
         }
 
         public static void SetGradientPropertyValue(SerializedProperty p, Gradient v)

@@ -51,7 +51,8 @@ internal class PhysicsDocumentPicker
             if (capturingElementPanel != null && !capturingElementPanel.isFlat)
             {
                 capturingDocument = UIDocument.FindRootUIDocument(capturingVE);
-                return true;
+                if (capturingDocument != null) // UUM-117081: don't hang on to an invalid capture
+                    return true;
             }
         }
 
@@ -61,7 +62,8 @@ internal class PhysicsDocumentPicker
             if (!capturingPanel.isFlat)
             {
                 capturingDocument = PointerDeviceState.GetWorldSpaceDocumentWithSoftPointerCapture(pointerId);
-                return true;
+                if (capturingDocument != null) // UUM-117081: don't hang on to an invalid capture
+                    return true;
             }
         }
 

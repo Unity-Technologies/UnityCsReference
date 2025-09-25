@@ -251,6 +251,27 @@ namespace UnityEditor
             set => EditorGUIUtility.systemCopyBuffer = value.ToString();
         }
 
+        public static bool hasEntityId
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchEntityId();
+                return m_State.m_HasEntityId.Value;
+            }
+        }
+
+        public static EntityId entityIdValue
+        {
+            get
+            {
+                FetchState();
+                m_State.FetchEntityId();
+                return m_State.m_ValueEntityId;
+            }
+            set => EditorGUIUtility.systemCopyBuffer = value.ToString();
+        }
+
         public static bool hasVector3
         {
             get

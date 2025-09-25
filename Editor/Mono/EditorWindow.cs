@@ -1406,6 +1406,9 @@ namespace UnityEditor
             int menuIndex = 1;
             foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
             {
+                if (win is MainToolbarWindow)
+                    continue;
+
                 var title = win.titleContent.text;
                 title = title.Replace("/", "\\");
                 Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => win.Focus(), null);

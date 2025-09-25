@@ -110,7 +110,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Baked UV Overlap"),
             };
 
-            public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.whiteLabel);
+            public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.wordWrappedLabel);
 
             public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TrTextContent("The texture is not available at the moment.");
             public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene, and make sure that this object is set to 'Contribute Global Illumination' if it's meant to be baked.");
@@ -651,6 +651,7 @@ namespace UnityEditor
                 m_CachedTexture = isRealtimeLightmap ?
                     LightmapVisualizationUtility.GetRealtimeGITexture(m_RealtimeTextureHash, textureType) :
                     LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex, m_InstanceID, textureType, useInteractiveLightBakingData);
+                Repaint();
             }
 
             if (!m_ShowUVOverlay)

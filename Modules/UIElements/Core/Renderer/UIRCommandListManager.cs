@@ -74,6 +74,8 @@ namespace UnityEngine.UIElements.UIR
                 var rootUIDocumentElement = cmdList.m_Owner as UIDocumentRootElement;
                 UIRenderer renderer = rootUIDocumentElement.uiRenderer;
 
+                Debug.Assert(renderer == cmdList.m_Renderer);
+
                 // A UIRenderer might contain multiple command lists (e.g. 1 per material). We make this check
                 // to avoid reseting the same UIRenderer many times.
                 if (lastRenderer != renderer)
@@ -143,8 +145,14 @@ namespace UnityEngine.UIElements.UIR
                 for (int i = 0; i < m_CommandListsArray.Length; ++i)
                 {
                     List<CommandList> commandLists = m_CommandListsArray[i];
-                    for (int j = 0 ; j < commandLists.Count ; ++j)
+                    for (int j = 0; j < commandLists.Count; ++j)
+                    {
+                        if (commandLists[j].m_Renderer != null)
+                        {
+                            commandLists[j].m_Renderer.ResetDrawCallData();
+                        }
                         commandLists[j].Dispose();
+                    }
                     commandLists.Clear();
                 }
                 m_CommandListsArray = null;

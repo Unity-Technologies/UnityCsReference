@@ -5,10 +5,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using PointerType = UnityEngine.UIElements.PointerType;
 
 namespace UnityEditor.Experimental.GraphView
 {
-    public class EdgeManipulator : MouseManipulator
+    public class EdgeManipulator : PointerManipulator
     {
         private bool m_Active;
         private Edge m_Edge;
@@ -20,7 +21,7 @@ namespace UnityEditor.Experimental.GraphView
         private Port m_DetachedPort;
         private bool m_DetachedFromInputPort;
         private static int s_StartDragDistance = 10;
-        private MouseDownEvent m_LastMouseDownEvent;
+        private IPointerOrMouseEvent m_LastPointerOrMouseDownEvent;
 
         public EdgeManipulator()
         {
@@ -31,18 +32,28 @@ namespace UnityEditor.Experimental.GraphView
 
         protected override void RegisterCallbacksOnTarget()
         {
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+
+            // Obsolete, use pointer events instead to handle touch input properly. Kept for compatibility.
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+
+            // Obsolete, use pointer events instead to handle touch input properly. Kept for compatibility.
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         private void Reset()
@@ -56,34 +67,102 @@ namespace UnityEditor.Experimental.GraphView
             m_DetachedFromInputPort = false;
         }
 
+        /// <summary>
+        /// Called when a pointer down event occurs.
+        /// </summary>
+        /// <param name="evt">The pointer down event.</param>
+        /// <remarks>
+        /// This method is invoked when a pointer down event occurs on the target element.
+        /// It checks if the pointer is a touch input and if manipulation can start.
+        /// </remarks>
+        protected void OnPointerDown(PointerDownEvent evt)
+        {
+            if (evt.pointerId != PointerId.mousePointerId && evt.pointerType != PointerType.touch)
+                return;
+
+            if (!CanStartManipulation(evt))
+                return;
+
+            if (TryOnPointerOrMouseDown(evt, evt.position))
+            {
+                target.CapturePointer(evt.pointerId);
+                m_LastPointerOrMouseDownEvent = evt;
+            }
+        }
+
         protected void OnMouseDown(MouseDownEvent evt)
+        {
+            if (!CanStartManipulation(evt))
+                return;
+
+            if (TryOnPointerOrMouseDown(evt, evt.mousePosition))
+            {
+                target.CaptureMouse();
+                m_LastPointerOrMouseDownEvent = evt;
+            }
+        }
+
+        bool TryOnPointerOrMouseDown(EventBase evt, Vector2 position)
         {
             if (m_Active)
             {
                 StopDragging();
                 evt.StopImmediatePropagation();
-                return;
+                return false;
             }
 
-            if (!CanStartManipulation(evt))
-            {
-                return;
-            }
+            m_Edge = (evt.target as VisualElement)?.GetFirstOfType<Edge>();
 
-            m_Edge = (evt.target as VisualElement).GetFirstOfType<Edge>();
-
-            m_PressPos = evt.mousePosition;
-            target.CaptureMouse();
+            m_PressPos = position;
             evt.StopPropagation();
-            m_LastMouseDownEvent = evt;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Called when a pointer move event occurs.
+        /// </summary>
+        /// <param name="evt">The pointer move event.</param>
+        /// <remarks>
+        /// This method is invoked when a pointer move event occurs on the target element.
+        /// It checks if the pointer has capture and if the manipulation is active.
+        /// It then processes the pointer move event accordingly.
+        /// </remarks>
+        protected void OnPointerMove(PointerMoveEvent evt)
+        {
+            if (!target.HasPointerCapture(evt.pointerId))
+                return;
+
+            if (OnPointerOrMouseMove(evt, evt.position) && m_Active)
+            {
+                m_ConnectedEdgeDragHelper.HandlePointerMove(evt);
+
+                foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                {
+                    edgeDrag.HandlePointerMove(evt);
+                }
+            }
         }
 
         protected void OnMouseMove(MouseMoveEvent evt)
         {
-            /// If the left mouse button is not down then return
+            if (OnPointerOrMouseMove(evt, evt.mousePosition) && m_Active)
+            {
+                m_ConnectedEdgeDragHelper.HandleMouseMove(evt);
+
+                foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                {
+                    edgeDrag.HandleMouseMove(evt);
+                }
+            }
+        }
+
+        bool OnPointerOrMouseMove(EventBase evt, Vector2 position)
+        {
+            // If the left mouse button is not down then return
             if (m_Edge == null)
             {
-                return;
+                return false;
             }
 
             evt.StopPropagation();
@@ -93,14 +172,14 @@ namespace UnityEditor.Experimental.GraphView
             // If one end of the edge is not already detached then
             if (!alreadyDetached)
             {
-                float delta = (evt.mousePosition - m_PressPos).sqrMagnitude;
+                float delta = (position - m_PressPos).sqrMagnitude;
 
                 if (delta < (s_StartDragDistance * s_StartDragDistance))
                 {
-                    return;
+                    return false;
                 }
 
-                /// Determine which end is the nearest to the mouse position then detach it.
+                // Determine which end is the nearest to the mouse position then detach it.
                 Vector2 outputPos = new Vector2(m_Edge.output.GetGlobalCenter().x, m_Edge.output.GetGlobalCenter().y);
                 Vector2 inputPos = new Vector2(m_Edge.input.GetGlobalCenter().x, m_Edge.input.GetGlobalCenter().y);
 
@@ -162,16 +241,23 @@ namespace UnityEditor.Experimental.GraphView
                         m_DetachedPort.Disconnect(edge);
                 }
 
-                m_Edge.candidatePosition = evt.mousePosition;
+                m_Edge.candidatePosition = position;
 
                 // Redirect the last mouse down event to active the drag helper
-
-                if (m_ConnectedEdgeDragHelper.HandleMouseDown(m_LastMouseDownEvent))
+                if (m_LastPointerOrMouseDownEvent is PointerDownEvent pointerDownEvent && m_ConnectedEdgeDragHelper.HandlePointerDown(pointerDownEvent))
                 {
                     m_Active = true;
                     foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
                     {
-                        edgeDrag.HandleMouseDown(m_LastMouseDownEvent);
+                        edgeDrag.HandlePointerDown(pointerDownEvent);
+                    }
+                }
+                else if (m_LastPointerOrMouseDownEvent is MouseDownEvent mouseDownEvent && m_ConnectedEdgeDragHelper.HandleMouseDown(mouseDownEvent))
+                {
+                    m_Active = true;
+                    foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                    {
+                        edgeDrag.HandleMouseDown(mouseDownEvent);
                     }
                 }
                 else
@@ -179,17 +265,27 @@ namespace UnityEditor.Experimental.GraphView
                     Reset();
                 }
 
-                m_LastMouseDownEvent = null;
+                m_LastPointerOrMouseDownEvent = null;
             }
 
-            if (m_Active)
-            {
-                m_ConnectedEdgeDragHelper.HandleMouseMove(evt);
+            return true;
+        }
 
-                foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
-                {
-                    edgeDrag.HandleMouseMove(evt);
-                }
+        /// <summary>
+        /// Called when a pointer up event occurs.
+        /// </summary>
+        /// <param name="evt">The pointer up event.</param>
+        /// <remarks>
+        /// This method is invoked when a pointer up event occurs on the target element.
+        /// It checks if the pointer has capture and if manipulation can stop.
+        /// It then processes the pointer up event accordingly.
+        /// </remarks>
+        protected void OnPointerUp(PointerUpEvent evt)
+        {
+            if (CanStopManipulation(evt))
+            {
+                target.ReleasePointer(evt.pointerId);
+                OnPointerOrMouseUp(evt);
             }
         }
 
@@ -198,22 +294,46 @@ namespace UnityEditor.Experimental.GraphView
             if (CanStopManipulation(evt))
             {
                 target.ReleaseMouse();
-                if (m_Active)
+                OnPointerOrMouseUp(evt);
+            }
+        }
+
+        void OnPointerOrMouseUp(EventBase evt)
+        {
+            if (m_Active)
+            {
+                // Restore the detached port before potentially delete or reconnect it.
+                // This is to ensure that the edge has valid input and output so it can be properly handled by the model.
+                RestoreDetachedPort();
+
+                switch (evt)
                 {
-                    // Restore the detached port before potentially delete or reconnect it.
-                    // This is to ensure that the edge has valid input and output so it can be properly handled by the model.
-                    RestoreDetachedPort();
-
-                    m_ConnectedEdgeDragHelper.HandleMouseUp(evt);
-
-                    foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                    case PointerUpEvent pointerUpEvent:
                     {
-                        edgeDrag.HandleMouseUp(evt);
+                        m_ConnectedEdgeDragHelper.HandlePointerUp(pointerUpEvent);
+
+                        foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                        {
+                            edgeDrag.HandlePointerUp(pointerUpEvent);
+                        }
+
+                        break;
+                    }
+                    case MouseUpEvent mouseUpEvent:
+                    {
+                        m_ConnectedEdgeDragHelper.HandleMouseUp(mouseUpEvent);
+
+                        foreach (var edgeDrag in m_AdditionalEdgeDragHelpers)
+                        {
+                            edgeDrag.HandleMouseUp(mouseUpEvent);
+                        }
+
+                        break;
                     }
                 }
-                Reset();
-                evt.StopPropagation();
             }
+            Reset();
+            evt.StopPropagation();
         }
 
         protected void OnKeyDown(KeyDownEvent evt)

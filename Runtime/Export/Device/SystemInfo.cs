@@ -208,6 +208,8 @@ namespace UnityEngine.Device
 
         public static bool supportsMachineLearning => ShimManager.systemInfoShim.supportsMachineLearning;
 
+        public static bool supportsMemorylessTextures => ShimManager.systemInfoShim.supportsMemorylessTextures;
+
         public static bool supportsSetConstantBuffer => ShimManager.systemInfoShim.supportsSetConstantBuffer;
 
         public static int constantBufferOffsetAlignment => ShimManager.systemInfoShim.constantBufferOffsetAlignment;

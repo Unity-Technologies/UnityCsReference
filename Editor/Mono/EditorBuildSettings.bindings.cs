@@ -120,11 +120,12 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
+        internal static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
         {
-            if (!EditorUserBuildSettings.isBuildProfileAvailable
-                || BuildProfileContext.activeProfile is null
-                || !BuildProfileContext.activeProfile.overrideGlobalScenes)
+            if (!EditorUserBuildSettings.isBuildProfileAvailable)
+                return EditorUserBuildSettings.GetCachedActiveProfileScenes();
+
+            if (BuildProfileContext.activeProfile is null || !BuildProfileContext.activeProfile.overrideGlobalScenes)
                 return null;
 
             return BuildProfileContext.activeProfile.scenes;

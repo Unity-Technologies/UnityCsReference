@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
 
         internal extern void AddDrawCallData(int safeFrameIndex, int cmdListIndex, Material mat, uint textureSlotCount, uint forceRenderType);
         internal extern void ResetDrawCallData();
+        internal extern int GetDrawCallDataCount();
 
         [RequiredByNativeCode]
         static void OnRenderNodeExecute(UIRenderer renderer, int safeFrameIndex, int cmdListIndex)

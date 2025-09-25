@@ -24,7 +24,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The Unity editor Hierarchy window.
     /// </summary>
-    [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
+    [EditorWindowTitle(title = "Hierarchy")]
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
     {
@@ -215,6 +215,8 @@ namespace Unity.Hierarchy.Editor
 
         void OnEnable()
         {
+            titleContent.image = EditorGUIUtility.LoadIconRequired(typeof(HierarchyWindow).ToString());
+
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).OnEnable()");
 
             m_CommandSubscriberHelper = new CommandSubscriberHelper(rootVisualElement);

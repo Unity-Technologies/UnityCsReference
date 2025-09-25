@@ -184,17 +184,15 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <undoc/>
             public void Dispose()
             {
-                if (m_Drawers != null)
-                {
-                    foreach(var drawer in m_Drawers)
-                    {
-                        drawer.Dispose();
-                    }
+                if (!IsValid)
+                    return;
 
-                    m_Drawers = null;
+                foreach(var drawer in m_Drawers)
+                {
+                    drawer.Dispose();
                 }
 
-                GC.SuppressFinalize(this);
+                m_Drawers = null;
             }
 
             /// <summary>
@@ -202,6 +200,9 @@ namespace UnityEngine.LowLevelPhysics2D
             /// </summary>
             abstract class BaseDrawer : IDisposable
             {
+                bool m_Disposed;
+
+                protected Mesh m_Mesh = null;
                 protected GraphicsBuffer m_GraphicsBuffer = new(GraphicsBuffer.Target.IndirectArguments, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size);
                 protected GraphicsBuffer.IndirectDrawIndexedArgs[] m_CommandData = new GraphicsBuffer.IndirectDrawIndexedArgs[1];
                 protected ComputeBuffer m_ElementBuffer;
@@ -210,39 +211,6 @@ namespace UnityEngine.LowLevelPhysics2D
                 protected readonly Bounds m_CullingBounds = new(Vector3.zero, 100000 * Vector3.one);
                 protected readonly int m_ElementBufferShaderProperty = Shader.PropertyToID("element_buffer");
                 protected readonly int m_TransformPlaneShaderProperty = Shader.PropertyToID("transform_plane");
-
-                /// <undoc/>
-                public virtual void Dispose()
-                {
-                    m_GraphicsBuffer?.Dispose();
-                    m_GraphicsBuffer = null;
-                    m_CommandData = null;
-
-                    m_ElementBuffer?.Dispose();
-                    m_ElementBuffer = null;
-
-                    m_ShaderMaterialPropertyBlock = null;
-
-                    if (m_ShaderMaterial != null)
-                    {
-                        Resources.UnloadAsset(m_ShaderMaterial);
-                        m_ShaderMaterial = null;
-                    }
-
-                    // No need to call the finalizer.
-                    GC.SuppressFinalize(this);
-                }
-
-                /// <undoc/>
-                public abstract void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, int drawCapacity);
-            }
-
-            /// <summary>
-            /// Base drawer when using meshes.
-            /// </summary>
-            abstract class MeshBaseDrawer : BaseDrawer
-            {
-                Mesh m_Mesh = null;
 
                 /// <undoc/>
                 protected Mesh GetMesh()
@@ -274,22 +242,45 @@ namespace UnityEngine.LowLevelPhysics2D
                 protected readonly int m_FillAlphaShaderProperty = Shader.PropertyToID("fillAlpha");
 
                 /// <undoc/>
-                public override void Dispose()
+                public void Dispose()
                 {
+                    // Finish if disposed.
+                    if (m_Disposed)
+                        return;
+
+                    m_GraphicsBuffer?.Dispose();
+                    m_GraphicsBuffer = null;
+                    m_CommandData = null;
+
+                    m_ElementBuffer?.Dispose();
+                    m_ElementBuffer = null;
+
+                    m_ShaderMaterialPropertyBlock = null;
+
                     if (m_Mesh != null)
                     {
                         Object.DestroyImmediate(m_Mesh);
                         m_Mesh = null;
                     }
 
-                    base.Dispose();
+                    if (m_ShaderMaterial != null)
+                    {
+                        Resources.UnloadAsset(m_ShaderMaterial);
+                        m_ShaderMaterial = null;
+                    }
+
+                    // Flag as disposed.
+                    m_Disposed = true;
                 }
+
+                /// <undoc/>
+                public abstract void Draw(CommandBuffer rendererCommandBuffer, ref PhysicsWorld.DrawResults drawResults, float thickness, float fillAlpha, PhysicsWorld.TransformPlane transformPlane, int drawCapacity);
             }
 
             /// <summary>
             /// Polygon Geometry Drawer.
             /// </summary>
-            sealed class PolygonGeometryDrawer : MeshBaseDrawer
+            sealed class PolygonGeometryDrawer : BaseDrawer
             {
                 /// <undoc/>
                 public PolygonGeometryDrawer()
@@ -337,7 +328,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Circle Geometry Drawer.
             /// </summary>
-            sealed class CircleGeometryDrawer : MeshBaseDrawer
+            sealed class CircleGeometryDrawer : BaseDrawer
             {
                 /// <undoc/>
                 public CircleGeometryDrawer()
@@ -385,7 +376,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Capsule Geometry Drawer.
             /// </summary>
-            sealed class CapsuleGeometryDrawer : MeshBaseDrawer
+            sealed class CapsuleGeometryDrawer : BaseDrawer
             {
                 /// <undoc/>
                 public CapsuleGeometryDrawer()
@@ -433,7 +424,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Line Drawer.
             /// </summary>
-            sealed class LineDrawer : MeshBaseDrawer
+            sealed class LineDrawer : BaseDrawer
             {
                 /// <undoc/>
                 public LineDrawer()
@@ -480,7 +471,7 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Point Drawer.
             /// </summary>
-            sealed class PointDrawer : MeshBaseDrawer
+            sealed class PointDrawer : BaseDrawer
             {
                 /// <undoc/>
                 public PointDrawer()

@@ -332,7 +332,13 @@ namespace UnityEditor.Build.Profile
         void OnDisable()
         {
             if (IsActiveBuildProfileOrPlatform())
+            {
                 EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
+                if (!overrideGlobalScenes)
+                    EditorUserBuildSettings.SetCachedActiveProfileScenes(EditorBuildSettings.globalScenes);
+                else
+                    EditorUserBuildSettings.SetCachedActiveProfileScenes(scenes);
+            }
 
             var playerSettingsDirty = EditorUtility.IsDirty(m_PlayerSettings);
             if (playerSettingsDirty)

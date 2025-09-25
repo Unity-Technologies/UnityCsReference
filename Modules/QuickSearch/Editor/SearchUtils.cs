@@ -1435,11 +1435,11 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(query))
                 return OpenDefaultQuickSearch();
 
-            providers ??= new [] { AssetProvider.type, AdbProvider.type, BuiltInSceneObjectsProvider.type};
+            providers ??= new [] { AssetProvider.type, BuiltInSceneObjectsProvider.type};
 
             return OpenWithContextualProviders(query,
                 providers,
-                contextualFlags: OpenWithContextualProvidersFlags.UseExplicitProvidersAsNormalProviders,
+                contextualFlags: OpenWithContextualProvidersFlags.None,
                 eventContext: "FindReferences");
         }
 

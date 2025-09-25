@@ -110,17 +110,15 @@ namespace UnityEditor
                     for (int i = 0; i < infos.Length; ++i)
                     {
                         IntegrationInfo info = infos[i];
-                        if (info.HasRequiredEntitlements())
-                        {
-                            string choiceName = info.isExperimental ? $"{info.name} (Experimental)" : info.name;
-                            classicEngineDropdown.choices.Add(choiceName);
-                            choiceToId.Add(choiceName, info.id);
+                        string choiceName = info.isExperimental ? $"{info.name} (Experimental)" : info.name;
+                        
+                        classicEngineDropdown.choices.Add(choiceName);
+                        choiceToId.Add(choiceName, info.id);
 
-                            if (currentSerializedId == info.id)
-                                currentChoiceIndex = choiceCount;
+                        if (currentSerializedId == info.id)
+                            currentChoiceIndex = choiceCount;
 
-                            choiceCount++;
-                        }
+                        choiceCount++;
                     }
 
                     classicEngineDropdown.value = classicEngineDropdown.choices[currentChoiceIndex];

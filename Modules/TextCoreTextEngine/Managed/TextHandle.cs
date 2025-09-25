@@ -242,7 +242,7 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
             get
             {
-                return useAdvancedText ? nativeSettings.text.Length : textInfo.characterCount;
+                return useAdvancedText ? TextLib.GetCharacterCount(textGenerationInfo) : textInfo.characterCount;
             }
         }
 

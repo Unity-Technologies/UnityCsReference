@@ -183,6 +183,11 @@ namespace UnityEditor
                 newField = new Vector4Field(preferredLabel);
                 ((BaseField<Vector4>)newField).onValidateValue += OnValidateValue;
             }
+            else if (property.propertyType == SerializedPropertyType.EntityId)
+            {
+                newField = new EntityIdField(preferredLabel);
+                ((BaseField<EntityId>)newField).onValidateValue += OnValidateValue;
+            }
 
             if (newField != null)
             {
@@ -248,6 +253,11 @@ namespace UnityEditor
         private Vector4 OnValidateValue(Vector4 value)
         {
             return new Vector4(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y), Mathf.Max(minAttribute.min, value.z), Mathf.Max(minAttribute.min, value.w));
+        }
+
+        private EntityId OnValidateValue(EntityId value)
+        {
+            return EntityId.From(Mathf.Max((int)minAttribute.min, value.GetRawData()));
         }
     }
 

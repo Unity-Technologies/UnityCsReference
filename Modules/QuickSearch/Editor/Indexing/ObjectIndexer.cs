@@ -651,6 +651,10 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, fieldName, p.hash128Value.ToString(), saveKeyword: true);
                     LogProperty(fieldName, p, propositionGenerationOptions, p.hash128Value);
                     break;
+                case SerializedPropertyType.EntityId:
+                    IndexProperty(documentIndex, fieldName, p.entityIdValue.ToString(), saveKeyword: true);
+                    LogProperty(fieldName, p, propositionGenerationOptions, p.entityIdValue);
+                    break;
             }
         }
 

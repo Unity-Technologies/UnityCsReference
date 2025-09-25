@@ -35,7 +35,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public static readonly ReadOnlyCollection<string> k_RequiredPackagesForRemoteInstances = new List<string>()
         {
-            "com.unity.services.multiplayer@1.1.4",
+            "com.unity.services.multiplayer",
         }.AsReadOnly();
 
         [SerializeField] private bool m_EnableEditors = true;
@@ -509,72 +509,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             missingPacks = new List<string>();
 
-            foreach (var packIds in k_RequiredPackagesForRemoteInstances)
-            {
-                var nameParts = packIds.Split('@');
-                var packageName = nameParts[0];
-                var requiredVersion = nameParts[1];
-                var packInfo = UnityEditor.PackageManager.PackageInfo.FindForPackageName(packageName);
-                var packageIsInstalled = false;
-                if (packInfo != null)
-                {
-                    var installedVersion = packInfo.version;
-                    packageIsInstalled = IsPackageVersionCompatible(installedVersion, requiredVersion);
-                }
-
-                var packInstalled = packInfo != null && packageIsInstalled;
-                if (!packInstalled)
-                    missingPacks.Add(packIds);
-            }
-            return missingPacks.Count == 0;
-        }
-
-        private static bool IsPackageVersionCompatible(string installedVersion, string requiredVersion)
-        {
-            SplitPackageVersion(installedVersion, out var installedMajor, out var installedMinor, out var installedPatch, out var installedPre, out var isInstalledPre);
-            SplitPackageVersion(requiredVersion, out var requiredMajor, out var requiredMinor, out var requiredPatch, out var requiredPre, out var isRequiredPre);
-
-            if (installedMajor < requiredMajor)
-                return false;
-
-            if (installedMajor > requiredMajor)
+            if (IPlayModeServices.Instance != null)
                 return true;
 
-            if (installedMinor < requiredMinor)
-                return false;
-
-            if (installedMinor > requiredMinor)
-                return true;
-
-            if (installedPatch < requiredPatch)
-                return false;
-
-            if (installedPatch > requiredPatch)
-                return true;
-
-            if (isInstalledPre && !isRequiredPre)
-                return false;
-
-            if (isInstalledPre && isRequiredPre && installedPre < requiredPre)
-                return false;
-
-            return true;
-        }
-
-        private static void SplitPackageVersion(string version, out int major, out int minor, out int patch, out int pre, out bool isPre)
-        {
-            var regex = new System.Text.RegularExpressions.Regex(@"(\d+)\.(\d+)\.(\d+)(?:-pre\.(\d+))?");
-            var match = regex.Match(version);
-
-            if (!match.Success)
-                throw new ArgumentException($"Invalid version string: {version}");
-
-            major = int.Parse(match.Groups[1].Value);
-            minor = int.Parse(match.Groups[2].Value);
-            patch = int.Parse(match.Groups[3].Value);
-
-            isPre = match.Groups[4].Success;
-            pre = isPre ? int.Parse(match.Groups[4].Value) : -1;
+            missingPacks.AddRange(k_RequiredPackagesForRemoteInstances);
+            return false;
         }
     }
 }

@@ -71,10 +71,6 @@ namespace UnityEditor
                         break;
                 }
                 
-                handlePos = Tools.pivotMode == PivotMode.Pivot ?
-                    points.GetPosition(selection[0]) :
-                    selection.Aggregate(handlePos, (current, index) => current + points.GetPosition(index)) / selection.Count;
-
                 if (cloudTransform != null)
                     handlePos = cloudTransform.TransformPoint(handlePos);
 

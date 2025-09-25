@@ -180,8 +180,27 @@ namespace UnityEngine
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static EntityId From(int input) => new EntityId {m_Data = input};
+
         internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static EntityId Parse(string input)
+        {
+            EntityId res = EntityId.None;
+
+            if (int.TryParse(input, out var intResult))
+                res = From(intResult);
+
+            return res;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal int GetRawData()
+        {
+            return m_Data;
+        }
     }
 
     internal static class EntityIdExtensions

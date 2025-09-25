@@ -703,9 +703,9 @@ namespace Unity.UI.Builder
 
             var propertyField = new PropertyField { bindingPath = serializedProperty.propertyPath };
             drawerRoot.Add(propertyField);
-            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, context.visualTree, context.element != null );
+            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, context.visualTree, context.element != null);
 
-            // The hiearachy is not complete yet so we need to defer the update
+            // The hierarchy is not complete yet so we need to defer the update
             root.schedule.Execute(() => UpdateCustomPropertyDrawerAttributeOverrideStyle(drawerRoot));
         }
 
@@ -808,6 +808,9 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
+                    var serializedReferencesFound = TrackPropertySerializedReferences(property, fieldElement);
+
+                    fieldElement.name = property.name;
                     var propertyField = new PropertyField
                     {
                         name = builderSerializedPropertyFieldName,
@@ -824,7 +827,16 @@ namespace Unity.UI.Builder
                         TrackElementPropertyValue(propertyField, property);
                     }
 
-                    fieldElement.Add(propertyField);
+                    // if a serialized reference was found, we need to add the property field the CustomPropertyDrawerField,
+                    // which is the child of the UxmlSerializedDataAttributeField.
+                    // This is to ensure that the CustomPropertyDrawerField override can be updated correctly.
+                    if (serializedReferencesFound)
+                    {
+                        var customPropertyDrawerField = fieldElement.Q<CustomPropertyDrawerField>();
+                        customPropertyDrawerField.Insert(0, propertyField);
+                    }
+                    else
+                        fieldElement.Add(propertyField);
 
                     propertyField.Bind(context.rootSerializedObject);
 
@@ -848,6 +860,26 @@ namespace Unity.UI.Builder
             SetupStyleRow(styleRow, fieldElement, attribute);
 
             return styleRow;
+        }
+
+        bool TrackPropertySerializedReferences(SerializedProperty property,
+            UxmlSerializedDataAttributeField fieldElement)
+        {
+            var drawerRoot = new CustomPropertyDrawerField();
+            var attributeDescription = context.uxmlSerializedDataDescription.FindAttributeWithPropertyName(property.name);
+            if (attributeDescription == null || !inspector.batchedChangesController.FindSerializedReferenceAndTrackChildProperties((property), p =>
+            {
+                var attributeField = new UxmlSerializedDataAttributeField { name = p.name };
+                attributeField.SetLinkedAttributeDescription(attributeDescription);
+                drawerRoot.Add(attributeField);
+                inspector.batchedChangesController.TrackPropertyValue(attributeField, p, this, uxmlDocument);
+            }))
+                return false;
+
+            // We found a serialized reference, so we need to add the item root to the FieldElement.
+            drawerRoot.AddManipulator(new ContextualMenuManipulator(BuildCustomPropertyDrawerMenu));
+            fieldElement.Add(drawerRoot);
+            return true;
         }
 
         void OnPropertyFieldBound(SerializedPropertyBindEvent evt)

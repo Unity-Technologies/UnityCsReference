@@ -667,8 +667,8 @@ namespace UnityEditor
             }
 
             var scene = goItem.scene;
-            var entityId = scene.defaultParent;
-            if (entityId != EntityId.None && (EditorSceneManager.GetActiveScene().guid == scene.guid || PrefabStageUtility.GetCurrentPrefabStage() != null))
+            var defaultParentId = scene.defaultParent;
+            if (defaultParentId != EntityId.None && goItem.id == defaultParentId && (EditorSceneManager.GetActiveScene().guid == scene.guid || PrefabStageUtility.GetCurrentPrefabStage() != null))
             {
                 lineStyle = Styles.lineBoldStyle;
             }

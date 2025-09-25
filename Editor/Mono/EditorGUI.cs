@@ -7591,6 +7591,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Bounds:
                 case SerializedPropertyType.BoundsInt:
                 case SerializedPropertyType.Hash128:
+                case SerializedPropertyType.EntityId:
                     return false;
             }
 
@@ -7880,6 +7881,16 @@ namespace UnityEditor
                         if (EndChangeCheck())
                         {
                             property.hash128Value = Hash128.Parse(newValue);
+                        }
+                        break;
+                    }
+                    case SerializedPropertyType.EntityId:
+                    {
+                        BeginChangeCheck();
+                        string newValue = TextField(position, label, property.entityIdValue.ToString());
+                        if (EndChangeCheck())
+                        {
+                            property.entityIdValue = EntityId.Parse(newValue);
                         }
                         break;
                     }

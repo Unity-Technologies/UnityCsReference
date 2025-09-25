@@ -219,6 +219,8 @@ namespace UnityEngine
 
         public virtual bool supportsMachineLearning => UnityEngine.SystemInfo.supportsMachineLearning;
 
+        public virtual bool supportsMemorylessTextures => UnityEngine.SystemInfo.supportsMemorylessTextures;
+
         public virtual bool supportsSetConstantBuffer => UnityEngine.SystemInfo.supportsSetConstantBuffer;
 
         public virtual int constantBufferOffsetAlignment => UnityEngine.SystemInfo.constantBufferOffsetAlignment;
