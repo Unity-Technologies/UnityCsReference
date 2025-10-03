@@ -1,11 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <NoWarn>1071;1701</NoWarn>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ResolveNuGetPackages>false</ResolveNuGetPackages>
