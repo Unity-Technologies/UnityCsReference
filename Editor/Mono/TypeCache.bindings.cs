@@ -12,7 +12,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Runtime/Mono/TypeCache.h")]
+    [NativeHeader("Runtime/Scripting/TypeCache.h")]
     public static partial class TypeCache
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -700,5 +700,7 @@ namespace UnityEditor
 
         [ThreadSafe]
         static extern TypeCollection GetTypesDerivedFromType(Type parentType);
+
+        internal static extern ulong GetCurrentAge();
     }
 }

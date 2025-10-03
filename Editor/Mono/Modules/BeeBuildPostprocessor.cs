@@ -637,8 +637,7 @@ namespace UnityEditor.Modules
                         if (EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", activeBuildStatus.Description, progress))
                         {
                             EditorUtility.DisplayCancelableProgressBar("Incremental Player Build", "Canceling build", 1.0f);
-                            cancellationTokenSource.Cancel();
-                            throw new OperationCanceledException();
+                            cancellationTokenSource.Cancel();                 
                         }
                     }
                     args.report.EndBuildStep(buildStep);
@@ -671,6 +670,13 @@ namespace UnityEditor.Modules
             catch (BuildFailedException)
             {
                 throw;
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException is OperationCanceledException or BuildFailedException)
+                    throw e.InnerException;
+
+                throw new BuildFailedException(e);
             }
             catch (Exception e)
             {

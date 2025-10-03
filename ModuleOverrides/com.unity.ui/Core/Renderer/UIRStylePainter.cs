@@ -405,7 +405,16 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
 
             TextInfo textInfo = te.uitkTextHandle.Update();
-            DrawTextInfo(textInfo, te.contentRect.min, true);
+
+            // If multiple colors are required (e.g., color tags are used), then ignore the dynamic-color hint
+            // since we cannot store multiple colors for a given text element.
+            bool hasMultipleColors = textInfo.hasMultipleColors;
+            if (hasMultipleColors)
+                te.renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
+            else
+                te.renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
+
+            DrawTextInfo(textInfo, te.contentRect.min, !hasMultipleColors);
         }
 
         private TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo();

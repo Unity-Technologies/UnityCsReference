@@ -5,6 +5,7 @@
 //#define UIR_DEBUG_CHAIN_BUILDER
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Profiling;
 
@@ -964,11 +965,18 @@ namespace UnityEngine.UIElements.UIR
         Count
     }
 
+    [Flags]
+    enum RenderDataFlags
+    {
+        IsIgnoringDynamicColorHint = 1 << 0,
+    }
+
     internal struct RenderChainVEData
     {
         internal VisualElement prev, next; // This is a flattened view of the visual element hierarchy
         internal VisualElement groupTransformAncestor, boneTransformAncestor;
         internal VisualElement prevDirty, nextDirty; // Embedded doubly-linked list for dirty updates
+        internal RenderDataFlags flags;
         internal int hierarchyDepth; // 0 is for the root
         internal RenderDataDirtyTypes dirtiedValues;
         internal uint dirtyID;
@@ -998,6 +1006,12 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand lastClosingOrLastCommand { get { return lastClosingCommand ?? lastCommand; } }
         static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
         static internal bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
+
+        public bool isIgnoringDynamicColorHint
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsIgnoringDynamicColorHint) == RenderDataFlags.IsIgnoringDynamicColorHint;
+        }
     }
 
     struct TextureEntry
