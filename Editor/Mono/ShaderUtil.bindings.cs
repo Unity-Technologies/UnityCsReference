@@ -158,7 +158,7 @@ namespace UnityEditor
         extern public   static bool hardwareSupportsRectRenderTexture { get; }
         extern internal static bool hardwareSupportsFullNPOT { get; }
 
-
+        extern internal static void RequestLoadRenderDoc();
         extern internal static void RecreateGfxDevice();
         extern internal static void RecreateSkinnedMeshResources();
         extern internal static void ReloadAllShaders();
