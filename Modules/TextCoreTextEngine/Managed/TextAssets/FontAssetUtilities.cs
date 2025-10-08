@@ -58,6 +58,9 @@ namespace UnityEngine.TextCore.Text
 
             if (isItalic || fontWeight != TextFontWeight.Regular)
             {
+                if (!canWriteOnAsset && sourceFontAsset.m_CharacterLookupDictionary == null)
+                    return null;
+
                 if (sourceFontAsset.GetCharacterInLookupCache(unicode, fontStyle, fontWeight, out character))
                 {
                     if (character.textAsset != null)

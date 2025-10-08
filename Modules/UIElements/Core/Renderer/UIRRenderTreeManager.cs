@@ -325,7 +325,6 @@ namespace UnityEngine.UIElements.UIR
             device.EvaluateChain(
                 m_RootRenderTree.firstCommand,
                 m_DefaultMat,
-                m_DefaultMat,
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 null,
@@ -340,21 +339,15 @@ namespace UnityEngine.UIElements.UIR
             List<CommandList> frameCommandLists = device?.currentFrameCommandLists;
             if (drawInCameras && frameCommandLists != null)
             {
-                for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
+                foreach (var r in m_RenderersToReset)
                 {
-                    var cmdList = frameCommandLists[cmdListIndex];
-                    if (cmdList.m_Owner.isWorldSpaceRootUIDocument)
+                    if (r != null)
                     {
-                        var rootUIDocumentElement = cmdList.m_Owner as UIDocumentRootElement;
-                        Debug.Assert(rootRenderTree != null); // Otherwise the flag should not be set
-                        UIRenderer renderer = rootUIDocumentElement.uiRenderer;
-                        if (!m_RenderersToReset.Contains(renderer))
-                        {
-                            renderer.ResetDrawCallData();
-                            m_RenderersToReset.Add(renderer);
-                        }
+                        r.ResetDrawCallData();
                     }
                 }
+
+                m_RenderersToReset.Clear();
 
                 for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
                 {
@@ -367,10 +360,9 @@ namespace UnityEngine.UIElements.UIR
 
                         int safeFrameIndex = (int)device.frameIndex % commandLists.Length;
                         renderer.AddDrawCallData(safeFrameIndex, cmdListIndex, cmdList.m_Material);
+                        m_RenderersToReset.Add(renderer);
                     }
                 }
-
-                m_RenderersToReset.Clear();
             }
 
             device.SynchronizeMaterials();
@@ -438,13 +430,6 @@ namespace UnityEngine.UIElements.UIR
                 GL.Clear(true, true, Color.clear, UIRUtility.k_ClearZ);
             }
 
-            if (forceGammaRendering)
-                m_DefaultMat.EnableKeyword(Shaders.k_ForceGammaKeyword);
-            else
-                m_DefaultMat.DisableKeyword(Shaders.k_ForceGammaKeyword);
-
-            m_DefaultMat.SetPass(0);
-
             var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
             GL.LoadProjectionMatrix(projection);
             GL.modelview = Matrix4x4.identity;
@@ -455,7 +440,6 @@ namespace UnityEngine.UIElements.UIR
             m_BlockDirtyRegistration = drawInCameras; // For now, we only enable it for drawInCameras
             device.EvaluateChain(
                 renderTree.firstCommand,
-                m_DefaultMat,
                 m_DefaultMat,
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,

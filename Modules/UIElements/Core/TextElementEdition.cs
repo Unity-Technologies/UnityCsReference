@@ -328,7 +328,25 @@ namespace UnityEngine.UIElements
                 if (!edition.isReadOnly)
                     editingManipulator?.HandleEventBubbleUp(evt);
 
-                elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
+                if (elementPanel?.contextualMenuManager?.CheckIfEventMatches(evt) == true)
+                {
+                    // UUM-102230: On PointerDown, Display menu after the target has been focused
+                    if (evt.eventTypeId == PointerDownEvent.TypeId() && !focusController.IsFocused(this))
+                    {
+                        var evtTimestamp = evt.timestamp;
+                        RegisterCallbackOnce<FocusEvent>(_ =>
+                        {
+                            // Don't react after event was disposed and we didn't get focus for any reason.
+                            if (evt.timestamp == evtTimestamp)
+                                elementPanel?.contextualMenuManager?.DisplayMenu(evt, this);
+                        });
+                    }
+                    else
+                    {
+                        elementPanel.contextualMenuManager.DisplayMenu(evt, this);
+                    }
+                    evt.StopPropagation();
+                }
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())
                 {

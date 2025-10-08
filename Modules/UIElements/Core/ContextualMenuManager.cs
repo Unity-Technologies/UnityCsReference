@@ -25,6 +25,16 @@ namespace UnityEngine.UIElements
         public abstract void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler);
 
         /// <summary>
+        /// Checks if the event triggers the display of the contextual menu. This method does not display the menu.
+        /// </summary>
+        /// <param name="evt">The event to inspect.</param>
+        /// <returns>Returns true if the event should trigger the display of the contextual menu, false otherwise.</returns>
+        /// <remarks>
+        /// This is an abstract method. Each concrete implementation of the ContextualMenuManager defines the events that will display the menu.
+        /// </remarks>
+        internal abstract bool CheckIfEventMatches(EventBase evt);
+
+        /// <summary>
         /// Displays the contextual menu.
         /// </summary>
         /// <param name="triggerEvent">The event that triggered the display of the menu.</param>

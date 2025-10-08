@@ -86,6 +86,7 @@ namespace UnityEditorInternal
                     return EditorGUIUtility.FindTexture(typeof(ScriptableObject));
 
                 case "vulkandevicefilter":
+                case "d3d12devicefilter":
                     return EditorGUIUtility.FindTexture(typeof(EditorSettings));
 
                 default: return null;

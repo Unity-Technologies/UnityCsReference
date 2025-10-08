@@ -2590,12 +2590,7 @@ namespace UnityEditor
         {
             Dictionary<int, IEditorElement> editorToElementMap = new Dictionary<int, IEditorElement>();
             var currentElements = editorsElement.Children().OfType<IEditorElement>().ToList();
-            if (editors.Length == 0)
-            {
-                return null;
-            }
-
-            if (rootVisualElement.panel == null)
+            if ((editors.Length == 0) || (rootVisualElement.panel == null && currentElements.Count == 0))
             {
                 return null;
             }

@@ -3786,6 +3786,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\CustomRenderTextureManager.cs">
       <Link>Runtime\Export\Graphics\CustomRenderTextureManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\D3D12DeviceFilterLists.bindings.cs">
+      <Link>Runtime\Export\Graphics\D3D12DeviceFilterLists.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Display.bindings.cs">
       <Link>Runtime\Export\Graphics\Display.bindings.cs</Link>
     </Compile>

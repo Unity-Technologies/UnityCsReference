@@ -635,18 +635,30 @@ namespace UnityEngine.UIElements.UIR
             public bool mustApplyMaterial;
             public bool mustApplyBatchProps; // Indicates that the "stateMatProps" must be applied.
             public bool mustApplyStencil;
+
+            public bool isSerializing;
+
+            public VisualElement commandListOwner;
         }
 
         // Before leaving an iteration over a command, the state that is altered by a draw command must be applied.
         // This must ONLY be called after stash/kick of the previous ranges has been performed.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, ref EvaluationState st)
+        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, bool kickRanges, Texture gradientSettings, Texture shaderInfo, ref EvaluationState st)
         {
             if (newMatDiffers)
             {
                 st.curState.material = newMat;
                 st.mustApplyMaterial = true;
+
+                // Add another material to the current owner
+                if (st.isSerializing)
+                    SetupCommandList(ref st, gradientSettings, shaderInfo, cmd.state);
             }
+
+            if (kickRanges)
+                // We're starting a new batch. It could be because of a material change or other reason.
+                m_TextureSlotManager.StartNewBatch();
 
             st.curPage = cmd.mesh.allocPage;
 
@@ -671,39 +683,26 @@ namespace UnityEngine.UIElements.UIR
 
         // Before calling KickRanges, this method MUST be called to ensure that any information previously stored
         // in the property blocks is applied.
-        void ApplyBatchState(ref EvaluationState st, Texture gradientSettings, Texture shaderInfo)
+        void ApplyBatchState(ref EvaluationState st)
         {
             if (st.mustApplyMaterial)
             {
+                m_DrawStats.materialSetCount++;
+
                 if (st.activeCommandList == null)
                 {
-                    m_DrawStats.materialSetCount++;
+                    Debug.Assert(isFlat); // World-space rendering should not go through this code path.
 
-                    if ((st.curState.material != Shaders.runtimeMaterial)
-                        && (st.curState.material != Shaders.editorMaterial)
-                        )
-                    {
-                        if (forceGammaRendering)
-                        {
-                            st.curState.material.EnableKeyword(Shaders.k_ForceGammaKeyword);
-                        }
-                        else
-                        {
-                            st.curState.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
-                        }
-                    }
+                    if (forceGammaRendering)
+                        st.curState.material.EnableKeyword(Shaders.k_ForceGammaKeyword);
+                    else
+                        st.curState.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
 
                     st.curState.material.SetPass(0); // No multipass support, should it be even considered?
-                    if (st.constantProps != null)
-                        Utility.SetPropertyBlock(st.constantProps);
+                    Utility.SetPropertyBlock(st.constantProps);
 
                     st.mustApplyBatchProps = true;
                     st.mustApplyStencil = true;
-                }
-                else
-                {
-                    Material material = GetOrCreateMaterial(st.curState.material);
-                    CommandList cmdList = GetOrCreateCommandList(ref st, st.activeCommandList.m_Owner, material, gradientSettings, shaderInfo);
                 }
             }
 
@@ -720,13 +719,12 @@ namespace UnityEngine.UIElements.UIR
                 ++m_DrawStats.stencilRefChanges;
                 if (st.activeCommandList == null)
                     Utility.SetStencilState(m_DefaultStencilState, st.curState.stencilRef);
+                // else Not supported yet in world-space
             }
 
             st.mustApplyMaterial = false;
             st.mustApplyBatchProps = false;
             st.mustApplyStencil = false;
-
-            m_TextureSlotManager.StartNewBatch();
         }
 
         // This function is only called when we are rendering in worldSpace.
@@ -761,7 +759,6 @@ namespace UnityEngine.UIElements.UIR
 
         public unsafe void EvaluateChain(
             RenderChainCommand head,
-            Material initialMat,
             Material defaultMat,
             Texture gradientSettings,
             Texture shaderInfo,
@@ -787,10 +784,7 @@ namespace UnityEngine.UIElements.UIR
 
             var st = new EvaluationState
             {
-                constantProps = m_ConstantProps,
-                batchProps = m_BatchProps,
                 defaultMat = defaultMat,
-                curState = new State { material = initialMat },
                 mustApplyBatchProps = true,
                 mustApplyStencil = true
             };
@@ -802,6 +796,14 @@ namespace UnityEngine.UIElements.UIR
                 // affects the root in some way.
                 m_DefaultCommandList.Reset(null, null);
                 st.activeCommandList = m_DefaultCommandList;
+                st.isSerializing = true;
+            }
+            else
+            {
+                st.constantProps = m_ConstantProps;
+                InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfo);
+                st.batchProps = m_BatchProps;
+                st.batchProps.Clear();
             }
 
             var drawParams = m_DrawParams;
@@ -810,12 +812,7 @@ namespace UnityEngine.UIElements.UIR
             RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
 
             m_TextureSlotManager.Reset();
-
-            st.batchProps.Clear();
-
-            InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfo);
-            if (!isSerializing)
-                Utility.SetPropertyBlock(st.constantProps);
+            m_TextureSlotManager.StartNewBatch();
 
             while (head != null)
             {
@@ -867,42 +864,44 @@ namespace UnityEngine.UIElements.UIR
                         stashRange = true;
                         kickRanges = true;
                     }
-
-                    if (head.mesh.allocPage != st.curPage)
+                    else
                     {
-                        mustApplyCmdState = true;
-                        stashRange = true;
-                        kickRanges = true;
-                    }
-                    else if (curDrawIndex != head.mesh.allocIndices.start + head.indexOffset)
-                        stashRange = true; // Same page but discontinuous range.
-
-                    if (head.state.texture != TextureId.invalid)
-                    {
-                        mustApplyCmdState = true;
-                        textureSlot = m_TextureSlotManager.IndexOf(head.state.texture);
-                        if (textureSlot < 0 && m_TextureSlotManager.FreeSlots < 1)
-                        { // No more slots available.
+                        if (head.mesh.allocPage != st.curPage)
+                        {
+                            mustApplyCmdState = true;
                             stashRange = true;
                             kickRanges = true;
                         }
-                    }
+                        else if (curDrawIndex != head.mesh.allocIndices.start + head.indexOffset)
+                            stashRange = true; // Same page but discontinuous range.
 
-                    if (head.state.stencilRef != st.curState.stencilRef)
-                    {
-                        mustApplyCmdState = true;
-                        stashRange = true;
-                        kickRanges = true;
-                    }
+                        if (head.state.texture != TextureId.invalid)
+                        {
+                            mustApplyCmdState = true;
+                            textureSlot = m_TextureSlotManager.IndexOf(head.state.texture);
+                            if (textureSlot < 0 && m_TextureSlotManager.FreeSlots < 1)
+                            { // No more slots available.
+                                stashRange = true;
+                                kickRanges = true;
+                            }
+                        }
 
-                    if (stashRange && isLastRange)
-                    {
-                        // The range we'll close is the last that we can store.
-                        // TODO: This only works since ranges are serialized and will break once the ranges are
-                        //       truly processed in a multi-threaded fashion without copies. When this happens, a new
-                        //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
-                        //       the time being, calling KickRanges will make the whole buffer available.
-                        kickRanges = true;
+                        if (head.state.stencilRef != st.curState.stencilRef)
+                        {
+                            mustApplyCmdState = true;
+                            stashRange = true;
+                            kickRanges = true;
+                        }
+
+                        if (stashRange && isLastRange)
+                        {
+                            // The range we'll close is the last that we can store.
+                            // TODO: This only works since ranges are serialized and will break once the ranges are
+                            //       truly processed in a multi-threaded fashion without copies. When this happens, a new
+                            //       mechanism will need to be implemented to handle the "ranges-buffer-full" condition. For
+                            //       the time being, calling KickRanges will make the whole buffer available.
+                            kickRanges = true;
+                        }
                     }
                 }
                 else
@@ -955,7 +954,7 @@ namespace UnityEngine.UIElements.UIR
                     m_DrawStats.totalIndices += (uint)head.indexCount;
 
                     if (mustApplyCmdState)
-                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, ref st);
+                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, kickRanges, gradientSettings, shaderInfo, ref st);
                     head = head.next;
                     continue;
                 }
@@ -965,7 +964,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     if (rangesReady > 0)
                     {
-                        ApplyBatchState(ref st, gradientSettings, shaderInfo);
+                        ApplyBatchState(ref st);
                         KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
                     }
 
@@ -973,7 +972,8 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (head.type == CommandType.CutRenderChain)
                         {
-                            CommandList cmdList = GetOrCreateCommandList(ref st, head.owner.owner, defaultMat, gradientSettings, shaderInfo);
+                            st.curState.material = null; // Force command list to be created on next draw command
+                            st.commandListOwner = head.owner.owner;
                         }
 
                         head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
@@ -999,7 +999,7 @@ namespace UnityEngine.UIElements.UIR
                 } // If kick ranges
 
                 if (head.type == CommandType.Draw && mustApplyCmdState)
-                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, ref st);
+                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, kickRanges, gradientSettings, shaderInfo, ref st);
 
                 head = head.next;
             } // While there are commands to execute
@@ -1013,7 +1013,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (rangesReady > 0)
             {
-                ApplyBatchState(ref st, gradientSettings, shaderInfo);
+                ApplyBatchState(ref st);
                 KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
             }
 
@@ -1035,6 +1035,29 @@ namespace UnityEngine.UIElements.UIR
                 constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
         }
 
+        private void SetupCommandList(ref EvaluationState st, Texture gradientSettings, Texture shaderInfo, State commandState)
+        {
+            if (st.commandListOwner == null)
+                // This is the default command list. Ignore material changes.
+                return;
+
+            CommandList cmdList = GetOrCreateCommandList(ref st, st.commandListOwner, st.curState.material, gradientSettings, shaderInfo);
+            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfo);
+
+            st.activeCommandList = cmdList;
+
+            // When a CommandList is used, we should not be modifying the batchprops,
+            // only those owned by the CommandList will be filled at execution time.
+            st.constantProps = null;
+            st.batchProps = null;
+
+            st.mustApplyBatchProps = true;
+            st.mustApplyStencil = true;
+
+            m_TextureSlotManager.Reset();
+
+        }
+
         private CommandList GetOrCreateCommandList(ref EvaluationState st, VisualElement owner, Material material, Texture gradientSettings, Texture shaderInfo)
         {
             // Reuse command lists whenever possible
@@ -1049,19 +1072,6 @@ namespace UnityEngine.UIElements.UIR
                 cmdList = new CommandList(owner, m_VertexDecl, m_DefaultStencilState, material);
                 currentFrameCommandLists.Add(cmdList);
             }
-
-            st.activeCommandList = cmdList;
-            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfo);
-
-            // When a CommandList is used, we should not be modifying the batchprops,
-            // only those owned by the CommandList will be filled at execution time.
-            st.constantProps = null;
-            st.batchProps = null;
-
-            st.mustApplyBatchProps = true;
-            st.mustApplyStencil = true;
-
-            m_TextureSlotManager.Reset();
 
             ++currentFrameCommandListCount;
             return cmdList;

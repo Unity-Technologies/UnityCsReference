@@ -2005,5 +2005,6 @@ namespace UnityEditor
         [NativeMethod("GetTemplateCustomValue")]
         internal extern string GetTemplateCustomValue_Internal(string name);
 
+        public static extern D3D12DeviceFilterLists d3D12DeviceFilterListAsset { get; set; }
     }
 }

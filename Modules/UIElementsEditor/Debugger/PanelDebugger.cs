@@ -54,6 +54,8 @@ namespace UnityEditor.UIElements.Debugger
         private IVisualElementScheduledItem m_ConnectWindowScheduledItem;
         private IVisualElementScheduledItem m_RestoreSelectionScheduledItem;
 
+        [NonSerialized] private bool m_Initialized;
+
         protected void TryFocusCorrespondingWindow(ScriptableObject panelOwner)
         {
             var hostView = panelOwner as HostView;
@@ -108,10 +110,15 @@ namespace UnityEditor.UIElements.Debugger
 
             if (!string.IsNullOrEmpty(m_LastVisualTreeName))
                 m_RestoreSelectionScheduledItem = m_Toolbar.schedule.Execute(() => RestorePanelSelection(true)).Every(500);
+
+            m_Initialized = true;
         }
 
         public void OnDisable()
         {
+            if (!m_Initialized)
+                return;
+
             var lastTreeName = m_LastVisualTreeName;
             var lastOwnerObjectName = m_LastOwnerObjectName;
             panelDebug?.DetachDebugger(this);

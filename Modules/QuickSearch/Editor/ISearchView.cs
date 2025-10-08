@@ -258,6 +258,7 @@ namespace UnityEditor.Search
         int cursorIndex { get; }
         string text { get; }
 
+        // This should focus the editable search field of an ISearchField, whether it is a TextField only or a QueryBuilder.
         void Focus();
         VisualElement GetTextElement();
     }

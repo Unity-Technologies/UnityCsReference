@@ -76,6 +76,7 @@ namespace UnityEditor
             public static readonly GUIContent otherSettingsTitle = EditorGUIUtility.TrTextContent("Other Settings");
             public static readonly GUIContent renderingTitle = EditorGUIUtility.TrTextContent("Rendering");
             public static readonly GUIContent vulkanSettingsTitle = EditorGUIUtility.TrTextContent("Vulkan Settings");
+            public static readonly GUIContent d3d12SettingsTitle = EditorGUIUtility.TrTextContent("D3D12 Settings");
             public static readonly GUIContent identificationTitle = EditorGUIUtility.TrTextContent("Identification");
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
@@ -157,6 +158,7 @@ namespace UnityEditor
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
             public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
             public static readonly GUIContent vulkanEnableCommandBufferRecycling = EditorGUIUtility.TrTextContent("Recycle command buffers*", "When enabled, command buffers are recycled after they have been executed as opposed to being freed.");
+            public static readonly GUIContent d3d12FilterLists = EditorGUIUtility.TrTextContent("Device Filtering Asset", "This asset defines one or more device filter lists that may allow or disallow the use of the D3D12 API on a given device or a set a preferred graphics mode for devices that match a given filter.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching", "Toggle Dynamic Batching. Note: Sprites are always dynamically batched.");
@@ -342,6 +344,9 @@ namespace UnityEditor
         SerializedProperty m_VulkanEnableLateAcquireNextImage;
         SerializedProperty m_VulkanEnableCommandBufferRecycling;
         SerializedProperty m_VulkanEnableSetSRGBWrite;
+
+        // D3D12
+        SerializedProperty m_D3D12FilterListsAsset;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -607,6 +612,8 @@ namespace UnityEditor
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
             m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
+
+            m_D3D12FilterListsAsset         = FindPropertyAssert("d3d12DeviceFilterListAsset");
 
             m_OverrideDefaultApplicationIdentifier = FindPropertyAssert("overrideDefaultApplicationIdentifier");
             m_ApplicationIdentifier         = FindPropertyAssert("applicationIdentifier");
@@ -2075,6 +2082,7 @@ namespace UnityEditor
                 {
                     OtherSectionRenderingGUI(platform, settingsExtension);
                     OtherSectionVulkanSettingsGUI(platform, settingsExtension);
+                    OtherSectionD3D12SettingsGUI(platform, settingsExtension);
                     OtherSectionIdentificationGUI(platform, settingsExtension);
                 }
                 OtherSectionConfigurationGUI(platform, settingsExtension);
@@ -2908,6 +2916,15 @@ namespace UnityEditor
 
             if (settingsExtension != null && settingsExtension.ShouldShowVulkanSettings())
                 settingsExtension.VulkanSectionGUI();
+
+            EditorGUILayout.Space();
+        }
+
+        private void OtherSectionD3D12SettingsGUI(BuildPlatform buildPlatform, ISettingEditorExtension settingsExtension)
+        {
+            GUILayout.Label(SettingsContent.d3d12SettingsTitle, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_D3D12FilterListsAsset, SettingsContent.d3d12FilterLists);
 
             EditorGUILayout.Space();
         }

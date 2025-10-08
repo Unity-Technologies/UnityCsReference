@@ -25,7 +25,7 @@ namespace UnityEditor
     }
 
     [Serializable]
-    internal abstract class PlayModeView : EditorWindow
+    internal abstract class PlayModeView : EditorWindow, ISerializationCallbackReceiver
     {
         static List<PlayModeView> s_PlayModeViews = new List<PlayModeView>();
 
@@ -51,7 +51,7 @@ namespace UnityEditor
 
         protected bool m_SwitchingPlayModeViewType = false;
 
-        private const int k_MaxSupportedDisplays = 8;
+        protected const int k_MaxSupportedDisplays = 8;
 
         static Dictionary<Type, string> s_AvailableWindowTypes;
 
@@ -87,10 +87,11 @@ namespace UnityEditor
             get { return m_TargetDisplay; }
             protected set
             {
-                if (m_TargetDisplay != value)
-                    SetDisplayViewSize(value, m_TargetSize);
+                var targetDisplayValue = GetValidTargetDisplay(value);
+                if (m_TargetDisplay != targetDisplayValue)
+                    SetDisplayViewSize(targetDisplayValue, m_TargetSize);
 
-                m_TargetDisplay = value;
+                m_TargetDisplay = targetDisplayValue;
             }
         }
 
@@ -233,7 +234,6 @@ namespace UnityEditor
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     // Display Targets can have valid targets from 0 to 7.
-                    System.Diagnostics.Debug.Assert(targetDisplay < k_MaxSupportedDisplays, "Display Target is Out of Range");
                     currentTargetDisplay = targetDisplay;
                 }
 
@@ -552,5 +552,23 @@ namespace UnityEditor
         }
 
         protected virtual void OnEnterPlayModeBehaviorChange() {}
+
+        int GetValidTargetDisplay(int display)
+        {
+            if (display < 0 || display >= k_MaxSupportedDisplays)
+                display = 0;
+
+            return display;
+        }
+        
+        public virtual void OnBeforeSerialize()
+        {
+        }
+
+        public virtual void OnAfterDeserialize()
+        {
+            // UUM-115918: Ensure deserialized target display is always valid, otherwise opening GameView will crash the editor.
+            m_TargetDisplay = GetValidTargetDisplay(m_TargetDisplay);
+        }
     }
 }
