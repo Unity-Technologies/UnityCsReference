@@ -613,16 +613,16 @@ namespace Unity.UI.Builder
                 // the choice of either keeping the UI Builder unsaved changes, use the external changes, or save the
                 // work in progress in the UI Builder to a temporary file and use the external changes.
                 var ussWasModified = false;
-                foreach (var openUssFiles in m_OpenUSSFiles)
+                foreach (var openUssFile in m_OpenUSSFiles)
                 {
                     var h = new Hash128();
-                    byte[] b = Encoding.UTF8.GetBytes(openUssFiles.ussPreview);
+                    byte[] b = Encoding.UTF8.GetBytes(openUssFile.ussPreview);
                     if (b.Length > 0)
                     {
                         HashUtilities.ComputeHash128(b, ref h);
                     }
 
-                    if (openUssFiles.contentHash != h.GetHashCode())
+                    if (openUssFile.contentHash != h.GetHashCode())
                     {
                         ussWasModified = true;
                         break;

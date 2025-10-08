@@ -199,7 +199,7 @@ namespace UnityEditor
         //This has been added to accomodate the test in PR for case 991291.
         internal void SetTargetDisplay(int id)
         {
-            if (id < 0 || id > 7)
+            if (id < 0 || id >= k_MaxSupportedDisplays)
                 return;
             targetDisplay = id;
             SetDisplayViewSize(id, targetSize);
@@ -1038,7 +1038,6 @@ namespace UnityEditor
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     // Display Targets can have valid targets from 0 to 7.
-                    System.Diagnostics.Debug.Assert(targetDisplay < 8, "Display Target is Out of Range");
                     currentTargetDisplay = targetDisplay;
                 }
 

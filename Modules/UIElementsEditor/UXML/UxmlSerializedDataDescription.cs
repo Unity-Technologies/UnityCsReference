@@ -25,6 +25,8 @@ namespace UnityEditor.UIElements
         private string m_UxmlName;
         private string m_UxmlFullName;
         private bool m_IsDefaultValueInitialized;
+        Type[] m_UxmlSupportedChildTypes;
+        static readonly Type[] s_DefaultSupportedChildren = new []{ typeof(VisualElement) };
 
         public Type serializedDataType => m_SerializedDataType;
         public bool isUxmlObject => m_UxmlObjectAttribute != null;
@@ -50,6 +52,34 @@ namespace UnityEditor.UIElements
 
                 return m_UxmlName;
             }
+        }
+
+        IReadOnlyList<Type> UxmlSupportedChildTypes
+        {
+            get
+            {
+                if (m_UxmlSupportedChildTypes == null)
+                {
+                    var elementAttribute = serializedDataType.DeclaringType?.GetCustomAttribute<UxmlElementAttribute>();
+                    m_UxmlSupportedChildTypes = elementAttribute?.supportedChildTypes ?? s_DefaultSupportedChildren;
+                }
+
+                return m_UxmlSupportedChildTypes;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool IsSupportedChild(Type type)
+        {
+            if (ReferenceEquals(m_UxmlSupportedChildTypes, s_DefaultSupportedChildren))
+                return true;
+
+            foreach (var allowed in UxmlSupportedChildTypes)
+            {
+                if (allowed.IsAssignableFrom(type))
+                    return true;
+            }
+            return false;
         }
 
         public string uxmlFullName

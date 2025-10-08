@@ -9,6 +9,7 @@ using Unity.Jobs;
 using UnityEngine.Profiling;
 using System;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEditor.SearchService;
 
 namespace UnityEditor
 {
@@ -16,6 +17,7 @@ namespace UnityEditor
     {
         private Camera m_Camera;
         private readonly Dictionary<PhysicsScene, SceneContacts> m_ContactsToDraw = new Dictionary<PhysicsScene, SceneContacts>();
+        private readonly List<PhysicsScene> m_ScenesToDelete = new List<PhysicsScene>();
 
         private void DrawContactsTab()
         {
@@ -312,6 +314,12 @@ namespace UnityEditor
             {
                 sceneContacts.CompleteJob();
 
+                if(!scene.IsValid())
+                {
+                    m_ScenesToDelete.Add(scene);
+                    continue;
+                }
+
                 var array = sceneContacts.ContactArray;
                 for(int j = 0; j < array.Count; j++)
                 {
@@ -320,6 +328,11 @@ namespace UnityEditor
                         DrawSingleCollision(array[j], impulseColor, useRandomColor);
                 }
             }
+
+            foreach(var scene in m_ScenesToDelete)
+                m_ContactsToDraw.Remove(scene);
+
+            m_ScenesToDelete.Clear();
         }
 
         private void DrawSingleCollision(VisContactPoint contactPoint, Color impulseColor, bool useRandomColor)

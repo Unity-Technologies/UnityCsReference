@@ -459,10 +459,12 @@ namespace UnityEditor
             if (!GraphicsSettings.isScriptableRenderPipelineEnabled || target == null)
                 return;
 
+            using var mixedScope = new EditorGUI.MixedValueScope(layerMask.hasMultipleDifferentValues);
             using var changeScope = new EditorGUI.ChangeCheckScope();
 
             var mask = target.renderingLayerMask;
             var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Styles.renderingLayerMask, layerMask);
             if (useMiniStyle)
             {
                 rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
@@ -470,6 +472,7 @@ namespace UnityEditor
             }
             else
                 mask = EditorGUI.RenderingLayerMaskField(rect,Styles.renderingLayerMask, mask);
+            EditorGUI.EndProperty();
 
             if (changeScope.changed)
             {

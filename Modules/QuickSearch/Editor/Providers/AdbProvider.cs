@@ -24,8 +24,11 @@ namespace UnityEditor.Search.Providers
 
         static ObjectQueryEngine<UnityEngine.Object> m_ResourcesQueryEngine;
 
-        public static SearchFilter CreateSearchFilter(in string searchQuery, in Type filterType, in SearchFlags flags)
+        public static SearchFilter CreateSearchFilter(SearchContext context)
         {
+            var flags = context.options;
+            var searchQuery = context.searchQuery;
+            var filterType = context.filterType;
             var searchFilter = new SearchFilter
             {
                 searchArea = GetSearchArea(flags),
@@ -35,17 +38,17 @@ namespace UnityEditor.Search.Providers
             if (!string.IsNullOrEmpty(searchQuery))
                 SearchUtility.ParseSearchString(searchQuery, searchFilter);
             if (filterType != null && searchFilter.classNames.Length == 0)
-                searchFilter.classNames = new[] { filterType.Name };
+                searchFilter.classNames = new [] { filterType.Name };
+
+            if (searchFilter.referencingInstanceIDs.Length > 0 && context.filterId != $"{type}:")
+            {
+                // ADB Find Refs will load all assets. Only allow it if the ADBProvider is used explicitly.
+                searchFilter.referencingInstanceIDs = new int[0];
+            }
+
             searchFilter.filterByTypeIntersection = true;
             return searchFilter;
         }
-
-        public static IEnumerable<int> EnumerateInstanceIDs(in string searchQuery, in Type filterType, in SearchFlags flags)
-        {
-            var searchFilter = CreateSearchFilter(searchQuery, filterType, flags);
-            return EnumerateInstanceIDs(searchFilter);
-        }
-
 
         static SearchFilter.SearchArea GetSearchArea(in SearchFlags searchFlags)
         {
@@ -56,6 +59,9 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<int> EnumerateInstanceIDs(SearchFilter searchFilter)
         {
+            if (searchFilter.GetState() == SearchFilter.State.EmptySearchFilter)
+                yield break;
+
             var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
             while (rIt.MoveNext())
             {
@@ -63,17 +69,19 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-
         public static IEnumerable<int> EnumerateInstanceIDs(SearchContext context)
         {
             if (context.filterType == null && context.empty)
                 return Enumerable.Empty<int>();
+            
             if (context.userData is SearchFilter legacySearchFilter)
             {
                 legacySearchFilter.filterByTypeIntersection = true;
                 return EnumerateInstanceIDs(legacySearchFilter);
             }
-            return EnumerateInstanceIDs(context.searchQuery, context.filterType, context.options);
+
+            var searchFilter = CreateSearchFilter(context);
+            return EnumerateInstanceIDs(searchFilter);
         }
 
         public static IEnumerable<string> EnumeratePaths(SearchContext context)

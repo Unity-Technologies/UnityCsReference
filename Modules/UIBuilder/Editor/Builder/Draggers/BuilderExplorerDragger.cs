@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -162,10 +163,8 @@ namespace Unity.UI.Builder
             if (newParent == elementToReparent)
                 return index;
 
-            if (newParent is ToggleButtonGroup && element is not Button)
-            {
+            if (!BuilderAssetUtilities.IsSupportedChildType(newParent, element.GetType()))
                 return index;
-            }
 
             var oldParent = elementToReparent.parent;
             if (oldParent != newParent)

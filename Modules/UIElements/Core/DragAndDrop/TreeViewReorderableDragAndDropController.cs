@@ -95,12 +95,18 @@ namespace UnityEngine.UIElements
 
         public override DragVisualMode HandleDragAndDrop(IListDragAndDropArgs args)
         {
-            return args.dragAndDropData.source == m_TreeView ? DragVisualMode.Move : DragVisualMode.Rejected;
+            return (args.dragAndDropData.source == m_TreeView) && CanDrop() ? DragVisualMode.Move : DragVisualMode.Rejected;
+        }
+
+        public override bool CanDrop()
+        {
+            return base.CanDrop() || m_DropData is { draggedIds: not null };
         }
 
         public override void OnDrop(IListDragAndDropArgs args)
         {
-            if (!m_TreeView.reorderable)
+            base.OnDrop(args);
+            if (!m_TreeView.reorderable || m_DropData?.draggedIds == null )
                 return;
 
             var insertAtParentId = args.parentId;
@@ -157,6 +163,7 @@ namespace UnityEngine.UIElements
 
         public override void DragCleanup()
         {
+            base.DragCleanup();
             if (m_DropData != null)
             {
                 if (m_DropData.expandedIdsBeforeDrag != null)

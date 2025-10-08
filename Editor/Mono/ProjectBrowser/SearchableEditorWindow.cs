@@ -116,7 +116,7 @@ namespace UnityEditor
         [MenuItem("Assets/Find References In Project", true)]
         private static bool OnSearchForReferencesInProjectValidate()
         {
-            return Selection.activeObject && Selection.activeObject != null;
+            return Selection.activeObject && Selection.activeObject != null && SearchUtility.SupportsFindDependenciesInProject();
         }
 
         virtual public void OnEnable()

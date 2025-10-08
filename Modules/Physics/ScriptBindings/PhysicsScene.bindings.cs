@@ -7,6 +7,7 @@ using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
+using System.Runtime.CompilerServices;
 
 namespace UnityEngine
 {
@@ -15,30 +16,43 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public partial struct PhysicsScene : IEquatable<PhysicsScene>
     {
-        private int m_Handle;
+        private int m_index;
+        private int m_version;
+        public override string ToString() { return string.Format("PhysicsScene(Index: {0}, Version: {1})", m_index, m_version); }
+        public static bool operator ==(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_index == rhs.m_index && lhs.m_version == rhs.m_version; }
 
-        public override string ToString() { return UnityString.Format("({0})", m_Handle); }
-        public static bool operator ==(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_Handle == rhs.m_Handle; }
-        public static bool operator !=(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_Handle != rhs.m_Handle; }
-        public override int GetHashCode() { return m_Handle; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(PhysicsScene lhs, PhysicsScene rhs) { return !(lhs == rhs); }
+        public override int GetHashCode() { return HashCode.Combine(m_index, m_version); }
         public override bool Equals(object other)
         {
             if (!(other is PhysicsScene))
                 return false;
 
             PhysicsScene rhs = (PhysicsScene)other;
-            return m_Handle == rhs.m_Handle;
+            return this == rhs;
         }
 
         public bool Equals(PhysicsScene other)
         {
-            return m_Handle == other.m_Handle;
+            return this == other;
         }
 
         public bool IsValid() { return IsValid_Internal(this); }
         [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
         [NativeMethod("IsPhysicsSceneValid")]
         extern private static bool IsValid_Internal(PhysicsScene physicsScene);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static internal PhysicsScene GetDefaultScene()
+        {
+            //!!!Keep this in sync with the declaration of kDefaultPhysicsSceneHandle inside PhysicsSceneHandle.h!!!
+            var scene = new PhysicsScene();
+            scene.m_index = 0;
+            scene.m_version = 1;
+
+            return scene;
+        }
 
         public bool IsEmpty()
         {
@@ -58,7 +72,7 @@ namespace UnityEngine
             if (IsValid())
             {
                 // Only check auto-simulation if simulating the default physics scene.
-                if (this == Physics.defaultPhysicsScene && Physics.simulationMode != SimulationMode.Script)
+                if (this == GetDefaultScene() && Physics.simulationMode != SimulationMode.Script)
                 {
                     Debug.LogWarning("PhysicsScene.Simulate(...) was called but simulation mode is not set to Script. You should set simulation mode to Script first before calling this function therefore the simulation was not run.");
                     return;
@@ -77,7 +91,7 @@ namespace UnityEngine
                 throw new InvalidOperationException("Cannot simulate the physics scene as it is invalid.");
 
             // Only check auto-simulation if simulating the default physics scene.
-            if (this == Physics.defaultPhysicsScene && Physics.simulationMode != SimulationMode.Script)
+            if (this == GetDefaultScene() && Physics.simulationMode != SimulationMode.Script)
             {
                 Debug.LogWarning("PhysicsScene.Simulate(...) was called but simulation mode is not set to Script. You should set simulation mode to Script first before calling this function therefore the simulation was not run.");
                 return;

@@ -144,8 +144,7 @@ namespace UnityEngine
 
         extern static public bool invokeCollisionCallbacks { get; set; }
 
-        [NativeProperty("DefaultPhysicsSceneHandle", true, TargetType.Function, true)]
-        extern public static PhysicsScene defaultPhysicsScene { get; }
+        public static PhysicsScene defaultPhysicsScene => PhysicsScene.GetDefaultScene();
 
         extern public static void IgnoreCollision([NotNull] Collider collider1, [NotNull] Collider collider2, [DefaultValue("true")] bool ignore);
 
@@ -1058,6 +1057,9 @@ namespace UnityEngine
         {
             return OverlapCapsuleNonAlloc(point0, point1, radius, results, AllLayers, QueryTriggerInteraction.UseGlobal);
         }
+
+        [StaticAccessor("GetPhysicsManager()")]
+        public static extern void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions);
 
         [StaticAccessor("GetPhysicsManager()")]
         [ThreadSafe]

@@ -4983,6 +4983,12 @@
     <Compile Include="..\..\Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs">
       <Link>Modules\InAppPurchasing\Editor\InAppPurchasingMenuItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\DisablementPopup.cs">
+      <Link>Modules\InsightsEditor\DisablementPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\TrText.cs">
+      <Link>Modules\InsightsEditor\TrText.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs">
       <Link>Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs</Link>
     </Compile>

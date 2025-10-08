@@ -1347,7 +1347,7 @@ namespace UnityEditor.Search
 
             return OpenWithContextualProviders(query,
                 new [] { Providers.AssetProvider.type, Providers.BuiltInSceneObjectsProvider.type },
-                contextualFlags: OpenWithContextualProvidersFlags.UseExplicitProvidersAsNormalProviders | OpenWithContextualProvidersFlags.AddActiveProvidersToContext,
+                contextualFlags: OpenWithContextualProvidersFlags.None,
                 eventContext: "FindReferences");
         }
 
@@ -1660,6 +1660,61 @@ namespace UnityEditor.Search
                     GetQueryParts(child, filters, searches);
                 }
             }
+        }
+        internal static string EscapeLiteralString(in string sv, bool explicitQuotes = false)
+        {
+            if (string.IsNullOrEmpty(sv))
+                return "\"\"";
+            if (sv[0] == '"' || sv[sv.Length - 1] == '"')
+                return sv;
+            if (explicitQuotes || sv.IndexOfAny(new[] { ' ', '/', '*' }) != -1)
+                return '"' + sv + '"';
+            return sv;
+        }
+
+        [CommandHandler("SupportsFindDependenciesInProject")]
+        internal static void SupportsFindDependenciesInProject(CommandExecuteContext c)
+        {
+            c.result = SupportsFindDependenciesInProject();
+        }
+
+        internal static bool SupportsFindDependenciesInProject()
+        {
+            return SupportsFindByInProject(null, db => db.settings.options.dependencies);
+        }
+
+        internal static bool SupportsFindByPropertiesInProject()
+        {
+            return SupportsFindByInProject(null, db => db.settings.options.properties);
+        }
+
+        internal static bool SupportsFindByInProject(IEnumerable<SearchDatabase> dbs, Func<SearchDatabase, bool> predicate)
+        {
+            dbs ??= SearchDatabase.EnumerateAll();
+            if (dbs == null)
+                return false;
+
+            if (dbs.Count() == 0)
+                return false;
+
+            if (dbs.Count() == 1)
+            {
+                return predicate(dbs.First());
+            }
+
+            var defaultDb = dbs.FirstOrDefault(db => db.path == "UserSettings/Search.index");
+            if (defaultDb != null && predicate(defaultDb))
+            {
+                return true;
+            }
+
+            foreach (var db in dbs)
+            {
+                if (predicate(db))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

@@ -36,7 +36,7 @@ namespace UnityEditor.Overlays
         internal const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         const string k_PanelLayout = "overlay-layout--freesize";
-        internal const string draggerName = "unity-overlay-collapse__dragger";
+        internal const string k_DraggerName = "unity-overlay-collapse__dragger";
 
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_ActiveLayout = Layout.Panel;

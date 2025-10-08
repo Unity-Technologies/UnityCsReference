@@ -48,7 +48,7 @@ namespace UnityEditor
             var bitCount = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
 
             BeginChangeCheck();
-            var mixedValue = property is { hasMultipleDifferentValues: true };
+            var mixedValue = showMixedValue || property is { hasMultipleDifferentValues: true };
             var newValue = DrawMaskField(position, label, layers, names, values, style, mixedValue, !RenderPipelineEditorUtility.DoesMaskContainRenderingLayersOutsideOfMaxBitCount(layers, bitCount));
             var uintValue = unchecked((uint)newValue);
 

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -72,10 +73,8 @@ namespace Unity.UI.Builder
                     newParent = null;
                 }
 
-                if (newParent is ToggleButtonGroup && element is not Button)
-                {
+                if (!BuilderAssetUtilities.IsSupportedChildType(newParent, element.GetType()))
                     continue;
-                }
 
                 BuilderAssetUtilities.ReparentElementInAsset(
                     paneWindow.document, element, newParent, index++, undo);
@@ -106,8 +105,11 @@ namespace Unity.UI.Builder
 
             var newParent = element;
             foreach (var elementToReparent in m_ElementsToReparent)
-                if (newParent == elementToReparent.element || newParent.HasAncestor(elementToReparent.element))
+            {
+                bool supportedChild = BuilderAssetUtilities.IsSupportedChildType(element, elementToReparent.element.GetType());
+                if (newParent == elementToReparent.element || newParent.HasAncestor(elementToReparent.element) || !supportedChild)
                     return false;
+            }
 
             return true;
         }

@@ -170,7 +170,8 @@ namespace UnityEngine.UIElements
         private abstract class BaseVisualElementScheduledItem : ScheduledItem, IVisualElementScheduledItem
         {
             public VisualElement element { get; private set; }
-            public bool isScheduled = false;
+            public IScheduler scheduler = null;
+            public bool isScheduled => scheduler != null;
 
             public bool isActive { get; private set; }
             public bool isDetaching { get; private set; }
@@ -225,6 +226,11 @@ namespace UnityEngine.UIElements
             {
                 if (isActive)
                 {
+                    // If the element is scheduled during DetachFromPanel, we didn't get
+                    // a chance to deactivate it yet (UUM-105657).
+                    if (isScheduled && scheduler != element.elementPanel.scheduler)
+                        OnPanelDeactivate();
+
                     SendActivation();
                 }
             }
@@ -282,7 +288,7 @@ namespace UnityEngine.UIElements
             internal override void OnItemUnscheduled()
             {
                 base.OnItemUnscheduled();
-                isScheduled = false;
+                scheduler = null;
                 if (!isDetaching)
                 {
                     SetActive(false);
@@ -313,9 +319,9 @@ namespace UnityEngine.UIElements
             {
                 if (!isScheduled)
                 {
-                    isScheduled = true;
                     ResetStartTime();
-                    element.elementPanel.scheduler.Schedule(this);
+                    scheduler = element.elementPanel.scheduler;
+                    scheduler.Schedule(this);
                 }
             }
 
@@ -323,8 +329,9 @@ namespace UnityEngine.UIElements
             {
                 if (isScheduled)
                 {
-                    isScheduled = false;
-                    element.elementPanel.scheduler.Unschedule(this);
+                    var old = scheduler;
+                    scheduler = null;
+                    old.Unschedule(this);
                 }
             }
 

@@ -197,7 +197,7 @@ namespace UnityEditor.Overlays
             m_DockOperation = new DockingOperation(canvas, m_Overlay);
 
             m_StartMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
-            m_StartLeftCornerPosition = m_Overlay.rootVisualElement.Q(Overlay.draggerName).worldBound.position;
+            m_StartLeftCornerPosition = m_Overlay.rootVisualElement.Q(Overlay.k_DraggerName).worldBound.position;
 
             m_InitialLayoutPosition = floatingContainer.WorldToLocal(m_Overlay.rootVisualElement.worldBound.position);
 

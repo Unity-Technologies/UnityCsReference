@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -133,10 +134,10 @@ namespace Unity.UI.Builder
             // Add VisualElement to Canvas.
             m_DragPreviewElement.RemoveFromClassList(s_DragPreviewElementClassName);
 
-            if (m_DragPreviewLastParent is ToggleButtonGroup && m_DragPreviewElement is not Button)
-            {
+            // Prevent action if attempting to drag invalid element as child of another element.
+            // For example, dragging something other than a Tab inside the TabView.
+            if (!BuilderAssetUtilities.IsSupportedChildType(m_DragPreviewLastParent, m_DragPreviewElement.GetType()))
                 return;
-            }
 
             if (index < 0)
                 m_DragPreviewLastParent.Add(m_DragPreviewElement);

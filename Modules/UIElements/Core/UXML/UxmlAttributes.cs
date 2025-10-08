@@ -97,6 +97,11 @@ namespace UnityEngine.UIElements
         public string libraryPath;
 
         /// <summary>
+        /// List of allowed children types for an element.
+        /// </summary>
+        internal readonly Type[] supportedChildTypes;
+
+        /// <summary>
         /// Exposes a type of VisualElement to UXML and UI Builder
         /// </summary>
         public UxmlElementAttribute() : this(null)
@@ -106,9 +111,18 @@ namespace UnityEngine.UIElements
         /// Declares a custom control with a custom element name.
         /// </summary>
         /// <param name="uxmlName">Provides a custom name for the element.</param>
-        public UxmlElementAttribute(string uxmlName)
+        public UxmlElementAttribute(string uxmlName) : this(uxmlName, null)
+        { }
+
+        /// <summary>
+        /// Declares a custom control with a custom element name and a list of supported child types.
+        /// </summary>
+        /// <param name="uxmlName">The name to use for the element in UXML, such as `my-custom-element`.</param>
+        /// <param name="supportedTypes">An array of supported child element types. This can be passed as individual <c>Type</c> arguments.</param>
+        public UxmlElementAttribute(string uxmlName, params Type[] supportedTypes)
         {
             name = uxmlName;
+            supportedChildTypes = supportedTypes;
         }
     }
 

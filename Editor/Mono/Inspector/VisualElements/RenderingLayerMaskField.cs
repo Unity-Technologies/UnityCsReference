@@ -160,6 +160,11 @@ namespace UnityEditor.UIElements
                 base.value = value;
             }
         }
+        
+        internal override string GetValueToDisplay()
+        {
+            return showMixedValue ? mixedValueString : GetDisplayedValue(ValueToMask(value));
+        }
 
         protected void UpdateLayersInfo()
         {

@@ -435,7 +435,7 @@ namespace UnityEngine
             {
                 int count;
                 if (textHandle.useAdvancedText)
-                    count = textHandle.NextCodePointIndex(cursorIndex) - cursorIndex;
+                    count = Mathf.Abs(textHandle.NextCodePointIndex(cursorIndex) - cursorIndex);
                 else
                     count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
                 text = text.Remove(stringCursorIndex, count);
@@ -460,7 +460,7 @@ namespace UnityEngine
                 int count;
                 if (textHandle.useAdvancedText)
                 {
-                    count = cursorIndex - startIndex;
+                    count = Mathf.Abs(cursorIndex - startIndex);
                 }
                 else
                     count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;

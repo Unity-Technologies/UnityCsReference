@@ -91,9 +91,6 @@ namespace UnityEditor
         [SerializeField]
         CamerasOverlay m_Overlay;
 
-        [SerializeField]
-        PropertyEditor m_ActiveEditor;
-
         public CameraInspectProperties(CamerasOverlay overlay) : base()
         {
             icon = EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow");
@@ -120,13 +117,7 @@ namespace UnityEditor
             if (m_Overlay.viewpoint == null)
                 return;
 
-            if (m_ActiveEditor != null)
-            {
-                m_ActiveEditor.Focus();
-                return;
-            }
-
-            m_ActiveEditor = PropertyEditor.OpenPropertyEditor(m_Overlay.viewpoint.TargetObject, true);
+            PropertyEditor.OpenPropertyEditor(m_Overlay.viewpoint.TargetObject, true);
         }
     }
 

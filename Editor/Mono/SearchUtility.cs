@@ -253,5 +253,38 @@ namespace UnityEditor
             }
             return -1;
         }
+
+        internal static void SearchProperty(SerializedProperty property)
+        {
+            CommandService.Execute("OpenToSearchByProperty", CommandHint.Menu, property);
+        }
+
+        internal static void FindReferences(UnityEngine.Object obj)
+        {
+            CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
+        }
+
+        internal static bool SupportsFindDependenciesInProject(SerializedProperty property)
+        {
+            return property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue && SupportsFindDependenciesInProject();
+        }
+
+        internal static bool SupportsFindDependenciesInProject()
+        {
+            if (!CommandService.Exists("SupportsFindDependenciesInProject") || !CommandService.Exists("OpenToFindReferenceOnObject"))
+                return false;
+
+            var result = CommandService.Execute("SupportsFindDependenciesInProject", CommandHint.Menu);
+            return (bool)result;
+        }
+
+        internal static bool CanSearchProperty(SerializedProperty property)
+        {
+            if (!CommandService.Exists("OpenToSearchByProperty") || !CommandService.Exists("IsPropertyValidForQuery"))
+                return false;
+
+            var result = CommandService.Execute("IsPropertyValidForQuery", CommandHint.Menu, property);
+            return (bool)result;
+        }
     }
 }
