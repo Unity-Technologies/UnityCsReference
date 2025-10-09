@@ -1344,8 +1344,9 @@ namespace Unity.Hierarchy
                 m_HierarchyViewModel.SetFlags(nodes.Span, HierarchyNodeFlags.Selected);
             }
 
-            // If called from pointer down event, wait for pointer up to change the global selection
-            if (m_MultiColumnListView.processingPointerDownEvent)
+            // If called from pointer down event, wait for pointer up to change the global selection unless it's a right click.
+            if (m_MultiColumnListView.pointerProcessingState == BaseVerticalCollectionView.pointerProcessingStateEnum.PointerDown
+                && m_MultiColumnListView.currentPointerButton != (int)MouseButton.RightMouse)
             {
                 m_SelectedIndicesChangedFromPointerDown = true;
                 return;

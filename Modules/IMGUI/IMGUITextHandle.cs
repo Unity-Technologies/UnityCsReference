@@ -147,7 +147,7 @@ namespace UnityEngine
         internal static float GetLineHeight(GUIStyle style)
         {
             ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
-            return GetLineHeightDefault(settings)/GUIUtility.pixelsPerPoint;
+            return GetLineHeightDefault(settings);
         }
 
         //Width is in saled pixels

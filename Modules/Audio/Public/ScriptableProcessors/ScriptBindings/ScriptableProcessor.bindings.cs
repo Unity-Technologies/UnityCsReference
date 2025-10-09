@@ -12,24 +12,14 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Audio
 {
-    /// <undoc/>
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public unsafe interface IAudioScriptingContext // Internal tag interface for dispatching implementations.
-    {
-        /// <undoc/>
-        internal Processor.AvailableData GetAvailableData(Handle handle);
-        /// <undoc/>
-        internal bool SendData(Handle handle, void* data, int size, int align, long typehash);
-    }
-
     /// <summary>
-    /// A temporary context tied to a particular mix cycle, and generally passed along when processing <see cref="Processor"/>s.
+    /// A temporary context tied to a particular mix cycle, and generally passed along when processing <see cref="ProcessorInstance"/>s.
     /// </summary>
     /// <remarks>
-    /// This also gives access to communicating data together with a <see cref="Processor.Pipe"/>.
+    /// This also gives access to communicating data together with a <see cref="ProcessorInstance.Pipe"/>.
     /// </remarks>
     /// <seealso cref="ControlContext.Manual.BeginMix"/>
-    public unsafe struct ProcessingContext : IAudioScriptingContext
+    public unsafe struct RealtimeContext : ProcessorInstance.IContext
     {
         /// <summary>
         /// The DSP time at which the mix cycle began.
@@ -44,10 +34,10 @@ namespace UnityEngine.Audio
         internal RealtimeAccess Access;
         UInt64 m_DSPClock;
 
-        Processor.AvailableData IAudioScriptingContext.GetAvailableData(Handle handle)
+        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(Handle handle)
             => new(ScriptableProcessorBindings.GetAvailableDataForRealtime(Access, handle));
 
-        bool IAudioScriptingContext.SendData(Handle handle, void* data, int size, int align, long typehash)
+        bool ProcessorInstance.IContext.SendData(Handle handle, void* data, int size, int align, long typehash)
         {
             ScriptableProcessorBindings.ReturnDataFromProcessor(Access, handle, data, size, align, typehash);
             return true;
@@ -55,31 +45,107 @@ namespace UnityEngine.Audio
     }
 
     /// <summary>
-    /// <see cref="Processor"/> is a handle to the common functionality of a scriptable processor.
+    /// <see cref="ProcessorInstance"/> is a handle to the common functionality of a scriptable processor.
     /// </summary>
     /// <remarks>
-    /// This could be a <see cref="Generator"/> etc., but with limited structural API available.
+    /// This could be a <see cref="GeneratorInstance"/> etc., but with limited structural API available.
     /// Use this together with <see cref="ControlContext"/> to query and send commands to the processor.
     /// </remarks>
-    public readonly struct Processor
+    public readonly partial struct ProcessorInstance
     {
+        /// <undoc/>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public unsafe interface IContext // Internal tag interface for dispatching implementations.
+        {
+            /// <undoc/>
+            internal AvailableData GetAvailableData(Handle handle);
+
+            /// <undoc/>
+            internal bool SendData(Handle handle, void* data, int size, int align, long typehash);
+        }
+
         /// <summary>
-        /// A context giving access to data that is currently available for the <see cref="Processor"/> this was passed to.
+        /// Additional data and parameters specifying how a <see cref="ProcessorInstance"/> should be created.
         /// </summary>
-        /// <seealso cref="Processor.IProcessor.Update"/>
-        /// <seealso cref="Processor.AvailableData"/>
-        /// <seealso cref="Processor.Pipe"/>
-        public unsafe struct UpdatedDataContext : IAudioScriptingContext
+        /// <remarks>
+        /// These are generally suggested setup from whomever is creating the <see cref="ProcessorInstance"/>, such as a <see cref="IAudioGenerator"/>.
+        /// You can change properties to suit your particular needs.
+        /// </remarks>
+        public struct CreationParameters
+        {
+            /// <summary>
+            /// Control under what circumstances <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> will be called.
+            /// </summary>
+            public ControlContext.ProcessorUpdateSetting controlUpdateSetting { get; set; }
+            /// <summary>
+            /// Control under what circumstances <see cref="ProcessorInstance.IRealtime.Update"/> will be called.
+            /// </summary>
+            public ControlContext.ProcessorUpdateSetting processorUpdateSetting { get; set; }
+
+            internal readonly InitializationFlags BuildInitializationFlags()
+            {
+                InitializationFlags flags = 0;
+
+                if (controlUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateIfDataIsAvailable)
+                    flags |= InitializationFlags.UpdateControlIfDataIsAvailable;
+                else if (controlUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateAlways)
+                    flags |= InitializationFlags.UpdateControlAlways;
+
+                if (processorUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateIfDataIsAvailable)
+                    flags |= InitializationFlags.UpdateProcessorIfDataIsAvailable;
+                else if (processorUpdateSetting == ControlContext.ProcessorUpdateSetting.UpdateAlways)
+                    flags |= InitializationFlags.UpdateProcessorAlways;
+
+                return flags;
+            }
+        }
+
+        /// <summary>
+        /// Internal representation of flags controlling how a <see cref="ProcessorInstance"/> is handled over the course of its lifetime.
+        /// </summary>
+        /// <seealso cref="ControlContext.ProcessorUpdateSetting"/>
+        [System.Flags]
+        internal enum InitializationFlags : UInt32
+        {
+            /// <summary>
+            /// Invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> only if data has been returned from
+            /// <see cref="ProcessorInstance.Pipe.SendData"/> since the last update.
+            /// </summary>
+            UpdateControlIfDataIsAvailable = 1 << 1,
+            /// <summary>
+            /// Always invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> on this realtime on every update.
+            /// </summary>
+            UpdateControlAlways = 1 << 2,
+
+
+            /// <summary>
+            /// Invoke <see cref="ProcessorInstance.IRealtime.Update"/> only if data has been sent from
+            /// <see cref="ProcessorInstance.Pipe.SendData"/> or <see cref="ControlContext.SendData"/> since the last update.
+            /// </summary>
+            UpdateProcessorIfDataIsAvailable = 1 << 3,
+            /// <summary>
+            /// Always invoke <see cref="ProcessorInstance.IRealtime.Update"/> on this realtime on every update.
+            /// </summary>
+            UpdateProcessorAlways = 1 << 4,
+        }
+
+        /// <summary>
+        /// A context giving access to data that is currently available for the <see cref="ProcessorInstance"/> this was passed to.
+        /// </summary>
+        /// <seealso cref="ProcessorInstance.IRealtime"/>
+        /// <seealso cref="ProcessorInstance.AvailableData"/>
+        /// <seealso cref="ProcessorInstance.Pipe"/>
+        public unsafe struct UpdatedDataContext : IContext
         {
             internal readonly RealtimeAccess Access;
 
             /// <undoc/>
-            AvailableData IAudioScriptingContext.GetAvailableData(Handle handle)
+            AvailableData IContext.GetAvailableData(Handle handle)
                 // Empty implementation: This is currently only used in a callback where <see cref="Pipe.Head"/> is already set.
                 => default;
 
             /// <undoc/>
-            bool IAudioScriptingContext.SendData(Handle handle, void* data, int size, int align, long typehash)
+            bool IContext.SendData(Handle handle, void* data, int size, int align, long typehash)
             {
                 ScriptableProcessorBindings.ReturnDataFromProcessor(Access, handle, data, size, align, typehash);
                 return true;
@@ -89,45 +155,45 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Base interface for the common processing logic of a <see cref="Processor"/>.
+        /// Base interface for the common processing logic of a <see cref="ProcessorInstance"/>.
         /// </summary>
         /// <remarks>
-        /// All <see cref="Processor"/>s must implement this interface to be fully formed,
-        /// though usually each specific <see cref="Processor"/> implements a more specific interface inheriting from this one.
+        /// All <see cref="ProcessorInstance"/>s must implement this interface to be fully formed,
+        /// though usually each specific <see cref="ProcessorInstance"/> implements a more specific interface inheriting from this one.
         /// </remarks>
-        /// <seealso cref="Generator.IProcessor"/>"/>
-        /// <seealso cref="Audio.Processor.IControl{TProcessor}"/>"/>
-        public interface IProcessor
+        /// <seealso cref="GeneratorInstance.IRealtime"/>"/>
+        /// <seealso cref="ProcessorInstance.IControl{TRealtime}"/>"/>
+        public interface IRealtime
         {
             /// <summary>
-            /// Implement this function to react to data sent to the <see cref="Processor"/> or communicate something back.
+            /// Implement this function to react to data sent to the <see cref="ProcessorInstance"/> or communicate something back.
             /// </summary>
             /// <remarks>
-            /// By default, this is called when there's data sent to your <see cref="Processor"/>.
-            /// This can be changed by setting flags in <see cref="ControlContext.ProcessorCreationParameters.controlUpdateSetting"/>
-            /// when initially creating the <see cref="Processor"/>.
+            /// By default, this is called when there's data sent to your <see cref="ProcessorInstance"/>.
+            /// This can be changed by setting flagsCreationParametersationParameters.controlUpdateSetting"/>
+            /// when initially creating the <see cref="ProcessorInstance"/>.
             /// </remarks>
             /// <param name="context">The context giving access to available data.</param>
             /// <param name="pipe">Cross-thread communications pipe.</param>
-            /// <seealso cref="Audio.Processor.IControl{TProcessor}.Update"/>
+            /// <seealso cref="ProcessorInstance.IControl{TRealtime}.Update"/>
             public void Update(UpdatedDataContext context, Pipe pipe);
         }
 
         /// <summary>
-        /// Base interface for common functionality of controlling a <see cref="Processor"/>.
+        /// Base interface for common functionality of controlling a <see cref="ProcessorInstance"/>.
         /// </summary>
         /// <remarks>
-        /// Here you can implement any control logic that is required for the processor,
-        /// that will run outside of the real time thread.
+        /// Here you can implement any control logic that is required for the realtime,
+        /// that will run outside of the real-time thread.
         ///
         /// <para/>
-        /// 
-        /// All <see cref="Processor"/>s must implement this interface to be fully formed,
-        /// though usually each specific <see cref="Processor"/> implements a more specific interface inheriting from this one.
+        ///
+        /// All <see cref="ProcessorInstance"/>s must implement this interface to be fully formed,
+        /// though usually each specific <see cref="ProcessorInstance"/> implements a more specific interface inheriting from this one.
         /// </remarks>
-        /// <seealso cref="Audio.Generator.IControl{TProcessor}"/>
-        public interface IControl<TProcessor>
-            where TProcessor : unmanaged, IProcessor
+        /// <seealso cref="GeneratorInstance.IControl{TRealtime}"/>
+        public interface IControl<TRealtime>
+            where TRealtime : unmanaged, IRealtime
         {
             /// <summary>
             /// Called when the generator is destroyed, after having left the processing thread.
@@ -136,31 +202,31 @@ namespace UnityEngine.Audio
             /// Here you can clean up any resources that were allocated for the control or realtime thread.
             /// It may take an indeterminate amount of time between <see cref="ControlContext.Destroy"/> is called and this
             /// will be called, and there may be any number of <see cref="Update"/> calls inbetween.
-            /// This is because destroying processors is an asynchronous process.
+            /// This is because destroying realtimes is an asynchronous process.
             /// </remarks>
-            /// <seealso cref="RootOutput.IProcessor.RemovedFromProcessing"/>
+            /// <seealso cref="RootOutputInstance.IRealtime.RemovedFromProcessing"/>
             /// <seealso cref="ControlContext.Destroy"/>
-            public void Dispose(ControlContext context, ref TProcessor processor);
+            public void Dispose(ControlContext context, ref TRealtime realtime);
 
             /// <summary>
             /// Called if you have subscribed to continuous updates from the control thread, or if there is
-            /// data returned from the <typeparamref name="TProcessor"/> counterpart.
+            /// data returned from the <typeparamref name="TRealtime"/> counterpart.
             /// </summary>
             /// <remarks>
             /// This is guaranteed to be invoked before <see cref="Dispose"/> if there's any data that's been sent
             /// from <see cref="Pipe.SendData"/> and suitable flags have been set in
-            /// <see cref="ControlContext.ProcessorCreationParameters.controlUpdateSetting"/>.
+            /// <see cref="ProcessorInstance.CreationParameters.controlUpdateSetting"/>.
             /// </remarks>
             /// <seealso cref="ControlContext.Manual.Update"/>
             /// <seealso cref="ControlContext.ProcessorUpdateSetting"/>
             public void Update(ControlContext context, Pipe pipe);
 
             /// <summary>
-            /// Called immediately from <see cref="ControlContext.SendMessage"/> when a message was sent to this <see cref="Processor"/>.
+            /// Called immediately from <see cref="ControlContext.SendMessage"/> when a message was sent to this <see cref="ProcessorInstance"/>.
             /// </summary>
             /// <returns>
-            /// <see cref="MessageStatus.Handled"/> if this <see cref="Processor"/> acknowledged and processed the message,
-            /// <see cref="MessageStatus.Unhandled"/> if not or ignored.
+            /// <see cref="Response.Handled"/> if this <see cref="ProcessorInstance"/> acknowledged and processed the message,
+            /// <see cref="Response.Unhandled"/> if not or ignored.
             /// </returns>
             /// <param name="context">Context the processor is in.</param>
             /// <param name="pipe">Cross-thread communications pipe.</param>
@@ -168,7 +234,7 @@ namespace UnityEngine.Audio
             /// The message someone sent to you through <see cref="ControlContext.SendMessage"/>.
             /// The contents are sent by reference, so you can modify them and the sender will see the changes.
             /// </param>
-            public MessageStatus OnMessage(ControlContext context, Pipe pipe, Message message);
+            public Response OnMessage(ControlContext context, Pipe pipe, Message message);
         }
 
         /// <summary>
@@ -176,7 +242,7 @@ namespace UnityEngine.Audio
         /// </summary>
         /// <remarks>
         /// One thread is referred to as "control" (main thread typically) and one as "realtime" (audio thread typically).
-        /// Using <see cref="ControlContext"/> and <see cref="ProcessingContext"/> as keys to the APIs,
+        /// Using <see cref="ControlContext"/> and <see cref="RealtimeContext"/> as keys to the APIs,
         /// you can read data the other thread sent you or send data back.
         /// </remarks>
         public unsafe ref struct Pipe
@@ -189,9 +255,9 @@ namespace UnityEngine.Audio
             /// </summary>
             /// <param name="context">The context key which provides data access from the respective thread.</param>
             /// <returns>A temporary collection of available data.</returns>
-            /// <seealso cref="Processor.AvailableData"/>
+            /// <seealso cref="ProcessorInstance.AvailableData"/>
             public readonly AvailableData GetAvailableData<TAudioContext>(TAudioContext context)
-                where TAudioContext : unmanaged, IAudioScriptingContext
+                where TAudioContext : unmanaged, IContext
             {
                 if (!DualThreadHandle.Valid)
                     throw new InvalidOperationException("DualThreadHandle is not valid, cannot get available data.");
@@ -200,17 +266,17 @@ namespace UnityEngine.Audio
             }
 
             /// <summary>
-            /// Send data from <see cref="IProcessor"/> to <see cref="IControl{TProcessor}"/> or vice versa.
+            /// Send data from <see cref="IRealtime"/> to <see cref="IControl{TRealtime}"/> or vice versa.
             /// </summary>
             /// <param name="context">The context key which targets the other logical thread receiver.</param>
             /// <param name="data">The data to be received in the other logical thread.</param>
             /// <returns>
-            /// True if this operation is currently possible. This can fail for instance when the <see cref="Processor"/>
+            /// True if this operation is currently possible. This can fail for instance when the <see cref="ProcessorInstance"/>
             /// is being in process of being disposed through <see cref="ControlContext.DestroyProcessor"/>,
             /// so you must guard against this if you are transferring resources.
             /// </returns>
             public readonly bool SendData<TAudioContext, T>(TAudioContext context, in T data)
-                where TAudioContext : unmanaged, IAudioScriptingContext
+                where TAudioContext : unmanaged, IContext
                 where T : unmanaged
             {
                 // The context will do validation.
@@ -256,7 +322,7 @@ namespace UnityEngine.Audio
             /// original message sender.
             /// </summary>
             /// <remarks>
-            /// Use <see cref="Processor.Message.Is"/> to figure out if you can call this function with a particular type.
+            /// Use <see cref="ProcessorInstance.Message.Is"/> to figure out if you can call this function with a particular type.
             /// </remarks>
             /// <exception cref="InvalidCastException">
             /// Thrown if the inner piece of data doesn't match the type of <typeparamref name="T"/>.
@@ -276,10 +342,10 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// A return value from <see cref="Audio.Processor.IControl{TProcessor}.OnMessage"/>
+        /// A return value from <see cref="ProcessorInstance.IControl{TRealtime}.OnMessage"/>
         /// that lets the message sender know if the message was handled or not.
         /// </summary>
-        public enum MessageStatus
+        public enum Response
         {
             /// <summary>
             /// Indicates the message wasn't handled.
@@ -307,23 +373,23 @@ namespace UnityEngine.Audio
         {
             /// <summary>
             /// A piece of temporary immutable type-erased data that was sent from an API like
-            /// <see cref="ControlContext.SendData"/> or <see cref="Processor.Pipe.SendData"/>, received on likely another thread.
+            /// <see cref="ControlContext.SendData"/> or <see cref="ProcessorInstance.Pipe.SendData"/>, received on likely another thread.
             /// </summary>
             /// <remarks>
-            /// You can use <see cref="Processor.AvailableData.Element.TryGetData"/> to test and extract a piece of typed data,
+            /// You can use <see cref="ProcessorInstance.AvailableData.Element.TryGetData"/> to test and extract a piece of typed data,
             /// if the current element matches it.
             /// </remarks>
             public unsafe ref struct Element
             {
                 /// <summary>
-                /// Test and return a piece of typed data if this <see cref="Processor.AvailableData.Element"/> matches the type given.
+                /// Test and return a piece of typed data if this <see cref="ProcessorInstance.AvailableData.Element"/> matches the type given.
                 /// </summary>
                 /// <param name="data">The typed piece of data to be extracted.</param>
                 /// <returns>
-                /// Whether this <see cref="Processor.AvailableData.Element"/> is of the same type as <typeparamref name="T"/>, and if so,
+                /// Whether this <see cref="ProcessorInstance.AvailableData.Element"/> is of the same type as <typeparamref name="T"/>, and if so,
                 /// whether the <paramref name="data"/> parameter was updated.
                 /// </returns>
-                /// <seealso cref="Processor.AvailableData"/>
+                /// <seealso cref="ProcessorInstance.AvailableData"/>
                 public bool TryGetData<T>(out T data) where T : unmanaged
                 {
                     var attemptedTypeHash = BurstRuntime.GetHashCode64<T>();
@@ -388,7 +454,7 @@ namespace UnityEngine.Audio
         readonly internal Unity.Audio.Handle Handle;
         readonly internal unsafe ProcessorHeader* Header;
 
-        internal unsafe Processor(Unity.Audio.Handle handle, ProcessorHeader* header)
+        internal unsafe ProcessorInstance(Unity.Audio.Handle handle, ProcessorHeader* header)
         {
             Handle = handle;
             Header = header;
@@ -425,7 +491,7 @@ namespace UnityEngine.Audio
     internal unsafe struct UpdateArguments
     {
         internal ControlHeader* ControlContext;
-        internal Processor.AvailableData.Element* FirstElement;
+        internal ProcessorInstance.AvailableData.Element* FirstElement;
         internal Unity.Audio.Handle Self;
     }
 
@@ -438,15 +504,15 @@ namespace UnityEngine.Audio
     internal unsafe struct MessageArguments
     {
         internal ControlHeader* Context;
-        internal Processor.Message* MessageData;
+        internal ProcessorInstance.Message* MessageData;
         internal Unity.Audio.Handle Self;
-        internal Processor.MessageStatus StatusReturn;
+        internal ProcessorInstance.Response StatusReturn;
     };
 
     internal unsafe struct ProcessorRealtimeUpdateArguments
     {
         internal readonly RealtimeAccess Access;
-        internal readonly Processor.AvailableData.Element* Head;
+        internal readonly ProcessorInstance.AvailableData.Element* Head;
         internal readonly Unity.Audio.Handle Self;
     }
 
@@ -525,17 +591,17 @@ namespace UnityEngine.Audio
             return AddDataToProcessorHandleInternal(control, handle, data, size, align, typeHash);
         }
 
-        public static unsafe Processor.AvailableData.Element* GetAvailableDataForRealtime(in RealtimeAccess access, in Unity.Audio.Handle handle)
+        public static unsafe ProcessorInstance.AvailableData.Element* GetAvailableDataForRealtime(in RealtimeAccess access, in Unity.Audio.Handle handle)
         {
             fixed (RealtimeAccess* pAccess = &access)
             {
-                return (Processor.AvailableData.Element*)GetRealtimeDataElementListForProcessorInternal(pAccess, handle);
+                return (ProcessorInstance.AvailableData.Element*)GetRealtimeDataElementListForProcessorInternal(pAccess, handle);
             }
         }
 
-        public static unsafe Processor.AvailableData.Element* GetAvailableDataForControl(ControlHeader* control, in Unity.Audio.Handle handle)
+        public static unsafe ProcessorInstance.AvailableData.Element* GetAvailableDataForControl(ControlHeader* control, in Unity.Audio.Handle handle)
         {
-            return (Processor.AvailableData.Element*)GetControlDataElementListForProcessorInternal(control, handle);
+            return (ProcessorInstance.AvailableData.Element*)GetControlDataElementListForProcessorInternal(control, handle);
         }
 
         public static unsafe void ReturnDataFromProcessor(in RealtimeAccess access, in Unity.Audio.Handle handle, void* data, int size, int align, long typeHash)
@@ -550,9 +616,9 @@ namespace UnityEngine.Audio
         /// Validates the validity of the handle and that you can currently call process/produce etc. with
         /// <paramref name="header"/>.
         /// </summary>
-        public static unsafe void ValidateCanProcess(in Unity.Audio.Handle handle, in ProcessingContext ctx)
+        public static unsafe void ValidateCanProcess(in Unity.Audio.Handle handle, in RealtimeContext ctx)
         {
-            fixed (ProcessingContext* pCtx = &ctx)
+            fixed (RealtimeContext* pCtx = &ctx)
             {
                 ValidateCanProcessInternal(handle, pCtx);
             }
@@ -573,13 +639,13 @@ namespace UnityEngine.Audio
             PerformRecursiveUpdateInternal(handle, control);
         }
 
-        public static unsafe Processor.MessageStatus SendMessageToProcessor(ProcessorHeader* header, ControlHeader* control, Processor.Message* message)
+        public static unsafe ProcessorInstance.Response SendMessageToProcessor(ProcessorHeader* header, ControlHeader* control, ProcessorInstance.Message* message)
         {
             return SendMessageToProcessorInternal(header, control, message);
         }
 
         [NativeMethod(Name = "audio::SendMessageToProcessor", IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe Processor.MessageStatus SendMessageToProcessorInternal(/*ProcessorHeader* */ void* header, /*ControlHeader* */ void* control, /* Message* */ void* message);
+        static extern unsafe ProcessorInstance.Response SendMessageToProcessorInternal(/*ProcessorHeader* */ void* header, /*ControlHeader* */ void* control, /* Message* */ void* message);
 
         [NativeMethod(Name = "audio::PerformRecursiveUpdate", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe void PerformRecursiveUpdateInternal(Unity.Audio.Handle handle, /*ControlHeader* */ void* control);
@@ -619,16 +685,16 @@ namespace UnityEngine.Audio
             return chunk;
         }
 
-        public static unsafe void DispatchGenericControl<TControl, TProcessor>(ref TControl control, ref TProcessor processor, in ProcessorHeader header, void* additionalPtr, ControlFunction function)
-            where TControl : unmanaged, Processor.IControl<TProcessor>
-            where TProcessor : unmanaged, Processor.IProcessor
+        public static unsafe void DispatchGenericControl<TControl, TRealtime>(ref TControl control, ref TRealtime realtime, in ProcessorHeader header, void* additionalPtr, ControlFunction function)
+            where TControl : unmanaged, ProcessorInstance.IControl<TRealtime>
+            where TRealtime : unmanaged, ProcessorInstance.IRealtime
         {
             switch (function)
             {
                 case ControlFunction.Dispose:
                 {
                     var args = (DisposeArguments*)additionalPtr;
-                    control.Dispose(new(args->ControlContext), ref processor);
+                    control.Dispose(new(args->ControlContext), ref realtime);
 
                     fixed (ProcessorHeader* pHeader = &header)
                         UnsafeUtility.FreeTracked(pHeader, Allocator.Persistent);
@@ -654,7 +720,7 @@ namespace UnityEngine.Audio
         }
 
         public static unsafe void DispatchGenericProcessor<T>(ref T processor, in ProcessorHeader header, void* additionalPtr, ProcessorFunction function)
-            where T : unmanaged, Processor.IProcessor
+            where T : unmanaged, ProcessorInstance.IRealtime
         {
             switch (function)
             {

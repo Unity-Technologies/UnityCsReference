@@ -104,8 +104,20 @@ namespace UnityEngine.LowLevelPhysics2D
         }
 
         /// <undoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsCameraTypeValid(Camera camera)
+        {
+            var cameraType = camera.cameraType;
+            return cameraType == CameraType.Game || cameraType == CameraType.SceneView;
+        }
+
+        /// <undoc/>
         static void BIRP_RenderAllWorlds(Camera camera)
         {
+            // Ensure the camera type is valid.
+            if (!IsCameraTypeValid(camera))
+                return;
+
             // Finish if we're bypassing the low-level or rendering is not allowed.
             if (PhysicsWorld.bypassLowLevel || !PhysicsWorld.isRenderingAllowed)
                 return;
@@ -126,6 +138,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <undoc/>
         static void SRP_RenderAllWorlds(ScriptableRenderContext context, Camera camera)
         {
+            // Ensure the camera type is valid.
+            if (!IsCameraTypeValid(camera))
+                return;
+
             // Create the renderer command buffer.
             s_RendererCommandBuffer ??= new CommandBuffer { name = "LowLevelPhysics2D.WorldRenderer" };
 

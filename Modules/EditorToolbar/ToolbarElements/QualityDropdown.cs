@@ -14,6 +14,7 @@ namespace UnityEditor.Toolbars
         {
             ModeService.modeChanged += (args) => RebuildContent();
             QualitySettings.activeQualityLevelChanged += (prev, current) => RebuildContent();
+            QualitySettings.activeQualityLevelRenamed += (prev, current) => RebuildContent();
         }
 
         static void RebuildContent()

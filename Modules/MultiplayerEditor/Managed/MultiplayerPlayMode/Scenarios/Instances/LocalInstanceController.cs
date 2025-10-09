@@ -7,12 +7,13 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     class LocalInstanceController : PlayModeController
     {
-        private readonly LocalInstanceDescription m_Settings;
+        [SerializeReference] LocalInstanceDescription m_Settings;
         private bool m_HasEditorInstance;
 
         internal LocalInstanceController(LocalInstanceDescription localInstanceDescription, bool hasEditorInstance)

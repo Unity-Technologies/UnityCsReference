@@ -7,22 +7,22 @@ using UnityEngine.Audio;
 namespace UnityEngine.Audio
 {
     /// <summary>
-    /// An audio configuration containing just the info used for signal processing,
-    /// in eg. <see cref="ControlContext"/> and <see cref="Processor"/>.
+    /// An audio format containing information required for signal processing in,
+    /// for example, <see cref="ControlContext"/> and <see cref="ProcessorInstance"/>.
     /// </summary>
     /// <seealso cref="AudioConfiguration"/>
-    public struct DSPConfiguration
+    public struct AudioFormat
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="DSPConfiguration"/> using the provided <see cref="AudioConfiguration"/>.
+        /// Initializes a new instance of the <see cref="AudioFormat"/> using the provided <see cref="AudioConfiguration"/>.
         /// </summary>
         /// <seealso cref="AudioSettings.GetConfiguration"/>"/>
-        public DSPConfiguration(AudioConfiguration config) { m_Config = config; }
+        public AudioFormat(AudioConfiguration config) { m_Config = config; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DSPConfiguration"/> using the provided parameters.
+        /// Initializes a new instance of the <see cref="AudioFormat"/> using the provided parameters.
         /// </summary>
-        public DSPConfiguration(AudioSpeakerMode speakerMode, int sampleRate, int bufferSize)
+        public AudioFormat(AudioSpeakerMode speakerMode, int sampleRate, int bufferSize)
         {
             m_Config = new ()
             {
@@ -33,7 +33,7 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// A helper function to return the amount of channels represented by the <see cref="DSPConfiguration.speakerMode"/>.
+        /// A helper function to return the amount of channels represented by the <see cref="AudioFormat.speakerMode"/>.
         /// </summary>
         /// <seealso cref="AudioExtensions.ChannelCount(AudioSpeakerMode)"/>
         public readonly int channelCount => m_Config.speakerMode.ChannelCount();
@@ -43,25 +43,25 @@ namespace UnityEngine.Audio
         /// </summary>
         /// <remarks>
         /// This determines the maximum size of the <see cref="ChannelBuffer"/> passed into processing callbacks,
-        /// like <see cref="Generator.Process"/>.
+        /// like <see cref="GeneratorInstance.Process"/>.
         /// </remarks>
         /// <seealso cref="AudioConfiguration.dspBufferSize"/>
         public readonly int bufferSize => m_Config.dspBufferSize;
 
         /// <summary>
-        /// The sample rate this <see cref="DSPConfiguration"/> is configured to run at.
+        /// The sample rate this <see cref="AudioFormat"/> is configured to run at.
         /// </summary>
         /// <seealso cref="AudioConfiguration.sampleRate"/>"/>
         public readonly int sampleRate => m_Config.sampleRate;
 
         /// <summary>
-        /// The speaker mode configuration this <see cref="DSPConfiguration"/> is configured to run in.
+        /// The speaker mode this <see cref="AudioFormat"/> is configured to run in.
         /// </summary>
         /// <remarks>
         /// This determines how the channel layout is mapped to speakers, and how many channels are available.
         /// </remarks>
         /// <seealso cref="AudioConfiguration.speakerMode"/>"/>
-        /// <seealso cref="DSPConfiguration.channelCount"/>
+        /// <seealso cref="AudioFormat.channelCount"/>
         public readonly AudioSpeakerMode speakerMode => m_Config.speakerMode;
 
         internal readonly AudioConfiguration audioConfiguration => m_Config;

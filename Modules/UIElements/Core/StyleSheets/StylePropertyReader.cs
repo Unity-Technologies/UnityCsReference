@@ -574,7 +574,17 @@ namespace UnityEngine.UIElements.StyleSheets
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
-                var propertyName = value.sheet.ReadStylePropertyName(value.handle);
+
+                StylePropertyName propertyName;
+                if (value.handle.valueType == StyleValueType.Keyword)
+                {
+                    var keyword = value.sheet.ReadKeyword(value.handle);
+                    propertyName = new StylePropertyName(keyword.ToUssString());
+                }
+                else
+                {
+                    propertyName = value.sheet.ReadStylePropertyName(value.handle);
+                }
                 list.Add(propertyName);
                 ++index;
 

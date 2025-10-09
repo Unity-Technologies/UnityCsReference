@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
+
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     class EditorInstanceController : PlayModeController
     {
-        private readonly EditorInstanceDescription m_Settings;
+        [SerializeReference] EditorInstanceDescription m_Settings;
 
         internal EditorInstanceController(EditorInstanceDescription editorInstanceDescription)
         {

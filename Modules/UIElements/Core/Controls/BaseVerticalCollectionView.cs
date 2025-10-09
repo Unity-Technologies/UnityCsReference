@@ -1122,9 +1122,29 @@ namespace UnityEngine.UIElements
         internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
 
         /// <summary>
-        /// Determine if we are currently processing a pointer down event.
+        /// Enum for current pointer processing state.
         /// </summary>
-        internal bool processingPointerDownEvent
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal enum pointerProcessingStateEnum
+        {
+            None,
+            PointerDown
+        }
+
+        /// <summary>
+        /// Determine what pointer state we are currently processing.
+        /// </summary>
+        internal pointerProcessingStateEnum pointerProcessingState
+        {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
+            private set;
+        }
+
+        /// <summary>
+        /// Determine mouse button for currently processed pointer event.
+        /// See <see cref="MouseButton"/> for details.
+        /// </summary>
+        internal int currentPointerButton
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
             private set;
@@ -1686,7 +1706,7 @@ namespace UnityEngine.UIElements
 
         private void ProcessPointerDown(IPointerEvent evt)
         {
-            processingPointerDownEvent = true;
+            pointerProcessingState = pointerProcessingStateEnum.PointerDown;
             try
             {
                 if (!HasValidDataAndBindings())
@@ -1697,6 +1717,8 @@ namespace UnityEngine.UIElements
 
                 if (evt.button is not ((int)MouseButton.LeftMouse or (int)MouseButton.RightMouse))
                     return;
+
+                currentPointerButton = evt.button;
 
                 if (evt.pointerType != PointerType.mouse)
                 {
@@ -1715,7 +1737,8 @@ namespace UnityEngine.UIElements
             }
             finally
             {
-                processingPointerDownEvent = false;
+                pointerProcessingState = pointerProcessingStateEnum.None;
+                currentPointerButton = -1;
             }
         }
 

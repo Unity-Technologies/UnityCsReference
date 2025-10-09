@@ -17,6 +17,9 @@ namespace UnityEditor.Search
 
         public override void Rename(SearchQueryTreeViewItem item, string newName)
         {
+            if (item == null || string.IsNullOrWhiteSpace(newName))
+                return;
+
             var query = GetQuery(item.Data.TreeId);
             var userQuery = (SearchQuery)query;
             userQuery.name = newName;

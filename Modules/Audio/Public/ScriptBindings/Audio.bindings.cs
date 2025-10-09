@@ -468,7 +468,7 @@ namespace UnityEngine
     // A container for audio data.
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
     [StaticAccessor("AudioClipBindings", StaticAccessorType.DoubleColon)]
-    public sealed class AudioClip : AudioResource, IGeneratorDefinition
+    public sealed class AudioClip : AudioResource, IAudioGenerator
     {
         private AudioClip() {}
 
@@ -654,13 +654,13 @@ namespace UnityEngine
                 m_PCMSetPositionCallback(position);
         }
 
-        #region Generator.IDefinition
+        #region Generator.IAudioGenerator
 
-        bool Generator.ICapabilities.isRealtime => throw new NotImplementedException();
-        bool Generator.ICapabilities.isFinite => throw new NotImplementedException();
-        DiscreteTime? Generator.ICapabilities.length => throw new NotImplementedException();
+        bool GeneratorInstance.ICapabilities.isRealtime => throw new NotImplementedException();
+        bool GeneratorInstance.ICapabilities.isFinite => throw new NotImplementedException();
+        DiscreteTime? GeneratorInstance.ICapabilities.length => throw new NotImplementedException();
 
-        Generator IGeneratorDefinition.CreateRuntime(ControlContext context, DSPConfiguration? configuration, ControlContext.ProcessorCreationParameters parameters)
+        GeneratorInstance IAudioGenerator.CreateRuntime(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters parameters)
         {
             throw new NotImplementedException();
         }
@@ -776,31 +776,31 @@ namespace UnityEngine
         // The default [[AudioClip]] to play
         public AudioClip clip
         {
-            get => generator as AudioClip;
-            set => generator = value;
+            get => generatorObject as AudioClip;
+            set => generatorObject = value;
         }
 
         public AudioResource resource
         {
-            get => generator as AudioResource;
-            set => generator = value;
+            get => generatorObject as AudioResource;
+            set => generatorObject = value;
         }
 
-        public IGeneratorDefinition generatorDefinition
+        public IAudioGenerator generator
         {
             // These shall always succeed
-            get => (IGeneratorDefinition)generator;
-            set => generator = (Object)value;
+            get => (IAudioGenerator)generatorObject;
+            set => generatorObject = (Object)value;
         }
 
-        public unsafe Processor generatorHandle
+        public unsafe ProcessorInstance generatorInstance
         {
             get
             {
-                var header = (Generator.GeneratorHeader*)generatorHeader;
+                var header = (GeneratorInstance.GeneratorHeader*)generatorHeader;
 
                 if (header != null)
-                    return new Generator(header);
+                    return new GeneratorInstance(header);
 
                 return default;
             }
@@ -808,7 +808,7 @@ namespace UnityEngine
 
         extern internal unsafe void* generatorHeader { get; }
 
-        extern internal Object generator { get; set; }
+        extern internal Object generatorObject { get; set; }
 
         extern public AudioMixerGroup outputAudioMixerGroup { get; set; }
 

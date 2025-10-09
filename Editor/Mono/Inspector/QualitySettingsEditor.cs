@@ -662,6 +662,7 @@ namespace UnityEditor
                 if (m_OriginalQualityLevelName != m_NewQualityLevelName)
                 {
                     BuildProfileModuleUtil.RenameQualityLevelInAllProfiles(m_OriginalQualityLevelName, m_NewQualityLevelName);
+                    QualitySettings.OnActiveQualityLevelRenamed(m_OriginalQualityLevelName, m_NewQualityLevelName);
                 }
             }
             ResetQualityLevelRenameTracking();

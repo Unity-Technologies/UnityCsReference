@@ -672,6 +672,9 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\Deprecated\Audio.bindings.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\Deprecated\Audio.bindings.deprecated.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs">
       <Link>Modules\Audio\Public\ScriptBindings\ExposeDSPGraph.cs</Link>
     </Compile>
@@ -684,14 +687,29 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\UnityEngineWebCamTexture.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\UnityEngineWebCamTexture.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\AudioFormat.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\AudioFormat.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ChannelBuffer.cs">
       <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ChannelBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ControlContext.cs">
       <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ControlContext.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\DSPConfiguration.cs">
-      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\DSPConfiguration.cs</Link>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\AudioFormat.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\AudioFormat.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ControlContext.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ControlContext.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableGenerator.bindings.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableGenerator.bindings.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableProcessor.bindings.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableProcessor.bindings.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableRootOutput.bindings.deprecated.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableRootOutput.bindings.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ScriptableGenerator.bindings.cs">
       <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ScriptableGenerator.bindings.cs</Link>

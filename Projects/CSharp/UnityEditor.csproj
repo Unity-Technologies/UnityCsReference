@@ -7860,6 +7860,9 @@
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\PropertyDrawers\PhysicsRotatePropertyDrawer.cs">
       <Link>Modules\Physics2DEditor\Managed\PropertyDrawers\PhysicsRotatePropertyDrawer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\PropertyDrawers\PhysicsUserDataPropertyDrawer.cs">
+      <Link>Modules\Physics2DEditor\Managed\PropertyDrawers\PhysicsUserDataPropertyDrawer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\PropertyDrawers\PolygonGeometryPropertyDrawer.cs">
       <Link>Modules\Physics2DEditor\Managed\PropertyDrawers\PolygonGeometryPropertyDrawer.cs</Link>
     </Compile>

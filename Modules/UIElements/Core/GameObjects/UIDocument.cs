@@ -1306,12 +1306,23 @@ namespace UnityEngine.UIElements
         {
             s_OnValidateCalled++;
 
+            // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
+            // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
+            // systems listening to the panel creation to initialize themselves, which may do invalid
+            // operations for an OnValidate() call (e.g., the EventSystem will create GameObjects).
+            // UUM-119306: Sort order is also undefined if not initialized.
+            if (m_PanelSettings != null && !m_PanelSettings.isInitialized)
+            {
+                return;
+            }
+
             if (!gameObject.activeInHierarchy)
             {
                 return;
             }
 
-            if (m_PreviousPanelSettings != m_PanelSettings)
+            if (m_PreviousPanelSettings != m_PanelSettings &&
+                (m_PanelSettings == null || m_RootVisualElement != null && m_RootVisualElement.panel != null))
             {
                 // We'll use the setter as it guarantees the right behavior.
                 // It's necessary for the setter that the old value is still in place.

@@ -11,7 +11,7 @@ using UnityEngine.UIElements.Experimental;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Element that draws IMGUI content. For more information, refer to [[wiki:UIE-uxml-element-IMGUIContainer|UXML element IMGUIContainer]].
+    /// Element that draws IMGUI content in the editor. For more information, refer to [[wiki:UIE-uxml-element-IMGUIContainer|UXML element IMGUIContainer]].
     /// </summary>
     [Icon("UIToolkit/Icons/IMGUIContainer.png")]
     public class IMGUIContainer : VisualElement, IDisposable
@@ -236,9 +236,9 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            if (elementPanel is BaseRuntimePanel { drawsInCameras: true })
+            if (elementPanel is BaseRuntimePanel)
             {
-                Debug.LogError($"{nameof(IMGUIContainer)} cannot be used in a panel drawn by cameras.");
+                Debug.LogError($"{nameof(IMGUIContainer)} cannot be used in a runtime panel.");
                 return;
             }
 
@@ -578,11 +578,19 @@ namespace UnityEngine.UIElements
         {
             using (k_ImmediateCallbackMarker.Auto())
             {
-                var offset = elementPanel.repaintData.currentOffset;
-                m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
-                m_CachedTransform = offset * worldTransform;
+                // Most of the IMGUI code assumes there is no scissor active, so any enable scissor rect could cause issues. In particular, any code that render
+                // into a render texture larger than the active scissor rect will be broken (see FogBugz case 1127773). Removing the scissor rect should not have
+                // any side-effects given that IMGUI already has a mechanism to clip its content (using the GUIClip.ParentClip feature).
+                UIR.Utility.DisableScissor();
 
-                HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+                using (new GUIClip.ParentClipScope(worldTransform, worldClip))
+                {
+                    var offset = elementPanel.repaintData.currentOffset;
+                    m_CachedClippingRect = ComputeAAAlignedBound(worldClip, offset);
+                    m_CachedTransform = offset * worldTransform;
+
+                    HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, m_CachedTransform, m_CachedClippingRect, onGUIHandler, true);
+                }
             }
         }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Multiplayer.Internal;
 using UnityEngine.UIElements;
@@ -14,7 +15,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     class RemoteInstanceController : PlayModeController
     {
-        private readonly RemoteInstanceDescription m_Settings;
+        [SerializeReference] RemoteInstanceDescription m_Settings;
 
         internal RemoteInstanceController(RemoteInstanceDescription remoteInstanceDescription)
         {

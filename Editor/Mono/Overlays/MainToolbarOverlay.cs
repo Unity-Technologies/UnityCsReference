@@ -41,12 +41,14 @@ namespace UnityEditor.Overlays
             if (result is MainToolbarElement single)
             {
                 var ve = single.Rebuild();
+                SetDraggerTooltip(ve);
                 SetElementTooltip(ve);
                 AddContextMenu(single, ve);
                 toolbar.Add(ve);
             }
             else if (result is IEnumerable multiple)
             {
+                SetDraggerTooltip(toolbar);
                 foreach (var element in multiple)
                     if (element is MainToolbarElement data)
                     {
@@ -119,6 +121,11 @@ namespace UnityEditor.Overlays
                 element.tooltip = L10n.Tr(displayName) + L10n.Tr(string.Format(k_Tooltip, key));
         }
 
+        void SetDraggerTooltip(VisualElement element)
+        {
+            m_MainToolbarEditModeDragger.tooltip = !string.IsNullOrEmpty(element.tooltip) ? element.tooltip : L10n.Tr(displayName);
+        }
+
         internal void SetEditMode(MainToolbarEditMode mode)
         {
             m_MainToolbarEditModeDragger.style.display = mode != MainToolbarEditMode.Inactive
@@ -139,7 +146,6 @@ namespace UnityEditor.Overlays
 
             m_MainToolbarEditModeDragger = new VisualElement() { name = "MainToolbarEditModeDragger" };
             m_MainToolbarEditModeDragger.AddManipulator(new ContextualMenuManipulator((evt) => ContextClickHandler(evt, null)));
-            m_MainToolbarEditModeDragger.tooltip = L10n.Tr(displayName);
             rootVisualElement.Add(m_MainToolbarEditModeDragger);
             m_Dragger = new OverlayDragger(this);
             // Add menu modifier to the dragger filter
