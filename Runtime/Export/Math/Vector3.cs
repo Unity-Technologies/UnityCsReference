@@ -296,10 +296,10 @@ namespace UnityEngine
                 return zero;
             else
             {
-                var dot = Dot(vector, onNormal);
-                return new Vector3(onNormal.x * dot / sqrMag,
-                    onNormal.y * dot / sqrMag,
-                    onNormal.z * dot / sqrMag);
+                var dotSqrMag = Dot(vector, onNormal)/ sqrMag;
+                return new Vector3(onNormal.x * dotSqrMag,
+                    onNormal.y * dotSqrMag,
+                    onNormal.z * dotSqrMag);
             }
         }
 
@@ -312,10 +312,10 @@ namespace UnityEngine
                 return vector;
             else
             {
-                var dot = Dot(vector, planeNormal);
-                return new Vector3(vector.x - planeNormal.x * dot / sqrMag,
-                    vector.y - planeNormal.y * dot / sqrMag,
-                    vector.z - planeNormal.z * dot / sqrMag);
+                var dotSqrMag = Dot(vector, planeNormal)/ sqrMag;
+                return new Vector3(vector.x - planeNormal.x * dotSqrMag,
+                    vector.y - planeNormal.y * dotSqrMag,
+                    vector.z - planeNormal.z * dotSqrMag);
             }
         }
 
