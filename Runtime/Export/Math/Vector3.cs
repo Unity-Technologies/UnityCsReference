@@ -69,11 +69,11 @@ namespace UnityEngine
 
             if (sqdist == 0 || (maxDistanceDelta >= 0 && sqdist <= maxDistanceDelta * maxDistanceDelta))
                 return target;
-            var dist = (float)Math.Sqrt(sqdist);
+            var maxDeltaOverDistance = maxDistanceDelta/ (float)Math.Sqrt(sqdist);
 
-            return new Vector3(current.x + toVector_x / dist * maxDistanceDelta,
-                current.y + toVector_y / dist * maxDistanceDelta,
-                current.z + toVector_z / dist * maxDistanceDelta);
+            return new Vector3(current.x + toVector_x / maxDeltaToDistance,
+                current.y + toVector_y / maxDeltaToDistance,
+                current.z + toVector_z / maxDeltaToDistance);
         }
 
         [uei.ExcludeFromDocs]
@@ -96,9 +96,7 @@ namespace UnityEngine
         // Gradually changes a vector towards a desired goal over time.
         public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime)
         {
-            float output_x = 0f;
-            float output_y = 0f;
-            float output_z = 0f;
+            Vector3 output = Vector3.zero;
 
             // Based on Game Programming Gems 4 Chapter 1.10
             smoothTime = Mathf.Max(0.0001F, smoothTime);
@@ -107,60 +105,43 @@ namespace UnityEngine
             float x = omega * deltaTime;
             float exp = 1F / (1F + x + 0.48F * x * x + 0.235F * x * x * x);
 
-            float change_x = current.x - target.x;
-            float change_y = current.y - target.y;
-            float change_z = current.z - target.z;
+            Vector3 change = current - target;
             Vector3 originalTo = target;
 
             // Clamp maximum speed
             float maxChange = maxSpeed * smoothTime;
 
             float maxChangeSq = maxChange * maxChange;
-            float sqrmag = change_x * change_x + change_y * change_y + change_z * change_z;
+            float sqrmag = change.x * change.x + change.y * change.y + change.z * change.z;
             if (sqrmag > maxChangeSq)
             {
-                var mag = (float)Math.Sqrt(sqrmag);
-                change_x = change_x / mag * maxChange;
-                change_y = change_y / mag * maxChange;
-                change_z = change_z / mag * maxChange;
+                float  MaxChangeOverMag = maxChange / Mathf.Sqrt(sqrmag);
+                change *= MaxChangeOverMag;
             }
+            target = current - change;
 
-            target.x = current.x - change_x;
-            target.y = current.y - change_y;
-            target.z = current.z - change_z;
+            Vector3 temp = new Vector3(currentVelocity.x + omega * change.x, 
+										currentVelocity.y + omega * change.y, 
+		  								currentVelocity.z + omega * change.z) * deltaTime;
 
-            float temp_x = (currentVelocity.x + omega * change_x) * deltaTime;
-            float temp_y = (currentVelocity.y + omega * change_y) * deltaTime;
-            float temp_z = (currentVelocity.z + omega * change_z) * deltaTime;
+            currentVelocity = new Vector3(currentVelocity.x - omega * temp.x, 
+											currentVelocity.y - omega * temp.y, 
+											currentVelocity.z - omega * temp.z) * exp;
 
-            currentVelocity.x = (currentVelocity.x - omega * temp_x) * exp;
-            currentVelocity.y = (currentVelocity.y - omega * temp_y) * exp;
-            currentVelocity.z = (currentVelocity.z - omega * temp_z) * exp;
-
-            output_x = target.x + (change_x + temp_x) * exp;
-            output_y = target.y + (change_y + temp_y) * exp;
-            output_z = target.z + (change_z + temp_z) * exp;
+            output = new Vector3(target.x + (change.x + temp.x) * exp, 
+									target.y + (change.y + temp.y) * exp, 
+		 							target.z + (change.z + temp.z)) * exp;
 
             // Prevent overshooting
-            float origMinusCurrent_x = originalTo.x - current.x;
-            float origMinusCurrent_y = originalTo.y - current.y;
-            float origMinusCurrent_z = originalTo.z - current.z;
-            float outMinusOrig_x = output_x - originalTo.x;
-            float outMinusOrig_y = output_y - originalTo.y;
-            float outMinusOrig_z = output_z - originalTo.z;
+            Vector3 origMinusCurrent = originalTo - current;
+            Vector3 outMinusOrig = output - originalTo;
 
-            if (origMinusCurrent_x * outMinusOrig_x + origMinusCurrent_y * outMinusOrig_y + origMinusCurrent_z * outMinusOrig_z > 0)
+            if (origMinusCurrent.x * outMinusOrig.x + origMinusCurrent.y * outMinusOrig.y + origMinusCurrent.z * outMinusOrig.z > 0)
             {
-                output_x = originalTo.x;
-                output_y = originalTo.y;
-                output_z = originalTo.z;
-
-                currentVelocity.x = (output_x - originalTo.x) / deltaTime;
-                currentVelocity.y = (output_y - originalTo.y) / deltaTime;
-                currentVelocity.z = (output_z - originalTo.z) / deltaTime;
+                output = originalTo;
+                currentVelocity = (output - originalTo) / deltaTime;
             }
-
-            return new Vector3(output_x, output_y, output_z);
+            return output;
         }
 
         // Access the x, y, z components using [0], [1], [2] respectively.
@@ -296,10 +277,8 @@ namespace UnityEngine
                 return zero;
             else
             {
-                var dot = Dot(vector, onNormal);
-                return new Vector3(onNormal.x * dot / sqrMag,
-                    onNormal.y * dot / sqrMag,
-                    onNormal.z * dot / sqrMag);
+                var dotOverSqrMag = Dot(vector, onNormal)/ sqrMag;
+                return onNormal * dotOverSqrMag;
             }
         }
 
@@ -312,10 +291,10 @@ namespace UnityEngine
                 return vector;
             else
             {
-                var dot = Dot(vector, planeNormal);
-                return new Vector3(vector.x - planeNormal.x * dot / sqrMag,
-                    vector.y - planeNormal.y * dot / sqrMag,
-                    vector.z - planeNormal.z * dot / sqrMag);
+                var dotOverSqrMag = Dot(vector, planeNormal)/ sqrMag;
+                return new Vector3(vector.x - planeNormal.x * dotOverSqrMag,
+                    vector.y - planeNormal.y * dotOverSqrMag,
+                    vector.z - planeNormal.z * dotOverSqrMag;
             }
         }
 
