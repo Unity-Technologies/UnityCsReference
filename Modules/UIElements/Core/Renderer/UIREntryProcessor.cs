@@ -451,7 +451,6 @@ namespace UnityEngine.UIElements.UIR
                 bool shapeWindingIsClockwise = UIRUtility.ShapeWindingIsClockwise(m_MaskDepth, m_StencilRef);
                 bool transformFlipsWinding = m_CurrentRenderData.worldFlipsWinding;
 
-
                 var job = new ConvertMeshJobData
                 {
                     vertSrc = (IntPtr)entry.vertices.GetUnsafePtr(),

@@ -46,6 +46,7 @@ namespace UnityEngine.UIElements
         /// This is used to sample the required region of the associated texture if any. Values outside the range 0..1 are currently not supported and could lead to undefined results.
         /// </remarks>
         public Vector2 uv;
+
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
         internal Color32 ids; //XYZW (xform,clip,opacity,color/textcore)
         internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (is-dynamic-color)

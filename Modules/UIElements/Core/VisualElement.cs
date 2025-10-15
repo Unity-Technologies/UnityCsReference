@@ -679,8 +679,7 @@ namespace UnityEngine.UIElements
                     ((renderHints & RenderHints.GroupTransform) != 0 ? UsageHints.GroupTransform : 0) |
                     ((renderHints & RenderHints.BoneTransform) != 0 ? UsageHints.DynamicTransform : 0) |
                     ((renderHints & RenderHints.MaskContainer) != 0 ? UsageHints.MaskContainer : 0) |
-                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0)
-                    ;
+                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0);
 
             }
             set
@@ -701,7 +700,6 @@ namespace UnityEngine.UIElements
                 if ((value & UsageHints.DynamicColor) != 0)
                     renderHints |= RenderHints.DynamicColor;
                 else renderHints &= ~RenderHints.DynamicColor;
-
 
                 NotifyPropertyChanged(usageHintsProperty);
             }
@@ -748,12 +746,7 @@ namespace UnityEngine.UIElements
         internal int insertionIndex = -1;
 
         // TODO: Do some validation to make sure all effects actually have a material
-        internal bool useRenderTexture
-        {
-            get {
-                return false;
-            }
-        }
+        internal bool useRenderTexture { get => false; }
 
         /// <summary>
         /// Returns a transform styles object for this VisualElement.
@@ -2830,37 +2823,6 @@ namespace UnityEngine.UIElements
             else if (eventType == MouseOutEvent.TypeId() && capturingElement == null)
             {
                 elementPanel.cursorManager.ResetCursor();
-            }
-        }
-
-        static Material s_runtimeMaterial;
-        Material getRuntimeMaterial()
-        {
-            if (s_runtimeMaterial != null)
-                return s_runtimeMaterial;
-
-            Shader shader = Shader.Find(UIRUtility.k_DefaultShaderName);
-            Debug.Assert(shader != null, "Failed to load UIElements default shader");
-            if (shader != null)
-            {
-                shader.hideFlags |= HideFlags.DontSaveInEditor;
-                Material mat = new Material(shader);
-                mat.hideFlags |= HideFlags.DontSaveInEditor;
-                return s_runtimeMaterial = mat;
-            }
-            return null;
-        }
-
-        Material m_defaultMaterial;
-        internal Material defaultMaterial
-        {
-            get { return m_defaultMaterial; }
-            private set
-            {
-                if (m_defaultMaterial == value)
-                    return;
-                m_defaultMaterial = value;
-                IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
             }
         }
     }

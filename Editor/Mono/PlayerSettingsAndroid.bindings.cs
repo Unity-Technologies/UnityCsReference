@@ -166,6 +166,17 @@ namespace UnityEditor
         Other = 99,
     }
 
+    [Flags]
+    public enum AndroidDisplayOptions : uint
+    {
+        // No specific option set
+        None = 0,
+
+        // Detect presentation display
+        // This option is used to enable the creation of a Presentation used to render a Camera targetting Display 2 if a Presentation display is detected in the system
+        DetectPresentationDisplay = 1 << 0
+    }
+
     // Gamepad support level for Android TV
     public enum AndroidGamepadSupportLevel
     {
@@ -618,6 +629,14 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidShowActivityIndicatorOnLoading")]
                 get;
                 [NativeMethod("SetAndroidShowActivityIndicatorOnLoading")]
+                set;
+            }
+
+            public static extern AndroidDisplayOptions displayOptions
+            {
+                [NativeMethod("GetAndroidDisplayOptions")]
+                get;
+                [NativeMethod("SetAndroidDisplayOptions")]
                 set;
             }
 

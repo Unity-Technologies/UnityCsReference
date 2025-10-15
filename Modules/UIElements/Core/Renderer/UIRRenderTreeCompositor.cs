@@ -153,9 +153,7 @@ namespace UnityEngine.UIElements.UIR
         {
             m_RootOperation = m_DrawOperationPool.Get();
             m_RootOperation.Init(rootRenderTree);
-
         }
-
 
         static PostProcessingMargins GetReadMargins(PostProcessingPass effect, FilterFunction func)
         {

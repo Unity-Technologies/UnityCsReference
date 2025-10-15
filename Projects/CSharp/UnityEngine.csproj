@@ -2832,9 +2832,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleList.cs">
       <Link>Modules\UIElements\Core\Style\StyleList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleMaterial.cs">
-      <Link>Modules\UIElements\Core\Style\StyleMaterial.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\StylePropertyUtil.cs</Link>
     </Compile>

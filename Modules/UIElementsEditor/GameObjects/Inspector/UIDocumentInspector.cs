@@ -103,6 +103,8 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceWidthField.style.display = display;
             m_WorldSpaceHeightField.style.display = display;
 
+            uiDocument.Validate(true);
+
             // Let the UIDocument update its rendering properties (UUM-105765)
             uiDocument.DoUpdate();
         }

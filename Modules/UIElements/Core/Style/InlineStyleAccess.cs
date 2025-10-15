@@ -118,7 +118,6 @@ namespace UnityEngine.UIElements
         //     return StyleKeyword.Null;
         // }
 
-
         public bool TryGetStyleValue(StylePropertyId id, ref StyleValue value)
         {
             value.id = StylePropertyId.Unknown;
@@ -185,7 +184,6 @@ namespace UnityEngine.UIElements
 
         private bool m_HasInlineBackgroundSize;
         public StyleBackgroundSize m_InlineBackgroundSize;
-
 
         private InlineRule m_InlineRule;
         public InlineRule inlineRule => m_InlineRule;
@@ -408,7 +406,6 @@ namespace UnityEngine.UIElements
                 }
             }
         }
-
 
         private StyleList<T> GetStyleList<T>(StylePropertyId id)
         {
@@ -827,7 +824,6 @@ namespace UnityEngine.UIElements
             ApplyStyleValue(sv);
             return true;
         }
-
 
         private bool SetStyleValue<T>(StylePropertyId id, StyleList<T> inlineValue)
         {
@@ -1254,7 +1250,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-
         private void ApplyStyleValue(StyleValue value)
         {
             var parent = ve.hierarchy.parent;
@@ -1416,7 +1411,6 @@ namespace UnityEngine.UIElements
             }
             return false;
         }
-
 
         StyleEnum<ScaleMode> IStyle.unityBackgroundScaleMode
         {

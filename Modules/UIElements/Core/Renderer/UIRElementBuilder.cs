@@ -63,10 +63,6 @@ namespace UnityEngine.UIElements.UIR
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
-            bool changesDefaultMaterial = ve.defaultMaterial != null;
-            if (changesDefaultMaterial)
-                mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.defaultMaterial);
-
             bool mustPopClipping = false;
 
             if (ve.visible)
@@ -90,14 +86,10 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-
             mgc.entryRecorder.DrawChildren(mgc.parentEntry);
 
             if (mustPopClipping)
                 PopVisualElementClipping(mgc);
-
-            if (changesDefaultMaterial)
-                mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
 
             if (isGroupTransform)
                 mgc.entryRecorder.PopGroupMatrix(mgc.parentEntry);

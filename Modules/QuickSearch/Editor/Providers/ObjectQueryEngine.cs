@@ -105,11 +105,11 @@ namespace UnityEditor.Search.Providers
             {
                 god.refs = null;
             }
-            return m_GODS.Remove(instanceId);
+            return InvalidateObject(instanceId);
         }
 
         public ObjectQueryEngine()
-            : this(new T[0])
+            : this(Array.Empty<T>())
         {
         }
 
@@ -117,7 +117,6 @@ namespace UnityEditor.Search.Providers
         {
             m_Objects = objects.ToList();
             m_QueryEngine.AddFilter<int>("id", GetId);
-            m_QueryEngine.GetFilter("id");
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
@@ -192,10 +191,12 @@ namespace UnityEditor.Search.Providers
             return new SearchProposition(label: label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
         }
 
+        // TODO: This should not be an example. Documentation examples should be in the SearchExamples project.
         #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
-            var query = m_QueryEngine.ParseQuery(context.searchQuery, true);
+            const bool useFastYielding = true;
+            var query = m_QueryEngine.ParseQuery(context.searchQuery, useFastYielding);
             if (!query.valid)
             {
                 if (reportError)
@@ -204,8 +205,10 @@ namespace UnityEditor.Search.Providers
             }
 
             m_DoFuzzyMatch = query.HasToggle("fuzzy");
-            IEnumerable<T> gameObjects = subset ?? m_Objects;
-            return query.Apply(gameObjects, false);
+            // Do not filter all the valid objects now. The filtering will be done when the objects are actually pulled.
+            // Since the search can be done asynchronously, the state of the objects can change in between iterations.
+            IEnumerable<T> validObjects = FilterValidObjectsOnPull(subset ?? m_Objects, useFastYielding);
+            return query.Apply(validObjects, false);
         }
 
         #endregion
@@ -331,8 +334,6 @@ namespace UnityEditor.Search.Providers
 
         bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
         {
-            if (!obj)
-                return false;
             var god = GetGOD(obj);
 
             if (god.types == null)
@@ -590,6 +591,30 @@ namespace UnityEditor.Search.Providers
         static ParseResult<int> DefaultRefTypeParser(string filterValue)
         {
             return new ParseResult<int>(true, filterValue.ToLowerInvariant().GetHashCode());
+        }
+
+        /// <summary>
+        /// Filter and keep valid objects only.
+        /// </summary>
+        /// <param name="allObjects">The objects to filter</param>
+        /// <param name="useFastYielding">When set to true, returns null for invalid object instead of skipping to the next valid object. Mimics what ParsedQuery does.</param>
+        /// <returns>An IEnumerable of valid objects.</returns>
+        /// <remarks>This method only filters the objects when actively pulling on the IEnumerable.</remarks>
+        static IEnumerable<T> FilterValidObjectsOnPull(IEnumerable<T> allObjects, bool useFastYielding)
+        {
+            // Use yield return to only filter when the object is actually needed.
+            foreach (var obj in allObjects)
+            {
+                if (obj)
+                {
+                    yield return obj;
+                }
+                else if (useFastYielding)
+                {
+                    // Mimic ParsedQuery behavior of returning null for invalid objects.
+                    yield return null;
+                }
+            }
         }
     }
 }

@@ -129,16 +129,6 @@ namespace UnityEngine.UIElements.UIR
         internal int currentFrameCommandListCount = 0;
         CommandList m_DefaultCommandList = new CommandList(null, IntPtr.Zero, IntPtr.Zero, null);
 
-        struct DisableForceGammaMaterial
-        {
-            public Material material;
-            public int count;
-        }
-
-        Dictionary<Material, DisableForceGammaMaterial> m_DisableForceGammaMaterialTable;
-        List<Material> m_MaterialToRemove;
-        List<Material> m_Materialkeys;
-
 
         static UIRenderDevice()
         {
@@ -200,10 +190,6 @@ namespace UnityEngine.UIElements.UIR
             m_CommandLists = new List<CommandList>[k_MaxQueuedFrameCount];
             for (int i = 0; i < k_MaxQueuedFrameCount; ++i)
                 m_CommandLists[i] = new List<CommandList>();
-
-            m_DisableForceGammaMaterialTable = new();
-            m_MaterialToRemove = new();
-            m_Materialkeys = new();
         }
 
         void InitVertexDeclaration()
@@ -727,36 +713,6 @@ namespace UnityEngine.UIElements.UIR
             st.mustApplyStencil = false;
         }
 
-        // This function is only called when we are rendering in worldSpace.
-        // Since forceGammaRendering will always be false, we Assert on it.
-        // To optimize the code path, we test if the material is the default runtimeWorldMaterial 
-        // to make sure we do not unecessarely disable k_ForceGammaKeyword since it is always false
-        // and cannot be changed in the overlay codepath.
-        // For a custom shader, since the k_ForceGammaKeyword can be enabled in the overlay codepath, 
-        // we need to keep a copy and disable it.
-        // Since there is currently no difference between the blockshader interface offered between overlay and worldspace
-        // shaders we have to keep track of the materials that have possibly been modified to disable the k_ForceGammaKeyword.
-        Material GetOrCreateMaterial(Material material)
-        {
-            Debug.Assert(forceGammaRendering == false);
-
-            if (material == Shaders.runtimeWorldMaterial)
-            {
-                return material;
-            }
-
-            DisableForceGammaMaterial disableForceGammaMaterial;
-            if (!m_DisableForceGammaMaterialTable.TryGetValue(material, out disableForceGammaMaterial))
-            {
-                disableForceGammaMaterial.material = new Material(material);
-                disableForceGammaMaterial.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
-                m_DisableForceGammaMaterialTable.Add(material, disableForceGammaMaterial);
-            }
-            disableForceGammaMaterial.count = 2;
-            m_DisableForceGammaMaterialTable[material] = disableForceGammaMaterial;
-            return disableForceGammaMaterial.material;
-        }
-
         public unsafe void EvaluateChain(
             RenderChainCommand head,
             Material defaultMat,
@@ -1261,44 +1217,6 @@ namespace UnityEngine.UIElements.UIR
                 current.Dispose();
                 current = next;
             }
-        }
-
-        public void SynchronizeMaterials()
-        {
-            foreach (Material key in m_DisableForceGammaMaterialTable.Keys)
-            {
-                m_Materialkeys.Add(key);
-            }
-
-            foreach (Material key in m_Materialkeys)
-            {
-                DisableForceGammaMaterial disableForceGammaMaterial = m_DisableForceGammaMaterialTable[key];
-                if (disableForceGammaMaterial.count == 0 || key == null)
-                {
-                    m_MaterialToRemove.Add(key);
-                }
-                else
-                {
-                    disableForceGammaMaterial.count --;
-                    m_DisableForceGammaMaterialTable[key] = disableForceGammaMaterial;
-
-                    if (disableForceGammaMaterial.material.shader != key.shader)
-                    {
-                        disableForceGammaMaterial.material.shader = key.shader;
-                    }
-
-                    disableForceGammaMaterial.material.CopyPropertiesFromMaterial(key);
-                    disableForceGammaMaterial.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
-                }
-            }
-
-            foreach (var material in m_MaterialToRemove)
-            {
-                m_DisableForceGammaMaterialTable.Remove(material);
-            }
-
-            m_Materialkeys.Clear();
-            m_MaterialToRemove.Clear();
         }
 
         internal static void PrepareForGfxDeviceRecreate()

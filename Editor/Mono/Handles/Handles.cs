@@ -1456,7 +1456,7 @@ namespace UnityEditor
         {
             if(Event.current.type != EventType.Repaint)
                 return;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers?.ToEntityIdArray(), childRenderers?.ToEntityIdArray(), OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 

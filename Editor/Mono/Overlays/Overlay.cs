@@ -368,6 +368,7 @@ namespace UnityEditor.Overlays
                 m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
                 m_RootVisualElement.AddToClassList(ussClassName);
                 m_RootVisualElement.AddManipulator(new GlobalMouseBehaviourForOverlays(this));
+                m_RootVisualElement.pickingMode = PickingMode.Ignore;
 
                 var dragger = new OverlayDragger(this);
                 var contextClick = new ContextualMenuManipulator(BuildContextMenu);

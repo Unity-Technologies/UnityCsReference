@@ -42,8 +42,7 @@ namespace UnityEditor.Search
             {
                 if (element == null)
                     yield return default;
-
-                if (predicate(element))
+                else if (predicate(element))
                     yield return element;
                 else
                     yield return default;

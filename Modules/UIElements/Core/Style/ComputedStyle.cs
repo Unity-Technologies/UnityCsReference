@@ -181,6 +181,5 @@ namespace UnityEngine.UIElements
             var to = backgroundSize.keyword == StyleKeyword.Initial ? InitialStyle.backgroundSize : backgroundSize.value;
             return element.styleAnimation.Start(StylePropertyId.BackgroundSize, computedStyle.visualData.Read().backgroundSize, to, durationMs, delayMs, easingCurve);
         }
-
     }
 }
