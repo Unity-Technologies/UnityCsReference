@@ -230,23 +230,6 @@ namespace UnityEditor.Build.Profile
             return BuildProfileModuleUtil.GetLastRunnableBuildKeyFromAssetPath(assetPath, key);
         }
 
-        /// <summary>
-        /// Duplicate the build profile. Note this does not create a new asset.
-        /// </summary>
-        [VisibleToOtherModules]
-        internal BuildProfile Duplicate()
-        {
-            var duplicatedProfile = Instantiate(this);
-
-            if (graphicsSettings != null)
-                duplicatedProfile.graphicsSettings = Instantiate(graphicsSettings);
-
-            if (qualitySettings != null)
-                duplicatedProfile.qualitySettings = Instantiate(qualitySettings);
-
-            return duplicatedProfile;
-        }
-
         [VisibleToOtherModules]
         internal void ResetToGlobalQualitySettingsValues()
         {
@@ -308,6 +291,7 @@ namespace UnityEditor.Build.Profile
             // On disk changes invoke OnEnable,
             // Check against the last observed editor defines.
             string[] lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);
             if (ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiledDefines))
             {
                 return;
@@ -349,7 +333,14 @@ namespace UnityEditor.Build.Profile
         void OnDisable()
         {
             if (IsActiveBuildProfileOrPlatform())
+            {
+                m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);                
                 EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
+                if (!overrideGlobalScenes)
+                    EditorUserBuildSettings.SetCachedActiveProfileScenes(EditorBuildSettings.globalScenes);
+                else
+                    EditorUserBuildSettings.SetCachedActiveProfileScenes(scenes);
+            }
 
             var playerSettingsDirty = EditorUtility.IsDirty(m_PlayerSettings);
             if (playerSettingsDirty)

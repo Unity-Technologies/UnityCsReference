@@ -33,6 +33,16 @@ namespace UnityEditor
             return res.isValid;
         }
 
+        public static bool ParseEntityId(string text, out EntityId res)
+        {
+            res = new EntityId();
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            res = EntityId.Parse(text);
+            return res != EntityId.None;
+        }
+
         public static bool ParseBool(string text, out bool res)
         {
             res = false;

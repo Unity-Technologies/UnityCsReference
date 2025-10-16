@@ -40,8 +40,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
         internal struct Content
         {
             public static readonly string k_AtNoLoaderInstance = L10n.Tr("There are no Adaptive Performance providers available for this platform.");
-            public static readonly string k_LicenseText = L10n.Tr("By clicking the checkbox to install a provider, you acknowledge that you have read and agreed to the terms and conditions found under \"View licenses.\"");
-            public static readonly GUIContent k_LicenseViewText = new GUIContent(L10n.Tr("View licenses"));
             public static readonly GUIContent k_LoaderUITitle = EditorGUIUtility.TrTextContent(L10n.Tr("Providers"));
             public static readonly GUIContent k_HelpContent = new GUIContent("", EditorGUIUtility.IconContent("_Help@2x").image, L10n.Tr("Selecting a provider installs that providers package. Packages can be managed through the Package Manager."));
         }
@@ -74,27 +72,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 li.stateChanged = true;
                 m_LoaderMetadata[index] = li;
             }
-
-            //if (li.licenseURL != null)
-            //    DisplayLink(Content.k_LicenseViewText, new Uri(li.licenseURL), 2, 80, rect);
-        }
-
-        private void DisplayLink(GUIContent text, Uri link, float leftMargin, float width, Rect rect)
-        {
-            var labelStyle = EditorStyles.linkLabel;
-            var uriRect = rect;
-
-            uriRect.x += uriRect.width * 2;
-            uriRect.y -= 1;
-            uriRect.x -= width + leftMargin;
-            uriRect.width = width;
-
-            if (GUI.Button(uriRect, text, labelStyle))
-            {
-                System.Diagnostics.Process.Start(link.AbsoluteUri);
-            }
-            EditorGUIUtility.AddCursorRect(uriRect, MouseCursor.Link);
-            EditorGUI.DrawRect(new Rect(uriRect.x + 2, uriRect.y + uriRect.height - 3, uriRect.width - 3, 1), labelStyle.normal.textColor);
         }
 
         float GetElementHeight(int index)
@@ -175,9 +152,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
             else
             {
-                EditorGUILayout.HelpBox(Content.k_LicenseText, MessageType.Info);
-                EditorGUILayout.Space();
-
                 m_OrderedList.DoLayoutList();
                 if (settings != null)
                 {

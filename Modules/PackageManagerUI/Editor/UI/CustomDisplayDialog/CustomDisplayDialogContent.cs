@@ -47,6 +47,7 @@ internal class CustomDisplayDialogContent : ModalContent
 
         helpBoxIcon.AddToClassList(args.headerInfoBoxIcon.ClassName());
         helpBoxLabel.text = args.headerInfoBoxText;
+        upperContainer.AddToClassList(args.headerColor.ToString().ToLower());
 
         var showInfoBox = !string.IsNullOrEmpty(args.headerInfoBoxText);
         var showHeaderMainLabel = !string.IsNullOrEmpty(args.headerMainText);
@@ -96,7 +97,7 @@ internal class CustomDisplayDialogContent : ModalContent
     {
         UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
 
-        var fixedSize = new Vector2(500f, lowerContainer.layout.height + upperContainer.layout.height);
+        var fixedSize = new Vector2(340f, lowerContainer.layout.height + upperContainer.layout.height);
         container.minSize = fixedSize;
         container.maxSize = fixedSize;
     }

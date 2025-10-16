@@ -5,7 +5,6 @@
 using System;
 using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEditorInternal;
 using UnityEngine.UIElements;
 using UIEHelpBox = UnityEngine.UIElements.HelpBox;
 
@@ -181,7 +180,7 @@ namespace Unity.UI.Builder
                         continue;
 
                     currentAttributesUxmlOwner.RemoveAttribute(attributeName);
-                    var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+                    var description = fieldElement.GetLinkedAttributeDescription();
                     description.SyncDefaultValue(currentSerializedData, true);
                     BuilderAssetUtilities.CallDeserializeOnElement(context);
 
@@ -269,21 +268,6 @@ namespace Unity.UI.Builder
             }
 
             root.Bind(context.rootSerializedObject);
-        }
-
-        /// <inheritdoc/>
-        protected override object GetAttributeValue(UxmlAttributeDescription attribute)
-        {
-            if (isBinding)
-            {
-                // For the converters attributes, the only way to get the value is to read the value from the uxml binding asset directly.
-                if (attribute.name is k_BindingAttr_ConvertersToUi or k_BindingAttr_ConvertersToSource)
-                {
-                    return attributesUxmlOwner.GetAttributeValue(attribute.name);
-                }
-            }
-
-            return base.GetAttributeValue(attribute);
         }
 
         internal override void UpdateAttributeOverrideStyle(VisualElement fieldElement)

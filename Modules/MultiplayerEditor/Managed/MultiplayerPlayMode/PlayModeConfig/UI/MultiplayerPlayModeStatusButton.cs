@@ -29,7 +29,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         VisualElement m_Progressbar;
         const string k_StylePath = "Multiplayer/UI/MultiplayerPlayModeStatusButton.uss";
 
-        public MultiplayerPlayModeStatusButton(ScenarioConfig config)
+        public MultiplayerPlayModeStatusButton(OrchestratedScenario config)
         {
             name = k_StatusButtonName;
             m_Progressbar = new VisualElement();
@@ -48,7 +48,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             styleSheets.Add(EditorGUIUtility.LoadRequired(k_StylePath) as StyleSheet);
 
-            PlayModeManager.instance.StateChanged += _ => SetProgress(ScenarioRunner.GetScenarioStatus());
+            ScenarioManagerProvider.instance.StateChanged += _ => SetProgress(ScenarioRunner.GetScenarioStatus());
             ScenarioRunner.StatusChanged += _ => SetProgress(ScenarioRunner.GetScenarioStatus());
             clicked += () => UnityEditor.PopupWindow.Show(new Rect(worldBound.x + worldBound.width - PlaymodeStatusPopupContent.windowSize.x, worldBound.y, worldBound.width, worldBound.height), new PlaymodeStatusPopupContent()); ;
         }
@@ -71,21 +71,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        void SetProgress(ScenarioStatus state)
+        void SetProgress(ScenarioStatusData state)
         {
             var stage = state.CurrentStage;
 
-            var labelText = state.State.ToString();
+            var labelText = state.OverallStatus.State.ToString();
             var tooltipText = "";
             var iconImage = default(Texture2D);
             var progressPercent = 0f;
 
             ClearUssClasses();
 
-            switch (state.State)
+            switch (state.OverallStatus.State)
             {
-                case ScenarioState.Running:
-                    if (stage == ExecutionStage.Run && state.StageState == ExecutionState.Active)
+                case ExecutionState.Running:
+                case ExecutionState.Active:
+                    if (stage == ExecutionStage.Run && state.CurrentStageState == ExecutionState.Active)
                     {
                         AddToClassList(ussClassRunning);
                         labelText = "Running";
@@ -101,12 +102,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         // Otherwise set the label to the stage we're running in.
                         labelText = stage == ExecutionStage.Run ? "Start" : stage.ToString();
 
-                        var stageProgress = Mathf.Ceil(state.TotalProgress * 100);
-                        progressPercent = Mathf.Ceil((((int)stage - 1) + state.TotalProgress) * 100 / 3);
+                        var stageProgress = Mathf.Ceil(state.OverallStatus.Progress * 100);
+                        progressPercent = Mathf.Ceil(((int)stage - 1 + state.OverallStatus.Progress) * 100 / 3);
                         tooltipText = $"Scenario Progress\n{labelText}:\t{stageProgress}%\nOverall:\t{progressPercent}%";
                     }
                     break;
-                case ScenarioState.Failed:
+                case ExecutionState.Failed:
                     AddToClassList(ussClassError);
                     tooltipText = "Scenario has failed. See console for details.";
                     iconImage = Icons.GetImage(Icons.ImageName.Error);

@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+#pragma warning disable CS0618
+
 namespace UnityEditor
 {
     [CustomEditor(typeof(SpeedTreeImporter))]
@@ -202,3 +204,5 @@ namespace UnityEditor
         }
     }
 }
+
+#pragma warning restore CS0618

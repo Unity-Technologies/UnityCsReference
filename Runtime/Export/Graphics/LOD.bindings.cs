@@ -57,6 +57,31 @@ namespace UnityEngine
             [NativeMethod("SetLastLODIsBillboard")] set;
         }
 
+        private extern int _globalIlluminationLOD
+        {
+            [NativeMethod("GetGlobalIlluminationLOD")]
+            get;
+            [NativeMethod("SetGlobalIlluminationLOD")]
+            set;
+        }
+
+        internal int globalIlluminationLOD
+        {
+            get
+            {
+                return _globalIlluminationLOD;
+            }
+            set
+            {
+                if (value < -1 || value >= lodCount)
+                {
+                    var validLodRange = lodCount <= 1 ? "" : $"(0-{lodCount - 1})";
+                    throw new ArgumentOutOfRangeException(nameof(globalIlluminationLOD), value, $"{nameof(globalIlluminationLOD)} must be -1 or point to a valid LOD {validLodRange} in the list of {lodCount} lod(s).");
+                }
+                _globalIlluminationLOD = value;
+            }
+        }
+
         // The fade mode
         extern public LODFadeMode fadeMode  { get; set; }
 

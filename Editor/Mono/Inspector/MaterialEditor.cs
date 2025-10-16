@@ -2959,6 +2959,8 @@ namespace UnityEditor
             }
             else if (go && go.GetComponent<Renderer>())
                 HandleRenderer(go.GetComponent<Renderer>(), materialIndex, target as Material, evt.type, evt.alt);
+            else if (go && go.GetComponent<Terrain>())
+                HandleTerrain(go.GetComponent<Terrain>(), target as Material, evt.type, evt.alt);
             else
                 ClearDragMaterialRendering();
         }
@@ -2974,10 +2976,25 @@ namespace UnityEditor
                     var materialRendererSerializedObject = new SerializedObject(s_previousDraggedUponRenderer).FindProperty("m_Materials");
                     PrefabUtility.RevertPropertyOverride(materialRendererSerializedObject, InteractionMode.AutomatedAction, false);
                     hasRevert = true;
-
-                    if (!hasRevert)
-                        s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
                 }
+
+                if (!hasRevert)
+                    s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
+            }
+
+            if (s_previousDraggedUponTerrain != null)
+            {
+                bool hasRevert = false;
+                if (!s_previousTerrainAlreadyHadPrefabModification &&
+                    PrefabUtility.GetPrefabInstanceStatus(s_previousDraggedUponTerrain) == PrefabInstanceStatus.Connected)
+                {
+                    var materialTerrainSerializedObject = new SerializedObject(s_previousDraggedUponTerrain).FindProperty("m_MaterialTemplate");
+                    PrefabUtility.RevertPropertyOverride(materialTerrainSerializedObject, InteractionMode.AutomatedAction, false);
+                    hasRevert = true;
+                }
+
+                if (!hasRevert)
+                    s_previousDraggedUponTerrain.materialTemplate = s_previousTerrainMaterialTemplate;
             }
         }
 
@@ -2986,6 +3003,9 @@ namespace UnityEditor
             TryRevertDragChanges();
             s_previousDraggedUponRenderer = null;
             s_previousMaterialValue = null;
+
+            s_previousDraggedUponTerrain = null;
+            s_previousTerrainMaterialTemplate = null;
         }
 
         Material s_OriginalMaterial;
@@ -3089,6 +3109,128 @@ namespace UnityEditor
                 // Since we can handle multiple objects being dragged, we cannot use the event here.
                 // This will fall under respective view message processing responsibilities.
             }
+        }
+
+        static Terrain s_previousDraggedUponTerrain;
+        static Material s_previousTerrainMaterialTemplate;
+        static bool s_previousTerrainAlreadyHadPrefabModification;
+        private void HandleTerrain(Terrain terrain, Material material, EventType type, bool alt)
+        {
+            if (terrain == null)
+                return;
+
+            var applyMaterial = false;
+            switch (type)
+            {
+                case EventType.DragUpdated:
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                    applyMaterial = true;
+                    break;
+
+                case EventType.DragPerform:
+                    DragAndDrop.AcceptDrag();
+                    applyMaterial = true;
+                    ClearDragMaterialRendering();
+                    break;
+
+                case EventType.DragExited:
+                    ClearDragMaterialRendering();
+                    break;
+            }
+
+            if (applyMaterial)
+            {
+                if (type != EventType.DragPerform)
+                {
+                    ClearDragMaterialRendering(); 
+                    s_previousDraggedUponTerrain = terrain;
+                    s_previousTerrainMaterialTemplate = terrain.materialTemplate;
+
+                    // Update prefab modification status cache for terrain
+                    s_previousTerrainAlreadyHadPrefabModification = false;
+                    if (PrefabUtility.GetPrefabInstanceStatus(s_previousDraggedUponTerrain) == PrefabInstanceStatus.Connected)
+                    {
+                        var materialTerrainSerializedObject = new SerializedObject(s_previousDraggedUponTerrain).FindProperty("m_MaterialTemplate");
+                        s_previousTerrainAlreadyHadPrefabModification = materialTerrainSerializedObject.prefabOverride;
+                    }
+                }
+
+                if (type == EventType.DragPerform)
+                {
+                    ValidateAndWarnTerrainMaterial(material);
+                }
+
+                Undo.RecordObject(terrain, Styles.undoAssignMaterial);
+                terrain.materialTemplate = material;
+            }
+        }
+
+        [RequiredByNativeCode]
+        internal static bool ValidateAndWarnTerrainMaterial(Material material)
+        {
+            if (!TryValidateTerrainMaterial(material, out string warningMessage, out string shaderPath))
+            {
+                Debug.LogWarning($"[Terrain] {warningMessage}");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Validates if a material is suitable for use with Terrain.
+        /// Returns true if valid; otherwise false and sets warningMessage.
+        /// </summary>
+        internal static bool TryValidateTerrainMaterial(Material material, out string warningMessage, out string recommendedShaderPath)
+        {
+            warningMessage = null;
+            recommendedShaderPath = "";
+
+            if (material == null)
+                return true;
+
+            bool isShaderValid;
+            bool.TryParse(material.GetTag("TerrainCompatible", false), out isShaderValid);
+            RenderPipelineAsset renderPipeline = GraphicsSettings.currentRenderPipeline;
+
+            var terrainDefaultMaterial = GraphicsSettings.GetDefaultMaterial(DefaultMaterialType.Terrain);
+            if (terrainDefaultMaterial != null)
+                recommendedShaderPath = terrainDefaultMaterial.shader.name;
+
+            string pipelineShaderTag = material.GetTag("RenderPipeline", false);
+            switch (renderPipeline?.GetType().Name)
+            {
+                case "HDRenderPipelineAsset":
+                    isShaderValid = pipelineShaderTag.Equals("HDRenderPipeline") && isShaderValid;
+                    break;
+                case "UniversalRenderPipelineAsset":
+                    isShaderValid = pipelineShaderTag.Equals("UniversalPipeline") && isShaderValid;
+                    break;
+                case null: // Legacy render pipeline
+                    recommendedShaderPath = "a shader from Nature/Terrain";
+                    isShaderValid = pipelineShaderTag.Equals("") && isShaderValid;
+                    break;
+                default: // Custom SRP — skip warning
+                    return true;
+            }
+
+            if (!isShaderValid)
+            {
+                warningMessage =
+                    $"The provided Material's shader might be unsuitable for use with Terrain in the active render pipeline. " +
+                    $"We recommend you use {recommendedShaderPath} instead.\n\n" +
+                    $"If this isn't the case, add the \"TerrainCompatible\" = \"True\" tag in your shader's property block to suppress this warning.";
+                return false;
+            }
+
+            if (ShaderUtil.HasTangentChannel(material.shader))
+            {
+                warningMessage =
+                    $"The selected Material's shader uses tangent geometry, which Terrain doesn't support. " +
+                    $"We recommend you use {recommendedShaderPath} instead.";
+                return false;
+            }
+
+            return true;
         }
 
         internal override bool HasLargeHeader()

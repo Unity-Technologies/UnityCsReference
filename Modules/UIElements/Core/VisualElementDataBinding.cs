@@ -145,7 +145,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// This event does not bubble up or trickle down.
     /// </remarks>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     class PropertyChangedEvent : EventBase<PropertyChangedEvent>, IChangeEvent
     {
         static PropertyChangedEvent()

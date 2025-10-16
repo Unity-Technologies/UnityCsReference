@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     [UxmlElement(null, typeof(Button))]
     [Icon("UIToolkit/Icons/ToggleButtonGroup.png")]
-    public class ToggleButtonGroup : BaseField<ToggleButtonGroupState>
+    public partial class ToggleButtonGroup : BaseField<ToggleButtonGroupState>
     {
         private static readonly string k_MaxToggleButtonGroupMessage = $"The number of buttons added to ToggleButtonGroup exceeds the maximum allowed ({ToggleButtonGroupState.maxLength}). The newly added button will not be treated as part of this control.";
 
@@ -59,37 +59,6 @@ namespace UnityEngine.UIElements
                     e.isMultipleSelection = isMultipleSelection;
                 if (ShouldWriteAttributeValue(allowEmptySelection_UxmlAttributeFlags))
                     e.allowEmptySelection = allowEmptySelection;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToggleButtonGroup"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> that is created from UXML.
-        /// </remarks>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToggleButtonGroup, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToggleButtonGroup"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a ToggleButtonGroup element that you can use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<ToggleButtonGroupState>.UxmlTraits
-        {
-            private UxmlBoolAttributeDescription m_IsMultipleSelection = new() { name = "is-multiple-selection" };
-            private UxmlBoolAttributeDescription m_AllowEmptySelection = new() { name = "allow-empty-selection" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var toggleButtonGroup = (ToggleButtonGroup)ve;
-                toggleButtonGroup.isMultipleSelection = m_IsMultipleSelection.GetValueFromBag(bag, cc);
-                toggleButtonGroup.allowEmptySelection = m_AllowEmptySelection.GetValueFromBag(bag, cc);
             }
         }
 
@@ -151,6 +120,29 @@ namespace UnityEngine.UIElements
 
         private bool m_IsMultipleSelection;
         private bool m_AllowEmptySelection;
+
+        bool m_AcceptClicksIfDisabled;
+
+        /// <summary>
+        /// Allow the buttons to accept click events when the elements are disabled.
+        /// </summary>
+        internal bool acceptClicksIfDisabled
+        {
+            get => m_AcceptClicksIfDisabled;
+            set
+            {
+                if (m_AcceptClicksIfDisabled == value)
+                    return;
+
+                m_AcceptClicksIfDisabled = value;
+
+                // In the events that this property is set after the buttons were created.
+                foreach (var button in m_Buttons)
+                {
+                    button.clickable.acceptClicksIfDisabled = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Whether all buttons can be selected.
@@ -339,6 +331,7 @@ namespace UnityEngine.UIElements
             // Assign the required class and functionality to the button being added.
             button.AddToClassList(buttonClassName);
             button.clickable.clickedWithEventInfo += OnOptionChange;
+            button.clickable.acceptClicksIfDisabled = acceptClicksIfDisabled;
 
             // Since we aren't passing index back and forth, this is the best way for now to get the latest ordered list
             // of buttons.

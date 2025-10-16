@@ -35,19 +35,25 @@ namespace UnityEditor.UIElements
             return filePath;
         }
 
-        [MenuItem("Assets/Create/UI Toolkit/UI Document", false, 610, false)]
+        [MenuItem("Assets/Create/UI Toolkit/UI Document (UXML)", false, 602, false)]
         private static void CreateUXMLAsset()
+        {
+            CreateUXMLAssetWithCallback();
+        }
+
+        public static void CreateUXMLAssetWithCallback(Action<int> onRenameComplete = null)
         {
             var folder = GetCurrentFolder();
             var contents = CreateUXMLTemplate(folder);
             var icon = EditorGUIUtility.IconContent<VisualTreeAsset>().image as Texture2D;
-            ProjectWindowUtil.CreateAssetWithContent("NewUXMLTemplate.uxml", contents, icon);
+
+            ProjectWindowUtil.CreateAssetWithContent("NewUXMLTemplate.uxml", contents, icon, onRenameComplete);
         }
 
         public static string CreateUXMLTemplate(string folder, string uxmlContent = "")
         {
-            if (!Directory.Exists(UxmlSchemaGenerator.k_SchemaFolder))
-                UxmlSchemaGenerator.UpdateSchemaFiles(true);
+            if (!Directory.Exists(UxmlSchemaGenerator.SchemaFolder))
+                UxmlSchemaGenerator.UpdateSchemaFiles();
 
             var pathComponents = folder.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             var backDots = new List<string>();
@@ -65,7 +71,7 @@ namespace UnityEditor.UIElements
                         break;
                 }
             }
-            backDots.Add(UxmlSchemaGenerator.k_SchemaFolder);
+            backDots.Add(UxmlSchemaGenerator.SchemaFolder);
             var schemaDirectory = string.Join("/", backDots.ToArray());
 
             var uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>

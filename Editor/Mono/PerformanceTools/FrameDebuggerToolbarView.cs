@@ -54,7 +54,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             GUILayout.Toggle(FrameDebugger.enabled, button, EditorStyles.toolbarButtonLeft, GUILayout.MinWidth(80));
             GUI.enabled = wasEnabled;
 
-            if (EditorGUI.EndChangeCheck())
+            if (!frameDebuggerWindow.IsDebuggingAvailable(out var _) || EditorGUI.EndChangeCheck())
             {
                 frameDebuggerWindow.ToggleFrameDebuggerEnabled();
                 needsRepaint = true;

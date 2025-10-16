@@ -29,6 +29,7 @@ namespace UnityEditor
         SerializedProperty m_ShaderChannels;
         SerializedProperty m_UpdateRectTransformForStandalone;
         SerializedProperty m_VertexColorAlwaysGammaSpace;
+        SerializedProperty m_UseReflectionProbes;
 
         AnimBool m_OverlayMode;
         AnimBool m_CameraMode;
@@ -49,6 +50,7 @@ namespace UnityEditor
             public static GUIContent pixelPerfectContent = EditorGUIUtility.TrTextContent("Pixel Perfect");
             public static GUIContent standaloneRenderResize = EditorGUIUtility.TrTextContent("Resize Canvas", "For manual Camera.Render calls should the canvas resize to match the destination target.");
             public static GUIContent vertexColorAlwaysGammaSpace = EditorGUIUtility.TrTextContent("Vertex Color Always In Gamma Color Space", "UI vertex colors are always in gamma color space disregard of the player settings");
+            public static GUIContent useReflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "Allows shaders in the canvas to access data from Reflection Probes");
         }
 
         private bool m_AllNested = false;
@@ -84,6 +86,7 @@ namespace UnityEditor
             m_ShaderChannels = serializedObject.FindProperty("m_AdditionalShaderChannelsFlag");
             m_UpdateRectTransformForStandalone = serializedObject.FindProperty("m_UpdateRectTransformForStandalone");
             m_VertexColorAlwaysGammaSpace = serializedObject.FindProperty("m_VertexColorAlwaysGammaSpace");
+            m_UseReflectionProbes = serializedObject.FindProperty("m_UseReflectionProbes");
 
             m_OverlayMode = new AnimBool(m_RenderMode.intValue == 0);
             m_OverlayMode.valueChanged.AddListener(Repaint);
@@ -211,6 +214,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
                 EditorGUILayout.SortingLayerField(Styles.m_SortingLayerStyle, m_SortingLayerID, EditorStyles.popup);
                 EditorGUILayout.PropertyField(m_SortingOrder, Styles.m_SortingOrderStyle);
+                EditorGUILayout.PropertyField(m_UseReflectionProbes, Styles.useReflectionProbes);
             }
             EditorGUILayout.EndFadeGroup();
             EditorGUI.indentLevel--;

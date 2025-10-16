@@ -21,7 +21,8 @@ internal abstract class VisualElementNodeTypeHandler :
     HierarchyNodeTypeHandler,
     IVisualElementChangeProcessor,
     IHierarchySearchPropositionProvider,
-    IHierarchyEntityIdConverter
+    IHierarchyEntityIdConverter,
+    IHierarchyEditorNodeTypeHandler
 {
     // Used for tests
     internal MappingsAccess GetMappings() => new(this);
@@ -278,182 +279,6 @@ internal abstract class VisualElementNodeTypeHandler :
         m_ParsedQuery = null;
     }
 
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.AcceptParent"/>>
-    public sealed override bool AcceptParent(HierarchyView view, in HierarchyNode parent)
-    {
-        if (isReadonly)
-            return false;
-
-        var handler = Hierarchy.GetNodeTypeHandlerBase(in parent);
-        return handler is VisualElementNodeTypeHandler;
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.AcceptChild"/>>
-    public sealed override bool AcceptChild(HierarchyView view, in HierarchyNode child)
-    {
-        if (isReadonly)
-            return false;
-
-        var handler = Hierarchy.GetNodeTypeHandlerBase(in child);
-        return handler is VisualElementNodeTypeHandler;
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanSetName"/>>
-    public sealed override bool CanSetName(HierarchyView view, in HierarchyNode node)
-    {
-        if (isReadonly)
-            return false;
-
-        return m_Mappings.TryGetValue(in node, out var element) && CanSetName(view, in node, element);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnSetName"/>>
-    protected sealed override bool OnSetName(HierarchyView view, in HierarchyNode node, string name)
-    {
-        if (!m_Mappings.TryGetValue(node, out var element))
-            return false;
-
-        if (!ValidateName(name))
-            return false;
-
-        element.name = name;
-        return OnSetName(view, in node, element, name);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.GetDisplayName"/>>
-    public sealed override string GetDisplayName(HierarchyView view, in HierarchyNode node)
-    {
-        if (!m_Mappings.TryGetValue(node, out var element) || element == null)
-            return "<null>";
-
-        return GetDisplayName(view, node, element);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanCopy"/>>
-    public sealed override bool CanCopy(HierarchyView view)
-    {
-        if (isReadonly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-        return CanCopy(view, in selection);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnCopy"/>>
-    protected sealed override bool OnCopy(HierarchyView view) => !isReadonly;
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanCut"/>>
-    public sealed override bool CanCut(HierarchyView view)
-    {
-        if (isReadonly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-        return CanCut(view, in selection);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnCut"/>>
-    protected sealed override bool OnCut(HierarchyView view) => !isReadonly;
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanDelete"/>>
-    public sealed override bool CanDelete(HierarchyView view)
-    {
-        if (isReadonly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-        return CanDelete(view, in selection);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnDelete"/>>
-    protected sealed override bool OnDelete(HierarchyView view) => !isReadonly;
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanDuplicate"/>>
-    public sealed override bool CanDuplicate(HierarchyView view)
-    {
-        if (isReadonly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-        return CanDuplicate(view, in selection);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnDuplicate"/>>
-    protected sealed override bool OnDuplicate(HierarchyView view) => !isReadonly;
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanFindReferences"/>>
-    public sealed override bool CanFindReferences(HierarchyView view)
-    {
-        // We currently don't support visual element references.
-        return false;
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnFindReferences"/>>
-    protected sealed override bool OnFindReferences(HierarchyView view)
-    {
-        // We currently don't support visual element references.
-        return false;
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanPaste"/>>
-    public sealed override bool CanPaste(HierarchyView view)
-    {
-        if (isReadonly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-        return CanPaste(view, in selection);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnPaste"/>>
-    protected sealed override bool OnPaste(HierarchyView view) => !isReadonly;
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanPasteAsChild"/>>
-    public sealed override bool CanPasteAsChild(HierarchyView view)
-    {
-        if (isReadonly)
-            return false;
-
-        using var memoryOwner = GetSelection(view, out var selection);
-        return CanPasteAsChild(view, in selection);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnPasteAsChild"/>>
-    protected sealed override bool OnPasteAsChild(HierarchyView view) => !isReadonly;
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanDoubleClick"/>>
-    public sealed override bool CanDoubleClick(HierarchyView view, in HierarchyNode node)
-    {
-        return m_Mappings.TryGetValue(in node, out var element) && CanDoubleClick(view, in node, element);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnDoubleClick"/>>
-    protected sealed override bool OnDoubleClick(HierarchyView view, in HierarchyNode node)
-    {
-        return m_Mappings.TryGetValue(node, out var element) && OnDoubleClick(view, in node, element);
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanStartDrag"/>>
-    protected sealed override bool CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes)
-    {
-        // This requires custom handling compared to the other end points because returning false here
-        // will prevent drag and drop of other handlers too. This is an issue that will be fixed on the hierarchy's side.
-        using var memoryOwner = GetSelection(view, out var selection);
-        return selection.Type switch
-        {
-            // No elements selected, revert to default handling.
-            SelectionContext.SelectionType.None => base.CanStartDrag(view, nodes),
-            // Mixed selection, disallow dragging.
-            SelectionContext.SelectionType.Mixed => false,
-            // We're only dragging visual element here.
-            SelectionContext.SelectionType.All => CanStartDrag(view, in selection),
-            _ => throw new ArgumentOutOfRangeException()
-        };
-    }
-
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.CanDrop"/>>
-    protected sealed override DragVisualMode CanDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
-
     protected override void OnBindItem(HierarchyViewItem item)
     {
         if (m_Mappings.TryGetValue(item.Node, out var element))
@@ -487,8 +312,133 @@ internal abstract class VisualElementNodeTypeHandler :
         }
     }
 
-    /// <inheritdoc cref="HierarchyView.GetTooltip"/>>
-    protected override void GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
+    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnInitializingView"/>>
+    protected override void OnBindView(HierarchyView view)
+    {
+        view.StyleContainer.styleSheets.Add(StyleSheet);
+        view.StyleContainer.styleSheets.Add(ThemeStyleSheet);
+    }
+
+    #endregion // HierarchyNodeTypeHandler
+
+    #region IHierarchyEditorNodeTypeHandler
+    bool IHierarchyEditorNodeTypeHandler.CanCut(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return CanCut(view, in selection);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnCut(HierarchyView view) => !isReadonly;
+
+    bool IHierarchyEditorNodeTypeHandler.CanCopy(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return CanCopy(view, in selection);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnCopy(HierarchyView view) => !isReadonly;
+
+    bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return CanPaste(view, in selection);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view) => !isReadonly;
+
+    bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return CanPasteAsChild(view, in selection);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos) => !isReadonly;
+
+    bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node)
+    {
+        if (isReadonly)
+            return false;
+
+        return m_Mappings.TryGetValue(in node, out var element) && CanSetName(view, in node, element);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name)
+    {
+        if (!m_Mappings.TryGetValue(node, out var element))
+            return false;
+
+        if (!ValidateName(name))
+            return false;
+
+        element.name = name;
+        return OnSetName(view, in node, element, name);
+    }
+
+    string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
+    {
+        if (!m_Mappings.TryGetValue(node, out var element) || element == null)
+            return "<null>";
+
+        return GetDisplayName(view, node, element);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return CanDuplicate(view, in selection);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view) => !isReadonly;
+
+    bool IHierarchyEditorNodeTypeHandler.CanDelete(HierarchyView view)
+    {
+        if (isReadonly)
+            return false;
+
+        using var memoryOwner = GetSelection(view, out var selection);
+        return CanDelete(view, in selection);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view) => !isReadonly;
+
+    bool IHierarchyEditorNodeTypeHandler.CanFindReferences(HierarchyView view)
+    {
+        // We currently don't support visual element references.
+        return false;
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnFindReferences(HierarchyView view)
+    {
+        // We currently don't support visual element references.
+        return false;
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.CanDoubleClick(HierarchyView view, in HierarchyNode node)
+    {
+        return m_Mappings.TryGetValue(in node, out var element) && CanDoubleClick(view, in node, element);
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.OnDoubleClick(HierarchyView view, in HierarchyNode node)
+    {
+        return m_Mappings.TryGetValue(node, out var element) && OnDoubleClick(view, in node, element);
+    }
+
+    void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
     {
         if (item == null)
             return;
@@ -500,8 +450,7 @@ internal abstract class VisualElementNodeTypeHandler :
         }
     }
 
-    /// <inheritdoc cref="HierarchyView.PopulateContextMenu"/>>
-    protected override void PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
+    void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
     {
         if (item == null)
             return;
@@ -510,14 +459,49 @@ internal abstract class VisualElementNodeTypeHandler :
             PopulateContextMenu(in item.Node, element, menu);
     }
 
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.OnInitializingView"/>>
-    protected override void OnBindView(HierarchyView view)
+    bool IHierarchyEditorNodeTypeHandler.AcceptParent(HierarchyView view, in HierarchyNode parent)
     {
-        view.StyleContainer.styleSheets.Add(StyleSheet);
-        view.StyleContainer.styleSheets.Add(ThemeStyleSheet);
+        if (isReadonly)
+            return false;
+
+        var handler = Hierarchy.GetNodeTypeHandlerBase(in parent);
+        return handler is VisualElementNodeTypeHandler;
     }
 
-    #endregion // HierarchyNodeTypeHandler
+    bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
+    {
+        if (isReadonly)
+            return false;
+
+        var handler = Hierarchy.GetNodeTypeHandlerBase(in child);
+        return handler is VisualElementNodeTypeHandler;
+    }
+
+    bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes)
+    {
+        // This requires custom handling compared to the other end points because returning false here
+        // will prevent drag and drop of other handlers too. This is an issue that will be fixed on the hierarchy's side.
+        using var memoryOwner = GetSelection(view, out var selection);
+        return selection.Type switch
+        {
+            // No elements selected, revert to default handling.
+            SelectionContext.SelectionType.None => true,
+            // Mixed selection, disallow dragging.
+            SelectionContext.SelectionType.Mixed => false,
+            // We're only dragging visual element here.
+            SelectionContext.SelectionType.All => CanStartDrag(view, in selection),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+    void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
+    {
+    }
+
+    DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+
+    DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+    #endregion
 
     #region IHierarchySearchPropositionProvider
 

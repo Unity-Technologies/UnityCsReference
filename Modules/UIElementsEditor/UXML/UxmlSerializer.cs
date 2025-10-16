@@ -16,7 +16,9 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    #pragma warning disable CS0618 // Type or member is obsolete.
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
+    #pragma warning restore CS0618 // Type or member is obsolete
     {
         static readonly Dictionary<Type, string> k_BaseTypes = new()
         {
@@ -341,8 +343,7 @@ namespace UnityEditor.UIElements
             {
                 if (removeOverride || GetSerializedValueAttributeFlags(uxmlSerializedData) == UxmlSerializedData.UxmlAttributeFlags.Ignore)
                 {
-                    SetSerializedValue(uxmlSerializedData, defaultValueClone);
-                    SetSerializedValueAttributeFlags(uxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+                    SetSerializedValue(uxmlSerializedData, defaultValueClone, UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
                 }
             }
             catch (Exception ex)
@@ -427,6 +428,12 @@ namespace UnityEditor.UIElements
             serializedField.SetValue(uxmlSerializedData, value);
         }
 
+        public void SetSerializedValue(object uxmlSerializedData, object value, UxmlSerializedData.UxmlAttributeFlags flags)
+        {
+            SetSerializedValue(uxmlSerializedData, value);
+            SetSerializedValueAttributeFlags(uxmlSerializedData, flags);
+        }
+
         public object GetSerializedValue(object uxmlSerializedData)
         {
             try
@@ -484,7 +491,9 @@ namespace UnityEditor.UIElements
                 baseType = "string";
 
             typeNamespace = xmlSchemaNamespace;
+            #pragma warning disable CS0618 // Type or member is obsolete
             ((UxmlAttributeDescription)this).type = baseType;
+            #pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public override string ToString() => $"{serializedField.DeclaringType.ReflectedType.Name}.{serializedField.Name} ({serializedField.FieldType})";
@@ -688,8 +697,7 @@ namespace UnityEditor.UIElements
 
                 try
                 {
-                    attribute.SetSerializedValue(data, value);
-                    attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                    attribute.SetSerializedValue(data, value, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                 }
                 catch (Exception e)
                 {

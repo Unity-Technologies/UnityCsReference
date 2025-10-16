@@ -68,6 +68,7 @@ namespace UnityEditor
         // Input - should not be changed by curve editor
         public int id;
         public EditorCurveBinding binding;
+        public bool isPhantom;
         public int groupId;
         public int regionId;                                    // Regions are defined by two curves added after each other with the same regionId.
         public Color color;

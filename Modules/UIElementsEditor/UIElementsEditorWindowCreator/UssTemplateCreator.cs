@@ -11,7 +11,7 @@ namespace UnityEditor.UIElements
     static partial class UIElementsTemplate
     {
         // Add submenu after GUI Skin
-        [MenuItem("Assets/Create/UI Toolkit/Style Sheet", false, 603, false)]
+        [MenuItem("Assets/Create/UI Toolkit/Style Sheet (USS)", false, 603, false)]
         private static void CreateUSSAsset()
         {
             var contents = "VisualElement {}";

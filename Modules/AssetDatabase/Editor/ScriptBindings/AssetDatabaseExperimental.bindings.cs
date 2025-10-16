@@ -10,8 +10,10 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
+using UnityEditor;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Assertions;
 
 namespace UnityEditor.Experimental
 {
@@ -24,36 +26,49 @@ namespace UnityEditor.Experimental
         Failed = 4
     }
 
+    [RequiredByNativeCode]
+    [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseExperimental.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ImporterID : IEquatable<ImporterID>
+    {
+        private Int32 persistentTypeID;
+        private Hash128 scriptedImportTypeHash;
+
+        public bool IsPrimary => persistentTypeID == -1;
+
+        public bool Equals(ImporterID other)
+        {
+            return persistentTypeID == other.persistentTypeID && scriptedImportTypeHash == other.scriptedImportTypeHash;
+        }
+    }
+
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseExperimental.h")]
     [StructLayout(LayoutKind.Sequential)]
     public struct ArtifactKey
     {
-        public ArtifactKey(GUID g)
+        public ArtifactKey(GUID guid)
         {
-            guid = g;
-            importerType = null;
+            this = AssetDatabaseExperimental.CreateArtifactKey(guid);
         }
 
         public ArtifactKey(GUID guid, Type importerType)
         {
-            this.guid = guid;
-            this.importerType = importerType;
+            this = AssetDatabaseExperimental.CreateArtifactKey(guid, importerType);
         }
 
         public bool isValid => !guid.Empty();
 
-        public GUID guid;
-        public Type importerType;
-    };
+        public Type importerType
+        {
+            get => AssetDatabaseExperimental.ImporterIDToImporterType(importerID);
+            set => importerID = AssetDatabaseExperimental.GetImporterID(value);
+        }
 
-    [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
-    [RequiredByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ArtifactID
-    {
-        public Hash128 value;
-        public bool isValid => value.isValid;
-    }
+        public GUID guid;
+        private ImporterID importerID;
+        private uint hash;
+    };
+    
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseTypes.h")]
     [RequiredByNativeCode]
@@ -83,6 +98,18 @@ namespace UnityEditor.Experimental
             Queue = 1,
             Poll = 2
         }
+
+        internal static extern ImporterID GetImporterID(Type importerType);
+        internal static extern Type ImporterIDToImporterType(ImporterID importerID);
+
+        internal static ArtifactKey CreateArtifactKey(GUID guid) { return CreateImportAddress_Primary(guid); }
+
+        internal static ArtifactKey CreateArtifactKey(GUID guid, Type importerType) { return CreateImportAddress_Full(guid, importerType); }
+
+        // Needed because bindings don't support overloads 
+        // https://internaldocs.unity.com/editor_and_runtime_development_guide/Runtime/Core/marshalling/faq/#do-overloaded-methods-work
+        private static extern ArtifactKey CreateImportAddress_Primary(GUID guid);
+        private static extern ArtifactKey CreateImportAddress_Full(GUID guid, Type importerType);
 
         public struct AssetDatabaseCounters
         {
@@ -156,15 +183,15 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction("AssetDatabaseExperimental::LookupArtifact")]
-        private extern static ArtifactID _LookupArtifact(ArtifactKey artifactKey);
-        public static ArtifactID LookupArtifact(ArtifactKey artifactKey) => _LookupArtifact(artifactKey);
-        public extern static ArtifactID ProduceArtifact(ArtifactKey artifactKey);
-        public extern static ArtifactID ProduceArtifactAsync(ArtifactKey artifactKey);
-        public extern static ArtifactID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null);
-        public extern static ArtifactID ForceProduceArtifact(ArtifactKey artifactKey);
+        private extern static ImportResultID _LookupArtifact(ArtifactKey artifactKey);
+        public static ImportResultID LookupArtifact(ArtifactKey artifactKey) => _LookupArtifact(artifactKey);
+        public extern static ImportResultID ProduceArtifact(ArtifactKey artifactKey);
+        public extern static ImportResultID ProduceArtifactAsync(ArtifactKey artifactKey);
+        public extern static ImportResultID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null);
+        public extern static ImportResultID ForceProduceArtifact(ArtifactKey artifactKey);
 
         extern internal static void LookupArtifacts(IntPtr guidsPtr, IntPtr hashesPtr, int len, [uei.DefaultValue("null")] Type importerType = null);
-        public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ArtifactID> hashes, Type importerType)
+        public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ImportResultID> hashes, Type importerType)
         {
             if (guids.Length != hashes.Length)
                 throw new ArgumentException("guids and hashes size mismatch!");
@@ -173,7 +200,7 @@ namespace UnityEditor.Experimental
         }
 
         extern internal static void LookupPrimaryArtifacts(IntPtr guidsPtr, IntPtr hashesPtr, int len);
-        public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ArtifactID> hashesOut)
+        public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ImportResultID> hashesOut)
         {
             if (!guids.IsCreated)
                 throw new ArgumentException("NativeArray is uninitialized", nameof(guids));
@@ -191,36 +218,16 @@ namespace UnityEditor.Experimental
         [uei.ExcludeFromDocs]
         public static Hash128 GetArtifactHash(string guid, ImportSyncMode mode = ImportSyncMode.Block)
         {
-            switch (mode)
-            {
-                case ImportSyncMode.Block:
-                    return ProduceArtifact(new ArtifactKey(new GUID(guid))).value;
-                case ImportSyncMode.Poll:
-                    return LookupArtifact(new ArtifactKey(new GUID(guid))).value;
-                case ImportSyncMode.Queue:
-                    return ProduceArtifactAsync(new ArtifactKey(new GUID(guid))).value;
-            }
-
-            throw new Exception("Invalid ImportSyncMode " + mode);
+            throw new NotImplementedException();
         }
 
         [Obsolete("GetArtifactHash() has been removed. Use LookupArtifact(), ProduceArtifact() or ForceProduceArtifact() instead.", true)]
         public static Hash128 GetArtifactHash(string guid, [uei.DefaultValue("null")] Type importerType, ImportSyncMode mode = ImportSyncMode.Block)
         {
-            switch (mode)
-            {
-                case ImportSyncMode.Block:
-                    return ProduceArtifact(new ArtifactKey(new GUID(guid), importerType)).value;
-                case ImportSyncMode.Poll:
-                    return LookupArtifact(new ArtifactKey(new GUID(guid), importerType)).value;
-                case ImportSyncMode.Queue:
-                    return ProduceArtifactAsync(new ArtifactKey(new GUID(guid), importerType)).value;
-            }
-
-            throw new Exception("Invalid ImportSyncMode " + mode);
+            throw new NotImplementedException();
         }
 
-        public static bool GetArtifactPaths(ArtifactID hash, out string[] paths)
+        public static bool GetArtifactPaths(ImportResultID hash, out string[] paths)
         {
             bool success;
             var p = GetArtifactPathsImpl(hash, out success);
@@ -228,54 +235,36 @@ namespace UnityEditor.Experimental
             return success;
         }
 
-        [Obsolete("GetArtifactPaths(Hash128, out string[]) has been removed. Use GetArtifactPaths(ArtifactID, out string[]) instead.", true)]
+        [Obsolete("GetArtifactPaths(Hash128, out string[]) has been removed. Use GetArtifactPaths(ImportResultID, out string[]) instead.", true)]
         public static bool GetArtifactPaths(Hash128 hash, out string[] paths)
         {
-            return GetArtifactPaths(new ArtifactID() { value =  hash }, out paths);
+            throw new NotImplementedException();
         }
 
         [Obsolete("GetArtifactHashes() has been removed. Use LookupArtifact(), ProduceArtifact() or ForceProduceArtifact() instead.", true)]
         public static Hash128[] GetArtifactHashes(string[] guids, ImportSyncMode mode = ImportSyncMode.Block)
         {
-            var _guids = guids.Select(a => new GUID(a)).ToArray();
-
-            switch (mode)
-            {
-                case ImportSyncMode.Block:
-                    List<Hash128> resultA = new List<Hash128>();
-                    foreach (var g in _guids)
-                        resultA.Add(ProduceArtifact(new ArtifactKey(g)).value);
-                    return resultA.ToArray();
-                case ImportSyncMode.Poll:
-                    List<Hash128> resultB = new List<Hash128>();
-                    foreach (var g in _guids)
-                        resultB.Add(LookupArtifact(new ArtifactKey(g)).value);
-                    return resultB.ToArray();
-                case ImportSyncMode.Queue:
-                    return ProduceArtifactsAsync(_guids, null).Select(a => a.value).ToArray();
-            }
-
-            throw new Exception("Invalid ImportSyncMode " + mode);
+            throw new NotImplementedException();
         }
 
-        private extern static string[] GetArtifactPathsImpl(ArtifactID hash, out bool success);
+        private extern static string[] GetArtifactPathsImpl(ImportResultID hash, out bool success);
 
         public extern static OnDemandProgress GetOnDemandArtifactProgress(ArtifactKey artifactKey);
 
         [Obsolete("GetOnDemandArtifactProgress(string) has been removed. Use GetOnDemandArtifactProgress(ArtifactKey) instead.", true)]
         public static OnDemandProgress GetOnDemandArtifactProgress(string guid)
         {
-            return GetOnDemandArtifactProgress(new ArtifactKey(new GUID(guid)));
+            return GetOnDemandArtifactProgress(CreateArtifactKey(new GUID(guid)));
         }
 
         [Obsolete("GetOnDemandArtifactProgress(string,Type) has been removed. Use GetOnDemandArtifactProgress(ArtifactKey) instead.", true)]
         public static OnDemandProgress GetOnDemandArtifactProgress(string guid, Type importerType)
         {
-            return GetOnDemandArtifactProgress(new ArtifactKey(new GUID(guid), importerType));
+            return GetOnDemandArtifactProgress(CreateArtifactKey(new GUID(guid), importerType));
         }
 
         [FreeFunction("AssetDatabase::GetArtifactStaticDependencyHash")]
-        private extern static Hash128 _GetArtifactStaticDependencyHash(ArtifactID artifactId);
-        internal static Hash128 GetArtifactStaticDependencyHash(ArtifactID artifactID) => _GetArtifactStaticDependencyHash(artifactID);
+        private extern static Hash128 _GetArtifactStaticDependencyHash(ImportResultID importResultID);
+        internal static Hash128 GetArtifactStaticDependencyHash(ImportResultID importResultID) => _GetArtifactStaticDependencyHash(importResultID);
     }
 }

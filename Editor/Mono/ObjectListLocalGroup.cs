@@ -1074,8 +1074,13 @@ namespace UnityEditor
                     if (EditorApplication.projectWindowItemOnGUI != null)
                         EditorApplication.projectWindowItemOnGUI(filterItem.guid, itemRect);
 
+                    #pragma warning disable 618
                     if (EditorApplication.projectWindowItemInstanceOnGUI != null)
                         EditorApplication.projectWindowItemInstanceOnGUI(filterItem.entityId, itemRect);
+                    #pragma warning restore 618
+
+                    if (EditorApplication.projectWindowItemByEntityIdOnGUI != null)
+                        EditorApplication.projectWindowItemByEntityIdOnGUI(filterItem.entityId, itemRect);
                 }
 
                 // Mouse handling (must be after rename overlay to ensure overlay get mouseevents)

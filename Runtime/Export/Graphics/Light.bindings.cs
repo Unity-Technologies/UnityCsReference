@@ -12,6 +12,28 @@ using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
+    [NativeHeader("Runtime/Camera/SharedLightData.h")]
+    public struct LightBakingOutput
+    {
+        public int probeOcclusionLightIndex;
+        public int occlusionMaskChannel;
+        [NativeName("lightmapBakeMode.lightmapBakeType")]
+        public LightmapBakeType lightmapBakeType;
+        [NativeName("lightmapBakeMode.mixedLightingMode")]
+        public MixedLightingMode mixedLightingMode;
+        public bool isBaked;
+    }
+
+    [NativeHeader("Runtime/Camera/SharedLightData.h")]
+    public enum LightShadowCasterMode
+    {
+        Default = 0,
+        [Obsolete("This has been deprecated. Use ShadowMask instead. (UnityUpgradable) -> ShadowMask")] NonLightmappedOnly = 1,
+        ShadowMask = 1,
+        [Obsolete("This has been deprecated. Use DistanceShadowMaskMode instead. (UnityUpgradable) -> DistanceShadowMask")] Everything = 2,
+        DistanceShadowMask = 2
+    }
+
     // Script interface for [[wiki:class-Light|light components]].
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Runtime/Export/Graphics/Light.bindings.h")]
@@ -40,39 +62,12 @@ namespace UnityEngine
             [FreeFunction("Light_Bindings::SetShadowResolution", HasExplicitThis = true, ThrowsException = true)] set;
         }
 
-        // Note: do not remove (so that projects with assembly-only scritps using this will continue working),
-        // just make it do nothing.
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Shadow softness is removed in Unity 5.0+", true)]
-        public float shadowSoftness
-        {
-            get { return 4.0f; }
-            set { }
-        }
-
-        // Note: do not remove (so that projects with assembly-only scritps using this will continue working),
-        // just make it do nothing.
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Shadow softness is removed in Unity 5.0+", true)]
-        public float shadowSoftnessFade
-        {
-            get { return 1.0f; }
-            set { }
-        }
-
         extern public float[] layerShadowCullDistances
         {
             [FreeFunction("Light_Bindings::GetLayerShadowCullDistances", HasExplicitThis = true, ThrowsException = false)]
             get;
             [FreeFunction("Light_Bindings::SetLayerShadowCullDistances", HasExplicitThis = true, ThrowsException = true)]
             set;
-        }
-
-        [Obsolete("Light.cookieSize has been deprecated. Use Light.cookieSize2D instead.", false)]
-        public float cookieSize
-        {
-            get { return cookieSize2D.x; }
-            set { cookieSize2D = new Vector2(value, value); }
         }
 
         extern public Vector2 cookieSize2D { get; set; }
@@ -86,12 +81,6 @@ namespace UnityEngine
             get;
             [FreeFunction("Light_Bindings::SetRenderMode", HasExplicitThis = true, ThrowsException = true)] set;
         }
-
-        // This index was used to denote lights which contribution was baked in lightmaps and/or lightprobes.
-        private int m_BakedIndex;
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("warning bakedIndex has been removed please use bakingOutput.isBaked instead.", true)]
-        public int bakedIndex { get { return m_BakedIndex; } set { m_BakedIndex = value; } }
 
         // The size of the area light.
         extern public Vector2 areaSize { get; set; }
@@ -184,26 +173,41 @@ namespace UnityEngine
 
         extern public int commandBufferCount { get; }
 
+        [NativeProperty("LightType")] extern public LightType type { get; set; }
 
-        [System.Obsolete("Use QualitySettings.pixelLightCount instead.")]
-        public static int pixelLightCount
-        {
-            get { return QualitySettings.pixelLightCount; }
-            set { QualitySettings.pixelLightCount = value; }
-        }
+        extern public float spotAngle { get; set; }
+        extern public float innerSpotAngle { get; set; }
+        extern public Color color { get; set; }
+        extern public float colorTemperature { get; set; }
+        extern public bool useColorTemperature { get; set; }
+        extern public float intensity { get; set; }
+        extern public float bounceIntensity { get; set; }
+        extern public LightUnit lightUnit { get; set; }
+        extern public float luxAtDistance { get; set; }
+        extern public bool enableSpotReflector { get; set; }
 
-        //*undocumented For terrain engine only
-        [Obsolete("Light.GetLights has been deprecated, use FindObjectsOfType in combination with light.cullingmask/light.type", false)]
-        [FreeFunction("Light_Bindings::GetLights")]
-        extern public static Light[] GetLights(LightType type, int layer);
+        extern public bool useBoundingSphereOverride { get; set; }
+        extern public Vector4 boundingSphereOverride { get; set; }
 
-        [Obsolete("light.shadowConstantBias was removed, use light.shadowBias", true)]
-        public float shadowConstantBias { get { return 0.0f; } set {} }
+        extern public bool useViewFrustumForShadowCasterCull { get; set; }
+        extern public bool forceVisible { get; set; }
+        extern public int shadowCustomResolution { get; set; }
+        extern public float shadowBias { get; set; }
+        extern public float shadowNormalBias { get; set; }
+        extern public float shadowNearPlane { get; set; }
+        extern public bool useShadowMatrixOverride { get; set; }
+        extern public Matrix4x4 shadowMatrixOverride { get; set; }
 
-        [Obsolete("light.shadowObjectSizeBias was removed, use light.shadowBias", true)]
-        public float shadowObjectSizeBias { get { return 0.0f; } set {} }
+        extern public float range { get; set; }
+        extern public float dilatedRange { get; }
+        extern public Flare flare { get; set; }
 
-        [Obsolete("light.attenuate was removed; all lights always attenuate now", true)]
-        public bool attenuate { get { return true; } set {} }
+        extern public LightBakingOutput bakingOutput { get; set; }
+        extern public int cullingMask { get; set; }
+        extern public int renderingLayerMask { get; set; }
+        extern public LightShadowCasterMode lightShadowCasterMode { get; set; }
+        extern public float shapeRadius { get; set; }
+
+        extern public float shadowAngle { get; set; }
     }
 }

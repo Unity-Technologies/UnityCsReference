@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using Unity.Properties;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -135,16 +134,6 @@ namespace Unity.UI.Builder
         /// </summary>
         public Action onNotifyAttributesChanged;
 
-        /// <inheritdoc/>
-        protected override bool IsAttributeIgnored(UxmlAttributeDescription attribute) => true;
-
-        protected override BindableElement CreateTraitsAttributeField(UxmlAttributeDescription attribute)
-        {
-            var field =  base.CreateTraitsAttributeField(attribute);
-            UpdateAttribute(field, attribute.name);
-            return field;
-        }
-
         protected override BuilderStyleRow CreateSerializedAttributeRow(UxmlSerializedAttributeDescription attribute, string propertyPath, VisualElement parent = null)
         {
             var row = base.CreateSerializedAttributeRow(attribute, propertyPath, parent);
@@ -164,23 +153,6 @@ namespace Unity.UI.Builder
                 UpdateAttribute(target, bindingAttribute);
                 UpdateFieldStatus(target);
             });
-        }
-
-        /// <inheritdoc/>
-        protected override object GetAttributeValue(UxmlAttributeDescription attribute)
-        {
-            var attributeValue = base.GetAttributeValue(attribute);
-            if (attribute.name is k_BindingAttr_DataSource)
-            {
-                return attributeValue ?? inheritedDataSource;
-            }
-
-            if (attribute.name is k_BindingAttr_DataSourceType)
-            {
-                return attributeValue ?? inheritedDataSourceType;
-            }
-
-            return attributeValue;
         }
 
         protected virtual void UpdateAttribute(VisualElement target, string bindingAttribute)
@@ -253,13 +225,6 @@ namespace Unity.UI.Builder
         }
 
         /// <inheritdoc/>
-        protected override void GenerateUxmlTraitsAttributeFields()
-        {
-            GenerateDataBindingFields(attributesContainer);
-            UpdateControls();
-        }
-
-        /// <inheritdoc/>
         protected override void GenerateSerializedAttributeFields()
         {
             var path = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
@@ -318,7 +283,7 @@ namespace Unity.UI.Builder
             // Only create the field and link it to the builder style row created above
             m_TypeFieldContainer = CreateAttributeField(k_BindingAttr_DataSourceType);
             m_AssetFieldContainer.parent.Add(m_TypeFieldContainer);
-            var attribute = uxmlSerializedDataDescription?.FindAttributeWithUxmlName(k_BindingAttr_DataSourceType) ?? FindAttribute(k_BindingAttr_DataSourceType);
+            var attribute = uxmlSerializedDataDescription?.FindAttributeWithUxmlName(k_BindingAttr_DataSourceType);
             SetupStyleRow(styleRow, m_TypeFieldContainer, attribute);
 
             // Set current value
@@ -351,11 +316,6 @@ namespace Unity.UI.Builder
 
         BuilderStyleRow CreateAttributeRow(string attribute, VisualElement parent)
         {
-            if (currentFieldSource == AttributeFieldSource.UxmlTraits)
-            {
-                return CreateTraitsAttributeRow(FindAttribute(attribute), parent);
-            }
-
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
             var basePath = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
             var path = $"{basePath}.{attributeDesc.serializedField.Name}";
@@ -364,13 +324,8 @@ namespace Unity.UI.Builder
 
         VisualElement CreateAttributeField(string attribute)
         {
-            if (currentFieldSource == AttributeFieldSource.UxmlTraits)
-            {
-                return CreateTraitsAttributeField(FindAttribute(attribute));
-            }
-
-            var fieldElement = new UxmlSerializedDataAttributeField();
             var attributeDesc = uxmlSerializedDataDescription.FindAttributeWithUxmlName(attribute);
+            var fieldElement = new UxmlSerializedDataAttributeField{ name = attributeDesc.serializedField.Name };
             var basePath = bindingSerializedPropertyRootPath ?? context.serializedBasePath;
             var path = $"{basePath}.{attributeDesc.serializedField.Name}";
             var propertyField = new PropertyField
@@ -400,7 +355,7 @@ namespace Unity.UI.Builder
         }
 
         /// <inheritdoc/>
-        protected override void ResetAttributeFieldToDefault(VisualElement fieldElement, UxmlAttributeDescription attribute)
+        protected override void ResetAttributeFieldToDefault(VisualElement fieldElement, UxmlSerializedAttributeDescription attribute)
         {
             if (m_DataSourceField == fieldElement)
             {
@@ -502,7 +457,7 @@ namespace Unity.UI.Builder
                     action =>
                     {
                         var attributeName = k_BindingAttr_DataSource;
-                        var bindingProperty = GetRemapAttributeNameToCSProperty(k_BindingAttr_DataSource);
+                        var bindingProperty = BuilderNameUtilities.ConvertDashToCamel(k_BindingAttr_DataSource);
                         var isAttributeOverrideAttribute =
                             context.isInTemplateInstance
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement,
@@ -520,7 +475,7 @@ namespace Unity.UI.Builder
                     (a) => UnsetAttributeProperty(m_DataSourceTypeField, false),
                     action =>
                     {
-                        var bindingProperty = GetRemapAttributeNameToCSProperty(k_BindingAttr_DataSourceType);
+                        var bindingProperty = BuilderNameUtilities.ConvertDashToCamel(k_BindingAttr_DataSourceType);
                         var isAttributeOverrideAttribute =
                             context.isInTemplateInstance
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement, k_BindingAttr_DataSourceType);

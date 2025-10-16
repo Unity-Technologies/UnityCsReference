@@ -41,8 +41,7 @@ namespace Unity.UI.Builder
             BuilderUxmlAttributesView.UxmlSerializedDataAttributeField dataField = null;
             dataFields.ForEach(x =>
             {
-                var serializedAttribute =
-                    x.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+                var serializedAttribute = x.GetLinkedAttributeDescription();
                 if (serializedAttribute.serializedField.Name == propertyPath)
                 {
                     dataField = x;
@@ -70,11 +69,6 @@ namespace Unity.UI.Builder
 
         public static bool HasBinding(BuilderInspector inspector, VisualElement fieldElement)
         {
-            if (inspector.attributeSection.currentFieldSource == BuilderUxmlAttributesView.AttributeFieldSource.UxmlTraits)
-            {
-                return false;
-            }
-
             var selectionIsSelector = BuilderSharedStyles.IsSelectorElement(inspector.currentVisualElement);
 
             if (selectionIsSelector)

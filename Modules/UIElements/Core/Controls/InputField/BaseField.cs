@@ -47,7 +47,7 @@ namespace UnityEngine.UIElements
     /// to align with other fields in the Inspector window. If there are IMGUI fields present,
     /// UI Toolkit fields are aligned with them for consistency and compatibility.</para>
     /// </summary>
-    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel, IEditableElement
+    public abstract partial class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel, IEditableElement
     {
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static readonly BindingId valueProperty = nameof(value);
@@ -85,30 +85,6 @@ namespace UnityEngine.UIElements
                     e.label = label;
                 if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
                     e.SetValueWithoutNotify(value);
-            }
-        }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusIndex.defaultValue = 0;
-                focusable.defaultValue = true;
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
             }
         }
 
@@ -163,7 +139,7 @@ namespace UnityEngine.UIElements
         // Sent whenever we overwrite the value from view data.
         internal event Action viewDataRestored;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement visualInput
         {
             get { return m_VisualInput; }
@@ -343,7 +319,7 @@ namespace UnityEngine.UIElements
         Action IEditableElement.editingStarted { get; set; }
         Action IEditableElement.editingEnded { get; set; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal BaseField(string label)
         {
             isCompositeRoot = true;
@@ -619,28 +595,6 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
-        }
-    }
-
-    /// <summary>
-    /// Traits for the <see cref="BaseField"/>.
-    /// </summary>
-    [Obsolete("BaseFieldTraits<TValueType, TValueUxmlAttributeType> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-    public class BaseFieldTraits<TValueType, TValueUxmlAttributeType> : BaseField<TValueType>.UxmlTraits
-        where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
-    {
-        TValueUxmlAttributeType m_Value = new TValueUxmlAttributeType { name = "value" };
-
-        /// <summary>
-        /// Initializes the trait of <see cref="BaseField"/>.
-        /// </summary>
-        /// <param name="ve">The VisualElement to initialize.</param>
-        /// <param name="bag">Bag of attributes.</param>
-        /// <param name="cc">The creation context associated with these traits.</param>
-        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-        {
-            base.Init(ve, bag, cc);
-            ((INotifyValueChanged<TValueType>)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
         }
     }
 }

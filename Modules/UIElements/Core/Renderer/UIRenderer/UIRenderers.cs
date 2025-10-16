@@ -127,35 +127,36 @@ namespace UnityEngine.UIElements.UIR
                         break;
 
                     s_ImmediateOverheadMarker.Begin();
+
+                    if (owner.compositeOpacity < 0.001f)
+                        break;
+
                     Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
                     Camera oldCamera = Camera.current;
                     RenderTexture oldRT = RenderTexture.active;
-                    bool hasScissor = drawParams.scissor.Count > 1; // We always expect the "unbound" scissor rectangle to exists
-                    if (hasScissor)
-                        Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
-                    // TODO: Validate VisualElement access for RenderTrees
-                    using (new GUIClip.ParentClipScope(owner.owner.worldTransform, owner.owner.worldClip))
+                    UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
+                    GL.modelview = matrix;
+
+                    PushScissor(drawParams, owner.clippingRect, pixelsPerPoint);
+
+                    s_ImmediateOverheadMarker.End();
+                    try
                     {
-                        s_ImmediateOverheadMarker.End();
-                        try
-                        {
-                            callback();
-                        }
-                        catch (Exception e)
-                        {
-                            immediateException = e;
-                        }
-                        s_ImmediateOverheadMarker.Begin();
+                        callback();
                     }
+                    catch (Exception e)
+                    {
+                        immediateException = e;
+                    }
+                    s_ImmediateOverheadMarker.Begin();
+
+                    PopScissor(drawParams, pixelsPerPoint);
 
                     Camera.SetupCurrent(oldCamera);
                     RenderTexture.active = oldRT;
                     GL.modelview = drawParams.view.Peek();
                     GL.LoadProjectionMatrix(oldProjection);
-
-                    if (hasScissor)
-                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(drawParams.scissor.Peek(), pixelsPerPoint));
 
                     s_ImmediateOverheadMarker.End();
                     break;

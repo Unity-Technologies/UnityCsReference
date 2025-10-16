@@ -23,7 +23,7 @@ namespace UnityEditor.Toolbars
         }
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             return new MainToolbarDropdown(new MainToolbarContent(

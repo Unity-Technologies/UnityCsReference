@@ -38,6 +38,9 @@ namespace UnityEngine.TextCore
             LineIndent,
             Link,
             Lowercase,
+            Margin,
+            MarginLeft,
+            MarginRight,
             Mark,
             Mspace,
             NoBr,
@@ -54,7 +57,7 @@ namespace UnityEngine.TextCore
             Uppercase,
             Unknown // Not a real tag, used to indicate an error
 
-            //gradient: margin, pos, rotate , width, voffset will not be supported
+            //gradient: pos, rotate , width, voffset will not be supported
         }
 
         public enum ValueID
@@ -102,6 +105,9 @@ namespace UnityEngine.TextCore
             new TagTypeInfo(TagType.LineIndent,"line-indent" ), //pixels, font units, or percentages.
             new TagTypeInfo(TagType.Link, "link"), //<link="ID">my link</link>
             new TagTypeInfo(TagType.Lowercase,"lowercase"),//none
+            new TagTypeInfo(TagType.Margin,"margin"),//pixels, font units, or percentages. Only positive. Does both left and right.
+            new TagTypeInfo(TagType.MarginLeft,"margin-left"),
+            new TagTypeInfo(TagType.MarginRight,"margin-right"),
             new TagTypeInfo(TagType.Mark,"mark" ), //<mark=#ffff00aa>
             new TagTypeInfo(TagType.Mspace,"mspace" ), // monospace : pixels or font units.
             new TagTypeInfo(TagType.NoBr,"nobr"), // none
@@ -135,10 +141,10 @@ namespace UnityEngine.TextCore
 
         internal enum TagUnitType
         {
-            Unknown = 0x0,
-            Pixels = 0x1,
-            FontUnits = 0x2,
-            Percentage = 0x4
+            Unknown = 0,
+            Pixels = 1,
+            FontUnits = 2,
+            Percentage = 3
         }
 
         //TODO : change this for an union when development is over to save memory
@@ -335,7 +341,7 @@ namespace UnityEngine.TextCore
             }
 
             //Special case for color where there is no tag, just the attribute.
-            if(tagCandidate.Length > 4 &&tagCandidate[0] == '#')
+            if (tagCandidate.Length > 4 && tagCandidate[0] == '#')
             {
                 tagType = TagType.Color;
                 error = null;
@@ -390,6 +396,57 @@ namespace UnityEngine.TextCore
                 return null;
 
             return new TagValue(new Vector4(paddings[0], paddings[1], paddings[2], paddings[3]), ValueID.Padding);
+        }
+
+        static TagValue? ParseHref(ReadOnlySpan<char> attributeSection)
+        {
+            if (TryGetSimpleHref(attributeSection, out string hrefValue))
+            {
+                return new TagValue(hrefValue);
+            }
+            else
+            {
+                // It's a complex link with multiple attributes. Store the entire string
+                var attributes = attributeSection.TrimStart();
+                return new TagValue(attributes.ToString());
+            }
+        }
+
+        static bool TryGetSimpleHref(ReadOnlySpan<char> attributeSection, out string hrefValue)
+        {
+            hrefValue = "";
+            attributeSection = attributeSection.Trim();
+
+            if (!attributeSection.StartsWith("href=".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // We can't simply return true here because <a href=... data=...> is also valid and not a simple href.
+
+            var valueSection = attributeSection.Slice("href=".Length);
+
+            char quote = valueSection.Length > 0 ? valueSection[0] : '\0';
+            if (quote == '"' || quote == '\'')
+            {
+                var valueWithoutQuotes = valueSection.Slice(1);
+                int endQuoteIndex = valueWithoutQuotes.IndexOf(quote);
+                if (endQuoteIndex == -1) return false;
+
+                // Check if there is any other text after the closing quote
+                if (valueWithoutQuotes.Slice(endQuoteIndex + 1).Trim().Length > 0)
+                    return false;
+
+                hrefValue = valueWithoutQuotes.Slice(0, endQuoteIndex).ToString();
+            }
+            else
+            {
+                // If there's a space, it means there are other attributes.
+                if (valueSection.Contains(new ReadOnlySpan<char>(new char[] { ' ' }), StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                hrefValue = valueSection.ToString();
+            }
+
+            return true;
         }
 
         private static bool ParseSpriteAttributes(ReadOnlySpan<char> attributeSection, TextSettings textSettings, out char unicode, out TagValue? spriteAssetValue, out TagValue? glyphMetricsValue, out TagValue? tintValue, out TagValue? scaleValue, out TagValue? colorValue)
@@ -651,15 +708,12 @@ namespace UnityEngine.TextCore
                             }
                         }
 
-                        if (tagType == TagType.Link || tagType == TagType.Hyperlink)
+                        if (tagType == TagType.Hyperlink)
                         {
-                            if (tagType == TagType.Hyperlink && attributeSection.StartsWith(" href="))
-                                attributeSection = attributeSection.Slice(" href=".Length);
-
-                            // strip the quotes for both  <link="xxxx"> and <a href="...">
-                            // The length need to be checked so that it is greater than 0
-                            // Quotes are not mandatory for link tag and for url it isn't problematic if they aren't there unless there is a <> in the url.
-                            // We would need to stop parsing from the beginning of the quote until the second one (a bit like for the noparse tags) for supporting <> character in url
+                            value = ParseHref(attributeSection);
+                        }
+                        if (tagType == TagType.Link)
+                        {
                             attributeSection = GetAttributeSpan(attributeSection);
                             var str = attributeSection.ToString();
 
@@ -674,7 +728,7 @@ namespace UnityEngine.TextCore
 
                             result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = value, value2 = value2, value3 = value3, value4 = value4, value5 = value5 });
                             // TODO: This is really inefficient, we should do this at the end of parsing instead, which isn't straightforward.
-                            inputStr = inputStr.Insert(end + 1, unicode+"/");
+                            inputStr = inputStr.Insert(end + 1, unicode + "/");
                             input = inputStr.ToCharArray();
                             result.Add(new Tag { tagType = tagType, start = end + 2, end = end + 2, isClosing = true, value = value, value2 = value2, value3 = value3, value4 = value4, value5 = value5 });
                             // Adjust position to continue after the newly inserted text
@@ -741,6 +795,25 @@ namespace UnityEngine.TextCore
                             value = new TagValue(parsedValue, tagUnitType);
                         }
 
+                        if (tagType == TagType.Margin || tagType == TagType.MarginLeft || tagType == TagType.MarginRight)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                // Handle parse error, e.g. skip or log
+                                errors?.Add(new("Invalid numerical value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
+
                         result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value, value2 = value2 });
 
                         if (tagType == TagType.NoParse)
@@ -751,7 +824,7 @@ namespace UnityEngine.TextCore
                                 break; // no closing noparse tag, no need to cleanup
                             }
                             start += pos; //The start index was relative to the span, we need to make it relative to the input
-                            end = start + "</noparse>".Length;
+                            end = start + "</noparse>".Length - 1;
                             result.Add(new Tag { tagType = TagType.NoParse, start = start, end = end, isClosing = true });
                             pos = end + 1;
                         }
@@ -851,13 +924,13 @@ namespace UnityEngine.TextCore
             Debug.Assert(startingPos <= atPosition && startingPos >= 0, "Invalid starting position");
 
             int previousTagPosition = 0;
-            foreach(var tag in allTags)
+            foreach (var tag in allTags)
             {
                 Debug.Assert(tag.start >= previousTagPosition, "Tags are not sorted");
-                previousTagPosition = tag.end+1;
+                previousTagPosition = tag.end + 1;
             }
 
-            foreach(var tag in applicableTags)
+            foreach (var tag in applicableTags)
             {
                 Debug.Assert(tag.end <= startingPos, "Tag end pass the point where we should start parsing");
                 Debug.Assert(allTags.Contains(tag));
@@ -1081,7 +1154,7 @@ namespace UnityEngine.TextCore
                         float cspaceMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
                         textSpan.cspace = (int)(segment.tags[i].value!.NumericalValue * cspaceMult);
                         textSpan.cspaceUnitType = segment.tags[i].value!.unit;
-                            break;
+                        break;
                     case TagType.Br:
                         //TODO : Add support for br
                         break;
@@ -1104,6 +1177,20 @@ namespace UnityEngine.TextCore
                         break;
                     case TagType.LineHeight:
                         //TODO : Add support for lineheight
+                        break;
+                    case TagType.Margin:
+                    case TagType.MarginLeft:
+                    case TagType.MarginRight:
+                        float mult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.margin = (int)(segment.tags[i].value!.NumericalValue * mult);
+                        textSpan.marginUnitType = segment.tags[i].value!.unit;
+                        textSpan.marginDirection = segment.tags[i].tagType switch
+                        {
+                            TagType.Margin => MarginDirection.Both,
+                            TagType.MarginLeft => MarginDirection.Left,
+                            TagType.MarginRight => MarginDirection.Right,
+                            _ => MarginDirection.Both
+                        };
                         break;
 
 
@@ -1136,7 +1223,7 @@ namespace UnityEngine.TextCore
                 var segment = segments[i];
                 string segmentText = tgs.text.Substring(segment.start, segment.end + 1 - segment.start);
 
-                var textSpan = CreateTextSpan(segment, ref tgs,links, hyperlinkColor, pixelsPerPoint);
+                var textSpan = CreateTextSpan(segment, ref tgs, links, hyperlinkColor, pixelsPerPoint);
                 textSpan.startIndex = parsedIndex;
                 textSpan.length = segmentText.Length;
                 tgs.textSpans[i] = textSpan;
@@ -1169,98 +1256,6 @@ namespace UnityEngine.TextCore
             }
 
             return false;
-        }
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static void PreProcessString(ref string text)
-        {
-            if (string.IsNullOrEmpty(text) || text.IndexOf('\\') == -1)
-            {
-                return;
-            }
-
-            var sb = new StringBuilder(text.Length);
-            int readIndex = 0;
-
-            while (readIndex < text.Length)
-            {
-                char c = text[readIndex];
-
-                if (c == '\\' && readIndex < text.Length - 1)
-                {
-                    readIndex++;
-                    char escapeCode = text[readIndex];
-
-                    switch (escapeCode)
-                    {
-                        case '\\': // escape
-                            sb.Append('\\');
-                            break;
-                        case 'n': // LineFeed
-                            sb.Append('\n');
-                            break;
-                        case 'r': // Carriage return
-                            sb.Append('\r');
-                            break;
-                        case 't': // Tab
-                            sb.Append('\t');
-                            break;
-                        case 'v': // Vertical tab used as soft line break
-                            sb.Append('\v');
-                            break;
-                        
-                        case 'u': // UTF-16 Unicode - \uXXXX
-                            if (readIndex + 4 < text.Length)
-                            {
-                                string hex = text.Substring(readIndex + 1, 4);
-                                if (uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint unicodeChar))
-                                {
-                                    sb.Append(Convert.ToChar(unicodeChar));
-                                    readIndex += 4; 
-                                }
-                                else
-                                {
-                                    sb.Append('\\').Append(escapeCode);
-                                }
-                            }
-                            else
-                            {
-                                sb.Append('\\').Append(escapeCode);
-                            }
-                            break;
-                        case 'U': // UTF-32 Unicode - \UXXXXXXXX
-                            if (readIndex + 8 < text.Length)
-                            {
-                                string hex = text.Substring(readIndex + 1, 8);
-                                if (uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint unicodeChar))
-                                {
-                                    sb.Append(char.ConvertFromUtf32((int)unicodeChar));
-                                    readIndex += 8;
-                                }
-                                else
-                                {
-                                    sb.Append('\\').Append(escapeCode);
-                                }
-                            }
-                            else
-                            {
-                                sb.Append('\\').Append(escapeCode);
-                            }
-                            break;
-                        default:
-                            sb.Append('\\').Append(escapeCode);
-                            break;
-                    }
-                }
-                else
-                {
-                    sb.Append(c);
-                }
-
-                readIndex++;
-            }
-
-            text = sb.ToString();
         }
     }
 }

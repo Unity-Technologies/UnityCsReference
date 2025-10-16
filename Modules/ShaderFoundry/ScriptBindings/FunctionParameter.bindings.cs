@@ -23,14 +23,13 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_AttributeListHandle;
         internal UInt32 m_Flags;
+        internal FoundryHandle m_LocationHandle;
 
         // TODO no need to make this extern, can duplicate it here
-        internal static extern FunctionParameterInternal Invalid();
+        [ThreadSafe] internal static extern FunctionParameterInternal Invalid();
 
         internal bool IsValid => (m_NameHandle.IsValid && (m_Flags != 0));
-        internal extern string GetName(ShaderContainer container);
-
-        internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+        [ThreadSafe] internal extern string GetName(ShaderContainer container);
 
         // IInternalType
         FunctionParameterInternal IInternalType<FunctionParameterInternal>.ConstructInvalid() => Invalid();
@@ -55,9 +54,11 @@ namespace UnityEditor.ShaderFoundry
         public bool IsValid => (container != null) && handle.IsValid && (param.IsValid);
         public string Name => param.GetName(container);
         public ShaderType Type => new ShaderType(container, param.m_TypeHandle);
-        public IEnumerable<ShaderAttribute> Attributes => param.m_AttributeListHandle.AsListEnumerable<ShaderAttribute>(container, (container, handle) => (new ShaderAttribute(container, handle)));
+        public IEnumerable<ShaderAttribute> Attributes =>
+            ListType.Enumerate<ShaderAttribute>(container, param.m_AttributeListHandle);
         public bool IsInput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsInput) != 0);
         public bool IsOutput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsOutput) != 0);
+        public Location Location => new Location(container, param.m_LocationHandle);
         internal FunctionParameterInternal.Flags Flags => (FunctionParameterInternal.Flags)param.m_Flags;
         internal bool HasFlag(FunctionParameterInternal.Flags flags) => Flags.HasFlag(flags);
 
@@ -71,17 +72,12 @@ namespace UnityEditor.ShaderFoundry
 
         public static FunctionParameter Invalid => new FunctionParameter(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is FunctionParameter other && this.Equals(other);
         public bool Equals(FunctionParameter other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
         public static bool operator==(FunctionParameter lhs, FunctionParameter rhs) => lhs.Equals(rhs);
         public static bool operator!=(FunctionParameter lhs, FunctionParameter rhs) => !lhs.Equals(rhs);
-
-        public bool ValueEquals(in FunctionParameter other)
-        {
-            return FunctionParameterInternal.ValueEquals(container, handle, other.container, other.handle);
-        }
 
         public class Builder
         {
@@ -90,6 +86,7 @@ namespace UnityEditor.ShaderFoundry
             internal ShaderType type;
             internal List<ShaderAttribute> attributes;
             internal UInt32 flags;
+            public Location location;
             public ShaderContainer Container => container;
 
             public Builder(ShaderContainer container, string name, ShaderType type, bool input, bool output)
@@ -110,9 +107,7 @@ namespace UnityEditor.ShaderFoundry
 
             public void AddAttribute(ShaderAttribute attribute)
             {
-                if (attributes == null)
-                    attributes = new List<ShaderAttribute>();
-                attributes.Add(attribute);
+                Utilities.AddToList(ref attributes, attribute);
             }
 
             public FunctionParameter Build()
@@ -120,8 +115,9 @@ namespace UnityEditor.ShaderFoundry
                 var functionParamInternal = new FunctionParameterInternal();
                 functionParamInternal.m_NameHandle = container.AddString(name);
                 functionParamInternal.m_TypeHandle = type.handle;
-                functionParamInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes, (a) => (a.handle));
+                functionParamInternal.m_AttributeListHandle = ListType.Build(container, attributes);
                 functionParamInternal.m_Flags = flags;
+                functionParamInternal.m_LocationHandle = location.handle;
                 FoundryHandle returnHandle = container.Add(functionParamInternal);
                 return new FunctionParameter(Container, returnHandle);
             }

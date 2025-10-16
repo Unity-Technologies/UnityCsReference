@@ -105,6 +105,7 @@ namespace UnityEngine
         public float    legStretch { get { return m_LegStretch; } set { m_LegStretch = value; }  }
         public float    feetSpacing { get { return m_FeetSpacing; } set { m_FeetSpacing = value; }   }
         public bool     hasTranslationDoF { get { return m_HasTranslationDoF; } set { m_HasTranslationDoF = value; }}
+        public string rootMotionBoneName { get { return m_RootMotionBoneName; } set { m_RootMotionBoneName = value; } }
     }
 
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]

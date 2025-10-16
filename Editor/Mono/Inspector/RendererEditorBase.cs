@@ -345,7 +345,8 @@ namespace UnityEditor
             public static readonly GUIContent meshLodSelectionBiasStyle = EditorGUIUtility.TrTextContent("LOD Selection Bias", "The value that Unity adds to the calculated LOD index. Increasing this value results in Unity selecting less detailed LODs, reducing the value - in more detailed LODs.");
         }
 
-        private int m_SelectedRendererCount;
+        private bool m_IsPrefab;
+
         protected Probes m_Probes;
         protected RendererLightingSettings m_Lighting;
 
@@ -388,12 +389,14 @@ namespace UnityEditor
 
             m_Probes = new Probes();
             m_Probes.Initialize(serializedObject);
-            m_SelectedRendererCount = targets.Length;
+
+            // Calculate if the newly selected LOD group is a prefab... they require special handling
+            m_IsPrefab = PrefabUtility.IsPartOfPrefabAsset(((Renderer)target).gameObject);
         }
 
-        public void DrawMeshLODLabel(Renderer renderer)
+        public void DrawMeshLODLabel(Renderer renderer, int lodCount)
         {
-            if (m_SelectedRendererCount > 1)
+            if (Selection.transforms.Length > 1)
                 return;
 
             if (SceneView.lastActiveSceneView == null)
@@ -405,7 +408,7 @@ namespace UnityEditor
             Camera camera = SceneView.lastActiveSceneView.camera;
 
             ushort meshLODLevel = LODUtility.CalculateMeshLOD(camera, renderer);
-            LODGUI.DrawLODLabel(camera, position, size, meshLODLevel, LODGUI.kMeshLODColors, "Mesh LOD ");
+            LODGUI.DrawLODLabel(camera, position, size, meshLODLevel, lodCount, LODGUI.kMeshLODColors, "Mesh LOD ", LODGUI.kMeshLODGradientStart, LODGUI.kMeshLODColorGradient);
         }
 
         protected void LightingSettingsGUI(bool showLightmappSettings)
@@ -450,6 +453,164 @@ namespace UnityEditor
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
+        private Vector3 m_LastCameraPos = Vector3.zero;
+        private Rect m_LastSceneViewCameraViewport = Rect.zero;
+        private float m_LastMeshLODThreshold = 1.0f;
+
+        protected void MeshLODUpdate()
+        {
+            if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.camera == null)
+            {
+                return;
+            }
+
+            // Update the last camera positon and repaint if the camera has moved
+            if (SceneView.lastActiveSceneView.camera.transform.position != m_LastCameraPos || SceneView.lastActiveSceneView.cameraViewport != m_LastSceneViewCameraViewport
+                || m_LastMeshLODThreshold != QualitySettings.meshLodThreshold)
+            {
+                m_LastCameraPos = SceneView.lastActiveSceneView.camera.transform.position;
+                m_LastSceneViewCameraViewport = SceneView.lastActiveSceneView.cameraViewport;
+                m_LastMeshLODThreshold = QualitySettings.meshLodThreshold;
+                Repaint();
+            }
+        }
+
+        private static void UpdateCamera(float desiredPercentage, Renderer renderer)
+        {
+            var sceneView = SceneView.lastActiveSceneView;
+            var sceneCamera = sceneView.camera;
+
+            // Figure out a distance based on the lod level
+            var distance = LODUtility.CalculateMeshLODDistance(sceneCamera, desiredPercentage, renderer);
+
+            LODGUI.UpdateCameraFromLODSlider(renderer.bounds.center, sceneCamera, distance);
+        }
+
+        internal static Rect s_ToolTipRect;
+
+        private static readonly int m_LODSliderId = "LODSliderIDHash".GetHashCode();
+        private static readonly int m_CameraSliderId = "LODCameraIDHash".GetHashCode();
+        private void DrawMeshLODLevelSlider(Rect sliderPosition, List<LODGUI.LODInfo> lods, int startLOD, int lodCount)
+        {
+            int cameraId = GUIUtility.GetControlID(m_CameraSliderId, FocusType.Passive);
+            int sliderId = GUIUtility.GetControlID(m_LODSliderId, FocusType.Passive);
+            Event evt = Event.current;
+            var renderer = (Renderer)target;
+
+            if (evt.GetTypeForControl(sliderId) == EventType.Repaint)
+            {
+                for (int i = 0; i < lods.Count; i++)
+                {
+                    LODGUI.LODInfo lod = lods[i];
+
+                    if (lod.m_RangePosition.Contains(evt.mousePosition))
+                    {
+                        if (!GUIStyle.IsTooltipActive(lod.LODName))
+                            s_ToolTipRect = new Rect(evt.mousePosition, Vector2.zero);
+                        GUIStyle.SetMouseTooltip(String.Format("LOD {0} - {1:0.#}%", lod.LODIndex, i == 0 ? 100.0f : lods[i - 1].RawScreenPercent * 100.0f), s_ToolTipRect);
+                    }
+                }
+
+                LODGUI.DrawMeshLODSlider(sliderPosition, lods, startLOD, lodCount);
+            }
+
+            if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null && !m_IsPrefab)
+            {
+                var camera = SceneView.lastActiveSceneView.camera;
+
+                var linearHeight = LODUtility.GetMeshRelativeHeight(camera, renderer);
+                var relativeHeight = LODGUI.DelinearizeScreenPercentage(linearHeight);
+
+                var cameraRect = LODGUI.CalcLODButton(sliderPosition, Mathf.Clamp01(relativeHeight));
+                var cameraIconRect = LODGUI.CalcLODCameraIconRect(cameraRect);
+                var cameraLineRect = LODGUI.CalcLODCameraLineRect(cameraRect);
+                var cameraPercentRect = LODGUI.CalcLODCameraPctRect(cameraIconRect, cameraLineRect);
+
+                switch (evt.GetTypeForControl(cameraId))
+                {
+                    case EventType.Repaint:
+                    {
+                        // Draw a marker to indicate the current scene camera distance
+                        var colorCache = GUI.backgroundColor;
+                        GUI.backgroundColor = new Color(colorCache.r, colorCache.g, colorCache.b, 0.8f);
+                        LODGUI.Styles.m_LODCameraLine.Draw(cameraLineRect, false, false, false, false);
+                        GUI.backgroundColor = colorCache;
+                        GUI.Label(cameraIconRect, LODGUI.Styles.m_CameraIcon, GUIStyle.none);
+                        LODGUI.Styles.m_LODSliderText.Draw(cameraPercentRect, String.Format("{0:0}%", Mathf.Clamp01(linearHeight) * 100.0f), false, false, false, false);
+                        break;
+                    }
+                    case EventType.MouseDown:
+                    {
+                        if (cameraIconRect.Contains(evt.mousePosition))
+                        {
+                            evt.Use();
+                            var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+
+                            GUIUtility.hotControl = cameraId;
+                            BeginLODDrag(cameraPercent, renderer, lods);
+                        }
+                        break;
+                    }
+                    case EventType.MouseDrag:
+                    {
+                        if (GUIUtility.hotControl == cameraId)
+                        {
+                            evt.Use();
+                            var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
+
+                            // Change the active LOD level if the camera moves into a new LOD level
+                            UpdateLODDrag(cameraPercent, renderer, lods);
+                        }
+                        break;
+                    }
+                    case EventType.MouseUp:
+                    {
+                        if (GUIUtility.hotControl == cameraId)
+                        {
+                            EndLODDrag();
+                            GUIUtility.hotControl = 0;
+                            evt.Use();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void BeginLODDrag(float desiredCameraPercentage, Renderer renderer, IEnumerable<LODGUI.LODInfo> lods)
+        {
+            if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.camera == null || m_IsPrefab)
+                return;
+
+            UpdateCamera(desiredCameraPercentage, renderer);
+            SceneView.lastActiveSceneView.ClearSearchFilter();
+            SceneView.lastActiveSceneView.SetSceneViewFilteringForLODGroups(true);
+            HierarchyIterator.FilterSingleSceneObject(renderer.gameObject.GetInstanceID(), false);
+            SceneView.RepaintAll();
+        }
+
+        private void EndLODDrag()
+        {
+            if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.camera == null || m_IsPrefab)
+                return;
+
+            SceneView.lastActiveSceneView.SetSceneViewFilteringForLODGroups(false);
+            SceneView.lastActiveSceneView.ClearSearchFilter();
+            // Clearing the search filter of a SceneView will not actually reset the visibility values
+            // of the GameObjects in the scene so we have to explicitly do that  (case 770915).
+            HierarchyIterator.ClearSceneObjectsFilter();
+        }
+
+        private void UpdateLODDrag(float desiredCameraPercentage, Renderer renderer, IEnumerable<LODGUI.LODInfo> lods)
+        {
+            if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.camera == null || m_IsPrefab)
+                return;
+
+            UpdateCamera(desiredCameraPercentage, renderer);
+            SceneView.RepaintAll();
+        }
+
+
         protected void MeshLodSettingsGUI(int lodCount)
         {
             m_ShowMeshLodSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowMeshLodSettings.value, Styles.meshLodSettings);
@@ -458,6 +619,50 @@ namespace UnityEditor
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
+                    var renderer = ((Renderer)target);
+
+                    if (Selection.gameObjects.Length == 1)
+                    {
+                        // Add some space at the top..
+                        GUILayout.Space(LODGUI.kSliderBarTopMargin);
+
+                        // Precalculate and cache the slider bar position for this update
+                        var sliderBarPosition = GUILayoutUtility.GetRect(0, LODGUI.kSliderBarHeight, GUILayout.ExpandWidth(true));
+
+                        List<float> lodValue = new List<float>();
+                        List<int> lodIndex = new List<int>();
+
+                        if (renderer.forceMeshLod >= 0)
+                        {
+                            lodValue.Add(0.0f);
+                            lodIndex.Add(renderer.forceMeshLod);
+                        }
+                        else
+                        {
+                            for (int i = 1 + Mathf.Max(0, (int)renderer.meshLodSelectionBias); i < lodCount; i++)
+                            {
+                                var value = LODUtility.CalculateMeshLODBoundsPercentage(SceneView.lastActiveSceneView.camera, (ushort)i, renderer);
+                                if (value < 1.0f)
+                                {
+                                    lodValue.Add(value);
+                                    lodIndex.Add(i - 1);
+                                }
+                            }
+                            lodValue.Add(0.0f);
+                            lodIndex.Add(lodCount - 1);
+                        }
+
+                        // Precalculate the lod info (button locations / ranges ect)
+                        var lods = LODGUI.CreateLODInfos(lodValue.Count, sliderBarPosition,
+                            i => String.Format($"LOD {(ushort)lodIndex[i]}"),
+                            i => lodValue[i]);
+
+                        DrawMeshLODLevelSlider(sliderBarPosition, lods, lodIndex[0], lodCount);
+                        EditorApplication.update += MeshLODUpdate;
+
+                        GUILayout.Space(LODGUI.kSliderBarBottomMargin);
+                    }
+
                     EditorGUI.BeginChangeCheck();
 
                     var forceMeshLODEnabled = EditorGUILayout.Toggle(Styles.forceMeshLodStyle, m_ForceMeshLod.intValue != -1);
@@ -535,10 +740,12 @@ namespace UnityEditor
             if (!GraphicsSettings.isScriptableRenderPipelineEnabled || target == null)
                 return;
 
+            using var mixedScope = new EditorGUI.MixedValueScope(layerMask.hasMultipleDifferentValues);
             using var changeScope = new EditorGUI.ChangeCheckScope();
 
             var mask = target.renderingLayerMask;
             var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, Styles.renderingLayerMask, layerMask);
             if (useMiniStyle)
             {
                 rect = ModuleUI.PrefixLabel(rect, Styles.renderingLayerMask);
@@ -546,6 +753,7 @@ namespace UnityEditor
             }
             else
                 mask = EditorGUI.RenderingLayerMaskField(rect,Styles.renderingLayerMask, mask);
+            EditorGUI.EndProperty();
 
             if (changeScope.changed)
             {

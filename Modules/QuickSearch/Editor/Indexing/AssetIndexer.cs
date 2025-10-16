@@ -90,7 +90,7 @@ namespace UnityEditor.Search
             var id = gid.ToString();
             var containerName = Path.GetFileNameWithoutExtension(containerPath);
             var isPrefabDocument = containerPath.EndsWith(".prefab");
-            var objPathName = Utils.RemoveInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
+            var objPathName = Utils.ReplaceInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
             var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
 
             IndexTypes(subObj.GetType(), subObjDocumentIndex, isPrefabDocument, exact: true);
@@ -121,7 +121,7 @@ namespace UnityEditor.Search
 
         public override void IndexDocument(string path, bool checkIfDocumentExists)
         {
-            var assetInstanceId = Utils.GetMainAssetInstanceID(path);
+            var assetInstanceId = Utils.GetMainAssetEntityId(path);
             var globalObjectId = GlobalObjectId.GetGlobalObjectIdSlow((EntityId)assetInstanceId);
             var globalObjectIdStr = globalObjectId.ToString();
             var documentIndex = AddDocument(globalObjectIdStr, null, path, checkIfDocumentExists, SearchDocumentFlags.Asset);
@@ -431,7 +431,7 @@ namespace UnityEditor.Search
                 // TODO Deep Indexing: we are currently not indexing all the properties of a nested objects. It could be worth indexing the same set of properties as a root object:
                 // types, path, dir, name, size, age, ext
 
-                IndexWord(documentIndex, Utils.RemoveInvalidCharsFromPath(obj.transform.name, '_'));
+                IndexWord(documentIndex, Utils.ReplaceInvalidCharsFromPath(obj.transform.name, '_'));
                 IndexProperty(documentIndex, "is", "nested", saveKeyword: true);
                 IndexDocumentArea(documentIndex, containerSearchArea);
 

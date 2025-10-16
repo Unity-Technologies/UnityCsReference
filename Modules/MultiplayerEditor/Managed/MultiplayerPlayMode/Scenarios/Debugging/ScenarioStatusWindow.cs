@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UIElements;
+using Unity.PlayMode.Editor;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -17,8 +18,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             GetWindow<ScenarioStatusWindow>();
         }
 
-        private static Scenario m_LastScenario;
-
         private Scenario m_Scenario;
         private ScenarioStatusElement m_ScenarioElement;
 
@@ -29,30 +28,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var styleSheet = EditorGUIUtility.LoadRequired(k_StylesheetPath) as StyleSheet;
             rootVisualElement.styleSheets.Add(styleSheet);
 
-            m_Scenario = m_LastScenario != null ? m_LastScenario : ScenarioRunner.instance.ActiveScenario;
-            Scenario.ScenarioStarted += OnScenarioStarted;
-
+            ScenarioManagerProvider.instance.ConfigAssetChanged += Refresh;
             Refresh();
         }
 
         private void OnDisable()
         {
-            Scenario.ScenarioStarted -= OnScenarioStarted;
-        }
-
-        private void OnScenarioStarted(Scenario scenario)
-        {
-            m_Scenario = scenario;
-            m_LastScenario = scenario;
-            Refresh();
+            ScenarioManagerProvider.instance.ConfigAssetChanged -= Refresh;
         }
 
         private void Refresh()
         {
+            var orchestratedScenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
+            m_Scenario = orchestratedScenario == null ? null : orchestratedScenario.Scenario;
+
             rootVisualElement.Clear();
 
             if (m_Scenario == null)
+            {
+                rootVisualElement.Add(new Label("No active orchestrated scenario"));
                 return;
+            }
 
             m_ScenarioElement = new ScenarioStatusElement(m_Scenario);
             rootVisualElement.Add(m_ScenarioElement);

@@ -99,13 +99,13 @@ namespace UnityEditor
             public Vector3 normal;
             public float separation;
             public float impulse;
-            public int thisColliderId;
-            public int otherColliderId;
+            public EntityId thisColliderId;
+            public EntityId otherColliderId;
 
             public Collider thisCollider => thisColliderId == 0 ? null : UnityEngine.Object.FindObjectFromInstanceID(thisColliderId) as Collider;
             public Collider otherCollider => otherColliderId == 0 ? null : UnityEngine.Object.FindObjectFromInstanceID(otherColliderId) as Collider;
 
-            public VisContactPoint(Vector3 point, Vector3 normal, float separation, float impulse, int col0, int col1)
+            public VisContactPoint(Vector3 point, Vector3 normal, float separation, float impulse, EntityId col0, EntityId col1)
             {
                 this.point = point;
                 this.normal = normal;
@@ -142,8 +142,8 @@ namespace UnityEditor
                         if (pair.isCollisionExit)
                             continue;
 
-                        var shape0 = pair.colliderInstanceID;
-                        var shape1 = pair.otherColliderInstanceID;
+                        var shape0 = pair.colliderEntityId;
+                        var shape1 = pair.otherColliderEntityId;
 
                         for(int k = 0; k < pair.contactCount; k++)
                         {

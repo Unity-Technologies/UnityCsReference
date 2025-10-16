@@ -10,11 +10,12 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/IncludeDescriptor.h")]
     internal struct IncludeDescriptorInternal : IInternalType<IncludeDescriptorInternal>
     {
-        internal FoundryHandle m_StringHandle;
-        
-        internal extern bool IsValid();
-        internal extern string GetValue(ShaderContainer container);
-        internal extern static IncludeDescriptorInternal Invalid();
+        internal FoundryHandle m_ResolvedPathHandle;
+        internal FoundryHandle m_LocationHandle;
+
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern string GetValue(ShaderContainer container);
+        [ThreadSafe] internal extern static IncludeDescriptorInternal Invalid();
 
         // IInternalType
         IncludeDescriptorInternal IInternalType<IncludeDescriptorInternal>.ConstructInvalid() => Invalid();
@@ -37,8 +38,9 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && descriptor.IsValid());
-        
+
         public string Value => descriptor.GetValue(container);
+        public Location Location => new Location(container, descriptor.m_LocationHandle);
 
         // private
         internal IncludeDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -50,7 +52,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static IncludeDescriptor Invalid => new IncludeDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality. ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is IncludeDescriptor other && this.Equals(other);
         public bool Equals(IncludeDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -61,6 +63,7 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             string value;
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -73,7 +76,8 @@ namespace UnityEditor.ShaderFoundry
             public IncludeDescriptor Build()
             {
                 var descriptor = new IncludeDescriptorInternal();
-                descriptor.m_StringHandle = container.AddString(value);
+                descriptor.m_ResolvedPathHandle = container.AddString(value);
+                descriptor.m_LocationHandle = location.handle;
                 var resultHandle = container.Add(descriptor);
                 return new IncludeDescriptor(container, resultHandle);
             }

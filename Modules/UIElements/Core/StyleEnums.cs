@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
         Hidden = LayoutOverflow.Hidden
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum OverflowInternal
     {
         Visible = LayoutOverflow.Visible,
@@ -336,7 +336,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Defines the position of an element.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum PositionProperty
     {
         /// <summary>
@@ -461,7 +461,7 @@ namespace UnityEngine.UIElements
         Sliced = 0,
         /// <summary>
         /// Fill the slices by tiling the center and sides.
-        /// Image must be imported as a Sprite (2D and UI) and have Mesh Type set to Full Rect. 
+        /// Image must be imported as a Sprite (2D and UI) and have Mesh Type set to Full Rect.
         /// </summary>
         Tiled = 1
     }

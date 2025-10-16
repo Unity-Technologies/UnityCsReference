@@ -329,6 +329,7 @@ namespace UnityEngine.UIElements
         MeshGenerationDeferrer m_MeshGenerationDeferrer;
         MeshGenerationNodeManager m_MeshGenerationNodeManager;
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal IMeshGenerator meshGenerator { get; set; }
 
         internal EntryRecorder entryRecorder { get; private set; }

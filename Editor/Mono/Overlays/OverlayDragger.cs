@@ -253,7 +253,7 @@ namespace UnityEditor.Overlays
             {
                 var prevLayout = m_Overlay.activeLayout;
                 m_Overlay.tempTargetContainer = targetContainer;
-                m_Overlay.RebuildContent();
+                m_Overlay.RebuildContent(false);
                 if (m_Overlay.activeLayout != prevLayout)
                     delayPositionUpdate = true;
             }
@@ -364,7 +364,7 @@ namespace UnityEditor.Overlays
             }
 
             OnDragEnd();
-            m_Overlay.RebuildContent();
+            m_Overlay.RebuildContent(false);
         }
 
         void OnDragEnd()

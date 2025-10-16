@@ -36,6 +36,12 @@ namespace UnityEditor
             return property != null && property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride;
         }
 
+        public static void RenderSortingLayerFields(SerializedProperty sortingLayer)
+        {
+            var hasPrefabOverride = HasPrefabOverride(sortingLayer);
+            EditorGUILayout.SortingLayerField(Styles.m_SortingLayerStyle, sortingLayer, hasPrefabOverride ? Styles.boldPopupStyle : EditorStyles.popup, hasPrefabOverride ? EditorStyles.boldLabel : EditorStyles.label);
+        }
+
         public static void RenderSortingLayerFields(SerializedProperty sortingOrder, SerializedProperty sortingLayer)
         {
             var hasPrefabOverride = HasPrefabOverride(sortingLayer);

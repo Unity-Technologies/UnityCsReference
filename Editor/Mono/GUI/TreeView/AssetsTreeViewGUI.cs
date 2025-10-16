@@ -66,7 +66,7 @@ namespace UnityEditor
         override public void BeginRowGUI()
         {
             s_VCEnabled = VersionControlUtils.isVersionControlConnected;
-            iconLeftPadding = iconRightPadding = s_VCEnabled ? k_IconOverlayPadding : 0f;
+            iconLeftPadding = iconRightPadding = 0f;
             base.BeginRowGUI();
         }
 
@@ -128,16 +128,16 @@ namespace UnityEditor
         }
 
         // Not part of interface because it is very specific to creating assets
-        virtual public void BeginCreateNewAsset(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated = true)
+        virtual public void BeginCreateNewAsset(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated = true)
         {
             ClearRenameAndNewItemState();
 
-            if (GetCreateAssetUtility().BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated))
+            if (GetCreateAssetUtility().BeginNewAssetCreation(entityId, endAction, pathName, icon, resourceFile, selectAssetBeingCreated))
             {
                 SyncFakeItem();
 
                 // Start nameing the asset
-                bool renameStarted = GetRenameOverlay().BeginRename(GetCreateAssetUtility().originalName, instanceID, 0f);
+                bool renameStarted = GetRenameOverlay().BeginRename(GetCreateAssetUtility().originalName, entityId, 0f);
                 if (!renameStarted)
                     Debug.LogError("Rename not started (when creating new asset)");
             }

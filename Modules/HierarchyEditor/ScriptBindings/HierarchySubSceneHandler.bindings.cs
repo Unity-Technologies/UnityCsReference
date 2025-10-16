@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -20,7 +21,10 @@ namespace Unity.Hierarchy.Editor
     [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchySubSceneHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchySubSceneHandlerBindings.h")]
-    internal sealed partial class HierarchySubSceneHandler : HierarchyNodeTypeHandler, IHierarchyEntityIdConverter
+    internal sealed partial class HierarchySubSceneHandler :
+        HierarchyNodeTypeHandler,
+        IHierarchyEntityIdConverter,
+        IHierarchyEditorNodeTypeHandler
     {
         const string k_SubSceneNodeUssClass = "hierarchy-item__scene-node";
 
@@ -59,24 +63,6 @@ namespace Unity.Hierarchy.Editor
             EditorSceneManager.sceneDirtied -= OnSceneDirty;
             EditorSceneManager.sceneSaved -= OnSceneSaved;
             base.Dispose(disposing);
-        }
-
-        /// <summary>
-        /// Get a node display name. Default is the node name property.
-        /// </summary>
-        /// <param name="view">The parent <see cref="HierarchyView"/>.</param>
-        /// <param name="node">The <see cref="HierarchyNode"/>.</param>
-        /// <returns>Display name</returns>
-        public override string GetDisplayName(HierarchyView view, in HierarchyNode node)
-        {
-            var name = base.GetDisplayName(view, node);
-            var scene = GetScene(node);
-            if (scene.IsValid())
-            {
-                if (scene.isDirty)
-                    name += "*";
-            }
-            return name;
         }
 
         /// <summary>
@@ -148,62 +134,49 @@ namespace Unity.Hierarchy.Editor
             return m_State.NodeType;
         }
 
-        /// <summary>
-        /// Determines if the nodes of this hierarchy node type handler accepts the given node as parent.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="parent">The hierarchy parent node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a parent, <see langword="false"/> otherwise.</returns>
-        public override bool AcceptParent(HierarchyView view, in HierarchyNode parent)
-        {
-            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
-            var parentNodeType = Hierarchy.GetNodeType(in parent);
-            return parentNodeType == sceneNodeType;
-        }
+        #region IHierarchyEditorNodeTypeHandler
+        bool IHierarchyEditorNodeTypeHandler.CanCut(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnCut(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanCopy(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnCopy(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanSetName(HierarchyView view, in HierarchyNode node) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnSetName(HierarchyView view, in HierarchyNode node, string name) => false;
 
-        /// <summary>
-        /// Determines if the nodes of this hierarchy node type handler accepts the given node as child.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="child">The hierarchy child node.</param>
-        /// <returns><see langword="true"/> if the node can be set as a child, <see langword="false"/> otherwise.</returns>
-        public override bool AcceptChild(HierarchyView view, in HierarchyNode child)
+        string IHierarchyEditorNodeTypeHandler.GetDisplayName(HierarchyView view, in HierarchyNode node)
         {
-            var gameObjectNodeType = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
-            var childNodeType = Hierarchy.GetNodeTypeHandler(in child);
-            return childNodeType == gameObjectNodeType;
-        }
-
-        /// <summary>
-        /// Whether or not this hierarchy node type handler accepts renaming its nodes.
-        /// </summary>
-        /// <param name="view">The <see cref="HierarchyView"/>.</param>
-        /// <param name="node">The <see cref="HierarchyNode"/>.</param>
-        /// <returns><see langword="true"/> if nodes can be renamed, <see langword="false"/> otherwise.</returns>
-        public override bool CanSetName(HierarchyView view, in HierarchyNode node) => false;
-
-        /// <summary>
-        /// Action to execute when starting a drag operation.
-        /// Used to setup a drag operation with the specified nodes by populating the <see cref="HierarchyViewDragAndDropSetupData"/> container.
-        /// The <see cref="HierarchyViewDragAndDropSetupData"/> container contains lists of <see cref="UnityEngine.Object"/> references and paths that can be populated to store information about the drag operation.
-        /// </summary>
-        /// <param name="data">Container holding the data needed to start a drag and drop operation. <see cref="HierarchyNodeTypeHandler"/>s can populate this container.</param>
-        protected override void OnStartDrag(in HierarchyViewDragAndDropSetupData data)
-        {
-            var nodeSpan = data.Nodes;
-            for (var i = 0; i < nodeSpan.Length; ++i)
+            var name = Hierarchy.GetName(in node);
+            var scene = GetScene(in node);
+            if (scene.IsValid())
             {
-                var node = nodeSpan[i];
-                if (node == HierarchyNode.Null || Hierarchy.GetNodeTypeHandler(in node) != this)
-                    continue;
-                var go = GetGameObject(in node);
-                if (go == null)
-                    continue;
-                data.EntityIds.Add(go.GetEntityId());
+                if (scene.isDirty)
+                    name += "*";
             }
+            return name;
         }
 
-        protected override void PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
+        bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnDuplicate(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanDelete(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnDelete(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanFindReferences(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnFindReferences(HierarchyView view) => false;
+        bool IHierarchyEditorNodeTypeHandler.CanDoubleClick(HierarchyView view, in HierarchyNode node) => false;
+        bool IHierarchyEditorNodeTypeHandler.OnDoubleClick(HierarchyView view, in HierarchyNode node) => false;
+
+        void IHierarchyEditorNodeTypeHandler.GetTooltip(HierarchyViewItem item, bool isFiltering, StringBuilder tooltip)
+        {
+            // By default only show tooltip when filtering
+            if (!isFiltering)
+                return;
+
+            tooltip.Append(Hierarchy.GetPath(in item.Node));
+        }
+
+        void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
         {
             // For Sub Scenes GameObjects, have menu items for cut, paste and delete.
             // Not copy or duplicate, since multiple of the same Sub Scene is not supported anyway.
@@ -232,6 +205,42 @@ namespace Unity.Hierarchy.Editor
             AddCustomSubSceneHeaderContextMenuItems(genericMenu2, scene);
             menu.AppendFromGenericMenu(genericMenu2);
         }
+
+        bool IHierarchyEditorNodeTypeHandler.AcceptParent(HierarchyView view, in HierarchyNode parent)
+        {
+            var sceneNodeType = Hierarchy.GetNodeType<HierarchySceneHandler>();
+            var parentNodeType = Hierarchy.GetNodeType(in parent);
+            return parentNodeType == sceneNodeType;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.AcceptChild(HierarchyView view, in HierarchyNode child)
+        {
+            var gameObjectNodeType = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
+            var childNodeType = Hierarchy.GetNodeTypeHandler(in child);
+            return childNodeType == gameObjectNodeType;
+        }
+
+        bool IHierarchyEditorNodeTypeHandler.CanStartDrag(HierarchyView view, ReadOnlySpan<HierarchyNode> nodes) => true;
+
+        void IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData data)
+        {
+            var nodeSpan = data.Nodes;
+            for (var i = 0; i < nodeSpan.Length; ++i)
+            {
+                var node = nodeSpan[i];
+                if (node == HierarchyNode.Null || Hierarchy.GetNodeTypeHandler(in node) != this)
+                    continue;
+                var go = GetGameObject(in node);
+                if (go == null)
+                    continue;
+                data.EntityIds.Add(go.GetEntityId());
+            }
+        }
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.CanDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+
+        DragVisualMode IHierarchyEditorNodeTypeHandler.OnDrop(in HierarchyViewDragAndDropHandlingData data) => DragVisualMode.None;
+        #endregion
 
         protected override void OnBindItem(HierarchyViewItem item)
             => item.AddToClassList(k_SubSceneNodeUssClass);

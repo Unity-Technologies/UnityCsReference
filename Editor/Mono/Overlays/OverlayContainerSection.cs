@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     enum OverlayContainerSection
     {
         BeforeSpacer,

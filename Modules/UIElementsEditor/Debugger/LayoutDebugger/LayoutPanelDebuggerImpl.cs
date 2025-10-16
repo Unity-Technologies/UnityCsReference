@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements.Layout;
 using static UnityEngine.UIElements.Layout.LayoutNative;
 
@@ -45,6 +45,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         SliderInt m_Slider = null;
         TextField m_SearchTextField;
         EnumFlagsField m_SearchModeEnumField;
+        Label m_SearchResultLabel;
 
         [Flags]
         enum SearchMode
@@ -126,6 +127,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
         public void UpdateLabel()
         {
+            DisableButtonsIfNoData();
             if (m_RecordLayout == null)
             {
                 return;
@@ -475,11 +477,11 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             root.Add(m_Toolbar);
 
 
-            VisualElement histogramCol = createNewColumn();
+            VisualElement histogramCol = createNewColumn("histogramCol");
 
-            VisualElement row = createNewRow();
+            VisualElement row = createNewRow("row");
 
-            m_Label = new UnityEngine.UIElements.Label();
+            m_Label = new Label();
             row.Add(m_Label);
             histogramCol.Add(row);
 
@@ -488,9 +490,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Display.style.flexDirection = FlexDirection.Column;
             m_Display.style.flexShrink = 0;
 
-            row = createNewRow();
+            row = createNewRow("row2");
 
-            Button firstFrameIndex = new Button();
+            Button firstFrameIndex = new Button() { name = "firstFrameIndex" };
             firstFrameIndex.text = "Goto first Frame Index";
             firstFrameIndex.clicked += () =>
             {
@@ -501,7 +503,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             };
             row.Add(firstFrameIndex);
 
-            Button gotoNextComplexUpdateLoop = new Button();
+            Button gotoNextComplexUpdateLoop = new Button() { name = "gotoNextComplexUpdateLoop" };
             gotoNextComplexUpdateLoop.text = "Goto next complex update";
             gotoNextComplexUpdateLoop.clicked += () =>
             {
@@ -511,15 +513,15 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             row.Add(gotoNextComplexUpdateLoop);
             histogramCol.Add(row);
 
-            row = createNewRow();
+            row = createNewRow("row3");
 
             // Use minimum height to simulate grid layout.
 
             const float minHeight = 20;
-            VisualElement column = createNewColumn();
+            VisualElement column = createNewColumn("Column" );
 
             {
-                Button frameIndexDown = new Button();
+                Button frameIndexDown = new Button() { name = "frameIndexDown" };
                 frameIndexDown.style.minHeight = minHeight;
                 frameIndexDown.text = "Frame Index--";
                 frameIndexDown.clicked += () =>
@@ -531,7 +533,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 };
                 column.Add(frameIndexDown);
 
-                Button passIndexLoopDown = new Button();
+                Button passIndexLoopDown = new Button() { name = "passIndexLoopDown" };
                 passIndexLoopDown.style.minHeight = minHeight;
                 passIndexLoopDown.text = "Pass Index--";
                 passIndexLoopDown.clicked += () =>
@@ -541,7 +543,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 };
                 column.Add(passIndexLoopDown);
 
-                Button layoutLoopDown = new Button();
+                Button layoutLoopDown = new Button() { name = "layoutLoopDown" };
                 layoutLoopDown.style.minHeight = minHeight;
                 layoutLoopDown.text = "Layout Loop--";
                 layoutLoopDown.clicked += () =>
@@ -582,9 +584,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             }
             row.Add(column);
 
-            column = createNewColumn();
+            column = createNewColumn("column2");
             {
-                Button frameIndexUp = new Button();
+                Button frameIndexUp = new Button() { name = "frameIndexUp" };
                 frameIndexUp.style.minHeight = minHeight;
                 frameIndexUp.text = "Frame Index++";
                 frameIndexUp.clicked += () =>
@@ -597,7 +599,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 };
                 column.Add(frameIndexUp);
 
-                Button passIndexUp = new Button();
+                Button passIndexUp = new Button() { name = "passIndexUp" };
                 passIndexUp.style.minHeight = minHeight;
                 passIndexUp.text = "Pass Index++";
                 passIndexUp.clicked += () =>
@@ -607,7 +609,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 };
                 column.Add(passIndexUp);
 
-                Button layoutLoopUp = new Button();
+                Button layoutLoopUp = new Button() { name = "layoutLoopUp" };
                 layoutLoopUp.style.minHeight = minHeight;
                 layoutLoopUp.text = "Layout Loop++";
                 layoutLoopUp.clicked += () =>
@@ -640,7 +642,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             }
             row.Add(column);
 
-            column = createNewColumn();
+            column = createNewColumn("AnotherColumn");
             {
                 m_FrameResetPassIndexLayoutLoop = new Toggle();
                 m_FrameResetPassIndexLayoutLoop.style.minHeight = minHeight;
@@ -664,7 +666,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             row.Add(column);
             histogramCol.Add(row);
 
-            row = createNewRow();
+            row = createNewRow("row4a");
 
             m_SearchTextField = new TextField();
             m_SearchTextField.style.flexGrow = 1.0f;
@@ -677,26 +679,36 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             row.Add(m_SearchModeEnumField);
 
-            Button button = new Button();
-            button.text = "Search";
-            button.clicked += () =>
             {
-                SearchVE();
-            };
+                Button button = new Button() { name = "Search" };
+                button.text = "Search";
+                button.clicked += () =>
+                {
+                    SearchVE();
+                };
 
-            row.Add(button);
+                row.Add(button);
+            }
 
-            button = new Button();
-            button.text = "Search Next";
-            row.Add(button);
-            button.clicked += () =>
             {
-                SearchNextVE();
-            };
+                var button = new Button() { name = "Search next" };
+                button.text = "Search Next";
+                row.Add(button);
+                button.clicked += () =>
+                {
+                    SearchNextVE();
+                };
+            }
 
             histogramCol.Add(row);
 
-            row = createNewRow();
+            row = createNewRow("row4b");
+            m_SearchResultLabel = new Label();
+            row.Add(m_SearchResultLabel);
+
+            histogramCol.Add(row);
+
+            row = createNewRow("row5");
 
             m_Info = new MultiColumnListView();
 
@@ -745,7 +757,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             histogramCol.Add(row);
 
-            VisualElement histogramRow = createNewRow();
+            VisualElement histogramRow = createNewRow("histogramRow");
             histogramRow.Add(histogramCol);
             m_Histogram = new UILayoutDebuggerHistogram();
             histogramRow.Add(m_Histogram);
@@ -756,7 +768,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             root.Add(histogramRow);
 
-            row = createNewRow();
+            row = createNewRow("row6");
 
             m_Slider = new SliderInt("Last VE");
             m_Slider.lowValue = 0;
@@ -770,10 +782,10 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 m_Display.FillUpdateInfoOfSelectedElement(m_Info);
             });
 
-            m_Interface = createNewColumn();
+            m_Interface = createNewColumn("m_Interface");
             m_Interface.Add(row);
 
-            row = createNewRow();
+            row = createNewRow("row7");
 
             row.Add(m_Slider);
 
@@ -782,7 +794,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             m_Interface.Add(row);
 
-            row = createNewRow();
+            row = createNewRow("row8");
 
             Toggle toggle = new Toggle();
             toggle.text = "Only show IsDirty=true";
@@ -840,6 +852,11 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             SetupIndices();
         }
 
+        private void DisableButtonsIfNoData()
+        {
+            m_Histogram.parent.SetEnabled( (m_RecordLayout != null && m_RecordLayout.Count > 0));
+        }
+
         private void SearchVE()
         {
             m_SearchInfo.m_SearchMode = (SearchMode)m_SearchModeEnumField.value;
@@ -857,13 +874,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         {
             if (m_RecordLayout == null)
             {
-                Debug.LogWarning("No recorded data to search.");
+                m_SearchResultLabel.text = "No recorded data to search.";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(m_SearchTextField.text))
             {
-                Debug.LogWarning("Search field empty.");
+                m_SearchResultLabel.text = "Search field empty.";
                 return;
             }
 
@@ -906,9 +923,12 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             if (m_SearchInfo.m_FoundVE == null)
             {
-                Debug.LogWarning("Last item reached.");
+                m_SearchResultLabel.text = "No VisualElement found.";
             }
-
+            else
+            {
+                m_SearchResultLabel.text = "VisualElement found";
+            }
         }
 
         private void SearchElement(LayoutDebuggerVisualElement ve)
@@ -982,18 +1002,18 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Display.FillUpdateInfoOfSelectedElement(m_Info);
         }
 
-        private VisualElement createNewRow()
+        private VisualElement createNewRow(string name)
         {
-            VisualElement row = new VisualElement();
+            VisualElement row = new VisualElement() { name = name };
             row.style.flexDirection = FlexDirection.Row;
             row.style.flexGrow = 0;
             row.style.flexShrink = 0;
             return row;
         }
 
-        private VisualElement createNewColumn()
+        private VisualElement createNewColumn(string name)
         {
-            VisualElement column = new VisualElement();
+            VisualElement column = new VisualElement() { name = name };
             column.style.flexDirection = FlexDirection.Column;
             column.style.flexGrow = 0;
             column.style.flexShrink = 0;

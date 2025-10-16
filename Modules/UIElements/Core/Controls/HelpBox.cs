@@ -55,7 +55,7 @@ namespace UnityEngine.UIElements
     /// }
     /// </code>
     /// </example>
-    public class HelpBox : VisualElement
+    public partial class HelpBox : VisualElement
     {
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId messageTypeProperty = nameof(messageType);
@@ -116,37 +116,6 @@ namespace UnityEngine.UIElements
                     e.text = text;
                 if (ShouldWriteAttributeValue(messageType_UxmlAttributeFlags))
                     e.messageType = messageType;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="HelpBox"/> with data from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<HelpBox, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="HelpBox"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-            UxmlEnumAttributeDescription<HelpBoxMessageType> m_MessageType = new UxmlEnumAttributeDescription<HelpBoxMessageType>(){ name = "message-type", defaultValue = HelpBoxMessageType.None };
-
-            /// <summary>
-            /// Initializes <see cref="HelpBox"/> properties with values from an attribute bag.
-            /// </summary>
-            /// <param name="ve">The Element to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var helpBox = ve as HelpBox;
-                helpBox.text = m_Text.GetValueFromBag(bag, cc);
-                helpBox.messageType = m_MessageType.GetValueFromBag(bag, cc);
             }
         }
 

@@ -393,7 +393,14 @@ namespace Unity.VectorGraphics
                         var pathProps = shape.PathProps; ;
                         var stroke = pathProps.Stroke;
 
-                        painter.strokeColor = stroke.Color;
+                        var gradientFill = stroke.Fill as GradientFill;
+                        if (gradientFill != null)
+                        {
+                            ComputeFillGradientFromGradientFill(node, shape, gradientFill, out var fillGradient, out var fillTransform);
+                            painter.strokeFillGradient = fillGradient;
+                            painter.fillTransform = fillTransform.ToMatrix4x4();
+                        }
+
                         painter.lineWidth = stroke.HalfThickness * 2.0f;
                         painter.lineJoin = pathProps.Corners == PathCorner.Tipped ? LineJoin.Miter : (pathProps.Corners == PathCorner.Beveled ? LineJoin.Bevel : LineJoin.Round);
                         painter.lineCap = (pathProps.Head == PathEnding.Round || pathProps.Tail == PathEnding.Round) ? LineCap.Round : LineCap.Butt;
@@ -440,16 +447,16 @@ namespace Unity.VectorGraphics
 
             var g = new Gradient();
             var colorKeys = new GradientColorKey[gradientFill.Stops.Length];
+            var alphaKeys = new GradientAlphaKey[gradientFill.Stops.Length];
+
             for (int i = 0; i < gradientFill.Stops.Length; ++i)
             {
                 var stop = gradientFill.Stops[i];
                 colorKeys[i] = new GradientColorKey() { color = stop.Color, time = stop.StopPercentage };
+                alphaKeys[i] = new GradientAlphaKey() { alpha = stop.Color.a, time = stop.StopPercentage };
             }
-            g.colorKeys = colorKeys;
 
-            var alphaKeys  = new GradientAlphaKey[2];
-            alphaKeys[0] = new GradientAlphaKey() { alpha = 1.0f, time = 0.0f };
-            alphaKeys[1] = new GradientAlphaKey() { alpha = 1.0f, time = 1.0f };
+            g.colorKeys = colorKeys;
             g.alphaKeys = alphaKeys;
 
             // Always construct a linear gradient, as the fill transform will take care of

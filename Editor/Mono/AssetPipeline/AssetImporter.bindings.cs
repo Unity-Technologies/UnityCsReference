@@ -108,7 +108,7 @@ namespace UnityEditor
         extern public void SetAssetBundleNameAndVariant(string assetBundleName, string assetBundleVariant);
 
         [NativeMethod("SetThumbnailFromTexture2D")]
-        extern internal void SetThumbnailFromTexture2D(Texture2D image, int instanceID);
+        extern internal void SetThumbnailFromTexture2D(Texture2D image, EntityId instanceID);
 
         [FreeFunction("FindAssetImporterAtAssetPath")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_Warning, "AssetImporters may not be accessed during gathering of import dependencies, as it is a source of non-determinism and will be disallowed in a forthcoming release.")]

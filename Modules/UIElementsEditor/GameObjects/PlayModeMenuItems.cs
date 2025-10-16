@@ -6,7 +6,6 @@ using System;
 using System.IO;
 using UnityEngine;
 using UnityEditor.SceneManagement;
-using UnityEditor.Experimental.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.GameObjects
@@ -21,7 +20,7 @@ namespace UnityEditor.UIElements.GameObjects
         private static readonly string k_PanelSettingsAssetPath = k_UITKEssentialResourcesFolderPath + "/PanelSettings.asset";
         private static string[] k_AssetsFolderFilter = new[] { k_AssetsFolder };
 
-        [MenuItem("GameObject/UI Toolkit/Panel Input Configuration", false, 10)]
+        [MenuItem("GameObject/UI Toolkit/Panel Input Configuration", false, 11)]
         public static void AddPanelInputConfiguration(MenuCommand menuCommand)
         {
             AddPanelInputConfiguration(menuCommand.context as GameObject);
@@ -53,8 +52,24 @@ namespace UnityEditor.UIElements.GameObjects
             Selection.activeGameObject = root;
         }
 
+        [MenuItem("GameObject/UI Toolkit/UI Document with Asset", false, 10)]
+        public static void AddPreFilledUIDocument(MenuCommand menuCommand)
+        {
+            // Creates new asset and upon successful rename will create the UIDoc & link asset
+            UIElementsTemplate.CreateUXMLAssetWithCallback((instanceID =>
+            {
+                var uiDocument = AddUIDocumentHelper(menuCommand);
+                uiDocument.visualTreeAsset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
+            }));
+        }
+
         [MenuItem("GameObject/UI Toolkit/UI Document", false, 9)]
         public static void AddUIDocument(MenuCommand menuCommand)
+        {
+            AddUIDocumentHelper(menuCommand);
+        }
+
+        internal static UIDocument AddUIDocumentHelper(MenuCommand menuCommand)
         {
             GameObject parent = menuCommand.context as GameObject;
             Type type = typeof(UIDocument);
@@ -119,6 +134,8 @@ namespace UnityEditor.UIElements.GameObjects
                     uiDocument.panelSettings = panelSettings;
                 }
             }
+
+            return uiDocument;
         }
 
         private static void SetParentAndAlign(GameObject child, GameObject parent)

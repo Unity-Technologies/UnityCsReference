@@ -28,7 +28,7 @@ namespace UnityEditor.Toolbars
         }
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 6, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, defaultDockIndex = 6, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("Icons/CloudConnect.png"), L10n.Tr("Manage services")), () => OpenServicesDiscoveryWindow(EditorGameServicesAnalytics.SendToolbarCloudEvent))

@@ -224,7 +224,7 @@ namespace UnityEditor
                     {
                         if (AssetDatabase.GetMainAssetTypeAtPath(path) == typeof(SceneAsset))
                         {
-                            var guid = new GUID(AssetDatabase.AssetPathToGUID(path));
+                            var guid = AssetDatabase.GUIDFromAssetPath(path);
                             selection.Add(guid.GetHashCode());
 
                             bool unique = true;
@@ -262,8 +262,8 @@ namespace UnityEditor
         protected override void DoubleClickedItem(int id)
         {
             BuildPlayerSceneTreeViewItem item = FindItem(id , rootItem) as BuildPlayerSceneTreeViewItem;
-            int instanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(item.fullName);
-            EditorGUIUtility.PingObject(instanceID);
+            EntityId entityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(item.fullName);
+            EditorGUIUtility.PingObject(entityId);
         }
 
         protected int FindDropAtIndex(DragAndDropArgs args)

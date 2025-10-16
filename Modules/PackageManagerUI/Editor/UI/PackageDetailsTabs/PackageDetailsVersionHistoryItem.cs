@@ -43,7 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache = upmCache;
             m_PackageLinkFactory = packageLinkFactory;
 
-            var root = resourceLoader.GetTemplate("PackageDetailsVersionHistoryItem.uxml");
+            var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsVersionHistoryItem.uxml");
             Add(root);
             m_Cache = new VisualElementCache(root);
 

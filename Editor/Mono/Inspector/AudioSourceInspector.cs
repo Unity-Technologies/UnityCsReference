@@ -86,7 +86,7 @@ namespace UnityEditor
             public static GUIStyle labelStyle = "ProfilerBadge";
             public static GUIContent rolloffLabel =  EditorGUIUtility.TrTextContent("Volume Rolloff", "Which type of rolloff curve to use");
             public static string controlledByCurveLabel = "Controlled by curve";
-            public static GUIContent audioGeneratorLabel = EditorGUIUtility.TrTextContent("Audio Generator", $"The Generator Definition object played by the {nameof(AudioSource)}, which can be assets like {nameof(AudioClip)}, {nameof(AudioRandomContainer)} or scripting {nameof(IGeneratorDefinition)} assets / components. Can be undefined if the {nameof(AudioSource)} is generating a live stream of audio via OnAudioFilterRead.");
+            public static GUIContent audioGeneratorLabel = EditorGUIUtility.TrTextContent("Audio Generator", $"The Audio Generator object played by the {nameof(AudioSource)}, which can be assets like {nameof(AudioClip)}, {nameof(AudioRandomContainer)} or scripting {nameof(IAudioGenerator)} assets / components. Can be undefined if the {nameof(AudioSource)} is generating a live stream of audio via OnAudioFilterRead.");
             public static GUIContent panStereoLabel = EditorGUIUtility.TrTextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will have each left/right value faded up and down according to the specified pan value.");
             public static GUIContent spatialBlendLabel = EditorGUIUtility.TrTextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
             public static GUIContent reverbZoneMixLabel = EditorGUIUtility.TrTextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
@@ -356,7 +356,7 @@ namespace UnityEditor
             UpdateWrappersAndLegend();
 
             EditorGUILayout.Space();
-            EditorGUILayout.ObjectField(m_AudioResource, typeof(IGeneratorDefinition), Styles.audioGeneratorLabel);
+            EditorGUILayout.ObjectField(m_AudioResource, typeof(IAudioGenerator), Styles.audioGeneratorLabel);
 
             EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, Styles.outputMixerGroupLabel);
             EditorGUILayout.PropertyField(m_Mute);

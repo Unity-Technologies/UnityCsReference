@@ -8,11 +8,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         internal CloneContext()
         {
-            if (!UnityEditor.MPE.ChannelService.IsRunning())
-            {
-                UnityEditor.MPE.ChannelService.Start();
-            }
-
             CloneSystems = new CloneSystems();
             {
                 MessagingService = MessagingService.GetClone(CommandLineParameters.ReadCurrentChannelName());

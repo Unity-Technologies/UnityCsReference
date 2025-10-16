@@ -3,19 +3,52 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Linker/BlockLinker.h")]
-    // This is needed for registration to work with the container being in a namespace!
-    [NativeClass("ShaderFoundry::BlockLinker")]
     [FoundryAPI]
-    internal sealed partial class BlockLinkerInternal
+    internal class BlockLinker : IDisposable
     {
-        internal enum Mode : ushort { Normal, Debug }
-        internal extern static string Build(ShaderContainer container, FoundryHandle blockShaderHandle, Mode mode);
-        internal static string Build(ShaderContainer container, FoundryHandle blockShaderHandle) => Build(container, blockShaderHandle, Mode.Normal);
+        private IntPtr m_Ptr;
+        public BlockLinker()
+            : this(Internal_Create())
+        {
+        }
+
+        private BlockLinker(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
+
+        ~BlockLinker()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
+            GC.SuppressFinalize(this);
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(BlockLinker obj) => obj.m_Ptr;
+            public static BlockLinker ConvertToManaged(IntPtr ptr) => new BlockLinker(ptr);
+        }
+
+        [ThreadSafe] private extern static IntPtr Internal_Create();
+        [ThreadSafe] private static extern void Internal_Destroy(IntPtr ptr);
+
+        [ThreadSafe] extern string Run(ShaderContainer container, FoundryHandle handle);
+        public string Run(ShaderContainer container, BlockShader blockShader) => Run(container, blockShader.handle);
+        public extern bool HasErrors { [NativeMethod(Name = "HasErrors", IsThreadSafe = true)] get; }
+        [ThreadSafe] public extern string[] GetErrors();
     }
 }

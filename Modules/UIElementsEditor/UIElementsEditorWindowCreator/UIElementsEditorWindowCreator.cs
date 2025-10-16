@@ -10,6 +10,7 @@ using System.Text;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
@@ -204,7 +205,7 @@ namespace UnityEditor.UIElements
             // Ping file to open folder where it was created
             var cSharpFile = AssetDatabase.LoadAssetAtPath<MonoScript>(cSharpPath);
             Selection.activeObject = cSharpFile;
-            EditorGUIUtility.PingObject(cSharpFile.GetInstanceID());
+            EditorGUIUtility.PingObject(cSharpFile.GetEntityId());
 
             // Close current window
             Close();
@@ -499,7 +500,8 @@ namespace UnityEditor.UIElements
 
         bool ClassExists()
         {
-            bool classExists = AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetType(m_CSharpName, false) != null);
+            // Types can be different, so use GetLoadedAssemblies instead of TypeCache
+            bool classExists = CurrentAssemblies.GetLoadedAssemblies().Any(a => a.GetType(m_CSharpName, false) != null);
             if (classExists)
             {
                 m_ErrorMessage = "Class name " + name + " already exists.";

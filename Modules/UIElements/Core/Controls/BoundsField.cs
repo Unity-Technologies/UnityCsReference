@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/BoundsField.png")]
-    public class BoundsField : BaseField<Bounds>
+    public partial class BoundsField : BaseField<Bounds>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Bounds>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
@@ -54,43 +54,6 @@ namespace UnityEngine.UIElements
                         uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="BoundsField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<BoundsField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BoundsField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<Bounds>.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_CenterXValue = new UxmlFloatAttributeDescription { name = "cx" };
-            UxmlFloatAttributeDescription m_CenterYValue = new UxmlFloatAttributeDescription { name = "cy" };
-            UxmlFloatAttributeDescription m_CenterZValue = new UxmlFloatAttributeDescription { name = "cz" };
-
-            UxmlFloatAttributeDescription m_ExtentsXValue = new UxmlFloatAttributeDescription { name = "ex" };
-            UxmlFloatAttributeDescription m_ExtentsYValue = new UxmlFloatAttributeDescription { name = "ey" };
-            UxmlFloatAttributeDescription m_ExtentsZValue = new UxmlFloatAttributeDescription { name = "ez" };
-
-            /// <summary>
-            /// Initialize <see cref="BoundsField"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                BoundsField f = (BoundsField)ve;
-                f.SetValueWithoutNotify(new Bounds(
-                    new Vector3(m_CenterXValue.GetValueFromBag(bag, cc), m_CenterYValue.GetValueFromBag(bag, cc), m_CenterZValue.GetValueFromBag(bag, cc)),
-                    new Vector3(m_ExtentsXValue.GetValueFromBag(bag, cc), m_ExtentsYValue.GetValueFromBag(bag, cc), m_ExtentsZValue.GetValueFromBag(bag, cc))));
             }
         }
 

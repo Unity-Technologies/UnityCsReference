@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -11,6 +12,7 @@ namespace UnityEditor.ShortcutManagement
         IEnumerable<ShortcutEntry> GetAllShortcuts();
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     interface IShortcutEntryDiscoveryInfo
     {
         ShortcutEntry GetShortcutEntry();
@@ -19,6 +21,7 @@ namespace UnityEditor.ShortcutManagement
         string GetFilePath();
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     interface IDiscoveryShortcutProvider
     {
         IEnumerable<IShortcutEntryDiscoveryInfo> GetDefinedShortcuts();

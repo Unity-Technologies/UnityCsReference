@@ -861,6 +861,7 @@ namespace UnityEditorInternal
             curveWrapper.renderer.SetWrap(WrapMode.Clamp, clip.isLooping ? WrapMode.Loop : WrapMode.Clamp);
             curveWrapper.renderer.SetCustomRange(0f, clip.length);
             curveWrapper.binding = curve.binding;
+            curveWrapper.isPhantom = curve.isPhantom;
             curveWrapper.id = curve.GetHashCode();
             curveWrapper.color = CurveUtility.GetPropertyColor(curve.propertyName);
             curveWrapper.hidden = false;

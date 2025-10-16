@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Shaders;
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
@@ -11,16 +12,21 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/KeywordDescriptor.h")]
     internal struct KeywordDescriptorInternal : IInternalType<KeywordDescriptorInternal>
     {
+        internal FoundryHandle m_LocationHandle;
+        internal KeywordDescriptor.DefinitionType m_Definition;
+        internal KeywordDescriptor.ScopeType m_Scope;
+        internal ShaderStageFlags m_Stage;
         internal FoundryHandle m_ListHandle;
 
-        internal extern static KeywordDescriptorInternal Invalid();
-        internal extern void Setup(ShaderContainer container, string definition, string scope, string stage, string[] ops);
+        [ThreadSafe] internal extern static KeywordDescriptorInternal Invalid();
+        [ThreadSafe] internal extern void Setup(ShaderContainer container, KeywordDescriptor.DefinitionType definition,
+            KeywordDescriptor.ScopeType scope, ShaderStageFlags stage, string[] ops);
 
-        internal extern string GetDefinition(ShaderContainer container);
-        internal extern string GetScope(ShaderContainer container);
-        internal extern string GetStage(ShaderContainer container);
-        internal extern int GetOpCount(ShaderContainer container);
-        internal extern string GetOp(ShaderContainer container, int index);
+        [ThreadSafe] internal extern KeywordDescriptor.DefinitionType GetDefinition();
+        [ThreadSafe] internal extern KeywordDescriptor.ScopeType GetScope();
+        [ThreadSafe] internal extern ShaderStageFlags GetStage();
+        [ThreadSafe] internal extern ulong GetOpCount(ShaderContainer container);
+        [ThreadSafe] internal extern string GetOp(ShaderContainer container, ulong index);
 
         // IInternalType
         KeywordDescriptorInternal IInternalType<KeywordDescriptorInternal>.ConstructInvalid() => Invalid();
@@ -29,6 +35,22 @@ namespace UnityEditor.ShaderFoundry
     [FoundryAPI]
     internal readonly struct KeywordDescriptor : IEquatable<KeywordDescriptor>, IPublicType<KeywordDescriptor>
     {
+        // These enums must match the declarations in Modules/ShaderFoundry/Public/Enums/KeywordEnums.h
+        public enum DefinitionType
+        {
+            Invalid,
+            DynamicBranch,
+            MaterialVariant,
+            RuntimeVariant
+        };
+
+        public enum ScopeType
+        {
+            Invalid,
+            Global,
+            Local
+        };
+
         // data members
         readonly ShaderContainer container;
         readonly KeywordDescriptorInternal descriptor;
@@ -44,19 +66,21 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && descriptor.m_ListHandle.IsValid);
 
-        public string Definition => descriptor.GetDefinition(container);
-        public string Scope => descriptor.GetScope(container);
-        public string Stage => descriptor.GetStage(container);
+        public KeywordDescriptor.DefinitionType Definition => descriptor.GetDefinition();
+        public KeywordDescriptor.ScopeType Scope => descriptor.GetScope();
+        public ShaderStageFlags Stage => descriptor.GetStage();
 
         public IEnumerable<string> Ops
         {
             get
             {
-                var opCount = descriptor.GetOpCount(container);
-                for (var i = 0; i < opCount; ++i)
+                ulong opCount = descriptor.GetOpCount(container);
+                for (ulong i = 0; i < opCount; ++i)
                     yield return descriptor.GetOp(container, i);
             }
         }
+
+        public Location Location => new Location(container, descriptor.m_LocationHandle);
 
         // private
         internal KeywordDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -68,7 +92,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static KeywordDescriptor Invalid => new KeywordDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is KeywordDescriptor other && this.Equals(other);
         public bool Equals(KeywordDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -78,14 +102,16 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             ShaderContainer container;
-            string definition;
-            string scope;
-            string stage;
+            KeywordDescriptor.DefinitionType definition;
+            KeywordDescriptor.ScopeType scope;
+            ShaderStageFlags stage;
             List<string> ops = new List<string>();
+            public Location location;
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, string definition, string scope, string stage, IEnumerable<string> ops)
+            public Builder(ShaderContainer container, KeywordDescriptor.DefinitionType definition,
+                KeywordDescriptor.ScopeType scope, ShaderStageFlags stage, IEnumerable<string> ops)
             {
                 this.container = container;
                 this.definition = definition;
@@ -98,6 +124,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new KeywordDescriptorInternal();
                 descriptor.Setup(container, definition, scope, stage, ops.ToArray());
+                descriptor.m_LocationHandle = location.handle;
                 var resultHandle = container.Add(descriptor);
                 return new KeywordDescriptor(container, resultHandle);
             }

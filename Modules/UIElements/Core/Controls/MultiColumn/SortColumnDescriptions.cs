@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// This represents a collection or SortColumnDescriptions in multi SortColumnDescription views.
     /// </summary>
     [UxmlObject]
-    public class SortColumnDescriptions : ICollection<SortColumnDescription>
+    public partial class SortColumnDescriptions : ICollection<SortColumnDescription>
     {
         [ExcludeFromDocs, Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
@@ -45,40 +45,6 @@ namespace UnityEngine.UIElements
                         var scd = (SortColumnDescription)scdData.CreateInstance();
                         scdData.Deserialize(scd);
                         e.Add(scd);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="SortColumnDescriptions"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : SortColumnDescriptions, new() {}
-        /// <summary>
-        /// Instantiates a <see cref="SortColumnDescriptions"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory : UxmlObjectFactory<SortColumnDescriptions> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="SortColumnDescriptions"/>.
-        /// </summary>
-        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : SortColumnDescriptions
-        {
-            readonly UxmlObjectListAttributeDescription<SortColumnDescription> m_SortColumnDescriptions = new UxmlObjectListAttributeDescription<SortColumnDescription>();
-
-            public override void Init(ref T obj, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ref obj, bag, cc);
-
-                var sortColumnDescriptions = m_SortColumnDescriptions.GetValueFromBag(bag, cc);
-                if (sortColumnDescriptions != null)
-                {
-                    foreach (var d in sortColumnDescriptions)
-                    {
-                        obj.Add(d);
                     }
                 }
             }

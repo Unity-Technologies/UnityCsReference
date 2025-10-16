@@ -9,6 +9,7 @@ using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.HierarchyV2;
 using static UnityEngine.UIElements.VisualElement;
 
 namespace Unity.Hierarchy;
@@ -67,14 +68,11 @@ class HierarchyViewDragHandler
     internal const string DragHoverSiblingMarkerItemName = "HierarchyHoverSiblingMarker";
 
     readonly HierarchyView m_HierarchyView;
-    readonly MultiColumnListView m_MultiColumnListView;
+    readonly CollectionView m_CollectionView;
 
     Hierarchy Hierarchy => m_HierarchyView.Source;
     HierarchyFlattened HierarchyFlattened => m_HierarchyView.Flattened;
     HierarchyViewModel HierarchyViewModel => m_HierarchyView.ViewModel;
-
-    BaseVerticalCollectionView TargetView => m_MultiColumnListView;
-    ScrollView TargetScrollView => TargetView.Q<ScrollView>();
 
     HierarchyViewDragAndDropTargets m_LastDragPosition;
     AutoExpansionData m_AutoExpansionData;
@@ -99,24 +97,24 @@ class HierarchyViewDragHandler
     public HierarchyViewDragHandler(HierarchyView hierarchyView)
     {
         m_HierarchyView = hierarchyView;
-        m_MultiColumnListView = m_HierarchyView.ListView;
+        m_CollectionView = m_HierarchyView.ListView;
         m_AutoExpansionData = new AutoExpansionData();
 
-        m_MultiColumnListView.canStartDrag += CanStartDrag;
-        m_MultiColumnListView.setupDragAndDrop += SetupDragAndDrop;
-        m_MultiColumnListView.dragAndDropUpdate += DragAndDropUpdate;
-        m_MultiColumnListView.handleDrop += HandleDrop;
+        m_CollectionView.canStartDrag += CanStartDrag;
+        m_CollectionView.setupDragAndDrop += SetupDragAndDrop;
+        m_CollectionView.dragAndDropUpdate += DragAndDropUpdate;
+        m_CollectionView.handleDrop += HandleDrop;
 
 #pragma warning disable UAL0015 // Auto cleaned up symbol assigned by constructor
         // this is ok, as it is used as part of HierarchyView Visual element which is re-created on code reload
-        m_MultiColumnListView.RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
-        m_MultiColumnListView.RegisterCallback<DragExitedEvent>(OnDragExited, TrickleDown.TrickleDown);
-        m_MultiColumnListView.RegisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
-        m_MultiColumnListView.RegisterCallback<PointerLeaveEvent>(OnPointerLeave);
+        m_CollectionView.RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
+        m_CollectionView.RegisterCallback<DragExitedEvent>(OnDragExited, TrickleDown.TrickleDown);
+        m_CollectionView.RegisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
+        m_CollectionView.RegisterCallback<PointerLeaveEvent>(OnPointerLeave);
 
         // Temporary until event modifiers are available in the ListView drag events.
-        m_MultiColumnListView.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
-        m_MultiColumnListView.RegisterCallback<PointerMoveEvent>(OnPointerMove, TrickleDown.TrickleDown);
+        m_CollectionView.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+        m_CollectionView.RegisterCallback<PointerMoveEvent>(OnPointerMove, TrickleDown.TrickleDown);
         m_HierarchyView.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 #pragma warning restore UAL0015 // Auto cleaned up symbol assigned by constructor
     }
@@ -124,7 +122,7 @@ class HierarchyViewDragHandler
     void OnDragUpdated(DragUpdatedEvent evt)
     {
         m_CurrentEventModifiers = evt.modifiers;
-        if (!m_MultiColumnListView.worldBound.Contains(evt.mousePosition))
+        if (!m_CollectionView.worldBound.Contains(evt.mousePosition))
             ClearDragAndDropUI();
     }
 
@@ -173,7 +171,7 @@ class HierarchyViewDragHandler
 
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
-            if (!handler.Internal_CanStartDrag(m_HierarchyView, draggedNodes))
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler && !editorHandler.CanStartDrag(m_HierarchyView, draggedNodes))
                 return false;
         }
 
@@ -192,7 +190,8 @@ class HierarchyViewDragHandler
         var setupData = new HierarchyViewDragAndDropSetupData(draggedNodes, allEntityIds, paths, m_HierarchyView, genericData);
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
-            handler.Internal_OnStartDrag(setupData);
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                editorHandler.OnStartDrag(setupData);
         }
 
         var startDragArgs = new StartDragArgs(args.startDragArgs.title, args.startDragArgs.visualMode);
@@ -246,14 +245,14 @@ class HierarchyViewDragHandler
 
         HierarchyViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, draggedNodes);
 
-        var parentNodeTypeHandler = parentNode == Hierarchy.Root ? null : Hierarchy.GetNodeTypeHandler(in parentNode);
+        var parentNodeTypeHandler = parentNode == Hierarchy.Root ? null : Hierarchy.GetNodeTypeHandler(in parentNode) as IHierarchyEditorNodeTypeHandler;
         for (var i = 0; i < draggedNodes.Span.Length; ++i)
         {
             var draggedNode = draggedNodes.Span[i];
             if (IsDescendant(parentNode, draggedNode))
                 return HierarchyViewDragAndDropTargets.Rejected;
 
-            var draggedNodeTypeHandler = Hierarchy.GetNodeTypeHandler(in draggedNode);
+            var draggedNodeTypeHandler = Hierarchy.GetNodeTypeHandler(in draggedNode) as IHierarchyEditorNodeTypeHandler;
             if (!parentNodeTypeHandler?.AcceptChild(m_HierarchyView, in draggedNode) ?? false)
                 return HierarchyViewDragAndDropTargets.Rejected;
             if (!draggedNodeTypeHandler?.AcceptParent(m_HierarchyView, in parentNode) ?? false)
@@ -289,11 +288,14 @@ class HierarchyViewDragHandler
 
         foreach (var handler in Hierarchy.EnumerateNodeTypeHandlers())
         {
-            var visualMode = perform ? handler.Internal_OnDrop(handlingData) : handler.Internal_CanDrop(handlingData);
-            if (visualMode != DragVisualMode.None)
+            if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
             {
-                dragAndDropTargets.dragVisualMode = visualMode;
-                return dragAndDropTargets;
+                var visualMode = perform ? editorHandler.OnDrop(handlingData) : editorHandler.CanDrop(handlingData);
+                if (visualMode != DragVisualMode.None)
+                {
+                    dragAndDropTargets.dragVisualMode = visualMode;
+                    return dragAndDropTargets;
+                }
             }
         }
 
@@ -466,7 +468,7 @@ class HierarchyViewDragHandler
 
     bool DragSourceIsCurrentListView(in HandleDragAndDropArgs args)
     {
-        return args.dragAndDropData.source == TargetView;
+        return args.dragAndDropData.source == m_CollectionView;
     }
 
     HierarchyViewDragAndDropTargets HandleTreePosition(in HandleDragAndDropArgs dnDArgs, in ReadOnlySpan<int> draggedIndices)
@@ -523,7 +525,7 @@ class HierarchyViewDragHandler
         VisualElement rootElement = null;
         if (previousNodeDepth > 0)
         {
-            rootElement = TargetView.GetRootElementForIndex(previousNodeIndex);
+            rootElement = m_CollectionView.GetRootElementForIndex(previousNodeIndex);
         }
         else
         {
@@ -531,7 +533,7 @@ class HierarchyViewDragHandler
             var initialItemDepth = initialTargetNode == HierarchyNode.Null ? 0 : HierarchyFlattened.GetDepth(initialTargetNode);
             if (initialItemDepth > 0)
             {
-                rootElement = TargetView.GetRootElementForIndex(dnDArgs.insertAtIndex);
+                rootElement = m_CollectionView.GetRootElementForIndex(dnDArgs.insertAtIndex);
             }
         }
 
@@ -600,10 +602,10 @@ class HierarchyViewDragHandler
         var didChangeTargetToAncestor = targetIndex != initialTargetIndex;
         if (didChangeTargetToAncestor)
         {
-            var siblingRoot = TargetView.GetRootElementForIndex(targetIndex);
+            var siblingRoot = m_CollectionView.GetRootElementForIndex(targetIndex);
             if (siblingRoot != null)
             {
-                var contentViewport = TargetScrollView.contentViewport;
+                var contentViewport = m_CollectionView.scrollView.viewport;
                 var elementBounds = contentViewport.WorldToLocal(siblingRoot.worldBound);
                 if (contentViewport.localBound.yMin < elementBounds.yMax && elementBounds.yMax < contentViewport.localBound.yMax)
                 {
@@ -666,24 +668,24 @@ class HierarchyViewDragHandler
         if (m_LastDragPosition.Equals(dragTargets))
             return;
 
-        var scrollView = TargetScrollView;
+        var scrollView = m_CollectionView.scrollView;
 
         if (m_DragHoverBar == null)
         {
             m_DragHoverBar = new VisualElement() { name = DragHoverBarItemName };
             m_DragHoverBar.AddToClassList(BaseVerticalCollectionView.dragHoverBarUssClassName);
             m_DragHoverBar.AddToClassList(DragHoverBarStyleName);
-            m_DragHoverBar.style.width = TargetView.localBound.width;
+            m_DragHoverBar.style.width = m_CollectionView.localBound.width;
             m_DragHoverBar.style.visibility = Visibility.Hidden;
             m_DragHoverBar.pickingMode = PickingMode.Ignore;
 
             void GeometryChangedCallback(GeometryChangedEvent e)
             {
-                m_DragHoverBar.style.width = TargetView.localBound.width;
+                m_DragHoverBar.style.width = m_CollectionView.localBound.width;
             }
 
-            TargetView.RegisterCallback<GeometryChangedEvent>(GeometryChangedCallback);
-            scrollView.contentViewport.Add(m_DragHoverBar);
+            m_CollectionView.RegisterCallback<GeometryChangedEvent>(GeometryChangedCallback);
+            scrollView.viewport.Add(m_DragHoverBar);
         }
 
         if (m_DragHoverItemMarker == null)
@@ -698,7 +700,7 @@ class HierarchyViewDragHandler
             m_DragHoverSiblingMarker.AddToClassList(BaseVerticalCollectionView.dragHoverMarkerUssClassName);
             m_DragHoverSiblingMarker.style.visibility = Visibility.Hidden;
             m_DragHoverSiblingMarker.pickingMode = PickingMode.Ignore;
-            scrollView.contentViewport.Add(m_DragHoverSiblingMarker);
+            scrollView.viewport.Add(m_DragHoverSiblingMarker);
         }
 
         ClearDragAndDropUI();
@@ -714,14 +716,14 @@ class HierarchyViewDragHandler
                 }
                 else
                 {
-                    var beforeItem = TargetView.GetRootElementForIndex(dragTargets.insertAtIndex - 1);
-                    var afterItem = TargetView.GetRootElementForIndex(dragTargets.insertAtIndex);
+                    var beforeItem = m_CollectionView.GetRootElementForIndex(dragTargets.insertAtIndex - 1);
+                    var afterItem = m_CollectionView.GetRootElementForIndex(dragTargets.insertAtIndex);
                     PlaceHoverBarAtElement(beforeItem ?? afterItem);
                 }
 
                 break;
             case DragAndDropPosition.OutsideItems:
-                var recycledItem = TargetView.GetRootElementForIndex(TargetView.itemsSource.Count - 1);
+                var recycledItem = m_CollectionView.GetRootElementForIndex(m_CollectionView.itemsSource.Count - 1);
                 if (recycledItem != null)
                     PlaceHoverBarAtElement(recycledItem);
                 else
@@ -774,7 +776,7 @@ class HierarchyViewDragHandler
 
     float GetHoverBarTopPosition(VisualElement item)
     {
-        var contentViewport = TargetScrollView.contentViewport;
+        var contentViewport = m_CollectionView.scrollView.viewport;
         var elementBounds = contentViewport.WorldToLocal(item.worldBound);
         var top = Mathf.Min(elementBounds.yMax, contentViewport.localBound.yMax - k_DragHoverBarHeight);
         return top;
@@ -793,7 +795,7 @@ class HierarchyViewDragHandler
         var nameColumnLayout = GetNameColumnLayout();
 
         var baseColumnOffset = nameColumnLayout.xMin;
-        var width = TargetView.localBound.width;
+        var width = m_CollectionView.localBound.width;
         if (nameColumnLayout.width > 0f)
             width = nameColumnLayout.width;
         else
@@ -825,7 +827,7 @@ class HierarchyViewDragHandler
 
     VisualElement GetNameColumn()
     {
-        return TargetView.Q(HierarchyViewItemColumn.k_HierarchyNameColumnName);
+        return m_CollectionView.Q(HierarchyViewItemColumn.k_HierarchyNameColumnName);
     }
 
     Rect GetNameColumnLayout()
@@ -842,7 +844,7 @@ class HierarchyViewDragHandler
             return;
 
         var itemIndex = dropTargets.parentIndex;
-        var item = m_MultiColumnListView.GetRootElementForIndex(itemIndex);
+        var item = m_CollectionView.GetRootElementForIndex(itemIndex);
         if (item == null)
             return;
 
@@ -871,7 +873,7 @@ class HierarchyViewDragHandler
     {
         if (m_ExpandItemScheduledItem == null)
         {
-            m_ExpandItemScheduledItem = m_MultiColumnListView.schedule.Execute(ExpandItem).Every(k_ExpandUpdateIntervalMs);
+            m_ExpandItemScheduledItem = m_CollectionView.schedule.Execute(ExpandItem).Every(k_ExpandUpdateIntervalMs);
         }
         else
         {

@@ -15,7 +15,7 @@ internal class TrText
     internal const int k_InsightsLinkTagProjectSettingsInfoBoxDisabledLinkId = 6;
 
     internal static readonly string k_BuildProfileNoCloudLabel = L10n.Tr(
-        $"Disabled (Requires <link={k_InsightsLinkTagNoCloudLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>Unity Cloud</u></color></link>)");
+        $"Diagnostics Data Disabled (Requires <link={k_InsightsLinkTagNoCloudLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>linking to Cloud Project</u></color></link>)");
 
     internal static readonly string k_DataReportingLevelDropdownLabel = L10n.Tr("Diagnostics Data");
     internal static readonly string k_EngineDiagnosticsDropdownEnabled = L10n.Tr("Enabled");
@@ -47,7 +47,7 @@ internal class TrText
     internal static readonly string k_DisabledWarningWindowCancelButton = L10n.Tr("Cancel");
 
     // Describes text block with multiple clickable elements. First one proposes expected order, rest is substitutions for tokens.
-    internal static readonly string k_InsightsInfoBoxRichText = L10n.Tr($"In Unity 6.2 <link={k_InsightsLinkTagInfoBoxProjectSettingsLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>Diagnostics Data</u></color></link> is on by default for new projects and based on Unity’s Developer Data framework. <link={k_InsightsLinkTagInfoBoxLearnMoreLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>Learn more</u></color></link>");
+    internal static readonly string k_InsightsInfoBoxRichText = L10n.Tr($"Starting in Unity 6.2 <link={k_InsightsLinkTagInfoBoxProjectSettingsLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>Diagnostics Data</u></color></link> is on by default for new projects and based on Unity’s Developer Data framework. <link={k_InsightsLinkTagInfoBoxLearnMoreLinkId}><color={EditorGUIUtility.GetHyperlinkColorForSkin()}><u>Learn more</u></color></link>");
     internal static readonly string k_InsightsInfoBoxLearnMoreUrl = L10n.Tr("https://docs.unity.com/cloud/en-us/developer-data-framework/overview");
     internal static readonly string k_InsightsInfoBoxButtonText = L10n.Tr("Dismiss");
 }

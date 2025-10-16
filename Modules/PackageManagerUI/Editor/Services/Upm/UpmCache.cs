@@ -24,7 +24,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         void AddExtraPackageInfo(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
         PackageInfo GetInstalledPackageInfo(string packageName);
-        PackageInfo GetInstalledPackageInfoById(string packageId);
         IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0);
         PackageInfo GetSearchPackageInfo(string packageName);
         PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
@@ -223,12 +222,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageInfo GetInstalledPackageInfo(string packageName) => m_PackageNameToInstalledPackageInfosMap.Get(packageName);
 
         public PackageInfo GetProductInstalledPackageInfo(long productId) => m_ProductIdToInstalledPackageInfosMap.GetValueOrDefault(productId);
-
-        public PackageInfo GetInstalledPackageInfoById(string packageId)
-        {
-            var idSplit = packageId?.Split(new[] { '@' }, 2);
-            return idSplit?.Length == 2 ? GetInstalledPackageInfo(idSplit[0]) : null;
-        }
 
         private void UpdateProductIdToInstalledPackageInfoMap(PackageInfo oldInfo, PackageInfo newInfo)
         {

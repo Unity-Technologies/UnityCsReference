@@ -11,11 +11,14 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/CustomizationPointImplementation.h")]
     internal struct CustomizationPointImplementationInternal : IInternalType<CustomizationPointImplementationInternal>
     {
-        internal FoundryHandle m_CustomizationPointHandle;
+        internal FoundryHandle m_AttributeListHandle;
+        internal FoundryHandle m_CustomizationPointNameHandle;
         internal FoundryHandle m_BlockSequenceElementListHandle;
+        internal FoundryHandle m_OutputLinkOverridesListHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static CustomizationPointImplementationInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static CustomizationPointImplementationInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         CustomizationPointImplementationInternal IInternalType<CustomizationPointImplementationInternal>.ConstructInvalid() => Invalid();
@@ -38,16 +41,23 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
-        public CustomizationPoint CustomizationPoint => new CustomizationPoint(container, customizationPointImplementation.m_CustomizationPointHandle);
+        public IEnumerable<ShaderAttribute> Attributes =>
+            ListType.Enumerate<ShaderAttribute>(container, customizationPointImplementation.m_AttributeListHandle);
+        public string CustomizationPointName => container?.GetString(customizationPointImplementation.m_CustomizationPointNameHandle) ?? string.Empty;
 
         public IEnumerable<BlockSequenceElement> BlockSequenceElements
         {
             get
             {
-                return customizationPointImplementation.m_BlockSequenceElementListHandle.AsListEnumerable<BlockSequenceElement>(container,
-                    (container, handle) => (new BlockSequenceElement(container, handle)));
+                var listHandle = customizationPointImplementation.m_BlockSequenceElementListHandle;
+                return ListType.Enumerate<BlockSequenceElement>(container, listHandle);
             }
         }
+        
+        public IEnumerable<BlockLinkOverride> OutputLinkOverrides =>
+        ListType.Enumerate<BlockLinkOverride>(container, customizationPointImplementation.m_OutputLinkOverridesListHandle);
+
+        public Location Location => new Location(container, customizationPointImplementation.m_LocationHandle);
 
         // private
         internal CustomizationPointImplementation(ShaderContainer container, FoundryHandle handle)
@@ -59,7 +69,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static CustomizationPointImplementation Invalid => new CustomizationPointImplementation(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is CustomizationPointImplementation other && this.Equals(other);
         public bool Equals(CustomizationPointImplementation other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -69,31 +79,44 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             ShaderContainer container;
-            CustomizationPoint customizationPoint = CustomizationPoint.Invalid;
+            public List<ShaderAttribute> attributes;
+            string customizationPointName;
             List<BlockSequenceElement> blockSequenceElements;
+            List<BlockLinkOverride> outputLinkOverrides;
+            public Location location;
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, CustomizationPoint customizationPoint)
+            public Builder(ShaderContainer container, string customizationPointName)
             {
                 this.container = container;
-                this.customizationPoint = customizationPoint;
+                this.customizationPointName = customizationPointName;
             }
 
-            public void AddBlockSequenceElement(BlockSequenceElement element)
+            // TODO @ SHADERS SHADERS-353: Remove this constructor
+            [Obsolete("Use the constructor taking only the customization point's name instead")]
+            public Builder(ShaderContainer container, CustomizationPoint customizationPoint)
+                : this(container, customizationPoint.Name)
             {
-                if (blockSequenceElements == null)
-                    blockSequenceElements = new List<BlockSequenceElement>();
-                blockSequenceElements.Add(element);
             }
+
+            public void AddAttribute(ShaderAttribute attribute) =>
+                Utilities.AddToList(ref attributes, attribute);
+            public void AddBlockSequenceElement(BlockSequenceElement element) =>
+                Utilities.AddToList(ref blockSequenceElements, element);
+            public void AddOutputOverride(BlockLinkOverride link) =>
+                Utilities.AddToList(ref outputLinkOverrides, link);
 
             public CustomizationPointImplementation Build()
             {
                 var customizationPointImplementationInternal = new CustomizationPointImplementationInternal()
                 {
-                    m_CustomizationPointHandle = customizationPoint.handle,
+                    m_CustomizationPointNameHandle = container.AddString(customizationPointName),
                 };
 
-                customizationPointImplementationInternal.m_BlockSequenceElementListHandle = HandleListInternal.Build(container, blockSequenceElements, (e) => (e.handle));
+                customizationPointImplementationInternal.m_AttributeListHandle = ListType.Build(container, attributes);
+                customizationPointImplementationInternal.m_BlockSequenceElementListHandle = ListType.Build(container, blockSequenceElements);
+                customizationPointImplementationInternal.m_OutputLinkOverridesListHandle = ListType.Build(container, outputLinkOverrides);
+                customizationPointImplementationInternal.m_LocationHandle = location.handle;
 
                 var returnTypeHandle = container.Add(customizationPointImplementationInternal);
                 return new CustomizationPointImplementation(container, returnTypeHandle);

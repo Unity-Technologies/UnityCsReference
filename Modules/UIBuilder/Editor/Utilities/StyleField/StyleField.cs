@@ -18,8 +18,8 @@ namespace Unity.UI.Builder
     {
         internal static readonly string s_NoOptionString = "-";
 
-        static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/StyleField.uss";
-        static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/StyleField.uxml";
+        static readonly string s_UssPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleField.uss";
+        static readonly string s_UxmlPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleField.uxml";
 
         static readonly string s_UssClassName = "unity-style-field";
         static readonly string s_OptionsPopupUssClassName = "unity-style-field__options-popup";

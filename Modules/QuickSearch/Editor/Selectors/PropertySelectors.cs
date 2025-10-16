@@ -169,6 +169,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.LayerMask: return p.layerMaskBits;
                 case SerializedPropertyType.RenderingLayerMask: return p.layerMaskBits;
                 case SerializedPropertyType.Hash128: return p.hash128Value.ToString();
+                case SerializedPropertyType.EntityId: return p.entityIdValue.ToString();
 
                 case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.Generic:

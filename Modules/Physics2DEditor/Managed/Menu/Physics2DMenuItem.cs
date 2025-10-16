@@ -14,7 +14,7 @@ namespace UnityEditor.U2D.Physics2D
     {
         internal const string k_CreatePhysicsMaterial2DMenuPath = "Assets/Create/2D/Physics Material 2D";
         internal const string k_CreatePhysicsLowLevelSettings2DMenuPath = "Assets/Create/2D/Physics LowLevel Settings";
-        static internal Action<int, ProjectWindowCallback.EndNameEditAction, string, Texture2D, string> StartNewAssetNameEditingDelegate = ProjectWindowUtil.StartNameEditingIfProjectWindowExists;
+        static internal Action<EntityId, ProjectWindowCallback.AssetCreationEndAction, string, Texture2D, string> StartNewAssetNameEditingDelegate = ProjectWindowUtil.StartNameEditingIfProjectWindowExists;
         const int k_PhysicsMaterial2DAssetMenuPriority = 13;
         const int k_PhysicsLowLevelSettings2DAssetMenuPriority = k_PhysicsMaterial2DAssetMenuPriority + 1;
 
@@ -56,32 +56,32 @@ namespace UnityEditor.U2D.Physics2D
             var destName = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(path, name));
             var newObject = createObject();
             var icon = EditorGUIUtility.IconContent<T>().image as Texture2D;
-            StartNewAssetNameEditing(null, destName, icon, newObject.GetInstanceID());
+            StartNewAssetNameEditing(null, destName, icon, newObject.GetEntityId());
             return Selection.activeObject as T;
         }
 
-        static private void StartNewAssetNameEditing(string source, string dest, Texture2D icon, int instanceId)
+        static private void StartNewAssetNameEditing(string source, string dest, Texture2D icon, EntityId entityId)
         {
             var action = ScriptableObject.CreateInstance<CreateAssetEndNameEditAction>();
-            StartNewAssetNameEditingDelegate(instanceId, action, dest, icon, source);
+            StartNewAssetNameEditingDelegate(entityId, action, dest, icon, source);
         }
 
-        private class CreateAssetEndNameEditAction : ProjectWindowCallback.EndNameEditAction
+        private class CreateAssetEndNameEditAction : ProjectWindowCallback.AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 var uniqueName = AssetDatabase.GenerateUniqueAssetPath(pathName);
-                if (instanceId == ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets && !string.IsNullOrEmpty(resourceFile))
+                if (entityId == ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets && !string.IsNullOrEmpty(resourceFile))
                 {
                     AssetDatabase.CopyAsset(resourceFile, uniqueName);
-                    instanceId = AssetDatabase.LoadMainAssetAtPath(uniqueName).GetInstanceID();
+                    entityId = AssetDatabase.LoadMainAssetAtPath(uniqueName).GetInstanceID();
                 }
                 else
                 {
-                    var obj = EditorUtility.EntityIdToObject(instanceId);
+                    var obj = EditorUtility.EntityIdToObject(entityId);
                     AssetDatabase.CreateAsset(obj, uniqueName);
                 }
-                ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+                ProjectWindowUtil.FrameObjectInProjectWindow(entityId);
             }
         }
     }

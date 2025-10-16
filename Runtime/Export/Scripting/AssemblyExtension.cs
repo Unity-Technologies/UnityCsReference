@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Export/Scripting/ScriptingRuntime.h")]
-    internal static class AssemblyExtension
+    public static class AssemblyExtension
     {
         /// <summary>
         /// The Assembly.Location property is not available when an assembly is loaded from a Stream. In many cases we do

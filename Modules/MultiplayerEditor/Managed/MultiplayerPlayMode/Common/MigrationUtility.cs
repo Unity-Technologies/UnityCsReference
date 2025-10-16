@@ -13,7 +13,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_TestPackageName = "com.unity.modules.multiplayer.playmode.editor.tests";
 
         static bool s_Initialized;
-        static bool s_PackageManagerInitialized;
         static bool s_IsMppmPackageInstalled;
         static bool s_IsVirtualProjectsInPackage;
         static bool s_IsMultiplayerModuleInstalled;
@@ -25,7 +24,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
 
             s_Initialized = true;
-            s_PackageManagerInitialized = PackageInfo.GetAllRegisteredPackages().Length > 0;
 
             var mppmPackageInfo = PackageInfo.FindForPackageName(k_MppmPackageName);
 
@@ -45,7 +43,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal static bool ShouldEnableMultiplayerPlayMode()
         {
             EnsureInitialized();
-            return s_TestPackageInstalled || (s_IsMppmPackageInstalled && s_PackageManagerInitialized && !s_IsVirtualProjectsInPackage);
+            return s_TestPackageInstalled || (s_IsMppmPackageInstalled && !s_IsVirtualProjectsInPackage);
         }
 
         internal static bool ShouldDisableMultiplayerPlayMode() => !ShouldEnableMultiplayerPlayMode();

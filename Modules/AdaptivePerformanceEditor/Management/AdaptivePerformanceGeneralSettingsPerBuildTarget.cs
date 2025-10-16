@@ -53,7 +53,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
         }
 
-//#if UNITY_EDITOR
         static AdaptivePerformanceGeneralSettingsPerBuildTarget()
         {
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
@@ -126,8 +125,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             return false;
         }
-
-//#endif
 
         /// <summary>
         /// Set specific settings for a given build target.

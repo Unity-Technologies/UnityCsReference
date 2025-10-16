@@ -115,38 +115,14 @@ namespace UnityEditor.UIElements
             return overriddenAttributes;
         }
 
-        public static List<UxmlAttributeDescription> GetAttributeDescriptions(this VisualElement ve, bool useTraits = false)
+        public static List<UxmlSerializedAttributeDescription> GetAttributeDescriptions(this VisualElement ve, bool useTraits = false)
         {
             var uxmlQualifiedName = GetUxmlQualifiedName(ve);
 
             var desc = UxmlSerializedDataRegistry.GetDescription(uxmlQualifiedName);
             if (desc != null && !useTraits)
-                return new List<UxmlAttributeDescription>(desc.serializedAttributes);
-
-            var attributeList = new List<UxmlAttributeDescription>();
-            if (!VisualElementFactoryRegistry.TryGetValue(uxmlQualifiedName, out var factoryList))
-                return attributeList;
-
-#pragma warning disable CS0618 // Type or member is obsolete
-            foreach (IUxmlFactory f in factoryList)
-            {
-                // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
-                if (f.uxmlAttributesDescription != null)
-                {
-                    foreach (var a in f.uxmlAttributesDescription)
-                    {
-                        // For user created types, they may `yield return null` which would create an array with a null, so we need
-                        // to check in order not to crash.
-                        if (a == null || s_SkippedAttributeNames.Contains(a.name))
-                            continue;
-
-                        attributeList.Add(a);
-                    }
-                }
-            }
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            return attributeList;
+                return new List<UxmlSerializedAttributeDescription>(desc.serializedAttributes);
+            return new List<UxmlSerializedAttributeDescription>();
         }
 
         static string GetUxmlQualifiedName(VisualElement ve)

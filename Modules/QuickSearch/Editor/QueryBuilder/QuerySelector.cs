@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -169,15 +170,21 @@ namespace UnityEditor.Search
         private readonly string m_Title;
         private readonly IBlockSource m_BlockSource;
         private readonly IEnumerable<SearchProposition> m_Propositions;
-
+        Dictionary<int, AdvancedDropdownItem> m_PathIdToItem;
         public SearchContext context => m_BlockSource.context;
         public EditorWindow window => m_WindowInstance;
+        private IEnumerator<SearchProposition> m_PropositionEnumerator;
+        private int m_PropositionsCount;
+        private AdvancedDropdownItem m_RootItem;
+
+        const double k_PropositionsIterationTimeInSeconds = 0.02;
 
         public QuerySelector(Rect rect, IBlockSource dataSource, string title = null)
             : base(new AdvancedDropdownState())
         {
             m_BlockSource = dataSource;
             m_Title = title ?? m_BlockSource.editorTitle ?? m_BlockSource.name ?? string.Empty;
+            m_PathIdToItem = new();
             m_Propositions = m_BlockSource.FetchPropositions().Where(p => p.valid);
 
             minimumSize = new Vector2(Mathf.Max(rect.width, 250f), 350f);
@@ -284,11 +291,10 @@ namespace UnityEditor.Search
             }
 
             var displayName = formatNames ? ObjectNames.NicifyVariableName(name) : name;
-            var newItem = new AdvancedDropdownItem(path)
+            var newItem = new AdvancedDropdownItem(path, displayName)
             {
-                displayName = displayName,
                 icon = p.icon ?? Icons.quicksearch,
-                tooltip = string.IsNullOrEmpty(p.help) ? $"Search {displayName}" : p.help,
+                tooltip = p.help,
                 userData = p
             };
             return newItem;
@@ -311,18 +317,29 @@ namespace UnityEditor.Search
 
         protected override AdvancedDropdownItem BuildRoot()
         {
-            var rootItem = new AdvancedDropdownItem(m_Title);
-            var formatNames = m_BlockSource.formatNames;
-            foreach (var p in m_Propositions)
+            var startIteration = EditorApplication.timeSinceStartup;
+            if (m_PropositionEnumerator == null)
             {
+                m_PathIdToItem.Clear();
+                m_RootItem = new AdvancedDropdownItem(m_Title);
+                m_PropositionEnumerator = m_Propositions.GetEnumerator();
+                m_PropositionsCount = 0;
+            }
+
+            var formatNames = m_BlockSource.formatNames;
+            var hasData = m_PropositionEnumerator.MoveNext();
+            while ((EditorApplication.timeSinceStartup - startIteration) < k_PropositionsIterationTimeInSeconds && hasData)
+            {
+                var p = m_PropositionEnumerator.Current;
                 var newItem = CreateItem(p, formatNames, out var path, out var name, out var prefix);
-                var parent = rootItem;
+                m_PathIdToItem[path.GetHashCode()] = newItem;
+                var parent = m_RootItem;
                 if (prefix != null)
-                    parent = MakeParents(prefix, p, rootItem);
+                    parent = MakeParents(prefix, p, m_RootItem);
 
                 if (p.isSeparator)
                 {
-                    (parent ?? rootItem).AddSeparator();
+                    (parent ?? m_RootItem).AddSeparator();
                 }
                 else
                 {
@@ -332,39 +349,41 @@ namespace UnityEditor.Search
                     else if (p.icon)
                         fit.icon = p.icon;
                 }
+                hasData = m_PropositionEnumerator.MoveNext();
+                m_PropositionsCount++;
             }
 
-            return rootItem;
+            if (hasData)
+            {
+                m_WindowInstance.SetDataSourceDirty();
+            }
+            else
+            {
+                // All propositions have been added to the Dialog.
+                m_PathIdToItem.Clear();
+                m_PropositionEnumerator.Dispose();
+                m_PropositionEnumerator = null;
+            }
+
+            return m_RootItem;
         }
 
         private AdvancedDropdownItem FindItem(string path, AdvancedDropdownItem root)
         {
-            var pos = path.IndexOf('/');
-            var name = pos == -1 ? path : path.Substring(0, pos);
-            var suffix = pos == -1 ? null : path.Substring(pos + 1);
-
-            foreach (var c in root.children)
+            if (m_PathIdToItem.TryGetValue(path.GetHashCode(), out var item))
             {
-                if (suffix == null && string.Equals(c.name, name, StringComparison.Ordinal))
-                    return c;
-
-                if (suffix == null)
-                    continue;
-
-                var f = FindItem(suffix, c);
-                if (f != null)
-                    return f;
+                return item;
             }
-
             return null;
         }
 
+        static readonly string[] s_Tokens = new string[10];
         private AdvancedDropdownItem MakeParents(string prefix, in SearchProposition proposition, AdvancedDropdownItem parent)
         {
-            var parts = prefix.Split('/');
-
-            foreach (var p in parts)
+            var tokenCount = SearchUtils.SplitTokens(prefix,  '/', s_Tokens);
+            for (var i = 0; i < tokenCount; ++i)
             {
+                var p = s_Tokens[i];
                 var f = FindItem(p, parent);
                 if (f != null)
                 {
@@ -375,6 +394,7 @@ namespace UnityEditor.Search
                 else
                 {
                     var newItem = new AdvancedDropdownItem(p) { icon = proposition.icon };
+                    m_PathIdToItem[p.GetHashCode()] = newItem;
                     parent.AddChild(newItem);
                     parent = newItem;
                 }

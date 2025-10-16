@@ -200,7 +200,7 @@ namespace UnityEditor.Animations
             set;
         }
 
-        extern internal void AddBehaviour(int instanceID);
+        extern internal void AddBehaviour(EntityId instanceID);
         extern internal void RemoveBehaviour(int index);
 
         extern public AnimatorStateTransition[]   transitions { get; set; }
@@ -291,7 +291,7 @@ namespace UnityEditor.Animations
 
         extern public void SetStateMachineTransitions(AnimatorStateMachine sourceStateMachine, AnimatorTransition[] transitions);
 
-        extern internal void AddBehaviour(int instanceID);
+        extern internal void AddBehaviour(EntityId instanceID);
         extern internal void RemoveBehaviour(int index);
 
         [FreeFunction(Name = "ScriptingAddStateMachineBehaviourWithType", HasExplicitThis = true)]

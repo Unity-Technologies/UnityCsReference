@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -25,7 +24,7 @@ namespace UnityEditor.Search.Providers
     class ObjectQueryEngine<T> where T : UnityEngine.Object
     {
         protected readonly List<T> m_Objects;
-        protected readonly Dictionary<int, GOD> m_GODS = new Dictionary<int, GOD>();
+        protected readonly Dictionary<EntityId, GOD> m_GODS = new Dictionary<EntityId, GOD>();
         protected static readonly QueryValidationOptions k_QueryEngineOptions = new QueryValidationOptions { validateFilters = true, skipNestedQueries = true };
         protected readonly QueryEngine<T> m_QueryEngine = new QueryEngine<T>(k_QueryEngineOptions);
         protected HashSet<SearchProposition> m_TypePropositions;
@@ -37,6 +36,7 @@ namespace UnityEditor.Search.Providers
         public bool reportError;
 
         private static readonly char[] s_EntrySeparators = { '/', ' ', '_', '-', '.' };
+
         private static readonly SearchProposition[] s_FixedPropositions = new SearchProposition[]
         {
             new SearchProposition(label: "id:", null, "Search object by ID"),
@@ -74,7 +74,7 @@ namespace UnityEditor.Search.Providers
             public string tag;
             public string[] types;
             public string[] words;
-            public HashSet<int> refs;
+            public HashSet<ulong> refs;
             public string[] attrs;
 
             public int? layer;
@@ -87,12 +87,12 @@ namespace UnityEditor.Search.Providers
             public bool missingAssetReference;
         }
 
-        public bool InvalidateObject(int instanceId)
+        public bool InvalidateObject(EntityId entityId)
         {
-            return m_GODS.Remove(instanceId);
+            return m_GODS.Remove(entityId);
         }
 
-        public bool InvalidateObjectAndRefs(int instanceId)
+        public bool InvalidateObjectAndRefs(EntityId entityId)
         {
             // Invalidate all refs because depending on the topology changed it becomes costly and
             // difficult to compute what needs to be updated. Example of Topology changed:
@@ -105,24 +105,30 @@ namespace UnityEditor.Search.Providers
             {
                 god.refs = null;
             }
-            return m_GODS.Remove(instanceId);
+            return InvalidateObject(entityId);
         }
 
         public ObjectQueryEngine()
-            : this(new T[0])
+            : this(Array.Empty<T>())
         {
         }
 
         public ObjectQueryEngine(IEnumerable<T> objects)
         {
             m_Objects = objects.ToList();
-            m_QueryEngine.AddFilter<int>("id", GetId);
-            m_QueryEngine.GetFilter("id");
+            m_QueryEngine.AddFilter<EntityId>("id", GetId);
+            m_QueryEngine.GetFilter("id").AddTypeParser(s =>
+            {
+                if (!ulong.TryParse(s, out ulong result))
+                    return ParseResult<EntityId>.none;
+
+                return new ParseResult<EntityId>(true, EntityId.From(result));
+            });
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
-            var refFilter = m_QueryEngine.SetFilter<int>("ref", GetReferences, new[] { "=", ":" });
+            var refFilter = m_QueryEngine.SetFilter<ulong>("ref", GetReferences, new[] { "=", ":" });
             SetupReferenceFilterTypeParsers(refFilter);
 
             SearchValue.SetupEngine(m_QueryEngine);
@@ -192,10 +198,12 @@ namespace UnityEditor.Search.Providers
             return new SearchProposition(label: label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
         }
 
+        // TODO: This should not be an example. Documentation examples should be in the SearchExamples project.
         #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
-            var query = m_QueryEngine.ParseQuery(context.searchQuery, true);
+            const bool useFastYielding = true;
+            var query = m_QueryEngine.ParseQuery(context.searchQuery, useFastYielding);
             if (!query.valid)
             {
                 if (reportError)
@@ -204,15 +212,17 @@ namespace UnityEditor.Search.Providers
             }
 
             m_DoFuzzyMatch = query.HasToggle("fuzzy");
-            IEnumerable<T> gameObjects = subset ?? m_Objects;
-            return query.Apply(gameObjects, false);
+            // Do not filter all the valid objects now. The filtering will be done when the objects are actually pulled.
+            // Since the search can be done asynchronously, the state of the objects can change in between iterations.
+            IEnumerable<T> validObjects = FilterValidObjectsOnPull(subset ?? m_Objects, useFastYielding);
+            return query.Apply(validObjects, false);
         }
 
         #endregion
 
-        public virtual bool GetId(T obj, QueryFilterOperator op, int instanceId)
+        public virtual bool GetId(T obj, QueryFilterOperator op, EntityId entityId)
         {
-            return instanceId == obj.GetInstanceID();
+            return entityId == obj.GetEntityId();
         }
 
         protected virtual string GetPath(T obj)
@@ -227,11 +237,11 @@ namespace UnityEditor.Search.Providers
 
         protected GOD GetGOD(UnityEngine.Object obj)
         {
-            var instanceId = obj.GetInstanceID();
-            if (!m_GODS.TryGetValue(instanceId, out var god))
+            var entityId = obj.GetEntityId();
+            if (!m_GODS.TryGetValue(entityId, out var god))
             {
                 god = new GOD();
-                m_GODS[instanceId] = god;
+                m_GODS[entityId] = god;
             }
             return god;
         }
@@ -331,8 +341,6 @@ namespace UnityEditor.Search.Providers
 
         bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
         {
-            if (!obj)
-                return false;
             var god = GetGOD(obj);
 
             if (god.types == null)
@@ -365,7 +373,7 @@ namespace UnityEditor.Search.Providers
 
         private void BuildReferences(ref GOD god, T obj)
         {
-            var refs = new HashSet<int>();
+            var refs = new HashSet<ulong>();
 
             BuildReferences(obj, ref god, refs);
 
@@ -381,6 +389,10 @@ namespace UnityEditor.Search.Providers
                 }
 
                 var gocs = go.GetComponents<Component>();
+                if (gocs.Length > 1)
+                {
+                    refs.Add((ulong)(int)obj.GetEntityId());
+                }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
                     var c = gocs[componentIndex];
@@ -395,12 +407,10 @@ namespace UnityEditor.Search.Providers
                     BuildReferences(c, ref god, refs);
                 }
             }
-
-            refs.Remove(obj.GetInstanceID());
             god.refs = refs;
         }
 
-        private void BuildReferences(UnityEngine.Object obj, ref GOD god, ICollection<int> refs)
+        private void BuildReferences(UnityEngine.Object obj, ref GOD god, ICollection<ulong> refs)
         {
             if (!obj)
                 return;
@@ -425,14 +435,14 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ref GOD god, ICollection<int> refs)
+        private void AddPropertyReferences(UnityEngine.Object obj, SerializedProperty p, ref GOD god, ICollection<ulong> refs)
         {
             if (p.propertyType != SerializedPropertyType.ObjectReference)
                 return;
 
             if (p.objectReferenceValue == null)
             {
-                god.missingAssetReference = god.missingAssetReference || p.objectReferenceInstanceIDValue != 0;
+                god.missingAssetReference = god.missingAssetReference || p.objectReferenceEntityIdValue != EntityId.None;
                 return;
             }
 
@@ -442,10 +452,10 @@ namespace UnityEditor.Search.Providers
 
             if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
-            refs.Add(p.objectReferenceValue.GetInstanceID());
+            refs.Add((ulong)(int)p.objectReferenceValue.GetEntityId());
             if (p.objectReferenceValue is Component c)
             {
-                refs.Add(c.gameObject.GetInstanceID());
+                refs.Add((ulong)(int)c.gameObject.GetEntityId());
                 var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
                 AddReference(c.gameObject, compRefValue, refs);
             }
@@ -457,7 +467,7 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private static bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<int> refs)
+        private static bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<ulong> refs)
         {
             if (string.IsNullOrEmpty(refValue))
                 return false;
@@ -465,25 +475,25 @@ namespace UnityEditor.Search.Providers
             var isTransformPath = refValue.StartsWith("/");
             if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
             {
-                var mainInstanceId = AssetDatabase.GetMainAssetEntityId(refValue);
-                refs.Add(mainInstanceId);
+                var mainEntityId = AssetDatabase.GetMainAssetEntityId(refValue);
+                refs.Add((ulong)(int)mainEntityId);
             }
 
             refValue = refValue.ToLowerInvariant();
             if (isTransformPath)
             {
-                refs.Add(refValue.Substring(1).GetHashCode());
+                refs.Add((ulong)refValue.Substring(1).GetHashCode());
             }
-            refs.Add(refValue.GetHashCode());
+            refs.Add((ulong)refValue.GetHashCode());
 
             var refType = refObj?.GetType().Name;
             if (refType != null)
-                refs.Add(refType.ToLowerInvariant().GetHashCode());
+                refs.Add((ulong)refType.ToLowerInvariant().GetHashCode());
 
             return true;
         }
 
-        private bool GetReferences(T obj, QueryFilterOperator op, int value)
+        private bool GetReferences(T obj, QueryFilterOperator op, ulong value)
         {
             var god = GetGOD(obj);
 
@@ -556,40 +566,64 @@ namespace UnityEditor.Search.Providers
             filter.AddTypeParser(DefaultRefTypeParser);
         }
 
-        static ParseResult<int> GlobalObjectIdTypeParser(string filterValue)
+        static ParseResult<ulong> GlobalObjectIdTypeParser(string filterValue)
         {
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
-                return ParseResult<int>.none;
+                return ParseResult<ulong>.none;
 
-            return new ParseResult<int>(true, GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid));
+            return new ParseResult<ulong>(true, (ulong)(int)GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid));
         }
 
-        static ParseResult<int> AssetPathTypeParser(string filterValue)
+        static ParseResult<ulong> AssetPathTypeParser(string filterValue)
         {
             if (!filterValue.StartsWith("/") && AssetDatabase.AssetPathExists(filterValue))
             {
-                var instanceId = AssetDatabase.GetMainAssetEntityId(filterValue);
-                return new ParseResult<int>(true, instanceId);
+                var entityId = AssetDatabase.GetMainAssetEntityId(filterValue);
+                return new ParseResult<ulong>(true, (ulong)(int)entityId);
             }
-            return ParseResult<int>.none;
+            return ParseResult<ulong>.none;
         }
 
-        static ParseResult<int> InstanceIdTypeParser(string filterValue)
+        static ParseResult<ulong> InstanceIdTypeParser(string filterValue)
         {
-            // Account for legacy ref:<InstanceID>: query that can be emitted by the various Find Reference in Scene menu items.
+            // Account for legacy ref:<EntityId>: query that can be emitted by the various Find Reference in Scene menu items.
             var potentialId = filterValue;
             if (filterValue.EndsWith(":"))
             {
                 potentialId = filterValue.TrimEnd(':');
             }
-            if (Utils.TryParse(potentialId, out int instanceId))
-                return new ParseResult<int>(true, instanceId);
-            return ParseResult<int>.none;
+            if (Utils.TryParse(potentialId, out ulong instanceId))
+                return new ParseResult<ulong>(true, instanceId);
+            return ParseResult<ulong>.none;
         }
 
-        static ParseResult<int> DefaultRefTypeParser(string filterValue)
+        static ParseResult<ulong> DefaultRefTypeParser(string filterValue)
         {
-            return new ParseResult<int>(true, filterValue.ToLowerInvariant().GetHashCode());
+            return new ParseResult<ulong>(true,(ulong)filterValue.ToLowerInvariant().GetHashCode());
+        }
+
+        /// <summary>
+        /// Filter and keep valid objects only.
+        /// </summary>
+        /// <param name="allObjects">The objects to filter</param>
+        /// <param name="useFastYielding">When set to true, returns null for invalid object instead of skipping to the next valid object. Mimics what ParsedQuery does.</param>
+        /// <returns>An IEnumerable of valid objects.</returns>
+        /// <remarks>This method only filters the objects when actively pulling on the IEnumerable.</remarks>
+        static IEnumerable<T> FilterValidObjectsOnPull(IEnumerable<T> allObjects, bool useFastYielding)
+        {
+            // Use yield return to only filter when the object is actually needed.
+            foreach (var obj in allObjects)
+            {
+                if (obj)
+                {
+                    yield return obj;
+                }
+                else if (useFastYielding)
+                {
+                    // Mimic ParsedQuery behavior of returning null for invalid objects.
+                    yield return null;
+                }
+            }
         }
     }
 }

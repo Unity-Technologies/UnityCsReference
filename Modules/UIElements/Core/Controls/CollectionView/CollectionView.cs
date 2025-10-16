@@ -9,9 +9,11 @@ using Unity.Properties;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal class CollectionView : VisualElement
     {
         internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
@@ -78,9 +80,29 @@ namespace UnityEngine.UIElements.HierarchyV2
         internal readonly Dictionary<int, RecycledItem> m_IndexToItemDictionary = new();
         internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
         /// <summary>
-        /// Determine if we are currently processing a pointer down event.
+        /// Enum for current pointer processing state.
         /// </summary>
-        internal bool processingPointerDownEvent
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal enum pointerProcessingStateEnum
+        {
+            None,
+            PointerDown
+        }
+
+        /// <summary>
+        /// Determine what pointer state we are currently processing.
+        /// </summary>
+        internal pointerProcessingStateEnum pointerProcessingState
+        {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
+            private set;
+        }
+
+        /// <summary>
+        /// Determine mouse button for currently processed pointer event.
+        /// See <see cref="MouseButton"/> for details.
+        /// </summary>
+        internal int currentPointerButton
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
             private set;
@@ -529,9 +551,11 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// </summary>
         public void RefreshItems()
         {
+            // Clean up all items if itemsSource is null or empty, or makeCell is null
             if (itemsSource == null || layoutConfiguration?.makeCell == null || itemsSource.Count == 0)
             {
                 m_VerticalScroller.style.display = DisplayStyle.None;
+                ClearAllItems();
                 return;
             }
 
@@ -564,9 +588,29 @@ namespace UnityEngine.UIElements.HierarchyV2
             // Normally needs to happen when undoing or deleting items.
             if (m_IndexToItemDictionary.Count > m_DisplayedList.Count)
             {
-                for (var i = m_IndexToItemDictionary.Count - 1; i >= m_DisplayedList.Count; --i)
+                if (m_DisplayedList.Count == 0)
                 {
-                    UnbindItem(m_IndexToItemDictionary[i]);
+                    ClearAllItems();
+                }
+                else
+                {
+                    using var _ = HashSetPool<int>.Get(out var displayedIndices);
+                    foreach (var item in m_DisplayedList)
+                    {
+                        displayedIndices.Add(item.index);
+                    }
+
+                    using var pooledList = ListPool<int>.Get(out var indicesToRemove);
+                    foreach (var key in m_IndexToItemDictionary.Keys)
+                    {
+                        if (!displayedIndices.Contains(key))
+                            indicesToRemove.Add(key);
+                    }
+
+                    foreach (var index in indicesToRemove)
+                    {
+                        UnbindItem(m_IndexToItemDictionary[index]);
+                    }
                 }
             }
         }
@@ -675,8 +719,12 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void UnbindAllItems()
         {
-            foreach (var (_, recycledItem) in m_IndexToItemDictionary)
-                UnbindItem(recycledItem);
+            using var _ = ListPool<int>.Get(out var indices);
+            foreach (var key in m_IndexToItemDictionary.Keys)
+                indices.Add(key);
+
+            foreach (var index in indices)
+                UnbindItem(m_IndexToItemDictionary[index]);
         }
 
         void UpdateVisibleRange()
@@ -968,17 +1016,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <param name="index">The item index.</param>
         /// <returns>The item's root element.</returns>
         public VisualElement GetRootElementForIndex(int index)
-        {
-            if (m_DisplayedList == null || index < 0 || index >= m_DisplayedList.Count)
-                return null;
-
-            var currentNode = m_DisplayedList.First;
-            for (var i = 0; i < index; i++)
-            {
-                currentNode = currentNode.Next;
-            }
-            return currentNode.Value.element;
-        }
+            => m_IndexToItemDictionary.TryGetValue(index, out var recycledItem) ? recycledItem.element : null;
 
         /// <summary>
         /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
@@ -1077,7 +1115,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void OnPointerDown(IPointerEvent evt)
         {
-            processingPointerDownEvent = true;
+            pointerProcessingState = pointerProcessingStateEnum.PointerDown;
             try
             {
                 if (!evt.isPrimary)
@@ -1085,6 +1123,8 @@ namespace UnityEngine.UIElements.HierarchyV2
 
                 if (evt.button != (int)MouseButton.LeftMouse && evt.button != (int)MouseButton.RightMouse)
                     return;
+
+                currentPointerButton = evt.button;
 
                 if (evt.pointerType != PointerType.mouse)
                 {
@@ -1096,7 +1136,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
             finally
             {
-                processingPointerDownEvent = false;
+                pointerProcessingState = pointerProcessingStateEnum.None;
+                currentPointerButton = -1;
             }
         }
 

@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
     [Icon("UIToolkit/Icons/TagField.png")]
-    public class TagField : PopupField<string>
+    public partial class TagField : PopupField<string>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
@@ -49,28 +49,6 @@ namespace UnityEditor.UIElements
                     var e = (TagField)obj;
                     e.overrideValue = overrideValue;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="TagField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TagField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TagField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : PopupField<string>.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var tagField = (TagField)ve;
-                tagField.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

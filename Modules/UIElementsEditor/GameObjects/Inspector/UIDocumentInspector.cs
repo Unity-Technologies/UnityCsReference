@@ -21,6 +21,8 @@ namespace UnityEditor.UIElements.Inspector
         private const string k_StyleClassPanelMissing = "unity-ui-document-inspector--panel-missing--hidden";
 
         internal const string k_EditorElementsError = "The VisualTreeAsset contains editor-only elements that cannot be used at runtime.\nPlease remove the following elements:";
+        const string k_InspectorEditSourceAssetButtonTooltip = "Edit the Visual Tree Asset (UXML) in the UI Builder.";
+        const string k_InspectorNewSourceAssetButtonTooltip = "Create a new Visual Tree Asset (UXML).";
 
         private static StyleSheet s_DefaultStyleSheet;
         private static VisualTreeAsset s_InspectorUxml;
@@ -30,6 +32,7 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_PanelSettingsField;
         private ObjectField m_ParentField;
         private ObjectField m_SourceAssetField;
+        private Button m_SourceAssetButton;
 
         private EnumField m_PositionEnumField;
 
@@ -60,6 +63,9 @@ namespace UnityEditor.UIElements.Inspector
 
             m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("source-asset-field");
             m_SourceAssetField.objectType = typeof(VisualTreeAsset);
+
+            m_SourceAssetButton = m_RootVisualElement.MandatoryQ<Button>("source-asset-button");
+            m_SourceAssetButton.clicked += OnSourceAssetButtonClicked;
 
             m_PositionEnumField = m_RootVisualElement.MandatoryQ<EnumField>("position-field");
 
@@ -120,8 +126,15 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceWidthField.style.display = display;
             m_WorldSpaceHeightField.style.display = display;
 
-            // Let the UIDocument's LateUpdate method kick in (UUM-105765)
-            EditorUtility.SetDirty(target);
+            // Update button text and visibility based on whether a VisualTreeAsset is assigned
+            bool hasVisualTreeAsset = uiDocument.visualTreeAsset != null;
+            m_SourceAssetButton.text = hasVisualTreeAsset ? "Edit..." : "New";
+            m_SourceAssetButton.tooltip = hasVisualTreeAsset ? k_InspectorEditSourceAssetButtonTooltip : k_InspectorNewSourceAssetButtonTooltip;
+
+            uiDocument.Validate(true);
+
+            // Let the UIDocument update its rendering properties (UUM-105765)
+            uiDocument.DoUpdate();
         }
 
         string GenerateEditorElementsErrorMessage(int maxElements)
@@ -155,6 +168,28 @@ namespace UnityEditor.UIElements.Inspector
                     }
                 }
                 return sb.ToString();
+            }
+        }
+
+        private void OnSourceAssetButtonClicked()
+        {
+            var uiDocument = (UIDocument)target;
+            var visualTreeAsset = uiDocument.visualTreeAsset;
+
+            if (visualTreeAsset != null)
+            {
+                // Open VTA asset in UI Builder
+                AssetDatabase.OpenAsset(visualTreeAsset.GetEntityId());
+            }
+            else
+            {
+                // Creates new asset and upon successful rename will link asset to UIDocument
+                UIElementsTemplate.CreateUXMLAssetWithCallback((instanceID =>
+                {
+                    uiDocument.visualTreeAsset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
+                    Selection.activeObject = uiDocument;
+                    UpdateValues();
+                }));
             }
         }
 

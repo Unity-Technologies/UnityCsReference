@@ -13,17 +13,20 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ValueHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static ShaderAttributeParameterInternal Invalid();
+        [ThreadSafe] internal extern static ShaderAttributeParameterInternal Invalid();
 
-        internal extern bool IsValid();
-        internal extern string GetName(ShaderContainer container);
-        internal extern string GetValue(ShaderContainer container);
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern string GetName(ShaderContainer container);
+        [ThreadSafe] internal extern ShaderTypeInternal GetShaderTypeValue(ShaderContainer container);
+        [ThreadSafe] internal extern string GetStringValue(ShaderContainer container);
+        [ThreadSafe] internal extern int GetIntegerValue(ShaderContainer container);
 
-        internal extern bool ValueIsString(ShaderContainer container);
-        internal extern bool ValueIsArray(ShaderContainer container);
-
-        internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+        [ThreadSafe] internal extern bool ValueIsInteger(ShaderContainer container);
+        [ThreadSafe] internal extern bool ValueIsShaderType(ShaderContainer container);
+        [ThreadSafe] internal extern bool ValueIsString(ShaderContainer container);
+        [ThreadSafe] internal extern bool ValueIsArray(ShaderContainer container);
 
         // IInternalType
         ShaderAttributeParameterInternal IInternalType<ShaderAttributeParameterInternal>.ConstructInvalid() => Invalid();
@@ -52,78 +55,137 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null) && (param.IsValid());
         public string Name => param.GetName(container);
-        public string Value
+
+        public IPublicType Value => container?.ConstructTypeFromHandle(param.m_ValueHandle);
+        public Location Location => new Location(container, param.m_LocationHandle);
+
+        [Obsolete("Use '(Value as IntegerLiteral).Value' instead")]
+        public int IntegerValue
+        {
+            get
+            {
+                if (container == null || !ValueIsInteger)
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.IntegerValue'. Value is not an integer. Check ValueIsInteger before calling.");
+                return param.GetIntegerValue(container);
+            }
+        }
+        [Obsolete("Use '(Value as ShaderType)' instead")]
+        public ShaderType ShaderTypeValue
+        {
+            get
+            {
+                if (container == null || !ValueIsShaderType)
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.ShaderTypeValue'.  Value is not a ShaderType.  Check ValueIsShaderType before calling.");
+                return new ShaderType(container, param.m_ValueHandle);
+            }
+        }
+        [Obsolete("Use '(Value as StringLiteral).Value' instead")]
+        public string StringValue
         {
             get
             {
                 if (container == null || !ValueIsString)
-                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.Value'. Value is not a string. Check ValueIsString before calling.");
-                return param.GetValue(container);
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.StringValue'. Value is not a string. Check ValueIsString before calling.");
+                return param.GetStringValue(container);
             }
         }
+        [Obsolete("Use '(Value as ListType).Values' instead")]
         public IEnumerable<ShaderAttributeParameter> Values
         {
             get
             {
-                if (container == null || !ValueIsArray)
-                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.Values'. Values is not a List. Check ValueIsArray before calling.");
-
-                var handleType = container.GetDataTypeFromHandle(param.m_ValueHandle);
                 var localContainer = Container;
-                var list = new HandleListInternal(param.m_ValueHandle);
-                return list.Select<ShaderAttributeParameter>(localContainer, (handle) => (new ShaderAttributeParameter(localContainer, handle)));
+                if (localContainer == null || !ValueIsArray)
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.Values'. Values is not a List. Check ValueIsArray before calling.");
+                return ListType.Enumerate<ShaderAttributeParameter>(localContainer, param.m_ValueHandle);
             }
         }
+        [Obsolete("Use '(Value is IntegerLiteral)' instead")]
+        public bool ValueIsInteger => param.ValueIsInteger(container);
+        [Obsolete("Use '(Value is ShaderType)' instead")]
+        public bool ValueIsShaderType => param.ValueIsShaderType(container);
+        [Obsolete("Use '(Value is StringLiteral)' instead")]
         public bool ValueIsString => param.ValueIsString(container);
         // The value is an array of sub attributes. This is equivalent to "param = [value, value]".
+        [Obsolete("Use '(Value is ListType)' instead")]
         public bool ValueIsArray => param.ValueIsArray(container);
         public static ShaderAttributeParameter Invalid => new ShaderAttributeParameter(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is ShaderAttributeParameter other && this.Equals(other);
         public bool Equals(ShaderAttributeParameter other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
         public static bool operator==(ShaderAttributeParameter lhs, ShaderAttributeParameter rhs) => lhs.Equals(rhs);
         public static bool operator!=(ShaderAttributeParameter lhs, ShaderAttributeParameter rhs) => !lhs.Equals(rhs);
 
-        public bool ValueEquals(in ShaderAttributeParameter other)
-        {
-            return ShaderAttributeParameterInternal.ValueEquals(container, handle, other.container, other.handle);
-        }
-
         public class Builder
         {
             ShaderContainer container;
             internal string m_Name;
-            internal string m_Value;
-            internal List<ShaderAttributeParameter> m_Values;
+            internal IPublicType Value { get; private set; }
+            public Location location;
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, string name, string value)
+            private static IntegerLiteral BuildInteger(ShaderContainer container, int value)
+            {
+                var builder = new IntegerLiteral.Builder(container);
+                builder.Value = value;
+                return builder.Build();
+            }
+
+            Builder(ShaderContainer container, string name, IPublicType value)
             {
                 this.container = container;
                 m_Name = name;
-                m_Value = value;
-                m_Values = null;
+                Value = value;
+            }
+
+            public Builder(ShaderContainer container, string name, int value)
+                : this(container, name, BuildInteger(container, value))
+            {}
+
+            public Builder(ShaderContainer container, string name, BooleanLiteral value)
+                : this(container, name, value as IPublicType)
+            {
+            }
+
+            public Builder(ShaderContainer container, string name, IntegerLiteral value)
+                : this(container, name, value as IPublicType)
+            {
+            }
+
+            public Builder(ShaderContainer container, string name, FloatLiteral value)
+                : this(container, name, value as IPublicType)
+            {
+            }
+
+            public Builder(ShaderContainer container, string name, ShaderType value)
+                : this(container, name, value as IPublicType)
+            {
+            }
+
+            public Builder(ShaderContainer container, string name, StringLiteral value)
+                : this(container, name, value as IPublicType)
+            {
+            }
+
+            public Builder(ShaderContainer container, string name, EnumLiteral value)
+                : this(container, name, value as IPublicType)
+            {
             }
 
             public Builder(ShaderContainer container, string name, List<ShaderAttributeParameter> values)
+                : this(container, name, ListType.Construct(container, values))
             {
-                this.container = container;
-                m_Name = name;
-                m_Value = null;
-                m_Values = values;
             }
 
             public ShaderAttributeParameter Build()
             {
                 var paramInternal = new ShaderAttributeParameterInternal();
                 paramInternal.m_NameHandle = container.AddString(m_Name);
-                if (m_Values == null)
-                    paramInternal.m_ValueHandle = container.AddString(m_Value);
-                else
-                    paramInternal.m_ValueHandle = HandleListInternal.Build(container, m_Values, (v) => v.handle);
+                paramInternal.m_ValueHandle = Value.Handle;
+                paramInternal.m_LocationHandle = location.handle;
 
                 var returnHandle = container.Add(paramInternal);
                 return new ShaderAttributeParameter(container, returnHandle);

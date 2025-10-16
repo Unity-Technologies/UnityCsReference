@@ -29,7 +29,9 @@ namespace UnityEditor
     {
         internal static void RegisterResourceForCleanupOnDomainReload(UnityObject obj)
         {
+#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using BeforeCodeUnloading/AfterCodeLoaded
             AppDomain.CurrentDomain.DomainUnload += (object sender, EventArgs e) => { UnityObject.DestroyImmediate(obj); };
+#pragma warning restore UAC0006
         }
 
         public class PropertyCallbackScope : IDisposable
@@ -512,6 +514,7 @@ namespace UnityEditor
         }
 
         // Get texture from managed type
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static Texture2D FindTexture(Type type)
         {
             return FindTextureByType(type);
@@ -786,7 +789,7 @@ namespace UnityEditor
 
         // Automatically loads version of icon that matches current skin.
         // Equivalent to Texture2DNamed in ObjectImages.cpp
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
         internal static Texture2D LoadIcon(string name)
         {
             return LoadIconForSkin(name, skinIndex);
@@ -971,7 +974,7 @@ namespace UnityEditor
             return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID(), showNullIcon);
         }
 
-        internal static GUIContent ObjectContent(UnityObject obj, Type type, int instanceID, bool showNullIcon = true)
+        internal static GUIContent ObjectContent(UnityObject obj, Type type, EntityId instanceID, bool showNullIcon = true)
         {
             if (obj)
             {
@@ -1014,7 +1017,7 @@ namespace UnityEditor
                 // from property.objectReferenceValue is not reliable, so we have to
                 // explicitly check property.objectReferenceInstanceIDValue if a property exists.
                 if (property != null && property.isValid)
-                    temp = ObjectContent(obj, type, property.objectReferenceInstanceIDValue, false);
+                    temp = ObjectContent(obj, type, property.objectReferenceEntityIdValue, false);
                 else
                     temp = ObjectContent(obj, type, false);
             }
@@ -1090,6 +1093,51 @@ namespace UnityEditor
         internal static bool HasHolddownKeyModifiers(Event evt)
         {
             return evt.shift | evt.control | evt.alt | evt.command;
+        }
+
+        // Gets the key code for the primary keyboard shortcut to trigger a "Rename" command for the current OS
+        internal static KeyCode GetDefaultRenameShortcutKeyCode()
+        {
+            switch (Application.platform)
+            {
+                case RuntimePlatform.OSXEditor:
+                    return KeyCode.Return; // Note: NumpadEnter is also valid, but this method's job is only to return a usable key code
+                case RuntimePlatform.WindowsEditor:
+                case RuntimePlatform.LinuxEditor:
+                    return KeyCode.F2;
+                default:
+                    return KeyCode.None;
+            }
+        }
+
+        // Utility to figure out if the user has pressed the default "Rename" shortcut for their OS
+        internal static bool IsDefaultRenameEvent(Event evt)
+        {
+            if (evt.type != EventType.KeyDown)
+                return false;
+
+            switch (Application.platform)
+            {
+                case RuntimePlatform.OSXEditor:
+                    return evt.keyCode is KeyCode.KeypadEnter or KeyCode.Return && !HasHolddownKeyModifiers(evt);
+                case RuntimePlatform.WindowsEditor:
+                case RuntimePlatform.LinuxEditor:
+                    return evt.keyCode is KeyCode.F2 && !HasHolddownKeyModifiers(evt);
+                default:
+                    return false;
+            }
+        }
+
+        // Utility to generate a Rename command if the user has pressed the default "Rename" shortcut for their OS
+        internal static bool HandleDefaultRenameEvent(Event evt, EditorWindow context)
+        {
+            if (!IsDefaultRenameEvent(evt))
+                return false;
+
+            var renameCommandEvent = CommandEvent(EventCommandNames.Rename);
+            context.SendEvent(renameCommandEvent);
+
+            return true;
         }
 
         // Does a given class have per-object thumbnails?
@@ -1226,27 +1274,32 @@ namespace UnityEditor
         public static void PingObject(UnityObject obj)
         {
             if (obj != null)
-                PingObject(obj.GetInstanceID());
+                PingObject(obj.GetEntityId());
         }
 
         // Ping an object in a window like clicking it in an inspector
-        public static void PingObject(int targetInstanceID)
+        [Obsolete("PingObject(int) is obsolete. Use PingObject(EntityId) instead.")]
+        public static void PingObject(int targetInstanceID) => PingObject(targetInstanceID);
+        public static void PingObject(EntityId targetEntityId)
         {
+            if (IsBuiltinResource(AssetDatabase.GetAssetPath(targetEntityId)))
+                return;
+
             var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
             foreach (var win in windows)
             {
                 if (win is IFramableContainer container)
                 {
-                    container.FrameObject(targetInstanceID, true);
+                    container.FrameObject(targetEntityId, true);
                 }
             }
         }
 
         // Same as PingObject, but renamed to avoid ambiguity when calling externally (i.e. using CallStaticMonoMethod)
         [RequiredByNativeCode]
-        private static void PingObjectFromCPP(int targetInstanceID)
+        private static void PingObjectFromCPP(EntityId targetEntityId)
         {
-            PingObject(targetInstanceID);
+            PingObject(targetEntityId);
         }
 
         internal static void MoveFocusAndScroll(bool forward)
@@ -1867,6 +1920,12 @@ namespace UnityEditor
             LikeControls = 1,
             // Looks like inspector
             LikeInspector = 2
+        }
+
+        static bool IsBuiltinResource(string resPath)
+        {
+            return string.Equals(resPath, "Library/unity default resources", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(resPath, "Resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase);
         }
     }
 

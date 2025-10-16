@@ -2,18 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Multiplayer.Internal;
+using UnityEngine.UIElements;
 using static Unity.Multiplayer.PlayMode.Editor.ScenarioFactory;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     class RemoteInstanceController : PlayModeController
     {
-        private readonly RemoteInstanceDescription m_Settings;
+        [SerializeReference] private RemoteInstanceDescription m_Settings;
 
         internal RemoteInstanceController(RemoteInstanceDescription remoteInstanceDescription)
         {
+            Assert.IsNotNull(remoteInstanceDescription);
             m_Settings = remoteInstanceDescription;
         }
 
@@ -37,8 +43,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var buildName = multiplayName;
             var buildConfigurationName = multiplayName;
             var fleetName = multiplayName;
-            // TODO Grab this from m_Settings.BuildProfile once ARM64 support has landed and we're in the engine.
-            var architecture = "amd64";
 
             var deployBuildNode = new DeployBuildNode($"{m_Settings.Name} {RemoteNodeConstants.k_DeployBuildNodePostfix}");
             executionGraph.AddNode(deployBuildNode, ExecutionStage.Deploy);
@@ -59,9 +63,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             executionGraph.AddNode(deployFleetNode, ExecutionStage.Deploy);
             executionGraph.ConnectConstant(deployFleetNode.FleetName, fleetName);
             executionGraph.ConnectConstant(deployFleetNode.Region, advancedConfiguration.FleetRegion);
-            executionGraph.ConnectConstant(deployFleetNode.Architecture, architecture);
             executionGraph.ConnectConstant(deployFleetNode.BuildConfigurationName, buildConfigurationName);
             executionGraph.Connect(deployBuildConfigNode.BuildConfigurationId, deployFleetNode.BuildConfigurationId);
+            executionGraph.Connect(buildNode.ExecutablePath, deployFleetNode.BuildExecutablePath);
 
 
             var allocateNode = new AllocateNode($"{m_Settings.Name} {RemoteNodeConstants.k_AllocateNodePostfix}");
@@ -80,6 +84,32 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_Settings.CorrespondingNodeId = remoteRunNode.Name;
 
             m_Settings.SetCorrespondingNodes(buildNode, deployBuildNode, deployBuildConfigNode, deployFleetNode, allocateNode, remoteRunNode);
+        }
+
+        /// <summary>
+        /// Validates whether the current Unity project is properly set up for running a remote instance
+        /// This includes:
+        /// 1. Checking if the project is linked to Unity Cloud - has a valid cloud project ID
+        /// 2. Verifying the existence of a valid Unity Cloud Environment ID
+        /// Returns a failed ValidationResult if any step is not properly configured.
+        /// </summary>
+        protected internal override async Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await IPlayModeServices.Instance.SetupSimEnvironmentAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                return new Scenario.ValidationResult(false, e.Message);
+            }
+
+            return new Scenario.ValidationResult(true, string.Empty);
+        }
+
+        protected internal override VisualElement CreateControllerUI()
+        {
+            return new CommonInstanceStatusElement(m_Settings);
         }
     }
 }

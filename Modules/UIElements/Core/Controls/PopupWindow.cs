@@ -22,36 +22,12 @@ namespace UnityEngine.UIElements
     /// popupWindow.Add(new Button());
     /// </code>
     /// </example>
-    public class PopupWindow : TextElement
+    public partial class PopupWindow : TextElement
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
         {
             public override object CreateInstance() => new PopupWindow();
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="PopupWindow"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<PopupWindow, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="PopupWindow"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextElement.UxmlTraits
-        {
-            /// <summary>
-            /// Returns an empty enumerable, as popup windows generally do not have children.
-            /// </summary>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get
-                {
-                    yield return new UxmlChildElementDescription(typeof(VisualElement));
-                }
-            }
         }
 
         private VisualElement m_ContentContainer;

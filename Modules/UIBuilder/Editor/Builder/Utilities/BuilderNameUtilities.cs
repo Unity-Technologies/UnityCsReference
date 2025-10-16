@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -12,6 +13,50 @@ namespace Unity.UI.Builder
 {
     internal static class BuilderNameUtilities
     {
+        static string ConvertDashToUpperNoSpace(string dash, bool firstCase, bool addSpace)
+        {
+            if (BuilderConstants.SpecialEnumNamesCases.TryGetValue(dash, out var replacement))
+                dash = replacement;
+
+            using var _ = StringBuilderPool.Get(out var sb);
+            bool caseFlag = firstCase;
+            for (int i = 0; i < dash.Length; ++i)
+            {
+                char c = dash[i];
+                if (c == '-')
+                {
+                    if (addSpace)
+                        sb.Append(' ');
+                    caseFlag = true;
+                }
+                else if (caseFlag)
+                {
+                    sb.Append(char.ToUpper(c));
+                    caseFlag = false;
+                }
+                else
+                {
+                    sb.Append(char.ToLower(c));
+                }
+            }
+            return sb.ToString();
+        }
+
+        public static string ConvertDashToCamel(string dash)
+        {
+            return ConvertDashToUpperNoSpace(dash, false, false);
+        }
+
+        public static string ConvertCamelToDash(string camel)
+        {
+            var split = Regex.Replace(Regex.Replace(camel, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1-$2"), @"(\p{Ll})(\P{Ll})", "$1-$2");
+            var lowerCase = split.ToLower();
+            foreach (var pair in BuilderConstants.SpecialEnumNamesCases.Where(pair => pair.Value.Equals(lowerCase)))
+                return pair.Key;
+
+            return lowerCase;
+        }
+
         public static string ConvertCamelToHuman(string camel)
         {
             return Regex.Replace(camel, "(\\B[A-Z])", " $1");

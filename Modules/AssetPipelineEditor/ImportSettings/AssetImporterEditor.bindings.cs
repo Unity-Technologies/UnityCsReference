@@ -12,15 +12,15 @@ namespace UnityEditor.AssetImporters
     public abstract partial class AssetImporterEditor
     {
         [FreeFunction]
-        private static extern Object CreateOrReloadInspectorCopy(int instanceID, Editor editor);
+        private static extern Object CreateOrReloadInspectorCopy(EntityId instanceID, Editor editor);
         [FreeFunction]
-        private static extern void SaveUserData(int instanceID, Object userData);
+        private static extern void SaveUserData(EntityId instanceID, Object userData);
         [FreeFunction]
-        private static extern bool ReleaseInspectorCopy(int instanceID, Editor editor);
+        private static extern bool ReleaseInspectorCopy(EntityId instanceID, Editor editor);
         [FreeFunction]
-        private static extern void FixCacheCount(int instanceID, int[] editors);
+        private static extern void FixCacheCount(EntityId instanceID, int[] editors);
         [FreeFunction]
-        private static extern int GetInspectorCopyCount(int instanceID);
+        private static extern int GetInspectorCopyCount(EntityId instanceID);
         [FreeFunction("IsMetaDataSerializationEqual")]
         private static extern bool IsSerializedDataEqual([NotNull] Object source);
         [FreeFunction]
@@ -28,7 +28,7 @@ namespace UnityEditor.AssetImporters
         [FreeFunction]
         private static extern void UpdateSavedData([NotNull] Object source);
         [FreeFunction]
-        private static extern void FixSavedAssetbundleSettings(int instanceID, PropertyModification[] assetBundleProperties);
+        private static extern void FixSavedAssetbundleSettings(EntityId instanceID, PropertyModification[] assetBundleProperties);
 
         [UsedByNativeCode]
         private static void UpdateUnsavedChangesState(Editor editor)

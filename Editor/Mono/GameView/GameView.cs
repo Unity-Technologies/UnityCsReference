@@ -18,6 +18,7 @@ using UnityEngine.XR;
 using FrameCapture = UnityEngine.Apple.FrameCapture;
 using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
 using UnityEditor.ShortcutManagement;
+using UnityEngine.UIElements;
 
 /*
 The main GameView can be in the following states when entering playmode.
@@ -133,6 +134,11 @@ namespace UnityEditor
 
         static double s_LastScrollTime;
 
+        private VisualElement m_StatsWindowInstance;
+        private VisualElement m_IndirectWarningBox;
+        private StatsData m_StatsData;
+
+
         public GameView()
         {
             autoRepaintOnSceneChange = true;
@@ -199,7 +205,7 @@ namespace UnityEditor
         //This has been added to accomodate the test in PR for case 991291.
         internal void SetTargetDisplay(int id)
         {
-            if (id < 0 || id > 7)
+            if (id < 0 || id >= k_MaxSupportedDisplays)
                 return;
             targetDisplay = id;
             SetDisplayViewSize(id, targetSize);
@@ -356,6 +362,7 @@ namespace UnityEditor
         {
             ModeService.modeChanged -= OnEditorModeChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.update -= UpdateStats;
             Undo.undoRedoEvent -= UndoRedoPerformed;
 
             if (m_RenderTexture)
@@ -625,8 +632,6 @@ namespace UnityEditor
                 {
                     GUILayout.FlexibleSpace();
                     Color oldCol = GUI.color;
-                    // This has nothing to do with animation recording.  Can we replace this color with something else?
-                    GUI.color *= AnimationMode.recordedPropertyColor;
                     GUILayout.Label(Styles.frameDebuggerOnContent, EditorStyles.toolbarLabel);
                     GUI.color = oldCol;
                     // Make frame debugger windows repaint after each time game view repaints.
@@ -1038,7 +1043,6 @@ namespace UnityEditor
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     // Display Targets can have valid targets from 0 to 7.
-                    System.Diagnostics.Debug.Assert(targetDisplay < 8, "Display Target is Out of Range");
                     currentTargetDisplay = targetDisplay;
                 }
 
@@ -1140,7 +1144,113 @@ namespace UnityEditor
             }
 
             if (m_Stats)
-                GameViewGUI.GameViewStatsGUI();
+            {
+                OnOpenStatsWindow();
+            }
+            else
+            {
+                OnCloseStatsWindow();
+            }
+        }
+
+
+        private void CreateGUI()
+        {
+            EditorApplication.update += UpdateStats;
+        }
+
+        // Event handler to load and show the stats window.
+        void OnOpenStatsWindow()
+        {
+            if (m_StatsWindowInstance != null)
+                return; 
+
+            const string path = "UXML/GameWindow/Stats_Window.uxml";
+            var statsWindowAsset = EditorGUIUtility.Load(path) as VisualTreeAsset;
+
+            if (statsWindowAsset != null)
+            {
+                m_StatsWindowInstance = statsWindowAsset.CloneTree();
+                InitializeFoldoutState(m_StatsWindowInstance, "HardwareFoldout", true);     
+                InitializeFoldoutState(m_StatsWindowInstance, "SceneFoldout", true);
+                InitializeFoldoutState(m_StatsWindowInstance, "DrawsFoldout", false);
+                InitializeFoldoutState(m_StatsWindowInstance, "MemoryFoldout", false);
+                InitializeFoldoutState(m_StatsWindowInstance, "AnimationMeshFoldout", false);
+
+                m_IndirectWarningBox = m_StatsWindowInstance.Q<HelpBox>("IndirectWarningBox");
+                m_StatsWindowInstance.style.marginTop = 35;
+                m_StatsWindowInstance.style.marginRight = 15;
+                rootVisualElement.Add(m_StatsWindowInstance);
+                m_StatsData = new StatsData();
+                m_StatsWindowInstance.dataSource = m_StatsData;
+
+                var openProfilerButton = m_StatsWindowInstance.Q<UnityEngine.UIElements.Button>("OpenProfilerButton");
+                if (openProfilerButton != null)
+                {
+                    openProfilerButton.clicked += OpenRenderingProfiler;
+                }
+                else
+                {
+                    Debug.LogError("Button 'openRenderingProfilerButton' not found in UXML!");
+                }
+            }
+            else
+            {
+                Debug.LogError("StatsWindow.uxml not found!");
+            }
+        }
+
+        void OnCloseStatsWindow()
+        {
+            if (m_StatsWindowInstance != null)
+            {
+                m_StatsWindowInstance.RemoveFromHierarchy();
+                m_StatsWindowInstance = null;
+            }
+        }
+
+        private void InitializeFoldoutState(VisualElement instance, string foldoutName, bool defaultState)
+        {
+            var foldout = instance.Q<Foldout>(foldoutName);
+            if (foldout == null)
+            {
+                return; 
+            }
+
+            string prefsKey = $"{this.GetType().Name}.{foldoutName}.IsExpanded";
+
+            foldout.value = EditorPrefs.GetBool(prefsKey, defaultState);
+
+            foldout.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.target == foldout)
+                    EditorPrefs.SetBool(prefsKey, evt.newValue);
+            });
+        }
+
+        void UpdateStats()
+        {
+            if (m_StatsData != null)
+            {
+                m_StatsData.UpdateMemory();
+                if (EditorApplication.isPlaying)
+                    m_StatsData.UpdateFPS();
+            }
+
+            if (m_IndirectWarningBox == null)
+                return;
+
+            bool shouldShow = UnityStats.hybridIndirectDrawCalls > 0 ||
+                              UnityStats.nullGeometryIndirectDrawCalls > 0 ||
+                              UnityStats.standardIndirectDrawCalls > 0;
+
+            m_IndirectWarningBox.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        // Method to open the Rendering Profiler window
+        void OpenRenderingProfiler()
+        {
+            ProfilerWindow.ShowProfilerWindow();
         }
 
         internal void SetCustomResolution(Vector2 res, string baseName)

@@ -875,7 +875,7 @@ namespace UnityEditor
             var inspectedObject = GetInspectedObject();
             if (inspectedObject == null)
                 return;
-            var inspectedInstanceId = inspectedObject.GetInstanceID();
+            var inspectedEntityId = inspectedObject.GetEntityId();
 
             for (int i = 0; i < stream.length; ++i)
             {
@@ -883,7 +883,7 @@ namespace UnityEditor
                 if (eventType == ObjectChangeKind.ChangeGameObjectOrComponentProperties)
                 {
                     stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
-                    if (e.instanceId == inspectedInstanceId)
+                    if (e.entityId == inspectedEntityId)
                     {
                         UpdateWindowObjectNameTitle();
                         return;
@@ -2647,12 +2647,7 @@ namespace UnityEditor
         {
             Dictionary<int, IEditorElement> editorToElementMap = new Dictionary<int, IEditorElement>();
             var currentElements = editorsElement.Children().OfType<IEditorElement>().ToList();
-            if (editors.Length == 0)
-            {
-                return null;
-            }
-
-            if (rootVisualElement.panel == null)
+            if ((editors.Length == 0) || (rootVisualElement.panel == null && currentElements.Count == 0))
             {
                 return null;
             }

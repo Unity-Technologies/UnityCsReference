@@ -26,6 +26,13 @@ namespace UnityEditor
         public const int kPackagesFolderInstanceId = int.MaxValue;
         public const int kAssetCreationInstanceID_ForNonExistingAssets = Int32.MaxValue - 1;
 
+        internal static readonly SavedBool k_ShowFoldersFirst = new SavedBool("ShowFoldersFirst", Application.platform != RuntimePlatform.OSXEditor);
+
+        static void ToggleShowFoldersFirst()
+        {
+            k_ShowFoldersFirst.value = !k_ShowFoldersFirst.value;
+        }
+
         private static readonly Color kFadedOutAssetsColor = new Color(1, 1, 1, 0.5f);
 
         public static Color GetAssetItemColor(int instanceID)
@@ -269,6 +276,8 @@ namespace UnityEditor
 
             SearchService.SearchService.syncSearchChanged += OnSyncSearchChanged;
 
+            k_ShowFoldersFirst.valueChanged += OnShowFoldersFirstChanged;
+
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
         }
@@ -289,6 +298,7 @@ namespace UnityEditor
             EditorApplication.assetLabelsChanged -= OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
+            k_ShowFoldersFirst.valueChanged -= OnShowFoldersFirstChanged;
             s_ProjectBrowsers.Remove(this);
         }
 
@@ -345,6 +355,13 @@ namespace UnityEditor
         {
             if (m_ListArea != null)
                 InitListArea();
+        }
+
+        void OnShowFoldersFirstChanged()
+        {
+            m_ListArea.foldersFirst = k_ShowFoldersFirst.value;
+            InitViewMode(m_ViewMode);
+            ResetViews();
         }
 
         void Awake()
@@ -516,7 +533,7 @@ namespace UnityEditor
             m_ListArea.allowBuiltinResources = false;
             m_ListArea.allowUserRenderingHook = true;
             m_ListArea.allowFindNextShortcut = true;
-            m_ListArea.foldersFirst = GetShouldShowFoldersFirst();
+            m_ListArea.foldersFirst = k_ShowFoldersFirst.value;
             m_ListArea.repaintCallback += Repaint;
             m_ListArea.itemSelectedCallback += ListAreaItemSelectedCallback;
             m_ListArea.keyboardCallback += ListAreaKeyboardCallback;
@@ -750,10 +767,13 @@ namespace UnityEditor
                 EditorApplication.projectWindowItemOnGUI(guid, rect);
             }
 
+            #pragma warning disable 618
             if (EditorApplication.projectWindowItemInstanceOnGUI != null)
-            {
                 EditorApplication.projectWindowItemInstanceOnGUI(instanceID, rect);
-            }
+            #pragma warning restore 618
+
+            if (EditorApplication.projectWindowItemByEntityIdOnGUI != null)
+                EditorApplication.projectWindowItemByEntityIdOnGUI(instanceID, rect);
         }
 
         private void InitOneColumnView()
@@ -769,7 +789,7 @@ namespace UnityEditor
             m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
 
             var data = new AssetsTreeViewDataSource(m_AssetTree, m_SkipHiddenPackages);
-            data.foldersFirst = GetShouldShowFoldersFirst();
+            data.foldersFirst = k_ShowFoldersFirst.value;
 
             m_AssetTree.Init(m_TreeViewRect,
                 data,
@@ -821,11 +841,6 @@ namespace UnityEditor
 
             minSize = new Vector2(minWidth, k_MinHeight);
             maxSize = new Vector2(10000, 10000);
-        }
-
-        private bool GetShouldShowFoldersFirst()
-        {
-            return Application.platform != RuntimePlatform.OSXEditor;
         }
 
         // Called when user changes view mode
@@ -1121,13 +1136,13 @@ namespace UnityEditor
 
         void OpenListAreaSelection()
         {
-            var selectedInstanceIDs = m_ListArea.GetSelection();
-            int selectionCount = selectedInstanceIDs.Length;
+            var selectedEntityIds = m_ListArea.GetSelection();
+            int selectionCount = selectedEntityIds.Length;
             if (selectionCount > 0)
             {
                 int numFolders = 0;
-                foreach (int instanceID in selectedInstanceIDs)
-                    if (ProjectWindowUtil.IsFolder(instanceID))
+                foreach (EntityId entityId in selectedEntityIds)
+                    if (ProjectWindowUtil.IsFolder(entityId))
                         numFolders++;
 
                 bool allFolders = numFolders == selectionCount;
@@ -1139,7 +1154,7 @@ namespace UnityEditor
                 else
                 {
                     // If any assets in selection open them instead of opening folder
-                    OpenAssetSelection(selectedInstanceIDs);
+                    OpenAssetSelection(selectedEntityIds);
 
                     Repaint();
                     GUIUtility.ExitGUI(); // Exit because if we are mouse clicking to open we are in the middle of iterating list area items..
@@ -2308,6 +2323,12 @@ namespace UnityEditor
         {
             if (m_EnableOldAssetTree)
             {
+                if (Application.platform == RuntimePlatform.OSXEditor)
+                {
+                    GUIContent showFoldersFirstText = EditorGUIUtility.TrTextContent("Keep folders on top"); // Matches macOS preference name
+                    menu.AddItem(showFoldersFirstText, k_ShowFoldersFirst.value, ToggleShowFoldersFirst);
+                }
+
                 GUIContent assetTreeText = EditorGUIUtility.TrTextContent("One Column Layout");
                 GUIContent assetBrowserText = EditorGUIUtility.TrTextContent("Two Column Layout");
 
@@ -2836,7 +2857,7 @@ namespace UnityEditor
             return pathName;
         }
 
-        internal void BeginPreimportedNameEditing(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
+        internal void BeginPreimportedNameEditing(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
         {
             if (!Initialized())
                 Init();
@@ -2856,10 +2877,10 @@ namespace UnityEditor
 
                 pathName = ValidateCreateNewAssetPath(pathName);
 
-                if (m_ListAreaState.m_CreateAssetUtility.BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated))
+                if (m_ListAreaState.m_CreateAssetUtility.BeginNewAssetCreation(entityId, endAction, pathName, icon, resourceFile, selectAssetBeingCreated))
                 {
                     ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyEntityId(m_ListAreaState.m_CreateAssetUtility.folder), true);
-                    m_ListArea.BeginNamingNewAsset(m_ListAreaState.m_CreateAssetUtility.originalName, instanceID, isCreatingNewFolder);
+                    m_ListArea.BeginNamingNewAsset(m_ListAreaState.m_CreateAssetUtility.originalName, entityId, isCreatingNewFolder);
                 }
             }
             else if (m_ViewMode == ViewMode.OneColumn)
@@ -2873,7 +2894,7 @@ namespace UnityEditor
                 // Create in tree
                 AssetsTreeViewGUI defaultTreeViewGUI = m_AssetTree.gui as AssetsTreeViewGUI;
                 if (defaultTreeViewGUI != null)
-                    defaultTreeViewGUI.BeginCreateNewAsset(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
+                    defaultTreeViewGUI.BeginCreateNewAsset(entityId, endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
                 else
                     Debug.LogError("Not valid defaultTreeViewGUI!");
             }
@@ -2977,7 +2998,7 @@ namespace UnityEditor
                 m_ListArea.Frame(instanceID, frame, ping);
             }
         }
-        
+
         static bool IsBuiltinResource(string resPath)
         {
             return string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||

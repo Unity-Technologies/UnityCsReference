@@ -50,6 +50,11 @@ namespace UnityEditor
             m_BoundsHandle.SetColor(Handles.s_BoundingBoxHandleColor);
         }
 
+        public void OnDisable()
+        {
+            EditorApplication.update -= MeshLODUpdate;
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -79,6 +84,7 @@ namespace UnityEditor
             LightingSettingsGUI(false);
             RayTracingSettingsGUI();
 
+            EditorApplication.update -= MeshLODUpdate;
             SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
             if (renderer != null && renderer.sharedMesh != null)
             {               
@@ -213,9 +219,9 @@ namespace UnityEditor
                 }
             }
 
-            if (renderer.sharedMesh && renderer.sharedMesh.isLodSelectionActive)
+            if (renderer.sharedMesh && renderer.sharedMesh.isLodSelectionActive && LODGUI.IsDrawingLabelInCurrentSceneView())
             {
-                DrawMeshLODLabel(renderer);
+                DrawMeshLODLabel(renderer, renderer.sharedMesh.lodCount);
             }
         }
     }

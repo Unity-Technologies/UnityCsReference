@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using PointerType = UnityEngine.UIElements.PointerType;
@@ -20,7 +21,7 @@ namespace Unity.UI.Builder
         };
 
         static readonly string s_DraggerPreviewClassName = "unity-builder-dragger-preview";
-        static readonly string s_DraggedPreviewClassName = "unity-builder-dragger-preview--dragged";
+        internal static readonly string s_DraggedPreviewClassName = "unity-builder-dragger-preview--dragged";
 
         static readonly string s_TreeItemHoverHoverClassName = "unity-builder-explorer__item--dragger-hover";
         public static readonly string s_TreeItemHoverWithDragBetweenElementsSupportClassName = "unity-builder-explorer__between-element-item--dragger-hover";
@@ -36,6 +37,7 @@ namespace Unity.UI.Builder
         bool m_WeStartedTheDrag;
 
         BuilderPaneWindow m_PaneWindow;
+        VisualElement m_PaneContent;
         VisualElement m_Root;
         VisualElement m_Canvas;
         BuilderSelection m_Selection;
@@ -44,6 +46,8 @@ namespace Unity.UI.Builder
         VisualElement m_LastHoverElement;
         int m_LastHoverElementChildIndex;
         VisualElement m_LastRowHoverElement;
+        VisualElement m_HierarchyScrollView;
+        VisualElement m_StylesheetScrollView;
 
         BuilderParentTracker m_ParentTracker;
         BuilderPlacementIndicator m_PlacementIndicator;
@@ -59,6 +63,7 @@ namespace Unity.UI.Builder
         protected bool exclusive { get; set; } = true;
 
         protected BuilderPaneWindow paneWindow { get { return m_PaneWindow; } }
+        protected VisualElement paneContent => m_PaneContent;
         protected BuilderSelection selection { get { return m_Selection; } }
         protected VisualElement documentRootElement => m_Canvas;
 
@@ -116,7 +121,7 @@ namespace Unity.UI.Builder
         {
         }
 
-        protected virtual bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
+        protected virtual bool PrepareDrag(VisualElement target, Vector2 mousePosition)
         {
             return true;
         }
@@ -125,8 +130,9 @@ namespace Unity.UI.Builder
         {
         }
 
-        protected virtual void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
+        protected virtual bool PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
+            return true;
         }
 
         protected virtual void FailAction(VisualElement target)
@@ -182,7 +188,30 @@ namespace Unity.UI.Builder
             selection.ForceVisualAssetUpdateWithoutSave(target, BuilderHierarchyChangeType.InlineStyle);
         }
 
-        public void RegisterCallbacksOnTarget(VisualElement target)
+        public void RegisterPaneContent(VisualElement root)
+        {
+            if (paneContent != null)
+            {
+                paneContent.UnregisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
+                paneContent.UnregisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
+                paneContent.UnregisterCallback<DragExitedEvent>(OnDragExited, TrickleDown.TrickleDown);
+                paneContent.UnregisterCallback<DragLeaveEvent>(OnDragLeave);
+                paneContent.UnregisterCallback<DragEnterEvent>(OnDragEnter, TrickleDown.TrickleDown);
+            }
+
+            m_PaneContent = root;
+
+            if (paneContent == null)
+                return;
+
+            paneContent.RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
+            paneContent.RegisterCallback<DragPerformEvent>(OnDragPerform, TrickleDown.TrickleDown);
+            paneContent.RegisterCallback<DragExitedEvent>(OnDragExited, TrickleDown.TrickleDown);
+            paneContent.RegisterCallback<DragLeaveEvent>(OnDragLeave);
+            paneContent.RegisterCallback<DragEnterEvent>(OnDragEnter, TrickleDown.TrickleDown);
+        }
+
+        public virtual void RegisterCallbacksOnTarget(VisualElement target)
         {
             target.RegisterCallback<PointerDownEvent>(OnPointerDown);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
@@ -192,7 +221,83 @@ namespace Unity.UI.Builder
             target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
 
-        void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
+        void OnDragUpdated(DragUpdatedEvent evt)
+        {
+            s_CurrentlyActiveBuilderDragger = this;
+
+            if (!m_Active && m_WeStartedTheDrag)
+            {
+                var startSuccess = StartDrag(new VisualElement(), evt.mousePosition);
+
+                if (startSuccess)
+                {
+                    m_Active = true;
+                }
+                else if (s_CurrentlyActiveBuilderDragger == this)
+                {
+                    s_CurrentlyActiveBuilderDragger = null;
+                }
+
+                evt.StopPropagation();
+                return;
+            }
+
+            if (m_Active)
+            {
+                PerformDragInner(evt.elementTarget, evt.mousePosition);
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            }
+
+            evt.StopPropagation();
+        }
+
+        void OnDragPerform(DragPerformEvent evt)
+        {
+            m_WeStartedTheDrag = false;
+
+            if (s_CurrentlyActiveBuilderDragger == this)
+                s_CurrentlyActiveBuilderDragger = null;
+
+            if (HandleDropAction(evt.mousePosition))
+                DragAndDrop.AcceptDrag();
+
+            ResetDragState();
+            evt.StopPropagation();
+            EndDragInner();
+        }
+
+        void OnDragExited(DragExitedEvent evt)
+        {
+            DragCleanUp();
+        }
+
+        void OnDragLeave(DragLeaveEvent evt)
+        {
+            DragCleanUp();
+        }
+
+        void DragCleanUp()
+        {
+            if (m_Active)
+            {
+                EndDragInner();
+            }
+
+            if (s_CurrentlyActiveBuilderDragger == this)
+            {
+                s_CurrentlyActiveBuilderDragger = null;
+            }
+            m_Active = false;
+        }
+
+        void OnDragEnter(DragEnterEvent evt)
+        {
+            m_WeStartedTheDrag = true;
+            DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+            DragAndDrop.AcceptDrag();
+        }
+
+        public virtual void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
         {
             var target = evt.elementTarget;
 
@@ -206,22 +311,24 @@ namespace Unity.UI.Builder
 
         bool StartDrag(VisualElement target, Vector2 mousePosition)
         {
-            var startSuccess = StartDrag(target, mousePosition, m_DraggedElement);
-            if (!startSuccess)
-                return startSuccess;
+            bool externalDrag = DragAndDrop.paths.Length > 0;
+            var startSuccess = PrepareDrag(target, mousePosition);
 
-            if (s_CurrentlyActiveBuilderDragger == this)
+            if (!startSuccess)
+                return false;
+
+            if (s_CurrentlyActiveBuilderDragger == this && !externalDrag)
             {
-                FillDragElement(m_DraggedElement);
-                m_DraggedElement.BringToFront();
-                m_DraggedElement.AddToClassList(s_DraggedPreviewClassName);
+                    FillDragElement(m_DraggedElement);
+                    m_DraggedElement.BringToFront();
+                    m_DraggedElement.AddToClassList(s_DraggedPreviewClassName);
             }
 
             // So we don't have a flashing element at the top left corner
             // at the very start of the drag.
             PerformDragInner(target, mousePosition);
 
-            return startSuccess;
+            return true;
         }
 
         bool TryToPickInCanvas(Vector2 mousePosition)
@@ -374,11 +481,36 @@ namespace Unity.UI.Builder
         void PerformDragInner(VisualElement target, Vector2 mousePosition)
         {
             // Move dragged element.
-            m_DraggedElement.style.left = mousePosition.x;
-            m_DraggedElement.style.top = mousePosition.y;
+            if (m_DraggedElement != null)
+            {
+                m_DraggedElement.style.left = mousePosition.x;
+                m_DraggedElement.style.top = mousePosition.y;
+            }
 
             m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
             m_LastRowHoverElement?.Query(className: BuilderConstants.ExplorerItemReorderZoneClassName).ForEach(e => e.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName));
+
+            // If dragging both UXML and USS we insert at the end anyway
+            // therefore we don't care about reordering zones and other logic following.
+            if (BuilderAssetUtilities.DraggingBothUxmlAndUSS())
+            {
+                VisualElement pickedElement = GetDefaultTargetElement();
+
+                if (pickedElement == null)
+                    return;
+
+                m_Active = true;
+                m_LastHoverElement = m_PaneWindow.document.primaryViewportWindow.documentRootElement;
+                PerformDrag(target, pickedElement);
+
+                m_HierarchyScrollView ??= builderHierarchyRoot.Q<ScrollView>();
+                m_StylesheetScrollView ??= builderStylesheetRoot.Q<ScrollView>();
+
+                m_HierarchyScrollView.AddToClassList(s_TreeItemHoverHoverClassName);
+                m_StylesheetScrollView.AddToClassList(s_TreeItemHoverHoverClassName);
+
+                return;
+            }
 
             // Note: It's important for the Hierarchy/Stylesheet panes to be checked first because
             // this check does not account for which element is on top of which other element
@@ -425,6 +557,9 @@ namespace Unity.UI.Builder
             EndDrag();
             onEndDrag?.Invoke();
 
+            m_HierarchyScrollView?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
+            m_StylesheetScrollView?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
+
             m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
             m_LastRowHoverElement?.Query(className: BuilderConstants.ExplorerItemReorderZoneClassName).ForEach(e => e.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName));
             m_DraggedElement.RemoveFromClassList(s_DraggedPreviewClassName);
@@ -432,7 +567,7 @@ namespace Unity.UI.Builder
             m_PlacementIndicator?.Deactivate();
         }
 
-        void OnPointerDown(PointerDownEvent evt)
+        protected void OnPointerDown(PointerDownEvent evt)
         {
             if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this && s_CurrentlyActiveBuilderDragger.exclusive)
                 return;
@@ -462,7 +597,7 @@ namespace Unity.UI.Builder
                 target.CaptureMouse();
         }
 
-        void OnPointerMove(PointerMoveEvent evt)
+        protected void OnPointerMove(PointerMoveEvent evt)
         {
             var target = evt.currentTarget as VisualElement;
 
@@ -476,18 +611,18 @@ namespace Unity.UI.Builder
                 {
                     var startSuccess = StartDrag(target, evt.position);
 
+                    if (target is BuilderClassPill pill)
+                        pill.isDragged = startSuccess;
+
                     if (startSuccess)
                     {
                         evt.StopPropagation();
                         m_Active = true;
                     }
-                    else
+                    else if (s_CurrentlyActiveBuilderDragger == this)
                     {
-                        if (s_CurrentlyActiveBuilderDragger == this)
-                        {
-                            target.ReleaseMouse();
-                            s_CurrentlyActiveBuilderDragger = null;
-                        }
+                        target.ReleaseMouse();
+                        s_CurrentlyActiveBuilderDragger = null;
                     }
                 }
 
@@ -544,7 +679,7 @@ namespace Unity.UI.Builder
             m_Selection.Select(null, documentElement);
         }
 
-        void OnPointerUp(PointerUpEvent evt)
+        protected void OnPointerUp(PointerUpEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse)
             {
@@ -569,48 +704,54 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var currentMouse = evt.position;
-            if (m_LastHoverElement != null)
-            {
-                var localCanvasMouse = viewport != null ? m_Canvas.WorldToLocal(currentMouse) : Vector2.zero;
-                var localHierarchyMouse = builderHierarchyRoot?.WorldToLocal(currentMouse) ?? Vector2.zero;
-                var localStylesheetMouse = builderStylesheetRoot?.WorldToLocal(currentMouse) ?? Vector2.zero;
-
-                if (builderHierarchyRoot != null && builderHierarchyRoot.ContainsPoint(localHierarchyMouse))
-                {
-                    VisualElement newParent;
-                    int index;
-                    GetPickedElementFromHoverElement(out newParent, out index);
-
-                    if (newParent != null)
-                        PerformAction(newParent, DestinationPane.Hierarchy, localHierarchyMouse, index);
-                }
-                else if (builderStylesheetRoot != null && builderStylesheetRoot.ContainsPoint(localStylesheetMouse))
-                {
-                    VisualElement newParent;
-                    int index;
-                    GetPickedElementFromHoverElement(out newParent, out index);
-
-                    if (newParent != null)
-                        PerformAction(newParent, DestinationPane.Stylesheet, localStylesheetMouse, index);
-                }
-                else if (viewport != null && m_Canvas.ContainsPoint(localCanvasMouse))
-                {
-                    PerformAction(m_LastHoverElement, DestinationPane.Viewport, localCanvasMouse, m_LastHoverElementChildIndex);
-                }
-            }
-
+            HandleDropAction(evt.position);
             m_Active = false;
 
-            evt.StopPropagation();
+            if (target is BuilderClassPill pill)
+                pill.isDragged = false;
 
+            evt.StopPropagation();
             EndDragInner();
+        }
+
+        bool HandleDropAction(Vector2 currentMouse)
+        {
+            if (m_LastHoverElement == null)
+                return false;
+
+            var localCanvasMouse = viewport != null ? m_Canvas.WorldToLocal(currentMouse) : Vector2.zero;
+            var localHierarchyMouse = builderHierarchyRoot?.WorldToLocal(currentMouse) ?? Vector2.zero;
+            var localStylesheetMouse = builderStylesheetRoot?.WorldToLocal(currentMouse) ?? Vector2.zero;
+
+            if (builderHierarchyRoot != null && builderHierarchyRoot.ContainsPoint(localHierarchyMouse))
+            {
+                GetPickedElementFromHoverElement(out var newParent, out var index);
+                if (newParent != null)
+                    return PerformAction(newParent, DestinationPane.Hierarchy, localHierarchyMouse, index);
+            }
+            else if (builderStylesheetRoot != null && builderStylesheetRoot.ContainsPoint(localStylesheetMouse))
+            {
+                GetPickedElementFromHoverElement(out var newParent, out var index);
+                if (newParent != null)
+                    return PerformAction(newParent, DestinationPane.Stylesheet, localStylesheetMouse, index);
+            }
+            else if (viewport != null && m_Canvas.ContainsPoint(localCanvasMouse))
+            {
+                return PerformAction(m_LastHoverElement, DestinationPane.Viewport, localCanvasMouse, m_LastHoverElementChildIndex);
+            }
+
+            return false;
+        }
+
+        void ResetDragState()
+        {
+            m_Active = false;
         }
 
         void GetPickedElementFromHoverElement(out VisualElement pickedElement, out int index)
         {
             index = -1;
-            if (IsElementTheScrollView(m_LastRowHoverElement))
+            if (IsElementTheScrollView(m_LastRowHoverElement) || BuilderAssetUtilities.DraggingBothUxmlAndUSS())
             {
                 pickedElement = GetDefaultTargetElement();
             }
@@ -639,7 +780,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void OnEsc(KeyUpEvent evt)
+        protected void OnEsc(KeyUpEvent evt)
         {
             if (evt.keyCode != KeyCode.Escape)
                 return;

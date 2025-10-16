@@ -26,12 +26,12 @@ namespace UnityEditor
         static Dictionary<string, bool> managedToDllType = new Dictionary<string, bool>();
         static BuildPlayerDataExtractor m_BuildPlayerDataExtractor = new BuildPlayerDataExtractor();
 
-        static public bool IsUnityEngineModule(AssemblyDefinition assembly)
+        public static bool IsUnityEngineModule(AssemblyDefinition assembly)
         {
             return assembly.CustomAttributes.Any(a => a.AttributeType.FullName == typeof(UnityEngineModuleAssembly).FullName);
         }
 
-        static public bool IsUnityEngineModule(Assembly assembly)
+        public static bool IsUnityEngineModule(Assembly assembly)
         {
             return assembly.GetCustomAttributes(typeof(UnityEngineModuleAssembly), false).Length > 0;
         }
@@ -65,10 +65,10 @@ namespace UnityEditor
             var typesDerivedFromScriptedImporter = TypeCache.GetTypesDerivedFrom<ScriptedImporter>();
 
             var fileName = Path.GetFileName(path);
-            IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFileName(x.Assembly.Location) == fileName);
+            IEnumerable<Type> userTypes = typesDerivedFromMonoBehaviour.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName);
             userTypes = userTypes
-                .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFileName(x.Assembly.Location) == fileName))
-                .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFileName(x.Assembly.Location) == fileName)).ToList();
+                .Concat(typesDerivedFromScriptableObject.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName))
+                .Concat(typesDerivedFromScriptedImporter.Where(x => Path.GetFileName(x.Assembly.GetLoadedAssemblyPath()) == fileName)).ToList();
 
             List<string> classNames = new List<string>(userTypes.Count());
             List<string> nameSpaces = new List<string>(userTypes.Count());
@@ -78,7 +78,7 @@ namespace UnityEditor
             foreach (var userType in userTypes)
             {
                 if (string.IsNullOrEmpty(pathToAssembly))
-                    pathToAssembly = Path.GetFullPath(userType.Assembly.Location);
+                    pathToAssembly = Path.GetFullPath(userType.Assembly.GetLoadedAssemblyPath());
 
                 classNames.Add(userType.Name);
                 nameSpaces.Add(userType.Namespace);

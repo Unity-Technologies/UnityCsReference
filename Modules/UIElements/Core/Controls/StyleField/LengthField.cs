@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering Length.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class LengthField : TextValueField<Length>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);
@@ -73,6 +73,10 @@ namespace UnityEngine.UIElements
         /// USS class name of the options dropdown element of this type when invisible.
         /// </summary>
         public static readonly string invisibleUnitDropdownUssClass = unitDropdownUssClass + "--invisible";
+        /// <summary>
+        /// USS class name for the content container of this type.
+        /// </summary>
+        public static readonly string contentContainerUssClassName = ussClassName + "__content-container";
 
         // Keywords
         public static readonly string KeywordInitial = "initial";
@@ -103,6 +107,7 @@ namespace UnityEngine.UIElements
         readonly List<string> m_AllOptionsList = new();
         private readonly StyleMatcher m_StyleMatcher = new();
         Expression m_SyntaxTree;
+        VisualElement m_Container;
 
         [CreateProperty]
         public bool showUnitAsDropdown
@@ -122,6 +127,7 @@ namespace UnityEngine.UIElements
         protected internal PopupField<string> optionsPopup => m_OptionsPopup;
 
         protected List<string> styleKeywords => m_StyleKeywords;
+        public override VisualElement contentContainer => m_Container ?? this;
 
         /// <summary>
         /// Constructor.
@@ -163,7 +169,14 @@ namespace UnityEngine.UIElements
 
             lengthInput.AddToClassList(inputUssClassName);
             lengthInput.delegatesFocus = true;
+
+            m_Container = new VisualElement() { pickingMode = PickingMode.Ignore, focusable = true, delegatesFocus = true };
+            m_Container.name = "content-container";
+            m_Container.AddToClassList(contentContainerUssClassName);
+
+            Add(lengthInput);
             Add(popupContainer);
+            hierarchy.Add(m_Container);
 
             m_OptionsPopup.RegisterValueChangedCallback(OnPopupFieldValueChange);
             UpdateFields();

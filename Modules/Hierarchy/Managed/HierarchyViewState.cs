@@ -46,7 +46,7 @@ namespace Unity.Hierarchy
     [Serializable]
     internal sealed class HierarchyViewState
     {
-        const int SerialVersion = 1;
+        const int SerialVersion = 2;
         const UInt32 FileIdentifierToken = 0x68696572;
         const UInt32 EndOfFileToken = 0x72636879;
 
@@ -112,8 +112,8 @@ namespace Unity.Hierarchy
                 col.Width = reader.ReadSingle();
                 col.Index = reader.ReadInt32();
             }
-            state.ScrollPositionX = reader.ReadSingle();
-            state.ScrollPositionY = reader.ReadSingle();
+            state.ScrollPositionX = reader.ReadDouble();
+            state.ScrollPositionY = reader.ReadDouble();
 
             int payloadEndOffset = (int)reader.BaseStream.Position;
             int actualPayloadSize = payloadEndOffset - payloadStartOffset;
@@ -233,12 +233,12 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Current View scroll position.
         /// </summary>
-        public float ScrollPositionX = -1;
+        public double ScrollPositionX = -1;
 
         /// <summary>
         /// Current View scroll position.
         /// </summary>
-        public float ScrollPositionY = -1;
+        public double ScrollPositionY = -1;
 
         /// <summary>
         /// Convert a HierarchyViewState to a string.

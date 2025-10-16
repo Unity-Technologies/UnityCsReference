@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected List<string> m_Labels;
-        public IEnumerable<string> labels => m_Labels;
+        public IReadOnlyCollection<string> labels => m_Labels;
 
         private void SetPurchaseInfo(AssetStorePurchaseInfo purchaseInfo)
         {

@@ -217,7 +217,7 @@ namespace UnityEditor.Accessibility
         /// <returns>The node at the index.</returns>
         public AccessibilityViewModelNode GetChildNode(int index)
         {
-            return m_Model?.CreateNode(isRoot ? m_Model.accessibilityHierarchy.rootNodes[index] : m_Node.children[index]) ?? default;
+            return m_Model?.CreateNode(isRoot ? m_Model.accessibilityHierarchy?.rootNodes[index] : m_Node?.children[index]) ?? default;
         }
 
         /// <summary>

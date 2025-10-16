@@ -4,10 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal static class EventCommandNames
     {
         // Some of these strings are also hardcoded on the native side. Change them at your own risk!

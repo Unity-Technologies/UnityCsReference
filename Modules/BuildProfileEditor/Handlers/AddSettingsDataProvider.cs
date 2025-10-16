@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.AdaptivePerformance;
 using UnityEditor.Build.Profile.Elements;
@@ -26,6 +27,8 @@ namespace UnityEditor.Build.Profile.Handlers
             new AdaptivePerformanceSettingProvider()
         };
 
+        static IList<IBuildProfileSettingsProvider> s_GenericSettingProviders = null;
+
         readonly BuildProfile m_BuildProfile;
 
         /// <summary>
@@ -35,6 +38,20 @@ namespace UnityEditor.Build.Profile.Handlers
         public AddSettingsDataProvider(BuildProfile profile)
         {
             m_BuildProfile = profile;
+
+            if (s_GenericSettingProviders != null)
+            {
+                return;
+            }
+
+            var foundPackageProviders = PackageSettingsProvider.Get();
+            s_GenericSettingProviders = new List<IBuildProfileSettingsProvider>(foundPackageProviders.Count);
+            for (int i = 0; i < foundPackageProviders.Count; i++)
+            {
+                var found = foundPackageProviders[i];
+                var typedInternalProvider = typeof(ScriptableObjectSettingsProvider<>).MakeGenericType(found.settingsType);
+                s_GenericSettingProviders.Add((IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found));
+            }
         }
 
         /// <summary>
@@ -53,6 +70,13 @@ namespace UnityEditor.Build.Profile.Handlers
                 if (provider.CanAddSettings(m_BuildProfile) && !provider.HasSettings(m_BuildProfile))
                     yield return (i, provider.GetDisplayName());
             }
+
+            for (int i = 0; i < s_GenericSettingProviders.Count; ++i)
+            {
+                var provider = s_GenericSettingProviders[i];
+                if (provider.CanAddSettings(m_BuildProfile) && !provider.HasSettings(m_BuildProfile))
+                    yield return (s_InternalSettings.Count + i, provider.GetDisplayName());
+            }
         }
 
         /// <summary>
@@ -65,6 +89,12 @@ namespace UnityEditor.Build.Profile.Handlers
                 if (provider.HasSettings(m_BuildProfile))
                     yield return provider;
             }
+
+            foreach (var provider in s_GenericSettingProviders)
+            {
+                if (provider.HasSettings(m_BuildProfile))
+                    yield return provider;
+            }
         }
 
         /// <summary>
@@ -72,7 +102,28 @@ namespace UnityEditor.Build.Profile.Handlers
         /// </summary>
         public IBuildProfileSettingsProvider Get(int key)
         {
-            return s_InternalSettings[key];
+            var offset = s_InternalSettings.Count;
+            if (key < offset)
+                return s_InternalSettings[key];
+            else
+                return s_GenericSettingProviders[key - offset];
+        }
+
+        /// <summary>
+        /// Checks if all available profile settings are in use.
+        /// </summary>
+        /// <returns><see langword="true"/> if all profile settings are in use; otherwise, <see langword="false"/>.</returns>
+        public bool AllProfileSettingsInUse()
+        {
+            foreach (var provider in s_InternalSettings)
+            {
+                if (!provider.CanAddSettings(m_BuildProfile) || provider.HasSettings(m_BuildProfile))
+                    continue;
+
+                return false;
+            }
+
+            return true;
         }
     }
 }

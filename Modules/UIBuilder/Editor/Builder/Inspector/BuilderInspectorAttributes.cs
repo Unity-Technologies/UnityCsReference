@@ -32,12 +32,6 @@ namespace Unity.UI.Builder
 
         bool m_IgnoreChangeToInlineValue = false;
 
-        /// <inheritdoc/>
-        protected override bool IsAttributeIgnored(UxmlAttributeDescription attribute)
-        {
-            return base.IsAttributeIgnored(attribute) || (attribute.name is "data-source" or "data-source-type" or "data-source-path");
-        }
-
         public override void Refresh()
         {
             using var marker = k_RefreshMarker.Auto();
@@ -228,6 +222,13 @@ namespace Unity.UI.Builder
 
             inspector?.RegisterFieldToInlineEditingEvents(attributeField);
             targetVE.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindCallback);
+        }
+
+        protected override void ShowUxmlTraitsUsageWarningBox()
+        {
+            if (attributesContainer == null)
+                return;
+            attributesContainer.Add(new UnityEngine.UIElements.HelpBox(BuilderConstants.UsingDeprecatedAPIUxmlTraitsWarning, HelpBoxMessageType.Warning));
         }
     }
 }

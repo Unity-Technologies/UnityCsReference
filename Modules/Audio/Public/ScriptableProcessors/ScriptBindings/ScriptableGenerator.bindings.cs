@@ -3,104 +3,165 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.IntegerTime;
-using UnityEngine.Bindings;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using Unity.Jobs.LowLevel.Unsafe;
-using static Unity.Collections.LowLevel.Unsafe.BurstLike;
-using Unity.Burst;
 using System.ComponentModel;
+using Unity.Burst;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.IntegerTime;
+using Unity.Jobs.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine.Audio
 {
     /// <summary>
-    /// Factory for instantiating <see cref="Generator"/> to be used internally or from other scripts.
+    /// Factory for instantiating <see cref="GeneratorInstance"/> to be used internally or from other scripts.
     /// </summary>
     /// <remarks>
-    /// If you want to serialize a reference to a <see cref="Generator.IDefinition"/> and have an object picker for
-    /// asset / component based factories, use the <see cref="Serializable"/> utility to store/load these references.
+    /// <see cref="IAudioGenerator"/>s do not own any created <see cref="GeneratorInstance"/> instances,
+    /// nor should they try to store these for scripting. Instead, the user of the <see cref="IAudioGenerator"/>
+    /// should expose the created <see cref="GeneratorInstance"/> through their own API.
+    ///
+    /// <para/>
+    ///
+    /// <see cref="IAudioGenerator"/>s are generally implemented on a <see cref="MonoBehaviour"/> or a <see cref="ScriptableObject"/>
+    /// to bind together asset/scene management and audio generation tools with a uniform interface.
+    /// You can also directly instantiate a <see cref="GeneratorInstance"/> using a <see cref="ControlContext"/> purely in code.
+    ///
+    /// <para/>
+    ///
+    /// If you want to serialize a reference to a <see cref="IAudioGenerator"/> and have an object picker for
+    /// asset / component based factories, use the <see cref="IAudioGenerator.Serializable"/> utility to store/load these references.
     /// </remarks>
+    /// <seealso cref="AudioSource.generator"/>
+    /// <seealso cref="AudioSource.generatorInstance"/>"/>
     [UsedByNativeCode]
-    public interface IGeneratorDefinition : Generator.ICapabilities
+    public interface IAudioGenerator : GeneratorInstance.ICapabilities
     {
         /// <summary>
-        /// Serializable utility for storing object-pickable <see cref="IGeneratorDefinition"/> references on eg.
-        /// <see cref="MonoBehaviour"/> or any other host object annotated with <see cref="SerializableAttribute"/>.
+        /// A helper struct that allows you to object select and serialize a reference to any <see cref="UnityEngine.Object"/>,
+        /// <see cref="MonoBehaviour"/> or <see cref="ScriptableObject"/> that implements <see cref="IAudioGenerator"/>.
         /// </summary>
+        /// <remarks>
+        /// Interface references are not directly serializable in user scripts if they are implemented on a <see cref="UnityEngine.Object"/>,
+        /// even if using <see cref="SerializeReference"/>.
+        /// This helper struct additionally provides a <see cref="PropertyDrawer"/> giving a UI with an object field properly scoped to
+        /// <see cref="IAudioGenerator"/> objects.
+        /// </remarks>
         [Serializable]
         public struct Serializable
         {
             [SerializeField]
             internal Object Reference;
 
-            public IGeneratorDefinition definition
+            /// <summary>
+            /// Get and Set the serialized object as a <see cref="IAudioGenerator"/>.
+            /// </summary>
+            public IAudioGenerator definition
             {
-                get => Reference as IGeneratorDefinition;
+                get => Reference as IAudioGenerator;
                 set => Reference = (Object)value;
             }
 
+            /// <summary>
+            /// A type-safe helper method that retrieves the internal value.
+            /// </summary>
             public T Get<T>()
-                where T : Object, IGeneratorDefinition
+                where T : Object, IAudioGenerator
             {
                 return Reference as T;
             }
 
+            /// <summary>
+            /// A type-safe helper method that sets the internal value.
+            /// </summary>
             public void Set<T>(T value)
-                where T : Object, IGeneratorDefinition
+                where T : Object, IAudioGenerator
             {
                 Reference = value;
             }
 
-            public Serializable(IGeneratorDefinition generatorDefinition) => Reference = (Object)generatorDefinition;
+            /// <summary>
+            /// Construct this serializable struct with an initial <see cref="IAudioGenerator"/> value.
+            /// </summary>
+            /// <param name="audioGenerator">The initial value to set.</param>
+            /// <exception cref="InvalidCastException">
+            /// Thrown if <paramref name="audioGenerator"/> is not a <see cref="UnityEngine.Object"/>.
+            /// </exception>
+            public Serializable(IAudioGenerator audioGenerator) => Reference = (Object)audioGenerator;
         }
 
         /// <summary>
-        /// Ask this interface to instantiate a runtime <see cref="Generator"/> instance.
+        /// Ask this interface to create a <see cref="GeneratorInstance"/>.
         /// </summary>
-        /// <param name="context">The context associated with this <see cref="Generator"/></param>
-        /// <param name="nestedConfiguration">
-        /// If not null, the <see cref="Generator"/> shall be created as a nested generator with such configuration to be used from within another processor.
+        /// <param name="context">
+        /// The context associated with this <see cref="GeneratorInstance"/>
         /// </param>
-        /// <param name="creationParameters">Initialization parameters passed through.</param>
-        Generator CreateRuntime(ControlContext context, DSPConfiguration? nestedConfiguration, ControlContext.ProcessorCreationParameters creationParameters);
+        /// <param name="nestedFormat">
+        /// If not null, the <see cref="GeneratorInstance"/> shall be created as a nested generator with such format to be used from within another processor.
+        /// </param>
+        /// <param name="creationParameters">
+        /// Initialization parameters passed through.
+        /// </param>
+        GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters);
     }
 
-    public unsafe struct Generator
+    /// <summary>
+    /// A <see cref="ProcessorInstance"/> that generates audio data.
+    /// </summary>
+    /// <remarks>
+    /// A <see cref="GeneratorInstance"/> can be defined through implementing the <see cref="GeneratorInstance.IControl{TRealtime}"/> and
+    /// <see cref="IRealtime"/> interfaces, which defines the control and real-time thread behaviour respectively.
+    /// <para/>
+    /// To use a generator in a scene, for example with an <see cref="AudioSource"/>, it must have an associated
+    /// <see cref="IAudioGenerator"/> that will instantiate it.
+    /// In the Unity Audio system they are used with an <see cref="AudioSource"/> by setting the <see cref="AudioSource.generator"/>
+    /// property to the associated <see cref="IAudioGenerator"/>.
+    /// <para/>
+    /// It is also possible to create your own generators through code using a <see cref="ControlContext"/>.
+    /// Interacting with an instantiated generator depends on the ownership of the <see cref="GeneratorInstance"/>:
+    /// If the generator has been created from an <see cref="AudioSource"/>, you would interact with it
+    /// through the instance obtained from <see cref="AudioSource.generatorInstance"/>.
+    /// </remarks>
+    /// <example>
+    /// <code source="../../../../../Tests/EditModeAndPlayModeTests/Audio/Assets/DocCodeExamples/SAP_HowToUseGenerator.cs"/>
+    /// </example>
+    public unsafe partial struct GeneratorInstance : IEquatable<GeneratorInstance>
     {
         /// <summary>
-        /// Describes the runtime behaviour of the <see cref="Generator"/>.
+        /// Describes the runtime behaviour of the <see cref="GeneratorInstance"/>.
         /// These reported values are cached in the beginning and assumed to not change.
         /// </summary>
         /// <remarks>
-        /// This must be implemented identically on both the asset / offline version in <see cref="IGeneratorDefinition"/> and the runtime
-        /// instance <see cref="Processor.IProcessor"/>.
-        /// This is so that offline tooling and asset management can reason about the content, and the engine identically so without depending on loading each other.
+        /// This must be implemented identically on both the asset / component / offline version in <see cref="IAudioGenerator"/>
+        /// and the runtime instance <see cref="IRealtime"/>.
+        /// This is so that offline tooling and asset management can reason about the content in advance,
+        /// and the engine identically so without depending on loading each other.
         /// </remarks>
         public interface ICapabilities
         {
             /// <summary>
-            /// Return true if this <see cref="Generator"/> is finite, meaning it has a defined length and will terminate eventually.
+            /// Return true if this <see cref="GeneratorInstance"/> is finite, meaning it has a defined length and will terminate eventually.
             /// </summary>
             /// <remarks>
-            /// <see cref="Generator"/> do not have to know their length ahead of time but for static content and editor tooling it helps.
+            /// <see cref="GeneratorInstance"/> do not have to know their length ahead of time but for static content and editor tooling it helps.
             /// </remarks>
             /// <seealso cref="length"/>
             public bool isFinite { get; }
 
             /// <summary>
-            /// Declare whether this <see cref="Generator"/> must be treated as a source rendering in real time.
+            /// Declare whether this <see cref="GeneratorInstance"/> must be treated as a source rendering in real time.
             /// Realtime generators must be processed at the same sampling rate and buffer size as the system they run in.
             /// </summary>
             /// <remarks>
-            /// Realtime <see cref="Generator"/>s shall return the same output every time they are processed.
+            /// Realtime <see cref="GeneratorInstance"/>s shall return the same output every time they are processed.
             /// Additionally, the system enforces the buffer size of the passed-in <see cref="ChannelBuffer"/> equals the length of the
-            /// <see cref="ProcessingContext.Configuration.dspBufferLength"/>.
+            /// <see cref="AudioFormat.bufferSize"/> that the <see cref="ControlContext"/> runs in.
             ///
             /// Use cases include hardware devices that cannot be rendered at arbitrary rate, or systematic graphs that render ahead of time.
-            /// If you are not sure whether your <see cref="Generator"/> is realtime or not, you should set this to false.
+            /// If you are not sure whether your <see cref="GeneratorInstance"/> is realtime or not, you should set this to false.
             /// </remarks>
-            /// <seealso cref="Processor.IProcessor.Configure(ControlContext, in DSPConfiguration, out Setup, ref Properties)"/>.
+            /// <seealso cref="GeneratorInstance.IControl{TRealtime}.Configure"/>.
             public bool isRealtime { get; }
 
             /// <summary>
@@ -108,30 +169,34 @@ namespace UnityEngine.Audio
             /// if <see cref="isFinite"/> is set to true.
             /// </summary>
             /// <remarks>
-            /// This value is ignored for <see cref="Generator"/>s that are not finite (ie. <see cref="isFinite"/>).
+            /// This value is ignored for <see cref="GeneratorInstance"/>s that are not finite (ie. <see cref="isFinite"/>).
             /// </remarks>
             public DiscreteTime? length { get; }
         }
 
         /// <summary>
-        /// A required setup of information you need to provide to the instantiator.
+        /// Information on the audio setup of the <see cref="GeneratorInstance"/> passed back to the
+        /// instantiator from <see cref="GeneratorInstance.IControl{TRealtime}.Configure"/>.
         /// </summary>
+        /// <seealso cref="ControlContext.GetConfiguration(GeneratorInstance)"/>
         public readonly struct Setup
         {
             /// <summary>
-            /// Declare the <see cref="AudioSpeakerMode"/> of this <see cref="Generator"/> and by extension
-            /// the number of channels this <see cref="Generator"/> will use.
-            /// This directly determines the size of the <see cref="ChannelBuffer"/> passed to the <see cref="Process"/> method.
+            /// Declare the <see cref="AudioSpeakerMode"/> of this <see cref="GeneratorInstance"/> and by extension
+            /// the number of channels this <see cref="GeneratorInstance"/> will use.
             /// </summary>
+            /// <remarks>
+            /// This directly determines the size of the <see cref="ChannelBuffer"/> passed to the <see cref="Process"/> method.
+            /// </remarks>
             public readonly AudioSpeakerMode speakerMode;
 
             /// <summary>
-            /// Declare the sampling rate the output of this <see cref="Generator"/> will be played at.
+            /// Declare the sample rate the output of this <see cref="GeneratorInstance"/> will be played at.
             /// </summary>
             public readonly int sampleRate;
 
             /// <summary>
-            /// Creates a new generator setup.
+            /// Create a new generator setup.
             /// </summary>
             public Setup(AudioSpeakerMode speakerMode, int sampleRate)
             {
@@ -139,15 +204,18 @@ namespace UnityEngine.Audio
                 this.sampleRate = sampleRate;
             }
 
-            public Setup(in DSPConfiguration fromConfiguration)
-                : this(fromConfiguration.speakerMode, fromConfiguration.sampleRate)
+            /// <summary>
+            /// Create a new generator setup, deriving values from <paramref name="fromFormat"/>.
+            /// </summary>
+            public Setup(in AudioFormat fromFormat)
+                : this(fromFormat.speakerMode, fromFormat.sampleRate)
             {
 
             }
         }
 
         /// <summary>
-        /// Represents optional or additional metadata about the <see cref="Generator"/>.
+        /// Represents optional or additional metadata about the <see cref="GeneratorInstance"/>.
         /// </summary>
         public struct Properties
         {
@@ -155,6 +223,12 @@ namespace UnityEngine.Audio
             byte m_Reserved;
         }
 
+        /// <summary>
+        /// The configuration of a specific instance of a <see cref="GeneratorInstance"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is mainly self-reported from <see cref="ICapabilities"/> and the <see cref="GeneratorInstance.IControl{TRealtime}.Configure"/> method.
+        /// </remarks>
         public struct Configuration
         {
             internal Setup Setup;
@@ -164,60 +238,145 @@ namespace UnityEngine.Audio
             internal bool IsRealtime;
             internal bool HasKnownLength;
 
+            /// <summary>
+            /// Information on the audio setup of a <see cref="GeneratorInstance"/> instance,
+            /// required to be provided to the instantiator in a <see cref="GeneratorInstance.IControl{TRealtime}.Configure"/> call.
+            /// </summary>
             public Setup setup => Setup;
+            /// <summary>
+            /// Optional or additional metadata about the <see cref="GeneratorInstance"/> instance.
+            /// </summary>
             public Properties properties => Properties;
+            /// <summary>
+            /// Declares whether this <see cref="GeneratorInstance"/> instance has a defined length and will eventually end.
+            /// </summary>
+            /// <seealso cref="ICapabilities.isFinite"/>
             public bool isFinite => IsFinite;
+            /// <summary>
+            /// Whether this <see cref="GeneratorInstance"/> instance must be treated as a source rendering in real time.
+            /// </summary>
+            /// <seealso cref="ICapabilities.isRealtime"/>
             public bool isRealtime => IsRealtime;
+            /// <summary>
+            /// Declares the length in seconds of this <see cref="GeneratorInstance"/> instance, if known.
+            /// </summary>
+            /// <seealso cref="ICapabilities.length"/>
             public DiscreteTime? length => HasKnownLength ? ReportedLength : null;
         }
 
+        /// <summary>
+        /// The result returned from a <see cref="IRealtime.Process"/> call.
+        /// </summary>
+        /// <remarks>
+        /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>.
+        /// </remarks>
+        /// <seealso cref="GeneratorInstance.Process"/>
         public ref struct Result
         {
             internal int m_ProcessedFrames;
 
+            /// <summary>
+            /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="GeneratorInstance.Process"/>.
+            /// </summary>
             public int processedFrames => m_ProcessedFrames;
 
-
+            /// <summary>
+            /// Creates a new <see cref="GeneratorInstance.Result"/> from a number of frames processed.
+            /// </summary>
             public static implicit operator Result(int processedFrames)
             {
                 return new Result { m_ProcessedFrames = processedFrames };
             }
         }
 
+        /// <summary>
+        /// Additional arguments passed to the <see cref="GeneratorInstance.Process"/> method.
+        /// </summary>
         public ref struct Arguments
         {
             /// <summary>
-            /// If <see cref="Generator.IDefinition.IsRealtime"/> is set, this field contains the aggregate playback speed of this source.
+            /// If <see cref="GeneratorInstance.IDefinition.IsRealtime"/> is set, this field contains the aggregate playback speed of this source.
             /// </summary>
             internal float Speed;
         }
 
+        /// <summary>
+        /// The control interface an implementation of a <see cref="GeneratorInstance"/> must implement on a struct to be fully formed.
+        /// </summary>
+        /// <remarks>
+        /// The control side of a <see cref="ProcessorInstance"/> receives various callbacks from a <see cref="ControlContext"/>
+        /// from the logical control thread.
+        /// You can annotate this with <see cref="Unity.Burst.BurstCompileAttribute"/> to have it compiled with Burst.
+        /// </remarks>
+        /// <typeparam name="TRealtime">The tandem processing counterpart.</typeparam>
+        /// <seealso cref="ProcessorInstance.IControl{TRealtime}"/>
         [JobProducerType(typeof(IGeneratorControlExtensions.JobStruct<,>))]
-        public interface IControl<TProcessor> : Processor.IControl<TProcessor>
-            where TProcessor : unmanaged, Processor.IProcessor
+        public interface IControl<TRealtime> : ProcessorInstance.IControl<TRealtime>
+            where TRealtime : unmanaged, ProcessorInstance.IRealtime
         {
             /// <summary>
-            /// Called to configure the <see cref="Generator"/> before it is used, and when the audio system reconfigures.
-            /// The default implementation will set the <paramref name="setup"/> and <paramref name="properties"/> based on the
-            /// <paramref name="configuration"/>.
+            /// Called to configure the <see cref="GeneratorInstance"/> before it is used, and when the audio system reconfigures.
+            /// A default implementation will set the <paramref name="setup"/> and <paramref name="properties"/> based on the
+            /// <paramref name="format"/>.
             /// </summary>
             /// <remarks>
-            /// In case of reconfiguration, the <typeparamref name="TProcessor"/> is temporarily suspended from processing,
-            /// and you can safely modify its properties.
             /// </remarks>
+            /// <param name="realtime">
+            /// In case of reconfiguration, the <paramref name="realtime"/> is temporarily suspended from processing,
+            /// and you can safely modify its properties.
+            /// </param>
+            /// <param name="context">
+            /// The <see cref="ControlContext"/> associated with this call.
+            /// </param>
+            /// <param name="format">
+            /// The format you're being suggested to use, for optimal performance.
+            /// You must initialize <paramref name="setup"/> to either this or a value of your choosing.
+            /// </param>
+            /// <param name="properties">Additional properties you can set, or leave as default.</param>
+            /// <param name="setup">
+            /// Out parameter where you must configure the sample rate and <see cref="AudioSpeakerMode"/> this <see cref="GeneratorInstance"/> must
+            /// run at.
+            /// The system enforces this to be true for you, and anyone using this <see cref="GeneratorInstance"/> will handle conversion
+            /// to another <see cref="AudioFormat"/> if needed.
+            /// </param>
+            /// <seealso cref="ControlContext.GetConfiguration(GeneratorInstance)"/>
+            /// <seealso cref="GeneratorInstance.Configuration"/>
             public void Configure(
                 ControlContext context,
-                ref TProcessor processor,
-                in DSPConfiguration configuration,
+                ref TRealtime realtime,
+                in AudioFormat format,
                 out Setup setup,
                 ref Properties properties
             );
         }
 
+        /// <summary>
+        /// The processing interface an implementation of a <see cref="GeneratorInstance"/> must implement on a struct to be fully formed.
+        /// </summary>
+        /// <remarks>
+        /// The processing side of a <see cref="ProcessorInstance"/> receives various callbacks from a <see cref="RealtimeContext"/>
+        /// from the logical processing thread.
+        /// You can annotate this with <see cref="Unity.Burst.BurstCompileAttribute"/> to have it compiled with Burst.
+        /// </remarks>
+        /// <seealso cref="ProcessorInstance.IRealtime"/>
         [JobProducerType(typeof(IGeneratorProcessorExtensions.JobStruct<>))]
-        public interface IProcessor : Audio.Processor.IProcessor, ICapabilities
+        public interface IRealtime : Audio.ProcessorInstance.IRealtime, ICapabilities
         {
-            public Result Process(in ProcessingContext context, Processor.Pipe pipe, ChannelBuffer buf, Arguments args);
+            /// <summary>
+            /// Called when you're asked to produce the next segment of audio into <paramref name="buffer"/>.
+            /// </summary>
+            /// <param name="context">
+            /// The <see cref="RealtimeContext"/> associated with this call.
+            /// Use this to process any nested <see cref="ProcessorInstance"/>s or query/return data together with <paramref name="pipe"/>.
+            /// </param>
+            /// <param name="pipe">Cross-thread communications pipe.</param>
+            /// <param name="buffer">The buffer your <see cref="GeneratorInstance"/> will put its processing result into.</param>
+            /// <param name="args">Addtional arguments.</param>
+            /// <returns>
+            /// A <see cref="Result"/> struct indicating amongst other things how many frames were actually written into <paramref name="buffer"/>.
+            /// </returns>
+            /// <seealso cref="GeneratorInstance.Process"/>
+            public Result Process(in RealtimeContext context, ProcessorInstance.Pipe pipe, ChannelBuffer buffer, Arguments args);
         }
 
         /// <summary>
@@ -230,23 +389,42 @@ namespace UnityEngine.Audio
             internal Configuration Configuration;
         }
 
-        /// <inheritdoc/>
-        public Result Process(in ProcessingContext context, ChannelBuffer buf, Arguments args)
+        /// <summary>
+        /// Manually process this particular <see cref="GeneratorInstance"/>.
+        /// </summary>
+        /// <remarks>
+        /// In most use cases, you would not call this directly, but rather have the audio system call it for you.
+        /// If you are yourself nesting a <see cref="GeneratorInstance"/> inside another <see cref="ProcessorInstance"/>, you would call this.
+        /// </remarks>
+        /// <param name="context">
+        /// The <see cref="RealtimeContext"/> associated with this call. You either get this from your own callback,
+        /// or from <see cref="ControlContext.Manual.BeginMix"/>.
+        /// </param>
+        /// <param name="args">
+        /// Additional arguments passed along, which can be default-initialized.</param>
+        /// <param name="buffer">
+        /// The buffer the <see cref="GeneratorInstance"/> will put its processing result into.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Result"/> struct indicating amongst other things how many frames were actually written into <paramref name="buffer"/>.
+        /// </returns>
+        /// <seealso cref="IRealtime.Process"/>
+        public Result Process(in RealtimeContext context, ChannelBuffer buffer, Arguments args)
         {
-            ScriptableProcessorBindings.ValidateCanProcess(Processor.Handle, context);
+            ScriptableProcessorBindings.ValidateCanProcess(m_ProcessorInstance.Handle, context);
 
-            fixed (float* writeBuffer = buf.Buffer)
+            fixed (float* writeBuffer = buffer.Buffer)
             {
-                fixed (ProcessingContext* pContext = &context)
+                fixed (RealtimeContext* pContext = &context)
                 {
                     var processArguments = new IGeneratorProcessorExtensions.ProcessArguments
                     {
                         AudioBuffer = writeBuffer,
                         Context = pContext,
-                        FrameCount = buf.frameCount
+                        FrameCount = buffer.frameCount
                     };
 
-                    Processor.Header->InvokeProcessor(ProcessorFunction.Process, &processArguments);
+                    m_ProcessorInstance.Header->InvokeProcessor(ProcessorFunction.Process, &processArguments);
 
                     return processArguments.Result;
                 }
@@ -255,37 +433,100 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Manually configure this <see cref="Generator"/> with the given <paramref name="configuration"/>.
+        /// Manually configure this <see cref="GeneratorInstance"/> with the given <paramref name="format"/>.
         /// </summary>
         /// <remarks>
-        /// This is only valid on nested processors.
+        /// Nested <see cref="GeneratorInstance"/>s must be manually configured,
+        /// and this call is only valid on nested <see cref="ProcessorInstance"/>s.
         /// </remarks>
-        public void Configure(ControlContext context, in DSPConfiguration configuration)
+        /// <seealso cref="ControlContext.AllocateGenerator"/>
+        public void Configure(ControlContext context, in AudioFormat format)
         {
             ScriptableProcessorBindings.PerformRecursiveConfigure(
-                Processor.Handle,
+                m_ProcessorInstance.Handle,
                 context.Header,
-                configuration.audioConfiguration
+                format.audioConfiguration
             );
         }
 
         /// <summary>
-        /// Manually update this <see cref="Generator"/>.
+        /// Manually update this <see cref="GeneratorInstance"/>.
         /// </summary>
         /// <remarks>
-        /// This is only valid on nested processors.
+        /// This is only valid on nested <see cref="ProcessorInstance"/>s.
+        /// You must always update any nested <see cref="ProcessorInstance"/>s you have created.
         /// </remarks>
+        /// <seealso cref="ControlContext.AllocateGenerator"/>
+        /// <seealso cref="GeneratorInstance.Configure"/>
         public void Update(ControlContext context)
         {
-            ScriptableProcessorBindings.PerformRecursiveUpdate(Processor.Handle, context.Header);
+            ScriptableProcessorBindings.PerformRecursiveUpdate(m_ProcessorInstance.Handle, context.Header);
         }
 
-        public static implicit operator Processor(in Generator generator) => generator.Processor;
+        /// <summary>
+        /// Convert this <see cref="GeneratorInstance"/> to its more general <see cref="ProcessorInstance"/> representation.
+        /// </summary>
+        /// <see cref="ProcessorInstance"/>s are unowned and can safely handed out to other users.
+        public static implicit operator ProcessorInstance(in GeneratorInstance generatorInstance) => generatorInstance.m_ProcessorInstance;
 
-        internal Generator(GeneratorHeader* header)
-            => Processor = new Processor(header->Processor.DualThreadHandle, &header->Processor);
+        /// <summary>
+        /// Checks if this instance equals another.
+        /// </summary>
+        /// <param name="other">The other instance for comparing.</param>
+        /// <returns>True if the given instance is equal to this, otherwise, false.</returns>
+        public bool Equals(GeneratorInstance other)
+        {
+            return m_ProcessorInstance.Equals(other.m_ProcessorInstance);
+        }
 
-        internal readonly Processor Processor;
+        /// <summary>
+        /// Checks if this instance equals a given object.
+        /// </summary>
+        /// <param name="obj">The object for comparing.</param>
+        /// <returns>True if the given object is equal to this instance, otherwise, false.</returns>
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            return obj is GeneratorInstance instance && Equals(instance);
+        }
+
+        /// <summary>
+        /// Checks if two instances are equal.
+        /// </summary>
+        /// <param name="a">The first instance for comparing.</param>
+        /// <param name="b">The second instance for comparing.</param>
+        /// <returns>True if the two given instances are equal, otherwise, false.</returns>
+        public static bool operator ==(GeneratorInstance a, GeneratorInstance b)
+        {
+            return a.Equals(b);
+        }
+
+        /// <summary>
+        /// Checks if two instances are not equal.
+        /// </summary>
+        /// <param name="a">The first instance for comparing.</param>
+        /// <param name="b">The second instance for comparing.</param>
+        /// <returns>True if the two given instances are not equal, otherwise, false.</returns>
+        public static bool operator !=(GeneratorInstance a, GeneratorInstance b)
+        {
+            return !a.Equals(b);
+        }
+
+        /// <summary>
+        /// Retrieves a hash code based on this instance.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return m_ProcessorInstance.GetHashCode();
+        }
+
+        internal GeneratorInstance(GeneratorHeader* header)
+            => m_ProcessorInstance = new ProcessorInstance(header->Processor.DualThreadHandle, &header->Processor);
+
+        internal readonly ProcessorInstance m_ProcessorInstance;
     }
 
     #region job-types
@@ -294,8 +535,8 @@ namespace UnityEngine.Audio
     static class IGeneratorControlExtensions
     {
         internal struct JobStruct<TUserControl, TUserProcessor>
-            where TUserControl : unmanaged, Generator.IControl<TUserProcessor>
-            where TUserProcessor : unmanaged, Generator.IProcessor
+            where TUserControl : unmanaged, GeneratorInstance.IControl<TUserProcessor>
+            where TUserProcessor : unmanaged, GeneratorInstance.IRealtime
         {
             internal struct ControlStorage
             {
@@ -303,7 +544,7 @@ namespace UnityEngine.Audio
                 public TUserControl UserControl;
             }
 
-            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserControl, TUserProcessor>>();
+            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserControl, TUserProcessor>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()
@@ -327,7 +568,7 @@ namespace UnityEngine.Audio
                         storage.UserControl.Configure(
                             new ControlContext(args->ControlContext),
                             ref storage.HeaderAndProcessor.UserProcessor,
-                            new DSPConfiguration(args->Now),
+                            new AudioFormat(args->Now),
                             out storage.HeaderAndProcessor.Header.Configuration.Setup,
                             ref storage.HeaderAndProcessor.Header.Configuration.Properties
                         );
@@ -354,8 +595,8 @@ namespace UnityEngine.Audio
         }
 
         internal static IntPtr GetReflectionData<TUserControl, TUserGenerator>()
-            where TUserGenerator : unmanaged, Generator.IProcessor
-            where TUserControl : unmanaged, Generator.IControl<TUserGenerator>
+            where TUserGenerator : unmanaged, GeneratorInstance.IRealtime
+            where TUserControl : unmanaged, GeneratorInstance.IControl<TUserGenerator>
         {
             JobStruct<TUserControl, TUserGenerator>.Initialize();
             var reflectionData = JobStruct<TUserControl, TUserGenerator>.jobReflectionData.Data;
@@ -368,27 +609,27 @@ namespace UnityEngine.Audio
     {
         internal unsafe ref struct ProcessArguments
         {
-            internal ProcessingContext* Context;
+            internal RealtimeContext* Context;
             internal float* AudioBuffer;
             internal Unity.Audio.Handle Self;
             /// <summary>
-            /// The total size of <see cref="AudioBuffer"/> is <see cref="FrameCount"/> times the amount of channels this generator has declared (<see cref="Generator.Configuration.setup.channelCount"/>).
+            /// The total size of <see cref="AudioBuffer"/> is <see cref="FrameCount"/> times the amount of channels this generator has declared (<see cref="GeneratorInstance.Configuration.setup.channelCount"/>).
             /// </summary>
             internal int FrameCount;
-            internal Generator.Arguments GeneratorArguments;
-            internal Generator.Result Result;
+            internal GeneratorInstance.Arguments GeneratorArguments;
+            internal GeneratorInstance.Result Result;
         }
 
         internal struct JobStruct<TUserProcessor>
-            where TUserProcessor : unmanaged, Generator.IProcessor
+            where TUserProcessor : unmanaged, GeneratorInstance.IRealtime
         {
             internal struct Storage
             {
-                public Generator.GeneratorHeader Header;
+                public GeneratorInstance.GeneratorHeader Header;
                 public TUserProcessor UserProcessor;
             }
 
-            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserProcessor>>();
+            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserProcessor>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()
@@ -430,7 +671,7 @@ namespace UnityEngine.Audio
         }
 
         internal static IntPtr GetReflectionData<TUserProcessor>()
-            where TUserProcessor : unmanaged, Generator.IProcessor
+            where TUserProcessor : unmanaged, GeneratorInstance.IRealtime
         {
             JobStruct<TUserProcessor>.Initialize();
             var reflectionData = JobStruct<TUserProcessor>.jobReflectionData.Data;
@@ -446,14 +687,14 @@ namespace UnityEngine.Audio
     internal static class ScriptableGeneratorBindings
     {
         [RequiredByNativeCode(GenerateProxy = true)]
-        internal static unsafe void InstantiateGeneratorFromObject(Object generatorObjectDefinition, ref ControlHeader control, out Generator runtimeHandle)
+        internal static unsafe void InstantiateGeneratorFromObject(Object generatorObjectDefinition, ref ControlHeader control, out GeneratorInstance runtimeHandle)
         {
-            if (generatorObjectDefinition is IGeneratorDefinition definition)
+            if (generatorObjectDefinition is IAudioGenerator definition)
             {
                 fixed (ControlHeader* pResources = &control)
                 {
                     var context = new ControlContext(pResources);
-                    runtimeHandle = definition.CreateRuntime(context, null,default);
+                    runtimeHandle = definition.CreateInstance(context, null,default);
 
                     if (context.Exists(runtimeHandle))
                     {
@@ -479,14 +720,14 @@ namespace UnityEngine.Audio
             else
             {
                 runtimeHandle = default;
-                Debug.LogError($"Trying to play object {generatorObjectDefinition}, but it doesn't implement {nameof(IGeneratorDefinition)}");
+                Debug.LogError($"Trying to play object {generatorObjectDefinition}, but it doesn't implement {nameof(IAudioGenerator)}");
             }
         }
 
-        internal static unsafe void InitializeGeneratorHandle(Generator.GeneratorHeader* header, ControlHeader* control, AudioConfiguration* nestedConfiguration, ProcessorInitializationFlags flags)
+        internal static unsafe void InitializeGeneratorHandle(GeneratorInstance.GeneratorHeader* header, ControlHeader* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags)
             => InternalInitializeGeneratorHandle(header, control, nestedConfiguration, flags);
 
         [NativeMethod(Name = "audio::InitializeGeneratorHandle", IsFreeFunction = true, ThrowsException = true)]
-        static extern unsafe void InternalInitializeGeneratorHandle(/*Generator.GeneratorHeader* */void* header, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInitializationFlags flags);
+        static extern unsafe void InternalInitializeGeneratorHandle(/*Generator.GeneratorHeader* */void* header, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags);
     }
 }

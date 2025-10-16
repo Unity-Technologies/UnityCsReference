@@ -16,7 +16,7 @@ namespace UnityEditor.Search
 {
     class IndexManager : EditorWindow
     {
-        
+
         public static void OpenWindow()
         {
             OpenWindow(-1);
@@ -1263,7 +1263,7 @@ namespace UnityEditor.Search
 
                 internal override void UpdateOnDragPerform(UnityEngine.Object draggedObject)
                 {
-                    if (ProjectWindowUtil.IsFolder(draggedObject.GetInstanceID()))
+                    if (ProjectWindowUtil.IsFolder(draggedObject.GetEntityId()))
                         m_Parent.m_EnumField.value = FilePattern.Folder;
                     else
                         m_Parent.m_EnumField.value = FilePattern.File;

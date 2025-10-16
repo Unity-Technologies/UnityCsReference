@@ -338,8 +338,8 @@ namespace UnityEditor
             GUI.color = GUI.color * color;
             GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, size), EditorGUIUtility.whiteTexture);
             GUI.DrawTexture(new Rect(rect.x, rect.yMax - size, rect.width, size), EditorGUIUtility.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.x, rect.y + 1, size, rect.height - 2 * size), EditorGUIUtility.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.xMax - size, rect.y + 1, size, rect.height - 2 * size), EditorGUIUtility.whiteTexture);
+            GUI.DrawTexture(new Rect(rect.x, rect.y + size, size, rect.height - 2 * size), EditorGUIUtility.whiteTexture);
+            GUI.DrawTexture(new Rect(rect.xMax - size, rect.y + size, size, rect.height - 2 * size), EditorGUIUtility.whiteTexture);
 
             GUI.color = orgColor;
         }

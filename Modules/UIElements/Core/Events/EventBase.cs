@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -33,6 +33,7 @@ namespace UnityEngine.UIElements
         public virtual long eventTypeId => -1;
 
         [Flags]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal enum EventPropagation
         {
             None = 0,
@@ -79,7 +80,12 @@ namespace UnityEngine.UIElements
             triggerEventId = id;
         }
 
-        internal EventPropagation propagation { get; set; }
+        internal EventPropagation propagation
+        {
+            get;
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+            set;
+        }
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
@@ -114,7 +120,7 @@ namespace UnityEngine.UIElements
             processed = true;
         }
 
-        internal virtual void Dispatch([NotNull] BaseVisualElementPanel panel)
+        internal virtual void Dispatch([JetBrains.Annotations.NotNull] BaseVisualElementPanel panel)
         {
             EventDispatchUtilities.DefaultDispatch(this, panel);
         }
@@ -183,7 +189,7 @@ namespace UnityEngine.UIElements
 
         internal bool bubblesOrTricklesDown => (propagation & EventPropagation.BubblesOrTricklesDown) != 0;
 
-        [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal VisualElement elementTarget
         {
             get;

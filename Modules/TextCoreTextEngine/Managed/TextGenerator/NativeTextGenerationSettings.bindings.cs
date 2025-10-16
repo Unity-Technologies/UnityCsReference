@@ -22,7 +22,7 @@ namespace UnityEngine.TextCore
         public string text;         // Contains the parsed text, meaning the rich text tags have been removed.
         public int screenWidth;     // Encoded in Fixed Point.
         public int screenHeight;    // Encoded in Fixed Point.
-        public WhiteSpace wordWrap;
+        public bool wordWrapEnabled;
         public TextOverflow overflow;
         public LanguageDirection languageDirection;
         public int vertexPadding; // Encoded in Fixed Point.
@@ -48,6 +48,8 @@ namespace UnityEngine.TextCore
         public int wordSpacing;             // Encoded in Fixed Point.
         public int paragraphSpacing;        // Encoded in Fixed Point.
 
+        public PreProcessFlags preProcessFlags;
+
         public bool hasLink => textSpans != null && Array.Exists(textSpans, span => span.linkID != -1);
 
         public readonly TextSpan CreateTextSpan()
@@ -70,6 +72,9 @@ namespace UnityEngine.TextCore
                 spriteID = -1,
                 spriteScale = 0,
                 spriteTint = false,
+                margin = 0,
+                marginDirection = MarginDirection.Both,
+                marginUnitType = RichTextTagParser.TagUnitType.Pixels,
                 linkID = -1
             };
         }
@@ -114,7 +119,7 @@ namespace UnityEngine.TextCore
             minFontSize = tgs.minFontSize;
             screenWidth = tgs.screenWidth;
             screenHeight = tgs.screenHeight;
-            wordWrap = tgs.wordWrap;
+            wordWrapEnabled = tgs.wordWrapEnabled;
             horizontalAlignment = tgs.horizontalAlignment;
             verticalAlignment = tgs.verticalAlignment;
             color = tgs.color;
@@ -129,6 +134,7 @@ namespace UnityEngine.TextCore
             characterSpacing = tgs.characterSpacing;
             wordSpacing = tgs.wordSpacing;
             paragraphSpacing = tgs.paragraphSpacing;
+            preProcessFlags = tgs.preProcessFlags;
         }
 
         public override string ToString()
@@ -159,7 +165,7 @@ namespace UnityEngine.TextCore
                 $"{nameof(bestFit)}: {bestFit}\n" +
                 $"{nameof(maxFontSize)}: {maxFontSize}\n" +
                 $"{nameof(minFontSize)}: {minFontSize}\n" +
-                $"{nameof(wordWrap)}: {wordWrap}\n" +
+                $"{nameof(wordWrapEnabled)}: {wordWrapEnabled}\n" +
                 $"{nameof(languageDirection)}: {languageDirection}\n" +
                 $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +
                 $"{nameof(verticalAlignment)}: {verticalAlignment}\n" +
@@ -171,7 +177,8 @@ namespace UnityEngine.TextCore
                 $"{nameof(textSpans)}: {textSpansString}\n" +
                 $"{nameof(characterSpacing)}: {characterSpacing}\n" +
                 $"{nameof(paragraphSpacing)}: {paragraphSpacing}\n" +
-                $"{nameof(wordSpacing)}: {wordSpacing}\n";
+                $"{nameof(wordSpacing)}: {wordSpacing}\n" +
+                $"{nameof(preProcessFlags)}: {preProcessFlags}\n";
         }
     }
 
@@ -199,6 +206,9 @@ namespace UnityEngine.TextCore
         public bool spriteTint;
         public int spriteScale;
         public Color32 spriteColor;
+        public int margin;
+        public MarginDirection marginDirection;
+        public RichTextTagParser.TagUnitType marginUnitType;
 
         public override string ToString()
         {
@@ -230,6 +240,14 @@ namespace UnityEngine.TextCore
         Bottom
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal enum MarginDirection
+    {
+        Both,
+        Left,
+        Right
+    }
+
     /// <summary>
     /// Indicates the directionality of the element's text.
     /// </summary>
@@ -253,6 +271,14 @@ namespace UnityEngine.TextCore
         NoWrap,
         Pre,
         PreWrap
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal enum PreProcessFlags
+    {
+        None,
+        CollapseWhiteSpaces,
+        ParseEscapeSequences
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]

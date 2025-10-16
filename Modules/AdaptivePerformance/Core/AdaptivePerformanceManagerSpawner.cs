@@ -4,6 +4,7 @@
 
 using System;
 using System.Reflection;
+using UnityEngine.Assemblies;
 
 namespace UnityEngine.AdaptivePerformance
 {
@@ -71,7 +72,7 @@ namespace UnityEngine.AdaptivePerformance
         void InstallScalers()
         {
             Type ti = typeof(AdaptivePerformanceScaler);
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly asm in CurrentAssemblies.GetLoadedAssemblies())
             {
                 foreach (Type t in asm.GetTypes())
                 {

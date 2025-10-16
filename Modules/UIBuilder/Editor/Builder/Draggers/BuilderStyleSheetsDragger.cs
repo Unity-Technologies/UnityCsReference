@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEditor.StyleSheets;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -50,14 +52,18 @@ namespace Unity.UI.Builder
                 : targetElement.GetStyleSheet().name + BuilderConstants.UssExtension;
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
+        protected override bool PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
             base.PerformAction(destination, pane, localMousePosition, index);
 
-            if (m_TargetElementToReparent.IsSelector())
+            if (DragAndDrop.paths.Length > 0)
+                PerformActionForStyleSheet(destination, pane, index);
+            else if (m_TargetElementToReparent.IsSelector())
                 PerformActionForSelector(destination, pane, index);
             else if (m_TargetElementToReparent.IsStyleSheet())
                 PerformActionForStyleSheet(destination, pane, index);
+
+            return true;
         }
 
         void PerformActionForSelector(VisualElement destination, DestinationPane pane, int index = -1)
@@ -94,11 +100,15 @@ namespace Unity.UI.Builder
             if (destination == null)
                 destination = BuilderSharedStyles.GetSelectorContainerElement(selection.documentRootElement);
 
-            BuilderAssetUtilities.ReorderStyleSheetsInAsset(paneWindow.document, destination);
+            bool reorderOccurred = BuilderAssetUtilities.ReorderStyleSheetsInAsset(paneWindow.document, destination);
 
-            selection.NotifyOfHierarchyChange();
-            selection.NotifyOfStylingChange(null);
-            selection.ForceReselection();
+            // Only notify and refresh if actual changes were made
+            if (reorderOccurred)
+            {
+                selection.NotifyOfHierarchyChange();
+                selection.NotifyOfStylingChange(null);
+                selection.ForceReselection();
+            }
         }
 
         protected override bool IsPickedElementValid(VisualElement element)
@@ -115,7 +125,7 @@ namespace Unity.UI.Builder
                 return false;
 
             // Cannot reparent stylesheets
-            if (element.IsStyleSheet() && m_TargetElementToReparent.IsStyleSheet())
+            if (element.IsStyleSheet() && DragAndDrop.paths.Length > 0 || m_TargetElementToReparent.IsStyleSheet())
                 return false;
 
             // Check if USS is part of active document.
@@ -176,6 +186,10 @@ namespace Unity.UI.Builder
 
         protected override VisualElement GetDefaultTargetElement()
         {
+            // We can only externally drag stylesheet
+            if (DragAndDrop.paths.Length > 0)
+                return BuilderSharedStyles.GetSelectorContainerElement(paneWindow.rootVisualElement);
+
             if (m_TargetElementToReparent.IsSelector())
                 return BuilderSharedStyles.GetSelectorContainerElement(paneWindow.rootVisualElement).Children().Last();
 

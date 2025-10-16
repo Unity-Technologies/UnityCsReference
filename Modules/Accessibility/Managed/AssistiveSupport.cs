@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.Accessibility
@@ -167,9 +168,6 @@ namespace UnityEngine.Accessibility
         /// When this property is set, Unity notifies the screen reader of the new hierarchy by calling
         /// <see cref="IAccessibilityNotificationDispatcher.SendScreenChanged"/> (with a @@null@@ parameter).
         /// </para>
-        /// <para>
-        /// **Note**: Setting this property on unsupported runtime platforms throws @@PlatformNotSupportedException@@.
-        /// </para>
         /// </remarks>
         public static AccessibilityHierarchy activeHierarchy
         {
@@ -182,7 +180,9 @@ namespace UnityEngine.Accessibility
 
                 if (!Application.isEditor && !AccessibilityManager.isSupportedPlatform)
                 {
-                    throw new PlatformNotSupportedException($"This API is not supported on platform {Application.platform}");
+                    Debug.LogError($"{nameof(activeHierarchy)} is not supported on {Application.platform}. " +
+                        "Please refer to the documentation for supported platforms.");
+                    return;
                 }
 
                 if (isScreenReaderEnabled || Application.isEditor)
@@ -258,6 +258,7 @@ namespace UnityEngine.Accessibility
             }
         }
 
+        [ExcludeFromCodeCoverage] // not reachable by the code coverage analysis
         internal static void Initialize()
         {
             AccessibilityManager.screenReaderStatusChanged += ScreenReaderStatusChanged;

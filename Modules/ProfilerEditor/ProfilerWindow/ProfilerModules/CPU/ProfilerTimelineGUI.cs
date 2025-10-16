@@ -1316,7 +1316,7 @@ namespace UnityEditorInternal
             {
                 if (singleClick)
                 {
-                    EditorGUIUtility.PingObject(obj.GetInstanceID());
+                    EditorGUIUtility.PingObject(obj.GetEntityId());
                 }
                 else if (doubleClick)
                 {

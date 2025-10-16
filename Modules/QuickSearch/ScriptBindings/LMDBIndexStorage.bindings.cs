@@ -150,7 +150,7 @@ namespace UnityEditor.Search
         }
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern void MapProperty(string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys);
+        public extern void MapProperty(int documentIndex, string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys);
 
         public void Start(bool clear)
         {

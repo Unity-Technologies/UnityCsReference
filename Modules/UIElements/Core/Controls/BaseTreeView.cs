@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
-    public abstract class BaseTreeView : BaseVerticalCollectionView
+    public abstract partial class BaseTreeView : BaseVerticalCollectionView
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
 
@@ -126,30 +126,6 @@ namespace UnityEngine.UIElements
                     var e = (BaseTreeView)obj;
                     e.autoExpand = autoExpand;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TreeView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the TreeView element properties that you can use in a UI document asset (UXML file).
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseVerticalCollectionView.UxmlTraits
-        {
-            private readonly UxmlBoolAttributeDescription m_AutoExpand = new UxmlBoolAttributeDescription { name = "auto-expand", defaultValue = false };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var treeView = (BaseTreeView)ve;
-                treeView.autoExpand = m_AutoExpand.GetValueFromBag(bag, cc);
             }
         }
 

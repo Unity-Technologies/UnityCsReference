@@ -28,6 +28,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
 
 [assembly: InternalsVisibleTo("UnityEditor.UIToolkitAuthoringModule")]
+[assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.

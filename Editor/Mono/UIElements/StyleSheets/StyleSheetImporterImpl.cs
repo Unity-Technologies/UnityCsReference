@@ -270,7 +270,8 @@ namespace UnityEditor.UIElements.StyleSheets
                         if (value.valueType != StyleValueType.ResourcePath)
                             continue;
 
-                        var path = clonedStylesheet.strings[value.valueIndex];
+                        var resourcePath = clonedStylesheet.ReadResourcePath(value);
+                        var path = resourcePath.path;
 
                         bool isResource = false;
                         int assetIndex = -1;
@@ -801,21 +802,23 @@ namespace UnityEditor.UIElements.StyleSheets
                     break;
 
                 case k_ResourcePathFunctionName:
+                    string resourcePath = null;
                     if (functionToken.ArgumentTokens.FirstOrDefault() is StringToken stringToken)
-                        m_Builder.AddValue(stringToken.Data, StyleValueType.ResourcePath);
+                        resourcePath = stringToken.Data;
                     else
                     {
                         var generatedPath = BuildStringFromTokens(functionToken.ArgumentTokens);
                         if (!string.IsNullOrEmpty(generatedPath))
-                        {
-                            m_Builder.AddValue(m_StringBuilder.ToString(), StyleValueType.ResourcePath);
-                            m_StringBuilder.Clear();
-                        }
+                            resourcePath = generatedPath;
                         else
                         {
                             m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, functionToken.Data, functionToken.Position.Line, functionToken.Position.Column);
                         }
                     }
+
+                    var resolvedResourcePath = new ResolvedResourcePath(resourcePath);
+                    if (resolvedResourcePath.isPathValid)
+                        m_Builder.AddResourcePath(resolvedResourcePath);
                     break;
 
                 case StyleValueFunctionExtension.k_NoneFilter:
@@ -1309,7 +1312,7 @@ namespace UnityEditor.UIElements.StyleSheets
         void VisitSelectorParts(StyleSelectorPart[] parts, ISelector selector)
         {
             int specificity = CSSSpec.GetSelectorSpecificity(parts);
-            if (specificity == 0)
+            if (specificity == CSSSpec.InvalidSpecificityScore)
             {
                 m_Errors.AddInternalError(string.Format(glossary.internalError, "Failed to calculate selector specificity " + selector.Text), m_CurrentLine);
                 return;
@@ -1373,7 +1376,7 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             int fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelector.Text);
 
-            if (fullSpecificity == 0)
+            if (fullSpecificity == CSSSpec.InvalidSpecificityScore)
             {
                 m_Errors.AddInternalError(string.Format(glossary.internalError, "Failed to calculate selector specificity " + complexSelector), m_CurrentLine);
                 return;

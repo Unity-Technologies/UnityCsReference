@@ -28,7 +28,12 @@ namespace UnityEditor
         [SerializeField]
         List<GroupSettingsData> m_GroupsSettingsList = new();
         Dictionary<string, GroupSettingsData> m_GroupToSettingsData = new();
-
+        
+        void OnEnable()
+        {
+            RefreshToolsData();
+        }
+        
         void OnDisable()
         {
             Save();

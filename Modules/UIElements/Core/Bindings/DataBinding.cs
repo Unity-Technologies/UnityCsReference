@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -144,6 +145,7 @@ namespace UnityEngine.UIElements
         }
 
         List<string> m_SourceToUIConvertersString;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal string sourceToUiConvertersString
         {
             get => m_SourceToUIConvertersString != null ? string.Join(", ", m_SourceToUIConvertersString) : null;
@@ -164,6 +166,7 @@ namespace UnityEngine.UIElements
         }
 
         List<string> m_UiToSourceConvertersString;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal string uiToSourceConvertersString
         {
             get => m_UiToSourceConvertersString != null ? string.Join(", ", m_UiToSourceConvertersString) : null;
@@ -230,13 +233,14 @@ namespace UnityEngine.UIElements
         {
             var target = context.targetElement;
 
-            // When a field is delayed, we should avoid setting the value.
+            // When a field is delayed or touchScreen, we should avoid setting the value.
             var focusController = target.focusController;
-            if (null != focusController && focusController.IsFocused(target) && target is IDelayedField {isDelayed: true})
+            if (null != focusController && focusController.IsFocused(target))
             {
                 // Only skip setting the value when the actual input field is focused.
                 var leaf = focusController.GetLeafFocusedElement();
-                if (leaf is TextElement textElement && textElement.ClassListContains("unity-text-element--inner-input-field-component"))
+                if (leaf is TextElement textElement && textElement.ClassListContains("unity-text-element--inner-input-field-component") &&
+                    (target is IDelayedField { isDelayed: true } || textElement.edition.touchScreenKeyboard != null))
                 {
                     return new BindingResult(BindingStatus.Pending);
                 }

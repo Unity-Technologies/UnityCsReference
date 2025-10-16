@@ -19,7 +19,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
     /// <summary>
     /// Custom Editor for ScenarioConfigurations. Used inside PlayModeConfigurationsWindow.
     /// </summary>
-    [CustomEditor(typeof(ScenarioConfig))]
+    [CustomEditor(typeof(OrchestratedScenario))]
     class ScenarioConfigEditor : Editor
     {
         internal const string k_StylePath = "Multiplayer/UI/ScenarioConfigEditor.uss";
@@ -260,7 +260,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             container.AddToClassList("instances-group");
             var remoteInstancesProperty = serializedObject.FindProperty("m_RemoteInstances");
 
-            if (!ScenarioConfig.PackagesForRemoteDeployInstalled(out var missingPacks))
+            if (!OrchestratedScenario.PackagesForRemoteDeployInstalled(out var missingPacks))
             {
                 container.Add(CreateMissingPackageHelpbox(missingPacks));
                 return container;
@@ -287,7 +287,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
 
             // Disable removal from the list view if a virtual instance is active.
-            var scenario = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             var isFreeRunningActive = scenario != null &&
                                       scenario.Scenario != null &&
                                       scenario.Scenario.HasActiveFreeRunInstanceOfType(instanceType);

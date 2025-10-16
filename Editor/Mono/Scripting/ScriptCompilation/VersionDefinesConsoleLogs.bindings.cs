@@ -21,7 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public void LogVersionDefineError(TargetAssembly targetAssembly, ExpressionNotValidException validationError)
         {
             var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(EditorCompilationInterface.Instance.FindCustomTargetAssemblyFromTargetAssembly(targetAssembly).FilePath);
-            var instanceID = asset.GetInstanceID();
+            var instanceID = asset.GetEntityId();
             InternalLogVersionDefineError(validationError, instanceID);
         }
 
@@ -31,7 +31,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [FreeFunction(nameof(InternalLogVersionDefineError))]
-        static extern void InternalLogVersionDefineError(Exception ex, int assetInstanceID);
+        static extern void InternalLogVersionDefineError(Exception ex, UnityEngine.EntityId assetInstanceID);
 
 
         [FreeFunction(nameof(InternalClearVersionDefineErrors))]

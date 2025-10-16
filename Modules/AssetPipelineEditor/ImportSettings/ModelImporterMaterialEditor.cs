@@ -445,7 +445,7 @@ namespace UnityEditor
         {
             //Select any material properties which are marked as "missing"
             int[] missingMaterialIndexes = m_ExternalObjectsCache.Values.Select((extObj, index) => new { extObj, index })
-                .Where(x => x.extObj.property != null && x.extObj.property.objectReferenceValue == null && x.extObj.property.objectReferenceInstanceIDValue != 0)
+                .Where(x => x.extObj.property != null && x.extObj.property.objectReferenceValue == null && x.extObj.property.objectReferenceEntityIdValue != 0)
                 .Select(x => x.index)
                 .ToArray();
 

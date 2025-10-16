@@ -33,6 +33,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
 
         public BuildProfileAdaptivePerformanceToggle(BuildProfile profile)
         {
+            AdaptivePerformancePackageMetadataStore.InitKnownPluginPackages();
             m_BuildProfile = profile;
             m_AdaptivePerformanceProviderUI = new BuildProfileAdaptivePerformanceProviderUI(m_BuildProfile);
             var buildProfileUI = EditorGUIUtility.LoadRequired(k_BuildProfileAdaptivePerformanceUIUXML) as VisualTreeAsset;

@@ -470,7 +470,7 @@ namespace UnityEditor.Search
             }
 
             if (context.options.HasAny(SearchFlags.Sorted))
-                results = new SortedSearchList(context);
+                results = new SortedSearchList(context, SearchListSortingStrategy.OnAddItems);
             else
                 results = new AsyncSearchList(context);
 

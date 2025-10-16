@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Scroller_Example.cs"/>
     /// </example>
     [Icon("UIToolkit/Icons/Scroller.png")]
-    public class Scroller : VisualElement
+    public partial class Scroller : VisualElement
     {
         internal static readonly BindingId valueProperty = nameof(value);
         internal static readonly BindingId lowValueProperty = nameof(lowValue);
@@ -88,49 +88,6 @@ namespace UnityEngine.UIElements
                     e.direction = direction;
                 if (ShouldWriteAttributeValue(value_UxmlAttributeFlags))
                     e.value = value;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Scroller"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Scroller, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Scroller"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", obsoleteNames = new[] { "lowValue" } };
-            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", obsoleteNames = new[] { "highValue" } };
-            UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical};
-            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
-
-            /// <summary>
-            /// Returns an empty enumerable, as scrollers do not have children.
-            /// </summary>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            /// <summary>
-            /// Initialize <see cref="Scroller"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                Scroller scroller = ((Scroller)ve);
-                scroller.slider.lowValue = m_LowValue.GetValueFromBag(bag, cc);
-                scroller.slider.highValue = m_HighValue.GetValueFromBag(bag, cc);
-                scroller.direction = m_Direction.GetValueFromBag(bag, cc);
-                scroller.value = m_Value.GetValueFromBag(bag, cc);
             }
         }
 

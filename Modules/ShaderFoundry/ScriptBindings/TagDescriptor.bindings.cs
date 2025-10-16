@@ -12,10 +12,11 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ValueHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static TagDescriptorInternal Invalid();
+        [ThreadSafe] internal extern static TagDescriptorInternal Invalid();
 
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         TagDescriptorInternal IInternalType<TagDescriptorInternal>.ConstructInvalid() => Invalid();
@@ -41,6 +42,7 @@ namespace UnityEditor.ShaderFoundry
 
         public string Name => Container?.GetString(descriptor.m_NameHandle) ?? string.Empty;
         public string Value => Container?.GetString(descriptor.m_ValueHandle) ?? string.Empty;
+        public Location Location => new Location(container, descriptor.m_LocationHandle);
 
         // private
         internal TagDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -52,7 +54,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static TagDescriptor Invalid => new TagDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is TagDescriptor other && this.Equals(other);
         public bool Equals(TagDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -64,6 +66,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             string name;
             string value;
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -79,6 +82,7 @@ namespace UnityEditor.ShaderFoundry
                 var descriptor = new TagDescriptorInternal();
                 descriptor.m_NameHandle = container.AddString(name);
                 descriptor.m_ValueHandle = container.AddString(value);
+                descriptor.m_LocationHandle = location.handle;
                 var resultHandle = container.Add(descriptor);
                 return new TagDescriptor(container, resultHandle);
             }

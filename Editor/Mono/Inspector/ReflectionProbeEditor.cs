@@ -870,7 +870,7 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(p, "Modified Reflection Probe AABB");
-                    Vector3 center = m_BoundsHandle.center;
+                    Vector3 center = p.center;
                     Vector3 size = m_BoundsHandle.size;
                     ValidateAABB(ref center, ref size);
                     p.center = center;

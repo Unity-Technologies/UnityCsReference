@@ -47,7 +47,7 @@ namespace UnityEditor.UIElements
     /// </code>
     /// </example>
     [Icon("UIToolkit/Icons/ToolbarBreadcrumbs.png")]
-    public class ToolbarBreadcrumbs : VisualElement
+    public partial class ToolbarBreadcrumbs : VisualElement
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -60,12 +60,6 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarBreadcrumbs"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarBreadcrumbs> {}
 
         /// <summary>
         /// A Unity style sheet (USS) class for the main ToolbarBreadcrumbs container.

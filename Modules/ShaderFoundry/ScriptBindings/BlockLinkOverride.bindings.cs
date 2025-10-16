@@ -25,9 +25,10 @@ namespace UnityEditor.ShaderFoundry
 
             internal Kind m_Kind;
             internal FoundryHandle m_AccessorHandle;
+            internal FoundryHandle m_LocationHandle;
 
-            internal extern static LinkAccessorInternal Invalid();
-            internal extern bool IsValid();
+            [ThreadSafe] internal extern static LinkAccessorInternal Invalid();
+            [ThreadSafe] internal extern bool IsValid();
 
             // IInternalType
             LinkAccessorInternal IInternalType<LinkAccessorInternal>.ConstructInvalid() => Invalid();
@@ -41,9 +42,10 @@ namespace UnityEditor.ShaderFoundry
             internal FoundryHandle m_NameHandle; // string
             internal FoundryHandle m_ConstantExpressionHandle; // string
             internal FoundryHandle m_AccessorListHandle; // List<LinkAccessor>
+            internal FoundryHandle m_LocationHandle;
 
-            internal extern static LinkElementInternal Invalid();
-            internal extern bool IsValid();
+            [ThreadSafe] internal extern static LinkElementInternal Invalid();
+            [ThreadSafe] internal extern bool IsValid();
 
             // IInternalType
             LinkElementInternal IInternalType<LinkElementInternal>.ConstructInvalid() => Invalid();
@@ -51,9 +53,10 @@ namespace UnityEditor.ShaderFoundry
 
         internal FoundryHandle m_InterfaceFieldHandle;
         internal FoundryHandle m_ArgumentHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static BlockLinkOverrideInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static BlockLinkOverrideInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         BlockLinkOverrideInternal IInternalType<BlockLinkOverrideInternal>.ConstructInvalid() => Invalid();
@@ -96,6 +99,7 @@ namespace UnityEditor.ShaderFoundry
             public bool IsArrayAccessor => IsKind(LinkAccessorKind.ArrayAccess);
             public string MemberAccessor => GetAccessor(LinkAccessorKind.MemberAccess);
             public string ArrayAccessor => GetAccessor(LinkAccessorKind.ArrayAccess);
+            public Location Location => new Location(container, accessor.m_LocationHandle);
 
             bool IsKind(BlockLinkOverrideInternal.LinkAccessorInternal.Kind expectedKind)
             {
@@ -119,18 +123,19 @@ namespace UnityEditor.ShaderFoundry
 
             public static LinkAccessor Invalid => new LinkAccessor(null, FoundryHandle.Invalid());
 
-            // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+            // Equals and operator == implement Reference Equality.
             public override bool Equals(object obj) => obj is LinkAccessor other && this.Equals(other);
             public bool Equals(LinkAccessor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
             public override int GetHashCode() => (container, handle).GetHashCode();
             public static bool operator==(LinkAccessor lhs, LinkAccessor rhs) => lhs.Equals(rhs);
             public static bool operator!=(LinkAccessor lhs, LinkAccessor rhs) => !lhs.Equals(rhs);
 
-            static LinkAccessor BuildAccessor(ShaderContainer container, LinkAccessorKind kind, FoundryHandle accessorHandle)
+            static LinkAccessor BuildAccessor(ShaderContainer container, LinkAccessorKind kind, FoundryHandle accessorHandle, Location location)
             {
                 var linkAccessorInternal = new BlockLinkOverrideInternal.LinkAccessorInternal();
                 linkAccessorInternal.m_Kind = kind;
                 linkAccessorInternal.m_AccessorHandle = accessorHandle;
+                linkAccessorInternal.m_LocationHandle = location.handle;
                 var returnTypeHandle = container.Add(linkAccessorInternal);
                 return new LinkAccessor(container, returnTypeHandle);
             }
@@ -139,6 +144,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 ShaderContainer container;
                 public string memberAccessor;
+                public Location location;
 
                 public ShaderContainer Container => container;
 
@@ -148,13 +154,14 @@ namespace UnityEditor.ShaderFoundry
                     this.memberAccessor = memberAccessor;
                 }
 
-                public LinkAccessor Build() => BuildAccessor(container, LinkAccessorKind.MemberAccess, container.AddString(memberAccessor));
+                public LinkAccessor Build() => BuildAccessor(container, LinkAccessorKind.MemberAccess, container.AddString(memberAccessor), location);
             }
 
             public class ArrayAccessBuilder
             {
                 ShaderContainer container;
                 public string arrayAccessor;
+                public Location location;
 
                 public ShaderContainer Container => container;
 
@@ -164,7 +171,7 @@ namespace UnityEditor.ShaderFoundry
                     this.arrayAccessor = arrayAccessor;
                 }
 
-                public LinkAccessor Build() => BuildAccessor(container, LinkAccessorKind.ArrayAccess, container.AddString(arrayAccessor));
+                public LinkAccessor Build() => BuildAccessor(container, LinkAccessorKind.ArrayAccess, container.AddString(arrayAccessor), location);
             }
         }
 
@@ -189,7 +196,10 @@ namespace UnityEditor.ShaderFoundry
             public string Namespace => container?.GetString(element.m_NamespaceHandle) ?? string.Empty;
             public string Name => container?.GetString(element.m_NameHandle) ?? string.Empty;
             public string ConstantExpression => container?.GetString(element.m_ConstantExpressionHandle) ?? string.Empty;
-            public IEnumerable<LinkAccessor> Accessors => element.m_AccessorListHandle.AsListEnumerable<LinkAccessor>(Container, (container, handle) => new LinkAccessor(container, handle));
+            public IEnumerable<LinkAccessor> Accessors =>
+                ListType.Enumerate<LinkAccessor>(container, element.m_AccessorListHandle);
+
+            public Location Location => new Location(container, element.m_LocationHandle);
 
             // private
             internal LinkElement(ShaderContainer container, FoundryHandle handle)
@@ -201,7 +211,7 @@ namespace UnityEditor.ShaderFoundry
 
             public static LinkElement Invalid => new LinkElement(null, FoundryHandle.Invalid());
 
-            // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+            // Equals and operator == implement Reference Equality.
             public override bool Equals(object obj) => obj is LinkElement other && this.Equals(other);
             public bool Equals(LinkElement other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
             public override int GetHashCode() => (container, handle).GetHashCode();
@@ -216,6 +226,7 @@ namespace UnityEditor.ShaderFoundry
                 public string namespaceName { get; set; }
                 public string name { get; set; }
                 List<LinkAccessor> m_Accessors;
+                public Location location;
 
                 public ShaderContainer Container => container;
 
@@ -239,7 +250,8 @@ namespace UnityEditor.ShaderFoundry
                     linkElementInternal.m_CastTypeHandle = castType.handle;
                     linkElementInternal.m_NamespaceHandle = container.AddString(namespaceName);
                     linkElementInternal.m_NameHandle = container.AddString(name);
-                    linkElementInternal.m_AccessorListHandle = HandleListInternal.Build(container, m_Accessors, (a) => (a.handle));
+                    linkElementInternal.m_AccessorListHandle = ListType.Build(container, m_Accessors);
+                    linkElementInternal.m_LocationHandle = location.handle;
                     var returnTypeHandle = container.Add(linkElementInternal);
                     return new LinkElement(container, returnTypeHandle);
                 }
@@ -249,6 +261,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 ShaderContainer container;
                 public string constantExpression { get; set; }
+                public Location location;
 
                 public ShaderContainer Container => container;
 
@@ -262,6 +275,7 @@ namespace UnityEditor.ShaderFoundry
                 {
                     var linkElementInternal = new BlockLinkOverrideInternal.LinkElementInternal();
                     linkElementInternal.m_ConstantExpressionHandle = container.AddString(constantExpression);
+                    linkElementInternal.m_LocationHandle = location.handle;
                     var returnTypeHandle = container.Add(linkElementInternal);
                     return new LinkElement(container, returnTypeHandle);
                 }
@@ -272,6 +286,7 @@ namespace UnityEditor.ShaderFoundry
         public LinkElement InterfaceField => new LinkElement(container, linkOverride.m_InterfaceFieldHandle);
         // The argument is applied to the block sequence (e.g. the input or output being matched against).
         public LinkElement Argument => new LinkElement(container, linkOverride.m_ArgumentHandle);
+        public Location Location => new Location(container, linkOverride.m_LocationHandle);
 
         // private
         internal BlockLinkOverride(ShaderContainer container, FoundryHandle handle)
@@ -283,7 +298,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static BlockLinkOverride Invalid => new BlockLinkOverride(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is BlockLinkOverride other && this.Equals(other);
         public bool Equals(BlockLinkOverride other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -295,6 +310,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             internal LinkElement interfaceField;
             internal LinkElement argument;
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -310,6 +326,7 @@ namespace UnityEditor.ShaderFoundry
                 var linkOverrideInternal = new BlockLinkOverrideInternal();
                 linkOverrideInternal.m_InterfaceFieldHandle = interfaceField.handle;
                 linkOverrideInternal.m_ArgumentHandle = argument.handle;
+                linkOverrideInternal.m_LocationHandle = location.handle;
                 var returnTypeHandle = container.Add(linkOverrideInternal);
                 return new BlockLinkOverride(container, returnTypeHandle);
             }

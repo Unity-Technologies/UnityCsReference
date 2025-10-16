@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Scripting;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.Tilemaps
 {
@@ -16,6 +18,7 @@ namespace UnityEngine.Tilemaps
 
         internal Tilemap m_Tilemap;
         internal bool m_AddToList;
+        internal bool m_NeedSort;
         internal int m_RefreshCount;
         internal NativeArray<Vector3Int> m_RefreshPos;
 
@@ -30,7 +33,7 @@ namespace UnityEngine.Tilemaps
 
         public static implicit operator ITilemap(Tilemap tilemap)
         {
-            return new ITilemap(tilemap);
+            return CreateInstanceFromTilemap(tilemap);
         }
 
         internal void SetTilemapInstance(Tilemap tilemap)
@@ -76,21 +79,58 @@ namespace UnityEngine.Tilemaps
             return m_Tilemap.GetTile<T>(position);
         }
 
+        public virtual EntityId GetTileEntityId(Vector3Int position)
+        {
+            return m_Tilemap.GetTileEntityId(position);
+        }
+
+        internal virtual void RefreshTileList(Vector3Int position)
+        {
+            if (m_RefreshCount >= m_RefreshPos.Length)
+            {
+                var refreshPos = new NativeArray<Vector3Int>(Math.Max(1, m_RefreshCount << 1), Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                NativeArray<Vector3Int>.Copy(m_RefreshPos, refreshPos, m_RefreshPos.Length);
+                m_RefreshPos.Dispose();
+                m_RefreshPos = refreshPos;
+            }
+            m_RefreshPos[m_RefreshCount++] = position;
+        }
+
+        internal virtual void RefreshTileList(NativeArray<Vector3Int> positionArray)
+        {
+            var newLength = positionArray.Length;
+            if (m_RefreshCount + newLength >= m_RefreshPos.Length)
+            {
+                var refreshPos = new NativeArray<Vector3Int>(Math.Max(1, (m_RefreshCount + newLength) << 1), Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                NativeArray<Vector3Int>.Copy(m_RefreshPos, refreshPos, m_RefreshPos.Length);
+                m_RefreshPos.Dispose();
+                m_RefreshPos = refreshPos;
+            }
+            NativeArray<Vector3Int>.Copy(positionArray, 0, m_RefreshPos, m_RefreshCount, newLength);
+            m_RefreshCount += newLength;
+        }
+
         public void RefreshTile(Vector3Int position)
         {
             if (m_AddToList)
             {
-                if (m_RefreshCount >= m_RefreshPos.Length)
-                {
-                    var refreshPos = new NativeArray<Vector3Int>(Math.Max(1, m_RefreshCount * 2), Allocator.Temp);
-                    NativeArray<Vector3Int>.Copy(m_RefreshPos, refreshPos, m_RefreshPos.Length);
-                    m_RefreshPos.Dispose();
-                    m_RefreshPos = refreshPos;
-                }
-                m_RefreshPos[m_RefreshCount++] = position;
+                RefreshTileList(position);
             }
             else
                 m_Tilemap.RefreshTile(position);
+        }
+
+        public void RefreshTiles(NativeArray<Vector3Int> positionArray)
+        {
+            if (m_AddToList)
+            {
+                RefreshTileList(positionArray);
+            }
+            else
+            {
+                foreach (var position in positionArray)
+                    m_Tilemap.RefreshTile(position);
+            }
         }
 
         public T GetComponent<T>()
@@ -102,83 +142,311 @@ namespace UnityEngine.Tilemaps
             return m_Tilemap.GetComponent<T>();
         }
 
+        private static Func<Tilemap, ITilemap> createITilemap;
+        private static int createITilemapPriority = 0;
+
+        internal static int createPriority => createITilemapPriority;
+
         [RequiredByNativeCode]
-        private static ITilemap CreateInstance()
+        internal static void RegisterCreateITilemapFunc(Func<Tilemap, ITilemap> func, int priority)
         {
-            s_Instance = new ITilemap();
-            return s_Instance;
+            if (priority <= createITilemapPriority)
+                return;
+
+            createITilemap = func;
+            createITilemapPriority = priority;
         }
 
         [RequiredByNativeCode]
-        private static unsafe void FindAllRefreshPositions(ITilemap tilemap, int count, IntPtr oldTilesIntPtr, IntPtr newTilesIntPtr, IntPtr positionsIntPtr)
+        internal static ITilemap CreateInstanceFromTilemap(Tilemap tilemap)
         {
-            tilemap.m_AddToList = true;
-            if (tilemap.m_RefreshPos == null || !tilemap.m_RefreshPos.IsCreated || tilemap.m_RefreshPos.Length < count)
-                tilemap.m_RefreshPos = new NativeArray<Vector3Int>(Math.Max(16, count), Allocator.Temp);
-            tilemap.m_RefreshCount = 0;
+            ITilemap instance = null;
+            if (createITilemap == null)
+            {
+                instance = new ITilemap(tilemap);
+            }
+            else
+            {
+                instance = createITilemap(tilemap);
+            }
+            tilemap.iTilemap = instance;
+            return instance;
+        }
 
-            var oldTilesPtr = oldTilesIntPtr.ToPointer();
-            var newTilesPtr = newTilesIntPtr.ToPointer();
-            var positionsPtr = positionsIntPtr.ToPointer();
+        [RequiredByNativeCode]
+        private static ITilemap GetInstanceFromTilemap(Tilemap tilemap)
+        {
+            return tilemap.iTilemap;
+        }
 
-            var oldTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(oldTilesPtr, count, Allocator.Invalid);
-            var newTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(newTilesPtr, count, Allocator.Invalid);
-            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
-            var ash = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref oldTilesIds, ash);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref newTilesIds, ash);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<Vector3Int>(ref positions, ash);
+        internal virtual void HandleRefreshPositions(int count
+            , NativeArray<EntityId> usedTileIds
+            , NativeArray<EntityId> oldTilesIds
+            , NativeArray<EntityId> newTilesIds
+            , NativeArray<Vector3Int> positions)
+        {
+            if (m_RefreshPos == null || !m_RefreshPos.IsCreated || m_RefreshPos.Length < count)
+                m_RefreshPos = new NativeArray<Vector3Int>(Math.Max(16, count), Allocator.Temp);
+            m_RefreshCount = 0;
+            m_NeedSort = true;
 
-            for (int i = 0; i < count; ++i)
+            for (int i = 0; i < count; i++)
             {
                 var oldTileId = oldTilesIds[i];
                 var newTileId = newTilesIds[i];
                 var position = positions[i];
                 if (oldTileId != 0)
                 {
-                    var tile = (TileBase)Object.ForceLoadFromInstanceID(oldTileId);
-                    tile.RefreshTile(position, tilemap);
+                    var tile = (TileBase) Resources.EntityIdToObject((int) oldTileId);
+                    tile.RefreshTile(position, this);
                 }
                 if (newTileId != 0)
                 {
-                    var tile = (TileBase)Object.ForceLoadFromInstanceID(newTileId);
-                    tile.RefreshTile(position, tilemap);
+                    var tile = (TileBase) Resources.EntityIdToObject((int) newTileId);
+                    tile.RefreshTile(position, this);
                 }
             }
+        }
 
-            tilemap.m_Tilemap.RefreshTilesNative(tilemap.m_RefreshPos.m_Buffer, tilemap.m_RefreshCount);
+        [RequiredByNativeCode]
+        private static unsafe void FindAllRefreshPositions(ITilemap tilemap
+            , int usedTileCount
+            , IntPtr usedTilesIntPtr
+            , int count
+            , IntPtr oldTilesIntPtr
+            , IntPtr newTilesIntPtr
+            , IntPtr positionsIntPtr)
+        {
+            tilemap.m_AddToList = true;
+
+            var usedTilesPtr = usedTilesIntPtr.ToPointer();
+            var oldTilesPtr = oldTilesIntPtr.ToPointer();
+            var newTilesPtr = newTilesIntPtr.ToPointer();
+            var positionsPtr = positionsIntPtr.ToPointer();
+
+            var usedTileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(usedTilesPtr, usedTileCount, Allocator.Invalid);
+            var oldTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(oldTilesPtr, count, Allocator.Invalid);
+            var newTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(newTilesPtr, count, Allocator.Invalid);
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+
+            var ash = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref oldTilesIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref newTilesIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash);
+            tilemap.m_NeedSort = false;
+
+            tilemap.HandleRefreshPositions(count, usedTileIds, oldTilesIds, newTilesIds, positions);
+
+            tilemap.m_Tilemap.RefreshTilesNative(tilemap.m_RefreshPos.m_Buffer, tilemap.m_RefreshCount, tilemap.m_NeedSort);
             tilemap.m_RefreshPos.Dispose();
             tilemap.m_AddToList = false;
+            tilemap.m_NeedSort = true;
 
             AtomicSafetyHandle.Release(ash);
         }
 
-        [RequiredByNativeCode]
-        private unsafe static void GetAllTileData(ITilemap tilemap, int count, IntPtr tilesIntPtr, IntPtr positionsIntPtr, IntPtr outTileDataIntPtr)
+        internal virtual bool PreGetAllTileData()
         {
+            return false;
+        }
+
+        internal virtual unsafe JobHandle HandleGetAllTileData(int usedTileCount
+            , NativeArray<EntityId> usedTilesIds
+            , int count
+            , NativeArray<EntityId> tileIds
+            , NativeArray<Vector3Int> positions
+            , NativeArray<TileData> tileDataArray)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var tileId = tileIds[i];
+                var position = positions[i];
+                if (tileId != 0)
+                {
+                    ref var tileData = ref UnsafeUtility.ArrayElementAsRef<TileData>(tileDataArray.GetUnsafePtr(), i);
+                    tileData = TileData.Default;
+                    var tile = Resources.EntityIdToObject(tileId) as TileBase;
+                    tile.GetTileData(position, this, ref tileData);
+                }
+            }
+            return default(JobHandle);
+        }
+
+        [RequiredByNativeCode]
+        private unsafe static void GetAllTileData(ITilemap tilemap
+            , int usedTileCount
+            , IntPtr usedTilesIntPtr
+            , int count
+            , IntPtr tilesIntPtr
+            , IntPtr positionsIntPtr
+            , IntPtr outTileDataIntPtr
+            , out JobHandle jobHandle)
+        {
+            void* usedTilesPtr = usedTilesIntPtr.ToPointer();
             void* tilesPtr = tilesIntPtr.ToPointer();
             void* positionsPtr = positionsIntPtr.ToPointer();
             void* outTileDataPtr = outTileDataIntPtr.ToPointer();
 
-            var tiles = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(tilesPtr, count, Allocator.Invalid);
+            var usedTileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(usedTilesPtr, usedTileCount, Allocator.Invalid);
+            var tileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(tilesPtr, count, Allocator.Invalid);
             var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
             var tileDataArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<TileData>(outTileDataPtr, count, Allocator.Invalid);
 
             var ash = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tiles, ash);
+            var ash2 = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileIds, ash);
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileDataArray, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileDataArray, ash2);
 
-            for (int i = 0; i < count; ++i)
+            jobHandle = tilemap.HandleGetAllTileData(usedTileCount, usedTileIds, count, tileIds, positions, tileDataArray);
+
+            AtomicSafetyHandle.Release(ash);
+            AtomicSafetyHandle.Release(ash2);
+        }
+
+        internal virtual unsafe JobHandle HandleGetAllTileAnimation(int usedTileCount
+            , NativeArray<EntityId> usedTilesIds
+            , NativeArray<bool> usedTileHasAnimation
+            , int count
+            , NativeArray<EntityId> tileIds
+            , NativeArray<Vector3Int> positions
+            , NativeArray<TileAnimationEntityIdData> tileAnimationDataArray)
+        {
+            for (int i = 0; i < count; i++)
             {
-                TileData tileData = TileData.Default;
-                var tileId = tiles[i];
+                var tileId = tileIds[i];
                 if (tileId != 0)
                 {
-                    TileBase tile = (TileBase)Object.ForceLoadFromInstanceID(tileId);
-                    tile.GetTileData(positions[i], tilemap, ref UnsafeUtility.ArrayElementAsRef<TileData>(tileDataArray.GetUnsafePtr(), i));
+                    for (int j = 0; j < usedTileCount; j++)
+                    {
+                        if (usedTilesIds[j] == tileId)
+                        {
+                            if (usedTileHasAnimation[j])
+                            {
+                                var position = positions[i];
+                                var tile = Resources.EntityIdToObject(tileId) as TileBase;
+                                TileAnimationData tileAnimationData = default;
+                                tile.GetTileAnimationData(positions[i], this, ref tileAnimationData);
+                                ref var tileAnimationEntityIdData = ref UnsafeUtility.ArrayElementAsRef<TileAnimationEntityIdData>(tileAnimationDataArray.GetUnsafePtr(), i);
+                                tileAnimationEntityIdData.CopyFrom(tileAnimationData);
+                            }
+                            break;
+                        }
+                    }
                 }
             }
+            return default(JobHandle);
+        }
+
+        [RequiredByNativeCode]
+        private unsafe static void GetAllTileAnimationData(ITilemap tilemap
+            , int usedTileCount
+            , IntPtr usedTilesIntPtr
+            , IntPtr usedTileHasAnimationIntPtr
+            , int count
+            , IntPtr tilesIntPtr
+            , IntPtr positionsIntPtr
+            , IntPtr outTileAnimationDataIntPtr
+            , out JobHandle jobHandle)
+        {
+            void* usedTilesPtr = usedTilesIntPtr.ToPointer();
+            void* usedTileHasAnimationPtr = usedTileHasAnimationIntPtr.ToPointer();
+            void* tilesPtr = tilesIntPtr.ToPointer();
+            void* positionsPtr = positionsIntPtr.ToPointer();
+            void* outTileAnimationDataPtr = outTileAnimationDataIntPtr.ToPointer();
+
+            var usedTileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(usedTilesPtr, usedTileCount, Allocator.Invalid);
+            var usedTileHasAnimationArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(usedTileHasAnimationPtr, usedTileCount, Allocator.Invalid);
+            var tileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(tilesPtr, count, Allocator.Invalid);
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+            var tileAnimationDataArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<TileAnimationEntityIdData>(outTileAnimationDataPtr, count, Allocator.Invalid);
+
+            var ash1 = AtomicSafetyHandle.Create();
+            var ash2 = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileIds, ash1);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileHasAnimationArray, ash1);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileIds, ash1);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash1);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileAnimationDataArray, ash2);
+
+            jobHandle = tilemap.HandleGetAllTileAnimation(usedTileCount, usedTileIds, usedTileHasAnimationArray, count, tileIds, positions, tileAnimationDataArray);
+
+            AtomicSafetyHandle.Release(ash1);
+            AtomicSafetyHandle.Release(ash2);
+        }
+
+        internal virtual unsafe JobHandle HandleAllTileStartUp(int usedTileCount
+            , NativeArray<EntityId> usedTilesIds
+            , NativeArray<bool> usedTileHasStartUp
+            , int count
+            , NativeArray<EntityId> tileIds
+            , NativeArray<EntityId> tileGameObjectIds
+            , NativeArray<Vector3Int> positions)
+        {
+            GameObject go = null;
+            Vector3Int* positionsPtrCast = (Vector3Int*)positions.GetUnsafePtr();
+            EntityId* tileIdPtrCast = (EntityId*)tileIds.GetUnsafePtr();
+            EntityId* goIdPtrCast = (EntityId*)tileGameObjectIds.GetUnsafePtr();
+            for (int i = 0; i < count; i++)
+            {
+                var tileId = *(tileIdPtrCast + i);
+                if (tileId != EntityId.None)
+                {
+                    for (int j = 0; j < usedTileCount; j++)
+                    {
+                        if (usedTilesIds[j] == tileId)
+                        {
+                            if (usedTileHasStartUp[j])
+                            {
+                                var position = *(positionsPtrCast + i);
+                                var goId = *(goIdPtrCast + i);
+                                go = null;
+                                if (goId != EntityId.None)
+                                    go = Resources.EntityIdToObject(goId) as GameObject;
+                                var tile = Resources.EntityIdToObject(tileId) as TileBase;
+                                tile.StartUp(position, this, go);
+                            }
+                            break;
+                        }
+                    }
+                }
+            };
+            return default(JobHandle);
+        }
+
+        [RequiredByNativeCode]
+        private unsafe static void DoAllTileStartUp(ITilemap tilemap
+            , int usedTileCount
+            , IntPtr usedTilesIntPtr
+            , IntPtr usedTileHasStartUpIntPtr
+            , int count
+            , IntPtr tilesIntPtr
+            , IntPtr gameObjectsIntPtr
+            , IntPtr positionsIntPtr)
+        {
+            void* usedTilesPtr = usedTilesIntPtr.ToPointer();
+            void* usedTileHasStartUpPtr = usedTileHasStartUpIntPtr.ToPointer();
+            void* tilesPtr = tilesIntPtr.ToPointer();
+            void* gameObjectsPtr = gameObjectsIntPtr.ToPointer();
+            void* positionsPtr = positionsIntPtr.ToPointer();
+
+            var usedTileIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(usedTilesPtr, usedTileCount, Allocator.Invalid);
+            var usedTileHasStartUpArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(usedTileHasStartUpPtr, usedTileCount, Allocator.Invalid);
+            var tiles = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(tilesPtr, count, Allocator.Invalid);
+            var tileGameObjects = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(gameObjectsPtr, count, Allocator.Invalid);
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+
+            var ash = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref usedTileHasStartUpArray, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tiles, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileGameObjects, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash);
+
+            var jobHandle = tilemap.HandleAllTileStartUp(usedTileCount, usedTileIds, usedTileHasStartUpArray, count, tiles, tileGameObjects, positions);
+            jobHandle.Complete();
 
             AtomicSafetyHandle.Release(ash);
         }

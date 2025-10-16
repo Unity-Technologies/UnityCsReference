@@ -5,8 +5,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Runtime.Serialization;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEditorInternal;
@@ -16,12 +16,18 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     [System.Serializable]
+    [DataContract]
     internal class SavedFilter
     {
+        [DataMember]
         public string m_Name;
+        [DataMember]
         public int m_Depth;             // Can be used for tree view representation
+        [DataMember]
         public float m_PreviewSize = -1f; // if -1f then preview size is not applied when set
+        [DataMember]
         public EntityId m_ID;
+        [DataMember]
         public SearchFilter m_Filter;
 
         public SavedFilter(string name, SearchFilter filter, int depth, float previewSize)
@@ -517,14 +523,13 @@ namespace UnityEditor
                 return default(T);
             }
 
-            System.Runtime.Serialization.IFormatter formatter =
-                new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            var serializer = new DataContractSerializer(typeof(T));
             Stream stream = new MemoryStream();
             using (stream)
             {
-                formatter.Serialize(stream, source);
+                serializer.WriteObject(stream, source);
                 stream.Seek(0, SeekOrigin.Begin);
-                return (T)formatter.Deserialize(stream);
+                return (T)serializer.ReadObject(stream);
             }
         }
     }

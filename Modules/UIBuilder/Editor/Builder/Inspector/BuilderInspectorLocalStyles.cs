@@ -5,12 +5,13 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using Unity.UIToolkit.Editor;
 using UnityEngine.Assertions;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEditor;
-using UnityEngine;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {

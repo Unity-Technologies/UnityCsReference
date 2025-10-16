@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// Makes a field for selecting a color. For more information, refer to [[wiki:UIE-uxml-element-ColorField|UXML element ColorField]].
     /// </summary>
     [Icon("UIToolkit/Icons/ColorField.png")]
-    public class ColorField : BaseField<Color>
+    public partial class ColorField : BaseField<Color>
     {
         internal static readonly BindingId showEyeDropperProperty = nameof(showEyeDropper);
         internal static readonly BindingId showAlphaProperty = nameof(showAlpha);
@@ -58,38 +58,6 @@ namespace UnityEditor.UIElements
                     e.showAlpha = showAlpha;
                 if (ShouldWriteAttributeValue(hdr_UxmlAttributeFlags))
                     e.hdr = hdr;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="ColorField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ColorField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ColorField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseFieldTraits<Color, UxmlColorAttributeDescription>
-        {
-            UxmlBoolAttributeDescription m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "show-eye-dropper", defaultValue = true };
-            UxmlBoolAttributeDescription m_ShowAlpha = new UxmlBoolAttributeDescription { name = "show-alpha", defaultValue = true };
-            UxmlBoolAttributeDescription m_Hdr = new UxmlBoolAttributeDescription { name = "hdr" };
-
-            /// <summary>
-            /// Initialize <see cref="ColorField"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                ((ColorField)ve).showEyeDropper = m_ShowEyeDropper.GetValueFromBag(bag, cc);
-                ((ColorField)ve).showAlpha = m_ShowAlpha.GetValueFromBag(bag, cc);
-                ((ColorField)ve).hdr = m_Hdr.GetValueFromBag(bag, cc);
             }
         }
 
@@ -160,7 +128,6 @@ namespace UnityEditor.UIElements
         bool m_ShowAlpha;
         bool m_ShowEyeDropper;
         bool m_HDR;
-        Color m_ColorBeforeEyeDrop;
         IVisualElementScheduledItem m_EyeDropperScheduler;
 
         Label m_HDRLabel;
@@ -352,44 +319,61 @@ namespace UnityEditor.UIElements
             if (EyeDropper.IsOpened || evt.button != (int)MouseButton.LeftMouse)
                 return;
 
-            m_ColorBeforeEyeDrop = value;
-            EyeDropper.Start(UpdateColorProperties);
-            m_EyeDropperScheduler = schedule.Execute(OnEyeDropperMove).Every(10).StartingIn(10)
+            EyeDropper.Start(OnEyeDropperColorSelected);
+            m_EyeDropperScheduler = schedule
+                .Execute(OnEyeDropperMove)
+                .Every(10)
+                .StartingIn(10)
                 .Until(ShouldStopWatchingEyeDropper);
             evt.StopPropagation();
+        }
+
+        void OnEyeDropperMove(TimerState state)
+        {
+            if (!EyeDropper.IsOpened)
+                return;
+
+            var pickerColor = CorrectPickedColorAlpha(EyeDropper.GetPickedColor());
+            if (pickerColor != value)
+                UpdateColorProperties(pickerColor);
+        }
+
+        void OnEyeDropperColorSelected(Color pickedColor)
+        {
+            var newValue = CorrectPickedColorAlpha(pickedColor);
+            value = newValue;
+            UpdateColorProperties(value);
+        }
+
+        private Color CorrectPickedColorAlpha(Color pickedColor)
+        {
+            if (setAlphaIfTransparentWhenPicked && Mathf.Approximately(value.a, 0.0f))
+            {
+                pickedColor.a = 1.0f;
+            }
+            else
+            {
+                // Eyedropper color picking should not impact the previous color alpha.
+                pickedColor.a = value.a;
+            }
+
+            return pickedColor;
         }
 
         bool ShouldStopWatchingEyeDropper()
         {
             if (EyeDropper.IsOpened)
                 return false;
-            if (EyeDropper.IsCancelled)
-            {
-                value = m_ColorBeforeEyeDrop;
-                UpdateColorProperties(value);
-            }
-            else
-            {
-                var pickedColor = EyeDropper.GetPickedColor();
-
-                if (setAlphaIfTransparentWhenPicked && value.a == 0)
-                {
-                    pickedColor.a = 1.0f;
-                }
-                // Eyedropper color picking should not impact the previous color alpha.
-                else
-                {
-                    pickedColor.a = value.a;
-                }
-
-                value = pickedColor;
-            }
 
             if (m_EyeDropperScheduler != null)
             {
                 m_EyeDropperScheduler.Pause();
                 m_EyeDropperScheduler = null;
             }
+
+            // Make sure the UI is updated with the final picked color.
+            // or if canceled, revert the UI to the original color as the value was never changed.
+            UpdateColorProperties(value);
             return true;
         }
 
@@ -404,7 +388,7 @@ namespace UnityEditor.UIElements
 
         void UpdateColorProperties(Color color)
         {
-            if (panel == null || showMixedValue)
+            if (panel == null || (showMixedValue && !EyeDropper.IsOpened))
                 return;
 
             if (m_AlphaElement != null)
@@ -447,25 +431,6 @@ namespace UnityEditor.UIElements
                 m_ColorElement.style.backgroundColor = color;
         }
 
-        void OnEyeDropperMove(TimerState state)
-        {
-            var pickerColor = EyeDropper.GetPickedColor();
-            if (pickerColor != value)
-            {
-                if (setAlphaIfTransparentWhenPicked && value.a == 0)
-                {
-                    pickerColor.a = 1.0f;
-                }
-                // Eyedropper color picking should not impact the previous color alpha.
-                else
-                {
-                    pickerColor.a = rawValue.a;
-                }
-
-                UpdateColorProperties(pickerColor);
-            }
-        }
-
         void OnAttach(AttachToPanelEvent evt)
         {
             UpdateColorProperties(value);
@@ -475,21 +440,29 @@ namespace UnityEditor.UIElements
         {
             m_ColorElement.EnableInClassList(mixedValueColorUssClassName, showMixedValue);
 
+            mixedValueLabel.style.display          = DisplayStyle.None;
+            m_GradientContainer.style.display      = DisplayStyle.None;
+            m_AlphaGradientContainer.style.display = DisplayStyle.None;
+            m_AlphaElement.style.display           = DisplayStyle.None;
+            m_HDRLabel.style.display               = DisplayStyle.None;
+
             if (showMixedValue)
             {
                 mixedValueLabel.style.display = DisplayStyle.Flex;
-                m_GradientContainer.style.display = DisplayStyle.None;
-                m_AlphaGradientContainer.style.display = DisplayStyle.None;
-                m_AlphaElement.style.display = DisplayStyle.None;
-                m_HDRLabel.style.display = DisplayStyle.None;
             }
             else
             {
-                mixedValueLabel.style.display = DisplayStyle.None;
-                m_GradientContainer.style.display = hdr ? DisplayStyle.Flex : DisplayStyle.None;
-                m_AlphaGradientContainer.style.display = hdr ? DisplayStyle.Flex : DisplayStyle.None;
-                m_AlphaElement.style.display = showAlpha ? DisplayStyle.Flex : DisplayStyle.None;
-                m_HDRLabel.style.display = hdr ? DisplayStyle.Flex : DisplayStyle.None;
+                if (hdr)
+                {
+                    m_GradientContainer.style.display      = DisplayStyle.Flex;
+                    m_AlphaGradientContainer.style.display = DisplayStyle.Flex;
+                    m_HDRLabel.style.display               = DisplayStyle.Flex;
+                }
+
+                if (showAlpha)
+                {
+                    m_AlphaElement.style.display = DisplayStyle.Flex;
+                }
 
                 UpdateColorProperties(value);
             }

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 
@@ -122,9 +123,8 @@ namespace UnityEditor.UIElements.Debugger
             m_State = new Dictionary<long, bool>();
             m_GroupedEvents = new Dictionary<string, List<long>>();
 
-            AppDomain currentDomain = AppDomain.CurrentDomain;
             HashSet<string> userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
-            foreach (Assembly assembly in currentDomain.GetAssemblies())
+            foreach (Assembly assembly in CurrentAssemblies.GetLoadedAssemblies())
             {
                 if (userAssemblies.Contains(assembly.GetName().Name + ".dll"))
                     continue;

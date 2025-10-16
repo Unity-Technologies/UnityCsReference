@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.Macros.Utilities;
 
 namespace UnityEditor.Search
 {
@@ -91,10 +93,11 @@ namespace UnityEditor.Search
 
             using (var ms = new MemoryStream(Convert.FromBase64String(stream)))
             {
-                var formatter = new BinaryFormatter();
+                var serializer = new DataContractSerializer(typeof(SerializableMethodInfo));
                 try
                 {
-                    var methodInfo = (MethodInfo)formatter.Deserialize(ms);
+                    var data = (SerializableMethodInfo)serializer.ReadObject(ms)!;
+                    var methodInfo = data.GetMethodInfo();
                     handler = (T)Delegate.CreateDelegate(typeof(T), methodInfo);
                 }
                 catch
@@ -120,8 +123,9 @@ namespace UnityEditor.Search
 
             using (var ms = new MemoryStream())
             {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(ms, methodInfo);
+                var serializable = SerializableMethodInfo.FromMethodInfo(methodInfo);
+                var serializer = new DataContractSerializer(typeof(SerializableMethodInfo));
+                serializer.WriteObject(ms, serializable);
                 stream = Convert.ToBase64String(ms.ToArray());
             }
         }

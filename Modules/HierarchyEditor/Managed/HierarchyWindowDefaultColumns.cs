@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using CellValueEditorGOBool = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.GameObject, UnityEngine.UIElements.Toggle, bool>;
 using CellValueEditorSceneBool = Unity.Hierarchy.HierarchyViewCellValueEditor<UnityEngine.SceneManagement.Scene, UnityEngine.UIElements.Toggle, bool>;
@@ -404,7 +405,7 @@ namespace Unity.Hierarchy.Editor
             desc.Title = "Tag";
             desc.Tooltip = "GameObject Tag";
             desc.DefaultPriority = 100;
-            desc.DefaultWidth = 15;
+            desc.DefaultWidth = 100;
 
             desc.UnbindColumn += (column, view) =>
             {
@@ -473,25 +474,17 @@ namespace Unity.Hierarchy.Editor
         internal static void CreateGameObjectCellDesc_Layer(HierarchyViewCellDescriptor desc)
         {
             desc.ClearCellContent = false;
-            desc.BindCell = cell =>
-            {
-                var go = HierarchyWindowColumnUtility.GetGameObject(cell);
-                var cellValueEditor = HierarchyWindowColumnUtility.BindCellToValueEditor(go, cell, cellGOPool);
-                HierarchyWindowColumnUtility.BindPropertyPath(cellValueEditor.Element, cell, new SerializedObject(go), "m_Layer");
-            };
-
-            desc.UnbindCell = cell =>
-            {
-                HierarchyWindowColumnUtility.UnbindPropertyPath(cell);
-                HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
-            };
+            desc.BindCell = cell
+                => HierarchyWindowColumnUtility.BindCellToValueEditor(HierarchyWindowColumnUtility.GetGameObject(cell), cell, cellGOPool);
+            desc.UnbindCell = cell
+                => HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
         }
 
         static HierarchyViewCellValueEditor<GameObject, LayerField, int> CreateGOCellValueEditor_Layer()
         {
             var editor = new HierarchyViewCellValueEditor<GameObject, LayerField, int>(
                     getModelValue: ed => ed.Model.layer,
-                    setModelValue: (ed, value) => ed.Model.layer = value,
+                    setModelValue: (ed, value) => SceneModeUtility.SetLayer(ed.Model, value, ed.Model.name),
                     isDefaultValue: (ed, value) => value == 0);
             return editor;
         }
@@ -533,23 +526,19 @@ namespace Unity.Hierarchy.Editor
             desc.ClearCellContent = false;
             desc.BindCell = cell =>
             {
-                var go = HierarchyWindowColumnUtility.GetGameObject(cell);
-                var cellValueEditor = HierarchyWindowColumnUtility.BindCellToValueEditor(go, cell, cellGOPool);
-                HierarchyWindowColumnUtility.BindPropertyPath(cellValueEditor.Element, cell, new SerializedObject(go), "m_StaticEditorFlags");
+                var gameObject = HierarchyWindowColumnUtility.GetGameObject(cell);
+                var ed = HierarchyWindowColumnUtility.BindCellToValueEditor(gameObject, cell, cellGOPool);
+                ed.Element.showMixedValue = GameObjectInspector.ShowMixedStaticEditorFlags(GameObjectUtility.GetStaticEditorFlags(gameObject));
             };
-
-            desc.UnbindCell = cell =>
-            {
-                HierarchyWindowColumnUtility.UnbindPropertyPath(cell);
-                HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
-            };
+            desc.UnbindCell = cell
+                => HierarchyWindowColumnUtility.UnbindCellFromValueEditor(cell, cellGOPool);
         }
 
         static CellValueEditorGOBool CreateGOCellValueEditor_Static()
         {
             var editor = new CellValueEditorGOBool(
                     getModelValue: ed => ed.Model && ed.Model.isStatic,
-                    setModelValue: (ed, value) => ed.Model.isStatic = value,
+                    setModelValue: (ed, value) => SceneModeUtility.SetStaticFlags(ed.Model, int.MaxValue, value),
                     isDefaultValue: (ed, value) => value == false);
             return editor;
         }

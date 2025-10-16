@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
@@ -11,42 +12,93 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderContainer.h")]
-    // This is needed for registration to work with the container being in a namespace!
-    [NativeClass("ShaderFoundry::ShaderContainer")]
+    [StructLayout(LayoutKind.Sequential)]
     [FoundryAPI]
-    internal sealed partial class ShaderContainer : Object
+    internal sealed partial class ShaderContainer : IDisposable
     {
+        private IntPtr m_Ptr;
+        private List<ShaderContainer> m_Dependencies = new List<ShaderContainer>();
+        // Denotes that the container's IntPtr was allocated by managed code and so de-allocation should be triggered
+        // by managed as well.
+        private readonly bool m_IsOwnedByManaged = false;
+
         // call native function to implement "constructor"
-        public ShaderContainer(ShaderContainer parent = null)
+        public ShaderContainer() : this(Internal_Create())
         {
-            Internal_Create(this);
-            if (parent != null)
-                AddDeclarationsFrom(parent);
-            else
-                AddDefaultTypes(this);
+            m_IsOwnedByManaged = true;
         }
 
-        private extern static void Internal_Create([Writable] ShaderContainer self);
-        private extern void AddDeclarationsFrom(ShaderContainer other);
+        private ShaderContainer(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
+
+        ~ShaderContainer()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            if (m_Ptr != IntPtr.Zero && m_IsOwnedByManaged)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
+            GC.SuppressFinalize(this);
+        }
+
+        [ThreadSafe] private extern static IntPtr Internal_Create();
+        [ThreadSafe] private static extern void Internal_Destroy(IntPtr ptr);
+
+        [NativeMethod(Name = "AddDependency", IsThreadSafe = true)]
+        private extern void Internal_AddDependency(ShaderContainer other);
+
+        internal void AddDependency(ShaderContainer other)
+        {
+            if (m_Dependencies.Contains(other))
+                return;
+
+            m_Dependencies.Add(other);
+            Internal_AddDependency(other);
+        }
+
+        internal static class BindingsMarshaller
+        {
+            // obj is checked for null before this call
+            // Only required if the type is passed into native code
+            public static IntPtr ConvertToNative(ShaderContainer obj) => obj.m_Ptr;
+
+            // If the natives return NULL the bindings will return null and this method will not be called
+            // Only required if the type is returned from native code
+            public static ShaderContainer ConvertToManaged(IntPtr ptr) => new ShaderContainer(ptr);
+        }
 
         // native member functions
-        internal extern FoundryHandle AddString(string s);
-        internal extern string GetString(FoundryHandle stringHandle);
+        [ThreadSafe] internal extern FoundryHandle AddString(string s);
+        [ThreadSafe] internal extern string GetString(FoundryHandle stringHandle);
 
-        extern FoundryHandle AllocateStaticSized(DataType dataType, int sizeInBytes);
-        unsafe extern void* GetStaticSizedPointer(FoundryHandle handle, DataType expectedDataType);
-        internal extern DataType GetDataTypeFromHandle(FoundryHandle handle);
+        [ThreadSafe] extern FoundryHandle AllocateStaticSized(DataType dataType, ulong sizeInBytes);
+        [ThreadSafe] unsafe extern void* GetStaticSizedPointer(FoundryHandle handle, DataType expectedDataType);
+        [ThreadSafe] unsafe extern void* GetStaticSizedPointerConst(FoundryHandle handle, DataType expectedDataType);
+        [ThreadSafe] internal extern DataType GetDataTypeFromHandle(FoundryHandle handle);
 
         internal FoundryHandle Create<T>() where T : struct, IInternalType<T>
         {
-            return AllocateStaticSized(InternalTypeStatic<T>.dataType, InternalTypeStatic<T>.internalTypeSizeInBytes);
+            // Strings are special and do not work in this code path. We can fix this later if we want with a runtime check.
+            Debug.Assert(typeof(T) != typeof(StringLiteral));
+            Debug.Assert(typeof(T) != typeof(ListType));
+            return AllocateStaticSized(InternalTypeStatic<T>.dataType, (ulong)InternalTypeStatic<T>.internalTypeSizeInBytes);
         }
 
         internal T Get<T>(FoundryHandle handle) where T : unmanaged, IInternalType<T>
         {
+            // Strings are special and do not work in this code path. We can fix this later if we want with a runtime check.
+            Debug.Assert(typeof(T) != typeof(StringLiteral));
+            Debug.Assert(typeof(T) != typeof(ListType));
             unsafe
             {
-                void* pointer = GetStaticSizedPointer(handle, InternalTypeStatic<T>.dataType);
+                void* pointer = GetStaticSizedPointerConst(handle, InternalTypeStatic<T>.dataType);
                 if (pointer != null)
                 {
                     T* typedPointer = (T*)pointer;
@@ -61,8 +113,22 @@ namespace UnityEditor.ShaderFoundry
             result = container?.Get<T>(handle) ?? InternalTypeStatic<T>.Invalid;
         }
 
+        internal T Get<T>(IPublicType publicType) where T : struct, IPublicType<T>
+        {
+            var handle = publicType.Handle;
+            DataType dataType = GetDataTypeFromHandle(handle);
+            if (dataType == PublicTypeStatic<T>.dataType)
+            {
+                return PublicTypeStatic<T>.ConstructFromHandle(this, handle);
+            }
+            return PublicTypeStatic<T>.Invalid;
+        }
+
         internal bool Set<T>(FoundryHandle handle, T data) where T : unmanaged, IInternalType<T>
         {
+            // Strings are special and do not work in this code path. We can fix this later if we want with a runtime check.
+            Debug.Assert(typeof(T) != typeof(StringLiteral));
+            Debug.Assert(typeof(T) != typeof(ListType));
             unsafe
             {
                 void* pointer = GetStaticSizedPointer(handle, InternalTypeStatic<T>.dataType);
@@ -76,148 +142,187 @@ namespace UnityEditor.ShaderFoundry
             return false;
         }
 
+        internal IPublicType ConstructTypeFromHandle(FoundryHandle handle)
+        {
+            var dataType = GetDataTypeFromHandle(handle);
+            var info = DataTypeStatic.GetInfoFromDataType(dataType);
+            return info.ConstructFromHandle(this, handle);
+        }
+
         internal FoundryHandle Add<T>(T data) where T : unmanaged, IInternalType<T>
         {
+            // Strings are special and do not work in this code path. We can fix this later if we want with a runtime check.
+            Debug.Assert(typeof(T) != typeof(StringLiteral));
+            Debug.Assert(typeof(T) != typeof(ListType));
             var handle = Create<T>();
             Set<T>(handle, data);
             return handle;
         }
 
-        // most types should be added via the ShaderType.* functions.
-        // this function is used to ensure the shader type belongs to this container
-        internal FoundryHandle AddShaderType(ShaderType shaderType, bool convertNonexistantToVoid)
+        [NativeMethod(Name = "CreateArray<ShaderFoundry::FoundryHandle>", IsThreadSafe = true)]
+        internal extern FoundryHandle CreateArray(ulong size);
+        [ThreadSafe]
+        internal extern ulong GetArraySize(FoundryHandle arrayHandle);
+        [NativeMethod(Name = "GetArrayElement<ShaderFoundry::FoundryHandle>", IsThreadSafe = true)]
+        internal extern FoundryHandle GetArrayElement(FoundryHandle arrayHandle, ulong elementIndex);
+        [NativeMethod(Name = "SetArrayElement<ShaderFoundry::FoundryHandle>", IsThreadSafe = true)]
+        internal extern void SetArrayElement(FoundryHandle arrayHandle, ulong elementIndex, FoundryHandle elementHandle);
+
+        [ThreadSafe] internal extern FoundryHandle GetTypeByName(string typeName);
+
+        [ThreadSafe] internal extern FoundryHandle[] GetSymbolsFromTree(DataType dataType);
+        [ThreadSafe] internal extern FoundryHandle[] GetShaderTypesFromTree(ShaderTypeInternal.Kind kind);
+        // Used for testing only
+        [ThreadSafe] internal extern void AddSymbolToTree(FoundryHandle scopeNameHandle, FoundryHandle symbolHandle);
+        IEnumerable<T> EnumerateSymbols<T>(FoundryHandle[] handles) where T : struct, IPublicType<T>
         {
-            if (shaderType.Exists)
-            {
-                if (shaderType.Container == this)
-                    return shaderType.handle;
-                else
-                {
-                    // TODO: have to deep copy the definition from another container
-                    return FoundryHandle.Invalid();
-                }
-            }
-            else
-            {
-                // invalid shader type...
-                if (convertNonexistantToVoid)
-                    return ShaderTypeInternal.Void(this);
-                else
-                    return FoundryHandle.Invalid();
-            }
+            var symbols = new List<T>(handles.Length);
+            foreach (var handle in handles)
+                symbols.Add(PublicTypeStatic<T>.ConstructFromHandle(this, handle));
+            return symbols;
+        }
+        IEnumerable<T> GetSymbols<T>() where T : struct, IPublicType<T>
+        {
+            FoundryHandle[] handles = GetSymbolsFromTree(PublicTypeStatic<T>.dataType);
+            return EnumerateSymbols<T>(handles);
+        }
+        IEnumerable<ShaderType> GetShaderTypes(ShaderTypeInternal.Kind kind)
+        {
+            FoundryHandle[] handles = GetShaderTypesFromTree(kind);
+            return EnumerateSymbols<ShaderType>(handles);
         }
 
-        [NativeMethod("CreateArray<ShaderFoundry::FoundryHandle>")]
-        internal extern FoundryHandle AddHandleBlob(uint size);
-        [NativeMethod("GetArraySize")]
-        internal extern uint GetHandleBlobSize(FoundryHandle blobHandle);
-        [NativeMethod("GetArrayElement<ShaderFoundry::FoundryHandle>")]
-        internal extern FoundryHandle GetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex);
-        [NativeMethod("SetArrayElement<ShaderFoundry::FoundryHandle>")]
-        internal extern void SetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex, FoundryHandle handle);
-
-        internal extern FoundryHandle GetTypeByName(string typeName);
-        internal extern FoundryHandle GetTypeByNameAndNamespace(string typeName, FoundryHandle namespaceHandle);
+        // Symbol discovery: The only symbols directly exposed by the symbol tree are those allocated in SA's
+        // symbol allocator pass.
+        public IEnumerable<Block> GetLocalBlocks() => GetSymbols<Block>();
+        public IEnumerable<BlockSequence> GetLocalBlockSequences() => GetSymbols<BlockSequence>();
+        public IEnumerable<BlockShaderInterface> GetLocalBlockShaderInterfaces() => GetSymbols<BlockShaderInterface>();
+        public IEnumerable<BlockShader> GetLocalBlockShaders() => GetSymbols<BlockShader>();
+        public IEnumerable<CustomizationPoint> GetLocalCustomizationPoints() => GetSymbols<CustomizationPoint>();
+        public IEnumerable<ShaderType> GetLocalResources() => GetShaderTypes(ShaderTypeInternal.Kind.Resource);
+        public IEnumerable<ShaderType> GetLocalStructs() => GetShaderTypes(ShaderTypeInternal.Kind.Struct);
+        public IEnumerable<Template> GetLocalTemplates() => GetSymbols<Template>();
+        public IEnumerable<CustomAttributeDefinition> GetLocalCustomAttributeDefinitions() => GetSymbols<CustomAttributeDefinition>();
 
         public ShaderType GetType(string name) => new ShaderType(this, GetTypeByName(name));
 
-        public ShaderType GetType(string name, Namespace namespaceSymbol)
-        {
-            return new ShaderType(this, GetTypeByNameAndNamespace(name, namespaceSymbol.handle));
-        }
+        public extern bool IsReadOnly { [NativeMethod(Name = "IsReadOnly", IsThreadSafe = true)] get; }
+        [ThreadSafe] public extern void MakeReadOnly();
 
-        internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)
-        {
-            // A null linker means block linker is used. Return invalid handle.
-            // TODO @ SHADERS: This all will be removed once legacy linker goes away.
-            FoundryHandle handle = new FoundryHandle();
-            if (linker == null)
-                return handle;
-
-            var existingLinkerIndex = m_TemplateLinkers.FindIndex((l) => (l == linker));
-            if (existingLinkerIndex != -1)
-                throw new Exception($"Template linker '{linker}' has already been registered.");
-
-            handle.LegacyHandle = (uint)m_TemplateLinkers.Count;
-            m_TemplateLinkers.Add(linker);
-
-            return handle;
-        }
-
-        internal ITemplateLinker GetTemplateLinker(FoundryHandle linkerHandle)
-        {
-            if (linkerHandle.IsValid && (linkerHandle.LegacyHandle < m_TemplateLinkers.Count))
-                return m_TemplateLinkers[(int)linkerHandle.LegacyHandle];
-
-            return null;
-        }
-
-        List<ITemplateLinker> m_TemplateLinkers = new List<ITemplateLinker>();
+        // TODO @ SHADERS SHADERS-253: Remove once symbol write API is gone
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        internal extern void ConstructTypedAttributeManaged(FoundryHandle attributeHandle);
 
         // cached common types
-        ShaderType m_void;
-        ShaderType m_bool, m_bool2, m_bool3, m_bool4;
-        ShaderType m_int, m_int2, m_int3, m_int4;
-        ShaderType m_uint, m_uint2, m_uint3, m_uint4;
-        ShaderType m_half, m_half2, m_half3, m_half4;
-        ShaderType m_float, m_float2, m_float3, m_float4;
-        ShaderType m_double, m_double2, m_double3, m_double4;
-        ShaderType m_float2x2, m_float3x3, m_float4x4;
-        ShaderType m_Texture1D, m_Texture1DArray, m_Texture2D, m_Texture2DArray, m_Texture3D, m_TextureCube, m_TextureCubeArray, m_Texture2DMS, m_Texture2DMSArray;
+        ShaderType m_Void;
+
+        ShaderType m_Bool;
+        ShaderType m_Bool2;
+        ShaderType m_Bool3;
+        ShaderType m_Bool4;
+        ShaderType m_Int;
+        ShaderType m_Int2;
+        ShaderType m_Int3;
+        ShaderType m_Int4;
+        ShaderType m_UInt;
+        ShaderType m_UInt2;
+        ShaderType m_UInt3;
+        ShaderType m_UInt4;
+        ShaderType m_Half;
+        ShaderType m_Half2;
+        ShaderType m_Half3;
+        ShaderType m_Half4;
+        ShaderType m_Float;
+        ShaderType m_Float2;
+        ShaderType m_Float3;
+        ShaderType m_Float4;
+
+        ShaderType m_Float2x2;
+        ShaderType m_Float3x3;
+        ShaderType m_Float4x4;
+
+        ShaderType m_Texture1DFloat4;
+        ShaderType m_Texture2DFloat4;
+        ShaderType m_Texture3DFloat4;
+        ShaderType m_TextureCubeFloat4;
+        ShaderType m_Texture2DMS4Float4;
+
+        ShaderType m_Texture1DHalf4;
+        ShaderType m_Texture2DHalf4;
+        ShaderType m_Texture3DHalf4;
+        ShaderType m_TextureCubeHalf4;
+        ShaderType m_Texture2DMS4Half4;
+
+        ShaderType m_Texture1DArrayFloat4;
+        ShaderType m_Texture2DArrayFloat4;
+        ShaderType m_TextureCubeArrayFloat4;
+        ShaderType m_Texture2DMS4ArrayFloat4;
+
+        ShaderType m_Texture1DArrayHalf4;
+        ShaderType m_Texture2DArrayHalf4;
+        ShaderType m_TextureCubeArrayHalf4;
+        ShaderType m_Texture2DMS4ArrayHalf4;
+
         ShaderType m_SamplerState;
 
-        public ShaderType _void =>      m_void.IsValid ?    m_void :    (m_void =       GetType("void"));
+        public ShaderType Void => m_Void.IsValid ? m_Void : (m_Void = GetType("void"));
 
-        public ShaderType _bool =>      m_bool.IsValid ?    m_bool :    (m_bool =       GetType("bool"));
-        public ShaderType _bool2 =>     m_bool2.IsValid ?   m_bool2 :   (m_bool2 =      GetType("bool2"));
-        public ShaderType _bool3 =>     m_bool3.IsValid ?   m_bool3 :   (m_bool3 =      GetType("bool3"));
-        public ShaderType _bool4 =>     m_bool4.IsValid ?   m_bool4 :   (m_bool4 =      GetType("bool4"));
+        // Scalars and vectors
+        public ShaderType Bool => m_Bool.IsValid ? m_Bool : (m_Bool = GetType("bool"));
+        public ShaderType Bool2 => m_Bool2.IsValid ? m_Bool2 : (m_Bool2 = GetType("bool2"));
+        public ShaderType Bool3 => m_Bool3.IsValid ? m_Bool3 : (m_Bool3 = GetType("bool3"));
+        public ShaderType Bool4 => m_Bool4.IsValid ? m_Bool4 : (m_Bool4 = GetType("bool4"));
 
-        public ShaderType _int =>       m_int.IsValid ?     m_int :     (m_int =        GetType("int"));
-        public ShaderType _int2 =>      m_int2.IsValid ?    m_int2 :    (m_int2 =       GetType("int2"));
-        public ShaderType _int3 =>      m_int3.IsValid ?    m_int3 :    (m_int3 =       GetType("int3"));
-        public ShaderType _int4 =>      m_int4.IsValid ?    m_int4 :    (m_int4 =       GetType("int4"));
+        public ShaderType Int => m_Int.IsValid ? m_Int : (m_Int = GetType("int"));
+        public ShaderType Int2 => m_Int2.IsValid ? m_Int2 : (m_Int2 = GetType("int2"));
+        public ShaderType Int3 => m_Int3.IsValid ? m_Int3 : (m_Int3 = GetType("int3"));
+        public ShaderType Int4 => m_Int4.IsValid ? m_Int4 : (m_Int4 = GetType("int4"));
 
-        public ShaderType _uint =>      m_uint.IsValid ?    m_uint :    (m_uint =       GetType("uint"));
-        public ShaderType _uint2 =>     m_uint2.IsValid ?   m_uint2 :   (m_uint2 =      GetType("uint2"));
-        public ShaderType _uint3 =>     m_uint3.IsValid ?   m_uint3 :   (m_uint3 =      GetType("uint3"));
-        public ShaderType _uint4 =>     m_uint4.IsValid ?   m_uint4 :   (m_uint4 =      GetType("uint4"));
+        public ShaderType UInt => m_UInt.IsValid ? m_UInt : (m_UInt = GetType("uint"));
+        public ShaderType UInt2 => m_UInt2.IsValid ? m_UInt2 : (m_UInt2 = GetType("uint2"));
+        public ShaderType UInt3 => m_UInt3.IsValid ? m_UInt3 : (m_UInt3 = GetType("uint3"));
+        public ShaderType UInt4 => m_UInt4.IsValid ? m_UInt4 : (m_UInt4 = GetType("uint4"));
 
-        public ShaderType _half =>      m_half.IsValid ?    m_half :    (m_half =       GetType("half"));
-        public ShaderType _half2 =>     m_half2.IsValid ?   m_half2 :   (m_half2 =      GetType("half2"));
-        public ShaderType _half3 =>     m_half3.IsValid ?   m_half3 :   (m_half3 =      GetType("half3"));
-        public ShaderType _half4 =>     m_half4.IsValid ?   m_half4 :   (m_half4 =      GetType("half4"));
+        public ShaderType Half => m_Half.IsValid ? m_Half : (m_Half = GetType("half"));
+        public ShaderType Half2 => m_Half2.IsValid ? m_Half2 : (m_Half2 = GetType("half2"));
+        public ShaderType Half3 => m_Half3.IsValid ? m_Half3 : (m_Half3 = GetType("half3"));
+        public ShaderType Half4 => m_Half4.IsValid ? m_Half4 : (m_Half4 = GetType("half4"));
 
-        public ShaderType _float =>     m_float.IsValid ?   m_float :   (m_float =      GetType("float"));
-        public ShaderType _float2 =>    m_float2.IsValid ?  m_float2 :  (m_float2 =     GetType("float2"));
-        public ShaderType _float3 =>    m_float3.IsValid ?  m_float3 :  (m_float3 =     GetType("float3"));
-        public ShaderType _float4 =>    m_float4.IsValid ?  m_float4 :  (m_float4 =     GetType("float4"));
+        public ShaderType Float => m_Float.IsValid ? m_Float : (m_Float = GetType("float"));
+        public ShaderType Float2 => m_Float2.IsValid ? m_Float2 : (m_Float2 = GetType("float2"));
+        public ShaderType Float3 => m_Float3.IsValid ? m_Float3 : (m_Float3 = GetType("float3"));
+        public ShaderType Float4 => m_Float4.IsValid ? m_Float4 : (m_Float4 = GetType("float4"));
 
-        public ShaderType _float2x2 =>  m_float2x2.IsValid ? m_float2x2 : (m_float2x2 = GetType("float2x2"));
-        public ShaderType _float3x3 =>  m_float3x3.IsValid ? m_float3x3 : (m_float3x3 = GetType("float3x3"));
-        public ShaderType _float4x4 =>  m_float4x4.IsValid ? m_float4x4 : (m_float4x4 = GetType("float4x4"));
+        // Matrices
+        public ShaderType Float2x2 => m_Float2x2.IsValid ? m_Float2x2 : (m_Float2x2 = GetType("float2x2"));
+        public ShaderType Float3x3 => m_Float3x3.IsValid ? m_Float3x3 : (m_Float3x3 = GetType("float3x3"));
+        public ShaderType Float4x4 => m_Float4x4.IsValid ? m_Float4x4 : (m_Float4x4 = GetType("float4x4"));
 
-        public ShaderType _double =>    m_double.IsValid ?  m_double :  (m_double =     GetType("double"));
-        public ShaderType _double2 =>   m_double2.IsValid ? m_double2 : (m_double2 =    GetType("double2"));
-        public ShaderType _double3 =>   m_double3.IsValid ? m_double3 : (m_double3 =    GetType("double3"));
-        public ShaderType _double4 =>   m_double4.IsValid ? m_double4 : (m_double4 =    GetType("double4"));
+        // Textures
+        // N.B. for MSAA textures we chose 4x as the most commonly used/supported format here.
+        // The user can still manually construct a type with a different number of samples.
+        public ShaderType Texture1DFloat4 => m_Texture1DFloat4.IsValid ? m_Texture1DFloat4 : (m_Texture1DFloat4 = GetType("Texture1D<float4>"));
+        public ShaderType Texture2DFloat4 => m_Texture2DFloat4.IsValid ? m_Texture2DFloat4 : (m_Texture2DFloat4 = GetType("Texture2D<float4>"));
+        public ShaderType Texture3DFloat4 => m_Texture3DFloat4.IsValid ? m_Texture3DFloat4 : (m_Texture3DFloat4 = GetType("Texture3D<float4>"));
+        public ShaderType TextureCubeFloat4 => m_TextureCubeFloat4.IsValid ? m_TextureCubeFloat4 : (m_TextureCubeFloat4 = GetType("TextureCube<float4>"));
+        public ShaderType Texture2DMS4Float4 => m_Texture2DMS4Float4.IsValid ? m_Texture2DMS4Float4 : (m_Texture2DMS4Float4 = GetType("Texture2DMS<float4, 4>"));
 
-        public ShaderType _Texture1D =>         m_Texture1D.IsValid ?       m_Texture1D :       (m_Texture1D =          GetType("Texture1D"));
-        public ShaderType _Texture2D =>         m_Texture2D.IsValid ?       m_Texture2D :       (m_Texture2D =          GetType("Texture2D"));
-        public ShaderType _Texture3D =>         m_Texture3D.IsValid ?       m_Texture3D :       (m_Texture3D =          GetType("Texture3D"));
-        public ShaderType _Texture1DArray =>    m_Texture1DArray.IsValid ?  m_Texture1DArray :  (m_Texture1DArray =     GetType("Texture1DArray"));
-        public ShaderType _Texture2DArray =>    m_Texture2DArray.IsValid ?  m_Texture2DArray :  (m_Texture2DArray =     GetType("Texture2DArray"));
-        public ShaderType _TextureCube =>       m_TextureCube.IsValid ?     m_TextureCube :     (m_TextureCube =        GetType("TextureCube"));
-        public ShaderType _TextureCubeArray =>  m_TextureCubeArray.IsValid ? m_TextureCubeArray : (m_TextureCubeArray =   GetType("TextureCubeArray"));
-        public ShaderType _Texture2DMS =>       m_Texture2DMS.IsValid ?     m_Texture2DMS :     (m_Texture2DMS =        GetType("Texture2DMS"));
-        public ShaderType _Texture2DMSArray =>  m_Texture2DMSArray.IsValid ? m_Texture2DMSArray : (m_Texture2DMSArray =   GetType("Texture2DMSArray"));
+        public ShaderType Texture1DHalf4 => m_Texture1DHalf4.IsValid ? m_Texture1DHalf4 : (m_Texture1DHalf4 = GetType("Texture1D<half4>"));
+        public ShaderType Texture2DHalf4 => m_Texture2DHalf4.IsValid ? m_Texture2DHalf4 : (m_Texture2DHalf4 = GetType("Texture2D<half4>"));
+        public ShaderType Texture3DHalf4 => m_Texture3DHalf4.IsValid ? m_Texture3DHalf4 : (m_Texture3DHalf4 = GetType("Texture3D<half4>"));
+        public ShaderType TextureCubeHalf4 => m_TextureCubeHalf4.IsValid ? m_TextureCubeHalf4 : (m_TextureCubeHalf4 = GetType("TextureCube<half4>"));
+        public ShaderType Texture2DMS4Half4 => m_Texture2DMS4Half4.IsValid ? m_Texture2DMS4Half4 : (m_Texture2DMS4Half4 = GetType("Texture2DMS<half4, 4>"));
 
-        public ShaderType _SamplerState =>      m_SamplerState.IsValid ?    m_SamplerState :    (m_SamplerState =       GetType("SamplerState"));
+        public ShaderType Texture1DArrayFloat4 => m_Texture1DArrayFloat4.IsValid ? m_Texture1DArrayFloat4 : (m_Texture1DArrayFloat4 = GetType("Texture1DArray<float4>"));
+        public ShaderType Texture2DArrayFloat4 => m_Texture2DArrayFloat4.IsValid ? m_Texture2DArrayFloat4 : (m_Texture2DArrayFloat4 = GetType("Texture2DArray<float4>"));
+        public ShaderType TextureCubeArrayFloat4 => m_TextureCubeArrayFloat4.IsValid ? m_TextureCubeArrayFloat4 : (m_TextureCubeArrayFloat4 = GetType("TextureCubeArray<float4>"));
+        public ShaderType Texture2DMS4ArrayFloat4 => m_Texture2DMS4ArrayFloat4.IsValid ? m_Texture2DMS4ArrayFloat4 : (m_Texture2DMS4ArrayFloat4 = GetType("Texture2DMSArray<float4, 4>"));
 
-        public ShaderType _UnitySamplerState;
-        public ShaderType _UnityTexture2D;
-        public ShaderType _UnityTexture2DArray;
-        public ShaderType _UnityTextureCube;
-        public ShaderType _UnityTexture3D;
+        public ShaderType Texture1DArrayHalf4 => m_Texture1DArrayHalf4.IsValid ? m_Texture1DArrayHalf4 : (m_Texture1DArrayHalf4 = GetType("Texture1DArray<half4>"));
+        public ShaderType Texture2DArrayHalf4 => m_Texture2DArrayHalf4.IsValid ? m_Texture2DArrayHalf4 : (m_Texture2DArrayHalf4 = GetType("Texture2DArray<half4>"));
+        public ShaderType TextureCubeArrayHalf4 => m_TextureCubeArrayHalf4.IsValid ? m_TextureCubeArrayHalf4 : (m_TextureCubeArrayHalf4 = GetType("TextureCubeArray<half4>"));
+        public ShaderType Texture2DMS4ArrayHalf4 => m_Texture2DMS4ArrayHalf4.IsValid ? m_Texture2DMS4ArrayHalf4 : (m_Texture2DMS4ArrayHalf4 = GetType("Texture2DMSArray<half4, 4>"));
+
+        public ShaderType SamplerState => m_SamplerState.IsValid ? m_SamplerState : (m_SamplerState = GetType("SamplerState"));
     }
 }

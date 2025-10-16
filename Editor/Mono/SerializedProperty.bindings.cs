@@ -86,7 +86,10 @@ namespace UnityEditor
         Hash128 = 25,
 
         // Rendering Layer Mask property
-        RenderingLayerMask = 26
+        RenderingLayerMask = 26,
+
+        // EntityId property
+        EntityId = 27
     }
 
     // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
@@ -360,6 +363,7 @@ namespace UnityEditor
                     case SerializedPropertyType.BoundsInt: return boundsIntValue;
                     case SerializedPropertyType.ManagedReference: return managedReferenceValue;
                     case SerializedPropertyType.Hash128: return hash128Value;
+                    case SerializedPropertyType.EntityId: return entityIdValue;
 
                     default:
                         throw new NotSupportedException(string.Format("The boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -446,6 +450,7 @@ namespace UnityEditor
                         case SerializedPropertyType.BoundsInt: boundsIntValue = (BoundsInt)value; break;
                         case SerializedPropertyType.ManagedReference: managedReferenceValue = value; break;
                         case SerializedPropertyType.Hash128: hash128Value = (Hash128)value; break;
+                        case SerializedPropertyType.EntityId: entityIdValue = (EntityId)value; break;
 
                         default: // FixedBufferSize is read-only
                             throw new NotSupportedException(string.Format("Set on boxedValue property is not supported on \"{0}\" because it has an unsupported propertyType {1}.", propertyPath, propertyType));
@@ -1420,12 +1425,15 @@ namespace UnityEditor
         [NativeName("SetPPtrValue")]
         private extern void SetPPtrValueInternal(UnityObject value);
 
-        public int objectReferenceInstanceIDValue
+        [Obsolete("objectReferenceInstanceIDValue is obsolete. Use objectReferenceEntityIdValue instead")]
+        public int objectReferenceInstanceIDValue { get => objectReferenceEntityIdValue; set => objectReferenceEntityIdValue = value; }
+
+        public EntityId objectReferenceEntityIdValue
         {
             get
             {
                 Verify(VerifyFlags.IteratorNotAtEnd);
-                return GetPPtrValueFromInstanceIDInternal();
+                return GetPPtrValueFromEntityIdInternal();
             }
             set
             {
@@ -1434,11 +1442,11 @@ namespace UnityEditor
             }
         }
 
-        [NativeName("GetPPtrInstanceID")]
-        private extern int GetPPtrValueFromInstanceIDInternal();
+        [NativeName("GetPPtrEntityId")]
+        private extern EntityId GetPPtrValueFromEntityIdInternal();
 
         [FreeFunction(Name = "SerializedPropertyBindings::SetPPtrValueFromInstanceIDInternal", HasExplicitThis = true)]
-        private extern void SetPPtrValueFromInstanceIDInternal(int instanceID);
+        private extern void SetPPtrValueFromInstanceIDInternal(EntityId instanceID);
 
         internal string objectReferenceStringValue
         {
@@ -1786,6 +1794,26 @@ namespace UnityEditor
 
         [FreeFunction(Name = "SerializedPropertyBindings::SetHash128ValueInternal", HasExplicitThis = true)]
         private extern void SetHash128ValueInternal(Hash128 value);
+
+        public EntityId entityIdValue
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (EntityId)GetEntityIdValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetEntityIdValueInternal(value);
+            }
+        }
+
+        [FreeFunction(Name = "SerializedPropertyBindings::GetEntityIdValueInternal", HasExplicitThis = true)]
+        private extern EntityId GetEntityIdValueInternal();
+
+        [FreeFunction(Name = "SerializedPropertyBindings::SetEntityIdValueInternal", HasExplicitThis = true)]
+        private extern void SetEntityIdValueInternal(EntityId value);
 
 
         // Move to next property.

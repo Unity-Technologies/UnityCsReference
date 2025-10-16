@@ -1490,7 +1490,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, string[] defines)
         {
             var precompiledAssemblies = PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(
-                options, EditorUserBuildSettings.activeBuildTarget, defines);
+                options, EditorUserBuildSettings.activeBuildTarget, defines, includeRedirectedAssemblies: true);
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, defines);
         }
 
@@ -1685,7 +1685,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var precompiledAssemblies =
                     PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(settings.CompilationOptions,
-                        settings.BuildTarget, settings.ExtraGeneralDefines);
+                        settings.BuildTarget, settings.ExtraGeneralDefines, includeRedirectedAssemblies: true);
 
                 UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), m_VersionMetaDatas, settings);
 

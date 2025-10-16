@@ -5,4 +5,4 @@
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
+[assembly: InternalsVisibleTo("Unity.Modules.ImageConversion.Tests.Editor")]

@@ -264,7 +264,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool enableMotor { get => WheelJoint_GetEnableMotor(this); set => WheelJoint_SetEnableMotor(this, value); }
 
         /// <summary>
-        /// The desired motor speed, usually in meters per second.
+        /// The desired motor speed, usually in degrees per second.
         /// </summary>
         public readonly float motorSpeed { get => WheelJoint_GetMotorSpeed(this); set => WheelJoint_SetMotorSpeed(this, value); }
 

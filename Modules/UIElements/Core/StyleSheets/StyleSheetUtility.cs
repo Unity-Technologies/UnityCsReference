@@ -15,7 +15,7 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class StyleSheetUtility
     {
         private static readonly Dictionary<string, string> SpecialEnumToStringCases = new Dictionary<string, string>

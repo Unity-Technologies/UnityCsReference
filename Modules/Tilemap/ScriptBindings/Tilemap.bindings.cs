@@ -8,6 +8,8 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.U2D;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.Tilemaps
 {
@@ -130,6 +132,26 @@ namespace UnityEngine.Tilemaps
         public TileBase GetTile(Vector3Int position) { return GetTileAsset(position) as TileBase; }
         public T GetTile<T>(Vector3Int position) where T : TileBase { return GetTileAsset(position) as T; }
 
+        [NativeMethod(Name = "GetTileAssetEntityId", IsThreadSafe = true)]
+        public extern EntityId GetTileEntityId(Vector3Int position);
+
+        internal extern IntPtr GetTilemapHandle();
+
+        [NativeMethod(Name = "GetTileEntityIdFromHandle", IsThreadSafe = true)]
+        internal static extern EntityId GetTileEntityIdFromHandle(IntPtr tilemapHandle, Vector3Int position);
+
+        [NativeMethod(Name = "GetTileEntityIdsFromOffsets", IsThreadSafe = true)]
+        private extern void GetTileEntityIdsFromOffsets(Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+
+        [NativeMethod(Name = "GetTileEntityIdsFromOffsetsAndHandle", IsThreadSafe = true)]
+        private static extern void GetTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+
+        [NativeMethod(Name = "GetTileEntityIdsFromBlockOffset", IsThreadSafe = true)]
+        private extern void GetTileEntityIdsFromBlockOffset(Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+
+        [NativeMethod(Name = "GetTileEntityIdsFromBlockOffsetAndHandle", IsThreadSafe = true)]
+        private static extern void GetTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+
         internal extern Object[] GetTileAssetsBlock(Vector3Int position, Vector3Int blockDimensions);
 
         public TileBase[] GetTilesBlock(BoundsInt bounds)
@@ -162,9 +184,11 @@ namespace UnityEngine.Tilemaps
         }
 
         internal extern void SetTileAsset(Vector3Int position, Object tile);
+
         public void SetTile(Vector3Int position, TileBase tile) { SetTileAsset(position, tile); }
 
         internal extern void SetTileAssets(Vector3Int[] positionArray, Object[] tileArray);
+
         public void SetTiles(Vector3Int[] positionArray, TileBase[] tileArray) { SetTileAssets(positionArray, tileArray); }
 
         [NativeMethod(Name = "SetTileAssetsBlock")]
@@ -185,7 +209,7 @@ namespace UnityEngine.Tilemaps
         public extern void RefreshTile(Vector3Int position);
 
         [FreeFunction(Name = "TilemapBindings::RefreshTileAssetsNative", HasExplicitThis = true)]
-        internal extern unsafe void RefreshTilesNative(void* positions, int count);
+        internal extern unsafe void RefreshTilesNative(void* positions, int count, bool needSortRemoveDup);
 
         [NativeMethod(Name = "RefreshAllTileAssets")]
         public extern void RefreshAllTiles();
@@ -315,10 +339,30 @@ namespace UnityEngine.Tilemaps
         internal extern Object GetAnyTileAsset(Vector3Int position);
         internal TileBase GetAnyTile(Vector3Int position) { return GetAnyTileAsset(position) as TileBase; }
         internal T GetAnyTile<T>(Vector3Int position) where T : TileBase { return GetAnyTile(position) as T; }
+        [NativeMethod(Name = "GetAnyTileAssetEntityId", IsThreadSafe = true)]
+        internal extern EntityId GetAnyTileEntityId(Vector3Int position);
+
+        [NativeMethod(Name = "GetAnyTileEntityIdFromHandle", IsThreadSafe = true)]
+        internal static extern EntityId GetAnyTileEntityIdFromHandle(IntPtr tilemapHandle, Vector3Int position);
+
+        [NativeMethod(Name = "GetAnyTileEntityIdsFromOffsets", IsThreadSafe = true)]
+        private extern void GetAnyTileEntityIdsFromOffsets(Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+
+        [NativeMethod(Name = "GetAnyTileEntityIdsFromOffsetsAndHandle", IsThreadSafe = true)]
+        private static extern void GetAnyTileEntityIdsFromOffsetsAndHandle(IntPtr tilemapHandle, Vector3Int position, IntPtr offsetsIntrPtr, IntPtr tilesIntPtr, int count);
+
+        [NativeMethod(Name = "GetAnyTileEntityIdsFromBlockOffset", IsThreadSafe = true)]
+        private extern void GetAnyTileEntityIdsFromBlockOffset(Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
+
+        [NativeMethod(Name = "GetAnyTileEntityIdsFromBlockOffsetAndHandle", IsThreadSafe = true)]
+        private static extern void GetAnyTileEntityIdsFromBlockOffsetAndHandle(IntPtr tilemapHandle, Vector3Int position, BoundsInt blockOffset, IntPtr tilesIntPtr, int count);
 
         internal extern Object GetEditorPreviewTileAsset(Vector3Int position);
         public TileBase GetEditorPreviewTile(Vector3Int position) { return GetEditorPreviewTileAsset(position) as TileBase; }
         public T GetEditorPreviewTile<T>(Vector3Int position) where T : TileBase { return GetEditorPreviewTile(position) as T; }
+
+        [NativeMethod(Name = "GetEditorPreviewTileAssetEntityId", IsThreadSafe = true)]
+        public extern EntityId GetEditorPreviewTileEntityId(Vector3Int position);
 
         internal extern void SetEditorPreviewTileAsset(Vector3Int position, Object tile);
         public void SetEditorPreviewTile(Vector3Int position, TileBase tile) { SetEditorPreviewTileAsset(position, tile); }
@@ -525,16 +569,18 @@ namespace UnityEngine.Tilemaps
     public partial struct TileData
     {
         public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetInstanceID() : 0; } }
+        public EntityId spriteEntityId { get => m_Sprite; set => m_Sprite = value; }
         public Color color { get { return m_Color; } set { m_Color = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
-        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetInstanceID() : 0;; } }
+        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetInstanceID() : 0; } }
+        public EntityId gameObjectEntityId { get => m_GameObject; set => m_GameObject = value; }
         public TileFlags flags { get { return m_Flags; } set { m_Flags = value; } }
         public Tile.ColliderType colliderType { get { return m_ColliderType; } set { m_ColliderType = value; } }
 
-        private int m_Sprite;
+        private EntityId m_Sprite;
         private Color m_Color;
         private Matrix4x4 m_Transform;
-        private int m_GameObject;
+        private EntityId m_GameObject;
         private TileFlags m_Flags;
         private Tile.ColliderType m_ColliderType;
 
@@ -542,43 +588,13 @@ namespace UnityEngine.Tilemaps
         private static TileData CreateDefault()
         {
             TileData tileData = default;
-            tileData.color = Color.white;
-            tileData.transform = Matrix4x4.identity;
-            tileData.flags = default;
-            tileData.colliderType = default;
+            tileData.m_Sprite = EntityId.None;
+            tileData.m_Color = Color.white;
+            tileData.m_Transform = Matrix4x4.identity;
+            tileData.m_GameObject = EntityId.None;
+            tileData.m_Flags = default;
+            tileData.m_ColliderType = default;
             return tileData;
-        }
-    }
-
-    [RequiredByNativeCode]
-    [StructLayoutAttribute(LayoutKind.Sequential)]
-    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
-    internal partial struct TileDataNative
-    {
-        public int sprite { get { return m_Sprite; } set { m_Sprite = value; } }
-        public Color color { get { return m_Color; } set { m_Color = value; } }
-        public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
-        public int gameObject { get { return m_GameObject; } set { m_GameObject = value; } }
-        public TileFlags flags { get { return m_Flags; } set { m_Flags = value; } }
-        public Tile.ColliderType colliderType { get { return m_ColliderType; } set { m_ColliderType = value; } }
-
-        private int m_Sprite;
-        private Color m_Color;
-        private Matrix4x4 m_Transform;
-        private int m_GameObject;
-        private TileFlags m_Flags;
-        private Tile.ColliderType m_ColliderType;
-
-        public static implicit operator TileDataNative(TileData td)
-        {
-            TileDataNative tileDataNative = default;
-            tileDataNative.sprite = td.sprite != null ? td.sprite.GetInstanceID() : 0;
-            tileDataNative.color = td.color;
-            tileDataNative.transform = td.transform;
-            tileDataNative.gameObject = td.gameObject != null ? td.gameObject.GetInstanceID() : 0;
-            tileDataNative.flags = td.flags;
-            tileDataNative.colliderType = td.colliderType;
-            return tileDataNative;
         }
     }
 
@@ -626,6 +642,58 @@ namespace UnityEngine.Tilemaps
         private float m_AnimationStartTime;
         private TileAnimationFlags m_Flags;
     }
+
+    [RequiredByNativeCode]
+    [StructLayoutAttribute(LayoutKind.Sequential)]
+    [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
+    public partial struct TileAnimationEntityIdData
+    {
+        public NativeArray<EntityId> animatedSpritesEntityIds
+        {
+            set
+            {
+                if (!value.IsCreated)
+                    return;
+                unsafe
+                {
+                    m_AnimatedSpritesEntityIdPtr = (IntPtr)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(value);
+                    m_Count = value.Length;
+                }
+            }
+        }
+
+        internal IntPtr animatedSpritesEntityIdPtr { get => m_AnimatedSpritesEntityIdPtr; set => m_AnimatedSpritesEntityIdPtr = value; }
+        internal int count { get => m_Count; set => m_Count = value; }
+        public float animationSpeed { get { return m_AnimationSpeed; } set { m_AnimationSpeed = value; } }
+        public float animationStartTime { get { return m_AnimationStartTime; } set { m_AnimationStartTime = value; } }
+        public TileAnimationFlags flags { get { return m_Flags; } set { m_Flags = value; } }
+
+        private IntPtr m_AnimatedSpritesEntityIdPtr;
+        private int m_Count;
+        private float m_AnimationSpeed;
+        private float m_AnimationStartTime;
+        private TileAnimationFlags m_Flags;
+
+        internal void CopyFrom(TileAnimationData other)
+        {
+            m_AnimatedSpritesEntityIdPtr = IntPtr.Zero;
+            m_Count = 0;
+            if (other.animatedSprites != null && other.animatedSprites.Length > 0)
+            {
+                var spriteArray = new NativeArray<EntityId>(other.animatedSprites.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                for (int i = 0; i < other.animatedSprites.Length; ++i)
+                {
+                    var sprite = other.animatedSprites[i];
+                    spriteArray[i] = sprite != null ? sprite.GetInstanceID() : EntityId.None;
+                }
+                animatedSpritesEntityIds = spriteArray;
+                m_Count = other.animatedSprites.Length;
+            }
+            m_AnimationSpeed = other.animationSpeed;
+            m_AnimationStartTime = other.animationStartTime;
+            m_Flags = other.flags;
+        }
+    };
 
     [RequireComponent(typeof(Tilemap))]
     [NativeType(Header = "Modules/Tilemap/Public/TilemapCollider2D.h")]

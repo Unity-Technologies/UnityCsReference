@@ -26,11 +26,11 @@ namespace UnityEngine.Rendering
         DrawRendererFlags m_Flags;
 
 #pragma warning disable 414
-        int m_OverrideShaderID;
+        EntityId m_OverrideShaderID;
         int m_OverrideShaderPassIndex;
-        int m_OverrideMaterialInstanceId;
+        EntityId m_OverrideMaterialInstanceId;
         int m_OverrideMaterialPassIndex;
-        int m_fallbackMaterialInstanceId;
+        EntityId m_fallbackMaterialInstanceId;
         int m_MainLightIndex;
         int m_UseSrpBatcher; // only needed to match native struct
         int m_LodCrossFadeStencilMask;

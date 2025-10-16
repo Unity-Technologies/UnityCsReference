@@ -9,6 +9,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Pool;
 
 namespace UnityEngine
@@ -231,6 +232,7 @@ namespace UnityEngine
                 }
                 _pool.Value.Release(this);
                 toRethrow?.Throw();
+                CodeLoadedScope.CancelIfNotInCorrectGeneration();
             }
             finally
             {

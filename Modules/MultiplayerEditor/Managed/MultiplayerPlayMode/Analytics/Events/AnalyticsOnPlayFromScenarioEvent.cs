@@ -54,5 +54,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [AnalyticInfo(eventName: OnPlayFromScenarioData.k_OnPlayFromScenarioEventName, vendorKey: Constants.k_VendorKey, version: 2)]
     internal class AnalyticsOnPlayFromScenarioEvent : AnalyticsEvent<AnalyticsOnPlayFromScenarioEvent, OnPlayFromScenarioData>
     {
+        public static void SendValidationErrorData(InstanceData[] instances, ErrorData[] errors)
+        {
+            var analyticsData = new OnPlayFromScenarioData
+            {
+                Instances = instances,
+                ScenarioState = "ValidationFailed",
+                Errors = errors
+            };
+            Send(analyticsData);
+        }
     }
 }

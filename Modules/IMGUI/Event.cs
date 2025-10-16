@@ -115,13 +115,14 @@ namespace UnityEngine
         // TODO: set this to null outside the event loop.
         //
 
+
         public static Event current
         {
             get
             {
                 // return null if Event.current is queried outside OnGUI
                 // Only in editor because of backwards compatible.
-                if (GUIUtility.guiDepth > 0)
+                if (GUIUtility.guiDepth > 0 )
                     return s_Current;
                 else
                     return null;

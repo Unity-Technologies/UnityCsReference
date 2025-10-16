@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// A control that allows the user to pick a choice from a list of options. For more information, refer to [[wiki:UIE-uxml-element-DropdownField|UXML element DropdownField]].
     /// </summary>
     [Icon("UIToolkit/Icons/DropdownField.png")]
-    public class DropdownField : PopupField<string>
+    public partial class DropdownField : PopupField<string>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
@@ -67,33 +67,6 @@ namespace UnityEngine.UIElements
 
                 if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
                     e.valueOverride = valueOverride;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="DropdownField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<DropdownField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="DropdownField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<string>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_Index = new UxmlIntAttributeDescription { name = "index" };
-            UxmlStringAttributeDescription m_Choices = new UxmlStringAttributeDescription() { name = "choices" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (DropdownField)ve;
-                var choices = UxmlUtility.ParseStringListAttribute(m_Choices.GetValueFromBag(bag, cc));
-                if (choices != null)
-                    f.choices = choices;
-                f.index = m_Index.GetValueFromBag(bag, cc);
             }
         }
 

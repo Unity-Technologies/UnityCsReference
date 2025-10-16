@@ -20,6 +20,16 @@ internal partial struct ProgressScope : IDisposable
         ProgressBarSetText(text, forceUpdate, forceDisplay);
     }
 
+    public void SetValue(float value)
+    {
+        ProgressBarSetValue(value);
+    }
+
+    public bool IsCancelled()
+    {
+        return ProgressBarIsCancelRequested();
+    }
+
     public void Dispose()
     {
         ProgressBarPopScope(scope);

@@ -11,7 +11,7 @@ using UnityEngine;
 namespace UnityEditor.Build.Content
 {
     [UsedByNativeCode]
-    [NativeHeader("Modules/ContentBuild/Editor/Public/BuildUsageCache.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/BuildUsage/BuildUsageCache.h")]
     public class BuildUsageCache : IDisposable
     {
         private IntPtr m_Ptr;

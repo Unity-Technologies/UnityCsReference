@@ -41,7 +41,7 @@ namespace UnityEditor.Build.Profile.Elements
 
         public VisualElement CreateInspectorGUI(BuildProfile profile, SerializedObject serializedObject)
         {
-            return new EditorAsVisualElement(profile.graphicsSettings);
+            return new EditorAsVisualElement(profile.graphicsSettings, true);
         }
 
         void OnReset(BuildProfile profile)

@@ -8,9 +8,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using System;
 using System.IO;
+using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
-using UnityEngine.Serialization;
-using Object = UnityEngine.Object;
+using UnityEngine.Pool;
 
 namespace Unity.UI.Builder
 {
@@ -307,8 +307,8 @@ namespace Unity.UI.Builder
         public void MarkStyleSheetsDirty()
             => activeOpenUXMLFile.MarkStyleSheetsDirty();
 
-        public void AddStyleSheetToDocument(StyleSheet styleSheet, string ussPath)
-            => activeOpenUXMLFile.AddStyleSheetToDocument(styleSheet, ussPath);
+        public void AddStyleSheetToDocument(StyleSheet styleSheet, string ussPath, int index = -1)
+            => activeOpenUXMLFile.AddStyleSheetToDocument(styleSheet, ussPath, index);
 
         public void RemoveStyleSheetFromDocument(int ussIndex)
             => activeOpenUXMLFile.RemoveStyleSheetFromDocument(ussIndex);
@@ -318,6 +318,9 @@ namespace Unity.UI.Builder
 
         public void UpdateActiveStyleSheet(BuilderSelection selection, StyleSheet styleSheet, IBuilderSelectionNotifier source)
             => activeOpenUXMLFile.UpdateActiveStyleSheet(selection, styleSheet, source);
+
+        public bool IsStyleSheetInDocument(StyleSheet styleSheet)
+            => activeOpenUXMLFile.GetUssFileFromSheet(styleSheet) != null;
 
         //
         // Save / Load
@@ -354,6 +357,8 @@ namespace Unity.UI.Builder
         {
             activeOpenUXMLFile.NewDocument(documentRootElement);
             SaveToDisk();
+
+            ClearUsingDeprecatedAPINotification();
         }
 
         internal bool SaveNewTemplateFileFromHierarchy(string newTemplatePath, string uxml)
@@ -366,6 +371,77 @@ namespace Unity.UI.Builder
                 m_ThemeManager = themeStyleSheetManager;
             ForceUpdateDocumentTheme();
             SaveToDisk();
+
+            ClearUsingDeprecatedAPINotification();
+            CheckForUsingDeprecatedAPI(documentElement);
+        }
+
+        void OnDoNotShowAgainButtonPressed()
+        {
+            BuilderProjectSettings.BlockNotification(BuilderConstants.UsingDeprecatedAPINotificationKey);
+            ClearUsingDeprecatedAPINotification();
+        }
+
+        void ClearUsingDeprecatedAPINotification()
+        {
+            primaryViewportWindow?.viewport.notifications.ClearNotifications(BuilderConstants.UsingDeprecatedAPINotificationKey);
+        }
+
+        public bool CheckForUsingDeprecatedAPI(VisualElement element)
+        {
+            bool usesDeprecatedAPI = false;
+
+            // We do not use the VisualTreeAsset because we want to check in template instances as well.
+            // We might check for other deprecated API usage in the future.
+            usesDeprecatedAPI |= CheckForUsingDeprecatedAPIUxmlTraits(element);
+
+            if (usesDeprecatedAPI)
+            {
+                if (!primaryViewportWindow.viewport.notifications.HasNotification(BuilderConstants.UsingDeprecatedAPINotificationKey))
+                {
+                    var notificationData = new BuilderNotifications.NotificationData
+                    {
+                        key = BuilderConstants.UsingDeprecatedAPINotificationKey,
+                        message = BuilderConstants.UsingDeprecatedAPINotification,
+                        actionButtonText = BuilderConstants.DoNotShowAgainNotificationButtonText,
+                        onActionButtonClicked = OnDoNotShowAgainButtonPressed,
+                        showDismissButton = true,
+                        notificationType = BuilderNotifications.NotificationType.Warning,
+                    };
+                    primaryViewportWindow.viewport.notifications.AddNotification(notificationData);
+                }
+            }
+            return usesDeprecatedAPI;
+        }
+
+        static bool CheckForUsingDeprecatedAPIUxmlTraits(VisualElement element)
+        {
+            using var _ = HashSetPool<string>.Get(out var testedTypes);
+            return CheckForUsingDeprecatedAPIUxmlTraitsRecursively(element, testedTypes);
+        }
+
+        static bool CheckForUsingDeprecatedAPIUxmlTraitsRecursively(VisualElement element, HashSet<string> testedTypes)
+        {
+            var fullTypeName = element.fullTypeName;
+
+            // If we already tested this type or if the element is not part of an asset file then skip it
+            if (!testedTypes.Contains(fullTypeName) && (element.GetVisualElementAsset() != null || element.GetVisualElementAssetInTemplate() != null))
+            {
+                testedTypes.Add(fullTypeName);
+                var uxmlSerializedDataDesc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);
+
+                // If null then it
+                if (uxmlSerializedDataDesc == null)
+                    return true;
+            }
+
+            foreach (var child in element.Children())
+            {
+                if (CheckForUsingDeprecatedAPIUxmlTraitsRecursively(child, testedTypes))
+                    return true;
+            }
+
+            return false;
         }
 
         private void ForceUpdateDocumentTheme()

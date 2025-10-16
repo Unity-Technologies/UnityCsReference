@@ -295,6 +295,8 @@ namespace UnityEngine.XR
 
         public extern float meshDensity { get; set; }
 
+        public extern bool submeshClassificationEnabled { get; set; }
+
         public extern bool SetBoundingVolume(Vector3 origin, Vector3 extents);
 
         [NativeConditional("ENABLE_XR")]
@@ -332,6 +334,63 @@ namespace UnityEngine.XR
         }
 
         extern IntPtr GetUpdatedMeshTransforms();
+
+        public unsafe bool TryGetSubmeshClassifications(
+            MeshId id,
+            Allocator allocator,
+            out uint elementsPerVector,
+            out NativeArray<uint> vertexIndexVectors,
+            out NativeArray<uint> classifications
+        )
+        {
+            uint* vertexIndexVectorsPtr = null;
+            uint* classificationsPtr = null;
+            ulong vertexIndexCount = 0;
+            ulong classificationCount = 0;
+
+            if (
+                !NativeTryGetSubmeshClassifications(
+                    id,
+                    out elementsPerVector,
+                    ref vertexIndexCount,
+                    vertexIndexVectorsPtr,
+                    ref classificationCount,
+                    classificationsPtr
+                )
+            )
+            {
+                vertexIndexVectors = default;
+                classifications = default;
+                return false;
+            }
+
+            vertexIndexVectors = new NativeArray<uint>((int)vertexIndexCount, allocator);
+            vertexIndexVectorsPtr = (uint*)
+                NativeArrayUnsafeUtility.GetUnsafePtr<uint>(vertexIndexVectors);
+            classifications = new NativeArray<uint>((int)classificationCount, allocator);
+            classificationsPtr = (uint*)
+                NativeArrayUnsafeUtility.GetUnsafePtr<uint>(classifications);
+
+            return NativeTryGetSubmeshClassifications(
+                id,
+                out elementsPerVector,
+                ref vertexIndexCount,
+                vertexIndexVectorsPtr,
+                ref classificationCount,
+                classificationsPtr
+            );
+        }
+
+        [return: MarshalAs(UnmanagedType.U1)]
+        [NativeMethod("TryGetSubmeshClassifications")]
+        extern unsafe bool NativeTryGetSubmeshClassifications(
+            MeshId id,
+            out uint elementsPerVector,
+            ref ulong vertexVectorCount,
+            uint* vertexIndexVectors,
+            ref ulong classificationCount,
+            uint* classificationBuffer
+        );
 
         new internal static class BindingsMarshaller
         {

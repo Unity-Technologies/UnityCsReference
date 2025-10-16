@@ -5,6 +5,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+using static UnityEngine.LowLevelPhysics2D.PhysicsLowLevelScripting2D;
+
 namespace UnityEngine.LowLevelPhysics2D
 {
     /// <summary>
@@ -18,7 +20,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// A custom Unity object.
         /// </summary>
-        public Object objectValue { readonly get => m_Object; set => m_Object = value; }
+        public Object objectValue { readonly get => PhysicsUserData_GetObject(m_EntityId); set => m_EntityId = value.GetEntityId(); }
 
         /// <summary>
         /// A custom 64-bit <see cref="LowLevelPhysics2D.PhysicsMask"/>.
@@ -45,11 +47,11 @@ namespace UnityEngine.LowLevelPhysics2D
 
         #region Internal
 
-        [SerializeField] Object m_Object;
-        [SerializeField] PhysicsMask m_PhysicsMask;
-        [SerializeField] float m_Float;
-        [SerializeField] int m_Int;
-        [SerializeField] bool m_Bool;
+        [SerializeField] internal EntityId m_EntityId;
+        [SerializeField] internal PhysicsMask m_PhysicsMask;
+        [SerializeField] internal float m_Float;
+        [SerializeField] internal int m_Int;
+        [SerializeField] internal bool m_Bool;
 
         #endregion
     }

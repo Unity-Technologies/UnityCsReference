@@ -7,15 +7,15 @@ using UnityEngine.Audio;
 
 namespace UnityEditor
 {
-    [CustomPropertyDrawer(typeof(IGeneratorDefinition.Serializable))]
+    [CustomPropertyDrawer(typeof(IAudioGenerator.Serializable))]
     internal class AudioGeneratorSerializableInterfaceDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty serializableStruct, GUIContent label)
         {
-            var innerField = serializableStruct.FindPropertyRelative(nameof(IGeneratorDefinition.Serializable.Reference));
+            var innerField = serializableStruct.FindPropertyRelative(nameof(IAudioGenerator.Serializable.Reference));
             // TODO: There's a bug where "allowSceneObjects" isn't recovered correctly from the relative property,
             // so while you can drag and drop scene references, you can't object pick them (yet).
-            EditorGUI.ObjectField(position, innerField, typeof(IGeneratorDefinition), label);
+            EditorGUI.ObjectField(position, innerField, typeof(IAudioGenerator), label);
         }
     }
 }

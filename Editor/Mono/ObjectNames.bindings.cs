@@ -25,7 +25,7 @@ namespace UnityEditor
         public static extern void SetNameSmart(UnityObject obj, string name);
 
         [FreeFunction("SetNameSmartWithInstanceID_Internal")]
-        internal static extern void SetNameSmartWithInstanceID(int instanceID, string name);
+        internal static extern void SetNameSmartWithInstanceID(UnityEngine.EntityId instanceID, string name);
 
         [FreeFunction("GetUniqueName_Internal")]
         public static extern string GetUniqueName(string[] existingNames, string name);

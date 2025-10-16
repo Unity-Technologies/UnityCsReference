@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
     /// This represents a description on what column to sort and in which order.
     /// </summary>
     [Serializable, UxmlObject]
-    public class SortColumnDescription : INotifyBindablePropertyChanged
+    public partial class SortColumnDescription : INotifyBindablePropertyChanged
     {
         static readonly BindingId columnNameProperty = nameof(columnName);
         static readonly BindingId columnIndexProperty = nameof(columnIndex);
@@ -68,37 +68,6 @@ namespace UnityEngine.UIElements
                     e.columnIndex = columnIndex;
                 if (ShouldWriteAttributeValue(direction_UxmlAttributeFlags))
                     e.direction = direction;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="SortColumnDescription"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : SortColumnDescription, new() {}
-        /// <summary>
-        /// Instantiates a <see cref="SortColumnDescription"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory : UxmlObjectFactory<SortColumnDescription> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="SortColumnDescription"/>.
-        /// </summary>
-        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : SortColumnDescription
-        {
-            readonly UxmlStringAttributeDescription m_ColumnName = new UxmlStringAttributeDescription { name = "column-name" };
-            readonly UxmlIntAttributeDescription m_ColumnIndex = new UxmlIntAttributeDescription { name = "column-index", defaultValue=-1};
-            readonly UxmlEnumAttributeDescription<SortDirection> m_SortDescription = new UxmlEnumAttributeDescription<SortDirection> { name = "direction", defaultValue = SortDirection.Ascending };
-
-            public override void Init(ref T obj, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ref obj, bag, cc);
-
-                obj.columnName = m_ColumnName.GetValueFromBag(bag, cc);
-                obj.columnIndex = m_ColumnIndex.GetValueFromBag(bag, cc);
-                obj.direction = m_SortDescription.GetValueFromBag(bag, cc);
             }
         }
 

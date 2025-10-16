@@ -24,7 +24,6 @@ namespace UnityEngine.Rendering
         UGUI = 6,
         UGUI_Overdraw = 7,
         UGUI_ETC1Supported = 8,
-        RenderAs2D = 9
     }
     
     [VisibleToOtherModules]
@@ -160,7 +159,6 @@ namespace UnityEngine.Rendering
                 DefaultMaterialType.UGUI => rp.defaultUIMaterial,
                 DefaultMaterialType.UGUI_Overdraw => rp.defaultUIOverdrawMaterial,
                 DefaultMaterialType.UGUI_ETC1Supported => rp.defaultUIETC1SupportedMaterial,
-                DefaultMaterialType.RenderAs2D => rp.defaultRenderAs2DMaterial,
                 _ => throw new NotImplementedException($"DefaultMaterialType {type} not implemented")
             };
         }

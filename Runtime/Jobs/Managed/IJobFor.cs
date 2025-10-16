@@ -21,7 +21,7 @@ namespace Unity.Jobs
     {
         internal struct ForJobStruct<T> where T : struct, IJobFor
         {
-            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ForJobStruct<T>>();
+            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<ForJobStruct<T>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()

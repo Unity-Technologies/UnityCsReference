@@ -18,6 +18,7 @@ namespace UnityEditor
     {
         public enum MaterialLocation
         {
+            [Obsolete("External Material Location is no longer supported.", false)]
             External = 0,
             InPrefab = 1
         }
@@ -291,7 +292,7 @@ namespace UnityEditor
                                 texImporter.SaveAndReimport();
                             }
 
-                            
+
                         }
                     }
                 }

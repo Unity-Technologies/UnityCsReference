@@ -61,6 +61,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     () =>
                     {
                         MppmLog.Debug($"{player.Name} correctly replicated the scene hierarchy with {sceneHierarchy.LoadedScenes.Count} active scenes, {sceneHierarchy.UnloadedScenes.Count} unloaded scenes and {sceneHierarchy.ActiveScene} as active scene");
+                        if (EditorApplication.isPaused)
+                        {
+                            PlaymodeEvents.InvokePause();
+                        }
                         if (EditorApplication.isPlaying)
                         {
                             PlaymodeEvents.InvokePlay();
@@ -106,18 +110,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (state == PauseState.Paused)
                 {
                     m_LastFrameStepWasDetected = Time.frameCount;
+                    PlaymodeEvents.InvokePause();
                 }
-
-                if (EditorApplication.isPlaying)
+                else
                 {
-                    if (state == PauseState.Paused)
-                    {
-                        PlaymodeEvents.InvokePause();
-                    }
-                    else
-                    {
-                        PlaymodeEvents.InvokeUnpause();
-                    }
+                    PlaymodeEvents.InvokeUnpause();
                 }
             };
             EditorApplication.playModeStateChanged += mode =>

@@ -19,6 +19,7 @@ using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using Unity.Properties;
+using Unity.UIToolkit.Editor;
 using Button = UnityEngine.UIElements.Button;
 using Cursor = UnityEngine.UIElements.Cursor;
 
@@ -447,15 +448,14 @@ namespace Unity.UI.Builder
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
                     uiField.visualInput.tooltip = styleValueTooltip;
             }
-            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is ObjectField materialField)
+            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionField materialDefinitionField)
             {
-                materialField.objectType = typeof(Material);
-                materialField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+                materialDefinitionField.RegisterValueChangedCallback(e => OnFieldValueChangeMaterial(e, styleName));
 
                 if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
-                    materialField.visualInput.tooltip = styleValueTooltip;
-            }            
+                    materialDefinitionField.visualInput.tooltip = styleValueTooltip;
+            }
             else if (IsComputedStyleEnum(val, styleType))
             {
                 var enumValue = GetComputedStyleEnumValue(val, styleType);
@@ -544,7 +544,7 @@ namespace Unity.UI.Builder
                     return;
                 }
             }
-            else if (IsComputedStyleRatio(val) && fieldElement is RatioStyleField aspectRatioField)
+            else if (IsComputedStyleRatio(val) && fieldElement is RatioField aspectRatioField)
             {
                 if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, aspectRatioField.typeName, ""), out var styleValueTooltip))
                     aspectRatioField.visualInput.tooltip = styleValueTooltip;
@@ -863,6 +863,7 @@ namespace Unity.UI.Builder
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
+                m_Inspector.UpdateAdvancedTextHelpBox();
                 return true;
             }
 
@@ -1253,9 +1254,9 @@ namespace Unity.UI.Builder
                 return true;
             }
 
-            if (IsComputedStyleMaterial(val, styleName) && fieldElement is ObjectField)
+            if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionField)
             {
-                var uiField = fieldElement as ObjectField;
+                var uiField = fieldElement as MaterialDefinitionField;
                 var value = GetComputedStyleMaterialValue(val);
                 if (useStyleProperty)
                     value = styleSheet.GetAsset(styleProperty.values[0]) as Material;
@@ -1346,10 +1347,13 @@ namespace Unity.UI.Builder
                         return false;
                 }
 
+                if (styleName is "-unity-text-generator")
+                    m_Inspector.UpdateAdvancedTextHelpBox();
+
                 return true;
             }
 
-            if(IsComputedStyleRatio(val) && fieldElement is RatioStyleField ratioStyleField)
+            if(IsComputedStyleRatio(val) && fieldElement is RatioField ratioStyleField)
             {
                 var value = GetComputedStyleRatioValue(val);
                 if (useStyleProperty && styleProperty.TryGetRatio(styleSheet, out var propertyValue))
@@ -1507,10 +1511,10 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(transitionTimingFunctionField);
             }
-            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is ObjectField objectMaterialField)
+            else if (IsComputedStyleMaterial(val, styleName) && fieldElement is MaterialDefinitionField objectMaterialDefinitionField)
             {
-                DispatchChangeEvent(objectMaterialField);
-            }            
+                DispatchChangeEvent(objectMaterialDefinitionField);
+            }
             else if (IsComputedStyleEnum(val, styleType))
             {
                 switch (fieldElement)
@@ -1523,7 +1527,7 @@ namespace Unity.UI.Builder
                         break;
                 }
             }
-            else if (IsComputedStyleRatio(val) && fieldElement is RatioStyleField aspectRatioStyleField)
+            else if (IsComputedStyleRatio(val) && fieldElement is RatioField aspectRatioStyleField)
             {
                 DispatchChangeEvent(aspectRatioStyleField);
             }
@@ -2711,16 +2715,15 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var resourcesPath = BuilderAssetUtilities.GetResourcesPathForAsset(assetPath);
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
             var isNewValue = !styleProperty.HasValue();
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            if (string.IsNullOrEmpty(resourcesPath))
-                styleProperty.SetAssetReference(styleSheet, newValue);
+            if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue, out var resolvedResourcePath))
+                styleProperty.SetResourcePath(styleSheet, resolvedResourcePath);
             else
-                styleProperty.SetResourcePath(styleSheet, resourcesPath);
+                styleProperty.SetAssetReference(styleSheet, newValue);
 
             PostStyleFieldSteps(target as VisualElement, styleProperty, styleName, isNewValue);
         }
@@ -2738,7 +2741,6 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var resourcesPath = BuilderAssetUtilities.GetResourcesPathForAsset(assetPath);
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
             var isNewValue = !styleProperty.HasValue();
 
@@ -2750,19 +2752,20 @@ namespace Unity.UI.Builder
             }
             else if (newValue.hotspot == Vector2.zero)
             {
-                if (string.IsNullOrEmpty(resourcesPath))
-                    styleProperty.SetAssetReference(styleSheet, newValue.texture);
+                if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
+                    styleProperty.SetResourcePath(styleSheet, resolvedResourcePath);
                 else
-                    styleProperty.SetResourcePath(styleSheet, resourcesPath);
+                    styleProperty.SetAssetReference(styleSheet, newValue.texture);
             }
             else
             {
                 if (styleProperty.handleCount != 3)
                     styleProperty.values = new StyleValueHandle[3];
-                if (string.IsNullOrEmpty(resourcesPath))
-                    styleSheet.WriteAssetReference(ref styleProperty.values[0], newValue.texture);
+                if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
+                    styleSheet.WriteResourcePath(ref styleProperty.values[0], resolvedResourcePath);
                 else
-                    styleSheet.WriteResourcePath(ref styleProperty.values[0], resourcesPath);
+                    styleSheet.WriteAssetReference(ref styleProperty.values[0], newValue.texture);
+
                 styleSheet.WriteFloat(ref styleProperty.values[1], newValue.hotspot.x);
                 styleSheet.WriteFloat(ref styleProperty.values[2], newValue.hotspot.y);
             }
@@ -2868,6 +2871,9 @@ namespace Unity.UI.Builder
             if (styleName == "position")
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 
+            if (styleName is "-unity-text-generator" or "-unity-text-auto-size")
+                m_Inspector.UpdateAdvancedTextHelpBox();
+
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
@@ -2879,6 +2885,48 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
             styleProperty.SetRatio(styleSheet, e.newValue);
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
+        }
+
+        void OnFieldValueChangeMaterial(ChangeEvent<MaterialDefinition> e, string styleName)
+        {
+            var target = e.target;
+            var newValue = e.newValue.material;
+            var previousValue = e.previousValue.material;
+
+            if (newValue == null)
+            {
+                var keywords = StyleFieldConstants.GetStyleKeywords(styleName);
+                if (keywords == StyleFieldConstants.KLNone)
+                    OnFieldKeywordChange(StyleValueKeyword.None, target as VisualElement, styleName);
+                else if (keywords == StyleFieldConstants.KLAuto)
+                    OnFieldKeywordChange(StyleValueKeyword.Auto, target as VisualElement, styleName);
+                else
+                    OnFieldKeywordChange(StyleValueKeyword.Initial, target as VisualElement, styleName);
+
+                return;
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(newValue);
+            if (BuilderAssetUtilities.IsBuiltinPath(assetPath))
+            {
+                Builder.ShowWarning(BuilderConstants.BuiltInAssetPathsNotSupportedMessage);
+
+                // Revert the change.
+                ((MaterialDefinitionField)target).SetValueWithoutNotify(previousValue);
+                return;
+            }
+
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = !styleProperty.HasValue();
+
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue, out var resolvedResourcePath))
+                styleProperty.SetResourcePath(styleSheet, resolvedResourcePath);
+            else
+                styleProperty.SetAssetReference(styleSheet, newValue);
+
+            PostStyleFieldSteps(target as VisualElement, styleProperty, styleName, isNewValue);
         }
 
         private void SetXAndYSubFieldsTooltips(VisualElement parentField, string xFieldName, string xTooltip, string yFieldName, string yTooltip)

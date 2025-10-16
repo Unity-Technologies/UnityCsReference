@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor.PhysicsEditor;
 
 [InitializeOnLoad]
-[NativeHeader("Modules/Physics/CommandLayer/PhysicsBackendSystem.h")]
+[NativeHeader("Modules/Physics/PhysicsBackendSystem.h")]
 internal class PhysicsBackendStripping
 {
     const string k_PhysicsModuleName = "Physics";
@@ -39,11 +39,6 @@ internal class PhysicsBackendStripping
         //if the current backend is the fallback then it is marked as belonging to the 'Physics' module
         if (activeIntegration.id == k_FallbackIntegrationId)
             return;
-
-        // If the target backend doesn't have the correct license requirement, we do not want to continue
-        if (!activeIntegration.HasRequiredEntitlements())
-            throw new BuildFailedException($"You do not meet the required license to build the current Physics System." +
-                $" Havok Physics for Unity is available to Pro, Enterprise, and Unity Industrial Collection users. Please choose a different Physics System and reboot the Editor");
 
         // If the current backend module name is null/empty this means we have a backend that is not registered via a module
         // or the serialized ID does not match a backend that is currently present in the user's project

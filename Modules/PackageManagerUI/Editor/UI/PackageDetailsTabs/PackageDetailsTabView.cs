@@ -34,10 +34,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // hardcoded constant values taken from styles applied to Package Details tab headers
         // if these ever change, these values will need to be updated
-        private const float k_TabHeaderPaddingLeft = 6.0f;
-        private const float k_TabHeaderPaddingRight = 6.0f;
-        private const float k_TabHeaderMarginLeft = 3.0f;
-        private const float k_TabHeaderMarginRight = 3.0f;
+        private const float k_TabHeaderPaddingLeft = 10.0f;
+        private const float k_TabHeaderPaddingRight = 10.0f;
 
         public PackageDetailsTabView()
         {
@@ -50,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_EntitlementsErrorLabel.AddClasses("packageDetailsTabMessage");
             Add(m_EntitlementsErrorLabel);
 
-            m_CalculatedTabHorizontalMarginAndPadding = k_TabHeaderMarginLeft + k_TabHeaderMarginRight + k_TabHeaderPaddingLeft + k_TabHeaderPaddingRight;
+            m_CalculatedTabHorizontalMarginAndPadding = k_TabHeaderPaddingLeft + k_TabHeaderPaddingRight;
         }
 
         public void RefreshAllTabs(IPackageVersion version)

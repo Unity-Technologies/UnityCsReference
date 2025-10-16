@@ -61,7 +61,7 @@ namespace Unity.UI.Builder
             pill.Add(overlay);
         }
 
-        protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
+        protected override bool PrepareDrag(VisualElement target, Vector2 mousePosition)
         {
             m_LibraryItem =
                 target.GetProperty(BuilderConstants.LibraryItemLinkedManipulatorVEPropertyName)
@@ -108,7 +108,7 @@ namespace Unity.UI.Builder
             m_DragPreviewElement.AddToClassList(s_DragPreviewElementClassName);
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane,
+        protected override bool PerformAction(VisualElement destination, DestinationPane pane,
             Vector2 localMousePosition, int index = -1)
         {
             // Determine if it applies and use Absolute Island insertion.
@@ -121,7 +121,7 @@ namespace Unity.UI.Builder
             // Prevent action if attempting to drag invalid element as child of another element.
             // For example, dragging something other than a Tab inside the TabView.
             if (!BuilderAssetUtilities.IsSupportedChildType(m_DragPreviewLastParent, m_DragPreviewElement.GetType()))
-                return;
+                return false;
 
             for (var i = 0; i < index; ++i)
             {
@@ -143,6 +143,8 @@ namespace Unity.UI.Builder
                 if (pane == DestinationPane.Viewport)
                     viewport.pane.Focus();
             }
+
+            return true;
         }
 
         protected override void EndDrag()

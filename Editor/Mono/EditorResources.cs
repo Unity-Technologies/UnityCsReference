@@ -277,12 +277,12 @@ namespace UnityEditor.Experimental
 
                     foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
                     {
-                        var artifactKey = new ArtifactKey(new GUID(AssetDatabase.AssetPathToGUID(editorUssPath)));
-                        var artifactID = AssetDatabaseExperimental.LookupArtifact(artifactKey);
+                        var artifactKey = AssetDatabaseExperimental.CreateArtifactKey(AssetDatabase.GUIDFromAssetPath(editorUssPath));
+                        var importResultID = AssetDatabaseExperimental.LookupArtifact(artifactKey);
 
                         //Only add it to the list of paths it if has been imported, since later on
                         //the asset will be loaded, and if not imported it will fail.
-                        if (artifactID.isValid)
+                        if (importResultID.isValid)
                         {
                             paths.Add(editorUssPath);
                         }

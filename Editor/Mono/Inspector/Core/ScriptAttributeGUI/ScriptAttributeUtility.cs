@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     internal class ScriptAttributeUtility
     {
         readonly struct CustomPropertyDrawerContainer
@@ -154,6 +154,7 @@ namespace UnityEditor
         /// <param name="renderPipelineAssetTypes">This can be either GraphicsSettings.currentRenderPipelineAssetType or type from SupportedOnRenderPipeline attribute for serializedObject</param>
         /// <param name="isPropertyTypeAManagedReference">Specify if it's known that we deal with ManagedReference property</param>
         /// <returns></returns>
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static Type GetDrawerTypeForType(Type propertyType, Type[] renderPipelineAssetTypes, bool isPropertyTypeAManagedReference = false)
         {
             //We map specific types to drawers and it will work with managed references too.

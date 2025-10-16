@@ -114,6 +114,16 @@ namespace UnityEditor.U2D
             return (packAtlas) ? Pack(config, setting, input) : Fit(config, setting, input);
         }
 
+        // Helper function to dispose Native Arrays.
+        public void Dispose(PackerData packerData)
+        {
+            if (packerData.colorData.IsCreated)     { packerData.colorData.Dispose();   }
+            if (packerData.spriteData.IsCreated)    { packerData.spriteData.Dispose();  }
+            if (packerData.textureData.IsCreated)   { packerData.textureData.Dispose(); }
+            if (packerData.indexData.IsCreated)     { packerData.indexData.Dispose();   }
+            if (packerData.vertexData.IsCreated)    { packerData.vertexData.Dispose();  }
+        }
+
     };
 
     // SpriteAtlas Importer lets you modify [[SpriteAtlas]]

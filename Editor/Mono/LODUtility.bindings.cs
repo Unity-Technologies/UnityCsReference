@@ -41,6 +41,15 @@ namespace UnityEditor
         [FreeFunction("LODUtilityBindings::CalculateMeshLOD")]
         extern internal static UInt16 CalculateMeshLOD(Camera camera, Renderer renderer);
 
+        [FreeFunction("LODUtilityBindings::GetMeshRelativeHeight")]
+        extern internal static float GetMeshRelativeHeight(Camera camera, Renderer renderer);
+
+        [FreeFunction("LODUtilityBindings::CalculateMeshLODDistance")]
+        extern internal static float CalculateMeshLODDistance(Camera camera, float relativeScreenHeight, Renderer renderer);
+
+        [FreeFunction("LODUtilityBindings::CalculateMeshLODBoundsPercentage")]
+        extern internal static float CalculateMeshLODBoundsPercentage(Camera camera, UInt16 lodLevel, Renderer renderer);
+
         internal static Vector3 CalculateWorldReferencePoint(LODGroup group)
         {
             return group.worldReferencePoint;

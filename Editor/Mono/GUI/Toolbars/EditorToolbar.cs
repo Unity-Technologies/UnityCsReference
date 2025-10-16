@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Overlays;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     sealed class EditorToolbar
     {
         public const string elementClassName = "unity-editor-toolbar-element";
@@ -38,6 +40,7 @@ namespace UnityEditor.Toolbars
             m_ToolbarElements = toolbarElementIds.ToArray();
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static OverlayToolbar CreateOverlay(IEnumerable<string> toolbarElementIds, EditorWindow context = null)
         {
             var root = new OverlayToolbar();

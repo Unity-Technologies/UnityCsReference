@@ -42,7 +42,7 @@ namespace UnityEditor.UIElements.Inspector
         private VisualElement m_ScaleModeContantPhysicalSizeGroup;
         private VisualElement m_ScaleModeWorldSpace;
 
-        private VisualElement m_ReferencePixelsPerUnit;
+        private FloatField m_ReferencePixelsPerUnit;
 
         private VisualElement m_ScreenMatchModeMatchWidthOrHeightGroup;
 
@@ -90,7 +90,22 @@ namespace UnityEditor.UIElements.Inspector
             m_ScaleModeContantPhysicalSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-physical-size");
             m_ScaleModeWorldSpace = m_RootVisualElement.MandatoryQ("scale-mode-world-space");
 
-            m_ReferencePixelsPerUnit = m_RootVisualElement.MandatoryQ("reference-pixels-per-unit");
+            m_ReferencePixelsPerUnit = m_RootVisualElement.MandatoryQ<FloatField>("reference-pixels-per-unit");
+            var worldSpacePixelPerUnit = m_RootVisualElement.MandatoryQ<FloatField>("world-space-pixel-per-unit");
+            worldSpacePixelPerUnit.RegisterCallback<ChangeEvent<float>>((evt) =>
+            {
+                if (evt.target == worldSpacePixelPerUnit)
+                {
+                    var validValue = Mathf.Clamp(evt.newValue, 0.001f, 9999999f);
+
+                    if (!Mathf.Approximately(validValue, evt.newValue))
+                    {
+                        evt.StopImmediatePropagation(); //we cancel the event notification
+                        worldSpacePixelPerUnit.value = validValue; //which will trigger another ChangeEvent to be dispatched
+                    }
+                }
+
+            }, TrickleDown.TrickleDown); 
 
             m_ScreenMatchModeMatchWidthOrHeightGroup =
                 m_RootVisualElement.MandatoryQ("screen-match-mode-match-width-or-height");
@@ -262,6 +277,19 @@ namespace UnityEditor.UIElements.Inspector
             }
 
             UpdateForceGammaOutput();
+
+            var ps = target as PanelSettings;
+            if (ps?.m_AttachedUIDocumentsList?.m_AttachedUIDocuments != null)
+            {
+                foreach (var document in ps.m_AttachedUIDocumentsList.m_AttachedUIDocuments)
+                {
+                    if (document != null)
+                    {
+                        // Let the UIDocument update its rendering properties (UUM-105765)
+                        document.DoUpdate();
+                    }
+                }
+            }
         }
 
         public override VisualElement CreateInspectorGUI()

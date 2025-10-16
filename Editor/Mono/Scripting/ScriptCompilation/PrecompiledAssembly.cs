@@ -29,7 +29,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     abstract class PrecompiledAssemblyProviderBase
     {
         public abstract PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines = null);
-        public abstract Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines);
+        public abstract Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines, bool includeRedirectedAssemblies);
         public abstract PrecompiledAssembly[] GetUnityAssemblies(bool isEditor, BuildTarget buildTarget);
         public abstract PrecompiledAssembly[] GetAllPrecompiledAssemblies();
         public abstract PrecompiledAssembly[] CachedEditorPrecompiledAssemblies { get; }
@@ -42,9 +42,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetUnityAssembliesNative(isEditor, buildTarget);
         }
 
-        protected virtual PrecompiledAssembly[] GetPrecompiledAssembliesInternal(EditorScriptCompilationOptions compilationOptions, BuildTarget target, string[] extraScriptingDefines)
+        protected virtual PrecompiledAssembly[] GetPrecompiledAssembliesInternal(EditorScriptCompilationOptions compilationOptions, BuildTarget target, string[] extraScriptingDefines, bool includeRedirectedAssemblies)
         {
-            return GetPrecompiledAssembliesNative(compilationOptions, target, extraScriptingDefines);
+            return GetPrecompiledAssembliesNative(compilationOptions, target, extraScriptingDefines, includeRedirectedAssemblies);
         }
 
         protected virtual PrecompiledAssembly[] GetAllPrecompiledAssembliesInternal()
@@ -54,7 +54,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         [FreeFunction("GetPrecompiledAssembliesManaged")]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
-        protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTarget target, string[] extraScriptingDefines);
+        protected static extern PrecompiledAssembly[] GetPrecompiledAssembliesNative(EditorScriptCompilationOptions compilationOptions, BuildTarget target, string[] extraScriptingDefines, bool includeRedirectedAssemblies);
 
         [FreeFunction("GetUnityAssembliesManaged")]
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
@@ -129,7 +129,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public override PrecompiledAssembly[] GetPrecompiledAssemblies(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines)
         {
-            return GetPrecompiledAssembliesDictionary(compilationOptions, buildTarget, extraScriptingDefines).Values.ToArray();
+            return GetPrecompiledAssembliesDictionary(compilationOptions, buildTarget, extraScriptingDefines, includeRedirectedAssemblies: true).Values.ToArray();
         }
 
         public override PrecompiledAssembly[] GetAllPrecompiledAssemblies()
@@ -152,18 +152,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             return (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
         }
-        public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines)
+        public override Dictionary<string, PrecompiledAssembly> GetPrecompiledAssembliesDictionary(EditorScriptCompilationOptions compilationOptions, BuildTarget buildTarget, string[] extraScriptingDefines, bool includeRedirectedAssemblies)
         {
             bool isEditor = IsEditor(compilationOptions);
-            if (isEditor && (extraScriptingDefines == null || extraScriptingDefines.Length == 0) && m_EditorPrecompiledAssemblies != null)
+            if (isEditor && (extraScriptingDefines == null || extraScriptingDefines.Length == 0) && m_EditorPrecompiledAssemblies != null && includeRedirectedAssemblies)
             {
                 return m_EditorPrecompiledAssemblies;
             }
 
-            var precompiledAssembliesInternal = GetPrecompiledAssembliesInternal(compilationOptions, buildTarget, extraScriptingDefines);
+            var precompiledAssembliesInternal = GetPrecompiledAssembliesInternal(compilationOptions, buildTarget, extraScriptingDefines, includeRedirectedAssemblies);
             var fileNameToPrecompiledAssembly = FilenameToPrecompiledAssembly(precompiledAssembliesInternal);
 
-            if (isEditor && (extraScriptingDefines == null || extraScriptingDefines.Length == 0))
+            if (isEditor && (extraScriptingDefines == null || extraScriptingDefines.Length == 0) && includeRedirectedAssemblies)
             {
                 m_EditorPrecompiledAssemblies = fileNameToPrecompiledAssembly;
             }

@@ -131,6 +131,7 @@ namespace UnityEngine.UIElements
         Action<ReusableCollectionItem> m_GeometryChangedCallback;
         IVisualElementScheduledItem m_ScheduledItem;
         IVisualElementScheduledItem m_ScrollResetScheduledItem;
+        IVisualElementScheduledItem m_RefreshScrollOffsetScheduledItem;
         Predicate<int> m_IndexOutOfBoundsPredicate;
 
         bool m_FillExecuted;
@@ -189,11 +190,14 @@ namespace UnityEngine.UIElements
             {
                 if (needsApply || previousActiveItemsCount != m_ActiveItems.Count)
                 {
-                    contentHeight = GetExpectedContentHeight();
-                    var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-                    m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-                    m_ScrollView.scrollOffset = serializedData.scrollOffset;
-                    serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
+                    if (m_RefreshScrollOffsetScheduledItem == null)
+                    {
+                        m_RefreshScrollOffsetScheduledItem = m_CollectionView.schedule.Execute(RefreshScrollOffset);
+                    }
+                    else if (!m_RefreshScrollOffsetScheduledItem.isActive)
+                    {
+                        m_RefreshScrollOffsetScheduledItem.Resume();
+                    }
                 }
 
                 ScheduleFill();
@@ -211,10 +215,18 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            ShouldDeferScrollToItem(index);
+            if (ShouldDeferScrollToItem(index))
+            {
+                ScheduleDeferredScrollToItem();
+            }
+            else
+            {
+                StopDeferredScrollToItem();
+            }
 
             var currentContentHeight = m_ScrollView.contentContainer.layout.height;
             var viewportHeight = m_ScrollView.contentViewport.layout.height;
+            var previousScrollOffset = m_ScrollView.scrollOffset;
 
             if (index == -1)
             {
@@ -245,6 +257,12 @@ namespace UnityEngine.UIElements
                 m_ForcedLastVisibleItem = index;
                 m_ForcedFirstVisibleItem = ReusableCollectionItem.UndefinedIndex;
                 m_ScrollView.scrollOffset = new Vector2(0, yScrollOffset);
+            }
+
+            // Due to the nature of the scheduler, the second time around we need to process the flags to refresh the content.
+            if (previousScrollOffset == m_ScrollView.scrollOffset)
+            {
+                OnScrollUpdate();
             }
         }
 
@@ -546,7 +564,7 @@ namespace UnityEngine.UIElements
 
         void Fill()
         {
-            if (!m_CollectionView.HasValidDataAndBindings())
+            if (!m_CollectionView.HasValidDataAndBindings() || firstVisibleIndex < 0)
                 return;
 
             m_FillExecuted = true;
@@ -1142,6 +1160,15 @@ namespace UnityEngine.UIElements
         bool IsIndexOutOfBounds(int i)
         {
             return m_CollectionView.itemsSource == null || i >= itemsCount;
+        }
+
+        void RefreshScrollOffset()
+        {
+            contentHeight = GetExpectedContentHeight();
+            var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
+            m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
+            m_ScrollView.scrollOffset = serializedData.scrollOffset;
+            serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
         }
     }
 }

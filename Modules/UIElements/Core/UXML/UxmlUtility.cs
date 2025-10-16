@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
 
         public static string EncodeListItem(string item)
         {
-            return item.Replace(",", s_CommaEncoded);
+            return item == null ? string.Empty : item.Replace(",", s_CommaEncoded);
         }
 
         public static string DecodeListItem(string item)

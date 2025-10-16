@@ -158,12 +158,7 @@ namespace UnityEditor.Toolbars
             return m_Definitions;
         }
 
-        internal static void ResetToDefaultLayout()
-        {
-            window.overlayCanvas.ApplyPreset(new DefaultOverlayPreset());
-        }
-
-        internal static void SetToUnityOnlyLayout()
+        internal static void ResetToUnityDefaultLayout()
         {
             window.overlayCanvas.ApplyPreset(new UnityOnlyToolbarPreset());
         }
@@ -177,7 +172,7 @@ namespace UnityEditor.Toolbars
 
     sealed class UnityOnlyToolbarPreset : IOverlayPreset
     {
-        public const string presetName = "Unity Only";
+        public const string presetName = "Unity Default";
 
         readonly static SaveData[] m_EmptySave = new SaveData[0];
         readonly static DynamicPanelContainerData[] m_EmptyDynamicPanelContainerData = new DynamicPanelContainerData[0];
@@ -197,7 +192,7 @@ namespace UnityEditor.Toolbars
                 if (overlay is MainToolbarOverlay mtOverlay && mtOverlay.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null)
                 {
                     var attr = mtOverlay.createElementMethod.GetCustomAttribute<MainToolbarElementAttribute>();
-                    shouldShow = attr.defaultDisplay;
+                    shouldShow = true; // Every element tagged with UnityOnlyMainToolbarPreset should always start visible
                 }
 
                 overlay.displayed = shouldShow;

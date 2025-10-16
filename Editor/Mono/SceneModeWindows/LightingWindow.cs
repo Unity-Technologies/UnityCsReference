@@ -32,6 +32,7 @@ namespace UnityEditor
             public static readonly GUIContent bakeLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current active scene. This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
             public static readonly GUIContent bakeLabelAnythingCompiling = EditorGUIUtility.TrTextContent("Generate Lighting", "Generate Lighting is currently unavailable. Waiting for asynchronous shader compilation.");
             public static readonly GUIContent cancelLabel = EditorGUIUtility.TrTextContent("Cancel");
+            public static readonly GUIContent ImageconversionModuleDisabledMessage = EditorGUIUtility.TrTextContentWithIcon("Generate Lighting is unavailable without the Image Conversion Module.", MessageType.Warning);
 
             public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
             public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
@@ -101,6 +102,7 @@ namespace UnityEditor
         const string m_BakingProfileKey = "lightmappingBakingProfile";
 
         int m_SelectedModeIndex = 0;
+        bool m_ImageConversionModuleAvailable = false;
         List<Mode> m_Modes = null;
         GUIContent[] m_ModeStrings;
 
@@ -169,6 +171,7 @@ namespace UnityEditor
         void OnEnable()
         {
             s_Window = this;
+            m_ImageConversionModuleAvailable = UnityEditor.PackageManager.PackageInfo.IsPackageRegistered("com.unity.modules.imageconversion");
 
             titleContent = GetLocalizedTitleContent();
 
@@ -523,7 +526,7 @@ namespace UnityEditor
         void DrawBakingProfileSelector()
         {
             // Handle the baking profile setting
-            using (new EditorGUI.DisabledScope(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.ProgressiveGPU))
+            using (new EditorGUI.DisabledScope(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.ProgressiveCPU))
             {
                 int bakingProfile = Styles.bakingProfileDefault;
                 string bakingProfileString = EditorUserSettings.GetConfigValue(m_BakingProfileKey);
@@ -579,14 +582,26 @@ namespace UnityEditor
                                 customTab.OnBakeButtonGUI();
                             else
                             {
+                                bool usingUnityComputeLightmapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == (LightingSettings.Lightmapper)3;
+                                bool doDisableMainButton = (!m_ImageConversionModuleAvailable && usingUnityComputeLightmapper) || !IsPrecomputeBakingAndDenosingSupported();
+
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
-                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: !IsPrecomputeBakingAndDenosingSupported()))
+                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: doDisableMainButton))
                                 {
                                     DoBake();
 
                                     // DoBake could've spawned a save scene dialog. This breaks GUI on mac (Case 490388).
                                     // We work around this with an ExitGUI here.
                                     GUIUtility.ExitGUI();
+                                }
+                                if (usingUnityComputeLightmapper && !m_ImageConversionModuleAvailable)
+                                {
+                                    using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
+                                    {
+                                        GUILayout.BeginVertical();
+                                        GUILayout.Label(Styles.ImageconversionModuleDisabledMessage, EditorStyles.wordWrappedMiniLabel);
+                                        GUILayout.EndVertical();
+                                    }
                                 }
                             }
                         }

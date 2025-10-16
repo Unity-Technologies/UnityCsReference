@@ -40,11 +40,15 @@ namespace Unity.UI.Builder
         public static readonly double PickSelectionRepeatMinTimeDelay = 0.5;
         public static readonly int OpenInIDELineNumber = 1;
         public static readonly int LibrarySearchFieldMaxLength = 256;
+        public static readonly int ElementNameMaxLength = 256;
 
         // Paths
         public const string UIBuilderPackageRootPath = "UIBuilderPackageResources";
         public const string UIBuilderPackagePath = UIBuilderPackageRootPath + "/UI";
         public const string UtilitiesPath = UIBuilderPackageRootPath + "/Utilities";
+        public const string UIToolkitAuthoringPackageRootPath = "UIToolkitAuthoring";
+        public const string UIToolkitAuthoringControlsPath = UIToolkitAuthoringPackageRootPath + "/Inspector/Controls";
+
         public const string IconsResourcesPath = UIBuilderPackageRootPath + "/Icons";
         public const string UIBuilderTestsRootPath = "Assets/Editor";
         public const string LibraryUIPath = UIBuilderPackagePath + "/Library";
@@ -96,6 +100,7 @@ namespace Unity.UI.Builder
         // Notifications
         public static readonly string previewNotificationKey = "builder-preview-mode-notification";
         public static readonly string inlineEditingNotificationKey = "builder-inline-editing-notification";
+        public static readonly string UsingDeprecatedAPINotificationKey = "builder-using-deprecated-api-notification";
 
         //
         // Elements
@@ -225,6 +230,9 @@ namespace Unity.UI.Builder
         public static readonly string VariableEnumFieldMustBeValidMessage = "An empty Enum is not a valid value.";
         public static readonly string UnnamedValue = "<No Name>";
         public static readonly string ManualUIBuilderUrl = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/UIBuilder.html";
+        static readonly string LinkToCustomControlMigrationDoc = "https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html";
+        public static readonly string UsingDeprecatedAPIUxmlTraitsWarning = L10n.Tr("Attributes for this control failed to load because it uses UxmlTraits, a deprecated API." +
+            $" To make attributes readable and editable, update the control to use UxmlAttribute. <a href=\"{LinkToCustomControlMigrationDoc}\">Learn more</a>.");
 
         // Tooltip Messages
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default Value";
@@ -349,7 +357,7 @@ namespace Unity.UI.Builder
             {"-unity-slice-type", "Determines how the center and sides of a sprite are filled when slices are applied."},
             {"-unity-slice-top", "Size of the 9-slice's top edge when painting an element's background image."},
             {"-unity-text-align", "Horizontal and vertical text alignment in the element's box."},
-            {"-unity-text-auto-size", "Enable to override the set font size and dynamically scale text with Best Fit, using Min and Max font sizes to fit the container." },
+            { "-unity-text-auto-size", "Enable to override the set font size and dynamically scale text with Best Fit, using Min and Max font sizes to fit the container. This impacts performance; use sparingly." },
             {"-unity-text-generator", "The Advanced Text Generator supports comprehensive Unicode and text shaping for various languages and scripts, including RTL languages, but some features are still under development."},
             {"-unity-text-outline", "Outline width and color of the text."},
             {"-unity-text-outline-color", "Outline color of the text."},
@@ -483,9 +491,6 @@ namespace Unity.UI.Builder
         public const string PreviewRestoreInInspector = "Restore in Inspector";
         public const string PreviewTransparencyToggleTooltip = "Show or hide transparency view.";
 
-        // Attribute fields
-        public static readonly string AttributeFieldFactoryVEPropertyName = "__unity-ui-builder-attribute-field-factory";
-
         // Completion
         public static readonly string CompleterAnchoredControlScreenRectVEPropertyName = "__unity-ui-builder-completer-popup-window-screen-rect";
         public static readonly string CompleterCurrentEntryItemId = "__unity-ui-builder-completer-current-entry-item";
@@ -500,7 +505,6 @@ namespace Unity.UI.Builder
         // Explorer Links VE Property Names
         public static readonly string ExplorerItemElementLinkVEPropertyName = "__unity-ui-builder-explorer-item-link";
         public static readonly string ExplorerItemFillItemCallbackVEPropertyName = "__unity-ui-builder-explorer-item-override-template";
-        public static readonly string ExplorerStyleClassPillClassNameVEPropertyName = "__unity-ui-builder-explorer-style-class-pill-name";
         public static readonly string ExplorerItemLinkedUXMLFileName = "__unity-ui-builder-linked-uxml-file-name";
 
         // Explorer Names
@@ -583,8 +587,6 @@ namespace Unity.UI.Builder
         public const string LibraryControlsSectionHeaderName = "Controls";
         public const string LibraryAssetsSectionHeaderName = "UI Documents (UXML)";
         public const string LibraryCustomControlsSectionHeaderName = "Custom Controls (C#)";
-        public const string LibraryCustomControlsSectionUxmlSerializedData = "UxmlSerializedData";
-        public const string LibraryCustomControlsSectionUxmTraits = "UxmlTraits";
         public const string EditorOnlyTag = "Editor Only";
 
         // Messages
@@ -770,6 +772,7 @@ namespace Unity.UI.Builder
         public const string InlineValuesOnCanvasNotification = "Changes made to inline values on properties with resolved bindings do not appear on the canvas.";
         public const string BindingsOnPreviewModeNotification = "Modifying attribute values in Preview could change a resolved binding's value depending on binding mode.";
         public const string DoNotShowAgainNotificationButtonText = "Do not show again";
+        public static readonly string UsingDeprecatedAPINotification = L10n.Tr("Some controls in this file use a deprecated API and may render incorrectly. See Console for details.");
 
         //
         // UXML/USS
@@ -824,6 +827,12 @@ namespace Unity.UI.Builder
             "border-right-width",
             "border-top-width",
             "border-bottom-width"
+        };
+
+        public static readonly Dictionary<string, string> SpecialEnumNamesCases = new()
+        {
+            {"nowrap", "no-wrap"},
+            {"tabindex", "tab-index"}
         };
 
         //

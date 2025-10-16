@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using DefaultFormat = UnityEngine.Experimental.Rendering.DefaultFormat;
@@ -316,6 +318,159 @@ namespace UnityEditor
         private bool TextureHasAlpha(ref Texture2D inTex)
         {
             return GraphicsFormatUtility.HasAlphaChannel(GraphicsFormatUtility.GetGraphicsFormat(inTex.format, true));
+        }
+
+        private static List<TerrainLayer> s_draggedLayersBuffer = new List<TerrainLayer>();
+
+        // State tracking for drag preview
+        private static Terrain s_previewTerrain = null;
+        private static TerrainLayer[] s_originalLayers = null;
+        private static bool s_previewApplied = false;
+
+        internal void OnSceneDrag(SceneView sceneView, int index)
+        {
+            Event evt = Event.current;
+            if (evt.type == EventType.Repaint)
+                return;
+
+            // Get terrain under mouse
+            var go = HandleUtility.PickGameObject(evt.mousePosition, out _);
+            var terrain = go?.GetComponent<Terrain>();
+
+            // Get dragged terrain layers (only do this once per drag operation)
+            if (evt.type == EventType.DragUpdated && s_draggedLayersBuffer.Count == 0)
+            {
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj is TerrainLayer layer)
+                        s_draggedLayersBuffer.Add(layer);
+                }
+            }
+
+            switch (evt.type)
+            {
+                case EventType.DragUpdated:
+                    if (terrain != null && s_draggedLayersBuffer.Count > 0)
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                        ApplyPreviewIfNeeded(terrain);
+                    }
+                    else
+                    {
+                        ClearPreview();
+                    }
+                    break;
+
+                case EventType.DragPerform:
+                    if (terrain != null && s_draggedLayersBuffer.Count > 0)
+                    {
+                        DragAndDrop.AcceptDrag();
+                        ApplyFinalChanges(terrain);
+                    }
+                    CleanupDragState();
+                    break;
+
+                case EventType.DragExited:
+                    ClearPreview();
+                    CleanupDragState();
+                    
+                    break;
+            }
+        }
+
+        private static void ApplyPreviewIfNeeded(Terrain terrain)
+        {
+            // If we're already previewing this terrain, do nothing
+            if (s_previewApplied && s_previewTerrain == terrain)
+                return;
+
+            // Clear any existing preview first
+            ClearPreview();
+
+            // Store original state
+            s_previewTerrain = terrain;
+            s_originalLayers = terrain.terrainData?.terrainLayers?.Clone() as TerrainLayer[];
+
+            // Apply preview
+            ApplyLayersToTerrain(terrain, true);
+            s_previewApplied = true;
+        }
+
+        private static void ApplyFinalChanges(Terrain terrain)
+        {
+            // Clear preview state since we're applying for real
+            ClearPreview();
+
+            // Apply the layers
+            ApplyLayersToTerrain(terrain, false);
+        }
+
+        private static void ApplyLayersToTerrain(Terrain terrain, bool isPreview)
+        {
+            if (terrain?.terrainData == null)
+                return;
+
+            var currentLayers = new List<TerrainLayer>(terrain.terrainData.terrainLayers ?? new TerrainLayer[0]);
+    
+            bool changed = false;
+            if(isPreview)
+            {
+                foreach (var layer in s_draggedLayersBuffer)
+                {
+                    if (!currentLayers.Contains(layer))
+                    {
+                        currentLayers.Add(layer);
+                        changed = true;
+                    }
+                }
+        
+                if (changed)
+                {
+                    terrain.terrainData.terrainLayers = currentLayers.ToArray();
+                }
+            }
+            else
+            {
+                foreach (var layer in s_draggedLayersBuffer)
+                {
+                    if (!currentLayers.Contains(layer))
+                    {
+                        TerrainLayerUtility.AddTerrainLayer(terrain, layer);
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed)
+            {
+                EditorUtility.SetDirty(terrain);
+            }
+        }
+
+        private static void ClearPreview()
+        {
+            if (!s_previewApplied || s_previewTerrain == null)
+                return;
+
+            if (s_originalLayers != null && s_previewTerrain.terrainData != null)
+            {
+                if (s_previewTerrain.terrainData != null)
+                {
+                    s_previewTerrain.terrainData.terrainLayers = s_originalLayers;
+                }
+                
+                EditorUtility.SetDirty(s_previewTerrain);
+            }
+
+            s_previewApplied = false;
+        }
+
+        private static void CleanupDragState()
+        {
+            s_draggedLayersBuffer.Clear();
+            s_previewTerrain = null;
+            s_originalLayers = null;
+            s_previewApplied = false;
         }
     }
 }

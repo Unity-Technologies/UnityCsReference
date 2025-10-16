@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Runtime.InteropServices;
 using System;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 using FrameCapture = UnityEngine.Apple.FrameCapture;

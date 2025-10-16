@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a field for entering Scale.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class ScaleField : BaseField<Scale>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

@@ -14,10 +14,10 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleSheetExporter
     {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal class UssExportOptions
         {
             public string propertyIndent { get; set; } = "    ";
@@ -503,11 +503,11 @@ namespace UnityEditor.UIElements
             }
         }
 
-        protected void WriteResourcePath(ref ExportContext ctx, string value)
+        protected void WriteResourcePath(ref ExportContext ctx, ResolvedResourcePath value)
         {
             WriteFunctionName(ref ctx, "resource");
             ctx.Append("(");
-            WritePath(ref ctx, value);
+            WritePath(ref ctx, value.ToString());
             ctx.Append(")");
         }
 

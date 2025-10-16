@@ -1414,6 +1414,10 @@ namespace UnityEngine.TextCore.Text
             if (indexX4 >= textInfo.meshInfo[materialIndex].vertexBufferSize)
                 textInfo.meshInfo[materialIndex].ResizeMeshInfo(Mathf.NextPowerOfTwo((indexX4 + 4) / 4), generationSettings.isIMGUI);
 
+            // We have overflown and cannot write in the next indices.
+            if (textInfo.meshInfo[materialIndex].vertexData.Length < (indexX4 + 4))
+                return;
+
             TextElementInfo[] textElementInfoArray = textInfo.textElementInfo;
             textInfo.textElementInfo[i].vertexIndex = indexX4;
 

@@ -15,15 +15,12 @@ namespace UnityEngine.UIElements.StyleSheets
             @"(?<id>#[-]?\w[\w-]*)|(?<class>\.[\w-]+)|(?<pseudoclass>:[\w-]+(\((?<param>.+)\))?)|(?<type>([^\-]\w+|\w+))|(?<wildcard>\*)|\s+",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        const int typeSelectorWeight = 1;
-        const int classSelectorWeight = 10;
-        const int idSelectorWeight = 100;
+        public const int InvalidSpecificityScore = -1;
 
         public static int GetSelectorSpecificity(string selector)
         {
-            StyleSelectorPart[] parts;
-            int score = 0;
-            if (ParseSelector(selector, out parts))
+            var score = InvalidSpecificityScore;
+            if (ParseSelector(selector, out var parts))
             {
                 score = GetSelectorSpecificity(parts);
             }
@@ -32,32 +29,30 @@ namespace UnityEngine.UIElements.StyleSheets
 
         // See https://www.w3.org/TR/selectors/#specificity
         // A proper CSS library should provide us with this
-        public static int GetSelectorSpecificity(StyleSelectorPart[] parts)
+        public static Specificity GetSelectorSpecificity(StyleSelectorPart[] parts)
         {
-            // always add 1 otherwise we wouldn't be able to distinguish between default C# value for int (0)
-            // and an actual specificity (0 for *)
-            int score = 1;
-            for (int i = 0; i < parts.Length; i++)
+            var specificity = new Specificity();
+            for (var i = 0; i < parts.Length; i++)
             {
                 switch (parts[i].type)
                 {
                     case StyleSelectorType.Type:
-                        score += typeSelectorWeight;
+                        specificity.typeScore++;
                         break;
                     case StyleSelectorType.Class:
                     case StyleSelectorType.PseudoClass:
-                        score += classSelectorWeight;
+                        specificity.classScore++;
                         break;
                     case StyleSelectorType.RecursivePseudoClass:
                         throw new ArgumentException("Recursive pseudo classes are not supported");
                     case StyleSelectorType.ID:
-                        score += idSelectorWeight;
+                        specificity.idScore++;
                         break;
                     default:
                         break;
                 }
             }
-            return score;
+            return specificity;
         }
 
         public static bool ValidateSelector(string selector)

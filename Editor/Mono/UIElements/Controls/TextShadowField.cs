@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for entering TextShadow.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class TextShadowField : BaseField<TextShadow>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

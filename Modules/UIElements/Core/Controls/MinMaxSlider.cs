@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
     /// SA: [[Slider]]
     /// </remarks>
     [Icon("UIToolkit/Icons/MinMaxSlider.png")]
-    public class MinMaxSlider : BaseField<Vector2>
+    public partial class MinMaxSlider : BaseField<Vector2>
     {
         internal static readonly BindingId minValueProperty = nameof(minValue);
         internal static readonly BindingId maxValueProperty = nameof(maxValue);
@@ -93,50 +93,6 @@ namespace UnityEngine.UIElements
                     e.highLimit = highLimit;
                 if (ShouldWriteAttributeValue(valueOverride_UxmlAttributeFlags))
                     e.valueOverride = valueOverride;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="MinMaxSlider"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<MinMaxSlider, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="MinMaxSlider"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<Vector2>.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_MinValue = new UxmlFloatAttributeDescription { name = "min-value", defaultValue = 0 };
-            UxmlFloatAttributeDescription m_MaxValue = new UxmlFloatAttributeDescription { name = "max-value", defaultValue = kDefaultHighValue };
-            UxmlFloatAttributeDescription m_LowLimit = new UxmlFloatAttributeDescription { name = "low-limit", defaultValue = float.MinValue };
-            UxmlFloatAttributeDescription m_HighLimit = new UxmlFloatAttributeDescription { name = "high-limit", defaultValue = float.MaxValue };
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PickingMode.defaultValue = PickingMode.Ignore;
-            }
-
-            /// <summary>
-            /// Initialize <see cref="MinMaxSlider"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The element to initialize.</param>
-            /// <param name="bag">The bag of attributes.</param>
-            /// <param name="cc">Creation Context, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var slider = ((MinMaxSlider)ve);
-                slider.lowLimit = m_LowLimit.GetValueFromBag(bag, cc);
-                slider.highLimit = m_HighLimit.GetValueFromBag(bag, cc);
-
-                var value = new Vector2(m_MinValue.GetValueFromBag(bag, cc), m_MaxValue.GetValueFromBag(bag, cc));
-                slider.value = value;
             }
         }
 

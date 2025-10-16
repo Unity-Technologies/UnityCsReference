@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering an unsigned integer. For more information, refer to [[wiki:UIE-uxml-element-UnsignedIntegerField|UXML element UnsignedIntegerField]].
     /// </summary>
     [Icon("UIToolkit/Icons/UnsignedIntegerField.png")]
-    public class UnsignedIntegerField : TextValueField<uint>
+    public partial class UnsignedIntegerField : TextValueField<uint>
     {
         // This property to alleviate the fact we have to cast all the time
         UnsignedIntegerInput integerInput => (UnsignedIntegerInput)textInputBase;
@@ -28,17 +28,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new UnsignedIntegerField();
         }
-
-        /// <summary>
-        /// Instantiates an <see cref="UnsignedIntegerField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<UnsignedIntegerField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="UnsignedIntegerField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<uint, UxmlUnsignedIntAttributeDescription> {}
 
         /// <summary>
         /// Converts the given unsigned integer to a string.

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
@@ -16,6 +17,14 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Overlays
 {
     [Serializable]
+    struct OverlayCanvasSaveState
+    {
+        public SaveData[] overlays;
+        public DynamicPanelContainerData[] dynamicPanels;
+    }
+
+    [Serializable]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     public class SaveData : IEquatable<SaveData>
     {
         // Note on the obsolete fields in this class:
@@ -30,33 +39,47 @@ namespace UnityEditor.Overlays
         const int k_InvalidIndex = -1;
 
         [SerializeField]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal DockPosition dockPosition = DockPosition.Bottom;
         [SerializeField]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal string containerId = string.Empty;
         [SerializeField]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal bool displayed;
         [SerializeField]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal string id;
         [SerializeField]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal int index = k_InvalidIndex;
         [SerializeField]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal string contents;
 
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal bool floating;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal bool collapsed;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Vector2 snapOffset;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Vector2 snapOffsetDelta;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal SnapCorner snapCorner;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Layout layout = Layout.Panel;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal Vector2 size;
         [SerializeField, Obsolete]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         [FormerlySerializedAs("sizeOverriden")]
         internal bool sizeOverridden;
 
@@ -87,6 +110,7 @@ namespace UnityEditor.Overlays
         public SaveData(Overlay overlay)
             : this(overlay, k_InvalidIndex) { }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal SaveData(Overlay overlay, int indexInContainer)
         {
             if (indexInContainer < 0)
@@ -200,7 +224,7 @@ namespace UnityEditor.Overlays
     }
 
     [Serializable]
-    sealed class DynamicPanelContainerData
+    sealed class DynamicPanelContainerData : IEquatable<DynamicPanelContainerData>
     {
         public string containerId;
         public float width;
@@ -214,16 +238,25 @@ namespace UnityEditor.Overlays
             width = other.width;
             saveData = other.saveData;
         }
+
+        public bool Equals(DynamicPanelContainerData other)
+        {
+            return containerId == other.containerId
+                && width == other.width
+                && saveData.Equals(other.saveData);
+        }
     }
 
     //Dock position within container
     //for a horizontal container, Top is left, Bottom is right
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     public enum DockPosition
     {
         Top,
         Bottom
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     enum SnapCorner
     {
         TopLeft,
@@ -915,6 +948,13 @@ namespace UnityEditor.Overlays
                 dynamicPanelContainerData[i] = new DynamicPanelContainerData(dynamicPanelContainerData[i]);
         }
 
+        internal OverlayCanvasSaveState CopySaveData()
+        {
+            CopySaveData(out var overlays, out var dynamicPanels);
+
+            return new OverlayCanvasSaveState { overlays = overlays, dynamicPanels = dynamicPanels };
+        }
+
         internal void SavePreset(OverlayPreset preset)
         {
             CopySaveData(out var saveData, out var dynamicPanelContainerData);
@@ -951,6 +991,11 @@ namespace UnityEditor.Overlays
                 m_DynamicPanelContainerData = new List<DynamicPanelContainerData>(dynamicPanelContainerData);
 
             RestoreOverlays();
+        }
+
+        internal void ApplySaveData(OverlayCanvasSaveState save)
+        {
+            ApplySaveData(save.overlays, save.dynamicPanels);
         }
 
         internal void Move(Overlay overlay, DockZone zone, DockPosition position = DockPosition.Bottom)
@@ -1009,7 +1054,7 @@ namespace UnityEditor.Overlays
 
         public void ShowPopupAtMouse<T>() where T : Overlay, new()
         {
-            if (!m_MouseInCurrentCanvas)
+            if (EditorWindow.mouseOverWindow != containerWindow && !m_MouseInCurrentCanvas)
             {
                 ClosePopupOverlay();
                 return;
@@ -1094,6 +1139,7 @@ namespace UnityEditor.Overlays
                 return;
             }
 
+            OverlayUtilities.ValidateName(overlay);
             overlay.canvas = this;
             m_Overlays.Add(overlay);
             if (transient)
@@ -1182,7 +1228,7 @@ namespace UnityEditor.Overlays
                     {
                         data.index = attr.defaultDockIndex;
                         data.dockPosition = (DockPosition)(int)attr.defaultDockPosition;
-                        data.displayed = attr.defaultDisplay;
+                        data.displayed = mtOverlay.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null;
                     }
                 }
             }

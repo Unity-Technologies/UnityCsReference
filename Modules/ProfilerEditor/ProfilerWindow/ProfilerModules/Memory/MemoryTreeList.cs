@@ -245,14 +245,14 @@ namespace UnityEditor
             m_MemorySelection.SetSelection(memoryElement);
             GUIUtility.keyboardControl = m_ControlID;
 
-            if (evt.clickCount == 2 && memoryElement.memoryInfo != null && memoryElement.memoryInfo.instanceId != 0)
+            if (evt.clickCount == 2 && memoryElement.memoryInfo != null && memoryElement.memoryInfo.entityId != 0)
             {
-                Selection.activeEntityId = memoryElement.memoryInfo.instanceId;
+                Selection.activeEntityId = memoryElement.memoryInfo.entityId;
             }
             evt.Use();
             if (memoryElement.memoryInfo != null)
             {
-                EditorGUIUtility.PingObject(memoryElement.memoryInfo.instanceId);
+                EditorGUIUtility.PingObject(memoryElement.memoryInfo.entityId);
             }
 
             if (m_DetailView != null)
@@ -310,7 +310,7 @@ namespace UnityEditor
                 case KeyCode.Return:
                     if (m_MemorySelection.Selected.memoryInfo != null)
                     {
-                        Selection.activeEntityId = m_MemorySelection.Selected.memoryInfo.instanceId;
+                        Selection.activeEntityId = m_MemorySelection.Selected.memoryInfo.entityId;
                     }
                     break;
                 default:

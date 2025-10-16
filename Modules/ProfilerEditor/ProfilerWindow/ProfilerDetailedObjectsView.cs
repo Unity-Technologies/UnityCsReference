@@ -58,7 +58,7 @@ namespace UnityEditorInternal.Profiling
         {
             public int id; // FrameDataView item id
             public int sampleIndex; // Merged sample index
-            public int instanceId; // 0 if from a different Editor/Player session than the current one
+            public EntityId entityId; // 0 if from a different Editor/Player session than the current one
             public float[] columnValues;
             public string[] columnStrings;
         }
@@ -201,7 +201,7 @@ namespace UnityEditorInternal.Profiling
                 if (m_ObjectsData == null)
                     return;
 
-                var selectedInstanceId = m_ObjectsData[id].instanceId;
+                var selectedInstanceId = m_ObjectsData[id].entityId;
                 // 0 is an invalid instance ID
                 if (selectedInstanceId == 0)
                     return;
@@ -210,7 +210,7 @@ namespace UnityEditorInternal.Profiling
                     obj = ((Component)obj).gameObject;
 
                 if (obj != null)
-                    EditorGUIUtility.PingObject(obj.GetInstanceID());
+                    EditorGUIUtility.PingObject(obj.GetEntityId());
             }
 
             protected override void DoubleClickedItem(int id)
@@ -415,8 +415,8 @@ namespace UnityEditorInternal.Profiling
             var samplesCount = m_FrameDataView.GetItemMergedSamplesCount(selectedId);
 
             // Collect all the data
-            var instanceIDs = new List<int>(samplesCount);
-            m_FrameDataView.GetItemMergedSamplesInstanceID(selectedId, instanceIDs);
+            var entityIds = new List<EntityId>(samplesCount);
+            m_FrameDataView.GetItemMergedSamplesEntityId(selectedId, entityIds);
 
             var columns = m_MultiColumnHeader.columns;
             var columnsCount = columns.Length;
@@ -443,7 +443,7 @@ namespace UnityEditorInternal.Profiling
 
                 // Do not set the instance ID if this data is not coming from this session.
                 // This field is only used for pinging the related object and instanceId does not carry over between editor sessions.
-                objData.instanceId = (dataIsFromCurrentEditorSession && i < instanceIDs.Count) ? instanceIDs[i] : 0;
+                objData.entityId = (dataIsFromCurrentEditorSession && i < entityIds.Count) ? entityIds[i] : 0;
                 for (var j = 0; j < columnsCount; j++)
                 {
                     objData.columnStrings[j] = (i < objectsDatas[j].Count) ? objectsDatas[j][i] : string.Empty;

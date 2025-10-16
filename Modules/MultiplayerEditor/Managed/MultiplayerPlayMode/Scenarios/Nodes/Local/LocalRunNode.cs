@@ -8,12 +8,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 // [TODO] Defined proper way  to finish the nodes that would match the lifecycle of its thread.
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     internal class LocalRunNode : Node, IInstanceRunNode
     {
         private const int k_LogMonitorIntervalMS = 100;
@@ -132,14 +134,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             var streamLogsTask = GetInput(StreamLogs) ? StreamLogsAsync(cancellationToken) : Task.CompletedTask;
 
-            while (IsRunning() && !cancellationToken.IsCancellationRequested)
+            try
             {
-                await Task.Delay(100);
+                while (IsRunning() && !cancellationToken.IsCancellationRequested)
+                {
+                    await Task.Delay(100, cancellationToken);
+                }
             }
-
-            StopProcess(cancellationToken);
-
-            await streamLogsTask;
+            catch (OperationCanceledException) { }
+            finally
+            {
+                StopProcess(cancellationToken);
+                await streamLogsTask;
+            }
         }
 
         private Process StartProcess()

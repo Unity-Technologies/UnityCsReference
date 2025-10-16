@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// A toggle for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarToggle|UXML element ToolbarToggle]].
     /// </summary>
     [Icon("UIToolkit/Icons/ToolbarToggle.png")]
-    public class ToolbarToggle : Toggle
+    public partial class ToolbarToggle : Toggle
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : Toggle.UxmlSerializedData
@@ -24,26 +24,6 @@ namespace UnityEditor.UIElements
             public new static void Register()
             {
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarToggle"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarToggle, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarToggle"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : Toggle.UxmlTraits
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = false;
             }
         }
 

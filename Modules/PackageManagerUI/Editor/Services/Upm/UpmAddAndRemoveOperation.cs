@@ -37,6 +37,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IReadOnlyCollection<string> packagesNamesToRemove => m_PackagesNamesToRemove;
 
         [SerializeField]
+        protected bool m_DryRun = false;
+        public bool dryRun => m_DryRun;
+
+        [SerializeField]
         private string m_SpecialUniqueId = string.Empty;
         public bool isSpecialInstall => !string.IsNullOrEmpty(m_SpecialUniqueId);
 
@@ -118,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override AddAndRemoveRequest CreateRequest()
         {
-            return m_ClientProxy.AddAndRemove(m_PackageIdsToAdd, m_PackagesNamesToRemove);
+            return m_ClientProxy.AddAndRemove(m_PackageIdsToAdd, m_PackagesNamesToRemove, dryRun);
         }
     }
 }

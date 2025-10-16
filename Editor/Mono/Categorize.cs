@@ -3,74 +3,51 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine.Categorization;
 using Unity.Collections;
+using UnityEngine;
+using UnityEngine.Categorization;
 
 namespace UnityEditor.Categorization
 {
-    /* Sorting API that rely on DisplayCategory and DisplaySubCategory */
-
-    internal interface ICategorizable
+    public interface ICategorizable
     {
         Type type { get; }
     }
     
-    interface IOrdering
+    public interface IOrdering
     {
         string name { get; }
         int order { get; }
     }
 
     //Need to be a class to prevent loop definition with leaf that can cause issue when loading type through reflection
-    internal class Category<T> : IEnumerable<T>, IOrdering
-        where T : ICategorizable, IOrdering
-    {
-        public List<T> content { get; private set; }
-        public string name { get; private set; }
-        public int order { get; private set; }
-        public Type type => content.Count > 0 ? content[0].type : null;
-        public T this[int i] => content[i];
-        public int count => content.Count;
-
-        public Category(string name, int order)
-        {
-            content = new();
-            this.name = name;
-            this.order = order;
-        }
-
-        public void Add(T newElement, IComparer<T> comparer)
-            => content.AddSorted(newElement, comparer);
-
-        public IEnumerator<T> GetEnumerator() => content.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => content.GetEnumerator();
-    }
-
-    internal struct LeafElement<T> : IOrdering, ICategorizable
+    public class Node<T> : IOrdering, ICategorizable
         where T : ICategorizable
     {
-        public T data { get; private set; }
-        public static implicit operator T(LeafElement<T> leaftElement)
-            => leaftElement.data;
+        public string name { get; }
+        public string description { get; }
+        public int order { get; }
+        public string helpUrl { get; internal set; }
 
-        public string name { get; private set; }
-        public int order { get; private set; }
-        public Category<LeafElement<T>> parent { get; private set; }
-        public Type type => typeof(T);
+        public Node<T> parent { get; internal set; }
+        public Type type => data != null ? data.type : (children.Count > 0 ? children[0].type : null);
 
-        public LeafElement(T data, string name, int order, Category<LeafElement<T>> parent)
+        public T data { get; }
+        public List<Node<T>> children { get; }
+
+        public Node(InfoAttribute info, T data = default)
         {
+            this.name = info.Name;
+            this.order = info.Order;
+            this.description = info.Description;
             this.data = data;
-            this.name = name;
-            this.order = order;
-            this.parent = parent;
+            this.children = new ();
         }
     }
 
-    internal static class CategorizeHelper
+    public static class CategorizationExtensions
     {
         struct OrderingComparer<T> : IComparer<T>
             where T : IOrdering
@@ -84,36 +61,54 @@ namespace UnityEditor.Categorization
             }
         }
 
-        internal static List<Category<LeafElement<T>>> SortByCategory<T>(this List<T> list)
+        public static List<Node<T>> SortByCategory<T>(this List<T> list)
             where T : ICategorizable
         {
-            var categories = new Dictionary<string, Category<LeafElement<T>>>();
-            var result = new List<Category<LeafElement<T>>>();
-            var comparerLeaf = new OrderingComparer<LeafElement<T>>();
-            var comparerCategory = new OrderingComparer<Category<LeafElement<T>>>();
+            var categories = new Dictionary<string, Node<T>>();
+            var result = new List<Node<T>>();
 
-            foreach(var entry in list)
+            var cmp = new OrderingComparer<Node<T>>();
+
+            foreach (var entry in list)
             {
                 var type = entry.type;
-                CategoryInfoAttribute categoryInfo = type.GetCustomAttribute<CategoryInfoAttribute>();
-                ElementInfoAttribute displayInfo = type.GetCustomAttribute<ElementInfoAttribute>();
-                int categoryOrder = categoryInfo?.Order ?? int.MaxValue;
-                int inCategoryOrder = displayInfo?.Order ?? int.MaxValue;
-                string categoryName = categoryInfo?.Name
-                    // Keep compatibility with previous used attribute for 23.3LTS
-                    ?? type.GetCustomAttribute<System.ComponentModel.CategoryAttribute>()?.Category;
-                string name = displayInfo?.Name ?? ObjectNames.NicifyVariableName(type.Name);
-                categoryName ??= name;
 
-                Category<LeafElement<T>> category;
-                if (!categories.TryGetValue(categoryName, out category))
+                // Fetch attribute data
+                var catInfo = type.GetCustomAttribute<CategoryInfoAttribute>() ?? new CategoryInfoAttribute();
+                var elemInfo = type.GetCustomAttribute<ElementInfoAttribute>() ?? new ElementInfoAttribute();
+                var helpURLAttribute = type.GetCustomAttribute<HelpURLAttribute>();
+
+                // Element info
+                elemInfo.Name = ObjectNames.NicifyVariableName(string.IsNullOrEmpty(elemInfo.Name) ? type.Name : elemInfo.Name);
+                elemInfo.Description = !string.IsNullOrEmpty(elemInfo.Description)
+                    ? elemInfo.Description
+                    : type.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>()?.Description;
+
+                // Try to find a proper category
+                catInfo.Name = string.IsNullOrEmpty(catInfo.Name)
+                    ? (type.GetCustomAttribute<System.ComponentModel.CategoryAttribute>()?.Category ?? elemInfo.Name)
+                    : catInfo.Name;
+
+                // Find or create the category node
+                if (!categories.TryGetValue(catInfo.Name, out Node<T> categoryNode))
                 {
-                    category = new Category<LeafElement<T>>(categoryName, categoryOrder);
-                    categories[categoryName] = category;
-                    result.AddSorted(category, comparerCategory);
+                    catInfo.Name = catInfo.Name;
+                    categoryNode = new Node<T>(catInfo)
+                    {
+                        parent = null,
+                        helpUrl = helpURLAttribute?.URL
+                    };
+                    categories[catInfo.Name] = categoryNode;
+                    result.AddSorted(categoryNode, cmp);
                 }
 
-                category.Add(new LeafElement<T>(entry, name, inCategoryOrder, category), comparerLeaf);
+                // Create the leaf node
+                var leaf = new Node<T>(elemInfo, entry)
+                {
+                    parent = categoryNode,
+                    helpUrl = helpURLAttribute?.URL
+                };
+                categoryNode.children.AddSorted(leaf, cmp);
             }
 
             return result;

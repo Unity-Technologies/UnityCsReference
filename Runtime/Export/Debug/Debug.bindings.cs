@@ -183,7 +183,7 @@ namespace UnityEngine
         }
 
         [ThreadAndSerializationSafe]
-        internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier, int instanceId);
+        internal static extern void LogCompilerMessage(string message, string fileName, int lineNumber, int columnNumber, bool forEditor, bool isError, int identifier, EntityId instanceId);
         [ThreadAndSerializationSafe]
         private static extern void LogCompilerWarning(string message, string fileName, int lineNumber, int columnNumber);
         [ThreadAndSerializationSafe]
@@ -318,6 +318,7 @@ namespace UnityEngine
         }
 
         internal static extern void LogSticky(int identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static extern void RemoveLogEntriesByIdentifier(int identifier);
 
         [NativeHeader("Runtime/Export/Debug/LogCapture.bindings.h")]

@@ -2,11 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -557,22 +553,22 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StyleValueType.ResourcePath:
                 {
-                    string path = propertyValue.sheet.ReadResourcePath(propertyValue.handle);
-                    if (!string.IsNullOrEmpty(path))
+                    var resourcePath = propertyValue.sheet.ReadResourcePath(propertyValue.handle);
+                    if (resourcePath.isPathValid)
                     {
                         //TODO: This will use GUIUtility.pixelsPerPoint as targetDpi, this may not be the best value for the current panel
-                        source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
+                        source.sprite = resourcePath.LoadResource<Sprite>(dpiScaling);
                         if (source.IsNull())
-                            source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
+                            source.texture = resourcePath.LoadResource<Texture2D>(dpiScaling);
                         if (source.IsNull())
-                            source.vectorImage = Panel.LoadResource(path, typeof(VectorImage), dpiScaling) as VectorImage;
+                            source.vectorImage = resourcePath.LoadResource<VectorImage>(dpiScaling);
                         if (source.IsNull())
-                            source.renderTexture = Panel.LoadResource(path, typeof(RenderTexture), dpiScaling) as RenderTexture;
+                            source.renderTexture = resourcePath.LoadResource<RenderTexture>(dpiScaling);
                     }
 
                     if (source.IsNull())
                     {
-                        Debug.LogWarning(string.Format("Image not found for path: {0}", path));
+                        Debug.LogWarning(string.Format("Image not found for path: {0}", resourcePath.ToString()));
                         return false;
                     }
                 }

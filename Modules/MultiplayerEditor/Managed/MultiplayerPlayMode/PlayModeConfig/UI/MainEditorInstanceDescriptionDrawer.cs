@@ -37,7 +37,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             dropdown.RegisterValueChangedCallback(evt =>
             {
-                if (RoleChoiceIsAllowed(evt.newValue, evt.previousValue, enumProp.serializedObject.targetObject as ScenarioConfig))
+                if (RoleChoiceIsAllowed(evt.newValue, evt.previousValue, enumProp.serializedObject.targetObject as OrchestratedScenario))
                 {
                     enumProp.intValue = (int)evt.newValue;
                     enumProp.serializedObject.ApplyModifiedProperties();
@@ -92,7 +92,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return tagsField;
         }
 
-        static bool RoleChoiceIsAllowed(MultiplayerRoleFlags newRole, MultiplayerRoleFlags oldRole, ScenarioConfig config)
+        static bool RoleChoiceIsAllowed(MultiplayerRoleFlags newRole, MultiplayerRoleFlags oldRole, OrchestratedScenario config)
         {
             // if it was already a server, it's ok
             if (oldRole != MultiplayerRoleFlags.Client)

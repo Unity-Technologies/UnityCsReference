@@ -58,6 +58,9 @@ namespace Unity.UI.Builder
             selection.NotifyOfHierarchyChange(null);
             selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
             selection.Select(null, newElement);
+
+            // Verify whether the newly added element is using deprecated APIs and show a notification if so.
+            document.CheckForUsingDeprecatedAPI(newElement);
             return true;
         }
     }

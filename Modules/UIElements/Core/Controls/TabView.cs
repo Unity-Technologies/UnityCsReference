@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     [UxmlElement(null, typeof(Tab))]
     [Icon("UIToolkit/Icons/TabView.png")]
-    public class TabView : VisualElement
+    public partial class TabView : VisualElement
     {
         internal static readonly BindingId reorderableProperty = nameof(reorderable);
 
@@ -57,32 +57,6 @@ namespace UnityEngine.UIElements
                     var e = (TabView)obj;
                     e.reorderable = reorderable;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="TabView"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TabView, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TabView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a TabView element that you can use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var tabView = (TabView)ve;
-                tabView.reorderable = m_Reorderable.GetValueFromBag(bag, cc);
             }
         }
 
@@ -361,8 +335,8 @@ namespace UnityEngine.UIElements
             m_ContentContainer = new TabViewContentContainer() { name = contentContainerUssClassName, classList = { contentContainerUssClassName }};
             hierarchy.Add(m_ContentContainer);
 
-            nextButton = new RepeatButton(OnNextClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { nextButtonUssClassName } };
-            previousButton = new RepeatButton(OnPreviousClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { previousButtonUssClassName } };
+            nextButton = new RepeatButton(OnNextClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { nextButtonUssClassName }, acceptClicksIfDisabled = true };
+            previousButton = new RepeatButton(OnPreviousClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { previousButtonUssClassName }, acceptClicksIfDisabled = true };
 
             contentViewport.Add(nextButton);
             contentViewport.Add(previousButton);

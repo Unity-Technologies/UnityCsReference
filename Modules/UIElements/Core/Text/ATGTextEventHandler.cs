@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
@@ -10,6 +12,9 @@ namespace UnityEngine.UIElements
 {
     class ATGTextEventHandler
     {
+        static readonly Regex s_ATagRegex = new Regex(@"(?<=\b="")[^""]*");
+        static readonly Regex s_LinkTagRegex = new Regex(@"(?<=\b=')[^']*");
+
         TextElement m_TextElement;
 
         public ATGTextEventHandler(TextElement textElement)
@@ -66,6 +71,8 @@ namespace UnityEngine.UIElements
             m_HyperlinkOnPointerOut = HyperlinkOnPointerOut;
         }
 
+        internal static event Action<Dictionary<string, string>> onComplexHyperlinkClicked;
+
         void HyperlinkOnPointerUp(PointerUpEvent pue)
         {
             var pos = pue.localPosition - new Vector3(m_TextElement.contentRect.min.x, m_TextElement.contentRect.min.y);
@@ -73,8 +80,41 @@ namespace UnityEngine.UIElements
             if (link == null || type!= TextCore.RichTextTagParser.TagType.Hyperlink)
                 return;
 
+            Dictionary<string, string> hyperLinkData;
+
             if (Uri.IsWellFormedUriString(link, UriKind.Absolute))
+            {
                 Application.OpenURL(link);
+            }
+            else if (IsComplexHyperLink(link, out hyperLinkData))
+            {
+                onComplexHyperlinkClicked?.Invoke(hyperLinkData);
+            }
+        }
+        
+        private static bool IsComplexHyperLink(string link, out Dictionary<string, string> hyperLinkData)
+        {
+            hyperLinkData = new Dictionary<string, string>();
+            MatchCollection matches = s_ATagRegex.Matches(link);
+            if (matches.Count == 0)
+                matches = s_LinkTagRegex.Matches(link);
+
+            int endPreviousAttributeIndex = 0;
+            // for each attribute we need to find the attribute name
+            foreach (Match match in matches)
+            {
+                // We are only working on the text between the previous attribute and the current
+                string namePart = link.Substring(endPreviousAttributeIndex,
+                    (match.Index - 2) - endPreviousAttributeIndex); // -2 is the character before ="
+                int indexName = namePart.LastIndexOf(' ') + 1;
+                string name = namePart.Substring(indexName);
+                // Add the name of the attribute and its value in the dictionary
+                hyperLinkData.Add(name, match.Value);
+
+                endPreviousAttributeIndex = match.Index + match.Value.Length + 1;
+            }
+
+            return true;
         }
 
         internal bool isOverridingCursor;
@@ -115,7 +155,6 @@ namespace UnityEngine.UIElements
         {
             isOverridingCursor = false;
         }
-
 
         void LinkTagOnPointerDown(PointerDownEvent pde)
         {

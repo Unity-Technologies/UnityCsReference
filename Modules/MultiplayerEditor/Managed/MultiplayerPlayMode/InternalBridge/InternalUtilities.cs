@@ -148,9 +148,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal static bool IsBuildProfileSupported(BuildProfile buildProfile)
         {
             GetBuildProfileInternalData(buildProfile, out _, out var buildTarget, out _);
-
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            return BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget);
+            var platformGuid = buildProfile.platformGuid;
+            return BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget) && BuildProfileModuleUtil.IsModuleInstalled(platformGuid);
         }
 
         internal static bool BuildProfileCanRunOnCurrentPlatform(BuildProfile buildProfile)

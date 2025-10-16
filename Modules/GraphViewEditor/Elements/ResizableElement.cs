@@ -26,7 +26,7 @@ namespace UnityEditor.Experimental.GraphView
             public override object CreateInstance() => new ResizableElement();
         }
 
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlFactoryObsoleteIsError)]
         public new class UxmlFactory : UxmlFactory<ResizableElement> {}
 
         public ResizableElement() : this("UXML/GraphView/Resizable.uxml")

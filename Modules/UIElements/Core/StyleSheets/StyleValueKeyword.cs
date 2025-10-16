@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum StyleValueKeyword
     {
         Inherit,

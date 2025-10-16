@@ -17,9 +17,9 @@ namespace Unity.UI.Builder
             paneWindow.document.UpdateActiveStyleSheet(selection, styleSheet, null);
         }
 
-        public static bool AddUSSToAsset(BuilderPaneWindow paneWindow, string ussPath)
+        public static bool AddUSSToAsset(BuilderPaneWindow paneWindow, string ussPath, int index = -1)
         {
-            bool added = BuilderAssetUtilities.AddStyleSheetToAsset(paneWindow.document, ussPath);
+            bool added = BuilderAssetUtilities.AddStyleSheetToAsset(paneWindow.document, ussPath, index);
 
             if (added)
             {

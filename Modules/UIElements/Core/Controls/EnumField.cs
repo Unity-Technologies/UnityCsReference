@@ -11,44 +11,12 @@ using static UnityEngine.EnumDataUtility;
 
 namespace UnityEngine.UIElements
 {
-    static class EnumFieldHelpers
-    {
-        internal static readonly UxmlTypeAttributeDescription<Enum> type = new UxmlTypeAttributeDescription<Enum> { name = "type" };
-        internal static readonly UxmlStringAttributeDescription value = new UxmlStringAttributeDescription { name = "value" };
-        internal static readonly UxmlBoolAttributeDescription includeObsoleteValues = new UxmlBoolAttributeDescription() { name = "include-obsolete-values", defaultValue = false };
-
-        internal static bool ExtractValue(IUxmlAttributes bag, CreationContext cc, out Type resEnumType, out Enum resEnumValue, out bool resIncludeObsoleteValues)
-        {
-            resIncludeObsoleteValues = false;
-            resEnumValue = null;
-
-            resEnumType = type.GetValueFromBag(bag, cc);
-            if (resEnumType == null)
-            {
-                return false;
-            }
-
-            string specifiedValue = null;
-            object resEnumValueObject = null;
-            if (value.TryGetValueFromBag(bag, cc, ref specifiedValue) && !Enum.TryParse(resEnumType, specifiedValue, false, out resEnumValueObject))
-            {
-                Debug.LogErrorFormat("EnumField: Could not parse value of '{0}', because it isn't defined in the {1} enum.", specifiedValue, resEnumType.FullName);
-                return false;
-            }
-
-            resEnumValue = specifiedValue != null && resEnumValueObject != null ? (Enum)resEnumValueObject : (Enum)Enum.ToObject(resEnumType, 0);
-            resIncludeObsoleteValues = includeObsoleteValues.GetValueFromBag(bag, cc);
-
-            return true;
-        }
-    }
-
     /// <summary>
     /// Makes a dropdown for switching between enum values. For more information, refer to [[wiki:UIE-uxml-element-EnumField|UXML element EnumField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/EnumField.png")]
-    public class EnumField : BaseField<Enum>
+    public partial class EnumField : BaseField<Enum>
     {
         internal static readonly BindingId textProperty = nameof(text);
 
@@ -94,58 +62,6 @@ namespace UnityEngine.UIElements
                 else
                     // We need to do this to initialize the EnumField.
                     e.valueAsString = null;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates an <see cref="EnumField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<EnumField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="EnumField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<Enum>.UxmlTraits
-        {
-#pragma warning disable 414
-            private UxmlTypeAttributeDescription<Enum> m_Type = EnumFieldHelpers.type;
-            private UxmlStringAttributeDescription m_Value = EnumFieldHelpers.value;
-            private UxmlBoolAttributeDescription m_IncludeObsoleteValues = EnumFieldHelpers.includeObsoleteValues;
-#pragma warning restore 414
-
-            /// <summary>
-            /// Initialize <see cref="EnumField"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                if (EnumFieldHelpers.ExtractValue(bag, cc, out var resEnumType, out var resEnumValue, out var resIncludeObsoleteValues))
-                {
-                    EnumField enumField = (EnumField)ve;
-                    enumField.Init(resEnumValue, resIncludeObsoleteValues);
-                }
-                // If we didn't have a valid value, try to set the type.
-                else if (null != resEnumType)
-                {
-                    EnumField enumField = (EnumField)ve;
-
-                    enumField.m_EnumType = resEnumType;
-                    if (enumField.m_EnumType != null)
-                        enumField.PopulateDataFromType(enumField.m_EnumType);
-                    enumField.value = null;
-                }
-                else
-                {
-                    var enumField = (EnumField)ve;
-                    enumField.m_EnumType = null;
-                    enumField.value = null;
-                }
             }
         }
 

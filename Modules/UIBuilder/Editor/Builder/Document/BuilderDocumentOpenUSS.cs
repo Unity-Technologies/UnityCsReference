@@ -60,7 +60,8 @@ namespace Unity.UI.Builder
                 ussPath = AssetDatabase.GetAssetPath(styleSheet);
 
             this.styleSheet = styleSheet;
-            if (updateBackup) {
+            if (updateBackup)
+            {
                 m_BackupStyleSheet = styleSheet.DeepCopy();
             }
             m_OldPath = ussPath;
@@ -92,7 +93,10 @@ namespace Unity.UI.Builder
 
         public void GeneratePreview()
         {
+            if (m_StyleSheet.contentHash == m_ContentHash) return;
+
             m_UssPreview = m_StyleSheet.GenerateUSS();
+            m_ContentHash = m_StyleSheet.contentHash;
         }
 
         public bool SaveToDisk(VisualTreeAsset visualTreeAsset)
@@ -124,6 +128,9 @@ namespace Unity.UI.Builder
                 m_BackupStyleSheet = m_StyleSheet.DeepCopy();
             else
                 m_StyleSheet.DeepOverwrite(m_BackupStyleSheet);
+
+            // We just saved. Clear the dirty flags.
+            EditorUtility.ClearDirty(m_StyleSheet);
 
             return BuilderAssetUtilities.WriteTextFileToDisk(newUSSPath, ussPreview);
         }
@@ -160,8 +167,11 @@ namespace Unity.UI.Builder
             ClearBackup();
 
             var restoredStyleSheet = StyleSheetUtility.CreateInstanceWithHideFlags();
+            restoredStyleSheet.name = styleSheet.name;
+
             var ussImporter = new BuilderStyleSheetImporter();
             ussImporter.Import(restoredStyleSheet, ussPreview);
+
             m_BackupStyleSheet = styleSheet.DeepCopy();
             restoredStyleSheet.DeepOverwrite(styleSheet);
         }
@@ -173,6 +183,7 @@ namespace Unity.UI.Builder
 
             m_BackupStyleSheet.DeepOverwrite(m_StyleSheet);
             m_ContentHash = m_StyleSheet.contentHash;
+            EditorUtility.ClearDirty(m_StyleSheet);
         }
 
         public void ClearBackup()

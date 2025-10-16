@@ -98,7 +98,7 @@ namespace Unity.UI.Builder
             Add(m_ElementHierarchyView);
             // Make sure the Hierarchy View gets focus when the pane gets focused.
             primaryFocusable = m_ElementHierarchyView;
-
+            explorerDragger.RegisterPaneContent(m_ElementHierarchyView);
             UpdateHierarchyAndSelection(false);
             m_ShouldRebuildHierarchyOnStyleChange = true;
         }

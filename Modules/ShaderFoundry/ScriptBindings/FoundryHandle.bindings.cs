@@ -11,10 +11,10 @@ namespace UnityEditor.ShaderFoundry
     [FoundryAPI]
     internal struct FoundryHandle
     {
-        private UInt32 m_Handle;
+        private UInt64 m_Handle;
 
-        internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-        internal extern static FoundryHandle Invalid();
+        internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
+        [ThreadSafe] internal extern static FoundryHandle Invalid();
         internal bool ReferenceEquals(FoundryHandle other)
         {
             return m_Handle == other.m_Handle;
@@ -29,7 +29,6 @@ namespace UnityEditor.ShaderFoundry
         public override string ToString() { return $"{m_Handle}"; }
 
         // This is extremely temporary!!  Use at your own risk as it will go away soon.
-        internal UInt32 Handle { get { return m_Handle; } set { m_Handle = value; }}
-        internal UInt32 LegacyHandle { get { return m_Handle - 1; } set { m_Handle = value + 1; } }
+        internal UInt64 Handle { get { return m_Handle; } set { m_Handle = value; }}
     }
 }

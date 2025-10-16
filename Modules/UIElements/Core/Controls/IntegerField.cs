@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/IntegerField.png")]
-    public class IntegerField : TextValueField<int>
+    public partial class IntegerField : TextValueField<int>
     {
         // This property to alleviate the fact we have to cast all the time
         IntegerInput integerInput => (IntegerInput)textInputBase;
@@ -30,17 +30,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new IntegerField();
         }
-
-        /// <summary>
-        /// Instantiates an <see cref="IntegerField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<IntegerField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="IntegerField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<int, UxmlIntAttributeDescription> {}
 
         /// <summary>
         /// Converts the given integer to a string.

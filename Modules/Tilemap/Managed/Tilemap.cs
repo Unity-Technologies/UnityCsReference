@@ -28,6 +28,16 @@ namespace UnityEngine.Tilemaps
             }
         }
 
+        private ITilemap m_ITilemap;
+        internal ITilemap iTilemap
+        {
+            get { return m_ITilemap; }
+            set
+            {
+                m_ITilemap = value;
+            }
+        }
+
         internal static bool HasLoopEndedForTileAnimationCallback()
         {
             return (Tilemap.loopEndedForTileAnimation != null);

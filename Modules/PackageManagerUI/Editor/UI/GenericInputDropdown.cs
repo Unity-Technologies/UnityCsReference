@@ -14,12 +14,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly Vector2 k_DefaultWindowSize = new Vector2(320, 50);
 
         private Vector2 m_WindowSize;
-        internal override Vector2 windowSize => m_WindowSize;
+        public override Vector2 windowSize => m_WindowSize;
 
         public Action<string> submitClicked { get; set; }
-
-        private TextFieldPlaceholder m_InputPlaceholder;
-        private EditorWindow m_AnchorWindow;
 
         private IResourceLoader m_ResourceLoader;
         private void ResolveDependencies(IResourceLoader resourceLoader)
@@ -27,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = resourceLoader;
         }
 
-        public GenericInputDropdown(IResourceLoader resourceLoader, EditorWindow anchorWindow, InputDropdownArgs args)
+        public GenericInputDropdown(IResourceLoader resourceLoader, InputDropdownArgs args)
         {
             ResolveDependencies(resourceLoader);
 
@@ -37,47 +34,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            Init(anchorWindow, args);
-        }
-
-        internal override void OnDropdownShown()
-        {
-            inputTextField.Focus();
-            m_AnchorWindow?.rootVisualElement?.SetEnabled(false);
-        }
-
-        internal override void OnDropdownClosed()
-        {
-            m_InputPlaceholder.OnDisable();
-
-            inputTextField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            inputTextField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
-
-            submitButton.clickable.clicked -= SubmitClicked;
-
-            if (m_AnchorWindow != null)
-            {
-                m_AnchorWindow.rootVisualElement.SetEnabled(true);
-                m_AnchorWindow = null;
-            }
-
-            inputTextField.value = string.Empty;
-            submitButton.text = string.Empty;
-            submitClicked = null;
-        }
-
-        private void Init(EditorWindow anchorWindow, InputDropdownArgs args)
-        {
-            m_AnchorWindow = anchorWindow;
-
             m_WindowSize = args.windowSize ?? k_DefaultWindowSize;
 
             inputTextField.value = args.defaultValue ?? string.Empty;
-            inputTextField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            inputTextField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
-
-            m_InputPlaceholder = new TextFieldPlaceholder(inputTextField);
-            m_InputPlaceholder.text = args.placeholderText ?? string.Empty;
+            inputTextField.textEdition.placeholder = args.placeholderText ?? string.Empty;
 
             mainTitle.text = args.title ?? string.Empty;
             UIUtils.SetElementDisplay(mainTitle, !string.IsNullOrEmpty(mainTitle.text));
@@ -100,6 +60,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             submitButton.text = !string.IsNullOrEmpty(args.submitButtonText) ? args.submitButtonText : k_DefaultSubmitButtonText;
             if (args.onInputSubmitted != null)
                 submitClicked = args.onInputSubmitted;
+        }
+
+        public override void OnDropdownShown()
+        {
+            inputTextField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
+            inputTextField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+
+            inputTextField.Focus();
+        }
+
+        public override void OnDropdownClosed()
+        {
+            inputTextField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
+            inputTextField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+
+            inputTextField.value = string.Empty;
+            submitButton.text = string.Empty;
+            submitClicked = null;
         }
 
         internal void SubmitClicked()

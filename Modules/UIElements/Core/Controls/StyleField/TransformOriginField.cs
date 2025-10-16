@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a field for entering Transform Origin.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class TransformOriginField : BaseField<TransformOrigin>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

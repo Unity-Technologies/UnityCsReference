@@ -359,9 +359,6 @@ namespace Unity.UI.Builder
             if (!userConfirmed)
                 return;
 
-            // Update any uses out there of the currently edited and saved USS.
-            RetainedMode.FlagStyleSheetChange();
-
             // Save last save path.
             m_LastSavePath = Path.GetDirectoryName(document.uxmlPath);
 
@@ -803,18 +800,6 @@ namespace Unity.UI.Builder
                 "Reset Notifications",
                 _ => BuilderProjectSettings.ResetNotifications(),
                 _ => BuilderProjectSettings.HasBlockedNotifications() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                m_SettingsMenu.menu.AppendAction(
-                    "Always Use UxmlTraits Attribute fields",
-                a =>
-                {
-                    Builder.alwaysUseUxmlTraits = !Builder.alwaysUseUxmlTraits;
-                    builder.inspector.RefreshUI();
-                },
-                a => Builder.alwaysUseUxmlTraits ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-            }
 
             m_SettingsMenu.menu.AppendAction("Settings"
                 , a => ShowSettingsWindow()

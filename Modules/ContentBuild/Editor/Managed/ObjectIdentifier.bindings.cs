@@ -21,7 +21,7 @@ namespace UnityEditor.Build.Content
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/ContentBuild/Editor/Public/ObjectIdentifier.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ObjectIdentifier.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public struct ObjectIdentifier : IEquatable<ObjectIdentifier>, IComparable<ObjectIdentifier>
     {
@@ -119,21 +119,25 @@ namespace UnityEditor.Build.Content
         [FreeFunction("GetObjectFromObjectIdentifier")]
         public static extern UnityEngine.Object ToObject(ObjectIdentifier objectId);
 
+        [Obsolete("Deprecated, use ToEntityId instead.")]
+        public static int ToInstanceID(ObjectIdentifier objectId) => ToEntityId(objectId);
         [FreeFunction("GetEntityIdFromObjectIdentifier")]
-        public static extern int ToInstanceID(ObjectIdentifier objectId);
+        public static extern EntityId ToEntityId(ObjectIdentifier objectId);
 
         public static bool TryGetObjectIdentifier(UnityEngine.Object targetObject, out ObjectIdentifier objectId)
         {
             return GetObjectIdentifierFromObject(targetObject, out objectId);
         }
 
-        public static bool TryGetObjectIdentifier(int instanceID, out ObjectIdentifier objectId)
+        public static bool TryGetObjectIdentifier(int instanceID, out ObjectIdentifier objectId) => GetObjectIdentifierFromEntityId((EntityId)instanceID, out objectId);
+
+        public static bool TryGetObjectIdentifier(EntityId entityId, out ObjectIdentifier objectId)
         {
-            return GetObjectIdentifierFromInstanceID(instanceID, out objectId);
+            return GetObjectIdentifierFromEntityId(entityId, out objectId);
         }
 
         internal static extern bool GetObjectIdentifierFromObject(UnityEngine.Object targetObject, out ObjectIdentifier objectId);
 
-        internal static extern bool GetObjectIdentifierFromInstanceID(EntityId instanceID, out ObjectIdentifier objectId);
+        internal static extern bool GetObjectIdentifierFromEntityId(EntityId entityId, out ObjectIdentifier objectId);
     }
 }

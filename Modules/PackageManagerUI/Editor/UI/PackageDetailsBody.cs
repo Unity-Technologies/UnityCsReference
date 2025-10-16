@@ -19,7 +19,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IResourceLoader m_ResourceLoader;
         private IPackageDatabase m_PackageDatabase;
         private IPackageOperationDispatcher m_OperationDispatcher;
-        private IProjectSettingsProxy m_SettingsProxy;
         private IPackageManagerPrefs m_PackageManagerPrefs;
         private ISelectionProxy m_Selection;
         private IAssetDatabaseProxy m_AssetDatabase;
@@ -37,7 +36,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<IResourceLoader>();
-            m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
             m_PackageDatabase = container.Resolve<IPackageDatabase>();
             m_OperationDispatcher = container.Resolve<IPackageOperationDispatcher>();
             m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
@@ -72,7 +70,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddTabs()
         {
             // The following list of tabs are added in the order we want them to be shown to the users.
-            m_TabView.AddTab(new PackageDetailsDescriptionTab(m_UnityConnect, m_ResourceLoader, m_PackageManagerPrefs));
+            m_TabView.AddTab(new PackageDetailsDetailsTab(m_UnityConnect, m_ResourceLoader));
             m_TabView.AddTab(new PackageDetailsOverviewTab(m_UnityConnect, m_ResourceLoader));
             m_TabView.AddTab(new PackageDetailsReleasesTab(m_UnityConnect));
             m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_UnityConnect, m_IOProxy, m_PackageManagerPrefs));

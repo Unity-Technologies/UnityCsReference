@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Serialization;
 
 namespace UnityEditorInternal
 {
@@ -16,7 +17,11 @@ namespace UnityEditorInternal
     [StructLayout(LayoutKind.Sequential)]
     public struct AudioProfilerGroupInfo
     {
-        public int assetInstanceId;
+        [FormerlySerializedAs("assetInstanceId")]
+        public EntityId assetEntityId;
+        [Obsolete("assetInstanceId is deprecated. Use assetEntityId instead.")]
+        public int assetInstanceId { get => assetEntityId; set => assetEntityId = value; }
+
         public int objectInstanceId;
         public int assetNameOffset;
         public int objectNameOffset;
@@ -60,7 +65,11 @@ namespace UnityEditorInternal
     [StructLayout(LayoutKind.Sequential)]
     public struct AudioProfilerClipInfo
     {
-        public int assetInstanceId;
+        [FormerlySerializedAs("assetInstanceId")]
+        public EntityId assetEntityId;
+        [Obsolete("assetInstanceId is deprecated. Use assetEntityId instead.")]
+        public int assetInstanceId { get => assetEntityId; set => assetEntityId = value; }
+
         public int assetNameOffset;
         public int loadState;
         public int internalLoadState;

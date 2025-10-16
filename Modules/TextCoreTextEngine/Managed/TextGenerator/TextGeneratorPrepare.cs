@@ -585,8 +585,10 @@ namespace UnityEngine.TextCore.Text
 
                 if (character != null)
                 {
-                    // Add character to font asset lookup cache
-                    fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                    if (isUsingAlternativeTypeface)
+                        fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                    else
+                        fontAsset.AddCharacterToLookupCache(unicode, character, FontStyles.Normal, TextFontWeight.Regular);
 
                     return character;
                 }
@@ -599,8 +601,10 @@ namespace UnityEngine.TextCore.Text
 
             if (character != null)
             {
-                // Add character to font asset lookup cache
-                fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                if (isUsingAlternativeTypeface)
+                    fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                else
+                    fontAsset.AddCharacterToLookupCache(unicode, character, FontStyles.Normal, TextFontWeight.Regular);
 
                 return character;
             }
@@ -611,8 +615,10 @@ namespace UnityEngine.TextCore.Text
 
             if (character != null)
             {
-                // Add character to font asset lookup cache
-                fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                if (isUsingAlternativeTypeface)
+                    fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                else
+                    fontAsset.AddCharacterToLookupCache(unicode, character, FontStyles.Normal, TextFontWeight.Regular);
 
                 return character;
             }
@@ -1387,32 +1393,55 @@ namespace UnityEngine.TextCore.Text
             bool isUsingAlternativeTypeface;
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
+            TextSettings textSettings = generationSettings.textSettings;
             bool populateLigature = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Search base font asset
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
 
             if (character == null)
-                return false;
-
-            m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
-
-            // If underline font differs from current font, set up proper material references
-            if (m_Underline.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
             {
-                // Determine which material to use based on settings
-                m_Underline.material = generationSettings.textSettings.matchMaterialPreset &&
-                    m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode()
-                        ? MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material)
-                        : m_Underline.fontAsset.material;
+                // Search primary fallback list
+                if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
+                    character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(0x5F, fontAsset, fontAsset.m_FallbackFontAssetTable, OSFallbackList: null, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+            }
 
-                // Add material reference and reset reference count
-                m_Underline.materialIndex = MaterialReference.AddMaterialReference(
-                    m_Underline.material,
-                    m_Underline.fontAsset,
-                    ref m_MaterialReferences,
-                    m_MaterialReferenceIndexLookup);
-                m_MaterialReferences[m_Underline.materialIndex].referenceCount = 0;
+            // Search the setting's general fallback list
+            if (character == null)
+            {
+                if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
+                    return false;
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(0x5F, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? generationSettings.fontSize : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+            }
+
+            // Search the setting's default font asset
+            if (character == null)
+            {
+                if (textSettings.defaultFontAsset != null)
+                    character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+            }
+
+            if (character != null)
+            {
+                m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
+
+                // If underline font differs from current font, set up proper material references
+                if (m_Underline.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
+                {
+                    // Determine which material to use based on settings
+                    m_Underline.material = generationSettings.textSettings.matchMaterialPreset &&
+                        m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode()
+                            ? MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material)
+                            : m_Underline.fontAsset.material;
+
+                    // Add material reference and reset reference count
+                    m_Underline.materialIndex = MaterialReference.AddMaterialReference(
+                        m_Underline.material,
+                        m_Underline.fontAsset,
+                        ref m_MaterialReferences,
+                        m_MaterialReferenceIndexLookup);
+                    m_MaterialReferences[m_Underline.materialIndex].referenceCount = 0;
+                }
             }
 
             return true;

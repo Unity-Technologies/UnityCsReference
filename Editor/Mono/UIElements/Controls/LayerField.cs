@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// A LayerField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerField|UXML element LayerField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerField.png")]
-    public class LayerField : PopupField<int>
+    public partial class LayerField : PopupField<int>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : PopupField<int>.UxmlSerializedData
@@ -48,35 +48,6 @@ namespace UnityEditor.UIElements
                     var e = (LayerField)obj;
                     e.SetValueWithoutNotify(layer);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="LayerField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<LayerField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="LayerField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : PopupField<int>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_Value = new UxmlIntAttributeDescription { name = "value" };
-
-            /// <summary>
-            /// Initialize the traits.
-            /// </summary>
-            /// <param name="ve">VisualElement that will be created and populated.</param>
-            /// <param name="bag">Bag of attributes where the data comes from.</param>
-            /// <param name="cc">Creation context, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var lf = (LayerField)ve;
-                lf.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

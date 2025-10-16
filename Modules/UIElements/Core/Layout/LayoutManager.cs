@@ -180,10 +180,12 @@ internal class LayoutManager : IDisposable
         if (!s_AppDomainUnloadRegistered)
         {
             // important: this will always be called from a special unload thread (main thread will be blocking on this)
+#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR would handle this using BeforeCodeUnloading on Shutdown
             AppDomain.CurrentDomain.DomainUnload += (_, __) =>
             {
                Shutdown();
             };
+#pragma warning restore UAC0006
 
             s_AppDomainUnloadRegistered = true;
         }

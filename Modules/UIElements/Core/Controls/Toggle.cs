@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
     /// For more information, refer to [[wiki:UIE-uxml-element-Toggle|UXML element Toggle]].
     /// </remarks>
     [Icon("UIToolkit/Icons/Toggle.png")]
-    public class Toggle : BaseBoolField
+    public partial class Toggle : BaseBoolField
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseBoolField.UxmlSerializedData
@@ -55,33 +55,6 @@ namespace UnityEngine.UIElements
                     var e = (Toggle)obj;
                     e.text = text;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Toggle"/> using data from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Toggle, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Toggle"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseFieldTraits<bool, UxmlBoolAttributeDescription>
-        {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-
-            /// <summary>
-            /// Initializes <see cref="Toggle"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((Toggle)ve).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 

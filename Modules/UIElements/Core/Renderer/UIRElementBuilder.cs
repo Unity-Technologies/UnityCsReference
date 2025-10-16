@@ -65,29 +65,22 @@ namespace UnityEngine.UIElements.UIR
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
-            bool changesDefaultMaterial = ve.defaultMaterial != null;
-            bool changesDefault = true;
-            if (changesDefaultMaterial)
-                mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.defaultMaterial);
-            else
-            {
-                changesDefaultMaterial = ve.resolvedStyle.unityMaterial != null;
-                if (changesDefaultMaterial)
-                {
-                    changesDefault = false;
-                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
-                }
-            }
-
+            bool setsMaterial = ve.resolvedStyle.unityMaterial != null;
             bool mustPopClipping = false;
 
             if (ve.visible)
             {
+                if (setsMaterial)
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+
                 DrawVisualElementBackground(mgc);
                 DrawVisualElementBorder(mgc);
                 PushVisualElementClipping(mgc);
                 mustPopClipping = true;
                 InvokeGenerateVisualContent(mgc);
+
+                if (setsMaterial)
+                    mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
             }
             else
             {
@@ -97,23 +90,29 @@ namespace UnityEngine.UIElements.UIR
                 // Even though the element hidden, we still have to push the stencil shape or setup the scissors in case any children are visible.
                 if (isClippingWithScissors || isClippingWithStencil)
                 {
+                    if (setsMaterial)
+                        mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+
                     mustPopClipping = true;
                     PushVisualElementClipping(mgc);
-                }
-            }
 
-            if (!changesDefault && changesDefaultMaterial)
-            {
-                mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
+                    if (setsMaterial)
+                        mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
+                }
             }
 
             mgc.entryRecorder.DrawChildren(mgc.parentEntry);
 
             if (mustPopClipping)
+            {
+                if (setsMaterial)
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+
                 PopVisualElementClipping(mgc);
 
-            if (changesDefault && changesDefaultMaterial)
-                mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
+                if (setsMaterial)
+                    mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
+            }
 
             if (isGroupTransform)
                 mgc.entryRecorder.PopGroupMatrix(mgc.parentEntry);
@@ -201,6 +200,7 @@ namespace UnityEngine.UIElements.UIR
                 var rectParams = new MeshGenerator.RectangleParams
                 {
                     rect = ve.rect,
+                    uv = new Rect(0, 0, 1, 1),
                     color = backgroundColor,
                     colorPage = ColorPage.Init(m_RenderTreeManager, renderData.backgroundColorID),
 #pragma warning disable UAL0018 // Capture is safe

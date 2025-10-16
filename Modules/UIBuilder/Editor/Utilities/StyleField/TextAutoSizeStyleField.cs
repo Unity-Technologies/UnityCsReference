@@ -42,6 +42,8 @@ namespace Unity.UI.Builder
         static readonly string s_MinSizeFieldName = s_TextAutoSizeFieldName + "-min-size";
         static readonly string s_MaxSizeFieldName = s_TextAutoSizeFieldName + "-max-size";
 
+        public bool IsBestFit => value.mode == TextAutoSizeMode.BestFit;
+
         Toggle m_AutoSizeToggle;
         DimensionStyleField m_MinSizeField;
         DimensionStyleField m_MaxSizeField;

@@ -15,6 +15,7 @@ using Unity.Profiling;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class EditorBuildNode : Node
     {
         [SerializeReference] public NodeInput<string> BuildPath;

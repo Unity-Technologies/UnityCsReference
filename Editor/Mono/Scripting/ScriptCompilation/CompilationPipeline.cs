@@ -351,7 +351,7 @@ namespace UnityEditor.Compilation
             var buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) != 0;
 
             var unityAssemblies = InternalEditorUtility.GetUnityAssemblies(buildingForEditor, target);
-            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, target, extraScriptingDefines);
+            var precompiledAssemblies = editorCompilation.PrecompiledAssemblyProvider.GetPrecompiledAssembliesDictionary(options, target, extraScriptingDefines, includeRedirectedAssemblies: true);
             return editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies, null);
         }
 

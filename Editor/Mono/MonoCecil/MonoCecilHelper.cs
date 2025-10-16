@@ -94,7 +94,7 @@ namespace UnityEditor
 
         public IFileOpenInfo TryGetCecilFileOpenInfo(Type type, MethodInfo methodInfo)
         {
-            var assemblyPath = type.Assembly.Location;
+            var assemblyPath = type.Assembly.GetLoadedAssemblyPath();
 
             // Get the sequence point directly from the method token (to avoid scanning all types/methods)
             using var assemblyDefinition = ReadAssembly(assemblyPath);

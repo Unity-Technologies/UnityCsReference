@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal readonly partial struct StylePropertyValidationCollection : IEnumerable<StylePropertyValidation>
     {
         public static implicit operator StylePropertyValidationCollection(List<StylePropertyValidation> validation)
@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyValidationCollection Empty { get; } = new ();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal StylePropertyValidationCollection(
             List<StylePropertyValidation> persistentValidation,
             List<StylePropertyValidation> validation

@@ -96,7 +96,8 @@ namespace UnityEditor.IMGUI.Controls
                     }
                 }
 
-                result.Sort((x, y) => EditorUtility.NaturalCompare(x.displayName, y.displayName));
+                if (m_Owner.sortByNameAfterSearch)
+                    result.Sort((x, y) => EditorUtility.NaturalCompare(x.displayName, y.displayName));
             }
 
             protected override void GetParentsAbove(TIdentifier id, HashSet<TIdentifier> ancestors)

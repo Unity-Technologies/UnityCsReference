@@ -9,6 +9,8 @@ using UnityEngine;
 using UnityEditor.Hardware;
 using UnityEngine.Rendering;
 using UnityEngine.Assertions;
+using UnityEditor.UIElements;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor
 {
@@ -51,8 +53,6 @@ namespace UnityEditor
             public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behaviour Mode");
 
             public static GUIContent buildPipelineHeader = EditorGUIUtility.TrTextContent("Build Pipeline");
-            public static GUIContent ucbpEnableAssetBundles = EditorGUIUtility.TrTextContent("Multi-Process AssetBundle Building", "Enable experimental improvements to the AssetBundle Build Pipeline aimed at reducing build times with multi-process importing and providing more efficient incremental content building");
-            public static readonly GUIContent ucbpLearnMore = new GUIContent("Learn more...", "Review official Unity documentation for important considerations around these experimental improvements.");
 
             public static GUIContent sceneHandlingHeader = EditorGUIUtility.TrTextContent("Scene Handling");
             public static GUIContent forceAssetUnloadAndGCOnSceneLoad = EditorGUIUtility.TrTextContent("Force Asset Unload & GC on Scene Load", "Force a managed heap garbage collection and unload unused assets after loading scenes in single mode in the Editor or exiting Prefab Mode. In complex projects, this can slow down performance. Disable this if you do not require class finalizers to run at the end of scene loading. Note that regular dynamic GC and unused asset unloading still occur when memory usage is high, but without this option, class finalizers might not run immediately after each scene load.");
@@ -82,8 +82,9 @@ namespace UnityEditor
             public static GUIContent enableEditModeTextureStreaming = EditorGUIUtility.TrTextContent("Enable Mipmap Streaming In Edit Mode", "Texture Mipmap Streaming must be enabled in Quality Settings for mipmap streaming to function in Edit Mode. This reduces GPU memory by streaming mips in and out as needed.");
             public static GUIContent enableEditorAsyncCPUTextureLoading = EditorGUIUtility.TrTextContent("Load texture data on demand", "While in Editor, load CPU side texture data for streaming textures from disk asynchronously on demand (will avoid some stalls and reduce CPU memory usage). Change requires Editor restart.");
 
-            public static GUIContent shaderCompilation = EditorGUIUtility.TrTextContent("Shader Compilation");
+            public static readonly GUIContent shaders = EditorGUIUtility.TrTextContent("Shaders");
             public static GUIContent asyncShaderCompilation = EditorGUIUtility.TrTextContent("Asynchronous Shader Compilation", "Enables async shader compilation in Game and Scene view. Async compilation for custom editor tools can be achieved via script API and is not affected by this option.");
+            public static readonly GUIContent blockShaders = EditorGUIUtility.TrTextContent("Block Shaders (Early Access)", "Enables block shader asset creation and compilation. Change triggers re-import of block shader assets.");
 
             public static GUIContent prefabMode = EditorGUIUtility.TrTextContent("Prefab Mode");
             public static GUIContent prefabModeAllowAutoSave = EditorGUIUtility.TrTextContent("Allow Auto Save", "When enabled, an Auto Save toggle is displayed in Prefab Mode which you can turn on or off. This is the default. When disabled, there is no Auto Save in Prefab Mode in this project and the toggle is not displayed.");
@@ -130,6 +131,9 @@ namespace UnityEditor
             public static readonly GUIContent numberingProjectSpace = EditorGUIUtility.TrTextContent("Space Before Number in Asset Names");
 
             public static GUIContent referencedClipsExactNaming = EditorGUIUtility.TrTextContent("Exactly Match Referenced Clip Names", "Controls how referenced clips are matched with models that are animated in Legacy mode. If turned on, the model name and the referenced clip names must exactly match. If turned off, only the start of the model name needs to match the referenced clip name. Also controls the behavior of the \"Update referenced clips\" button for models that are animated in Humanoid mode. See the documentation for EditorSettings.referencedClipsExactNaming for more details.");
+
+            public static readonly GUIContent buildProfileSettings = EditorGUIUtility.TrTextContent("Build Profiles");
+            public static readonly GUIContent buildProfileClassicPlatforms = EditorGUIUtility.TrTextContent("Hide Classic Platforms");
         }
 
         internal struct PopupElement
@@ -267,6 +271,8 @@ namespace UnityEditor
         SerializedProperty m_AssetNamingUsesSpace;
 
         SerializedProperty m_AsyncShaderCompilation;
+        SerializedProperty m_BlockShaders;
+        SerializedProperty m_UnlockBlockShaders;
         SerializedProperty m_DefaultBehaviorMode;
         SerializedProperty m_SerializationMode;
         SerializedProperty m_SerializeInlineMappingsOnOneLine;
@@ -289,6 +295,7 @@ namespace UnityEditor
         SerializedProperty m_ProjectGenerationRootNamespace;
         SerializedProperty m_CacheServerValidationMode;
         SerializedProperty m_InspectorUseIMGUIDefaultInspector;
+        SerializedProperty m_HideBuildProfileClassicPlatforms;
 
         bool m_IsGlobalSettings;
 
@@ -316,6 +323,8 @@ namespace UnityEditor
             m_AssetNamingUsesSpace = serializedObject.FindProperty("m_AssetNamingUsesSpace");
 
             m_AsyncShaderCompilation = serializedObject.FindProperty("m_AsyncShaderCompilation");
+            m_BlockShaders = serializedObject.FindProperty("m_BlockShaders");
+            m_UnlockBlockShaders = serializedObject.FindProperty("m_UnlockBlockShaders");
 
             m_DefaultBehaviorMode = serializedObject.FindProperty("m_DefaultBehaviorMode");
             Assert.IsNotNull(m_DefaultBehaviorMode);
@@ -384,6 +393,8 @@ namespace UnityEditor
 
             m_InspectorUseIMGUIDefaultInspector = serializedObject.FindProperty("m_InspectorUseIMGUIDefaultInspector");
             Assert.IsNotNull(m_InspectorUseIMGUIDefaultInspector);
+
+            m_HideBuildProfileClassicPlatforms = serializedObject.FindProperty("m_HideBuildProfileClassicPlatforms");
 
             m_IsGlobalSettings = EditorSettings.GetEditorSettings() == target;
         }
@@ -461,25 +472,6 @@ namespace UnityEditor
             }
 
             GUILayout.Space(10);
-
-            GUILayout.BeginHorizontal();
-            GUI.enabled = true;
-            GUILayout.Label(Content.buildPipelineHeader, EditorStyles.boldLabel);
-            GUI.enabled = editorEnabled;
-            if (GUILayout.Button(Content.ucbpLearnMore, EditorStyles.linkLabel))
-            {
-                var help = Help.FindHelpNamed("Build-MultiProcess");
-                Application.OpenURL(help);
-            }
-            GUILayout.EndHorizontal();
-
-            EditorGUI.BeginChangeCheck();
-            bool parallelAssetBundleBuilding = EditorBuildSettings.UseParallelAssetBundleBuilding;
-            parallelAssetBundleBuilding = EditorGUILayout.Toggle(Content.ucbpEnableAssetBundles, parallelAssetBundleBuilding);
-            if (EditorGUI.EndChangeCheck())
-                EditorBuildSettings.UseParallelAssetBundleBuilding = parallelAssetBundleBuilding;
-            if(parallelAssetBundleBuilding)
-                EditorGUILayout.HelpBox("Please review official documentation before building any content with these experimental improvements enabled. These improvements apply only to AssetBundles built with BuildPipeline.BuildAssetBundles() and do not apply to AssetBundles built with Scriptable Build Pipeline or Addressables.", MessageType.Info);
 
             GUILayout.Label(Content.sceneHandlingHeader, EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
@@ -588,10 +580,11 @@ namespace UnityEditor
             var compressorsChanged = DoTextureCompressorSettings();
             DoLineEndingsSettings();
             DoStreamingSettings();
-            DoShaderCompilationSettings();
+            DoShadersSettings();
             DoEnterPlayModeSettings();
             DoNumberingSchemeSettings();
             DoEnterInspectorSettings();
+            DoBuildProfileSettings();
 
             serializedObject.ApplyModifiedProperties();
             if (compressorsChanged)
@@ -760,6 +753,20 @@ namespace UnityEditor
                     EditorSettings.referencedClipsExactNaming = referencedClipsExactNaming;
                     AssetDatabase.Refresh();
                 }
+            }
+        }
+
+        private void DoBuildProfileSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label(Content.buildProfileSettings, EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_HideBuildProfileClassicPlatforms, Content.buildProfileClassicPlatforms);
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+                BuildProfileModuleUtil.OnEditorSettingsChanged?.Invoke();
             }
         }
 
@@ -977,12 +984,20 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_AssetNamingUsesSpace, Content.numberingProjectSpace);
         }
 
-        private void DoShaderCompilationSettings()
+        private void DoShadersSettings()
         {
             GUILayout.Space(10);
-            GUILayout.Label(Content.shaderCompilation, EditorStyles.boldLabel);
+            GUILayout.Label(Content.shaders, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_AsyncShaderCompilation, Content.asyncShaderCompilation);
+
+            if (EditorSettings.unlockBlockShaders)
+            {
+                EditorGUI.BeginChangeCheck();
+                m_BlockShaders.boolValue = EditorGUILayout.Toggle(Content.blockShaders, m_BlockShaders.boolValue);
+                if (EditorGUI.EndChangeCheck())
+                    EditorSettings.blockShaders = m_BlockShaders.boolValue;
+            }
         }
 
         private void DoEnterPlayModeSettings()

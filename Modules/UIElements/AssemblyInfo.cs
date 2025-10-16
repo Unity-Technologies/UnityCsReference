@@ -41,6 +41,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.InternalAccessTests")] // for UI Test Framework tests that need internal access
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
 
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Playmode")]
+
+
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.
 
@@ -73,6 +78,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.HierarchyModule")] // Unity.HierarchyEditor module, for HierarchyWindow
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")] // Hierarchy tests
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")] // Hierarchy performance tests
+[assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")] // Hierarchy performance tests
 [assembly: InternalsVisibleTo("UnityEditor.VectorGraphicsModule")] // VectorImage
 
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")] // com.unity.2d.sprite: VisualElement.styleSheetList, FocusController.IsFocused
@@ -88,9 +94,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.017")] // com.unity.motion: UIElementsUtility
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.015")] // Eventually remove this line. Kept for earlier, unreleased versions of com.unity.graphtoolsfoundation, which is now com.unity.graphtoolsauthoringframework (line below).
-[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalBridge")] // com.unity.graphtoolsauthoringframework
 
 
+[assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")]
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")] // com.unity.purchasing, VisualElement.AddStyleSheetPath
-[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
 

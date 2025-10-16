@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -73,8 +74,7 @@ namespace UnityEditor.Experimental.GraphView
                 s_NodeAdapterDictionary = new Dictionary<int, MethodInfo>();
 
                 // add extension methods
-                AppDomain currentDomain = AppDomain.CurrentDomain;
-                foreach (Assembly assembly in currentDomain.GetAssemblies())
+                foreach (Assembly assembly in CurrentAssemblies.GetLoadedAssemblies())
                 {
                     IEnumerable<MethodInfo> methods;
 
@@ -121,8 +121,7 @@ namespace UnityEditor.Experimental.GraphView
             if (s_TypeAdapters == null)
             {
                 s_TypeAdapters = new List<MethodInfo>();
-                AppDomain currentDomain = AppDomain.CurrentDomain;
-                foreach (Assembly assembly in currentDomain.GetAssemblies())
+                foreach (Assembly assembly in CurrentAssemblies.GetLoadedAssemblies())
                 {
                     try
                     {

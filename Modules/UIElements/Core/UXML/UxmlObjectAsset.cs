@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal abstract class UxmlAsset : IUxmlAttributes
     {
         public const string NullNodeType = "null";

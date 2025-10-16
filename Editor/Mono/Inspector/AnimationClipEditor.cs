@@ -323,7 +323,7 @@ namespace UnityEditor
         {
             // It doesn't make sense to try and use the preview
             Texture2D icon = null;
-            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetInstanceID());
+            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetEntityId());
             icon = AssetPreview.GetAssetPreview(target);
             if (!icon)
             {

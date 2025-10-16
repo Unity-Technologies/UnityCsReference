@@ -42,7 +42,7 @@ namespace UnityEngine.UIElements
     /// Represents a collection of columns.
     /// </summary>
     [UxmlObject]
-    public class Columns : ICollection<Column>, INotifyBindablePropertyChanged
+    public partial class Columns : ICollection<Column>, INotifyBindablePropertyChanged
     {
         static readonly BindingId primaryColumnNameProperty = nameof(primaryColumnName);
         static readonly BindingId reorderableProperty = nameof(reorderable);
@@ -122,52 +122,6 @@ namespace UnityEngine.UIElements
                         var column = (Column)columnData.CreateInstance();
                         columnData.Deserialize(column);
                         e.Add(column);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Columns"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : Columns, new() {}
-
-        /// <summary>
-        /// Instantiates a <see cref="Columns"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory : UxmlObjectFactory<Columns> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="Columns"/>.
-        /// </summary>
-        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : Columns
-        {
-            readonly UxmlStringAttributeDescription m_PrimaryColumnName = new UxmlStringAttributeDescription { name = "primary-column-name" };
-            readonly UxmlEnumAttributeDescription<StretchMode> m_StretchMode = new UxmlEnumAttributeDescription<StretchMode> { name = "stretch-mode", defaultValue = StretchMode.GrowAndFill };
-            readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = true };
-            readonly UxmlBoolAttributeDescription m_Resizable = new UxmlBoolAttributeDescription { name = "resizable", defaultValue = true };
-            readonly UxmlBoolAttributeDescription m_ResizePreview = new UxmlBoolAttributeDescription { name = "resize-preview" };
-            readonly UxmlObjectListAttributeDescription<Column> m_Columns = new UxmlObjectListAttributeDescription<Column>();
-
-            public override void Init(ref T obj, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ref obj, bag, cc);
-
-                obj.primaryColumnName = m_PrimaryColumnName.GetValueFromBag(bag, cc);
-                obj.stretchMode = m_StretchMode.GetValueFromBag(bag, cc);
-                obj.reorderable = m_Reorderable.GetValueFromBag(bag, cc);
-                obj.resizable = m_Resizable.GetValueFromBag(bag, cc);
-                obj.resizePreview = m_ResizePreview.GetValueFromBag(bag, cc);
-
-                var columnList = m_Columns.GetValueFromBag(bag, cc);
-                if (columnList != null)
-                {
-                    foreach (var column in columnList)
-                    {
-                        obj.Add(column);
                     }
                 }
             }

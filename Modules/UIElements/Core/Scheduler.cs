@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -138,6 +139,7 @@ namespace UnityEngine.UIElements
     }
 
     // default scheduler implementation
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal class TimerEventScheduler
     {
         private readonly List<ScheduledItem> m_ScheduledItems = new List<ScheduledItem>();

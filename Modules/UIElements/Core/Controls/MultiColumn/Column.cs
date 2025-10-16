@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
     /// cell in this column are represented.
     /// </summary>
     [UxmlObject]
-    public class Column : INotifyBindablePropertyChanged
+    public partial class Column : INotifyBindablePropertyChanged
     {
         static readonly BindingId nameProperty = nameof(name);
         static readonly BindingId titleProperty = nameof(title);
@@ -183,135 +183,6 @@ namespace UnityEngine.UIElements
                 {
                     e.cellTemplate = cellTemplate;
                     e.makeCell = () => cellTemplate.Instantiate();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Column"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory<T> : UxmlObjectFactory<T, UxmlObjectTraits<T>> where T : Column, new() {}
-        /// <summary>
-        /// Instantiates a <see cref="Column"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlObjectFactory<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectFactory : UxmlObjectFactory<Column> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlObjectTraits{T}"/> for the <see cref="Column"/>.
-        /// </summary>
-        [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        internal class UxmlObjectTraits<T> : UnityEngine.UIElements.UxmlObjectTraits<T> where T : Column
-        {
-            UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = "name" };
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "title" };
-            UxmlBoolAttributeDescription m_Visible = new UxmlBoolAttributeDescription { name = "visible", defaultValue = true };
-            UxmlStringAttributeDescription m_Width = new UxmlStringAttributeDescription { name = "width" };
-            UxmlStringAttributeDescription m_MinWidth = new UxmlStringAttributeDescription { name = "min-width" };
-            UxmlStringAttributeDescription m_MaxWidth = new UxmlStringAttributeDescription { name = "max-width" };
-            UxmlBoolAttributeDescription m_Stretch = new UxmlBoolAttributeDescription { name = "stretchable" };
-            UxmlBoolAttributeDescription m_Sortable = new UxmlBoolAttributeDescription { name = "sortable", defaultValue = true };
-            UxmlBoolAttributeDescription m_Optional = new UxmlBoolAttributeDescription { name = "optional", defaultValue = true };
-            UxmlBoolAttributeDescription m_Resizable = new UxmlBoolAttributeDescription { name = "resizable", defaultValue = true };
-            UxmlStringAttributeDescription m_HeaderTemplateId = new UxmlStringAttributeDescription { name = k_HeaderTemplateAttributeName };
-            UxmlStringAttributeDescription m_CellTemplateId = new UxmlStringAttributeDescription { name = k_CellTemplateAttributeName };
-            UxmlStringAttributeDescription m_BindingPath = new UxmlStringAttributeDescription { name = "binding-path" };
-
-            static Length ParseLength(string str, Length defaultValue)
-            {
-                // Copied from UnityEditor.UIElements.Debugger.StyleLengthField.
-                float value = defaultValue.value;
-                LengthUnit unit = defaultValue.unit;
-
-                // Find unit index
-                int digitEndIndex = 0;
-                int unitIndex = -1;
-                for (int i = 0; i < str.Length; i++)
-                {
-                    var c = str[i];
-                    if (char.IsLetter(c) || c == '%')
-                    {
-                        unitIndex = i;
-                        break;
-                    }
-
-                    ++digitEndIndex;
-                }
-
-                var floatStr = str.Substring(0, digitEndIndex);
-                var unitStr = string.Empty;
-                if (unitIndex > 0)
-                    unitStr = str.Substring(unitIndex, str.Length - unitIndex).ToLowerInvariant();
-
-                float v;
-                if (float.TryParse(floatStr, out v))
-                    value = v;
-
-                switch (unitStr)
-                {
-                    case "px":
-                        unit = LengthUnit.Pixel;
-                        break;
-                    case "%":
-                        unit = LengthUnit.Percent;
-                        break;
-                    default:
-                        break;
-                }
-
-                return new Length(value, unit);
-            }
-
-            /// <summary>
-            /// Initialize a uxml object instance with values from the UXML element attributes.
-            /// </summary>
-            /// <param name="obj">The object to initialize.</param>
-            /// <param name="bag">A bag of name-value pairs, one for each attribute of the UXML element.</param>
-            /// <param name="cc">Contains information about the uxml objects available in the tree for the initialization step.</param>
-            /// <remarks>
-            /// UxmlObject are simple data classes or structs.
-            /// </remarks>
-            public override void Init(ref T obj, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ref obj, bag, cc);
-
-                obj.name = m_Name.GetValueFromBag(bag, cc);
-                obj.title = m_Text.GetValueFromBag(bag, cc);
-                obj.visible = m_Visible.GetValueFromBag(bag, cc);
-
-                obj.width = ParseLength(m_Width.GetValueFromBag(bag, cc), new Length());
-                obj.maxWidth = ParseLength(m_MaxWidth.GetValueFromBag(bag, cc), new Length(Length.k_MaxValue));
-                obj.minWidth = ParseLength(m_MinWidth.GetValueFromBag(bag, cc), new Length(kDefaultMinWidth));
-                obj.sortable = m_Sortable.GetValueFromBag(bag, cc);
-                obj.stretchable = m_Stretch.GetValueFromBag(bag, cc);
-                obj.optional = m_Optional.GetValueFromBag(bag, cc);
-                obj.resizable = m_Resizable.GetValueFromBag(bag, cc);
-                obj.bindingPath = m_BindingPath.GetValueFromBag(bag, cc);
-                var headerTemplateId = m_HeaderTemplateId.GetValueFromBag(bag, cc);
-
-                if (!string.IsNullOrEmpty(headerTemplateId))
-                {
-                    var asset = cc.visualTreeAsset?.ResolveTemplate(headerTemplateId);
-                    obj.makeHeader = () =>
-                    {
-                        if (asset != null)
-                            return asset.Instantiate();
-                        return new Label(BaseVerticalCollectionView.k_InvalidTemplateError);
-                    };
-                }
-
-                var cellTemplateId = m_CellTemplateId.GetValueFromBag(bag, cc);
-
-                if (!string.IsNullOrEmpty(cellTemplateId))
-                {
-                    var asset = cc.visualTreeAsset?.ResolveTemplate(cellTemplateId);
-                    obj.makeCell = () =>
-                    {
-                        if (asset != null)
-                            return asset.Instantiate();
-                        return new Label(BaseVerticalCollectionView.k_InvalidTemplateError);
-                    };
                 }
             }
         }

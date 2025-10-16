@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine.Bindings;
 using System.Linq;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -25,17 +27,17 @@ namespace UnityEngine.UIElements
     }
 
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleComplexSelector
     {
         // Hash keys for the most relevant parts of a complex selector to use against the style sheet's Bloom filter.
         [NonSerialized] public Hashes ancestorHashes;
 
         [SerializeField]
-        int m_Specificity;
+        Specificity m_Specificity;
 
         // This "score" is calculated according to the enclosing complex selector specificity
-        public int specificity
+        public Specificity specificity
         {
             get => m_Specificity;
             internal set => m_Specificity = value;

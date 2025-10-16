@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         void Resolve(bool force = true);
         AddRequest Add(string identifier);
-        AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null);
+        AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null, bool dryRun = false);
         AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes, bool dryRun = false);
         EmbedRequest Embed(string packageName);
         GetRegistriesRequest GetRegistries();
@@ -40,9 +40,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Client.Add(identifier);
         }
 
-        public AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null)
+        public AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null, bool dryRun = false)
         {
-            return Client.AddAndRemove(packagesToAdd, packagesToRemove);
+            return Client.AddAndRemove(packagesToAdd, packagesToRemove, dryRun);
         }
 
         public AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes, bool dryRun = false)

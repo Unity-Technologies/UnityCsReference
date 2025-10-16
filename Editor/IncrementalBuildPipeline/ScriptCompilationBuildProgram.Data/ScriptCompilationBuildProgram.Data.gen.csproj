@@ -7,8 +7,13 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <NoWarn>1701</NoWarn>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Data.cs" />

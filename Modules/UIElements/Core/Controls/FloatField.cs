@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/FloatField.png")]
-    public class FloatField : TextValueField<float>
+    public partial class FloatField : TextValueField<float>
     {
         // This property to alleviate the fact we have to cast all the time
         FloatInput floatInput => (FloatInput)textInputBase;
@@ -30,17 +30,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new FloatField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="FloatField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<FloatField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="FloatField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<float, UxmlFloatAttributeDescription> {}
 
         /// <summary>
         /// Converts the given float to a string.

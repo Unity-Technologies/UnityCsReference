@@ -247,7 +247,7 @@ namespace Unity.UI.Builder
             m_Notifications = this.Q<BuilderNotifications>("notifications");
 
             m_BuilderViewportDragger = new BuilderViewportDragger(paneWindow, paneWindow.rootVisualElement, selection, this, m_BuilderParentTracker);
-
+            m_BuilderViewportDragger.RegisterPaneContent(this);
             m_BuilderMover.parentTracker = m_BuilderParentTracker;
 
             m_ContentContainerWrapper.RegisterCallback<MouseDownEvent>(OnPick);

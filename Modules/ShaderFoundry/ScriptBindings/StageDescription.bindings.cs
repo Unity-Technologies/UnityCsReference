@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using ShaderStage = UnityEngine.Shaders.ShaderStage;
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
@@ -11,12 +12,14 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/StageDescription.h")]
     internal struct StageDescriptionInternal : IInternalType<StageDescriptionInternal>
     {
-        internal PassStageType m_StageType;
+        internal ShaderStage m_StageType;
         internal FoundryHandle m_SetupVariablesListHandle;
         internal FoundryHandle m_ElementListHandle;
+        internal FoundryHandle m_OutputLinkOverridesListHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static StageDescriptionInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static StageDescriptionInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         StageDescriptionInternal IInternalType<StageDescriptionInternal>.ConstructInvalid() => Invalid();
@@ -40,20 +43,22 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid && stageDescription.IsValid());
 
-        public PassStageType StageType => stageDescription.m_StageType;
+        public ShaderStage StageType => stageDescription.m_StageType;
 
-        public IEnumerable<FunctionParameter> SetupVariables => stageDescription.m_SetupVariablesListHandle.AsListEnumerable<FunctionParameter>(Container, (container, handle) => (new FunctionParameter(container, handle)));
-        public IEnumerable<FunctionParameter> InputSetupVariables => SetupVariables.Select(FunctionParameterInternal.Flags.kFlagsInput);
-        public IEnumerable<FunctionParameter> OutputSetupVariables => SetupVariables.Select(FunctionParameterInternal.Flags.kFlagsOutput);
+        public IEnumerable<StructField> SetupVariables =>
+            ListType.Enumerate<StructField>(container, stageDescription.m_SetupVariablesListHandle);
+        public IEnumerable<StructField> InputSetupVariables =>
+            SetupVariables.Select(StructFieldInternal.Flags.kInput);
+        public IEnumerable<StructField> OutputSetupVariables =>
+            SetupVariables.Select(StructFieldInternal.Flags.kOutput);
 
-        public IEnumerable<BlockSequenceElement> Elements
-        {
-            get
-            {
-                return stageDescription.m_ElementListHandle.AsListEnumerable<BlockSequenceElement>(Container,
-                    (container, handle) => (new BlockSequenceElement(container, handle)));
-            }
-        }
+        public IEnumerable<BlockSequenceElement> Elements =>
+            ListType.Enumerate<BlockSequenceElement>(container, stageDescription.m_ElementListHandle);
+        public IEnumerable<BlockLinkOverride> OutputLinkOverrides =>
+            ListType.Enumerate<BlockLinkOverride>(container, stageDescription.m_OutputLinkOverridesListHandle);
+
+        public Location Location => new Location(container, stageDescription.m_LocationHandle);
+
         // private
         internal StageDescription(ShaderContainer container, FoundryHandle handle)
         {
@@ -64,7 +69,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static StageDescription Invalid => new StageDescription(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is StageDescription other && this.Equals(other);
         public bool Equals(StageDescription other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -75,13 +80,15 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
 
-            public PassStageType stageType;
-            public List<FunctionParameter> setupVariables;
+            public ShaderStage stageType;
+            public List<StructField> setupVariables;
             public List<BlockSequenceElement> elements;
+            public List<BlockLinkOverride> outputOverrides;
+            public Location location;
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, PassStageType stageType)
+            public Builder(ShaderContainer container, ShaderStage stageType)
             {
                 this.container = container;
                 this.stageType = stageType;
@@ -89,17 +96,17 @@ namespace UnityEditor.ShaderFoundry
 
             public void AddElement(BlockSequenceElement element)
             {
-                if (elements == null)
-                    elements = new List<BlockSequenceElement>();
-                elements.Add(element);
+                Utilities.AddToList(ref elements, element);
             }
 
-            public void AddSetupVariable(FunctionParameter param)
+            public void AddOutputOverride(BlockLinkOverride linkOverride)
             {
-                if (setupVariables == null)
-                    setupVariables = new List<FunctionParameter>();
+                Utilities.AddToList(ref outputOverrides, linkOverride);
+            }
 
-                setupVariables.Add(param);
+            public void AddSetupVariable(StructField variable)
+            {
+                Utilities.AddToList(ref setupVariables, variable);
             }
 
             public StageDescription Build()
@@ -109,8 +116,10 @@ namespace UnityEditor.ShaderFoundry
                     m_StageType = stageType,
                 };
 
-                stageDescriptionInternal.m_SetupVariablesListHandle = HandleListInternal.Build(container, setupVariables, (e) => (e.handle));
-                stageDescriptionInternal.m_ElementListHandle = HandleListInternal.Build(container, elements, (e) => (e.handle));
+                stageDescriptionInternal.m_SetupVariablesListHandle = ListType.Build(container, setupVariables);
+                stageDescriptionInternal.m_ElementListHandle = ListType.Build(container, elements);
+                stageDescriptionInternal.m_OutputLinkOverridesListHandle = ListType.Build(container, outputOverrides);
+                stageDescriptionInternal.m_LocationHandle = location.handle;
 
                 var returnTypeHandle = container.Add(stageDescriptionInternal);
                 return new StageDescription(container, returnTypeHandle);

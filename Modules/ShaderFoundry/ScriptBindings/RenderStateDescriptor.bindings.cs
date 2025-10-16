@@ -11,14 +11,13 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/RenderStateDescriptor.h")]
     internal struct RenderStateDescriptorInternal : IInternalType<RenderStateDescriptorInternal>
     {
+        internal RenderStateDescriptor.StateKind m_Kind;
+        // core::string, IntegerLiteral, FloatLitereal, RenderStateProperty, RenderStateTargetSpecifier, RenderStateNamedValue
         internal FoundryHandle m_ListHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static RenderStateDescriptorInternal Invalid();
-        internal extern void Setup(ShaderContainer container, string name, string[] ops);
-        internal extern bool IsValid();
-        internal extern string GetName(ShaderContainer container);
-        internal extern int GetOpCount(ShaderContainer container);
-        internal extern string GetOp(ShaderContainer container, int index);
+        [ThreadSafe] internal extern static RenderStateDescriptorInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         RenderStateDescriptorInternal IInternalType<RenderStateDescriptorInternal>.ConstructInvalid() => Invalid();
@@ -27,6 +26,24 @@ namespace UnityEditor.ShaderFoundry
     [FoundryAPI]
     internal readonly struct RenderStateDescriptor : IEquatable<RenderStateDescriptor>, IPublicType<RenderStateDescriptor>
     {
+        public enum StateKind : ushort
+        {
+            Invalid = 0,
+            AlphaToMask,
+            Blend,
+            BlendOp,
+            ColorMask,
+            Conservative,
+            Cull,
+            ZClip,
+            ZTest,
+            ZWrite,
+            Offset,
+            Stencil,
+
+            Count,
+        };
+
         // data members
         readonly ShaderContainer container;
         readonly RenderStateDescriptorInternal descriptor;
@@ -36,23 +53,18 @@ namespace UnityEditor.ShaderFoundry
         ShaderContainer IPublicType.Container => Container;
         bool IPublicType.IsValid => IsValid;
         FoundryHandle IPublicType.Handle => handle;
-        RenderStateDescriptor IPublicType<RenderStateDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new RenderStateDescriptor(container, handle);
+        RenderStateDescriptor IPublicType<RenderStateDescriptor>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle)
+            => new RenderStateDescriptor(container, handle);
 
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && descriptor.IsValid());
+        public StateKind Kind => descriptor.m_Kind;
 
-        public string Name => descriptor.GetName(container);
+        internal IEnumerable<IPublicType> Ops =>
+            ListType.EnumeratePublicType(container, descriptor.m_ListHandle);
 
-        public IEnumerable<string> Ops
-        {
-            get
-            {
-                var opCount = descriptor.GetOpCount(container);
-                for (var i = 0; i < opCount; ++i)
-                    yield return descriptor.GetOp(container, i);
-            }
-        }
+        internal Location Location => new Location(container, descriptor.m_LocationHandle);
 
         // private
         internal RenderStateDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -64,7 +76,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static RenderStateDescriptor Invalid => new RenderStateDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is RenderStateDescriptor other && this.Equals(other);
         public bool Equals(RenderStateDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -74,22 +86,44 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             ShaderContainer container;
-            string name;
-            List<string> ops = new List<string>();
+            public StateKind kind = StateKind.Invalid;
+            internal List<IPublicType> publicTypes;
+            public Location location;
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, string name, IEnumerable<string> ops)
+            public Builder(ShaderContainer container, StateKind kind)
             {
                 this.container = container;
-                this.name = name;
-                this.ops.AddRange(ops);
+                this.kind = kind;
+            }
+            void AddOp(IPublicType item) => Utilities.AddToList(ref publicTypes, item);
+            public void Add(RenderStateNamedValue symbol) => AddOp(symbol);
+            public void Add(RenderStateTargetSpecifier symbol) => AddOp(symbol);
+            public void Add(RenderStateProperty symbol) => AddOp(symbol);
+            public void Add(string value)
+            {
+                AddOp(new StringLiteral(container, container.AddString(value)));
+            }
+            public void Add(int value)
+            {
+                var intBuilder = new IntegerLiteral.Builder(container);
+                intBuilder.Value = value;
+                AddOp(intBuilder.Build());
+            }
+            public void Add(float value)
+            {
+                var floatBuilder = new FloatLiteral.Builder(container);
+                floatBuilder.Value = value;
+                AddOp(floatBuilder.Build());
             }
 
             public RenderStateDescriptor Build()
             {
                 var descriptor = new RenderStateDescriptorInternal();
-                descriptor.Setup(container, name, ops.ToArray());
+                descriptor.m_Kind = kind;
+                descriptor.m_ListHandle = ListType.Build(container, publicTypes);
+                descriptor.m_LocationHandle = location.handle;
                 var resultHandle = container.Add(descriptor);
                 return new RenderStateDescriptor(container, resultHandle);
             }

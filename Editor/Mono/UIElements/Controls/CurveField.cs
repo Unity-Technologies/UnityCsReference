@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
     /// Makes a field for editing an <see cref="AnimationCurve"/>. For more information, refer to [[wiki:UIE-uxml-element-CurveField|UXML element CurveField]].
     /// </summary>
     [Icon("UIToolkit/Icons/CurveField.png")]
-    public class CurveField : BaseField<AnimationCurve>
+    public partial class CurveField : BaseField<AnimationCurve>
     {
         internal static readonly BindingId renderModeProperty = nameof(renderMode);
 
@@ -33,18 +33,6 @@ namespace UnityEditor.UIElements
 
             public override object CreateInstance() => new CurveField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="CurveField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<CurveField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="CurveField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<AnimationCurve>.UxmlTraits {}
 
         /// <summary>
         /// USS class name of elements of this type.

@@ -16,7 +16,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         //[Tooltip("Select the Build profile that this instance will be based  as.")]
         [SerializeField] private BuildProfile m_BuildProfile;
-        [SerializeField] private ServerSettings m_ServerSettings = new();
+        [SerializeField]
+        private ServerSettings m_ServerSettings = new()
+        {
+            CliSettings = ServerCliSettings.Default,
+            SimulatorSettings = SimulatorSettings.Default,
+        };
         [SerializeField] private AdvancedConfig advancedConfiguration = new();
 
         [Serializable]

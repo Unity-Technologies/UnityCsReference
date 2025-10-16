@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Assemblies;
 
 namespace UnityEngineInternal
 {
@@ -43,7 +44,7 @@ In order to be able to build the game, replace this call (APIUpdaterRuntimeServi
                 return candidateType;
             }
 
-            candidateType = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).SingleOrDefault(t => (t.Name == name || t.FullName == name) && typeof(Component).IsAssignableFrom(t));
+            candidateType = CurrentAssemblies.GetLoadedAssemblies().SelectMany(a => a.GetTypes()).SingleOrDefault(t => (t.Name == name || t.FullName == name) && typeof(Component).IsAssignableFrom(t));
             if (candidateType != null)
             {
                 Debug.LogWarningFormat("[{2}] Component type '{0}' found on assembly {1}, consider replacing with go.AddComponent<{0}>()", name, new AssemblyName(candidateType.Assembly.FullName).Name, sourceInfo);
@@ -66,5 +67,5 @@ In order to be able to build the game, replace this call (APIUpdaterRuntimeServi
         }
 
         private static IList<Type> ComponentsFromUnityEngine;
-    }
+        }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     internal class DeployBuildNode : MultiplayNode
     {
         private const string k_ErrorMessage_BuildPathDoesNotExist = "Build path does not exist";

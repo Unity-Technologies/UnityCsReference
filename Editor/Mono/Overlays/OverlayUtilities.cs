@@ -30,7 +30,7 @@ namespace UnityEditor.Overlays
         internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
         internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
         internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
-        
+
         internal class OverlayEditorWindowAssociation
         {
             public Type overlay;
@@ -251,6 +251,13 @@ namespace UnityEditor.Overlays
             return words[0].Substring(0, 1) + words[1].Substring(0, 1);
         }
 
+        internal static void ValidateName(Overlay overlay)
+        {
+            if (overlay == null || !string.IsNullOrEmpty(overlay.displayName))
+                return;
+            overlay.displayName = $"{overlay.GetType().Name}";
+        }
+
         internal static bool EnsureValidId(IEnumerable<Overlay> existing, Overlay overlay)
         {
             if (overlay == null)
@@ -281,7 +288,7 @@ namespace UnityEditor.Overlays
 
             return null;
         }
-        
+
         internal static void AddStyleSheets(VisualElement ve)
         {
             StyleSheet sheet;
@@ -293,7 +300,7 @@ namespace UnityEditor.Overlays
             else
                 sheet = EditorGUIUtility.Load(k_StyleLight) as StyleSheet;
 
-            ve.styleSheets.Add(sheet);   
+            ve.styleSheets.Add(sheet);
         }
 
         public static bool IsOverlayWindowValid(OverlayAttribute attribute)
@@ -323,6 +330,45 @@ namespace UnityEditor.Overlays
                 }
             }
             return nearestDropZone;
+        }
+
+        // Can be a costly operation, shouldn't be used frequently
+        // Does not support comparing with default presets (empty array)
+        internal static bool IsCanvasStateDifferent(OverlayCanvasSaveState a, OverlayCanvasSaveState b)
+        {
+            if (a.overlays != b.overlays && (a.overlays == null || b.overlays == null))
+                return true;
+
+            if (a.dynamicPanels != b.dynamicPanels && (a.dynamicPanels == null || b.dynamicPanels == null))
+                return true;
+
+            if (a.overlays != null)
+            {
+                foreach (var data in a.overlays)
+                {
+                    var index = Array.FindIndex(b.overlays, (save) => save.id == data.id);
+                    if (index < 0)
+                        return true;
+
+                    if (!data.Equals(b.overlays[index]))
+                        return true;
+                }
+            }
+
+            if (a.dynamicPanels != null)
+            {
+                foreach (var data in a.dynamicPanels)
+                {
+                    var index = Array.FindIndex(b.dynamicPanels, (save) => save.containerId == data.containerId);
+                    if (index < 0)
+                        return true;
+
+                    if (!data.Equals(b.dynamicPanels[index]))
+                        return true;
+                }
+            }
+
+            return false;
         }
     }
 }

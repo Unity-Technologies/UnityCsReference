@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.DeviceSimulation
 {
     [EditorWindowTitle(title = "Simulator", useTypeNameAsIconName = true)]
-    internal class SimulatorWindow : PlayModeView, IHasCustomMenu, ISerializationCallbackReceiver
+    internal class SimulatorWindow : PlayModeView, IHasCustomMenu
     {
         private static List<SimulatorWindow> s_SimulatorInstances = new List<SimulatorWindow>();
         private bool m_DeviceListDirty;
@@ -171,13 +171,10 @@ namespace UnityEditor.DeviceSimulation
             }
         }
 
-        public void OnBeforeSerialize()
+        public override void OnBeforeSerialize()
         {
+            base.OnBeforeSerialize();
             m_SimulatorState = m_Main.SerializeSimulatorState();
-        }
-
-        public void OnAfterDeserialize()
-        {
         }
 
         public virtual void AddItemsToMenu(GenericMenu menu)

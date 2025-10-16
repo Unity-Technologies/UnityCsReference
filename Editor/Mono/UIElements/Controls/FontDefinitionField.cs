@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for entering FontDefinition.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class FontDefinitionField : BaseField<FontDefinition>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

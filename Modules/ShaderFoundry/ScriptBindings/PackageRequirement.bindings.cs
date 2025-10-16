@@ -12,9 +12,10 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_VersionHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal static extern PackageRequirementInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal static extern PackageRequirementInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         PackageRequirementInternal IInternalType<PackageRequirementInternal>.ConstructInvalid() => Invalid();
@@ -39,6 +40,7 @@ namespace UnityEditor.ShaderFoundry
         public bool IsValid => (container != null) && handle.IsValid && (packageRequirement.IsValid());
         public string Name => container?.GetString(packageRequirement.m_NameHandle) ?? string.Empty;
         public string Version => container?.GetString(packageRequirement.m_VersionHandle) ?? string.Empty;
+        public Location Location => new Location(container, packageRequirement.m_LocationHandle);
 
         // private
         internal PackageRequirement(ShaderContainer container, FoundryHandle handle)
@@ -50,7 +52,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static PackageRequirement Invalid => new PackageRequirement(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is PackageRequirement other && this.Equals(other);
         public bool Equals(PackageRequirement other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -62,6 +64,7 @@ namespace UnityEditor.ShaderFoundry
             internal ShaderContainer container;
             internal string name;
             internal string version;
+            public Location location;
 
             public Builder(ShaderContainer container, string name)
             {
@@ -82,6 +85,7 @@ namespace UnityEditor.ShaderFoundry
                 var packageRequirementInternal = new PackageRequirementInternal();
                 packageRequirementInternal.m_NameHandle = container.AddString(name);
                 packageRequirementInternal.m_VersionHandle = container.AddString(version);
+                packageRequirementInternal.m_LocationHandle = location.handle;
                 var returnHandle = container.Add(packageRequirementInternal);
                 return new PackageRequirement(container, returnHandle);
             }

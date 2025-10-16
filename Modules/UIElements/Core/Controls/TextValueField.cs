@@ -411,38 +411,4 @@ namespace UnityEngine.UIElements
             }
         }
     }
-
-    // Derive from BaseFieldTraits in order to not inherit from TextInputBaseField UXML attributes.
-    /// <summary>
-    /// Specifies the <see cref="TextValueField{TValueType}"/>'s <see cref="UxmlTraits"/>.
-    /// </summary>
-    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    [Obsolete("TextValueFieldTraits<TValueType, TValueUxmlAttributeType> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-    public class TextValueFieldTraits<TValueType, TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
-        where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
-    {
-        UxmlStringAttributeDescription m_PlaceholderText = new UxmlStringAttributeDescription { name = "placeholder-text" };
-        UxmlBoolAttributeDescription m_HidePlaceholderOnFocus = new UxmlBoolAttributeDescription { name = "hide-placeholder-on-focus" };
-        UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
-        UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
-
-        /// <summary>
-        /// Initializes the <see cref="TextValueField{TValueType}"/>'s <see cref="UxmlTraits"/>.
-        /// </summary>
-        /// <param name="ve">The VisualElement to initialize.</param>
-        /// <param name="bag">A bag of UXML attribute name-value pairs used to initialize VisualElement members.</param>
-        /// <param name="cc">The creation context associated with these traits.</param>
-        public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-        {
-            base.Init(ve, bag, cc);
-            var field = (TextInputBaseField<TValueType>)ve;
-            if (field != null)
-            {
-                field.textEdition.placeholder = m_PlaceholderText.GetValueFromBag(bag, cc);
-                field.textEdition.hidePlaceholderOnFocus = m_HidePlaceholderOnFocus.GetValueFromBag(bag, cc);
-                field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
-                field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
-            }
-        }
-    }
 }

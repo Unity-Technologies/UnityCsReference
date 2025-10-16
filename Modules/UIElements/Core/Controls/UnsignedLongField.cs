@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// Makes a text field for entering unsigned long integers. For more information, refer to [[wiki:UIE-uxml-element-UnsignedLongField|UXML element UnsignedLongField]].
     /// </summary>
     [Icon("UIToolkit/Icons/UnsignedLongField.png")]
-    public class UnsignedLongField : TextValueField<ulong>
+    public partial class UnsignedLongField : TextValueField<ulong>
     {
         // This property to alleviate the fact we have to cast all the time
         UnsignedLongInput unsignedLongInput => (UnsignedLongInput)textInputBase;
@@ -28,17 +28,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new UnsignedLongField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="UnsignedLongField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<UnsignedLongField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="UnsignedLongField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<ulong, UxmlUnsignedLongAttributeDescription> {}
 
         /// <summary>
         /// Converts the given unsigned long integer to a string.

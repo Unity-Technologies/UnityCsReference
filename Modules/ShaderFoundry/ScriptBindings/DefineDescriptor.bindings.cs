@@ -10,15 +10,16 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/DefineDescriptor.h")]
     internal struct DefineDescriptorInternal : IInternalType<DefineDescriptorInternal>
     {
+        internal FoundryHandle m_LocationHandle;
         internal FoundryHandle m_ListHandle;
 
-        internal extern static DefineDescriptorInternal Invalid();
+        [ThreadSafe] internal extern static DefineDescriptorInternal Invalid();
 
-        internal extern void Setup(ShaderContainer container, string name, string value);
+        [ThreadSafe] internal extern void Setup(ShaderContainer container, string name, string value);
 
-        internal extern bool IsValid();
-        internal extern string GetName(ShaderContainer container);
-        internal extern string GetValue(ShaderContainer container);
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern string GetName(ShaderContainer container);
+        [ThreadSafe] internal extern string GetValue(ShaderContainer container);
 
         // IInternalType
         DefineDescriptorInternal IInternalType<DefineDescriptorInternal>.ConstructInvalid() => Invalid();
@@ -44,6 +45,7 @@ namespace UnityEditor.ShaderFoundry
 
         public string Name => descriptor.GetName(Container);
         public string Value => descriptor.GetValue(Container);
+        public Location Location => new Location(container, descriptor.m_LocationHandle);
 
         // private
         internal DefineDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -55,7 +57,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static DefineDescriptor Invalid => new DefineDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is DefineDescriptor other && this.Equals(other);
         public bool Equals(DefineDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -67,6 +69,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             string name;
             string value;
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -81,6 +84,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new DefineDescriptorInternal();
                 descriptor.Setup(container, name, value);
+                descriptor.m_LocationHandle = location.handle;
                 var resultHandle = container.Add(descriptor);
                 return new DefineDescriptor(container, resultHandle);
             }

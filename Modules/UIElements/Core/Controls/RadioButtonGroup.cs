@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// A control that allows single selection out of a logical group of <see cref="RadioButton"/> elements. Selecting one will deselect the others. For more information, refer to [[wiki:UIE-uxml-element-RadioButtonGroup|UXML element RadioButtonGroup]].
     /// </summary>
     [Icon("UIToolkit/Icons/RadioButtonGroup.png")]
-    public class RadioButtonGroup : BaseField<int>, IGroupBox
+    public partial class RadioButtonGroup : BaseField<int>, IGroupBox
     {
         internal static readonly BindingId choicesProperty = nameof(choices);
 
@@ -48,35 +48,6 @@ namespace UnityEngine.UIElements
                     var e = (RadioButtonGroup)obj;
                     e.choicesList = choicesList;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="RadioButtonGroup"/> using data from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="RadioButtonGroup"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseFieldTraits<int, UxmlIntAttributeDescription>
-        {
-            UxmlStringAttributeDescription m_Choices = new UxmlStringAttributeDescription { name = "choices" };
-
-            /// <summary>
-            /// Initializes <see cref="RadioButtonGroup"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (RadioButtonGroup)ve;
-                f.choicesList = UxmlUtility.ParseStringListAttribute(m_Choices.GetValueFromBag(bag, cc));
             }
         }
 

@@ -433,34 +433,6 @@ namespace UnityEngine
             return (diff_x * diff_x + diff_y * diff_y) < kEpsilon * kEpsilon;
         }
 
-        // *Undocumented*
-        // The following operator* and operator/ were previously implicitly supported until adding Vector3 & Vector4 operators
-        // For compability purposes they are added explicitly here
-        // Multiplies Vector2 Vector3 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator*(in Vector2 a, in Vector3 b) => new Vector2(a.x * b.x, a.y * b.y);
-        // Multiplies Vector3 Vector2 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator*(in Vector3 a, in Vector2 b) => new Vector2(a.x * b.x, a.y * b.y);
-        // Divides Vector2 Vector3 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator/(in Vector2 a, in Vector3 b) => new Vector2(a.x / b.x, a.y / b.y);
-        // Divides Vector3 Vector2 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator/(in Vector3 a, in Vector2 b) => new Vector2(a.x / b.x, a.y / b.y);
-        // Multiplies Vector2 Vector4 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator*(in Vector2 a, in Vector4 b) => new Vector2(a.x * b.x, a.y * b.y);
-        // Multiplies Vector4 Vector2 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator*(in Vector4 a, in Vector2 b) => new Vector2(a.x * b.x, a.y * b.y);
-        // Divides Vector2 Vector4 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator/(in Vector2 a, in Vector4 b) => new Vector2(a.x / b.x, a.y / b.y);
-        // Divides Vector4 Vector2 component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2 operator/(in Vector4 a, in Vector2 b) => new Vector2(a.x / b.x, a.y / b.y);
-
         // Returns true if vectors are different.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator!=(in Vector2 lhs, in Vector2 rhs) =>

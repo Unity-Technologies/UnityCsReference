@@ -90,7 +90,7 @@ namespace UnityEngine
             LayoutCache cache;
             store.TryGetValue(instanceID, out cache);
 
-            return cache;               
+            return cache;
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -505,7 +505,7 @@ namespace UnityEngine
             {
                 case EventType.Layout:
                     current.topLevel.Add(new GUILayoutEntry(minWidth, maxWidth, minHeight, maxHeight, style, options));
-                    return new Rect(0, 0, maxWidth, maxHeight);
+                    return kDummyRect;
                 case EventType.Used:
                     return kDummyRect;
                 default:

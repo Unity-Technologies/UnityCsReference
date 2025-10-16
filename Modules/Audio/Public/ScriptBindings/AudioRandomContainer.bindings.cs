@@ -52,7 +52,7 @@ sealed class AudioContainerElement : Object
 
 [NativeHeader("Modules/Audio/Public/AudioRandomContainer.h")]
 [ExcludeFromPreset]
-sealed class AudioRandomContainer : AudioResource, IGeneratorDefinition
+sealed class AudioRandomContainer : AudioResource, IAudioGenerator
 {
     internal enum ChangeEventType
     {
@@ -96,16 +96,16 @@ sealed class AudioRandomContainer : AudioResource, IGeneratorDefinition
 
     static extern void Internal_Create([Writable] AudioRandomContainer self);
 
-    #region IGeneratorDefinition
+    #region IAudioGenerator
 
-    bool Generator.ICapabilities.isFinite => throw new NotImplementedException();
-    bool Generator.ICapabilities.isRealtime => throw new NotImplementedException();
-    DiscreteTime? Generator.ICapabilities.length => throw new NotImplementedException();
+    bool GeneratorInstance.ICapabilities.isFinite => throw new NotImplementedException();
+    bool GeneratorInstance.ICapabilities.isRealtime => throw new NotImplementedException();
+    DiscreteTime? GeneratorInstance.ICapabilities.length => throw new NotImplementedException();
 
-    Generator IGeneratorDefinition.CreateRuntime(ControlContext context, DSPConfiguration? configuration, ControlContext.ProcessorCreationParameters creationParameters)
+    GeneratorInstance IAudioGenerator.CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters)
     {
         throw new NotImplementedException();
     }
-    
+
     #endregion
 }

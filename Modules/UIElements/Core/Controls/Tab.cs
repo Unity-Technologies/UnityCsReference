@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
     /// For more information, refer to [[wiki:UIE-uxml-element-tab|UXML element Tab]].
     /// </remarks>
     [Icon("UIToolkit/Icons/Tab.png")]
-    public class Tab : VisualElement
+    public partial class Tab : VisualElement
     {
         internal static readonly BindingId labelProperty = nameof(label);
         internal static readonly BindingId iconImageProperty = nameof(iconImage);
@@ -62,36 +62,6 @@ namespace UnityEngine.UIElements
                     e.iconImageReference = iconImageReference;
                 if (ShouldWriteAttributeValue(closeable_UxmlAttributeFlags))
                     e.closeable = closeable;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates an <see cref="Tab"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Tab, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Tab"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a Tab element that you can use in a UXML file.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            private readonly UxmlStringAttributeDescription m_Label = new() { name = "label" };
-            private readonly UxmlImageAttributeDescription m_IconImage = new() { name = "icon-image" };
-            private readonly UxmlBoolAttributeDescription m_Closeable = new () { name = "closeable", defaultValue = false };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var tab = (Tab)ve;
-                tab.label = m_Label.GetValueFromBag(bag, cc);
-                tab.iconImage = m_IconImage.GetValueFromBag(bag, cc);
-                tab.closeable = m_Closeable.GetValueFromBag(bag, cc);
             }
         }
 
@@ -386,7 +356,7 @@ namespace UnityEngine.UIElements
             };
             m_TabHeader.Add(m_TabHeaderLabel);
 
-            m_TabHeader.RegisterCallback<PointerDownEvent>(OnTabClicked);
+            m_TabHeader.RegisterCallback<PointerDownEvent>(OnTabClicked, InvokePolicy.IncludeDisabled);
 
             // Add the Tab's underline for active tab
             m_TabHeader.Add(new VisualElement()

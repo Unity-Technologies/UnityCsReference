@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using UnityEditor.Audio;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor
 {
@@ -45,7 +46,7 @@ namespace UnityEditor
             m_EffectDragging = new EffectDragging();
 
             Type pluginType = typeof(IAudioEffectPluginGUI);
-            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in CurrentAssemblies.GetLoadedAssemblies())
             {
                 //Debug.Log("Assembly: " + assembly.FullName);
                 try

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace UnityEngine.Accessibility
 {
@@ -19,7 +20,10 @@ namespace UnityEngine.Accessibility
             "AccessibilityState.Selected. (UnityUpgradable) -> invoked", false)]
         public event Func<bool> selected
         {
+            [ExcludeFromCodeCoverage] // obsolete
             add => invoked += value;
+
+            [ExcludeFromCodeCoverage] // obsolete
             remove => invoked -= value;
         }
     }

@@ -95,7 +95,7 @@ namespace UnityEditor
         EditorCache     m_EditorCache;
         GUIView         m_DelegateView;
         PreviewResizer  m_PreviewResizer = new PreviewResizer();
-        List<int> m_AllowedIDs;
+        List<EntityId> m_AllowedIDs;
 
         // Callbacks
         Action<UnityObject> m_OnObjectSelectorClosed;
@@ -141,7 +141,7 @@ namespace UnityEditor
             }
         }
 
-        public List<int> allowedInstanceIDs
+        public List<EntityId> allowedEntityIds
         {
             get { return m_AllowedIDs; }
         }
@@ -457,12 +457,12 @@ namespace UnityEditor
             return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
-        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
-            Show(new [] { requiredType }, property, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+            Show(new [] { requiredType }, property, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
-        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
+        internal void Show(Type[] requiredTypes, SerializedProperty property, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
         {
             if (requiredTypes == null)
             {
@@ -479,29 +479,29 @@ namespace UnityEditor
             UnityObject objectBeingEdited = property.serializedObject.targetObject;
             m_EditedProperty = property;
 
-            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated);
+            SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated);
         }
 
-        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
-            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedInstanceIDs, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem);
+            Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem);
         }
 
-        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        internal void Show(UnityObject obj, Type[] requiredTypes, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
             SharedShow(
                 obj,
                 new RequiredTypeList(requiredTypes, null),
                 objectBeingEdited,
                 allowSceneObjects,
-                allowedInstanceIDs,
+                allowedEntityIds,
                 onObjectSelectorClosed,
                 onObjectSelectedUpdated,
                 showNoneItem
             );
         }
 
-        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
+        void SharedShow(UnityObject obj, RequiredTypeList typeList, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true)
         {
             // We can't rely on the fact that the window will always be closed when we call Show. For example,
             // if a user clicks on multiple object fields without closing the window first, there is no guarantee
@@ -512,7 +512,7 @@ namespace UnityEditor
             m_AllowSceneObjects = allowSceneObjects;
             m_IsShowingAssets = true;
             m_SkipHiddenPackages = true;
-            m_AllowedIDs = allowedInstanceIDs;
+            m_AllowedIDs = allowedEntityIds;
             m_ObjectBeingEdited = objectBeingEdited;
             SetSelectedInstanceID(obj?.GetInstanceID() ?? 0);
             m_SelectionCancelled = false;
@@ -567,7 +567,7 @@ namespace UnityEditor
                         editedObjects = m_EditedProperty != null ? m_EditedProperty.serializedObject.targetObjects : new[] { objectBeingEdited },
                         requiredTypes = m_RequiredTypes.types,
                         requiredTypeNames = m_RequiredTypes.typeNames,
-                        allowedInstanceIds = allowedInstanceIDs,
+                        allowedEntityIds = allowedEntityIds,
                         visibleObjects = allowSceneObjects ? SearchService.VisibleObjects.All : SearchService.VisibleObjects.Assets,
                         searchFilter = GetSearchFilter()
                     };

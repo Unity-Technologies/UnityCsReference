@@ -11,15 +11,16 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/PragmaDescriptor.h")]
     internal struct PragmaDescriptorInternal : IInternalType<PragmaDescriptorInternal>
     {
+        internal FoundryHandle m_LocationHandle;
         internal FoundryHandle m_ListHandle;
 
-        internal extern static PragmaDescriptorInternal Invalid();
-        internal extern void Setup(ShaderContainer container, string name, string[] ops);
+        [ThreadSafe] internal extern static PragmaDescriptorInternal Invalid();
+        [ThreadSafe][NativeName("SetupFromScripting")] internal extern void Setup(ShaderContainer container, string name, string[] ops);
 
-        internal extern bool IsValid();
-        internal extern string GetName(ShaderContainer container);
-        internal extern int GetOpCount(ShaderContainer container);
-        internal extern string GetOp(ShaderContainer container, int index);
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern string GetName(ShaderContainer container);
+        [ThreadSafe] internal extern ulong GetOpCount(ShaderContainer container);
+        [ThreadSafe] internal extern string GetOp(ShaderContainer container, ulong index);
 
         // IInternalType
         PragmaDescriptorInternal IInternalType<PragmaDescriptorInternal>.ConstructInvalid() => Invalid();
@@ -49,11 +50,13 @@ namespace UnityEditor.ShaderFoundry
         {
             get
             {
-                var opCount = descriptor.GetOpCount(Container);
-                for (var i = 0; i < opCount; ++i)
+                ulong opCount = descriptor.GetOpCount(Container);
+                for (ulong i = 0; i < opCount; ++i)
                     yield return descriptor.GetOp(Container, i);
             }
         }
+
+        public Location Location => new Location(container, descriptor.m_LocationHandle);
 
         // private
         internal PragmaDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -65,7 +68,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static PragmaDescriptor Invalid => new PragmaDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is PragmaDescriptor other && this.Equals(other);
         public bool Equals(PragmaDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -77,6 +80,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             string name;
             List<string> ops = new List<string>();
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -91,6 +95,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var descriptor = new PragmaDescriptorInternal();
                 descriptor.Setup(container, name, ops.ToArray());
+                descriptor.m_LocationHandle = location.handle;
                 var resultHandle = container.Add(descriptor);
                 return new PragmaDescriptor(container, resultHandle);
             }

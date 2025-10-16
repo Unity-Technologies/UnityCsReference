@@ -62,6 +62,8 @@ namespace UnityEditor.UIElements
                 EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
                 AnimationMode.onAnimationRecordingStart += RefreshStylesAfterExternalEvent;
                 AnimationMode.onAnimationRecordingStop += RefreshStylesAfterExternalEvent;
+                AnimationMode.onAnimationSampleEnd += RefreshStylesAfterExternalEvent;
+                AnimationMode.onAnimationModeStop += RefreshStylesAfterExternalEvent;
 
                 m_NotificationContainer = new IMGUIContainer();
                 m_NotificationContainer.StretchToParentSize();
@@ -244,6 +246,8 @@ namespace UnityEditor.UIElements
             EditorApplication.playModeStateChanged -= PlayModeStateChangedCallback;
             AnimationMode.onAnimationRecordingStart -= RefreshStylesAfterExternalEvent;
             AnimationMode.onAnimationRecordingStop -= RefreshStylesAfterExternalEvent;
+            AnimationMode.onAnimationSampleEnd -= RefreshStylesAfterExternalEvent;
+            AnimationMode.onAnimationModeStop -= RefreshStylesAfterExternalEvent;
 
             m_NotificationContainer.onGUIHandler = null;
             m_NotificationContainer.RemoveFromHierarchy();

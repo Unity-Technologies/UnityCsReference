@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     static class PointerDeviceState
     {
         [Flags]
@@ -197,6 +199,7 @@ namespace UnityEngine.UIElements
             s_PressedButtons[pointerId] = 0;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static Vector3 GetPointerPosition(int pointerId, ContextType contextType)
         {
             switch (contextType)

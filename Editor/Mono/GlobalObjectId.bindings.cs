@@ -120,9 +120,16 @@ namespace UnityEditor
 
         // Converting one object at a time is incredibly slow. (Have to iterate whole scene to grab one object...)
         // Always prefer using batch API when multiple objects need to be looked up.
-        [FreeFunction]
-        extern public static int GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id);
+        [Obsolete("GlobalObjectIdentifierToInstanceIDSlow is obsolete. Use GlobalObjectIdentifierToEntityIdSlow instead.")]
+        public static int GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id) => GlobalObjectIdentifierToEntityIdSlow(id);
+        [Obsolete("GlobalObjectIdentifiersToInstanceIDsSlow is obsolete. Use GlobalObjectIdentifiersToEntityIdsSlow instead.")]
         [FreeFunction]
         extern public static void GlobalObjectIdentifiersToInstanceIDsSlow(GlobalObjectId[] identifiers, [Out] int[] outputInstanceIDs);
+
+        [FreeFunction]
+        extern public static EntityId GlobalObjectIdentifierToEntityIdSlow(GlobalObjectId id);
+        [FreeFunction]
+        extern public static void GlobalObjectIdentifiersToEntityIdsSlow(GlobalObjectId[] identifiers, [Out] EntityId[] outputEntityIds);
+
     }
 }

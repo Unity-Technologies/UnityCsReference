@@ -61,7 +61,7 @@ namespace UnityEditor.Search
         {
             this.id = id;
             this.op = op;
-            this.value = UnQuoteString(value) ?? string.Empty;
+            this.value = SearchUtils.UnescapeLiteralString(value) ?? string.Empty;
 
             UpdateName();
             marker = default;
@@ -87,17 +87,6 @@ namespace UnityEditor.Search
             }
         }
 
-        private string NiceName(in string name)
-        {
-            return ObjectNames.NicifyVariableName(name.TrimStart('#').Replace("m_", "").Replace(".", ""));
-        }
-
-        private string UnQuoteString(string value)
-        {
-            if (value != null && value.Length > 2 && value[0] == '"' && value[value.Length-1] == '"')
-                return value.Substring(1, value.Length - 2);
-            return value;
-        }
 
         public void ApplyExpression(string searchText)
         {
@@ -385,14 +374,14 @@ namespace UnityEditor.Search
             if (formatParam != null)
             {
                 property = true;
-                name = $"<b>{id}</b>(<i>{NiceName(formatParam)}</i>)";
+                name = $"<b>{id}</b>(<i>{SearchUtils.GetNiceDisplayLabel(formatParam)}</i>)";
             }
             else
             {
                 if (id.Length > 0 && id[0] == '#')
                 {
                     property = true;
-                    name = NiceName(id);
+                    name = SearchUtils.GetNiceDisplayLabel(id);
                 }
                 else
                     name = id.ToLowerInvariant();

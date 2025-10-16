@@ -160,7 +160,7 @@ namespace UnityEditor.Search.Providers
 
         private bool IsActive(GameObject go)
         {
-            return go != null && go.activeInHierarchy;
+            return go.activeInHierarchy;
         }
 
         private bool GetScene(GameObject obj, QueryFilterOperator op, GUID sceneGuid)
@@ -260,22 +260,22 @@ namespace UnityEditor.Search.Providers
             return god.tag;
         }
 
-        public override bool GetId(GameObject go, QueryFilterOperator op, int instanceId)
+        public override bool GetId(GameObject go, QueryFilterOperator op, EntityId entityId)
         {
-            int goId = go.GetInstanceID();
+            EntityId goId = go.GetEntityId();
             switch (op.type)
             {
                 case FilterOperatorType.Contains:
                 case FilterOperatorType.Equal:
-                    if (instanceId == goId)
+                    if (entityId == goId)
                         return true;
-                    return EditorUtility.EntityIdToObject(instanceId) is Component c && c.gameObject == go;
+                    return EditorUtility.EntityIdToObject(entityId) is Component c && c.gameObject == go;
 
-                case FilterOperatorType.NotEqual: return instanceId != goId;
-                case FilterOperatorType.Greater: return instanceId > goId;
-                case FilterOperatorType.GreaterOrEqual: return instanceId >= goId;
-                case FilterOperatorType.Lesser: return instanceId < goId;
-                case FilterOperatorType.LesserOrEqual: return instanceId <= goId;
+                case FilterOperatorType.NotEqual: return entityId != goId;
+                case FilterOperatorType.Greater: return entityId > goId;
+                case FilterOperatorType.GreaterOrEqual: return entityId >= goId;
+                case FilterOperatorType.Lesser: return entityId < goId;
+                case FilterOperatorType.LesserOrEqual: return entityId <= goId;
             }
 
             return false;
@@ -354,8 +354,6 @@ namespace UnityEditor.Search.Providers
 
         SearchValue OnPropertyFilter(GameObject go, string propertyName)
         {
-            if (!go)
-                return SearchValue.invalid;
             if (string.IsNullOrEmpty(propertyName))
                 return SearchValue.invalid;
 

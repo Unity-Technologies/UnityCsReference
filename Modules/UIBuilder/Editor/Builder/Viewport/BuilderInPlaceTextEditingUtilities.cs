@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
@@ -288,56 +286,15 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(viewport.paneWindow.document.visualTreeAsset, BuilderConstants.ChangeAttributeValueUndoMessage);
 
             var newValue = viewport.textEditor.value;
-            var type = editedElement.GetType();
             var vea = editedElement.GetVisualElementAsset();
             var oldValue = vea.GetAttributeValue(uxmlAttributeName);
 
             if (newValue != oldValue)
             {
-                // UxmlSerializedData
-                if (!Builder.alwaysUseUxmlTraits && vea.serializedData != null && UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName) is {} description)
-                {
-                    var attributeDescription = description.FindAttributeWithUxmlName(uxmlAttributeName);
-                    if (attributeDescription != null)
-                    {
-                        attributeDescription.SetSerializedValue(vea.serializedData, newValue);
-                        attributeDescription.SetSerializedValueAttributeFlags(vea.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-                        vea.SetAttribute(uxmlAttributeName, newValue);
-                    }
-                }
-                else // Fallback to factory
-                {
-                    vea.SetAttribute(context.uxmlAttributeName, newValue);
-
-                    var fullTypeName = type.ToString();
-
-                    if (VisualElementFactoryRegistry.TryGetValue(fullTypeName, out var factoryList))
-                    {
-                        #pragma warning disable CS0618 // Type or member is obsolete
-                        var traits = factoryList[0].GetTraits() as UxmlTraits;
-                        #pragma warning restore CS0618 // Type or member is obsolete
-
-                        if (traits == null)
-                        {
-                            CloseEditor(context);
-                            return;
-                        }
-
-                        var creationContext = new CreationContext();
-
-                        try
-                        {
-                            // We need to clear bindings before calling Init to avoid corrupting the data source.
-                            BuilderBindingUtility.ClearUxmlBindings(editedElement);
-
-                            traits.Init(editedElement, vea, creationContext);
-                        }
-                        catch
-                        {
-                            // HACK: This throws in 2019.3.0a4 because usageHints property throws when set after the element has already been added to the panel.
-                        }
-                    }
-                }
+                var description = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
+                var attributeDescription = description.FindAttributeWithUxmlName(uxmlAttributeName);
+                attributeDescription.SetSerializedValue(vea.serializedData, newValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                vea.SetAttribute(uxmlAttributeName, newValue);
 
                 viewport.selection.NotifyOfHierarchyChange(viewport);
             }

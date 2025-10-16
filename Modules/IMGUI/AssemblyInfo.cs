@@ -15,3 +15,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
 [assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
+
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")]
+

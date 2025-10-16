@@ -8,6 +8,7 @@ using UnityEditor.EngineDiagnostics;
 using UnityEditor.InsightsEditor;
 using UnityEditor.InsightsEditor.EditorAnalytics;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 
@@ -56,7 +57,8 @@ namespace UnityEditor.Connect
             Disabling
         }
 
-        private int EnabledStateToIndex(bool enabled) => enabled ? 1 : 0;
+        [VisibleToOtherModules]
+        internal static int EnabledStateToIndex(bool enabled) => enabled ? 1 : 0;
 
         private bool IndexToEnabledState(int index)
         {

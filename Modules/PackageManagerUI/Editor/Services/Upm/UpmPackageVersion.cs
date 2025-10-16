@@ -101,12 +101,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string deprecationMessage => m_DeprecationMessage ?? string.Empty;
 
         [SerializeField]
-        private SignatureInfo m_Signature;
-        public override SignatureInfo signature => m_Signature;
+        private TrustAndSignature m_TrustAndSignature;
+        public override TrustAndSignature trustAndSignature => m_TrustAndSignature;
 
         [SerializeField]
-        private TrustLevel m_TrustLevel;
-        public override TrustLevel trustLevel => m_TrustLevel;
+        private string m_SignatureOrgName;
+        public override string signatureOrgName => m_SignatureOrgName;
 
         private UpmPackageVersion(string name, string versionString, RegistryType availableRegistry)
         {
@@ -150,8 +150,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PublishedDateTicks = GetPublishDateTicks(packageInfo),
                 m_MinimumUnityVersion = packageInfo.editorCompatibility?.minimumUnityVersion,
                 m_Author = packageInfo.author,
-                m_Signature = packageInfo.signature,
-                m_TrustLevel = packageInfo.trustLevel,
+                m_TrustAndSignature = GetTrustAndSignature(packageInfo, isInstalled),
+                m_SignatureOrgName = packageInfo.signature?.attestation?.ownerOrgName ?? string.Empty,
             };
 
             packageVersion.UpdateTags(packageData, packageInfo);
@@ -201,6 +201,41 @@ namespace UnityEditor.PackageManager.UI.Internal
                     break;
             }
             return PackageTag.None;
+        }
+
+        private static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
+        {
+            if (!isInstalled)
+                return TrustAndSignature.NotApplicable;
+
+            switch (packageInfo.trustLevel)
+            {
+                case TrustLevel.FullTrust:
+                {
+                    if (packageInfo.signature?.status == SignatureStatus.Valid)
+                    {
+                        var publishingChannel = packageInfo.signature.attestation?.publishingChannel ?? "";
+                        // When the signature is valid but the publishing channel is empty, it's a legacy Unity signature
+                        // We will check it this way before the UpmClient provides a better way to identify legacy signatures
+                        if (publishingChannel is "unity" or "")
+                            return TrustAndSignature.FullTrustUnitySignature;
+                        return TrustAndSignature.FullTrustValidSignature;
+                    }
+                    return TrustAndSignature.FullTrustNoSignature;
+                }
+                case TrustLevel.LimitedTrust:
+                    return TrustAndSignature.LimitedTrust;
+                case TrustLevel.Untrusted:
+                    switch (packageInfo.signature?.status)
+                    {
+                        case SignatureStatus.Unsigned:
+                            return TrustAndSignature.UntrustedNoSignature;
+                        case SignatureStatus.Invalid:
+                            return TrustAndSignature.UntrustedInvalidSignature;
+                    }
+                    break;
+            }
+            return TrustAndSignature.NotApplicable;
         }
 
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)

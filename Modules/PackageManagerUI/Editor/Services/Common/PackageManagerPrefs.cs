@@ -18,10 +18,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         string activePageIdFromLastUnitySession { get; set; }
         int? numItemsPerPage { get; set; }
         string selectedFeatureDependency { get; set; }
-        bool overviewFoldoutExpanded { get; set; }
         float packageDetailVerticalScrollOffset { get; set; }
         string selectedPackageDetailsTabIdentifier { get; set; }
         SortedColumn[] importedAssetsSortedColumns { get; set; }
+        bool[] orderedSidebarFoldoutsExpandedStatus { get; set; }
 
         bool IsDetailsExtensionExpanded(string extensionTitle);
         void SetDetailsExtensionExpanded(string extensionTitle, bool value);
@@ -112,14 +112,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [SerializeField]
-        private bool m_OverviewFoldoutExpanded = true;
-        public bool overviewFoldoutExpanded
-        {
-            get => m_OverviewFoldoutExpanded;
-            set => m_OverviewFoldoutExpanded = value;
-        }
-
-        [SerializeField]
         private float m_PackageDetailVerticalScrollOffset;
         public float packageDetailVerticalScrollOffset
         {
@@ -142,6 +134,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get => m_ImportedAssetsSortedColumns;
             set => m_ImportedAssetsSortedColumns = value ?? Array.Empty<SortedColumn>();
+        }
+
+        [SerializeField]
+        private bool[] m_OrderedSidebarFoldoutsExpandedStatus = Array.Empty<bool>();
+
+        public bool[] orderedSidebarFoldoutsExpandedStatus
+        {
+            get => m_OrderedSidebarFoldoutsExpandedStatus;
+            set => m_OrderedSidebarFoldoutsExpandedStatus = value ?? Array.Empty<bool>();
         }
 
         [SerializeField]

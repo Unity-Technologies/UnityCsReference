@@ -541,8 +541,8 @@ namespace UnityEditor
                         var clickedButton = false;
 
                         // case:464019 have to re-sort the LOD array for these buttons to get the overlaps in the right order...
-                        var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODLevel);
-                        var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODLevel);
+                        var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODIndex);
+                        var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODIndex);
 
                         var lodButtonOrder = new List<LODGUI.LODInfo>();
                         lodButtonOrder.AddRange(lodsLeft);
@@ -552,8 +552,8 @@ namespace UnityEditor
                         {
                             if (lod.m_ButtonPosition.Contains(evt.mousePosition))
                             {
-                                m_SelectedLODSlider = lod.LODLevel;
-                                m_SelectedLODRange = lod.LODLevel;
+                                m_SelectedLODSlider = lod.LODIndex;
+                                m_SelectedLODRange = lod.LODIndex;
                                 clickedButton = true;
                                 break;
                             }
@@ -567,7 +567,7 @@ namespace UnityEditor
                                 if (lod.m_RangePosition.Contains(evt.mousePosition))
                                 {
                                     m_SelectedLODSlider = -1;
-                                    m_SelectedLODRange = lod.LODLevel;
+                                    m_SelectedLODRange = lod.LODIndex;
                                     ExpandSelectedHeaderAndCloseRemaining(m_SelectedLODRange);
                                     break;
                                 }

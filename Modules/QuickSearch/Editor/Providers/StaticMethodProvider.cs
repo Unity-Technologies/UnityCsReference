@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor.Search.Providers
 {
@@ -68,13 +69,13 @@ namespace UnityEditor.Search.Providers
         {
             // Note: since 23.2 an internal api causes a hard crash when fetching for it.
             // bool isDevBuild = Unsupported.IsDeveloperBuild();
-            return AppDomain.CurrentDomain.GetAllStaticMethods(false);
+            return GetAllStaticMethods(false);
         }
 
-        private static MethodInfo[] GetAllStaticMethods(this AppDomain aAppDomain, bool showInternalAPIs)
+        private static MethodInfo[] GetAllStaticMethods(bool showInternalAPIs)
         {
             var result = new List<MethodInfo>();
-            var assemblies = aAppDomain.GetAssemblies();
+            var assemblies = CurrentAssemblies.GetLoadedAssemblies();
             var bindingFlags = BindingFlags.Static | (showInternalAPIs ? BindingFlags.Public | BindingFlags.NonPublic : BindingFlags.Public) | BindingFlags.DeclaredOnly;
             foreach (var assembly in assemblies)
             {

@@ -15,7 +15,7 @@ internal class InProjectPage : SimplePage
     public const string k_Id = "InProject";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("In Project");
+    public override string displayName => L10n.Tr("All Packages");
     public override Icon icon => Icon.InProjectPage;
 
     [SerializeField]

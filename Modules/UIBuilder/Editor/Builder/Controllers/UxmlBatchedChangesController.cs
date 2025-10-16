@@ -36,17 +36,17 @@ internal class UxmlBatchedChangesController: IDisposable
     }
 
     // Events that are only to be performed once per view per call to ProcessBatchedChanges.
-    
+
     /// <summary>
     /// Deserialize the relevant <see cref="BuilderUxmlAttributesView"/>s' respective elements.
     /// </summary>
     public event Action deserializeElement;
-    
+
     /// <summary>
     /// Used in the relevant <see cref="BuilderUxmlAttributesView"/>s to address any UI changes that need to be performed.
     /// </summary>
     public event Action notifyAllChangesProcessed;
-    
+
     /// <summary>
     /// Called in the relevant <see cref="BuilderUxmlAttributesView"/>s when the undo/redo is performed by the controller,
     /// as it is required for the views to once again Deserialize their respective elements.
@@ -80,14 +80,17 @@ internal class UxmlBatchedChangesController: IDisposable
         if (target == null)
             return;
 
+        var copiedProperty = property.Copy();
+
         void PrepareTrackedPropertyChangeForBatch(object obj, SerializedProperty prop)
         {
             if (isInsideUndoRedoUpdate)
                 return;
-            AddBatchedChange(target, property, listener, uxmlDocument);
+
+            AddBatchedChange(target, copiedProperty, listener, uxmlDocument);
         }
 
-        target.TrackPropertyValue(property, PrepareTrackedPropertyChangeForBatch);
+        target.TrackPropertyValue(copiedProperty, PrepareTrackedPropertyChangeForBatch);
     }
 
     /// <summary>
@@ -164,27 +167,31 @@ internal class UxmlBatchedChangesController: IDisposable
     /// <summary>
     /// Used to track a list of UxmlObjects from an appropriate view. Call this method from the relevant view.
     /// </summary>
-    /// <param name="uxmlObjectField">a UXML ObectField</param>
+    /// <param name="parentField">a field representing the uxml object field or a parent serialized attribute field.</param>
     /// <param name="property">The targeted property on the listener's current element</param>
     /// <param name="listener">Typically a <see cref="BuilderUxmlAttributesView"/> that is responsible for creating the field</param>
     /// <param name="uxmlDocument">The uxml document currently being edited by the listener</param>
     /// <param name="allowSingleObjectTracking">Used to allow the call to <see cref="TrackPropertyValue"/>, if, for example,
     /// the relevant view's current element is not null</param>
-    public void TrackCustomPropertyDrawerFields(VisualElement uxmlObjectField, SerializedProperty property,
+    public void TrackCustomPropertyDrawerFields(VisualElement parentField, SerializedProperty property,
         IBatchedUxmlChangesListener listener, VisualTreeAsset uxmlDocument = null, bool allowSingleObjectTracking = false)
     {
         var instance = property.boxedValue;
         if (instance == null)
             return;
 
-        var dataDescription = UxmlSerializedDataRegistry.GetDescription(instance.GetType().DeclaringType.FullName);
+        var instanceType = instance.GetType();
+        var fullName = instanceType?.DeclaringType?.FullName ?? instanceType?.FullName;
+
+        var dataDescription = UxmlSerializedDataRegistry.GetDescription(fullName);
+
         var itemRoot = new BuilderUxmlAttributesView.UxmlAssetSerializedDataRoot
         {
             dataDescription = dataDescription,
             rootPath = property.propertyPath,
             name = property.propertyPath
         };
-        uxmlObjectField.Add(itemRoot);
+        parentField.Add(itemRoot);
 
         foreach (var desc in dataDescription.serializedAttributes)
         {
@@ -205,7 +212,6 @@ internal class UxmlBatchedChangesController: IDisposable
                 fieldElement.TrackPropertyValue(p, PrepareTrackedObjectPropertyChangeForBatch);
 
                 if (p.isArray)
-                    // add a custom bool here
                     TrackCustomPropertyDrawerListElements(fieldElement, p, listener, uxmlDocument, allowSingleObjectTracking);
                 else
                     TrackCustomPropertyDrawerFields(fieldElement, p, listener, uxmlDocument, allowSingleObjectTracking);
@@ -215,6 +221,37 @@ internal class UxmlBatchedChangesController: IDisposable
                 TrackPropertyValue(fieldElement, p, listener, uxmlDocument);
             }
         }
+    }
+
+    public bool FindSerializedReferenceAndTrackChildProperties(SerializedProperty currentProperty, Action<SerializedProperty> onChildPropertyFound = null, bool childOfSerializedReference = false)
+    {
+        // Traverse every child property of the instance. If we find a serialized reference, we need to drill down into it.
+        SerializedProperty iterator = currentProperty.Copy();
+        bool serializedReferenceFound = false;
+
+        while (iterator.NextVisible(true))
+        {
+            if (!iterator.propertyPath.StartsWith(currentProperty.propertyPath))
+                break;
+            // Make sure that we are only looking at a direct child of the property.
+            var relativePath = iterator.propertyPath.Substring(currentProperty.propertyPath.Length + 1);
+            if (string.IsNullOrEmpty(relativePath) || relativePath.Contains('.'))
+                continue;
+
+            if (iterator.propertyType == SerializedPropertyType.ManagedReference)
+            {
+                serializedReferenceFound = true;
+                serializedReferenceFound |= FindSerializedReferenceAndTrackChildProperties(iterator, onChildPropertyFound, true);
+            }
+            else
+            {
+                if (childOfSerializedReference && onChildPropertyFound != null)
+                    onChildPropertyFound(iterator);
+                serializedReferenceFound |= FindSerializedReferenceAndTrackChildProperties(iterator, onChildPropertyFound, childOfSerializedReference);
+            }
+        }
+
+        return serializedReferenceFound;
     }
 
     /// <summary>
@@ -398,7 +435,7 @@ internal class UxmlBatchedChangesController: IDisposable
             // We need to discard any change events that happen during the undo/redo update in order to avoid reapplying those changes.
             isInsideUndoRedoUpdate = true;
             m_Inspector?.elementPanel?.TickSchedulingUpdaters();
-            
+
             // This is necessary, as a BuilderBindingWindow is not the inspector's window.
             if (BuilderBindingWindow.activeWindow != null)
                 BuilderBindingWindow.activeWindow?.rootVisualElement?.elementPanel?.TickSchedulingUpdaters();

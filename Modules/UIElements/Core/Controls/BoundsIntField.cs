@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/BoundsIntField.png")]
-    public class BoundsIntField : BaseField<BoundsInt>
+    public partial class BoundsIntField : BaseField<BoundsInt>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<BoundsInt>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
@@ -57,42 +57,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        /// <summary>
-        /// Instantiates a <see cref="BoundsIntField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<BoundsIntField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BoundsIntField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<BoundsInt>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_PositionXValue = new UxmlIntAttributeDescription { name = "px" };
-            UxmlIntAttributeDescription m_PositionYValue = new UxmlIntAttributeDescription { name = "py" };
-            UxmlIntAttributeDescription m_PositionZValue = new UxmlIntAttributeDescription { name = "pz" };
-
-            UxmlIntAttributeDescription m_SizeXValue = new UxmlIntAttributeDescription { name = "sx" };
-            UxmlIntAttributeDescription m_SizeYValue = new UxmlIntAttributeDescription { name = "sy" };
-            UxmlIntAttributeDescription m_SizeZValue = new UxmlIntAttributeDescription { name = "sz" };
-
-            /// <summary>
-            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="BoundsIntField"/>.
-            /// </summary>
-            /// <param name="ve">The <see cref="VisualElement"/> to be initialized.</param>
-            /// <param name="bag">Bag of attributes.</param>
-            /// <param name="cc">CreationContext, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (BoundsIntField)ve;
-                f.SetValueWithoutNotify(new BoundsInt(
-                    new Vector3Int(m_PositionXValue.GetValueFromBag(bag, cc), m_PositionYValue.GetValueFromBag(bag, cc), m_PositionZValue.GetValueFromBag(bag, cc)),
-                    new Vector3Int(m_SizeXValue.GetValueFromBag(bag, cc), m_SizeYValue.GetValueFromBag(bag, cc), m_SizeZValue.GetValueFromBag(bag, cc))));
-            }
-        }
         private Vector3IntField m_PositionField;
         private Vector3IntField m_SizeField;
 

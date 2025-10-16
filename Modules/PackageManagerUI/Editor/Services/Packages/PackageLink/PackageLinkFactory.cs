@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         PackageLink CreateUpmQuickStartLink(IPackageVersion version);
         PackageLink CreateProductLink(IPackageVersion version);
         PackageLink CreateReviewLink(IPackageVersion version);
-        PackageLink CreateAuthorLink(IPackageVersion version);
+        PackageLink CreateAssetStoreAuthorLink(IPackageVersion version);
         PackageLink CreatePublisherSupportLink(IPackageVersion version);
         PackageLink CreatePublisherWebsiteLink(IPackageVersion version);
 
@@ -272,7 +272,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
         }
 
-        public PackageLink CreateAuthorLink(IPackageVersion version)
+        public PackageLink CreateAssetStoreAuthorLink(IPackageVersion version)
         {
             var productInfo = m_AssetStoreCache.GetProductInfo(version?.package.product?.id);
 

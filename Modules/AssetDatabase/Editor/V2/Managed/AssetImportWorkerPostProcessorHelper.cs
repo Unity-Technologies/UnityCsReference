@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace UnityEditor.AssetImporters
 {
@@ -160,7 +161,7 @@ namespace UnityEditor.AssetImporters
                 if (curField == null || curField.DeclaringType == null || curField.IsInitOnly || curField.IsLiteral)
                     continue;
 
-                var assemblyLocation = Path.GetFullPath(curField.DeclaringType.Assembly.Location);
+                var assemblyLocation = Path.GetFullPath(curField.DeclaringType.Assembly.GetLoadedAssemblyPath());
 
                 // Ignore Editor Assemblies since we can't get source for them
                 if (assemblyLocation.StartsWith(applicationContentsPath, StringComparison.Ordinal))

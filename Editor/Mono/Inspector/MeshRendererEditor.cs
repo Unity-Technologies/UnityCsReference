@@ -22,6 +22,20 @@ namespace UnityEditor
         private SerializedObject m_GameObjectsSerializedObject;
         private SerializedProperty m_GameObjectStaticFlags;
 
+        private bool CheckLODSelection()
+        {
+            Renderer renderer = (Renderer)target;
+            MeshFilter mf = renderer.GetComponent<MeshFilter>();
+
+            if (mf == null || mf.sharedMesh == null)
+                return false;
+
+            if (!mf.sharedMesh.isLodSelectionActive)
+                return false;
+
+            return true;
+        }
+
         public override void OnEnable()
         {
             // Since we are not doing anything if we are not displayed in the inspector, early out. This help keeps multi selection snappier.
@@ -39,6 +53,12 @@ namespace UnityEditor
         public void OnDisable()
         {
             Lightmapping.lightingDataUpdated -= LightingDataUpdatedRepaint;
+            EditorApplication.update -= MeshLODUpdate;
+        }
+
+        public static bool IsSceneGUIEnabled()
+        {
+            return LODGUI.IsDrawingLabelInCurrentSceneView();
         }
 
         public void OnSceneGUI()
@@ -55,7 +75,7 @@ namespace UnityEditor
             if (!mf.sharedMesh.isLodSelectionActive)
                 return;
 
-            DrawMeshLODLabel(renderer);
+            DrawMeshLODLabel(renderer, mf.sharedMesh.lodCount);
         }
 
         private void LightingDataUpdatedRepaint()
@@ -112,6 +132,7 @@ namespace UnityEditor
 
             RayTracingSettingsGUI();
 
+            EditorApplication.update -= MeshLODUpdate;
             if (mf != null && mf.sharedMesh != null)
             {
                 if (mf.sharedMesh.isLodSelectionActive)

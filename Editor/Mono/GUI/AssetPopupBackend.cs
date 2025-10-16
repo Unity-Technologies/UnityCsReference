@@ -39,7 +39,7 @@ namespace UnityEditor
             AssetPopup<T>(serializedProperty, label, fileExtension, "Default");
         }
 
-        private class DoCreateNewAsset : ProjectWindowCallback.EndNameEditAction
+        private class DoCreateNewAsset : ProjectWindowCallback.AssetCreationEndAction
         {
             private SerializedObject m_Object;
             private SerializedProperty m_Property;
@@ -50,11 +50,11 @@ namespace UnityEditor
                 m_Property = m_Object.FindProperty(property.propertyPath);
             }
 
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
-                var obj = EditorUtility.EntityIdToObject(instanceId);
+                var obj = EditorUtility.EntityIdToObject(entityId);
                 AssetDatabase.CreateAsset(obj, AssetDatabase.GenerateUniqueAssetPath(pathName));
-                ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+                ProjectWindowUtil.FrameObjectInProjectWindow(entityId);
                 m_Property.objectReferenceValue = obj;
                 m_Property.serializedObject.ApplyModifiedProperties();
                 m_Property.serializedObject.Dispose();
@@ -62,7 +62,7 @@ namespace UnityEditor
                 m_Object.Dispose();
             }
 
-            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            public override void Cancelled(EntityId entityId, string pathName, string resourceFile)
             {
                 Selection.activeObject = m_Property.serializedObject.targetObject;
                 m_Property.serializedObject.Dispose();
@@ -75,7 +75,7 @@ namespace UnityEditor
         {
             GenericMenu gm = new GenericMenu();
 
-            int selectedInstanceID = serializedProperty.objectReferenceValue != null ? serializedProperty.objectReferenceValue.GetInstanceID() : 0;
+            EntityId selectedEntityId = serializedProperty.objectReferenceValue != null ? serializedProperty.objectReferenceValue.GetEntityId() : EntityId.None;
 
 
             bool foundDefaultAsset = false;
@@ -91,7 +91,7 @@ namespace UnityEditor
                 {
                     if (resource.m_Name == defaultFieldName)
                     {
-                        gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
+                        gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedEntityId, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
                         resourceList = resourceList.Where(x => x != resource).ToArray();
                         foundDefaultAsset = true;
                         break;
@@ -102,13 +102,13 @@ namespace UnityEditor
             // If no defalut asset was found, add defualt null value.
             if (!foundDefaultAsset)
             {
-                gm.AddItem(new GUIContent(defaultFieldName), selectedInstanceID == 0, AssetPopupMenuCallback, new object[] { 0, serializedProperty });
+                gm.AddItem(new GUIContent(defaultFieldName), selectedEntityId == 0, AssetPopupMenuCallback, new object[] { EntityId.None, serializedProperty });
             }
 
             // Add items from asset database
             foreach (var property in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { typeName } }))
             {
-                gm.AddItem(new GUIContent(property.name), property.entityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { property.entityId, serializedProperty });
+                gm.AddItem(new GUIContent(property.name), property.entityId == selectedEntityId, AssetPopupMenuCallback, new object[] { property.entityId, serializedProperty });
             }
 
             // Add builtin items, except for the already added default item.
@@ -116,7 +116,7 @@ namespace UnityEditor
             {
                 foreach (var resource in resourceList)
                 {
-                    gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
+                    gm.AddItem(new GUIContent(resource.m_Name), resource.m_EntityId == selectedEntityId, AssetPopupMenuCallback, new object[] { resource.m_EntityId, serializedProperty });
                 }
             }
 
@@ -133,7 +133,7 @@ namespace UnityEditor
                     var newAsset = Activator.CreateInstance<T>();
                     var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();
                     doCreate.SetProperty(serializedProperty);
-                    ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetInstanceID(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
+                    ProjectWindowUtil.StartNameEditingIfProjectWindowExists(newAsset.GetEntityId(), doCreate, "New " + typeName + "." + fileExtension, AssetPreview.GetMiniThumbnail(newAsset), null);
                 });
             }
 
@@ -148,7 +148,7 @@ namespace UnityEditor
         static void AssetPopupMenuCallback(object userData)
         {
             var data = userData as object[];
-            var instanceID = (int)data[0];
+            var instanceID = (EntityId)data[0];
             var serializedProperty = (SerializedProperty)data[1];
 
             serializedProperty.objectReferenceValue = EditorUtility.EntityIdToObject(instanceID);

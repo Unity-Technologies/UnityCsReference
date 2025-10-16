@@ -228,7 +228,7 @@ namespace UnityEditor
                 if (instanceID == assetsFolderInstanceID)
                     continue;
 
-                ObjectIdentifier.GetObjectIdentifierFromInstanceID(instanceID, out var identifier);
+                ObjectIdentifier.GetObjectIdentifierFromEntityId(instanceID, out var identifier);
                 assetClipboard.Add(identifier);
             }
         }
@@ -328,7 +328,7 @@ namespace UnityEditor
             if (performedAction == PerformedAction.Cut)
             {
                 Object obj = EditorUtility.EntityIdToObject(instanceID);
-                ObjectIdentifier.GetObjectIdentifierFromInstanceID(instanceID, out var identifier);
+                ObjectIdentifier.GetObjectIdentifierFromEntityId(instanceID, out var identifier);
                 return obj != null && assetClipboard.Contains(identifier);
             }
 

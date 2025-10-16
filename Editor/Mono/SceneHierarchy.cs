@@ -1166,7 +1166,7 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Asset"), false, () =>
                 {
                     Selection.activeObject = prefabAsset;
-                    EditorGUIUtility.PingObject(prefabAsset.GetInstanceID());
+                    EditorGUIUtility.PingObject(prefabAsset.GetEntityId());
                 });
             }
 

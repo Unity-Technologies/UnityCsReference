@@ -132,13 +132,49 @@ namespace UnityEditor.Search
 
             public Options options;
             public int baseScore = 100;
+
+            public static bool IsPackages(string path)
+            {
+                return !string.IsNullOrEmpty(path) && (path.Equals("Packages", StringComparison.InvariantCultureIgnoreCase) || path.Equals("Packages/", StringComparison.InvariantCultureIgnoreCase));
+            }
+
+            public bool IsPackagesIndexingEnabled()
+            {
+                return roots != null && roots.Any(r => IsPackages(r));
+            }
+
+            public void EnablePackagesIndexing(bool enable)
+            {
+                if (IsPackagesIndexingEnabled() == enable)
+                    return;
+
+                if (enable)
+                {
+                    var newRoots = new string[roots.Length + 1];
+                    Array.Copy(roots, newRoots, roots.Length);
+                    newRoots[newRoots.Length - 1] = "Packages";
+                    roots = newRoots;
+                }
+                else
+                {
+                    var newRoots = new string[roots.Length - 1];
+                    var newRootIndex = 0;
+                    foreach (var root in roots)
+                    {
+                        if (IsPackages(root))
+                            continue;
+                        newRoots[newRootIndex++] = root;
+                    }
+                    roots = newRoots;
+                }
+            }
         }
 
         class IndexArtifact : IEquatable<IndexArtifact>
         {
             public readonly string source;
             public readonly ArtifactKey key;
-            public ArtifactID value;
+            public ImportResultID value;
             public string path;
             public long timestamp;
             public OnDemandState state;
@@ -151,7 +187,7 @@ namespace UnityEditor.Search
             public IndexArtifact(in string source, in GUID guid, in Type indexerType)
             {
                 this.source = source;
-                key = new ArtifactKey(guid, indexerType);
+                key = AssetDatabaseExperimental.CreateArtifactKey(guid, indexerType);
                 value = default;
                 path = null;
                 timestamp = long.MaxValue;
@@ -165,7 +201,7 @@ namespace UnityEditor.Search
 
             public override int GetHashCode()
             {
-                return guid.GetHashCode() ^ value.value.GetHashCode();
+                return guid.GetHashCode() ^ value.GetHashCode();
             }
 
             public override bool Equals(object other)
@@ -175,7 +211,7 @@ namespace UnityEditor.Search
 
             public bool Equals(IndexArtifact other)
             {
-                return guid == other.guid && value.value == other.value.value;
+                return guid == other.guid && value.Equals(other.value);
             }
         }
 
@@ -1200,7 +1236,7 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private static bool GetArtifactPaths(in ArtifactID id, out string[] paths)
+        private static bool GetArtifactPaths(in ImportResultID id, out string[] paths)
         {
             return AssetDatabaseExperimental.GetArtifactPaths(id, out paths);
         }

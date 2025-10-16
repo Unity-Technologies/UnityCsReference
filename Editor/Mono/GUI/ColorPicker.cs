@@ -6,9 +6,11 @@ using System;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Accessibility;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal class ColorPicker : EditorWindow
     {
         private const string k_HeightPrefKey = "CPickerHeight";
@@ -1220,6 +1222,7 @@ namespace UnityEditor
             Show(viewToUpdate, null, col, showAlpha, hdr);
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static void Show(Action<Color> colorChangedCallback, Color col, bool showAlpha = true, bool hdr = false, bool setAlphaIfTransparentOnNextPick = false)
         {
             Show(null, colorChangedCallback, col, showAlpha, hdr, setAlphaIfTransparentOnNextPick);
@@ -1401,8 +1404,8 @@ namespace UnityEditor
             return s_LastPickedColor;
         }
 
-        public static bool IsOpened => s_Instance?.m_IsOpened == true;
-        public static bool IsCancelled => s_Instance?.m_IsCancelled == true;
+        public static bool IsOpened => s_Instance != null && s_Instance.m_IsOpened;
+        public static bool IsCancelled => s_Instance != null && s_Instance.m_IsCancelled;
 
         static class Styles
         {

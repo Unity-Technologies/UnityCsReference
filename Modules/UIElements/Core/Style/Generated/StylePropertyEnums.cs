@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Visual = 7
     }
 
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum StyleEnumType
     {
         Align,
@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements.StyleSheets
         Wrap
     }
 
-    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [UnityEngine.Bindings.VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal enum StylePropertyId
     {
         Unknown = 0,
@@ -150,15 +150,15 @@ namespace UnityEngine.UIElements.StyleSheets
         UnitySliceTop = StylePropertyGroup.Rare << k_GroupOffset | 8,
         UnitySliceType = StylePropertyGroup.Rare << k_GroupOffset | 9,
         UnityTextAlign = StylePropertyGroup.Inherited << k_GroupOffset | 10,
-        UnityTextAutoSize = StylePropertyGroup.Rare << k_GroupOffset | 10,
-        UnityTextGenerator = StylePropertyGroup.Inherited << k_GroupOffset | 11,
+        UnityTextAutoSize = StylePropertyGroup.Inherited << k_GroupOffset | 11,
+        UnityTextGenerator = StylePropertyGroup.Inherited << k_GroupOffset | 12,
         UnityTextOutline = StylePropertyGroup.Shorthand << k_GroupOffset | 10,
-        UnityTextOutlineColor = StylePropertyGroup.Inherited << k_GroupOffset | 12,
-        UnityTextOutlineWidth = StylePropertyGroup.Inherited << k_GroupOffset | 13,
-        UnityTextOverflowPosition = StylePropertyGroup.Rare << k_GroupOffset | 11,
-        Visibility = StylePropertyGroup.Inherited << k_GroupOffset | 14,
-        WhiteSpace = StylePropertyGroup.Inherited << k_GroupOffset | 15,
+        UnityTextOutlineColor = StylePropertyGroup.Inherited << k_GroupOffset | 13,
+        UnityTextOutlineWidth = StylePropertyGroup.Inherited << k_GroupOffset | 14,
+        UnityTextOverflowPosition = StylePropertyGroup.Rare << k_GroupOffset | 10,
+        Visibility = StylePropertyGroup.Inherited << k_GroupOffset | 15,
+        WhiteSpace = StylePropertyGroup.Inherited << k_GroupOffset | 16,
         Width = StylePropertyGroup.Layout << k_GroupOffset | 33,
-        WordSpacing = StylePropertyGroup.Inherited << k_GroupOffset | 16
+        WordSpacing = StylePropertyGroup.Inherited << k_GroupOffset | 17
     }
 }

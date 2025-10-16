@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// Makes a field for entering Cursor.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class CursorField : BaseField<Cursor>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

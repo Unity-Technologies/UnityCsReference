@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// A toolbar spacer of static size. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSpacer|UXML element ToolbarSpacer]].
     /// </summary>
     [Icon("UIToolkit/Icons/ToolbarSpacer.png")]
-    public class ToolbarSpacer : VisualElement
+    public partial class ToolbarSpacer : VisualElement
     {
         internal static readonly BindingId flexProperty = nameof(flex);
 
@@ -29,12 +29,6 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarSpacer"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarSpacer> {}
 
         /// <summary>
         /// USS class name of elements of this type.

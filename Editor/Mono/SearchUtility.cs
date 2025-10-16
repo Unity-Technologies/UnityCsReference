@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.AssetImporters;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -151,7 +152,7 @@ namespace UnityEditor
             // Support: 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with instanceID 1234)
             if (HasFilter(searchString, "ref"))
             {
-                int instanceID = 0;
+                EntityId entityId = EntityId.None;
                 int firstColon = 3;
                 int secondColon = searchString.IndexOf(':', firstColon + 1);
                 if (secondColon >= 0)
@@ -159,9 +160,9 @@ namespace UnityEditor
                     // Instead of resolving a path passed-in pathname to an instance-id, use a supplied one.
                     // The pathname is effectively just a UI hint of whose references we're filtering out.
                     string refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
-                    int id;
-                    if (System.Int32.TryParse(refString, out id))
-                        instanceID = id;
+                    ulong id;
+                    if (System.UInt64.TryParse(refString, out id))
+                        entityId = (int)id;
                     //else
                     //  Debug.Log ("Not valid refString to case to Integer " + refString); // outcomment for debugging
                 }
@@ -188,12 +189,12 @@ namespace UnityEditor
                         obj = AssetDatabase.LoadMainAssetAtPath("Assets/" + assetPath);
 
                     if (obj != null)
-                        instanceID = obj.GetInstanceID();
+                        entityId = obj.GetEntityId();
                     //else
                     //  Debug.Log ("Not valid assetPath " + assetPath); // outcomment for debugging
                 }
 
-                filter.referencingInstanceIDs = new[] { instanceID };
+                filter.referencingInstanceIDs = new int[] { entityId };
                 parsed = true;
             }
 
@@ -252,6 +253,39 @@ namespace UnityEditor
                     return i;
             }
             return -1;
+        }
+
+        internal static void SearchProperty(SerializedProperty property)
+        {
+            CommandService.Execute("OpenToSearchByProperty", CommandHint.Menu, property);
+        }
+
+        internal static void FindReferences(UnityEngine.Object obj)
+        {
+            CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
+        }
+
+        internal static bool SupportsFindDependenciesInProject(SerializedProperty property)
+        {
+            return property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue && SupportsFindDependenciesInProject();
+        }
+
+        internal static bool SupportsFindDependenciesInProject()
+        {
+            if (!CommandService.Exists("SupportsFindDependenciesInProject") || !CommandService.Exists("OpenToFindReferenceOnObject"))
+                return false;
+
+            var result = CommandService.Execute("SupportsFindDependenciesInProject", CommandHint.Menu);
+            return (bool)result;
+        }
+
+        internal static bool CanSearchProperty(SerializedProperty property)
+        {
+            if (!CommandService.Exists("OpenToSearchByProperty") || !CommandService.Exists("IsPropertyValidForQuery"))
+                return false;
+
+            var result = CommandService.Execute("IsPropertyValidForQuery", CommandHint.Menu, property);
+            return (bool)result;
         }
     }
 }

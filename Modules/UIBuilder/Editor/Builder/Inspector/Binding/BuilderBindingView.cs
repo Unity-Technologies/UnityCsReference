@@ -60,7 +60,6 @@ namespace Unity.UI.Builder
 
 
         private BuilderInspector m_Inspector;
-        private bool m_IsCreatingBinding;
 
         // Make it internal for tests
         internal TextField m_BindingIdField;
@@ -79,15 +78,7 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Indicates whether the view is used to either create or edit a binding.
         /// </summary>
-        public bool isCreatingBinding
-        {
-            get => m_IsCreatingBinding;
-            private set
-            {
-                m_IsCreatingBinding = value;
-                m_AttributesView.context.callInitOnValueChange = !value;
-            }
-        }
+        public bool isCreatingBinding { get; set; }
 
         /// <summary>
         /// The property of the binding to create or to edit.
@@ -297,14 +288,12 @@ namespace Unity.UI.Builder
             var data = (Binding.UxmlSerializedData)description.CreateDefaultSerializedData();
 
             var propertyAttribute = description.FindAttributeWithPropertyName(nameof(Binding.property));
-            propertyAttribute.SetSerializedValue(data, bindingPropertyName);
-            propertyAttribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+            propertyAttribute.SetSerializedValue(data, bindingPropertyName, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
             var bindingModeAttribute = description.FindAttributeWithPropertyName(nameof(DataBinding.bindingMode));
             if (bindingModeAttribute != null)
             {
-                bindingModeAttribute.SetSerializedValue(data, BindingMode.ToTarget);
-                bindingModeAttribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                bindingModeAttribute.SetSerializedValue(data, BindingMode.ToTarget, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
             }
 
             m_AttributesView.SetAttributesOwnerFromCopy(m_Inspector.document.visualTreeAsset, currentVisualElement);

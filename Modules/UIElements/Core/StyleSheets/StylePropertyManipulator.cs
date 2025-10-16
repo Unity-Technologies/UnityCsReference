@@ -352,37 +352,45 @@ namespace UnityEngine.UIElements
                 return m_StyleSheet.TryReadVariable(m_Property.values[span.start+2], out value);
             }
 
-            public void AddResourcePath(string value)
+            public void AddResourcePath(ResolvedResourcePath resolvedResourcePath)
             {
                 var handle = default(StyleValueHandle);
-                m_StyleSheet.WriteResourcePath(ref handle, value);
+                m_StyleSheet.WriteResourcePath(ref handle, resolvedResourcePath);
                 AddHandle(handle);
             }
 
-            public void SetResourcePath(int index, string value)
+            public void SetResourcePath(int index, ResolvedResourcePath resolvedResourcePath)
             {
                 var span = GetValueSpan(index);
                 ResizeValue(ref span, 1);
-                m_StyleSheet.WriteResourcePath(ref m_Property.values[span.start], value);
+                m_StyleSheet.WriteResourcePath(ref m_Property.values[span.start], resolvedResourcePath);
             }
 
-            public void InsertResourcePath(int index, string value)
+            public void InsertResourcePath(int index, ResolvedResourcePath resolvedResourcePath)
             {
                 var span = GetValueSpan(index, true);
                 Insert(m_Property, span.start, 1);
-                m_StyleSheet.WriteResourcePath(ref m_Property.values[span.start], value);
+                m_StyleSheet.WriteResourcePath(ref m_Property.values[span.start], resolvedResourcePath);
             }
 
-            public bool TryGetResourcePath(int index, out string value)
+            public bool TryGetResourcePath(int index, out string path, out string subAssetName)
             {
+                path = null;
+                subAssetName = null;
+
                 var span = GetValueSpan(index);
                 if (span.length != 1)
                 {
-                    value = null;
                     return false;
                 }
 
-                return m_StyleSheet.TryReadResourcePath(m_Property.values[span.start], out value);
+                if (m_StyleSheet.TryReadResourcePath(m_Property.values[span.start], out var resourcePath))
+                {
+                    path = resourcePath.path;
+                    subAssetName = resourcePath.subAssetName;
+                    return true;
+                }
+                return false;
             }
 
             public void AddAssetReference(Object value)
@@ -877,9 +885,9 @@ namespace UnityEngine.UIElements
                         filterFunctionDefinition = (FilterFunctionDefinition)reference;
                         isCustom = true;
                     }
-                    else if (m_StyleSheet.TryReadResourcePath(m_Property.values[currentIndex], out var path))
+                    else if (m_StyleSheet.TryReadResourcePath(m_Property.values[currentIndex], out var resourcePath))
                     {
-                        filterFunctionDefinition = (FilterFunctionDefinition)Panel.LoadResource(path, typeof(Object), 1.0f);
+                        filterFunctionDefinition = resourcePath.LoadResource<FilterFunctionDefinition>(1.0f);
                         isCustom = true;
                     }
                     --parameterCount;

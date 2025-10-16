@@ -141,7 +141,7 @@ namespace UnityEngine.Rendering
         (
             RenderPipelineAsset pipelineAsset,
             IntPtr loopPtr,
-            Object renderRequest
+            object renderRequest
             , AtomicSafetyHandle safety
         )
         {

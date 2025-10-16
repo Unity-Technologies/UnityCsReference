@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
     /// collapsed and down when it is expanded.
     /// </remarks>
     [Icon("UIToolkit/Icons/Foldout.png")]
-    public class Foldout : BindableElement, INotifyValueChanged<bool>
+    public partial class Foldout : BindableElement, INotifyValueChanged<bool>
     {
         internal static readonly BindingId textProperty = nameof(text);
         internal static readonly BindingId toggleOnLabelClickProperty = nameof(toggleOnLabelClick);
@@ -64,47 +64,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        /// <summary>
-        /// Instantiates a <see cref="Foldout"/> using the data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> created from UXML.
-        /// </remarks>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Foldout, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Foldout"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the Foldout element properties that you can use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value", defaultValue = true };
-
-            /// <summary>
-            /// Initializes <see cref="Foldout"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                Foldout f = ve as Foldout;
-                if (f != null)
-                {
-                    f.text = m_Text.GetValueFromBag(bag, cc);
-                    f.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
-                }
-            }
-        }
-
-        readonly Toggle m_Toggle = new Toggle();
+        readonly Toggle m_Toggle = new() { acceptClicksIfDisabled = true };
 
         internal Toggle toggle
         {

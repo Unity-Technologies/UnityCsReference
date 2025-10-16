@@ -682,7 +682,7 @@ namespace UnityEditor
                 // Show Object Selector for output group selection
                 m_DraggedMixers = draggedMixers;
                 Object startSelection = draggedMixers.Count == 1 ? draggedMixers[0].outputAudioMixerGroup : null;
-                ObjectSelector.get.Show(startSelection, typeof(AudioMixerGroup), null, false, new List<int>() { droppedUponMixer.GetInstanceID() });
+                ObjectSelector.get.Show(startSelection, typeof(AudioMixerGroup), null, false, new List<EntityId>() { droppedUponMixer.GetEntityId() });
                 ObjectSelector.get.objectSelectorID = kObjectSelectorID;
                 ObjectSelector.get.titleContent = EditorGUIUtility.TrTextContent("Select Output Audio Mixer Group");
                 GUIUtility.ExitGUI();

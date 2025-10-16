@@ -93,12 +93,6 @@ namespace UnityEngine
         public bool isFallback => id == k_FallbackIntegrationId;
 
         internal bool isExperimental => m_IntegrationVersion[0] < 1;
-
-        [NativeHeader("Modules/Physics/PhysicsEntitlementChecker.h")]
-        [FreeFunction("Physics::HasRequiredEntitlements")]
-        extern private static bool HasRequiredEntitlements_internal(uint id);
-
-        internal bool HasRequiredEntitlements() => HasRequiredEntitlements_internal(id);
     }
 
     [NativeHeader("Modules/Physics/PhysicsQuery.h")]
@@ -1066,6 +1060,9 @@ namespace UnityEngine
         {
             return OverlapCapsuleNonAlloc(point0, point1, radius, results, AllLayers, QueryTriggerInteraction.UseGlobal);
         }
+
+        [StaticAccessor("GetPhysicsManager()")]
+        public static extern void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions);
 
         [StaticAccessor("GetPhysicsManager()")]
         [ThreadSafe]

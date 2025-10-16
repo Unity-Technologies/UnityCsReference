@@ -204,22 +204,22 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// The default categories used.
             /// </summary>
-            public static PhysicsMask DefaultCategories = PhysicsMask.One;
+            public static readonly PhysicsMask DefaultCategories = PhysicsMask.One;
 
             /// <summary>
             /// The default hit categories used.
             /// </summary>
-            public static PhysicsMask DefaultHitCategories = PhysicsMask.All;
+            public static readonly PhysicsMask DefaultHitCategories = PhysicsMask.All;
 
             /// <summary>
             /// Get a query filter that is all categories and hit everything.
             /// </summary>
-            public static QueryFilter Everything = new(PhysicsMask.All, PhysicsMask.All);
+            public static readonly QueryFilter Everything = new(PhysicsMask.All, PhysicsMask.All);
 
             /// <summary>
             /// Get the default query filter that hits everything. This uses both <see cref="QueryFilter.DefaultCategories"/> and <see cref="QueryFilter.DefaultHitCategories"/>.
             /// </summary>
-            public static QueryFilter defaultFilter = new(DefaultCategories, DefaultHitCategories);
+            public static readonly QueryFilter defaultFilter = new(DefaultCategories, DefaultHitCategories);
 
             #region Internal
 

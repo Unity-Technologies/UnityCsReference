@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Collections;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
 
@@ -101,56 +102,6 @@ namespace UnityEngine.UIElements
                     e.tripleClickSelectsLine = tripleClickSelectsLine;
                 if (ShouldWriteAttributeValue(displayTooltipWhenElided_UxmlAttributeFlags))
                     e.displayTooltipWhenElided = displayTooltipWhenElided;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="TextElement"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TextElement, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TextElement"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-            UxmlBoolAttributeDescription m_EnableRichText = new UxmlBoolAttributeDescription { name = "enable-rich-text", defaultValue = true };
-            UxmlBoolAttributeDescription m_EmojiFallbackSupport = new UxmlBoolAttributeDescription { name = "emoji-fallback-support", defaultValue = true };
-            UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences" };
-            UxmlBoolAttributeDescription m_Selectable = new UxmlBoolAttributeDescription { name = "selectable" };
-            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "double-click-selects-word" };
-            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "triple-click-selects-line" };
-            UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
-
-            /// <summary>
-            /// Enumerator to get the child elements of the <see cref="UxmlTraits"/> of <see cref="TextElement"/>.
-            /// </summary>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            /// <summary>
-            /// Initializer for the <see cref="UxmlTraits"/> for the <see cref="TextElement"/>.
-            /// </summary>
-            /// <param name="ve"><see cref="VisualElement"/> to initialize.</param>
-            /// <param name="bag">Bag of attributes where to get the value from.</param>
-            /// <param name="cc">Creation Context, not used.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var textElement = (TextElement)ve;
-                textElement.text = m_Text.GetValueFromBag(bag, cc);
-                textElement.enableRichText = m_EnableRichText.GetValueFromBag(bag, cc);
-                textElement.emojiFallbackSupport = m_EmojiFallbackSupport.GetValueFromBag(bag, cc);
-                textElement.isSelectable = m_Selectable.GetValueFromBag(bag, cc);
-                textElement.parseEscapeSequences = m_ParseEscapeSequences.GetValueFromBag(bag, cc);
-                textElement.selection.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
-                textElement.selection.tripleClickSelectsLine = m_SelectLineByTripleClick.GetValueFromBag(bag, cc);
-                textElement.displayTooltipWhenElided = m_DisplayTooltipWhenElided.GetValueFromBag(bag, cc);
             }
         }
 
@@ -566,7 +517,8 @@ namespace UnityEngine.UIElements
         /// <param name="heightMode">Height restrictions.</param>
         /// <param name="fontsize">Optional parameter that override the fontSize that would be applied on the visualElement.</param>
         /// <returns>The horizontal and vertical size needed to display the text string.</returns>
-        internal Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+        public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, fontsize);
         }
@@ -645,6 +597,19 @@ namespace UnityEngine.UIElements
             // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
             if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
+        }
+
+        /// <summary>
+        /// Marks that the <see cref="TextElement"/> forces a layout and repaint.
+        /// </summary>
+        /// <remarks>
+        /// Call this method if you modify assets that influence text generation at runtime,
+        /// such as a <see cref="FontAsset"/>.
+        /// </remarks>
+        public void MarkDirtyText()
+        {
+            IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
+            uitkTextHandle.SetDirty();
         }
     }
 }

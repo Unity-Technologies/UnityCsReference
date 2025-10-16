@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A button that executes an action repeatedly while it is pressed. For more information, refer to [[wiki:UIE-uxml-element-RepeatButton|UXML element RepeatButton]].
     /// </summary>
-    public class RepeatButton : TextElement
+    public partial class RepeatButton : TextElement
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
@@ -43,36 +43,6 @@ namespace UnityEngine.UIElements
                     var e = (RepeatButton)obj;
                     e.SetAction(null, delay, interval);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="RepeatButton"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<RepeatButton, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="RepeatButton"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextElement.UxmlTraits
-        {
-            UxmlLongAttributeDescription m_Delay = new UxmlLongAttributeDescription { name = "delay" };
-            UxmlLongAttributeDescription m_Interval = new UxmlLongAttributeDescription { name = "interval" };
-
-            /// <summary>
-            /// Initialize <see cref="RepeatButton"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                RepeatButton repeatButton = (RepeatButton)ve;
-                repeatButton.SetAction(null, m_Delay.GetValueFromBag(bag, cc), m_Interval.GetValueFromBag(bag, cc));
             }
         }
 

@@ -40,7 +40,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             settingsContainer.AddToClassList(k_InstanceDrawerClass);
 
             // When building UI for Free Run Instances, disable modifications if there are actively running ones.
-            var scenario = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             var instanceDescript = instanceProp.boxedValue as InstanceDescription;
             var hasScenarioAndInstance = scenario != null && instanceDescript != null;
             if (hasScenarioAndInstance && scenario.Scenario != null && !scenario.Scenario.HasActiveFreeRunInstanceOfType(instanceDescript.GetType()))
@@ -183,7 +183,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                     dropdown.RegisterValueChangedCallback(evt =>
                     {
-                        if (RoleChoiceIsAllowed(evt.newValue, evt.previousValue, enumProp.serializedObject.targetObject as ScenarioConfig))
+                        if (RoleChoiceIsAllowed(evt.newValue, evt.previousValue, enumProp.serializedObject.targetObject as OrchestratedScenario))
                         {
                             enumProp.intValue = (int)evt.newValue;
                             enumProp.serializedObject.ApplyModifiedProperties();
@@ -298,6 +298,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return false;
             }
 
+            // Check that remote instances do not have a client role
+            if (isServerInstance && !LocalDeploymentUtility.IsServerProfileOrRole(newProfile))
+            {
+                error = "Build profile has a client profile or role, remote instances are intended for uploading a Dedicated Game Server to the cloud and is not compatible with a client instance";
+                return false;
+            }
+
+
             error = null;
             return true;
         }
@@ -319,7 +327,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // Grab the corresponding configs to look for Free Running instances
             var instanceConfig = property.boxedValue as InstanceDescription;
-            var scenarioConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            var scenarioConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             if (instanceConfig == null || scenarioConfig == null || scenarioConfig.Scenario == null)
                 return;
 
@@ -357,7 +365,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             });
         }
 
-        static bool RoleChoiceIsAllowed(MultiplayerRoleFlags newRole, MultiplayerRoleFlags oldRole, ScenarioConfig config)
+        static bool RoleChoiceIsAllowed(MultiplayerRoleFlags newRole, MultiplayerRoleFlags oldRole, OrchestratedScenario config)
         {
             // if it was already a server, it's ok
             if (oldRole != MultiplayerRoleFlags.Client)
@@ -410,7 +418,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             container.AddManipulator(new ContextualMenuManipulator(evt =>
             {
-                var scenario = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+                var scenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
                 var instanceDescript = instanceProp.boxedValue as InstanceDescription;
                 var hasScenarioAndInstance = scenario != null && instanceDescript != null;
                 if (hasScenarioAndInstance && scenario.Scenario != null && !scenario.Scenario.HasActiveFreeRunInstanceOfType(instanceDescript.GetType()))

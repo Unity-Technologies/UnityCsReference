@@ -13,7 +13,16 @@ namespace UnityEditor.Search
     [AttributeUsage(AttributeTargets.Class)]
     public class QueryListBlockAttribute : Attribute
     {
-        static List<QueryListBlockAttribute> s_Attributes;
+        internal class ListBlockData
+        {
+            public QueryListBlockAttribute attribute;
+
+            private QueryListBlock m_TemplateBlock;
+            public QueryListBlock templateBlock => m_TemplateBlock ??= (QueryListBlock)Activator.CreateInstance(attribute.type, new object[] { null, attribute.id, string.Empty, attribute });
+        }
+
+        static Dictionary<string, ListBlockData> s_IdToAttribute;
+        static Dictionary<Type, ListBlockData> s_TypeToAttribute;
 
         public QueryListBlockAttribute(string category, string name, string id, string op = "=")
             : this(category, name, new []{id}, op, 0)
@@ -45,9 +54,14 @@ namespace UnityEditor.Search
 
         public string id => ids.Length > 0 ? ids[0] : string.Empty;
 
+        public override string ToString()
+        {
+            return $"{category}{op}{name} ({string.Join(',', ids)}) priority:{priority}";
+        }
+
         internal static QueryListBlock CreateBlock(Type type, IQuerySource source, string value)
         {
-            var attr = FindBlock(type);
+            var attr = FindBlock(type).attribute;
             if (attr != null)
                 return (QueryListBlock)Activator.CreateInstance(type, new object[] { source, attr.id, value, attr });
             return null;
@@ -55,17 +69,17 @@ namespace UnityEditor.Search
 
         internal static QueryListBlock CreateBlock(string id, string op, IQuerySource source, string value)
         {
-            var attr = FindBlock(id);
+            var listBlockData = FindBlock(id);
             QueryMarker.TryParse(value, out var marker);
             var isValidMarker = marker.valid && marker.type == "list";
-            if (attr != null)
+            if (listBlockData != null)
             {
                 if (isValidMarker)
                 {
-                    return new QueryListMarkerBlock(source, id, marker, attr);
+                    return new QueryListMarkerBlock(source, id, marker, listBlockData.attribute);
                 }
 
-                return (QueryListBlock)Activator.CreateInstance(attr.type, new object[] { source, id, value, attr });
+                return (QueryListBlock)Activator.CreateInstance(listBlockData.attribute.type, new object[] { source, id, value, listBlockData.attribute });
             }
             else if (isValidMarker)
             {
@@ -74,36 +88,26 @@ namespace UnityEditor.Search
             return null;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-        internal static IEnumerable<SearchProposition> GetPropositions(Type type)
+        internal static ListBlockData FindBlock(Type t)
         {
-            var block = CreateBlock(type, null, null);
-            if (block != null)
-                return block.GetPropositions();
-            return new SearchProposition[0];
+            if (s_IdToAttribute == null)
+                RefreshQueryListBlock();
+            return s_TypeToAttribute.GetValueOrDefault(t);
         }
 
-        internal static QueryListBlockAttribute FindBlock(Type t)
+        internal static ListBlockData FindBlock(string id)
         {
-            if (s_Attributes == null)
+            if (s_IdToAttribute == null)
                 RefreshQueryListBlock();
-            return s_Attributes?.FirstOrDefault(a => a.type == t);
-        }
 
-        internal static QueryListBlockAttribute FindBlock(string id)
-        {
-            if (s_Attributes == null)
-                RefreshQueryListBlock();
-            return s_Attributes?
-                .Where(a => a.ids.Any(matchedId => matchedId.Equals(id, StringComparison.Ordinal)))
-                .OrderBy(a => a.priority)
-                .ThenBy(a => a.name)
-                .FirstOrDefault();
+            return s_IdToAttribute.GetValueOrDefault(id);
         }
 
         internal static void RefreshQueryListBlock()
         {
-            s_Attributes = new List<QueryListBlockAttribute>();
+            s_IdToAttribute = new();
+            s_TypeToAttribute = new();
+
             var types = TypeCache.GetTypesWithAttribute<QueryListBlockAttribute>();
             foreach (var ti in types)
             {
@@ -113,7 +117,17 @@ namespace UnityEditor.Search
                     attr.type = ti;
                     if (!typeof(QueryListBlock).IsAssignableFrom(ti))
                         continue;
-                    s_Attributes.Add(attr);
+
+                    var listBlockData = new ListBlockData() { attribute = attr };
+
+                    s_TypeToAttribute[attr.type] = listBlockData;
+                    foreach (var id in attr.ids)
+                    {
+                        if (!s_IdToAttribute.TryGetValue(id, out var alreadyExists) || alreadyExists.attribute.priority > attr.priority)
+                        {
+                            s_IdToAttribute[id] = listBlockData;
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -124,11 +138,20 @@ namespace UnityEditor.Search
 
         internal static bool TryGetReplacement(string id, string type, ref Type blockType, out string replacement)
         {
-            var block = CreateBlock(id, null, null, null);
-            if (block != null)
-                return block.TryGetReplacement(id, type, ref blockType, out replacement);
+            var blockData = FindBlock(id);
+            if (blockData != null)
+                return blockData.templateBlock.TryGetReplacement(id, type, ref blockType, out replacement);
             replacement = string.Empty;
             return false;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static IEnumerable<SearchProposition> GetPropositions(Type type)
+        {
+            var blockData = FindBlock(type);
+            if (blockData != null)
+                return blockData.templateBlock.GetPropositions();
+            return Array.Empty<SearchProposition>();
         }
     }
 }

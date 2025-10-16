@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// A TextField accepts and displays text input. For more information, refer to [[wiki:UIE-uxml-element-TextField|UXML element TextField]].
     /// </summary>
     [Icon("UIToolkit/Icons/TextField.png")]
-    public class TextField : TextInputBaseField<string>
+    public partial class TextField : TextInputBaseField<string>
     {
         internal static readonly BindingId multilineProperty = nameof(multiline);
 
@@ -66,52 +66,6 @@ namespace UnityEngine.UIElements
                         uxmlAsset.SetAttribute("value", Value);
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="TextField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TextField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextInputBaseField<string>.UxmlTraits
-        {
-            // Using a static attribute here because we want to override the behaviour of an
-            // attribute from a base trait class, without the attribute appearing twice in the
-            // UI Builder.
-            static readonly UxmlStringAttributeDescription k_Value = new UxmlStringAttributeDescription
-            {
-                name = "value",
-                obsoleteNames = new [] { "text" }
-            };
-
-            UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
-
-            /// <summary>
-            /// Initialize <see cref="TextField"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                TextField field = ((TextField)ve);
-                base.Init(ve, bag, cc);
-
-                // Re-defining the value to account for the "obsolete" text property.
-                // We are doing it here because TextField binds the value to the text and this
-                // is not the case in the base class.
-                var value = string.Empty;
-                if (k_Value.TryGetValueFromBag(bag, cc, ref value))
-                {
-                    field.SetValueWithoutNotify(value);
-                }
-
-                field.multiline = m_Multiline.GetValueFromBag(bag, cc);
             }
         }
 

@@ -6,17 +6,19 @@ using System;
 
 namespace UnityEngine.Categorization
 {
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public sealed class ElementInfoAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public abstract class InfoAttribute : Attribute
     {
         public int Order { get; set; } = int.MaxValue;
-        public string Name { get; set; } = null;
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
     }
-        
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public sealed class CategoryInfoAttribute : Attribute
-    { 
-        public int Order { get; set; } = int.MaxValue;
-        public string Name { get; set; } = null;
+
+    public sealed class ElementInfoAttribute : InfoAttribute
+    {
+    }
+    
+    public class CategoryInfoAttribute : InfoAttribute
+    {
     }
 }

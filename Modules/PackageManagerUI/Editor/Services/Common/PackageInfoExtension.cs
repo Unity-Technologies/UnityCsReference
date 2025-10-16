@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal static class PackageInfoExtension
     {
         public const string k_BuiltinPackageDocsUrlKey = "Scripting API: ";

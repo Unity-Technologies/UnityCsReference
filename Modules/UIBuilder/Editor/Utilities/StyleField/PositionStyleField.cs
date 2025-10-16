@@ -3,8 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
-using UnityEngine.UIElements;
+using Unity.UIToolkit.Editor;
 
 namespace Unity.UI.Builder
 {
@@ -17,7 +16,6 @@ namespace Unity.UI.Builder
         }
 
         static readonly string k_FieldClassName = "unity-position-style-field";
-        static readonly string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/PositionSection";
 
         public PositionAnchorPoint point { get; set; }
 
@@ -27,8 +25,6 @@ namespace Unity.UI.Builder
         {
             AddToClassList(BuilderConstants.InspectorContainerClassName);
             AddToClassList(k_FieldClassName);
-            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPathNoExt + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss"));
-            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPathNoExt + ".uss"));
         }
 
         public override void SetValueWithoutNotify(string newValue)

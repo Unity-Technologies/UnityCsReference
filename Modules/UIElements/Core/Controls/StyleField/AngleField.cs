@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering Angle.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class AngleField : TextValueField<Angle>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);

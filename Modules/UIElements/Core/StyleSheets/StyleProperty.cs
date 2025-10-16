@@ -11,15 +11,22 @@ using UnityEngine.UIElements.StyleSheets;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal partial class StyleProperty
     {
         [SerializeField]
         StylePropertyId m_Id;
 
-        internal StylePropertyId id
+        public StylePropertyId id
         {
             get => m_Id;
+            internal set
+            {
+                if (value is StylePropertyId.Unknown or StylePropertyId.Custom)
+                    throw new ArgumentException(nameof(value));
+                m_Id = value;
+                m_CustomName = null;
+            }
         }
 
         [SerializeField]
@@ -135,7 +142,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SetKeyword(StyleSheet styleSheet, StyleValueKeyword value)
         {
             SetSize(ref m_Values, 1);
@@ -373,11 +380,11 @@ namespace UnityEngine.UIElements
         /// Sets a resource path as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
-        /// <param name="value">The path.</param>
-        public void SetResourcePath(StyleSheet styleSheet, string value)
+        /// <param name="resource">The resolved path value.</param>
+        public void SetResourcePath(StyleSheet styleSheet, ResolvedResourcePath resource)
         {
             SetSize(ref m_Values, 1);
-            styleSheet.WriteResourcePath(ref m_Values[0], value);
+            styleSheet.WriteResourcePath(ref m_Values[0], resource);
             requireVariableResolve = false;
         }
 
@@ -385,12 +392,44 @@ namespace UnityEngine.UIElements
         /// Tries to read a resource path from the <see cref="StyleProperty"/>'s value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
-        /// <param name="value">The read value.</param>
+        /// <param name="resourcePath">The resolved path value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetResourcePath(StyleSheet styleSheet, out string value)
+        public bool TryGetResourcePath(StyleSheet styleSheet, out ResolvedResourcePath resourcePath)
         {
             if (handleCount == 1)
-                return styleSheet.TryReadResourcePath(m_Values[0], out value);
+                return styleSheet.TryReadResourcePath(m_Values[0], out resourcePath);
+            resourcePath = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Sets a <see cref="Background"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetBackground(StyleSheet styleSheet, Background value)
+        {
+            SetSize(ref m_Values, 1);
+            styleSheet.WriteAssetReference(ref m_Values[0], value.GetSelectedImage());
+            requireVariableResolve = false;
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="Object"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetBackground(StyleSheet styleSheet, out Background value)
+        {
+            if (handleCount == 1)
+            {
+                if (styleSheet.TryReadAssetReference(m_Values[0], out var objectValue))
+                {
+                    value = Background.FromObject(objectValue);
+                    return !value.IsEmpty();
+                }
+            }
 
             value = null;
             return false;
@@ -795,13 +834,8 @@ namespace UnityEngine.UIElements
         /// <param name="value">The value to store.</param>
         public void SetRatio(StyleSheet styleSheet, Ratio value)
         {
-            if (value.IsAuto())
-            {
-                SetSize(ref m_Values, 1);
-                styleSheet.WriteKeyword(ref m_Values[0], StyleValueKeyword.Auto);
-            }
-            else
-                SetFloat(styleSheet, value.value);
+            SetSize(ref m_Values, 1);
+            styleSheet.WriteRatio(ref m_Values[0], value);
         }
 
         /// <summary>
@@ -812,14 +846,15 @@ namespace UnityEngine.UIElements
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
         public bool TryGetRatio(StyleSheet styleSheet, out Ratio value)
         {
-            if (TryGetFloat(styleSheet, out var floatValue))
+            if (handleCount != 1)
             {
-                if(floatValue != 0.0f )
-                {
-                    value = floatValue;
-                    return true;
-                }
+                value = default;
+                return false;
+            }
 
+            if (styleSheet.TryReadRatio(m_Values[0], out value))
+            {
+                return true;
             }
 
             value = Ratio.Auto();
@@ -1092,11 +1127,149 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Sets a <see cref="Font"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetFont(StyleSheet styleSheet, Font value)
+        {
+            SetAssetReference(styleSheet, value);
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="Font"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetFont(StyleSheet styleSheet, out Font value)
+        {
+            if (TryGetAssetReference(styleSheet, out var objectValue) && objectValue is Font fontValue)
+            {
+                value = fontValue;
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Sets a <see cref="FontDefinition"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetFontDefinition(StyleSheet styleSheet, FontDefinition value)
+        {
+            if (value.fontAsset)
+                SetAssetReference(styleSheet, value.fontAsset);
+            else if (value.font)
+                SetAssetReference(styleSheet, value.font);
+            else
+                SetAssetReference(styleSheet, null);
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="FontDefinition"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetFontDefinition(StyleSheet styleSheet, out FontDefinition value)
+        {
+            if (TryGetAssetReference(styleSheet, out var objectValue))
+            {
+                value = FontDefinition.FromObject(objectValue);
+                return !value.IsEmpty();
+            }
+
+            value = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Sets a <see cref="MaterialDefinition"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetMaterialDefinition(StyleSheet styleSheet, MaterialDefinition value)
+        {
+            SetAssetReference(styleSheet, value.material);
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="MaterialDefinition"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetMaterialDefinition(StyleSheet styleSheet, out MaterialDefinition value)
+        {
+            if (TryGetAssetReference(styleSheet, out var objectValue) && objectValue is Material material)
+            {
+                value = MaterialDefinition.FromMaterial(material);
+                return !value.IsEmpty();
+            }
+
+            value = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Sets a <see cref="Cursor"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetCursor(StyleSheet styleSheet, Cursor value)
+        {
+            if (value.defaultCursorId != 0)
+            {
+                Debug.LogWarning("Runtime cursors other than the default cursor need to be defined using a texture.");
+            }
+
+            if (value.hotspot != Vector2.zero)
+            {
+                SetSize(ref m_Values, 3);
+                styleSheet.WriteAssetReference(ref values[0], value.texture);
+                styleSheet.WriteFloat(ref values[1], value.hotspot.x);
+                styleSheet.WriteFloat(ref values[2], value.hotspot.y);
+            }
+            else
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteAssetReference(ref values[0], value.texture);
+            }
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="Cursor"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetCursor(StyleSheet styleSheet, out Cursor value)
+        {
+            if (handleCount is <= 0 or > 3)
+            {
+                value = default;
+                return false;
+            }
+
+            var valCount = handleCount;
+            var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
+            var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
+            var val3 = valCount > 2 ? new StylePropertyValue { handle = values[2], sheet = styleSheet } : default;
+
+            value = StylePropertyReader.ReadCursor(handleCount, val1, val2, val3);
+            return true;
+        }
+
+        /// <summary>
         /// Sets a <see cref="List{TimeValue}"/> as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        public void SetTimeValue(StyleSheet styleSheet, List<TimeValue> value)
+        public void SetTimeValueList(StyleSheet styleSheet, List<TimeValue> value)
         {
             SetSize(ref m_Values, value.Count * 2 - 1);
             for (var i = 0; i < value.Count; ++i)
@@ -1115,7 +1288,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetTimeValue(StyleSheet styleSheet, out List<TimeValue> value)
+        public bool TryGetTimeValueList(StyleSheet styleSheet, out List<TimeValue> value)
         {
             if (ContainsVariable())
             {
@@ -1124,7 +1297,7 @@ namespace UnityEngine.UIElements
             }
 
             value = new List<TimeValue>();
-            return TryGetTimeValue(styleSheet, value);
+            return TryGetTimeValueList(styleSheet, value);
         }
 
         /// <summary>
@@ -1133,7 +1306,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetTimeValue(StyleSheet styleSheet, List<TimeValue> value)
+        public bool TryGetTimeValueList(StyleSheet styleSheet, List<TimeValue> value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -1164,8 +1337,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-
-        public void SetStylePropertyName(StyleSheet styleSheet, List<StylePropertyName> value)
+        public void SetStylePropertyNameList(StyleSheet styleSheet, List<StylePropertyName> value)
         {
             SetSize(ref m_Values, value.Count * 2 - 1);
             for (var i = 0; i < value.Count; ++i)
@@ -1184,7 +1356,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetStylePropertyName(StyleSheet styleSheet, out List<StylePropertyName> value)
+        public bool TryGetStylePropertyNameList(StyleSheet styleSheet, out List<StylePropertyName> value)
         {
             if (ContainsVariable())
             {
@@ -1193,7 +1365,7 @@ namespace UnityEngine.UIElements
             }
 
             value = new List<StylePropertyName>();
-            return TryGetStylePropertyName(styleSheet, value);
+            return TryGetStylePropertyNameList(styleSheet, value);
         }
 
         /// <summary>
@@ -1202,7 +1374,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetStylePropertyName(StyleSheet styleSheet, List<StylePropertyName> value)
+        public bool TryGetStylePropertyNameList(StyleSheet styleSheet, List<StylePropertyName> value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -1234,7 +1406,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        public void SetEasingFunction(StyleSheet styleSheet, List<EasingFunction> value)
+        public void SetEasingFunctionList(StyleSheet styleSheet, List<EasingFunction> value)
         {
             SetSize(ref m_Values, value.Count * 2 - 1);
             for (var i = 0; i < value.Count; ++i)
@@ -1253,7 +1425,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetEasingFunction(StyleSheet styleSheet, out List<EasingFunction> value)
+        public bool TryGetEasingFunctionList(StyleSheet styleSheet, out List<EasingFunction> value)
         {
             if (ContainsVariable())
             {
@@ -1262,7 +1434,7 @@ namespace UnityEngine.UIElements
             }
 
             value = new List<EasingFunction>();
-            return TryGetEasingFunction(styleSheet, value);
+            return TryGetEasingFunctionList(styleSheet, value);
         }
 
         /// <summary>
@@ -1271,7 +1443,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetEasingFunction(StyleSheet styleSheet, List<EasingFunction> value)
+        public bool TryGetEasingFunctionList(StyleSheet styleSheet, List<EasingFunction> value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -1305,17 +1477,17 @@ namespace UnityEngine.UIElements
         /// <param name="value">The value to store.</param>
         /// <remarks>
         /// </remarks>
-        public void SetFilter(StyleSheet styleSheet, List<FilterFunction> filterFunctions)
+        public void SetFilterFunctionList(StyleSheet styleSheet, List<FilterFunction> value)
         {
             // Count the required number of values.
             int valueCount = 0;
-            foreach (var ff in filterFunctions)
+            foreach (var ff in value)
                 valueCount += GetNumberOfValuesForFilterFunction(ff);
 
             SetSize(ref m_Values, valueCount);
 
             int index = 0;
-            foreach (var ff in filterFunctions)
+            foreach (var ff in value)
             {
                 styleSheet.WriteFunction(ref values[index++], ToStyleValueFunction(ff.type));
 
@@ -1345,7 +1517,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetFilter(StyleSheet styleSheet, out List<FilterFunction> value)
+        public bool TryGetFilterFunctionList(StyleSheet styleSheet, out List<FilterFunction> value)
         {
             if (ContainsVariable())
             {
@@ -1354,7 +1526,7 @@ namespace UnityEngine.UIElements
             }
 
             value = new List<FilterFunction>();
-            return TryGetFilter(styleSheet, value);
+            return TryGetFilterFunctionList(styleSheet, value);
         }
 
         /// <summary>
@@ -1363,7 +1535,7 @@ namespace UnityEngine.UIElements
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The read value.</param>
         /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
-        public bool TryGetFilter(StyleSheet styleSheet, List<FilterFunction> value)
+        public bool TryGetFilterFunctionList(StyleSheet styleSheet, List<FilterFunction> value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));

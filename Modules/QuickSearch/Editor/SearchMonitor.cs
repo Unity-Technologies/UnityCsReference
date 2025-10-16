@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
@@ -204,6 +205,7 @@ namespace UnityEditor.Search
 
         public static event Action sceneChanged;
         public static event ObjectChangeEvents.ObjectChangeEventsHandler objectChanged;
+        internal static GameObjectChangeTrackerEventHandler gameObjectChanged;
         public static event Action documentsInvalidated;
 
         internal const string k_TransactionDatabasePath = "Library/Search/transactions.db";
@@ -285,6 +287,7 @@ namespace UnityEditor.Search
             s_DelayedInvalidate = Delayer.Debounce(_ => InvalidateDocuments());
 
             ObjectChangeEvents.changesPublished += OnObjectChanged;
+            GameObjectChangeTracker.GameObjectsChanged += OnGameObjectChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             s_Initialize = true;
@@ -391,6 +394,14 @@ namespace UnityEditor.Search
             handler?.Invoke(ref stream);
         }
 
+        static void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
+        {
+            HandleGameObjectChangedEvents(in events);
+
+            var handler = gameObjectChanged;
+            handler?.Invoke(in events);
+        }
+
         static void InvalidateCurrentScene()
         {
             var handler = sceneChanged;
@@ -461,49 +472,68 @@ namespace UnityEditor.Search
                     case ObjectChangeKind.DestroyGameObjectHierarchy:
                     {
                         stream.GetDestroyGameObjectHierarchyEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
 
                     case ObjectChangeKind.CreateGameObjectHierarchy:
                     {
                         stream.GetCreateGameObjectHierarchyEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
 
                     case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
                     {
                         stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
 
                     case ObjectChangeKind.ChangeGameObjectStructure:
                     {
                         stream.GetChangeGameObjectStructureEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectParent:
                     {
                         stream.GetChangeGameObjectParentEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
                     {
                         stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.UpdatePrefabInstances:
                     {
                         stream.GetUpdatePrefabInstancesEvent(i, out var e);
-                        for (int idIndex = 0; idIndex < e.instanceIds.Length; ++idIndex)
-                            InvalidateObject(e.instanceIds[idIndex]);
+                        for (int idIndex = 0; idIndex < e.entityIds.Length; ++idIndex)
+                            InvalidateObject(e.entityIds[idIndex]);
                     }
                     break;
+                }
+            }
+        }
+
+        static void HandleGameObjectChangedEvents(in NativeArray<GameObjectChangeTrackerEvent> events)
+        {
+            for (var i = 0; i < events.Length; ++i)
+            {
+                var e = events[i];
+                switch (e.EventType)
+                {
+                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
+                    case GameObjectChangeTrackerEventType.Destroyed:
+                    case GameObjectChangeTrackerEventType.ChangedParent:
+                    case GameObjectChangeTrackerEventType.ChangedScene:
+                        InvalidateObject(e.InstanceId);
+                        break;
+
+                    // Other events are not relevant for us since they do not affect properties.
                 }
             }
         }
@@ -515,9 +545,9 @@ namespace UnityEditor.Search
             s_TransactionManager?.ClearAll();
         }
 
-        private static void InvalidateObject(int instanceId)
+        private static void InvalidateObject(EntityId entityId)
         {
-            var obj = EditorUtility.EntityIdToObject(instanceId);
+            var obj = EditorUtility.EntityIdToObject(entityId);
             var documentKey = SearchUtils.GetDocumentKey(obj);
             InvalidateDocument(documentKey);
         }

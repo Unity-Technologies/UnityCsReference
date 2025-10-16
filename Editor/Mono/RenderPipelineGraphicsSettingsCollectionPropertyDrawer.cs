@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor.Categorization;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
-using UnityEditor.Categorization;
 
 namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 {
@@ -19,43 +19,13 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
     internal class RenderPipelineGraphicsSettingsCollectionPropertyDrawer : PropertyDrawer
     {
         const string k_LineClass = "contextual-menu-button--handler";
+        const string k_MoreOptionsButtonClass = "more-options-button";
         const string k_GraphicsSettingsClass = "project-settings-section__graphics-settings";
         const string k_GraphicsSettingsHighlightableClass = "graphics-settings__highlightable";
         const string k_GraphicsSettingsContentFollowupClass = "project-settings-section__content-followup";
 
-        internal struct SettingsInfo : ICategorizable
-        {
-            public SerializedProperty property { get; private set; }
-            public Type type { get; private set; }
-            public HelpURLAttribute helpURLAttribute { get; private set; }
-            public bool onlyForDevMode { get; private set; }
-            public IRenderPipelineGraphicsSettings target => property?.boxedValue as IRenderPipelineGraphicsSettings;
-            
-            public static SettingsInfo? ExtractFrom(SerializedProperty property)
-            {
-                //boxedProperty can be null if we keep in the list a data blob for a type that have disappears
-                //this can happens if user remove a IRenderPipelineGraphicsSettings from his project for instance
-                Type type = property?.boxedValue?.GetType();
-                if (type == null || !typeof(IRenderPipelineGraphicsSettings).IsAssignableFrom(type))
-                    return null;
-
-                // If GraphicsSettings is hidden, discard it
-                bool hidden = type.GetCustomAttribute<HideInInspector>() != null;
-                if (!Unsupported.IsDeveloperMode() && hidden)
-                    return null;
-
-                return new SettingsInfo()
-                {
-                    property = property.Copy(),
-                    type = type,
-                    helpURLAttribute = type.GetCustomAttribute<HelpURLAttribute>(),
-                    onlyForDevMode = hidden,
-                };
-            }
-        }
-
         //internal for tests
-        internal static List<Category<LeafElement<SettingsInfo>>> Categorize(SerializedProperty property)
+        internal static List<Node<SettingsInfo>> Categorize(SerializedProperty property)
         {
             List<SettingsInfo> elements = new();
 
@@ -77,35 +47,68 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             return elements.SortByCategory();
         }
 
-        void DrawHelpButton(VisualElement root, HelpURLAttribute helpURLAttribute)
+        internal struct SettingsInfo : ICategorizable
         {
-            if (helpURLAttribute?.URL != null)
+            public SerializedProperty property { get; private set; }
+            public Type type { get; private set; }
+            public bool onlyForDevMode { get; private set; }
+            public IRenderPipelineGraphicsSettings target => property?.boxedValue as IRenderPipelineGraphicsSettings;
+
+            public static SettingsInfo? ExtractFrom(SerializedProperty property)
             {
-                var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("_Help")), () => Help.BrowseURL(helpURLAttribute.URL));
+                //boxedProperty can be null if we keep in the list a data blob for a type that have disappears
+                //this can happens if user remove a IRenderPipelineGraphicsSettings from his project for instance
+                Type type = property?.boxedValue?.GetType();
+                if (type == null || !typeof(IRenderPipelineGraphicsSettings).IsAssignableFrom(type))
+                    return null;
+
+                // If GraphicsSettings is hidden, discard it
+                bool hidden = type.GetCustomAttribute<HideInInspector>() != null;
+                if (!Unsupported.IsDeveloperMode() && hidden)
+                    return null;
+
+                return new SettingsInfo()
+                {
+                    property = property.Copy(),
+                    type = type,
+                    onlyForDevMode = hidden,
+                };
+            }
+        }
+
+        void DrawHelpButton(VisualElement root, string helpURL)
+        {
+            if (string.IsNullOrEmpty(helpURL))
+            {
+                var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("_Help")), () => Help.BrowseURL(helpURL));
                 root.Add(button);
             }
         }
 
-        void ShowContextualMenu(Rect rect, List<LeafElement<SettingsInfo>> siblings)
+        void ShowContextualMenu(Rect rect, Node<SettingsInfo> parent)
         {
-            List<(IRenderPipelineGraphicsSettings target, SerializedProperty property)> targets = new(siblings.Count);
-            foreach (SettingsInfo sibling in siblings)
-                targets.Add((sibling.target, sibling.property));
+            List<(IRenderPipelineGraphicsSettings target, SerializedProperty property)> targets = new(parent.children.Count);
+            foreach (Node<SettingsInfo> sibling in parent.children)
+                targets.Add((sibling.data.target, sibling.data.property));
 
             var contextualMenu = new GenericMenu(); //use ImGUI for now, need to be updated later
             RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(targets, ref contextualMenu);
             contextualMenu.DropDown(new Rect(rect.position + Vector2.up * rect.size.y, Vector2.zero), shouldDiscardMenuOnSecondClick: true);
         }
 
-        void DrawContextualMenuButton(VisualElement root, LeafElement<SettingsInfo> settingsInfo)
+        void DrawContextualMenuButton(VisualElement root, Node<SettingsInfo> settingsInfo)
         {
-            var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
-            button.clicked += () => ShowContextualMenu(button.worldBound, settingsInfo.parent.content);
+            var button = new Button();
+            button.AddToClassList(k_MoreOptionsButtonClass);
+            button.clicked += () => ShowContextualMenu(button.worldBound, settingsInfo.parent);
             root.Add(button);
         }
 
-        void DrawHeader(VisualElement root, Category<LeafElement<SettingsInfo>> category)
+        void DrawHeader(VisualElement root, Node<SettingsInfo> category)
         {
+            if (category.parent != null)
+                throw new ArgumentException("Drawing the header of a Leaf Element", nameof(category));
+
             var line = new VisualElement();
             line.style.flexDirection = FlexDirection.Row;
             line.AddToClassList(k_LineClass);
@@ -116,8 +119,8 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             root.Add(line);
 
-            var firstSetting = category[0];
-            DrawHelpButton(line, firstSetting.data.helpURLAttribute);
+            var firstSetting = category.children[0];
+            DrawHelpButton(line, firstSetting.helpUrl);
             DrawContextualMenuButton(line, firstSetting);
         }
 
@@ -145,11 +148,15 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
             foreach (var category in Categorize(graphicsSettings))
             {
+                // Draw category header
                 DrawHeader(root, category);
 
-                DrawContent(root, category[0], first: true);
-                for (int i = 1; i < category.count; ++i)
-                    DrawContent(root, category[i], first: false);
+                // Draw each leaf of that category
+                for (int i = 0; i < category.children.Count; ++i)
+                {
+                    bool first = (i == 0);
+                    DrawContent(root, category.children[i].data, first);
+                }
             }
 
             return root;

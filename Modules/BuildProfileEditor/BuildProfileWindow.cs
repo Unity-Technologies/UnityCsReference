@@ -42,6 +42,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         PlatformListView m_ProfileListViews;
         VisualElement m_WelcomeMessageElement;
+        VisualElement m_WelcomeMessageElementNoClassicPlatforms;
 
         VisualElement m_SelectionHeader;
         VisualElement m_SelectionFooter;
@@ -54,6 +55,7 @@ namespace UnityEditor.Build.Profile
         ScrollView m_BuildProfileInspectorElement;
         VisualElement m_BuildProfileInspectorHeaderElement;
 
+        Label m_PlatformListLabel;
         VisualElement m_AdditionalActionsDropdown;
         DropdownButton m_BuildButton;
         ToolbarButton m_AssetImportButton;
@@ -70,8 +72,19 @@ namespace UnityEditor.Build.Profile
             window.minSize = new Vector2(725, 400);
         }
 
+        public static void OnEditorSettingsChanged()
+        {
+            if (!HasOpenInstances<BuildProfileWindow>())
+                return;
+
+            var window = GetWindow<BuildProfileWindow>();
+            window.UpdateFromEditorSettings();
+        }
+
         public void CreateGUI()
         {
+            BuildProfileModuleUtil.OnEditorSettingsChanged ??= OnEditorSettingsChanged;
+
             m_WindowState = new BuildProfileWorkflowState(OnWorkflowStateChanged);
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
@@ -92,13 +105,16 @@ namespace UnityEditor.Build.Profile
             m_ActivateButton = rootVisualElement.Q<Button>("activate-button");
             m_BuildInCloudPackageButton = rootVisualElement.Q<Button>("build-cloud-build-pkg");
             m_WelcomeMessageElement = rootVisualElement.Q<VisualElement>("fallback-no-custom-build-profiles");
+            m_WelcomeMessageElementNoClassicPlatforms = rootVisualElement.Q<VisualElement>("fallback-no-custom-or-classic-build-profiles");
             m_SelectionHeader = rootVisualElement.Q<VisualElement>("build-profile-editor-header");
             m_SelectionFooter = rootVisualElement.Q<VisualElement>("build-profile-editor-footer");
 
             // Apply localized text to static elements.
-            rootVisualElement.Q<Label>("platforms-label").text = TrText.platforms;
+            m_PlatformListLabel = rootVisualElement.Q<Label>("platforms-label");
+            m_PlatformListLabel.text = TrText.platforms;
             rootVisualElement.Q<Label>("build-profiles-label").text = TrText.buildProfilesName;
             rootVisualElement.Q<Label>("fallback-welcome-label").text = TrText.buildProfileWelcome;
+            rootVisualElement.Q<Label>("no-profile-label").text = TrText.noBuildProfilesFound;
             addBuildProfileButton.text = TrText.addBuildProfile;
             playerSettingsButton.text = TrText.playerSettings;
             listViewAddProfileButton.text = TrText.addBuildProfile;
@@ -122,6 +138,7 @@ namespace UnityEditor.Build.Profile
             {
                 m_ProfileListViews.ShowCustomBuildProfiles();
                 m_WelcomeMessageElement.Hide();
+                m_WelcomeMessageElementNoClassicPlatforms.Hide();
             }
 
             // When creating the profile lists, the bind callbacks (which set the active profile index)
@@ -149,6 +166,7 @@ namespace UnityEditor.Build.Profile
                 m_AssetImportWindow.ShowUtilityWindow(UpdateToolbarButtonState);
             };
 
+            UpdateFromEditorSettings();
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
             BuildProfileContext.activeProfileChanged += OnActiveProfileChanged;
             ActiveBuildTargetListener.activeBuildTargetChanged += OnActiveBuildTargetChanged;
@@ -286,6 +304,25 @@ namespace UnityEditor.Build.Profile
             m_SelectionFooter.Hide();
         }
 
+        internal void OnShowWelcomeElement()
+        {
+            if (!EditorSettings.hideBuildProfileClassicPlatforms)
+                return;
+
+            m_BuildProfileSelection.ClearSelectedProfiles();
+            m_ProfileListViews.ClearSharedSceneListSelection();
+            m_ProfileListViews.ClearProfileSelection();
+            m_ProfileListViews.ClearPlatformSelection();
+
+            DestroyImmediate(buildProfileEditor);
+            m_BuildProfileInspectorElement.Clear();
+            m_BuildProfileInspectorHeaderElement.Clear();
+            m_SelectionHeader.Hide();
+            m_SelectionFooter.Hide();
+
+            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement());
+        }
+
         /// <summary>
         /// Selects the build profile in the custom profile list view.
         /// </summary>
@@ -346,15 +383,20 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         internal void RebuildProfileListViews()
         {
+            VisualElement welcomeMessage = (EditorSettings.hideBuildProfileClassicPlatforms)
+                ? m_WelcomeMessageElementNoClassicPlatforms
+                : m_WelcomeMessageElement;
+
             if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
             {
                 m_ProfileListViews.HideCustomBuildProfiles();
-                m_WelcomeMessageElement.Show();
+                welcomeMessage.Show();
+                OnShowWelcomeElement();
             }
             else
             {
                 m_ProfileListViews.ShowCustomBuildProfiles();
-                m_WelcomeMessageElement.Hide();
+                welcomeMessage.Hide();
             }
 
             m_ProfileListViews.Rebuild();
@@ -589,7 +631,7 @@ namespace UnityEditor.Build.Profile
         void OnCloudBuildClicked()
         {
             var profile = m_BuildProfileSelection.Get(0);
-            if (profile == null) 
+            if (profile == null)
                 return;
 
             BuildAutomationModalWindow.OnCloudBuildClicked(profile, this);
@@ -689,6 +731,26 @@ namespace UnityEditor.Build.Profile
         {
             if (m_WarningIcon == null)
                 m_WarningIcon = Background.FromTexture2D(BuildProfileModuleUtil.GetWarningIcon());
+        }
+
+        void UpdateFromEditorSettings()
+        {
+            if (EditorSettings.hideBuildProfileClassicPlatforms)
+            {
+                m_WelcomeMessageElementNoClassicPlatforms.Show();
+                m_WelcomeMessageElement.Hide();
+                m_PlatformListLabel.Hide();
+                m_ProfileListViews.HideClassicPlatformListView();
+            }
+            else
+            {
+                m_WelcomeMessageElement.Show();
+                m_WelcomeMessageElementNoClassicPlatforms.Hide();
+                m_PlatformListLabel.Show();
+                m_ProfileListViews.ShowClassicPlatformListView();
+            }
+
+            RebuildProfileListViews();
         }
     }
 }

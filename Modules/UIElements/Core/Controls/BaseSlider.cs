@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This is a base class for the Slider fields.
     /// </summary>
-    public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
+    public abstract partial class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : IComparable<TValueType>
     {
         internal static readonly BindingId lowValueProperty = nameof(lowValue);
@@ -106,31 +106,6 @@ namespace UnityEngine.UIElements
 
         [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
-
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseSlider"/>.
-        ///
-        /// This class must be used instead of the non-generic inherited UxmlTraits equivalent.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a BaseSlider element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits<TValueUxmlAttributeType> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public class UxmlTraits<TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
-            where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PickingMode.defaultValue = PickingMode.Ignore;
-            }
-        }
 
         // Placeholder required to prevent issues syncing UxmlSerializedData.
         internal TValueType valueOverride { get => value; set => SetValueWithoutNotify(value); }

@@ -36,11 +36,17 @@ namespace UnityEditor.PackageManager
         [NativeName("ownerOrgName")]
         private string m_OwnerOrgName;
 
+        [SerializeField]
+        [NativeName("publisherName")]
+        private string m_PublisherName;
+
         public string format => m_Format;
         public string publishingChannel => m_PublishingChannel;
         public string[] entitlementKeys => m_EntitlementKeys;
         public string ownerOrgId => m_OwnerOrgId;
         public string ownerOrgName => m_OwnerOrgName;
+
+        public string publisherName => m_PublisherName;
 
         internal Attestation() { }
     }

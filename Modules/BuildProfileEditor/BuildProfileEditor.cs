@@ -253,9 +253,10 @@ namespace UnityEditor.Build.Profile
                 m_SettingsFoldoutRoot.Add(new BuildProfileSettingsFoldout(
                     serializedObject,
                     m_Profile,
-                    settings,
-                    this.ShowSettingsFoldouts));
+                    settings));
             }
+
+            m_AddSettingsButton.SetEnabled(!m_AddSettingsDataSource.AllProfileSettingsInUse());
         }
 
         void OnAddSettingsClicked(int key)

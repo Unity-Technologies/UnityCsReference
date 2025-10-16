@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/Hash128Field.png")]
-    public class Hash128Field : TextInputBaseField<Hash128>
+    public partial class Hash128Field : TextInputBaseField<Hash128>
     {
         // This property to alleviate the fact we have to cast all the time
         Hash128Input integerInput => (Hash128Input)textInputBase;
@@ -29,18 +29,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new Hash128Field();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="Hash128Field"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Hash128Field, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Hash128Field"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<Hash128, UxmlHash128AttributeDescription> {}
 
         /// <summary>
         /// USS class name of elements of this type.

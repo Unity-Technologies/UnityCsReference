@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
     /// You can use <c>id</c> to maintain distinct references, and use the <c>index</c> to handle rendering
     /// and layout tasks based on the visible order of items.
     /// </remarks>
-    public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
+    public abstract partial class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
         internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
         internal static readonly BindingId selectionTypeProperty = nameof(selectionType);
@@ -174,68 +174,6 @@ namespace UnityEngine.UIElements
         internal const string internalBindingKey = "__unity-collection-view-internal-binding";
         static readonly ProfilerMarker k_RefreshMarker = new ("BaseVerticalCollectionView.RefreshItems");
         static readonly ProfilerMarker k_RebuildMarker = new ("BaseVerticalCollectionView.Rebuild");
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseVerticalCollectionView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the BaseVerticalCollectionView element properties that you can use in a UI document asset (UXML file).
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
-            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight", "item-height" }, defaultValue = s_DefaultItemHeight };
-            private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
-            private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
-            private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
-            private readonly UxmlBoolAttributeDescription m_Reorderable = new UxmlBoolAttributeDescription { name = "reorderable", defaultValue = false };
-            private readonly UxmlBoolAttributeDescription m_HorizontalScrollingEnabled = new UxmlBoolAttributeDescription { name = "horizontal-scrolling", defaultValue = false };
-
-            /// <summary>
-            /// Returns an empty enumerable, because list views usually do not have child elements.
-            /// </summary>
-            /// <returns>An empty enumerable.</returns>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
-
-            /// <summary>
-            /// Initializes <see cref="BaseVerticalCollectionView"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var itemHeight = 0;
-                var view = (BaseVerticalCollectionView)ve;
-                view.reorderable = m_Reorderable.GetValueFromBag(bag, cc);
-
-                // Avoid setting itemHeight unless it's explicitly defined.
-                // Setting itemHeight property will activate inline property mode.
-                if (m_FixedItemHeight.TryGetValueFromBag(bag, cc, ref itemHeight))
-                {
-                    view.fixedItemHeight = itemHeight;
-                }
-
-                view.virtualizationMethod = m_VirtualizationMethod.GetValueFromBag(bag, cc);
-                view.showBorder = m_ShowBorder.GetValueFromBag(bag, cc);
-                view.selectionType = m_SelectionType.GetValueFromBag(bag, cc);
-                view.showAlternatingRowBackgrounds = m_ShowAlternatingRowBackgrounds.GetValueFromBag(bag, cc);
-                view.horizontalScrollingEnabled = m_HorizontalScrollingEnabled.GetValueFromBag(bag, cc);
-            }
-        }
 
         /// <summary>
         /// Obsolete. Use <see cref="BaseVerticalCollectionView.itemsChosen"/> instead.
@@ -1122,9 +1060,29 @@ namespace UnityEngine.UIElements
         internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
 
         /// <summary>
-        /// Determine if we are currently processing a pointer down event.
+        /// Enum for current pointer processing state.
         /// </summary>
-        internal bool processingPointerDownEvent
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal enum pointerProcessingStateEnum
+        {
+            None,
+            PointerDown
+        }
+
+        /// <summary>
+        /// Determine what pointer state we are currently processing.
+        /// </summary>
+        internal pointerProcessingStateEnum pointerProcessingState
+        {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
+            private set;
+        }
+
+        /// <summary>
+        /// Determine mouse button for currently processed pointer event.
+        /// See <see cref="MouseButton"/> for details.
+        /// </summary>
+        internal int currentPointerButton
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
             private set;
@@ -1686,7 +1644,7 @@ namespace UnityEngine.UIElements
 
         private void ProcessPointerDown(IPointerEvent evt)
         {
-            processingPointerDownEvent = true;
+            pointerProcessingState = pointerProcessingStateEnum.PointerDown;
             try
             {
                 if (!HasValidDataAndBindings())
@@ -1697,6 +1655,8 @@ namespace UnityEngine.UIElements
 
                 if (evt.button is not ((int)MouseButton.LeftMouse or (int)MouseButton.RightMouse))
                     return;
+
+                currentPointerButton = evt.button;
 
                 if (evt.pointerType != PointerType.mouse)
                 {
@@ -1715,7 +1675,8 @@ namespace UnityEngine.UIElements
             }
             finally
             {
-                processingPointerDownEvent = false;
+                pointerProcessingState = pointerProcessingStateEnum.None;
+                currentPointerButton = -1;
             }
         }
 

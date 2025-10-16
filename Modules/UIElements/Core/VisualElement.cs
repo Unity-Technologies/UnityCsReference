@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Unity.Properties;
@@ -20,10 +21,11 @@ namespace UnityEngine.UIElements
     // pseudo states are used for common states of a widget
     // they are addressable from CSS via the pseudo state syntax ":selected" for example
     // while css class list can solve the same problem, pseudo states are a fast commonly agreed upon path for common cases.
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
     [Flags]
     internal enum PseudoStates
     {
+        None = 0,
         Active    = 1 << 0,     // control is currently pressed in the case of a button
         Hover     = 1 << 1,     // mouse is over control, set and removed from dispatcher automatically
         Checked   = 1 << 3,     // usually associated with toggles of some kind to change visible style
@@ -226,17 +228,6 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
-        static VisualElement()
-        {
-            // This is an empty call to prevent the initialization from being stripped out of a build
-            // if VisualElement is included.
-            UIElementsInitialization.SoftPreserve();
-        }
-        internal static class Testing
-        {
-            public static void SetDefaultMaterial(VisualElement ve, Material material) => ve.defaultMaterial = material;
-        }
-
         /// <summary>
         /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>.
         /// </summary>
@@ -371,98 +362,6 @@ namespace UnityEngine.UIElements
                         }
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="VisualElement"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public class UxmlFactory : UxmlFactory<VisualElement, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="VisualElement"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public class UxmlTraits : UIElements.UxmlTraits
-        {
-            protected UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = UxmlGenericAttributeNames.k_NameAttributeName };
-            private UxmlBoolAttributeDescription m_EnabledSelf = new UxmlBoolAttributeDescription { name = "enabled", defaultValue = true };
-            UxmlStringAttributeDescription m_ViewDataKey = new UxmlStringAttributeDescription { name = "view-data-key" };
-            protected UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "picking-mode", obsoleteNames = new[] { "pickingMode" }};
-            UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
-            UxmlEnumAttributeDescription<UsageHints> m_UsageHints = new UxmlEnumAttributeDescription<UsageHints> { name = "usage-hints" };
-
-            // focusIndex is obsolete. It has been replaced by tabIndex and focusable.
-            /// <summary>
-            /// The focus index attribute.
-            /// </summary>
-            protected UxmlIntAttributeDescription focusIndex { get; set; } = new UxmlIntAttributeDescription { name = null, obsoleteNames = new[] { "focus-index", "focusIndex" }, defaultValue = -1 };
-            UxmlIntAttributeDescription m_TabIndex = new UxmlIntAttributeDescription { name = "tabindex", defaultValue = 0 };
-            /// <summary>
-            /// The focusable attribute.
-            /// </summary>
-            protected UxmlBoolAttributeDescription focusable { get; set; } = new UxmlBoolAttributeDescription { name = "focusable", defaultValue = false };
-
-#pragma warning disable 414
-            // These variables are used by reflection.
-            UxmlStringAttributeDescription m_Class = new UxmlStringAttributeDescription { name = "class" };
-            UxmlStringAttributeDescription m_ContentContainer = new UxmlStringAttributeDescription { name = "content-container", obsoleteNames = new[] { "contentContainer" } };
-            UxmlStringAttributeDescription m_Style = new UxmlStringAttributeDescription { name = "style" };
-#pragma warning restore
-
-            UxmlAssetAttributeDescription<Object> m_DataSource = new UxmlAssetAttributeDescription<Object>() { name = "data-source" };
-            UxmlStringAttributeDescription m_DataSourcePath = new UxmlStringAttributeDescription() { name = "data-source-path" };
-            UxmlTypeAttributeDescription<object> m_DataSourceType = new UxmlTypeAttributeDescription<object> { name = "data-source-type" };
-
-            /// <summary>
-            /// Returns an enumerable containing <c>UxmlChildElementDescription(typeof(VisualElement))</c>, since VisualElements can contain other VisualElements.
-            /// </summary>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield return new UxmlChildElementDescription(typeof(VisualElement)); }
-            }
-
-            /// <summary>
-            /// Initialize <see cref="VisualElement"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                if (ve == null)
-                {
-                    throw new ArgumentNullException(nameof(ve));
-                }
-
-                ve.name = m_Name.GetValueFromBag(bag, cc);
-                ve.enabledSelf = m_EnabledSelf.GetValueFromBag(bag, cc);
-                ve.viewDataKey = m_ViewDataKey.GetValueFromBag(bag, cc);
-                ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
-                ve.usageHints = m_UsageHints.GetValueFromBag(bag, cc);
-                ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
-
-                int index = 0;
-                if (focusIndex.TryGetValueFromBag(bag, cc, ref index))
-                {
-                    ve.tabIndex = index >= 0 ? index : 0;
-                    ve.focusable = index >= 0;
-                }
-
-                // tabIndex and focusable overrides obsolete focusIndex.
-                ve.tabIndex = m_TabIndex.GetValueFromBag(bag, cc);
-                ve.focusable = focusable.GetValueFromBag(bag, cc);
-
-                ve.dataSource = m_DataSource.GetValueFromBag(bag, cc);
-                ve.dataSourcePath = new PropertyPath(m_DataSourcePath.GetValueFromBag(bag, cc));
-                ve.dataSourceType = m_DataSourceType.GetValueFromBag(bag, cc);
-
-                // We ignore m_Class, it was processed in UIElementsViewImporter.
-                // We ignore m_ContentContainer, it was processed in UIElementsViewImporter.
-                // We ignore m_Style, it was processed in UIElementsViewImporter.
             }
         }
 
@@ -674,7 +573,14 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal Color playModeTintColor => disablePlayModeTint ? Color.white : UIElementsUtility.editorPlayModeTintColor;
+        internal Color playModeTintColor
+        {
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+            get
+            {
+                return disablePlayModeTint ? Color.white : UIElementsUtility.editorPlayModeTintColor;
+            }
+        }
 
         /// <summary>
         /// A combination of hint values that specify high-level intended usage patterns for the <see cref="VisualElement"/>.
@@ -735,6 +641,7 @@ namespace UnityEngine.UIElements
         internal RenderHints renderHints
         {
             get { return m_RenderHints; }
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
             set
             {
                 // Filter out the dirty flags
@@ -941,6 +848,7 @@ namespace UnityEngine.UIElements
                 }
                 return result;
             }
+
             internal set
             {
                 // Same position value while type is already manual should not trigger any layout change, return early
@@ -975,26 +883,6 @@ namespace UnityEngine.UIElements
                 if (changeType != 0)
                     IncrementVersion(changeType);
             }
-        }
-
-        internal void ClearManualLayout()
-        {
-            // Mark layout manual false to re-enable layout calculation.
-            isLayoutManual = false;
-
-            // Remove inline values.
-            var styleAccess = style;
-            styleAccess.position = StyleKeyword.Null;
-            styleAccess.marginLeft = StyleKeyword.Null;
-            styleAccess.marginRight = StyleKeyword.Null;
-            styleAccess.marginBottom = StyleKeyword.Null;
-            styleAccess.marginTop = StyleKeyword.Null;
-            styleAccess.left = StyleKeyword.Null;
-            styleAccess.top = StyleKeyword.Null;
-            styleAccess.right = StyleKeyword.Null;
-            styleAccess.bottom = StyleKeyword.Null;
-            styleAccess.width = StyleKeyword.Null;
-            styleAccess.height = StyleKeyword.Null;
         }
 
         /// <summary>
@@ -1410,6 +1298,7 @@ namespace UnityEngine.UIElements
 
         internal ref Matrix4x4 worldTransformInverse
         {
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
             get
             {
                 if (isWorldTransformInverseOrDependenciesDirty)
@@ -1523,7 +1412,7 @@ namespace UnityEngine.UIElements
 
         private PseudoStates m_PseudoStates;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal PseudoStates pseudoStates
         {
             get { return m_PseudoStates; }
@@ -1761,7 +1650,7 @@ namespace UnityEngine.UIElements
 
         internal List<string> classList
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (ReferenceEquals(m_ClassList, s_EmptyClassList))
@@ -1853,6 +1742,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         ///  Initializes and returns an instance of VisualElement.
         /// </summary>
+        [DynamicDependency(nameof(UIElementsInitialization.InitializeUIElementsManaged), typeof(UIElementsInitialization))]
         public VisualElement()
         {
             m_Children = s_EmptyList;
@@ -2149,7 +2039,7 @@ namespace UnityEngine.UIElements
             EventDispatchUtilities.HandleEvent(e, this);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void IncrementVersion(VersionChangeType changeType)
         {
             elementPanel?.OnVersionChanged(this, changeType);
@@ -2447,7 +2337,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal string GetFullHierarchicalViewDataKey()
         {
             StringBuilder key = new StringBuilder();
@@ -2505,7 +2395,7 @@ namespace UnityEngine.UIElements
             return viewData.GetScriptable<T>(keyWithType);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void OverwriteFromViewData(object obj, string key)
         {
             if (obj == null)
@@ -2535,7 +2425,7 @@ namespace UnityEngine.UIElements
             viewDataPersistentData.Overwrite(obj, keyWithType);
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SaveViewData()
         {
             if (elementPanel != null
@@ -2570,7 +2460,7 @@ namespace UnityEngine.UIElements
             OnViewDataReady();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal virtual void OnViewDataReady() {}
 
         /// <summary>
@@ -2664,10 +2554,15 @@ namespace UnityEngine.UIElements
 
         internal void SetSize(Vector2 size)
         {
-            var pos = layout;
-            pos.width = size.x;
-            pos.height = size.y;
-            layout = pos;
+            style.width = size.x;
+            style.height = size.y;
+            style.position = Position.Absolute;
+
+            unsafe
+            {
+                layoutNode.Layout.Dimensions[(int)Layout.LayoutDimension.Width] = size.x;
+                layoutNode.Layout.Dimensions[(int)Layout.LayoutDimension.Height] = size.y;
+            }
         }
 
         void FinalizeLayout()
@@ -2684,7 +2579,7 @@ namespace UnityEngine.UIElements
         }
 
         // Used by the builder to apply the inline styles without passing by SetComputedStyle
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void UpdateInlineRule(StyleSheet sheet, StyleRule rule)
         {
             var oldStyle = computedStyle.Acquire();
@@ -2980,37 +2875,6 @@ namespace UnityEngine.UIElements
             else if (eventType == MouseOutEvent.TypeId() && capturingElement == null)
             {
                 elementPanel.cursorManager.ResetCursor();
-            }
-        }
-
-        static Material s_runtimeMaterial;
-        Material getRuntimeMaterial()
-        {
-            if (s_runtimeMaterial != null)
-                return s_runtimeMaterial;
-
-            Shader shader = Shader.Find(UIRUtility.k_DefaultShaderName);
-            Debug.Assert(shader != null, "Failed to load UIElements default shader");
-            if (shader != null)
-            {
-                shader.hideFlags |= HideFlags.DontSaveInEditor;
-                Material mat = new Material(shader);
-                mat.hideFlags |= HideFlags.DontSaveInEditor;
-                return s_runtimeMaterial = mat;
-            }
-            return null;
-        }
-
-        Material m_defaultMaterial;
-        internal Material defaultMaterial
-        {
-            get { return m_defaultMaterial; }
-            private set
-            {
-                if (m_defaultMaterial == value)
-                    return;
-                m_defaultMaterial = value;
-                IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
             }
         }
     }

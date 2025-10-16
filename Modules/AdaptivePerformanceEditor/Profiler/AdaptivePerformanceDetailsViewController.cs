@@ -11,6 +11,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 using UnityEditor.AdaptivePerformance.UI.Editor;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor.AdaptivePerformance
 {
@@ -74,7 +75,7 @@ namespace UnityEditor.AdaptivePerformance
             var scalerTree = EditorGUIUtility.LoadRequired(k_UxmlResourceNameScaler) as VisualTreeAsset;
             var scalerStyle = EditorGUIUtility.LoadRequired(k_ResourceNameScalerStyle) as StyleSheet;
 
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly asm in CurrentAssemblies.GetLoadedAssemblies())
             {
                 foreach (Type t in asm.GetTypes())
                 {

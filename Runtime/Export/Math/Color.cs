@@ -84,10 +84,6 @@ namespace UnityEngine
         // Multiplies two colors together. Each component is multiplied separately.
         public static Color operator*(in Color a, in Color b) => new Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
 
-        // Multiplies color /a/ and Vector4 /b/ together. Each component is multiplied separately.
-        // This supports existing Color * Vector4 multiplication usage after adding Vector4 operator*
-        public static Color operator*(in Color a, in Vector4 b) => new Color(a.r * b.x, a.g * b.y, a.b * b.z, a.a * b.w);
-
         // Multiplies color /a/ by the float /b/. Each color component is scaled separately.
         public static Color operator*(in Color a, float b) => new Color(a.r * b, a.g * b, a.b * b, a.a * b);
 

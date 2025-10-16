@@ -54,7 +54,7 @@ namespace UnityEditor
             return FindAllAssets(searchFilter).Select(property => property.assetGUID).Distinct().ToArray();
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ShaderFoundryModule")]
         internal static IEnumerable<HierarchyIterator> FindAllAssets(SearchFilter searchFilter)
         {
             var enumerator = EnumerateAllAssets(searchFilter);

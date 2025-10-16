@@ -23,6 +23,7 @@ namespace Unity.Profiling.Editor.UI
     {
         const string k_FileExtensionData = ".data";
         const string k_FileExtensionRaw = ".raw";
+        const int k_MaxFilenameLengthBytes = 255; // Limit on Mac/Linux
 
         readonly ProfilerWindow m_ProfilerWindow;
         CaptureFileListModel m_CaptureFileListModel;
@@ -140,6 +141,33 @@ namespace Unity.Profiling.Editor.UI
             return fileName.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
         }
 
+        public bool PathLengthIsValid(string sourceFilePath, string targetFileName)
+        {
+            // The highlights suffix is the longest, and if we're renaming, that
+            // will need changing too, so try with that.
+            var filenameWithExtension = targetFileName + BottlenecksChartViewModel.k_HighlightFileExtension;
+
+            // First check the actual filename's length:
+            if (System.Text.Encoding.UTF8.GetByteCount(filenameWithExtension) > k_MaxFilenameLengthBytes)
+                return false;
+
+            // Then test the full path:
+            try
+            {
+                var targetFilePath = Path.Combine(Path.GetDirectoryName(sourceFilePath), filenameWithExtension);
+                Path.GetFullPath(targetFilePath);
+                return true;
+            }
+            catch (PathTooLongException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return true; // Different exception, but the path wasn't too long!
+            }
+        }
+
         public bool CanRename(string sourceFilePath, string targetFileName)
         {
             bool isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
@@ -158,7 +186,7 @@ namespace Unity.Profiling.Editor.UI
                 Path.GetDirectoryName(sourceFilePath), targetFileName + (isRaw ? k_FileExtensionRaw : k_FileExtensionData));
             if (File.Exists(targetFilePath))
             {
-                Debug.LogError($"Can't rename {sourceFilePath} to {targetFileName}, file with the same name is already exist!");
+                Debug.LogError($"Can't rename {sourceFilePath} to {targetFileName}, file with the same name already exists!");
                 return;
             }
 
@@ -199,7 +227,7 @@ namespace Unity.Profiling.Editor.UI
             m_CaptureFolderIsDirty = true;
         }
 
-        public void SyncCapturesFolder()
+        void SyncCapturesFolder()
         {
             if (m_Disposed)
                 throw new ObjectDisposedException(nameof(CaptureDataService));
@@ -211,7 +239,7 @@ namespace Unity.Profiling.Editor.UI
             // Check and store updated state
             m_CaptureFolderWatcher.Refresh();
             // grab a copy of the directory so that a directory change on main thread will not bleed into the worker thread
-            var CaptureDirectory = m_CaptureFolderWatcher.Directory;
+            var captureDirectory = m_CaptureFolderWatcher.Directory;
             // pre-declare directory as clean, because it will be once the worker is done
             m_CaptureFolderIsDirty = false;
 
@@ -219,7 +247,7 @@ namespace Unity.Profiling.Editor.UI
             {
                 try
                 {
-                    return BuildCapturesInfo(token, CaptureDirectory, AllCaptures);
+                    return BuildCapturesInfo(token, captureDirectory, AllCaptures);
                 }
                 catch (TaskCanceledException)
                 {
@@ -254,22 +282,22 @@ namespace Unity.Profiling.Editor.UI
             });
         }
 
-        static CaptureFileListModel BuildCapturesInfo(CancellationToken token, DirectoryInfo CapturesDirectory, IReadOnlyList<CaptureFileModel> CaptureInfos)
+        static CaptureFileListModel BuildCapturesInfo(CancellationToken token, DirectoryInfo capturesDirectory, IReadOnlyList<CaptureFileModel> captureInfos)
         {
-            var CapturesMap = new Dictionary<string, CaptureFileModel>(CaptureInfos.Count);
-            foreach (var captureFilemodel in CaptureInfos)
+            var capturesMap = new Dictionary<string, CaptureFileModel>(captureInfos.Count);
+            foreach (var captureFilemodel in captureInfos)
             {
-                CapturesMap[captureFilemodel.Name] = captureFilemodel;
+                capturesMap[captureFilemodel.Name] = captureFilemodel;
             }
 
             var allCaptures = new List<CaptureFileModel>();
-            foreach (var CaptureFile in GetCaptureFiles(CapturesDirectory))
+            foreach (var captureFile in GetCaptureFiles(capturesDirectory))
             {
                 if (token.IsCancellationRequested)
                     return null;
-                if (!CapturesMap.TryGetValue(CaptureFile, out var CapturesFile))
+                if (!capturesMap.TryGetValue(captureFile, out var CapturesFile))
                 {
-                    var builder = new CaptureFileModelBuilder(CaptureFile);
+                    var builder = new CaptureFileModelBuilder(captureFile);
                     CapturesFile = builder.Build();
                 }
 
@@ -280,9 +308,9 @@ namespace Unity.Profiling.Editor.UI
             if (token.IsCancellationRequested)
                 return null;
 
-            var CaptureFileListBuilder = new CaptureFileListModelBuilder(allCaptures, CapturesDirectory.LastWriteTimeUtc);
-            var CaptureFileListModel = CaptureFileListBuilder.Build();
-            return CaptureFileListModel;
+            var captureFileListBuilder = new CaptureFileListModelBuilder(allCaptures, capturesDirectory.LastWriteTimeUtc);
+            var captureFileListModel = captureFileListBuilder.Build();
+            return captureFileListModel;
         }
 
         static IEnumerable<string> GetCaptureFiles(DirectoryInfo directory)
@@ -308,10 +336,10 @@ namespace Unity.Profiling.Editor.UI
 
         bool ImportCapture(string sourceFilePath)
         {
-            var CaptureFolderPath = GetCaptureFolderPath();
-            bool isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
+            var captureFolderPath = GetCaptureFolderPath();
+            var isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
             var targetFilePath = Path.Combine(
-                CaptureFolderPath, Path.GetFileNameWithoutExtension(sourceFilePath) + (isRaw ? k_FileExtensionRaw : k_FileExtensionData));
+                captureFolderPath, Path.GetFileNameWithoutExtension(sourceFilePath) + (isRaw ? k_FileExtensionRaw : k_FileExtensionData));
             if (File.Exists(targetFilePath))
                 return false;
 
@@ -361,14 +389,14 @@ namespace Unity.Profiling.Editor.UI
 
         string GetOrCreateCaptureFolderPath()
         {
-            var CaptureFolderPath = ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath;
-            if (!Directory.Exists(CaptureFolderPath) && ProfilerUserSettings.UsingDefaultProfilerCaptureStoragePath())
+            var captureFolderPath = ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath;
+            if (!Directory.Exists(captureFolderPath) && ProfilerUserSettings.UsingDefaultProfilerCaptureStoragePath())
             {
                 // If the path points to the default folder but doesn't exist, create it.
                 // We don't create non default path folders though. As that could lead to unexpected behaviour for the User.
-                Directory.CreateDirectory(CaptureFolderPath);
+                Directory.CreateDirectory(captureFolderPath);
             }
-            return CaptureFolderPath;
+            return captureFolderPath;
         }
     }
 }

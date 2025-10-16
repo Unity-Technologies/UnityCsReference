@@ -82,7 +82,7 @@ namespace UnityEditor.Search
                 SearchService.CreateContext(GetObjectSelectorProviders(selectContext), searchQuery, searchFlags), selectHandler, trackingHandler,
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
             if (parameters.context.currentObject)
-                viewState.selectedIds = new int[] { parameters.context.currentObject.GetInstanceID()};
+                viewState.selectedIds = new int[] { parameters.context.currentObject.GetEntityId()};
             viewState.context.runtimeContext = new RuntimeSearchContext() {
                 searchEngineContext = selectContext,
                 pickerType = SearchPickerType.AdvancedSearchPicker };

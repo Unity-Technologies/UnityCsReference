@@ -43,6 +43,25 @@ namespace UnityEditor
         }
 
         /// <summary>
+        /// Will return true if an action should be triggered using a throttle strategy (i.e. the action will trigger at most once every triggerTimeout seconds)
+        /// </summary>
+        /// <param name="lastTriggerTimeInSeconds">Last time in seconds the timer was triggered. If 0, we start the timer now.</param>
+        /// <param name="triggerTimeout">Timeout at which an action should trigger.</param>
+        /// <returns>Return true if an action should be triggered using a throttle strategy (i.e. the action will trigger at most once every triggerTimeout seconds)</returns>
+        public static bool ThrottleTrigger(ref double lastTriggerTimeInSeconds, TimeSpan triggerTimeout)
+        {
+            var now = EditorApplication.timeSinceStartup;
+            if (lastTriggerTimeInSeconds == 0)
+            {
+                lastTriggerTimeInSeconds = now;
+            }
+            var trigger = TimeSpan.FromSeconds(now - lastTriggerTimeInSeconds) >= triggerTimeout;
+            if (trigger)
+                lastTriggerTimeInSeconds = now;
+            return trigger;
+        }
+
+        /// <summary>
         /// Debounce the action to be executed after the delay has passed.
         /// If no delay is specified default delay is <see cref="DefaultDelay"/>
         /// </summary>

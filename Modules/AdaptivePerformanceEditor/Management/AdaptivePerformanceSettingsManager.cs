@@ -338,6 +338,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             if (currentSettings?.EnableAdaptivePerformance == true)
             {
+                AdaptivePerformancePackageMetadataStore.InitKnownPluginPackages();
                 DisplayDocumentationLink();
                 DisplayLoadOrderUi();
             }

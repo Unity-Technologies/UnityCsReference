@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
@@ -15,7 +16,7 @@ namespace UnityEditor.ShaderFoundry
             public bool hasErrors;
         }
         // TODO @ SHADERS: Improve error handling. This currently just propagates back a bool as we don't have any bound error data yet.
-        extern public ScriptingResult Build(ShaderContainer container, FoundryHandle interfaceTypeHandle, FoundryHandle namespaceHandle);
+        [ThreadSafe] extern public ScriptingResult Build(ShaderContainer container, Span<FoundryHandle> fieldHandles);
     }
 
     internal class BlockConstructorGenerator
@@ -26,10 +27,10 @@ namespace UnityEditor.ShaderFoundry
         {
             this.container = container;
         }
-        internal FoundryHandle BuildFunction(FoundryHandle interfaceTypeHandle, FoundryHandle namespaceHandle)
+        internal FoundryHandle BuildFunction(Span<FoundryHandle> fieldHandles)
         {
             BlockConstructorGeneratorInternal generator = new BlockConstructorGeneratorInternal();
-            var result = generator.Build(container, interfaceTypeHandle, namespaceHandle);
+            var result = generator.Build(container, fieldHandles);
             hasErrors = result.hasErrors;
             return result.functionHandle;
         }

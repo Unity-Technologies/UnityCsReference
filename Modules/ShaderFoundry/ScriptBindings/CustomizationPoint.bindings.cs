@@ -15,10 +15,10 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_ContainingNamespaceHandle;
         internal FoundryHandle m_InterfaceFieldListHandle;
-        internal FoundryHandle m_DefaultBlockSequenceElementListHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static CustomizationPointInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static CustomizationPointInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         CustomizationPointInternal IInternalType<CustomizationPointInternal>.ConstructInvalid() => Invalid();
@@ -42,27 +42,13 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
         public string Name => container?.GetString(customizationPoint.m_NameHandle) ?? string.Empty;
-        public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, customizationPoint.m_AttributeListHandle);
+        public IEnumerable<ShaderAttribute> Attributes => ListType.Enumerate<ShaderAttribute>(container, customizationPoint.m_AttributeListHandle);
         public Namespace ContainingNamespace => new Namespace(container, customizationPoint.m_ContainingNamespaceHandle);
-        public IEnumerable<BlockVariable> InterfaceFields => GetVariableEnumerable(customizationPoint.m_InterfaceFieldListHandle);
-        public IEnumerable<BlockVariable> Inputs => InterfaceFields.Select(BlockVariableInternal.Flags.kInput);
-        public IEnumerable<BlockVariable> Outputs => InterfaceFields.Select(BlockVariableInternal.Flags.kOutput);
-        // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
-        internal IEnumerable<BlockSequenceElement> DefaultBlockSequenceElements
-        {
-            get
-            {
-                return customizationPoint.m_DefaultBlockSequenceElementListHandle.AsListEnumerable(container,
-                    (container, handle) => new BlockSequenceElement(container, handle));
-            }
-        }
-
-        IEnumerable<BlockVariable> GetVariableEnumerable(FoundryHandle listHandle)
-        {
-            var localContainer = Container;
-            var list = new HandleListInternal(listHandle);
-            return list.Select<BlockVariable>(localContainer, (handle) => (new BlockVariable(localContainer, handle)));
-        }
+        public IEnumerable<StructField> InterfaceFields =>
+            ListType.Enumerate<StructField>(container, customizationPoint.m_InterfaceFieldListHandle);
+        public IEnumerable<StructField> Inputs => InterfaceFields.Select(StructFieldInternal.Flags.kInput);
+        public IEnumerable<StructField> Outputs => InterfaceFields.Select(StructFieldInternal.Flags.kOutput);
+        public Location Location => new Location(container, customizationPoint.m_LocationHandle);
 
         // private
         internal CustomizationPoint(ShaderContainer container, FoundryHandle handle)
@@ -74,7 +60,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static CustomizationPoint Invalid => new CustomizationPoint(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is CustomizationPoint other && this.Equals(other);
         public bool Equals(CustomizationPoint other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -87,9 +73,8 @@ namespace UnityEditor.ShaderFoundry
             internal string name;
             public List<ShaderAttribute> attributes;
             public Namespace containingNamespace = Namespace.Invalid;
-            public List<BlockVariable> interfaceFields { get; set; } = new List<BlockVariable>();
-            public List<BlockVariable> properties { get; set; } = new List<BlockVariable>();
-            public List<BlockSequenceElement> defaultBlockSequenceElements;
+            public List<StructField> interfaceFields;
+            public Location location;
             public ShaderContainer Container => container;
 
             public Builder(ShaderContainer container, string name)
@@ -99,9 +84,7 @@ namespace UnityEditor.ShaderFoundry
             }
 
             public void AddAttribute(ShaderAttribute attribute) => Utilities.AddToList(ref attributes, attribute);
-            public void AddInterfaceField(BlockVariable field) { interfaceFields.Add(field); }
-            // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
-            internal void AddDefaultBlockSequenceElement(BlockSequenceElement blockSequenceElement) => Utilities.AddToList(ref defaultBlockSequenceElements, blockSequenceElement);
+            public void AddInterfaceField(StructField field) => Utilities.AddToList(ref interfaceFields, field);
 
             public CustomizationPoint Build()
             {
@@ -110,10 +93,10 @@ namespace UnityEditor.ShaderFoundry
                     m_NameHandle = container.AddString(name),
                 };
 
-                customizationPointInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes);
+                customizationPointInternal.m_AttributeListHandle = ListType.Build(container, attributes);
                 customizationPointInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
-                customizationPointInternal.m_InterfaceFieldListHandle = HandleListInternal.Build(container, interfaceFields, (v) => (v.handle));
-                customizationPointInternal.m_DefaultBlockSequenceElementListHandle = HandleListInternal.Build(container, defaultBlockSequenceElements, (v) => (v.handle));
+                customizationPointInternal.m_InterfaceFieldListHandle = ListType.Build(container, interfaceFields);
+                customizationPointInternal.m_LocationHandle = location.handle;
 
                 var returnTypeHandle = container.Add(customizationPointInternal);
                 return new CustomizationPoint(container, returnTypeHandle);

@@ -206,7 +206,7 @@ namespace Unity.UI.Builder
             AddToSelection(source, ve, true, true);
         }
 
-        void AddToSelection(IBuilderSelectionNotifier source, VisualElement ve, bool undo, bool sort)
+        public void AddToSelection(IBuilderSelectionNotifier source, VisualElement ve, bool undo, bool sort)
         {
             if (ve == null)
                 return;
@@ -268,16 +268,16 @@ namespace Unity.UI.Builder
         {
             ForceVisualAssetUpdateWithoutSave(element, changeType);
 
-            // This is so anyone interested can refresh their use of this UXML with
-            // the latest (unsaved to disk) changes.
-            EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
-
             foreach (var notifier in m_Notifiers)
                 if (notifier != source)
                     notifier.HierarchyChanged(element, changeType);
 
-            if (hasUnsavedChanges && !isAnonymousDocument)
+            // This is so anyone interested can refresh their use of this UXML with
+            // the latest (unsaved to disk) changes.
+            if (Builder.ActiveWindow.hierarchy.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
             {
+                EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
+
                 var liveReloadChanges = ((changeType & BuilderHierarchyChangeType.InlineStyle) != 0
                                             ? BuilderAssetUtilities.LiveReloadChanges.Styles
                                             : 0) |
@@ -367,11 +367,6 @@ namespace Unity.UI.Builder
 
         void NotifyOfStylingChangePostStylingUpdate()
         {
-            // This is so anyone interested can refresh their use of this USS with
-            // the latest (unsaved to disk) changes.
-            //RetainedMode.FlagStyleSheetChange(); // Works but TOO SLOW.
-            m_PaneWindow.document.MarkStyleSheetsDirty();
-
             // Order notifications from least to most specific.
 
             m_Notifications.Sort((left, right) =>
@@ -412,8 +407,12 @@ namespace Unity.UI.Builder
 
             m_Notifications.Clear();
 
-            if (hasUnsavedChanges && !isAnonymousDocument)
+            // This is so anyone interested can refresh their use of this USS with
+            // the latest (unsaved to disk) changes.
+            if (Builder.ActiveWindow.styleSheets.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
             {
+                //RetainedMode.FlagStyleSheetChange(); // Works but TOO SLOW.
+                m_PaneWindow.document.MarkStyleSheetsDirty();
                 BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Styles);
             }
         }

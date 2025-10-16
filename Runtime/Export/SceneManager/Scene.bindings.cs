@@ -125,6 +125,9 @@ namespace UnityEngine.SceneManagement
 
         public override int GetHashCode() => m_Value.GetHashCode();
 
+        public override string ToString() => m_Value.ToString();
+        public string ToString(string format) => m_Value.ToString(format);
+
         internal EntityId ToEntityId() => m_Value;
     }
 

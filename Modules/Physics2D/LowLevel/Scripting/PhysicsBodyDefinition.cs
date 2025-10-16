@@ -65,7 +65,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public Vector2 linearVelocity { readonly get => m_LinearVelocity; set => m_LinearVelocity = value; }
 
         /// <summary>
-        /// The initial angular velocity of the body, in degrees/sec.
+        /// The initial angular velocity of the body, in degrees per second.
         /// </summary>
         public float angularVelocity { readonly get => m_AngularVelocity; set => m_AngularVelocity = value; }
 

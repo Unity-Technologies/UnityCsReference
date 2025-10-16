@@ -9,6 +9,9 @@ using UnityEngine;
 namespace Unity.VectorGraphics
 {
     /// <summary>The gradient fill types.</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public enum GradientFillType
     {
         /// <summary>A linear gradient.</summary>
@@ -45,6 +48,9 @@ namespace Unity.VectorGraphics
     }
 
     /// <summary>The fill mode types.</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public enum FillMode
     {
         /// <summary>Determines the "insideness" of the shape by evaluating the direction of the edges crossed.</summary>
@@ -55,6 +61,9 @@ namespace Unity.VectorGraphics
     }
 
     /// <summary>The addressing mode, defining how textures or gradients behave when being addressed outside their unit range.</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public enum AddressMode
     {
         /// <summary>Textures/gradients are wrapping around with a repeating pattern.</summary>
@@ -73,14 +82,17 @@ namespace Unity.VectorGraphics
         /// <summary>The color of the stop.</summary>
         public Color Color { get; set; }
 
-        /// <summary>At which percentage this stop applies. Should be between 0 and 1, inclusively.</summary>
+        /// <summary>At which percentage this stop applies. The value must be between 0 and 1, inclusively.</summary>
         public float StopPercentage { get; set; }
     }
 
     /// <summary>A bezier segment.</summary>
     /// <remarks>
-    /// Cubic Bezier segment starts from P0, flies in tangent to direction from P0 to P1,
-    /// then lands in direction from P2 to P3, to finally end exactly at P3.
+    /// Cubic Bezier segment starts from `P0`, flies in tangent to direction from `P0` to `P1`,
+    /// then lands in direction from `P2` to `P3`, to finally end exactly at `P3`.
+    /// </remarks>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
     /// </remarks>
     public struct BezierSegment
     {
@@ -99,7 +111,7 @@ namespace Unity.VectorGraphics
 
     /// <summary>A bezier path segment.</summary>
     /// <remarks>
-    /// Like BezierSegment but implies connectivity of segments, where segments[0].P3 is actually segments[1].P0
+    /// Like <see cref="BezierSegment"/> but implies connectivity of segments, where `segments[0].P3` is actually `segments[1].P0`.
     /// </remarks>
     public struct BezierPathSegment
     {
@@ -114,6 +126,9 @@ namespace Unity.VectorGraphics
     }
 
     /// <summary>A chain of bezier paths, optionnally closed.</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public struct BezierContour
     {
         /// <summary>An array of every path segments on the contour.</summary>
@@ -129,6 +144,9 @@ namespace Unity.VectorGraphics
     }
 
     /// <summary>The IFill interface is implemented by filling techniques (solid, texture or gradient).</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public interface IFill
     {
         /// <summary>The filling method (non-zero or even-odd) of the fill.</summary>
@@ -158,6 +176,9 @@ namespace Unity.VectorGraphics
     /// Radial fills are centered in the element's bounding box. Its radii are half the bounding box dimensions in each direction.
     /// Linear fills start from the left edge to the right edge of the element's bounding box.
     /// </remarks>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public class GradientFill : IFill
     {
         /// <summary>The fill type (linear or gradient).</summary>
@@ -181,6 +202,9 @@ namespace Unity.VectorGraphics
     }
 
     /// <summary>Fills a shape with a texture.</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public class TextureFill : IFill 
     {
         /// <summary>The texture to fill the shape with.</summary>
@@ -198,6 +222,9 @@ namespace Unity.VectorGraphics
     }
 
     /// <summary>Fills a shape with a pattern.</summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:ui-systems/work-with-vector-graphics|work with vector graphics]].
+    /// </remarks>
     public class PatternFill : IFill
     {
         /// <summary>The filling method (non-zero or even-odd) of the fill.</summary>
@@ -214,7 +241,7 @@ namespace Unity.VectorGraphics
         public Rect Rect { get; set; }
     }
 
-    /// <summary>Defines how strokes should be rendered.</summary>
+    /// <summary>Defines how strokes are rendered.</summary>
     public class Stroke
     {
         /// <summary>The stroke color.</summary>
@@ -243,10 +270,10 @@ namespace Unity.VectorGraphics
         /// <remarks>Even entries mark a fill and odd entries mark void</remarks>
         public float[] Pattern { get; set; }
 
-        /// <summary>An offset to where the pattern should start.</summary>
+        /// <summary>An offset to which the pattern starts.</summary>
         public float PatternOffset { get; set; }
 
-        /// <summary>How far the tipped corners may extrude.</summary>
+        /// <summary>How far the tipped corners might extrude.</summary>
         public float TippedCornerLimit { get; set; }
     }
 
@@ -256,13 +283,13 @@ namespace Unity.VectorGraphics
         /// <summary>The stroke used to render the path.</summary>
         public Stroke Stroke { get; set; }
 
-        /// <summary>How the beginning of the path should be displayed.</summary>
+        /// <summary>How the beginning of the path is displayed.</summary>
         public PathEnding Head { get; set; }
 
-        /// <summary>How the end of the path should be displayed.</summary>
+        /// <summary>How the end of the path is displayed.</summary>
         public PathEnding Tail { get; set; }
 
-        /// <summary>How the corners of the path should be displayed.</summary>
+        /// <summary>How the corners of the path are displayed.</summary>
         public PathCorner Corners { get; set; }
     }
 
@@ -271,7 +298,7 @@ namespace Unity.VectorGraphics
     {
         /// <summary>All the contours defining the shape.</summary>
         /// <remarks>
-        /// Some of these coutours may be holes in the shape, depending on the fill mode used <see cref="FillMode"/>.
+        /// Some of these contours might be holes in the shape, depending on the <see cref="FillMode"/> used.
         /// </remarks>
         public BezierContour[] Contours { get; set; }
 
@@ -285,7 +312,7 @@ namespace Unity.VectorGraphics
         /// <summary>The path properties.</summary>
         public PathProperties PathProps { get; set; }
 
-        /// <summary>Whether the specified contours are convex or not</summary>
+        /// <summary>Whether the specified contours are convex.</summary>
         /// <remarks>
         /// Set this to true when you know the shape contours are convex.
         /// This will allow for a faster tessellation process in some circumstances.
@@ -306,7 +333,7 @@ namespace Unity.VectorGraphics
         public Matrix2D Transform { get { return m_Transform; } set { m_Transform = value; } }
         private Matrix2D m_Transform = Matrix2D.identity;
 
-        /// <summary>A clipper hierarchy that will clip this node.</summary>
+        /// <summary>A clipper hierarchy that clips this node.</summary>
         public SceneNode Clipper { get; set; }
     }
 

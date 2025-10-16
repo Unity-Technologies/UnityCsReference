@@ -22,43 +22,36 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     internal class Scenario : ScriptableObject, ISerializationCallbackReceiver
     {
-        [SerializeField] private string m_Name;
-        [SerializeField] private ScenarioStatus m_Status;
+        [SerializeField] private ScenarioStatusData m_StatusData;
         [SerializeField] private bool m_HasStarted;
         [SerializeField] private List<Instance> m_Instances = new List<Instance>();
 
-        public string Name => m_Name;
-        public ScenarioStatus Status => m_Status;
+        public ScenarioStatusData StatusData => m_StatusData;
 
         // Scenario Callbacks
         internal static event Action<Scenario> Completed;
         internal static event Action<Scenario> ScenarioStarted;
-        internal event Action<ScenarioStatus> StatusRefreshed;
+        internal event Action<ScenarioStatusData> StatusRefreshed;
 
         internal static Scenario Create(string name)
         {
             // Create a scenario
             var scenario = CreateInstance<Scenario>();
-            scenario.m_Name = name;
+            scenario.name = name;
             scenario.hideFlags |= HideFlags.DontSave;
             return scenario;
         }
 
-        public void OnBeforeSerialize()
-        {
-            // Clear out all listeners before Domain Reload Serialization
-            foreach (var instance in m_Instances)
-                instance.AddInstanceExecutionEventListener(null);
-        }
+        public void OnBeforeSerialize() {}
 
         public void OnAfterDeserialize()
         {
             // Re-attach listeners after Domain Reload Deserialization
             foreach (var instance in m_Instances)
-                instance.AddInstanceExecutionEventListener(OnInstanceExecutionUpdate);
+                instance.StatusRefreshed += OnInstanceStatusRefreshed;
         }
 
-        private void OnInstanceExecutionUpdate(Instance instance, Node node)
+        private void OnInstanceStatusRefreshed(Instance instance, InstanceStatusData status)
         {
             if (!instance.IsFreeRunMode())
                 RefreshAndNotifyStatus();
@@ -67,7 +60,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal void Reset()
         {
             m_HasStarted = false;
-            m_Status = ScenarioStatus.Default;
+            m_StatusData.Clear();
 
             // Reset only the instances that are controlled by this Scenario.
             foreach (var instance in m_Instances)
@@ -87,8 +80,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
 
             // Add instance and hook up event listeners back to this scenario.
-            instance.AddInstanceExecutionEventListener(OnInstanceExecutionUpdate);
+            instance.StatusRefreshed += OnInstanceStatusRefreshed;
             m_Instances.Add(instance);
+
+            RefreshAndNotifyStatus();
         }
 
         internal void RemoveInstance(Instance instance)
@@ -100,11 +95,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Remove the given instance and deatch its listeners from this Scenario, if found.
             if (m_Instances.Remove(instance))
             {
-                instance.RemoveInstanceExecutionEventListener(OnInstanceExecutionUpdate);
+                instance.StatusRefreshed -= OnInstanceStatusRefreshed;
                 return;
             }
 
-            Debug.LogWarning($"Scenario: No instance {instance.m_Name} was found to be removed!");
+            Debug.LogWarning($"Scenario: No instance {instance.Name} was found to be removed!");
         }
 
         internal List<Instance> GetAllInstances()
@@ -116,7 +111,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             foreach (var instance in m_Instances)
             {
-                if (instance.m_Name.Equals(instanceName))
+                if (instance.Name.Equals(instanceName))
                 {
                     if (!targetActiveFreeRun || (instance.IsFreeRunMode() && instance.IsActive()))
                         return instance;
@@ -136,7 +131,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         return true;
 
                     var instanceDescriptType = instance.GetInstanceDescription();
-                    if (name.Equals(instance.m_Name) &&
+                    if (name.Equals(instance.Name) &&
                         instanceDescriptType != null &&
                         instanceDescriptType.GetType() == type)
                         return true;
@@ -170,11 +165,47 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
                 {
-                    activeInstanceNames.Add(instance.m_Name);
+                    activeInstanceNames.Add(instance.Name);
                 }
             }
 
             return activeInstanceNames;
+        }
+
+        internal struct ValidationResult
+        {
+            public bool IsValid;
+            public string Message;
+
+            public ValidationResult(bool isValid, string message)
+            {
+                IsValid = isValid;
+                Message = message;
+            }
+        }
+
+        /// <summary>
+        /// Validates each instance sequentially to ensure it is ready to run
+        /// Stops and returns immediately if any instance fails validation checks
+        /// </summary>
+        internal async Task<ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
+        {
+            foreach (var instance in m_Instances)
+            {
+                // Skip validation for Free Run instances from scenario
+                if (instance.IsFreeRunMode())
+                {
+                    continue;
+                }
+
+                var result = await instance.ValidateForRunningAsync(cancellationToken);
+                if (!result.IsValid)
+                {
+                    return result;
+                }
+            }
+
+            return new ValidationResult(true, string.Empty);
         }
 
         internal void ResumeFreeRunInstances()
@@ -183,6 +214,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (instance.IsFreeRunMode() && instance.IsActive())
                     instance.StartOrResumeAsFreeRunning(true).Forget();
+            }
+        }
+
+        internal void NotifyDrift()
+        {
+            // If the scenario is deploying, it is in a state of flux
+            // and thus avoid drift notifications while in this state.
+            if (StatusData.OverallStatus.State == ExecutionState.Running &&
+                (StatusData.CurrentStage != ExecutionStage.Run ||
+                 StatusData.CurrentStageState != ExecutionState.Active))
+                return;
+
+            // Only Perform Drift detection for active free running instances.
+            foreach (var instance in m_Instances)
+            {
+                if (!instance.IsFreeRunMode() || !instance.IsActive())
+                    continue;
+
+                var isVirtual = instance.GetInstanceDescription() is VirtualEditorInstanceDescription;
+                if (!isVirtual && instance.HasDeployedAndRun())
+                    instance.Drifted = true;
             }
         }
 
@@ -213,8 +265,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             RefreshStatus();
 
-            var state = Status.State;
-            if (state != ScenarioState.Idle && state != ScenarioState.Running)
+            var state = StatusData.OverallStatus.State;
+            if (state != ExecutionState.Idle && state != ExecutionState.Running)
                 throw new InvalidOperationException($"Cannot run or resume a scenario that is not in the idle or running state ({state}).");
 
             if (!m_HasStarted)
@@ -300,163 +352,80 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private void RefreshAndNotifyStatus()
         {
             RefreshStatus();
-            StatusRefreshed?.Invoke(Status);
+            StatusRefreshed?.Invoke(StatusData);
         }
 
         private void RefreshStatus()
         {
-            if (!m_HasStarted)
+            m_StatusData.Clear();
+
+            foreach (var instance in m_Instances)
             {
-                m_Status = ScenarioStatus.Default;
-                return;
-            }
+                if (instance.IsFreeRunMode())
+                    continue;
 
-            // Iterate through all the Execution Stages of all Instance graphs
-            // within a Scenario to get its full status.
-            var mStages = Enum.GetValues(typeof(ExecutionStage));
-            var totalNodes = 0;
-            var progressSum = 0.0f;
-            var idleNodes = 0;
-            var runningNodes = 0;
-            var completedNodes = 0;
-            var activeNodes = 0;
-            var failedNodes = 0;
-            var abortedNodes = 0;
-            var currentStageState = ExecutionState.Invalid;
-            var currentStage = ExecutionStage.None;
-            var errors = new List<Node.Error>();
-            var nodeStatuses = new List<NodeStatus>();
-            var stageStates = new ExecutionState[mStages.Length];
-            var stageProgress = new float[mStages.Length];
-            var stagesCount = mStages.Length;
+                var instanceStatus = instance.StatusData;
 
-            if (m_Instances.Count == 0)
-            {
-                m_Status = ScenarioStatus.Invalid;
-                return;
-            }
+                if (instanceStatus.OverallStatus.State == ExecutionState.Invalid)
+                    continue;
 
-            for (var i = stagesCount - 1; i >= 0; i--)
-            {
-                var targetExecutionStage = (ExecutionStage)mStages.GetValue(i);
-                int stageTotalInstanceNodes = 0;
-                float stageProgressSum = 0;
-                int stageIdleNodes = 0;
-                int stageRunningNodes = 0;
-                int stageCompletedNodes = 0;
-                int stageActiveNodes = 0;
-                int stageFailedNodes = 0;
-                int stageAbortedNodes = 0;
-                ExecutionState stageState = ExecutionState.Idle;
+                m_StatusData.OverallStatus.Aggregate(instanceStatus.OverallStatus);
 
-                foreach (var instance in m_Instances)
+                foreach (var stage in ExecutionGraph.k_Stages)
                 {
-                    if (instance.IsFreeRunMode())
-                        continue;
+                    m_StatusData.StageStatuses[(int)stage].Aggregate(instanceStatus.StageStatuses[(int)stage]);
 
-                    instance.ComputeStageState(
-                        targetExecutionStage,
-                        out var instanceStageTotalInstanceNodes,
-                        out var instanceStageState,
-                        progressSum: out var instanceStageProgressSum,
-                        idleNodes: out var instanceStageIdleNodes,
-                        runningNodes: out var instanceStageRunningNodes,
-                        completedNodes: out var instanceStageCompletedNodes,
-                        activeNodes: out var instanceStageActiveNodes,
-                        failedNodes: out var instanceStageFailedNodes,
-                        abortedNodes: out var instanceStageAbortedNodes,
-                        errors: ref errors,
-                        nodeStatuses: ref nodeStatuses
-                    );
-
-                    stageTotalInstanceNodes += instanceStageTotalInstanceNodes;
-                    stageProgressSum += instanceStageProgressSum;
-                    stageIdleNodes += instanceStageIdleNodes;
-                    stageRunningNodes += instanceStageRunningNodes;
-                    stageCompletedNodes += instanceStageCompletedNodes;
-                    stageActiveNodes += instanceStageActiveNodes;
-                    stageFailedNodes += instanceStageFailedNodes;
-                    stageAbortedNodes += instanceStageAbortedNodes;
-                }
-
-                progressSum += stageProgressSum;
-                idleNodes += stageIdleNodes;
-                runningNodes += stageRunningNodes;
-                completedNodes += stageCompletedNodes;
-                activeNodes += stageActiveNodes;
-                failedNodes += stageFailedNodes;
-                abortedNodes += stageAbortedNodes;
-
-                totalNodes += stageTotalInstanceNodes;
-
-                // For a scenario, examine the accumulation of all nodes from all
-                // the instances within it and infer the current Execution state at the
-                // scenario level.
-                if (stageFailedNodes > 0)
-                    stageState = ExecutionState.Failed;
-                else if (stageAbortedNodes > 0)
-                    stageState = ExecutionState.Aborted;
-                else if (stageRunningNodes > 0)
-                    stageState = ExecutionState.Running;
-                else if (stageActiveNodes > 0)
-                    stageState = ExecutionState.Active;
-                else if (stageIdleNodes > 0)
-                    stageState = ExecutionState.Idle;
-                else if (stageCompletedNodes == stageTotalInstanceNodes)
-                    stageState = ExecutionState.Completed;
-                stageStates[i] = stageState;
-
-                // For a scenario, calculate all the nodes for that stage and extrapolate progress.
-                stageProgress[i] = stageTotalInstanceNodes == 0 ? 1 : stageProgressSum / stageTotalInstanceNodes;
-                if ((stageState != ExecutionState.Completed && stageState != ExecutionState.Active) || i == stagesCount - 1)
-                {
-                    currentStage = (ExecutionStage)i;
-                    currentStageState = stageState;
+                    if (m_StatusData.StageStatuses[(int)stage].IdleNodesCount < m_StatusData.StageStatuses[(int)stage].NodesCount)
+                        m_StatusData.CurrentStage = stage;
                 }
             }
+        }
 
-            // Now with all accumulated per-stage data, construct the current scenario state
-            var progress = progressSum / totalNodes;
-            ScenarioState scenarioState;
-
-            if (idleNodes == totalNodes && totalNodes > 0)
-                scenarioState = ScenarioState.Idle;
-            else if (failedNodes > 0)
-                scenarioState = ScenarioState.Failed;
-            else if (abortedNodes > 0)
-                scenarioState = ScenarioState.Aborted;
-            else if (completedNodes == totalNodes)
-                scenarioState = ScenarioState.Completed;
-            else
-                scenarioState = ScenarioState.Running;
-
-            m_Status = new ScenarioStatus
+        internal IEnumerable<Node.Error> GetAllNonFreeRunNodeErrors()
+        {
+            foreach (var instance in m_Instances)
             {
-                State = scenarioState,
-                CurrentStage = currentStage,
-                StageState = currentStageState,
-                TotalProgress = progress,
-                StageProgress = stageProgress,
-                Errors = errors,
-                NodeStateReports = nodeStatuses,
-                StageStates = stageStates
-            };
+                if (instance.IsFreeRunMode())
+                    continue;
+
+                foreach (var node in instance.GetExecutionGraph().GetAllNodes())
+                {
+                    if (node.ErrorInfo != null)
+                        yield return node.ErrorInfo;
+                }
+            }
+        }
+
+        private IEnumerable<NodeTimeData> GetAllNonFreeRunNodesTimeData()
+        {
+            foreach (var instance in m_Instances)
+            {
+                if (instance.IsFreeRunMode())
+                    continue;
+
+                var graph = instance.GetExecutionGraph().GetAllNodes();
+                foreach (var node in graph)
+                {
+                    yield return node.TimeData;
+                }
+            }
         }
 
         private void SendOnPlayModeEnteredFromScenarioEvent()
         {
-            var nodeTimeDataList = new List<NodeTimeData>();
-            foreach (var nodeStatus in m_Status.NodeStateReports)
-            {
-                nodeTimeDataList.Add(nodeStatus.TimeData);
-            }
-            TryGetLaunchingDuration(out var durationMs, nodeTimeDataList);
+            TryGetLaunchingDuration(out var durationMs, GetAllNonFreeRunNodesTimeData());
             var instances = GetAnalyticsInstancesData();
             var errors = GetErrorInfoData();
+
+            var state = m_StatusData.OverallStatus.State;
+            // TODO: Active state is considered as Running. The active state will likely be removed.
+            if (state == ExecutionState.Active)
+                state = ExecutionState.Running;
+
             AnalyticsOnPlayFromScenarioEvent.Send(new OnPlayFromScenarioData()
             {
                 Instances = instances.ToArray(),
-                ScenarioState = m_Status.State.ToString(),
+                ScenarioState = state.ToString(),
                 ScenarioLaunchingDurationMs = durationMs,
                 Errors = errors.ToArray()
             });
@@ -465,9 +434,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private List<ErrorData> GetErrorInfoData()
         {
             var result = new List<ErrorData>();
-            var errors = Status.Errors;
 
-            foreach (var error in errors)
+            foreach (var error in GetAllNonFreeRunNodeErrors())
             {
                 var cleanedStackTrace = PreprocessStackTraceToList(error.StackTrace);
                 result.Add(new ErrorData()
@@ -519,7 +487,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         // Get launching duration for scenario
         // Retrieve all nodes from the scenario and calculate the time difference between the earliest start time and the latest end time
-        private bool TryGetLaunchingDuration(out long durationMS, List<NodeTimeData> nodesTimeData)
+        private bool TryGetLaunchingDuration(out long durationMS, IEnumerable<NodeTimeData> nodesTimeData)
         {
             var hasEnded = true;
             DateTime? startTime = null;

@@ -14,6 +14,7 @@ namespace UnityEditor.Toolbars
         {
             ModeService.modeChanged += (args) => RebuildContent();
             QualitySettings.activeQualityLevelChanged += (prev, current) => RebuildContent();
+            QualitySettings.activeQualityLevelRenamed += (prev, current) => RebuildContent();
         }
 
         static void RebuildContent()
@@ -21,7 +22,7 @@ namespace UnityEditor.Toolbars
             MainToolbar.Refresh(k_Path);
         }
 
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             string currentQualityName = QualitySettings.names[QualitySettings.GetQualityLevel()];

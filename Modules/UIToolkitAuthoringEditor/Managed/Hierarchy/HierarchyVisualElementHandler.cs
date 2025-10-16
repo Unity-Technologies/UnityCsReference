@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
@@ -114,19 +115,84 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
 
     protected override void PopulateContextMenu(in HierarchyNode node, VisualElement element, DropdownMenu menu)
     {
-        if (element is UIDocumentRootElement uiDocumentRootElement)
+        UIDocument uiDoc;
+        VisualTreeAsset vtaSource;
+        VisualElementAsset vea;
+        if (element is UIDocumentRootElement documentRootElement)
         {
-            var document = uiDocumentRootElement.document;
-            var vta = document.visualTreeAsset;
+            uiDoc = documentRootElement.document;
+            vtaSource = uiDoc.visualTreeAsset;
+            vea = vtaSource?.visualTree;
+        }
+        else
+        {
+            uiDoc = element.GetFirstAncestorOfType<UIDocumentRootElement>().document;
+            vtaSource = uiDoc.visualTreeAsset;
+            vea = element.visualElementAsset;
 
+            if (vea == null)
+            {
+                vea = element.GetFirstAncestorWhere(ve => ve.visualElementAsset != null).visualElementAsset;
+            }
+        }
+        bool isUIDocumentRootElement = element is UIDocumentRootElement;
+
+        var (ancestorVTAs, ancestorInstances) = GetTemplateChain(element);
+
+        if (isUIDocumentRootElement)
+        {
             menu.AppendAction(
                 "Select VisualTreeAsset Asset",
                 ma => { EditorGUIUtility.PingObject(ma.userData as VisualTreeAsset); },
                 ma => (ma.userData as VisualTreeAsset) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
-                vta);
+                vtaSource);
+        }
+
+        if (vtaSource != null)
+        {
+            menu.AppendAction(
+                "Open in UI Builder",
+                a =>
+                {
+                    var cmd = new LoadUIDocumentCommand { selectedId = vea?.id ?? -1 };
+                    SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
+                    AssetDatabase.OpenAsset(vtaSource.GetEntityId());
+                    SessionState.EraseString(LoadUIDocumentCommand.CommandId);
+                });
+        }
+
+        if (vtaSource != null && ancestorVTAs.Count > 0 && ancestorInstances.Count > 0 && !isUIDocumentRootElement)
+        {
+            menu.AppendAction(
+                "Open Instance in UI Builder/in Isolation",
+                a =>
+                {
+                    var cmd = new LoadUIDocumentCommand
+                    {
+                        subDocumentOptions = SubDocumentOptions.Isolation,
+                        subDocuments = ancestorVTAs
+                    };
+                    SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
+                    AssetDatabase.OpenAsset(vtaSource.GetEntityId());
+                    SessionState.EraseString(LoadUIDocumentCommand.CommandId);
+                });
+            menu.AppendAction(
+                "Open Instance in UI Builder/in Context",
+                a =>
+                {
+                    var cmd = new LoadUIDocumentCommand
+                    {
+                        selectedId = ancestorInstances[0].id,
+                        subDocumentOptions = SubDocumentOptions.InContext,
+                        subDocuments = ancestorVTAs,
+                        contextInstances = ancestorInstances
+                    };
+                    SessionState.SetString(LoadUIDocumentCommand.CommandId, EditorJsonUtility.ToJson(cmd));
+                    AssetDatabase.OpenAsset(vtaSource.GetEntityId());
+                    SessionState.EraseString(LoadUIDocumentCommand.CommandId);
+                });
         }
     }
-
     protected override bool TryGetParentNode(VisualElement element, out HierarchyNode parentNode)
     {
         if (element is not UIDocumentRootElement uiDocumentRootElement)
@@ -137,6 +203,35 @@ internal sealed class HierarchyVisualElementHandler : VisualElementNodeTypeHandl
         return parentNode != HierarchyNode.Null;
     }
 
+    private (List<VisualTreeAsset> vtAssets, List<TemplateAsset> instances) GetTemplateChain(VisualElement element)
+    {
+        var vtAssets = new List<VisualTreeAsset>();
+        var instances = new List<TemplateAsset>();
+        if (element is not TemplateContainer) return (vtAssets, instances);
+
+        var elementTemplateSource = (element as TemplateContainer)?.templateSource;
+        var elementVEATemplate = element.visualElementAsset as TemplateAsset;
+
+        vtAssets.Add(elementTemplateSource);
+        instances.Add(elementVEATemplate);
+
+        var leafElement = element;
+        while (leafElement?.GetFirstAncestorOfType<TemplateContainer>() != null)
+        {
+            var templateContainer = leafElement.GetFirstAncestorOfType<TemplateContainer>();
+            if (templateContainer is UIDocumentRootElement) break;
+
+            if (templateContainer != null && templateContainer.templateSource != null)
+                vtAssets.Add(templateContainer.templateSource);
+
+            if (templateContainer?.visualElementAsset is TemplateAsset templateAsset)
+                instances.Add(templateAsset);
+
+            leafElement = templateContainer;
+        }
+
+        return (vtAssets, instances);
+    }
     private void EnableHierarchyIntegration(bool value)
     {
         if (value)

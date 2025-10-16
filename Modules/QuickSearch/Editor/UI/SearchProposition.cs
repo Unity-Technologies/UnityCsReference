@@ -49,7 +49,7 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static void FetchPropositions(in SearchContext context, in SearchPropositionOptions options, SortedSet<SearchProposition> propositions)
+        internal static void FetchPropositions(in SearchContext context, in SearchPropositionOptions options, HashSet<SearchProposition> propositions)
         {
             foreach (var provider in providers)
             {
@@ -105,7 +105,7 @@ namespace UnityEditor.Search
         internal readonly SearchPropositionGenerationOptions generationOptions;
         public readonly object data;
 
-        internal string path => string.IsNullOrEmpty(category) ? label : $"{category}/{label}";
+        internal readonly string path;
 
         internal static SearchProposition invalid = default;
 
@@ -131,14 +131,16 @@ namespace UnityEditor.Search
         {
         }
 
+        readonly static string[] s_Tokens = new string[10];
+
         internal SearchProposition(string category, string label, string replacement, string help,
             int priority, TextCursorPlacement moveCursor,
             Texture2D icon, Type type, object data, Color color, SearchPropositionGenerationOptions generationOptions)
         {
-            var kparts = label.Split(new char[] { '|' });
-            this.label = kparts[0];
+            var tokenCount = SearchUtils.SplitTokens(label,'|', s_Tokens);
+            this.label = s_Tokens[0];
             this.replacement = replacement ?? this.label;
-            this.help = kparts.Length >= 2 ? kparts[1] : BuiltinPropositions.FindHelpText(this.replacement, help);
+            this.help = tokenCount >= 2 ? s_Tokens[1] : BuiltinPropositions.FindHelpText(this.replacement, help);
             this.priority = priority;
             this.moveCursor = moveCursor;
             this.icon = icon;
@@ -147,6 +149,7 @@ namespace UnityEditor.Search
             this.data = data;
             this.color = color;
             this.generationOptions = generationOptions;
+            path =  string.IsNullOrEmpty(category) ? label : $"{category}/{label}";
         }
 
         const string kSeparator = "-------------------------";
@@ -205,9 +208,9 @@ namespace UnityEditor.Search
             return $"{label} > {replacement}";
         }
 
-        internal static SortedSet<SearchProposition> Fetch(SearchContext context, in SearchPropositionOptions options)
+        internal static HashSet<SearchProposition> Fetch(SearchContext context, in SearchPropositionOptions options)
         {
-            var propositions = new SortedSet<SearchProposition>();
+            var propositions = new HashSet<SearchProposition>();
 
             if (!options.HasAny(SearchPropositionFlags.QueryBuilder) && !context.options.HasFlag(SearchFlags.Debug) && !Utils.IsRunningTests())
                 FillBuiltInPropositions(context, propositions);
@@ -216,9 +219,9 @@ namespace UnityEditor.Search
             return propositions;
         }
 
-        private static void FillProviderPropositions(SearchContext context, in SearchPropositionOptions options, SortedSet<SearchProposition> propositions)
+        private static void FillProviderPropositions(SearchContext context, in SearchPropositionOptions options, HashSet<SearchProposition> propositions)
         {
-            var providers = context.providers.Where(p => context.filterId == null || context.filterId == p.filterId).ToList();
+            var providers = context.providers.Where(p => context.filterId == null || context.filterId == p.filterId);
             var queryEmpty = string.IsNullOrWhiteSpace(context.searchText) && providers.Count(p => !p.isExplicitProvider) > 1;
             foreach (var p in providers)
             {
@@ -248,7 +251,7 @@ namespace UnityEditor.Search
             }
         }
 
-        private static void FillBuiltInPropositions(SearchContext context, SortedSet<SearchProposition> propositions)
+        private static void FillBuiltInPropositions(SearchContext context, HashSet<SearchProposition> propositions)
         {
             int builtPriority = -50;
             foreach (var rs in SearchSettings.recentSearches.Take(5))
@@ -260,7 +263,7 @@ namespace UnityEditor.Search
             }
         }
 
-        static void FillPropositions(IEnumerable<SearchProposition> newPropositions, SortedSet<SearchProposition> propositions, SearchPropositionOptions options)
+        static void FillPropositions(IEnumerable<SearchProposition> newPropositions, HashSet<SearchProposition> propositions, SearchPropositionOptions options)
         {
             if (newPropositions == null)
                 return;

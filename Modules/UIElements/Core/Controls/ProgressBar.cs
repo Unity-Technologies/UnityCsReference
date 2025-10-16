@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class for the ProgressBar.
     /// </summary>
-    public abstract class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
+    public abstract partial class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
     {
         internal static readonly BindingId titleProperty = nameof(title);
         internal static readonly BindingId lowValueProperty = nameof(lowValue);
@@ -84,26 +84,6 @@ namespace UnityEngine.UIElements
                     e.value = value;
                 if (ShouldWriteAttributeValue(title_UxmlAttributeFlags))
                     e.title = title;
-            }
-        }
-
-        /// <undoc/>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", defaultValue = 0 };
-            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = 100 };
-            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value", defaultValue = 0 };
-            UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription() { name = "title", defaultValue = string.Empty };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var bar = ve as AbstractProgressBar;
-                bar.lowValue = m_LowValue.GetValueFromBag(bag, cc);
-                bar.highValue = m_HighValue.GetValueFromBag(bag, cc);
-                bar.value = m_Value.GetValueFromBag(bag, cc);
-                bar.title = m_Title.GetValueFromBag(bag, cc);
             }
         }
 
@@ -328,16 +308,12 @@ namespace UnityEngine.UIElements
     /// </example>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/ProgressBar.png")]
-    public class ProgressBar : AbstractProgressBar
+    public partial class ProgressBar : AbstractProgressBar
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : AbstractProgressBar.UxmlSerializedData
         {
             public override object CreateInstance() => new ProgressBar();
         }
-
-        /// <undoc/>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ProgressBar, UxmlTraits> {}
     }
 }

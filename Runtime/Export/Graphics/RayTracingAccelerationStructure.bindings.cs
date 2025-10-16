@@ -440,7 +440,7 @@ namespace UnityEngine.Rendering
             }
         }
 
-        [System.Obsolete(@"RayTracingAccelerationStructure.RASSettings is deprecated. Use RayTracingAccelerationStructure.Settings instead. (UnityUpgradable) -> RayTracingAccelerationStructure/Settings", false)]
+        [System.Obsolete(@"RayTracingAccelerationStructure.RASSettings is deprecated. Use RayTracingAccelerationStructure.Settings instead. (UnityUpgradable) -> RayTracingAccelerationStructure/Settings", true)]
         public struct RASSettings
         {
             public ManagementMode managementMode;
@@ -1211,30 +1211,6 @@ namespace UnityEngine.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CheckMaterialEnablesInstancing")]
         extern private static bool CheckMaterialEnablesInstancing(Material material);
-
-        // Obsolete methods bellow. To be removed in the future.
-        const string obsoleteBuildMsg1 = "Method Update is deprecated and it will be removed in Unity 2024.1. Use Build instead (UnityUpgradable) -> Build()";
-        [Obsolete(obsoleteBuildMsg1, true)]
-        public void Update() => new NotSupportedException(obsoleteBuildMsg1);
-
-        const string obsoleteBuildMsg2 = "Method Update is deprecated and it will be removed in Unity 2024.1. Use Build instead (UnityUpgradable) -> Build(*)";
-        [Obsolete(obsoleteBuildMsg2, true)]
-        public void Update(Vector3 relativeOrigin) => new NotSupportedException(obsoleteBuildMsg2);
-
-        const string obsoleteRendererMsg = "This AddInstance method is deprecated and will be removed and it will be removed in Unity 2024.1. Please use the alternative AddInstance method for adding Renderers to the acceleration structure.";
-        [Obsolete(obsoleteRendererMsg, true)]
-        public void AddInstance(Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteRendererMsg);
-
-        const string obsoleteAABBMsg1 = "This AddInstance method is deprecated and it will be removed in Unity 2024.1. Please use the alternative AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
-        [Obsolete(obsoleteAABBMsg1, true)]
-        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg1);
-
-        const string obsoleteAABBMsg2 = "This AddInstance method is deprecated and it will be removed in Unity 2024.1. Please use the alternative AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
-        [Obsolete(obsoleteAABBMsg2, true)]
-        public int AddInstance(GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF)
-        {
-            throw new NotSupportedException(obsoleteAABBMsg2);
-        }
 
         internal static class BindingsMarshaller
         {

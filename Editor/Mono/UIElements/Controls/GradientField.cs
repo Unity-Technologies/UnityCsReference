@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// Makes a field for editing an <see cref="Gradient"/>. For more information, refer to [[wiki:UIE-uxml-element-GradientField|UXML element GradientField]].
     /// </summary>
     [Icon("UIToolkit/Icons/GradientField.png")]
-    public class GradientField : BaseField<Gradient>
+    public partial class GradientField : BaseField<Gradient>
     {
         internal static readonly BindingId colorSpaceProperty = nameof(colorSpace);
         internal static readonly BindingId hdrProperty = nameof(hdr);
@@ -38,18 +38,6 @@ namespace UnityEditor.UIElements
 
             public override object CreateInstance() => new GradientField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="GradientField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<GradientField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="GradientField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<Gradient>.UxmlTraits {}
 
         private bool m_ValueNull;
         // The GradientPicker will change the values in the arrays directly and will send commands to keep everything

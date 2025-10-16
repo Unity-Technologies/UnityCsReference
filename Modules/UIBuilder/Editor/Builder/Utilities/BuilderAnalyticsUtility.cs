@@ -5,8 +5,10 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Assemblies;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -45,7 +47,6 @@ namespace Unity.UI.Builder
         DataBinding         = 1 << 9,
         UserDataBinding     = 1 << 10,
         CustomBinding       = 1 << 11,
-        UxmlTraits          = 1 << 12,
         UxmlSerialization   = 1 << 13
     }
 
@@ -146,10 +147,6 @@ namespace Unity.UI.Builder
             {
                 features |= Features.CustomBinding;
             }
-            if (visualElementAssets.Exists(x => HasUxmlTraits(x) && IsCustomElement(x)))
-            {
-                features |= Features.UxmlTraits;
-            }
             if (visualElementAssets.Exists(x => x.serializedData != null && IsCustomElement(x)))
             {
                 features |= Features.UxmlSerialization;
@@ -160,22 +157,13 @@ namespace Unity.UI.Builder
 
         static bool IsCustomBinding<T>(UxmlObjectAsset o)
         {
-            #pragma warning disable CS0618 // Type or member is obsolete
-            if (UxmlObjectFactoryRegistry.factories.TryGetValue(o.fullTypeName, out var factories))
+            var desc = UxmlSerializedDataRegistry.GetDescription(o.fullTypeName);
+            if (desc != null)
             {
-                var uxmlType = factories[0].GetUxmlType();
-                var type = typeof(T);
-                return type != uxmlType && type.IsAssignableFrom(uxmlType) && uxmlType.Assembly.GetName().Name != UxmlObjectFactoryRegistry.uieCoreModule;
+                var uxmlType = desc.serializedDataType.DeclaringType;
+                return typeof(T).IsAssignableFrom(uxmlType) && uxmlType.Assembly.GetName().Name != uieCoreModule;
             }
-            #pragma warning restore CS0618 // Type or member is obsolete
-
             return false;
-        }
-
-        static bool HasUxmlTraits(VisualElementAsset vta)
-        {
-            return vta.fullTypeName != BuilderConstants.UxmlTagTypeName &&
-                VisualElementFactoryRegistry.TryGetValue(vta.fullTypeName, out _);
         }
 
         static bool IsCustomElement(VisualElementAsset vta)
@@ -204,7 +192,7 @@ namespace Unity.UI.Builder
                     userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
                     typeCache = new Dictionary<string, Type>();
 
-                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    var assemblies = CurrentAssemblies.GetLoadedAssemblies();
                     foreach (var assembly in assemblies)
                     {
                         if (!userAssemblies.Contains(assembly.GetName().Name + ".dll"))

@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a field for entering Translate.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class TranslateField : BaseField<Translate>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

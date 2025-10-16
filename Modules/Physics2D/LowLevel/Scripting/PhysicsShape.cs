@@ -1084,7 +1084,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Get the shape density.
         /// See <see cref="LowLevelPhysics2D.PhysicsBody.massConfiguration"/>.
         /// </summary>
-        public readonly void GetDensity() => PhysicsShape_GetDensity(this);
+        /// <returns>The density of the shape.</returns>
+        public readonly float GetDensity() => PhysicsShape_GetDensity(this);
 
         /// <summary>
         /// The shape mass configuration. Normally this only used on a body where the total of all shapes is used.

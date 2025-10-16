@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -42,10 +43,10 @@ namespace Unity.UI.Builder
             m_TargetElementToReparent?.AddToClassList(s_DragPreviewElementClassName);
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
+        protected override bool PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
             if (pane == DestinationPane.Viewport && (!IsPickedElementValid(destination)))
-                return;
+                return false;
 
             base.PerformAction(destination, pane, localMousePosition, index);
 
@@ -93,6 +94,8 @@ namespace Unity.UI.Builder
             selection.NotifyOfHierarchyChange(null);
             selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
             selection.ForceReselection(null);
+
+            return true;
         }
 
         protected override bool IsPickedElementValid(VisualElement element)

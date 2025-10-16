@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -66,11 +67,7 @@ namespace Unity.UI.Builder
         public BuilderStyleSheets styleSheets => m_StyleSheets;
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
-
-        /// <summary>
-        /// Provided for debug purposes to force the builder to use UxmlTraits
-        /// </summary>
-        internal static bool alwaysUseUxmlTraits { get; set; }
+        internal static int s_NextSelectedIdFromDocumentCommand = -1;
 
         readonly Action m_UnregisterBuilderLibraryContentProcessors = BuilderLibraryContent.UnregisterProcessors;
 
@@ -180,9 +177,10 @@ namespace Unity.UI.Builder
             var hierarchyDragger = new BuilderHierarchyDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker) { builderStylesheetRoot = m_StyleSheets.container };
 
             m_Hierarchy = new BuilderHierarchy(this, m_Viewport, selection, classDragger, hierarchyDragger, contextMenuManipulator, m_HighlightOverlayPainter);
-
+            styleSheetsDragger.builderHierarchyRoot = hierarchy.container;
             var libraryDragger = new BuilderLibraryDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker, hierarchy.container, libraryTooltipPreview) { builderStylesheetRoot = m_StyleSheets.container };
             m_Viewport.viewportDragger.builderHierarchyRoot = hierarchy.container;
+            m_Viewport.viewportDragger.builderStylesheetRoot = m_StyleSheets.container;
             m_Library = new BuilderLibrary(this, m_Viewport, selection, libraryDragger, libraryTooltipPreview);
             m_Inspector = new BuilderInspector(this, selection, m_HighlightOverlayPainter, m_BindingsCache, m_Viewport.notifications);
             m_Toolbar = new BuilderToolbar(this, selection, m_Viewport, hierarchy, m_Library, m_Inspector, libraryTooltipPreview);
@@ -285,13 +283,25 @@ namespace Unity.UI.Builder
             m_Library.OnAfterBuilderDeserialize();
             m_Inspector.OnAfterBuilderDeserialize();
 
-            // Restore selection.
-            selection.RestoreSelectionFromDocument(m_Viewport.sharedStylesAndDocumentElement);
-
             // We claim the change is coming from the Document because we don't
             // want the document hasUnsavedChanges flag to be set at this time.
             m_Selection.NotifyOfStylingChange(document);
             m_Selection.NotifyOfHierarchyChange(document);
+
+            EditorApplication.delayCall += () =>
+            {
+                if (s_NextSelectedIdFromDocumentCommand == -1) return;
+
+                selection.ClearSelection(null, false);
+                var selectedElement = rootVisualElement.FindElement(ve =>
+                    ve.visualElementAsset?.id == s_NextSelectedIdFromDocumentCommand);
+                hierarchy.elementHierarchyView.RecursivelyExpandToItem(selectedElement);
+                selection.AddToSelection(null, selectedElement, false, false);
+                s_NextSelectedIdFromDocumentCommand = -1;
+            };
+
+            if (s_NextSelectedIdFromDocumentCommand == -1)
+                selection.RestoreSelectionFromDocument(m_Viewport.sharedStylesAndDocumentElement);
         }
 
         internal override void OnUndoRedo()
@@ -337,6 +347,10 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(document.uxmlFileName))
             {
                 document.NewDocument(m_Viewport.documentRootElement);
+            }
+            else
+            {
+                document.OnAfterBuilderDeserialize(m_Viewport.documentRootElement);
             }
 
             base.DiscardChanges();
@@ -420,6 +434,18 @@ namespace Unity.UI.Builder
                 return false;
 
             var builderWindow = ActiveWindow;
+            bool builderWindowAlreadyOpened = ActiveWindow != null;
+
+            // UIDocument settings from SessionState
+            // Used when opening builder from contextmenu
+            LoadUIDocumentCommand documentCommand = new LoadUIDocumentCommand();
+            var loadCommandStr = SessionState.GetString(LoadUIDocumentCommand.CommandId, string.Empty);
+            EditorJsonUtility.FromJsonOverwrite(loadCommandStr, documentCommand);
+
+            if (documentCommand.selectedId != -1)
+            {
+                s_NextSelectedIdFromDocumentCommand = documentCommand.selectedId;
+            }
 
             if (builderWindow == null)
             {
@@ -445,6 +471,29 @@ namespace Unity.UI.Builder
             else
             {
                 builderWindow.ReloadDocument();
+            }
+
+            if (documentCommand.subDocumentOptions == SubDocumentOptions.InContext)
+            {
+                for (int i = documentCommand.subDocuments.Count - 1; i >= 1; i--)
+                    BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[i], documentCommand.contextInstances[i]);
+
+                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[0], documentCommand.contextInstances[0]);
+            }
+            else if (documentCommand.subDocumentOptions == SubDocumentOptions.Isolation)
+            {
+                for (int i = documentCommand.subDocuments.Count - 1; i >= 1; i--)
+                    BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[i]);
+
+                BuilderHierarchyUtilities.OpenAsSubDocument(ActiveWindow, documentCommand.subDocuments[0]);
+            }
+
+            // If the builder is already open there is no call to OnEnableAfterSerialization
+            if (documentCommand.selectedId != -1 && builderWindowAlreadyOpened)
+            {
+                var selectedElement = builderWindow.rootVisualElement.FindElement(ve => ve.visualElementAsset?.id == s_NextSelectedIdFromDocumentCommand);
+                builderWindow.selection.ClearSelection(null, false);
+                builderWindow.selection.AddToSelection(null, selectedElement, false, false);
             }
 
             return true;

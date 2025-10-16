@@ -101,7 +101,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (m_Progress != value)
                 {
                     m_Progress = value;
-                    ProgressChanged?.Invoke(this, m_Progress);
+                    StatusRefreshed?.Invoke();
                 }
             }
         }
@@ -114,7 +114,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (m_State != value)
                 {
                     m_State = value;
-                    StateChanged?.Invoke(this, m_State);
+                    StatusRefreshed?.Invoke();
                 }
             }
         }
@@ -124,15 +124,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         /// </summary>
         public bool Interrupted => (State == ExecutionState.Running || State == ExecutionState.Active) && !m_HasNotBeenInterrupted;
 
-        /// <summary>
-        /// Event that is triggered when the state of the node changes.
-        /// </summary>
-        public event Action<Node, ExecutionState> StateChanged;
-
-        /// <summary>
-        /// Event that is triggered when the progress of the node changes.
-        /// </summary>
-        public event Action<Node, float> ProgressChanged;
+        internal event Action StatusRefreshed;
 
         public Node(string name)
         {

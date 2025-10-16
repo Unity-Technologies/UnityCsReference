@@ -222,9 +222,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StyleValueType.ResourcePath:
                 {
-                    string path = value.sheet.ReadResourcePath(value.handle);
-                    if (!string.IsNullOrEmpty(path))
-                        o = Panel.LoadResource(path, typeof(Object), dpiScaling);
+                    o = value.sheet.ReadResourcePath(value.handle).LoadResource<Object>(dpiScaling);
                     break;
                 }
                 case StyleValueType.AssetReference:
@@ -245,16 +243,13 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StyleValueType.ResourcePath:
                 {
-                    string path = value.sheet.ReadResourcePath(value.handle);
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
-                        if (font == null)
-                            fontAsset = Panel.LoadResource(path, typeof(FontAsset), dpiScaling) as FontAsset;
-                    }
+                    var resourcePath = value.sheet.ReadResourcePath(value.handle);
+                    font = resourcePath.LoadResource<Font>(dpiScaling);
+                    if (font == null)
+                        fontAsset = resourcePath.LoadResource<FontAsset>(dpiScaling);
 
                     if (fontAsset == null && font == null)
-                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", path));
+                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", resourcePath.ToString()));
 
                     break;
                 }
@@ -299,12 +294,10 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StyleValueType.ResourcePath:
                 {
-                    string path = value.sheet.ReadResourcePath(value.handle);
-                    if (!string.IsNullOrEmpty(path))
-                        font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
-
+                    var resourcePath = value.sheet.ReadResourcePath(value.handle);
+                    font = resourcePath.LoadResource<Font>(dpiScaling);
                     if (font == null)
-                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", path));
+                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", resourcePath.ToString()));
                     break;
                 }
 
@@ -339,12 +332,10 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 case StyleValueType.ResourcePath:
                     {
-                        string path = value.sheet.ReadResourcePath(value.handle);
-                        if (!string.IsNullOrEmpty(path))
-                            material = Panel.LoadResource(path, typeof(Material), dpiScaling) as Material;
-
+                        var resourcePath = value.sheet.ReadResourcePath(value.handle);
+                        material = resourcePath.LoadResource<Material>(dpiScaling);
                         if (material == null)
-                            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Material not found for path: {0}", path));
+                            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Material not found for path: {0}", resourcePath.ToString()));
                         break;
                     }
 
@@ -574,7 +565,17 @@ namespace UnityEngine.UIElements.StyleSheets
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
-                var propertyName = value.sheet.ReadStylePropertyName(value.handle);
+
+                StylePropertyName propertyName;
+                if (value.handle.valueType == StyleValueType.Keyword)
+                {
+                    var keyword = value.sheet.ReadKeyword(value.handle);
+                    propertyName = new StylePropertyName(keyword.ToUssString());
+                }
+                else
+                {
+                    propertyName = value.sheet.ReadStylePropertyName(value.handle);
+                }
                 list.Add(propertyName);
                 ++index;
 

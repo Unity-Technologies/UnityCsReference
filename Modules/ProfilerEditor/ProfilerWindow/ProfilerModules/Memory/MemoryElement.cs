@@ -10,7 +10,7 @@ namespace UnityEditor
 {
     internal class ObjectInfo
     {
-        public int    instanceId;
+        public EntityId entityId;
         public long   memorySize;
         public int    reason;
         public List<ObjectInfo> referencedBy;

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -17,6 +18,7 @@ namespace UnityEditor.Overlays
         DockedAfter
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     class OverlayContainer : VisualElement
     {
         [Serializable]

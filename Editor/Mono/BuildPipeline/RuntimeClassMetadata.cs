@@ -125,6 +125,7 @@ namespace UnityEditor
             return isUsed;
         }
 
+        [RequiredByNativeCode]
         protected void AddUsedClass(string assemblyName, string className)
         {
             if (string.IsNullOrEmpty(assemblyName))
@@ -216,6 +217,12 @@ namespace UnityEditor
             return new List<string>(allNativeClasses.Values);
         }
 
+        [RequiredByNativeCode]
+        public int[] GetAllNativeClassIds()
+        {
+            return allNativeClasses.Keys.ToArray();
+        }
+
         public IEnumerable<KeyValuePair<string, string[]>> GetAllSerializedClassesAsString()
         {
             foreach (var pair in serializedClassesPerAssembly)
@@ -228,6 +235,18 @@ namespace UnityEditor
         public MethodDescription[] GetAllMethodsToPreserve()
         {
             return m_MethodsToPreserve.ToArray();
+        }
+
+        [RequiredByNativeCode]
+        public string[] GetUsedTypesForAssembly(string assembly)
+        {
+            return m_UsedTypesPerUserAssembly[assembly].ToArray();
+        }
+
+        [RequiredByNativeCode]
+        public string[] GetAllUserAssembliesReferencingTypes()
+        {
+            return m_UsedTypesPerUserAssembly.Keys.ToArray();
         }
 
         [RequiredByNativeCode]

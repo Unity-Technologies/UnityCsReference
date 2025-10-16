@@ -4,6 +4,7 @@
 
 using System;
 using System.Reflection;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -183,6 +184,11 @@ namespace UnityEditor
                 newField = new Vector4Field(preferredLabel);
                 ((BaseField<Vector4>)newField).onValidateValue += OnValidateValue;
             }
+            else if (property.propertyType == SerializedPropertyType.EntityId)
+            {
+                newField = new EntityIdField(preferredLabel);
+                ((BaseField<EntityId>)newField).onValidateValue += OnValidateValue;
+            }
 
             if (newField != null)
             {
@@ -248,6 +254,12 @@ namespace UnityEditor
         private Vector4 OnValidateValue(Vector4 value)
         {
             return new Vector4(Mathf.Max(minAttribute.min, value.x), Mathf.Max(minAttribute.min, value.y), Mathf.Max(minAttribute.min, value.z), Mathf.Max(minAttribute.min, value.w));
+        }
+
+        private EntityId OnValidateValue(EntityId value)
+        {
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Contemplate using GetIndex instead of GetRawData if EntityId size changes. And get the full EntityId from the index instead");
+            return EntityId.From(Mathf.Max((int)minAttribute.min, (int)value.GetRawData()));
         }
     }
 

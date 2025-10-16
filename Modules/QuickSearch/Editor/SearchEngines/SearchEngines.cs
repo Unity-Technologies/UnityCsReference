@@ -266,7 +266,7 @@ namespace UnityEditor.Search
     [SceneSearchEngine]
     class SceneSearchEngine : QuickSearchEngine, ISceneSearchEngineV2
     {
-        private readonly Dictionary<Guid, HashSet<int>> m_SearchItemsBySession = new Dictionary<Guid, HashSet<int>>();
+        private readonly Dictionary<Guid, HashSet<EntityId>> m_SearchItemsBySession = new Dictionary<Guid, HashSet<EntityId>>();
 
         public override string providerId => "scene";
 
@@ -291,13 +291,13 @@ namespace UnityEditor.Search
             }
 
             if (!m_SearchItemsBySession.ContainsKey(context.guid))
-                m_SearchItemsBySession.Add(context.guid, new HashSet<int>());
+                m_SearchItemsBySession.Add(context.guid, new HashSet<EntityId>());
             var searchItemsSet = m_SearchItemsBySession[context.guid];
             searchItemsSet.Clear();
 
-            foreach (var id in SearchService.GetItems(searchSession.context, SearchFlags.Synchronous).Select(item => Convert.ToInt32(item.id)))
+            foreach (var id in SearchService.GetItems(searchSession.context, SearchFlags.Synchronous).Select(item => Convert.ToUInt64(item.id)))
             {
-                searchItemsSet.Add(id);
+                searchItemsSet.Add(EntityId.From(id));
             }
         }
 

@@ -40,15 +40,20 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Create an identity rotation.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PhysicsRotate() { this = identityRotation; }
+        public PhysicsRotate() { direction = Vector2.right; }
+
+        /// <summary>
+        /// Create a rotation with the specified direction.
+        /// </summary>
+        /// <param name="direction">The direction to use. This cannot be zero length.</param>
+        public PhysicsRotate(Vector2 direction) { this = PhysicsRotate_CreateDirection(in direction); }
 
         /// <summary>
         /// Create a rotation with the specified angle.
         /// </summary>
         /// <param name="angle">The rotation angle specified, in radians.</param>
         /// <returns>The rotation represented by the specified angle.</returns>
-        public PhysicsRotate(float angle) { this = PhysicsRotate_SetAngle(angle); }
+        public PhysicsRotate(float angle) { this = PhysicsRotate_CreateAngle(angle); }
 
         /// <summary>
         /// Create a rotation with the specified <see cref="UnityEngine.Quaternion"/>.
@@ -56,15 +61,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="rotation">The Quaternion rotation to use.</param>
         /// <param name="transformPlane">The transform plane to use.</param>
         /// <returns>The 2D rotation extracted from the specified Quaternion.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public PhysicsRotate(Quaternion rotation, PhysicsWorld.TransformPlane transformPlane) { this = new PhysicsRotate(PhysicsMath.ToRotation2D(rotation, transformPlane)); }
-
-        /// <summary>
-        /// Create a rotation with the specified direction.
-        /// </summary>
-        /// <param name="direction">The direction to use. This cannot be zero length.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PhysicsRotate(Vector2 direction) { this.direction = direction; this = Normalized(); }
 
         /// <summary>
         /// Get the relative angle between this rotation and the specified rotation.
@@ -164,19 +161,19 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly Matrix4x4 GetMatrix(PhysicsWorld.TransformPlane transformPlane) => Matrix4x4.Rotate(PhysicsMath.ToRotationFast3D(angle, transformPlane));
 
         /// <summary>
-        /// Normalize the rotation.
+        /// Create a normalized rotation.
         /// </summary>
-        public readonly PhysicsRotate Normalized() => PhysicsRotate_Normalize(this);
-
-        /// <summary>
-        /// Check if the rotation is valid (not NaN and Normalized).
-        /// </summary>
-        public readonly bool isValid => PhysicsRotate_IsValid(this);
+        public readonly PhysicsRotate Normalized() => PhysicsRotate_CreateDirection(in direction);
 
         /// <summary>
         /// Is the rotation normalized? If not, it should be normalized using <see cref="LowLevelPhysics2D.PhysicsRotate.Normalized"/>.
         /// </summary>
         public readonly bool isNormalized => PhysicsRotate_IsNormalized(this);
+
+        /// <summary>
+        /// Check if the rotation is valid (not NaN and Normalized).
+        /// </summary>
+        public readonly bool isValid => PhysicsRotate_IsValid(this);
 
         /// <summary>
         /// Get the angle which this rotation represents, in radians.

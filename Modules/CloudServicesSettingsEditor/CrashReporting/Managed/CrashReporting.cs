@@ -117,7 +117,6 @@ namespace UnityEditor.CrashReporting
         private class UploadPlatformConfig
         {
             public string UsymtoolPath;
-            public string LzmaPath;
             public string LogFilePath;
         }
 
@@ -128,20 +127,17 @@ namespace UnityEditor.CrashReporting
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 config.UsymtoolPath = Paths.Combine(EditorApplication.applicationToolsPath, "usymtool.exe");
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationToolsPath, "lzma.exe");
                 config.LogFilePath = Paths.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Unity", "Editor", "symbol_upload.log");
             }
             else if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 string usymtoolFileName = RuntimeInformation.ProcessArchitecture.ToString().ToLower() == "arm64" ? "usymtoolarm64" :"usymtool";
                 config.UsymtoolPath = Paths.Combine(EditorApplication.applicationToolsPath, usymtoolFileName);
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationToolsPath, "lzma");
                 config.LogFilePath = Paths.Combine(Environment.GetEnvironmentVariable("HOME"), "Library", "Logs", "Unity", "symbol_upload.log");
             }
             else if (Application.platform == RuntimePlatform.LinuxEditor)
             {
                 config.UsymtoolPath = Paths.Combine(EditorApplication.applicationToolsPath, "usymtool");
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationToolsPath, "lzma-linux64");
                 config.LogFilePath = Paths.Combine(Environment.GetEnvironmentVariable("HOME"), ".config", "unity3d", "symbol_upload.log");
             }
 
@@ -188,7 +184,6 @@ namespace UnityEditor.CrashReporting
 
                 psi.EnvironmentVariables["USYM_UPLOAD_AUTH_TOKEN"] = authToken;
                 psi.EnvironmentVariables["USYM_UPLOAD_URL_SOURCE"] = SignedUrlSourceUrl;
-                psi.EnvironmentVariables["LZMA_PATH"] = platformConfig.LzmaPath;
 
                 System.Diagnostics.Process nativeProgram = new System.Diagnostics.Process();
                 nativeProgram.StartInfo = psi;

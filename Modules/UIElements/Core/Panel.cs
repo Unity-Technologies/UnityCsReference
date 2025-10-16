@@ -238,6 +238,7 @@ namespace UnityEngine.UIElements
 
     //keep in sync with RenderHints in C++ (Modules/UIElements/RenderHints.h)
     [Flags]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     enum RenderHints
     {
         None = 0,
@@ -457,7 +458,7 @@ namespace UnityEngine.UIElements
         public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEngine.VectorGraphicsModule", "UnityEditor.GraphToolkitModule")]
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
     {
     	// TODO: Make sure we do not use new native layout before we fix android 32bit (arm v7) failing test.
@@ -659,7 +660,12 @@ namespace UnityEngine.UIElements
         }
 
         TimerEventScheduler m_Scheduler;
-        internal TimerEventScheduler scheduler { get => m_Scheduler??= new TimerEventScheduler(this); }
+
+        internal TimerEventScheduler scheduler
+        {
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
+            get => m_Scheduler??= new TimerEventScheduler(this);
+        }
 
 
         internal abstract IStylePropertyAnimationSystem styleAnimationSystem
@@ -892,6 +898,7 @@ namespace UnityEngine.UIElements
 
     // Strategy to fetch real time since startup in the context of Editor or Runtime
     // Old method signature, use TimeFunction instead
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal delegate long TimeMsFunction();
     internal delegate double TimeFunction();
 
@@ -902,7 +909,7 @@ namespace UnityEngine.UIElements
     internal delegate void SavePersistentViewData();
 
     // Default panel implementation
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
     internal class Panel : BaseVisualElementPanel
     {
         internal const int k_DefaultPixelsPerUnit = 100;
@@ -1190,6 +1197,7 @@ namespace UnityEngine.UIElements
         }
 
         [Obsolete("Use the non-static TimeSinceStartupFunc instead")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static TimeMsFunction TimeSinceStartup { get; set; }
 
         public override int IMGUIContainersCount { get; set; }

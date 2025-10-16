@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -32,6 +33,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void FetchExtraInfo(IPackageVersion version);
 
+        bool OpenManifest(IPackageVersion version);
+
         bool Download(IPackage package);
         bool Download(IEnumerable<IPackage> packages);
         void AbortDownload(IPackage package);
@@ -49,14 +52,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IAssetStorePackageInstaller m_AssetStorePackageInstaller;
         private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private readonly IUpmClient m_UpmClient;
+        private readonly IIOProxy m_IOProxy;
+        private readonly ISelectionProxy m_SelectionProxy;
+        private readonly IAssetDatabaseProxy m_AssetDatabaseProxy;
 
-        public PackageOperationDispatcher(IAssetStorePackageInstaller assetStorePackageInstaller,
+        public PackageOperationDispatcher(
+            IAssetStorePackageInstaller assetStorePackageInstaller,
             IAssetStoreDownloadManager assetStoreDownloadManager,
-            IUpmClient upmClient)
+            IUpmClient upmClient,
+            IIOProxy ioProxy,
+            ISelectionProxy selectionProxy,
+            IAssetDatabaseProxy assetDatabaseProxy)
         {
             m_AssetStorePackageInstaller = RegisterDependency(assetStorePackageInstaller);
             m_AssetStoreDownloadManager = RegisterDependency(assetStoreDownloadManager);
             m_UpmClient = RegisterDependency(upmClient);
+            m_IOProxy = RegisterDependency(ioProxy);
+            m_SelectionProxy = RegisterDependency(selectionProxy);
+            m_AssetDatabaseProxy = RegisterDependency(assetDatabaseProxy);
         }
 
         public bool isInstallOrUninstallInProgress => m_UpmClient.isAddOrRemoveInProgress;
@@ -178,6 +191,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version == null || version.isFullyFetched)
                 return;
             m_UpmClient.ExtraFetchPackageInfo(version.packageId);
+        }
+
+        public bool OpenManifest(IPackageVersion version)
+        {
+            var path = m_IOProxy.PathsCombine("Packages", version.name, "package.json");
+            var folderObject = m_AssetDatabaseProxy.LoadAssetAtPath<Object>(path);
+            if (folderObject is null)
+                return false;
+
+            m_SelectionProxy.activeObject = folderObject;
+            var inspectorWindow = EditorWindow.GetWindow<InspectorWindow>();
+            if (inspectorWindow.isLocked)
+            {
+                var newInspectorWindow = EditorWindow.CreateWindow<InspectorWindow>();
+                newInspectorWindow.Show(true);
+            }
+            else
+                inspectorWindow.Show(true);
+            return true;
         }
 
         public bool Download(IPackage package)

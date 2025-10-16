@@ -13,26 +13,26 @@ namespace UnityEngine
         internal Vector3 m_Point;
         internal Vector3 m_Normal;
         internal Vector3 m_Impulse;
-        internal int m_ThisColliderInstanceID;
-        internal int m_OtherColliderInstanceID;
+        internal EntityId m_ThisColliderEntityId;
+        internal EntityId m_OtherColliderEntityId;
         internal float m_Separation;
 
         public Vector3 point { get { return m_Point; } }
         public Vector3 normal { get { return m_Normal; } }
         public Vector3 impulse { get { return m_Impulse; } }
 
-        public Collider thisCollider { get { return Physics.GetColliderByInstanceID(m_ThisColliderInstanceID); } }
-        public Collider otherCollider { get { return Physics.GetColliderByInstanceID(m_OtherColliderInstanceID); } }
+        public Collider thisCollider { get { return Physics.GetColliderByInstanceID(m_ThisColliderEntityId); } }
+        public Collider otherCollider { get { return Physics.GetColliderByInstanceID(m_OtherColliderEntityId); } }
         public float separation { get { return m_Separation; } }
 
-        internal ContactPoint(Vector3 point, Vector3 normal, Vector3 impulse, float separation, int thisInstanceID, int otherInstenceID)
+        internal ContactPoint(Vector3 point, Vector3 normal, Vector3 impulse, float separation, EntityId thisEntityId, EntityId otherEntityId)
         {
             m_Point = point;
             m_Normal = normal;
             m_Impulse = impulse;
             m_Separation = separation;
-            m_ThisColliderInstanceID = thisInstanceID;
-            m_OtherColliderInstanceID = otherInstenceID;
+            m_ThisColliderEntityId = thisEntityId;
+            m_OtherColliderEntityId = otherEntityId;
         }
     }
 
@@ -118,8 +118,8 @@ namespace UnityEngine
                     ptr->m_Normal * sign,
                     ptr->m_Impulse,
                     ptr->m_Separation,
-                    m_Flipped ? m_Pair.otherColliderInstanceID : m_Pair.colliderInstanceID,
-                    m_Flipped ? m_Pair.colliderInstanceID : m_Pair.otherColliderInstanceID);
+                    m_Flipped ? m_Pair.otherColliderEntityId : m_Pair.colliderEntityId,
+                    m_Flipped ? m_Pair.colliderEntityId : m_Pair.otherColliderEntityId);
         }
 
         // Get contacts for this collision.

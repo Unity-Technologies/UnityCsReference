@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     internal class DeployBuildConfigurationNode : MultiplayNode
     {
         [SerializeReference] public NodeInput<string> BuildConfigurationName;

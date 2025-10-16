@@ -75,14 +75,25 @@ namespace UnityEditor.Presets
             {
                 AddPresetTypeWindow.Show(addDefaultButton.worldBound, OnPresetTypeWindowSelection, string.IsNullOrEmpty(m_Search) ? null : m_Search);
             };
-
-            EditorApplication.update += CheckSerializedObjectChanged;
-            m_RootVisualElement.RegisterCallback<DetachFromPanelEvent>(evt =>
-            {
-                EditorApplication.update -= CheckSerializedObjectChanged;
-            });
             
             return m_RootVisualElement;
+        }
+
+        void OnEnable()
+        {
+            Undo.undoRedoEvent += OnUndoRedo;
+            EditorApplication.update += CheckSerializedObjectChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.update -= CheckSerializedObjectChanged;
+            Undo.undoRedoEvent -= OnUndoRedo;
+        }
+        void OnDestroy()
+        {
+            EditorApplication.update -= CheckSerializedObjectChanged;
+            Undo.undoRedoEvent -= OnUndoRedo;
         }
 
         private void CreateDefaultPresetsLists()
@@ -139,13 +150,17 @@ namespace UnityEditor.Presets
 
                     EventCallback<ChangeEvent<bool>> toggleCallback = evt =>
                     {
+                        Undo.RecordObjects(targets, "Toggle Preset Enabled");
                         boolProp.boolValue = !evt.newValue;
-                        boolProp.serializedObject.ApplyModifiedProperties();
+                        serializedObject.ApplyModifiedProperties();
                     };
+                    
                     toggle.RegisterValueChangedCallback(toggleCallback);
                     toggle.userData = toggleCallback;
 
                     toggle.SetValueWithoutNotify(!boolProp.boolValue);
+
+                    toggle.SetProperty("serialized-property", boolProp);
 
                     var filterField = element.Q<TextField>("filterField");
                     filterField.BindProperty(presetProperty.FindPropertyRelative("m_Filter"));
@@ -217,6 +232,8 @@ namespace UnityEditor.Presets
                         toggle.UnregisterValueChangedCallback(toggleCallback);
                         toggle.userData = null;
                     }
+                    
+                    toggle.SetProperty("serialized-property", null);
                     
                     var presetField = element.Q<UIElements.ObjectField>("presetField");
                     if (presetField != null)
@@ -300,6 +317,28 @@ namespace UnityEditor.Presets
                 {
                     CreateDefaultPresetsLists();
                 }    
+            }
+        }
+
+        private void OnUndoRedo(in UndoRedoInfo undoInfo)
+        {
+            if (serializedObject.isValid)
+            {
+                serializedObject.Update();
+                RefreshToggleValues();
+            }
+        }
+
+        private void RefreshToggleValues()
+        {
+            var toggles = m_RootVisualElement.Query<Toggle>("enabledToggle").ToList();
+            foreach (var toggle in toggles)
+            {
+                var property = toggle.GetProperty("serialized-property") as SerializedProperty;
+                if (property != null && property.isValid)
+                {
+                    toggle.SetValueWithoutNotify(!property.boolValue);
+                }
             }
         }
     }

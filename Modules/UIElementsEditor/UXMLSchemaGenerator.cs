@@ -8,9 +8,8 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
-using UnityEditor.ProjectWindowCallback;
-using UnityEngine.Pool;
 using UnityEngine;
+using UnityEngine.Assemblies;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -21,11 +20,11 @@ namespace UnityEditor.UIElements
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class UxmlNamespacePrefixAttribute : Attribute
     {
-        #pragma warning disable CS0618 // Type or member is obsolete
         /// <summary>
         /// The namespace name.
         /// </summary>
         public string ns { get; }
+
         /// <summary>
         /// The namespace prefix.
         /// </summary>
@@ -46,14 +45,7 @@ namespace UnityEditor.UIElements
     internal class UxmlSchemaGenerator
     {
         // Folder, relative to the project root.
-        internal const string k_SchemaFolder = "UIElementsSchema";
-
-        internal static readonly List<string> k_SkippedAttributeNames = new()
-        {
-            "content-container",
-            "class",
-            "style",
-        };
+        public const string SchemaFolder = "UIElementsSchema";
 
         [MenuItem("Assets/Update UXML Schema", false, secondaryPriority = 3)]
         static void UpdateUXMLSchema()
@@ -66,255 +58,170 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public static void UpdateSchemaFiles(bool saveSelectedObject = false)
+        public static void UpdateSchemaFiles()
         {
-            var selectedObject = Selection.activeObject;
-
-            Directory.CreateDirectory(k_SchemaFolder);
-            using (var it = GenerateSchemaFiles(k_SchemaFolder + "/").GetEnumerator())
-            {
-                while (it.MoveNext())
-                {
-                    var fileName = it.Current;
-                    if (!it.MoveNext())
-                        continue;
-
-                    var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
-                    action.filecontent = it.Current;
-
-                    ProjectWindowUtil.EndNameEditAction(action, 0, fileName, null, true);
-                    Selection.activeObject = EditorUtility.EntityIdToObject(0);
-                }
-            }
-
-            AssetDatabase.Refresh();
-
-            // Ensure that the selected object has not changed. Needed for UIElementsTemplate.CreateUXMLTemplate()
-            if (saveSelectedObject)
-                Selection.activeObject = selectedObject;
+            GenerateSchemaFiles(SchemaFolder);
         }
 
-        internal static Dictionary<string, string> GetNamespacePrefixDictionary()
-        {
-            return SchemaInfo.s_NamespacePrefix;
-        }
-
-        sealed class UTF8StringWriter : StringWriter
-        {
-            public override Encoding Encoding => Encoding.UTF8;
-        }
-
-        class SchemaInfo
+        internal class SchemaInfo
         {
             public SchemaInfo(string uxmlNamespace)
             {
-                schema = new XmlSchema();
-                schema.ElementFormDefault = XmlSchemaForm.Qualified;
+                schema = new XmlSchema { ElementFormDefault = XmlSchemaForm.Qualified };
                 if (uxmlNamespace != string.Empty)
                 {
                     schema.TargetNamespace = uxmlNamespace;
                 }
-
                 namepacePrefix = GetPrefixForNamespace(uxmlNamespace);
-
-                importNamespaces = new HashSet<string>();
             }
 
-            public XmlSchema schema { get; set; }
-            public string namepacePrefix { get; set; }
-            public HashSet<string> importNamespaces { get; set; }
+            public XmlSchema schema { get; }
+            public string namepacePrefix { get; }
+            public HashSet<string> importNamespaces { get; } = new();
 
-            internal static Dictionary<string, string> s_NamespacePrefix;
+            static Dictionary<string, string> s_NamespacePrefix { get; }
+
+            static SchemaInfo()
+            {
+                s_NamespacePrefix = new Dictionary<string, string>
+                {
+                    { string.Empty, "global" },
+                    { typeof(VisualElement).Namespace, "engine" },
+                    { typeof(UxmlSchemaGenerator).Namespace, "editor" },
+                };
+
+                var userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
+                foreach (var assembly in CurrentAssemblies.GetLoadedAssemblies())
+                {
+                    if (!userAssemblies.Contains(assembly.GetName().Name + ".dll"))
+                        continue;
+
+                    try
+                    {
+                        foreach (var nsPrefixAttributeObject in assembly.GetCustomAttributes(typeof(UxmlNamespacePrefixAttribute), false))
+                        {
+                            var nsPrefixAttribute = (UxmlNamespacePrefixAttribute)nsPrefixAttributeObject;
+                            s_NamespacePrefix[nsPrefixAttribute.ns] = nsPrefixAttribute.prefix;
+                        }
+                    }
+                    catch (TypeLoadException e)
+                    {
+                        Debug.LogWarningFormat("Error while loading types from assembly {0}: {1}", assembly.FullName, e);
+                    }
+                }
+            }
 
             static string GetPrefixForNamespace(string ns)
             {
-                if (s_NamespacePrefix == null)
-                {
-                    s_NamespacePrefix = new Dictionary<string, string>();
+                if (string.IsNullOrEmpty(ns))
+                    return string.Empty;
 
-                    s_NamespacePrefix.Add(string.Empty, "global");
-                    s_NamespacePrefix.Add(typeof(VisualElement).Namespace, "engine");
-                    s_NamespacePrefix.Add(typeof(UxmlSchemaGenerator).Namespace, "editor");
-
-                    var currentDomain = AppDomain.CurrentDomain;
-                    var userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
-                    foreach (var assembly in currentDomain.GetAssemblies())
-                    {
-                        if (!userAssemblies.Contains(assembly.GetName().Name + ".dll"))
-                            continue;
-
-                        try
-                        {
-                            foreach (var nsPrefixAttributeObject in assembly.GetCustomAttributes(typeof(UxmlNamespacePrefixAttribute), false))
-                            {
-                                var nsPrefixAttribute = (UxmlNamespacePrefixAttribute)nsPrefixAttributeObject;
-                                s_NamespacePrefix[nsPrefixAttribute.ns] = nsPrefixAttribute.prefix;
-                            }
-                        }
-                        catch (TypeLoadException e)
-                        {
-                            Debug.LogWarningFormat("Error while loading types from assembly {0}: {1}", assembly.FullName, e);
-                        }
-                    }
-                }
-
-                if (s_NamespacePrefix.TryGetValue(ns ?? string.Empty, out var prefix))
-                {
+                if (s_NamespacePrefix.TryGetValue(ns, out var prefix))
                     return prefix;
-                }
 
                 s_NamespacePrefix[ns] = string.Empty;
                 return string.Empty;
             }
         }
 
-        class SerializedDataSchemaInfo
-        {
-            public SerializedDataSchemaInfo(string uxmlName, Type type)
-            {
-                fullName = uxmlName;
-                this.type = type;
-            }
-
-            public string fullName { get; }
-            public Type type { get; }
-
-            public string uxmlName => type.Name;
-
-            public string uxmlNamespace => type.Namespace ?? string.Empty;
-
-            public string uxmlQualifiedName => type.FullName;
-
-            public string baseTypeName => type == typeof(VisualElement) ? string.Empty : typeof(VisualElement).Name;
-
-            public string baseTypeNamespace => type == typeof(VisualElement) ? string.Empty : typeof(VisualElement).Namespace ?? string.Empty;
-
-            public string baseTypeQualifiedName => type == typeof(VisualElement) ? string.Empty : typeof(VisualElement).FullName;
-
-            public IEnumerable<UxmlSerializedAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    var description = UxmlSerializedDataRegistry.GetDescription(fullName);
-                    Debug.AssertFormat(description != null, "Expected to find a description for {0}", fullName);
-                    return description?.serializedAttributes;
-                }
-            }
-
-            public IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get
-                {
-                    if (type != typeof(VisualElement))
-                        yield break;
-                    yield return new UxmlChildElementDescription(typeof(VisualElement));
-                }
-            }
-        }
-
+        const string k_DefaultNamespace = "UnityEngine.UIElements";
         const string k_XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
         const string k_TypeSuffix = "Type";
-
-        class FactoryProcessingHelper
-        {
-            public class AttributeRecord
-            {
-                public XmlQualifiedName name { get; set; }
-                public UxmlAttributeDescription desc { get; set; }
-            }
-
-            public Dictionary<string, AttributeRecord> attributeTypeNames;
-
-            HashSet<XmlQualifiedName> m_KnownTypes;
-
-            public FactoryProcessingHelper()
-            {
-                attributeTypeNames = new Dictionary<string, AttributeRecord>();
-                m_KnownTypes = new HashSet<XmlQualifiedName>();
-            }
-
-            public void RegisterElementType(string elementName, string elementNameSpace)
-            {
-                m_KnownTypes.Add(new XmlQualifiedName(elementName, elementNameSpace));
-            }
-
-            public bool IsKnownElementType(string elementName, string elementNameSpace)
-            {
-                return m_KnownTypes.Contains(new XmlQualifiedName(elementName, elementNameSpace));
-            }
-        }
-
         const string k_SchemaFileExtension = ".xsd";
         const string k_MainSchemaFileName = "UIElements" + k_SchemaFileExtension;
         const string k_GlobalNamespaceSchemaFileName = "GlobalNamespace" + k_SchemaFileExtension;
 
-        internal static IEnumerable<string> GenerateSchemaFiles(string baseDir = null)
+        internal class SchemaGenerator
         {
-            var schemas = new Dictionary<string, SchemaInfo>();
-            var processingData = new FactoryProcessingHelper();
+            const string k_XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
 
-            baseDir ??= Application.temporaryCachePath + "/";
+            static readonly XmlQualifiedName s_StringTypeQualifiedName = new XmlQualifiedName("string", k_XmlSchemaNamespace);
+            static readonly XmlQualifiedName s_BoolTypeQualifiedName = new XmlQualifiedName("boolean", k_XmlSchemaNamespace);
+            static readonly XmlQualifiedName s_BaseTypeAnyType = new XmlQualifiedName("anyType", k_XmlSchemaNamespace);
+            static readonly XmlQualifiedName s_VisualElementName = new XmlQualifiedName(nameof(VisualElement), k_DefaultNamespace);
 
-            if (!Application.isBatchMode)
+            public Dictionary<string, SchemaInfo> schemas { get; } = new();
+
+            public Dictionary<Type, XmlQualifiedName> m_AttributeTypes = new()
             {
-                EditorUtility.DisplayProgressBar("Generating UXML Schema Files", "Please wait...", 0.0f);
+                { typeof(string), s_StringTypeQualifiedName },
+                { typeof(short), new XmlQualifiedName("short", k_XmlSchemaNamespace) },
+                { typeof(ushort), new XmlQualifiedName("unsignedShort", k_XmlSchemaNamespace) },
+                { typeof(int), new XmlQualifiedName("int", k_XmlSchemaNamespace) },
+                { typeof(uint), new XmlQualifiedName("unsignedInt", k_XmlSchemaNamespace) },
+                { typeof(long), new XmlQualifiedName("long", k_XmlSchemaNamespace) },
+                { typeof(ulong), new XmlQualifiedName("unsignedLong", k_XmlSchemaNamespace) },
+                { typeof(float), new XmlQualifiedName("float", k_XmlSchemaNamespace) },
+                { typeof(double), new XmlQualifiedName("double", k_XmlSchemaNamespace) },
+                { typeof(bool), s_BoolTypeQualifiedName },
+                { typeof(sbyte), new XmlQualifiedName("byte", k_XmlSchemaNamespace) },
+                { typeof(byte), new XmlQualifiedName("unsignedByte", k_XmlSchemaNamespace) }
+            };
+
+            readonly Dictionary<Type, HashSet<string>> m_ProcessedTypes = new();
+
+            /// <summary>
+            /// Generates the schemas for all the types in <see cref="UxmlSerializedDataRegistry.SerializedDataTypes"/>.
+            /// </summary>
+            public void Generate()
+            {
+                foreach (var serializedDataType in UxmlSerializedDataRegistry.SerializedDataTypes.Values)
+                {
+                    var desc = UxmlSerializedDataRegistry.GetDescription(serializedDataType.DeclaringType.FullName);
+                    AddElementType(desc);
+                }
+
+                AddSpecialElements();
             }
 
-            try
+            /// <summary>
+            /// Writes the compiles schemas to disk.
+            /// </summary>
+            /// <param name="directory"></param>
+            public void WriteSchemaFiles(string directory)
             {
-                // Convert the factories and serialized data into schemas info.
-                ProcessUxmlSerializedData(schemas, processingData);
-                ProcessUxmlTraitFactories(schemas, processingData);
+                directory ??= Application.temporaryCachePath;
+                Directory.CreateDirectory(directory);
 
                 // Compile schemas.
                 var schemaSet = new XmlSchemaSet();
-                var masterSchema = new XmlSchema();
-                masterSchema.ElementFormDefault = XmlSchemaForm.Qualified;
+                var masterSchema = new XmlSchema { ElementFormDefault = XmlSchemaForm.Qualified };
+                schemaSet.Add(masterSchema);
 
-                var nsmgr = new XmlNamespaceManager(new NameTable());
-                nsmgr.AddNamespace("xs", k_XmlSchemaNamespace);
-
-                File.Delete(baseDir + k_MainSchemaFileName);
-
-                foreach (var schema in schemas)
+                foreach (var schemaInfo in schemas.Values)
                 {
-                    if (schema.Value.schema.TargetNamespace != null)
+                    XmlSchemaExternal schemaExternal;
+                    if (schemaInfo.schema.TargetNamespace != null)
                     {
-                        nsmgr.AddNamespace(schema.Value.namepacePrefix, schema.Value.schema.TargetNamespace);
-
                         // Import schema into the master schema.
-                        var import = new XmlSchemaImport();
-                        import.Namespace = schema.Value.schema.TargetNamespace;
-                        var schemaLocation = GetFileNameForNamespace(schema.Value.schema.TargetNamespace);
-                        File.Delete(baseDir + schemaLocation);
-                        import.SchemaLocation = schemaLocation;
-                        masterSchema.Includes.Add(import);
+                        schemaExternal = new XmlSchemaImport { Namespace = schemaInfo.schema.TargetNamespace };
+                        schemaExternal.SchemaLocation = GetFileNameForNamespace(schemaInfo.schema.TargetNamespace);
                     }
                     else
                     {
-                        var include = new XmlSchemaInclude();
-                        var schemaLocation = GetFileNameForNamespace(null);
-                        File.Delete(baseDir + schemaLocation);
-                        include.SchemaLocation = schemaLocation;
-                        masterSchema.Includes.Add(include);
+                        schemaExternal = new XmlSchemaInclude();
+                        schemaExternal.SchemaLocation = GetFileNameForNamespace(null);
                     }
 
+                    var fileName = Path.Combine(directory, schemaExternal.SchemaLocation);
+                    File.Delete(fileName);
+                    masterSchema.Includes.Add(schemaExternal);
+
                     // Import referenced schemas into this XSD
-                    foreach (var ns in schema.Value.importNamespaces)
+                    foreach (var ns in schemaInfo.importNamespaces)
                     {
-                        if (ns != schema.Value.schema.TargetNamespace && ns != k_XmlSchemaNamespace)
+                        if (ns != schemaInfo.schema.TargetNamespace && ns != k_XmlSchemaNamespace)
                         {
-                            var import = new XmlSchemaImport();
-                            import.Namespace = ns;
-                            import.SchemaLocation = GetFileNameForNamespace(ns);
-                            schema.Value.schema.Includes.Add(import);
+                            schemaInfo.schema.Includes.Add(new XmlSchemaImport
+                            {
+                                Namespace = ns,
+                                SchemaLocation = GetFileNameForNamespace(ns)
+                            });
                         }
                     }
 
-                    schemaSet.Add(schema.Value.schema);
+                    schemaSet.Add(schemaInfo.schema);
                 }
-
-                schemaSet.Add(masterSchema);
 
                 try
                 {
@@ -323,10 +230,13 @@ namespace UnityEditor.UIElements
                 catch (Exception e)
                 {
                     Debug.LogException(e);
-                    yield break;
+                    return;
                 }
 
                 // Now generate the schema textual data.
+
+                // We dont want to include the BOM - https://unity.slack.com/archives/C06TQ0QMQ/p1701774372020839
+                var encoding = new UTF8Encoding(false);
                 foreach (XmlSchema compiledSchema in schemaSet.Schemas())
                 {
                     var schemaName = compiledSchema.TargetNamespace;
@@ -344,741 +254,451 @@ namespace UnityEditor.UIElements
                         schemaName = GetFileNameForNamespace(compiledSchema.TargetNamespace);
                     }
 
-                    yield return baseDir + schemaName;
-
-                    StringWriter strWriter = new UTF8StringWriter();
-                    compiledSchema.Write(strWriter, nsmgr);
-                    yield return strWriter.ToString();
+                    var fileName = Path.Combine(directory, schemaName);
+                    using (var writer = new XmlTextWriter(fileName, encoding) { Formatting = Formatting.Indented })
+                    {
+                        compiledSchema.Write(writer);
+                    }
                 }
+            }
+
+            /// <summary>
+            /// Returns the file name to use for the provided namespace. 
+            /// If <paramref name="ns"/> is null or empty then the global namespace file name will be returned.
+            /// </summary>
+            /// <param name="ns"></param>
+            /// <returns></returns>
+            static string GetFileNameForNamespace(string ns)
+            {
+                return string.IsNullOrEmpty(ns) ? k_GlobalNamespaceSchemaFileName : ns + k_SchemaFileExtension;
+            }
+
+            /// <summary>
+            /// Returns the <see cref="SchemaInfo"/> for the <paramref name="uxmlNamespace"/>.
+            /// </summary>
+            /// <param name="uxmlNamespace"></param>
+            /// <returns></returns>
+            internal SchemaInfo GetSchemaInfo(string uxmlNamespace)
+            {
+                uxmlNamespace ??= string.Empty;
+                if (!schemas.TryGetValue(uxmlNamespace, out var schemaInfo))
+                {
+                    schemaInfo = new SchemaInfo(uxmlNamespace);
+                    schemas[uxmlNamespace] = schemaInfo;
+                }
+                return schemaInfo;
+            }
+
+            void AddSpecialElements()
+            {
+                // UXML
+                var uxmlType = AddFakeElement(k_DefaultNamespace, "UXML");
+                var uxmlChildren = new XmlSchemaSequence();
+                uxmlType.type.Particle = uxmlChildren;
+                uxmlChildren.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+                uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "class", SchemaTypeName = s_StringTypeQualifiedName });
+                uxmlType.type.Attributes.Add(new XmlSchemaAttribute { Name = "editor-extension-mode", SchemaTypeName = s_BoolTypeQualifiedName });
+
+                // Style
+                var styleType = AddFakeElement(k_DefaultNamespace, "Style");
+                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
+                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
+                styleType.type.Attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+
+                // Template
+                var templateType = AddFakeElement(k_DefaultNamespace, "Template");
+                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "name", SchemaTypeName = s_StringTypeQualifiedName });
+                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "path", SchemaTypeName = s_StringTypeQualifiedName });
+                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "src", SchemaTypeName = s_StringTypeQualifiedName });
+
+                // Instance
+                var instanceType = AddFakeElement(k_DefaultNamespace, "Instance");
+                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "template", SchemaTypeName = s_StringTypeQualifiedName });
+
+                // AttributeOverrides
+                var attributeOverridesType = AddFakeElement(k_DefaultNamespace, "AttributeOverrides");
+                templateType.type.Attributes.Add(new XmlSchemaAttribute { Name = "element-name", SchemaTypeName = s_StringTypeQualifiedName, Use = XmlSchemaUse.Required });
+            }
+
+            (XmlSchemaElement element, XmlSchemaComplexType type) AddFakeElement(string ns, string uxmlName)
+            {
+                var typeName = uxmlName + k_TypeSuffix;
+
+                var xmlElementType = new XmlSchemaComplexType
+                {
+                    Name = typeName,
+                };
+                var schemaInfo = GetSchemaInfo(ns);
+                schemaInfo.schema.Items.Add(xmlElementType);
+
+                var attributes = xmlElementType.Attributes;
+
+                var sequence = new XmlSchemaSequence();
+                xmlElementType.Particle = sequence;
+                sequence.Items.Add(new XmlSchemaElement { RefName = s_VisualElementName });
+
+                // Add element to the schema.
+                var element = new XmlSchemaElement
+                {
+                    Name = uxmlName,
+                    SchemaTypeName = new XmlQualifiedName(xmlElementType.Name, ns)
+                };
+                schemaInfo.schema.Items.Add(element);
+
+                return (element, xmlElementType);
+            }
+
+            /// <summary>
+            /// Adds the UxmlElement or UxmlObject type to the schema and returns the qualified XmlSchemaComplexType name.
+            /// If the type has already been added then it will not be added again and the type name will just be returned.
+            /// </summary>
+            /// <param name="description"></param>
+            /// <returns></returns>
+            XmlQualifiedName AddElementType(UxmlSerializedDataDescription description)
+            {
+                var typeName = description.uxmlName + k_TypeSuffix;
+                var elementType = description.serializedDataType.DeclaringType;
+                if (m_ProcessedTypes.ContainsKey(elementType))
+                    return new XmlQualifiedName(typeName, elementType.Namespace);
+
+                var elementTypeAttributes = new HashSet<string>();
+                m_ProcessedTypes.Add(elementType, elementTypeAttributes);
+
+                var xmlElementType = new XmlSchemaComplexType
+                {
+                    Name = typeName,
+                };
+                var schemaInfo = GetSchemaInfo(elementType.Namespace);
+                schemaInfo.schema.Items.Add(xmlElementType);
+
+                (var baseTypeName, var baseType) = GetElementBaseType(description);
+
+                var attributes = xmlElementType.Attributes;
+
+                // Extend the base type.
+                if (baseTypeName != null)
+                {
+                    // We cant use extensions because they let us extend the accepted child elements, which is needed for UxmlObjects.
+                    // We dont use restrictions because they cause problems with inherited restrictions and make UxmlObject support difficult.
+                    var complexContentExtension = new XmlSchemaComplexContentExtension { BaseTypeName = baseTypeName };
+                    schemaInfo.importNamespaces.Add(complexContentExtension.BaseTypeName.Namespace);
+
+                    xmlElementType.ContentModel = new XmlSchemaComplexContent { Content = complexContentExtension };
+                    attributes = complexContentExtension.Attributes;
+                }
+
+                AddAttributes(description, attributes, elementTypeAttributes, xmlElementType, schemaInfo);
+
+                // Setup expected child types
+                var rootSequence = GetRootSequence(xmlElementType);
+                foreach (var childType in description.uxmlSupportedChildTypes)
+                {
+                    var desc = UxmlSerializedDataRegistry.GetDescription(childType.FullName);
+                    if (desc != null)
+                    {
+                        var childElementType = AddElementType(desc);
+                        rootSequence.Items.Add(new XmlSchemaElement
+                        {
+                            RefName = new XmlQualifiedName(desc.uxmlName, childElementType.Namespace)
+                        });
+                    }
+                }
+
+                // Add element to the schema.
+                var element = new XmlSchemaElement
+                {
+                    Name = description.uxmlName,
+                    SchemaTypeName = new XmlQualifiedName(xmlElementType.Name, elementType.Namespace),
+                };
+
+                // A substitution group allows you to define that one element can be used in place of another element.
+                // Used to support polymorphism when setting what types can be children of an element.
+                if (baseTypeName != null)
+                {
+                    element.SubstitutionGroup = new XmlQualifiedName(baseType.uxmlName, baseTypeName.Namespace);
+                }
+
+                schemaInfo.schema.Items.Add(element);
+
+                return new XmlQualifiedName(typeName, elementType.Namespace);
+            }
+
+            /// <summary>
+            /// Adds all the attributes and inherited attributes that do not belong to any parent UxmlElement/UxmlObject for the type. 
+            /// </summary>
+            /// <param name="description"></param>
+            /// <param name="attributes"></param>
+            /// <param name="handledAttributes"></param>
+            /// <param name="elementType"></param>
+            /// <param name="schemaInfo"></param>
+            void AddAttributes(UxmlSerializedDataDescription description, XmlSchemaObjectCollection attributes, HashSet<string> handledAttributes, XmlSchemaComplexType elementType, SchemaInfo schemaInfo)
+            {
+                HashSet<string> baseTypeAttributes = null;
+                if (GetElementBaseType(description).baseTypeDescription is { } baseType)
+                {
+                    baseTypeAttributes = m_ProcessedTypes[baseType.serializedDataType.DeclaringType];
+                }
+
+                // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
+                foreach (var attributeDescription in description.serializedAttributes)
+                {
+                    handledAttributes.Add(attributeDescription.name);
+
+                    if (baseTypeAttributes?.Contains(attributeDescription.name) == true)
+                    {
+                        // We cant support overridden attributes in the schema, that requires restrictions which dont support UxmlObjects.
+                        continue;
+                    }
+
+                    // Handle UxmlObjects
+                    if (attributeDescription is UxmlSerializedUxmlObjectAttributeDescription objectAttributeDescription)
+                    {
+                        AddAttributeUxmlObjectType(description, objectAttributeDescription, elementType, schemaInfo);
+                        continue;
+                    }
+
+                    var attributeQualifiedName = AddAttributeType(attributeDescription);
+                    if (attributeQualifiedName == null)
+                        continue;
+
+                    var xmlAttribute = new XmlSchemaAttribute
+                    {
+                        Name = attributeDescription.name,
+                        SchemaTypeName = attributeQualifiedName,
+                    };
+
+                    var defaultValue = ExtractDefaultValueForAttribute(attributeDescription, attributeQualifiedName);
+                    if (!string.IsNullOrEmpty(defaultValue))
+                        xmlAttribute.DefaultValue = defaultValue;
+
+                    attributes.Add(xmlAttribute);
+                    schemaInfo.importNamespaces.Add(attributeQualifiedName.Namespace);
+                }
+            }
+
+            static string ExtractDefaultValueForAttribute(UxmlSerializedAttributeDescription attributeDescription, XmlQualifiedName uxmlType)
+            {
+                try
+                {
+                    if (attributeDescription.defaultValue == null ||
+                        !UxmlAttributeConverter.TryConvertToString(attributeDescription.defaultValue, null, out var defaultValue) ||
+                        defaultValue == null)
+                        return null;
+
+                    // Cleanup the default value.
+
+                    // Bools shoudld be lowercase.
+                    if (ReferenceEquals(uxmlType, s_BoolTypeQualifiedName))
+                        defaultValue = defaultValue.ToLower();
+                    // Remove null terminator from strings, this can happen when converting a char to a string.
+                    else if (ReferenceEquals(uxmlType, s_StringTypeQualifiedName))
+                        defaultValue = defaultValue.Trim('\0');
+
+                    return defaultValue;
+                }
+                catch (NotImplementedException)
+                {
+                    // We ignore these as we have some unimplemented converters
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                return null;
+            }
+
+            (XmlQualifiedName baseTypeName, UxmlSerializedDataDescription baseTypeDescription) GetElementBaseType(UxmlSerializedDataDescription description)
+            {
+                // Find the next base type that has a description.
+                var baseType = description.serializedDataType.DeclaringType.BaseType;
+                while (baseType != null)
+                {
+                    var desc = UxmlSerializedDataRegistry.GetDescription(baseType.FullName);
+                    if (desc != null)
+                    {
+                        // We can handle it like a normal element type.
+                        return (AddElementType(desc), desc);
+                    }
+                    baseType = baseType.BaseType;
+                }
+
+                return default;
+            }
+
+            /// <summary>
+            /// Adds the attributes type to the schema and returns the qualified name. 
+            /// Returns null if the type is not supported and the attribute should be ignored.
+            /// </summary>
+            /// <param name="attributeDescription"></param>
+            /// <returns></returns>
+            XmlQualifiedName AddAttributeType(UxmlSerializedAttributeDescription attributeDescription)
+            {
+                if (!m_AttributeTypes.TryGetValue(attributeDescription.type, out var xmlQualifiedName))
+                {
+                    if (attributeDescription.type.IsEnum)
+                    {
+                        xmlQualifiedName = AddEnumType(attributeDescription.type);
+                    }
+                    else if (typeof(UnityEngine.Object).IsAssignableFrom(attributeDescription.type))
+                    {
+                        xmlQualifiedName = s_StringTypeQualifiedName;
+                    }
+                    else if (UxmlAttributeConverter.TryGetConverter(attributeDescription.type, out var converter))
+                    {
+                        // Treat as string for now.
+                        xmlQualifiedName = s_StringTypeQualifiedName;
+                    }
+
+                    m_AttributeTypes[attributeDescription.type] = xmlQualifiedName;
+                }
+
+                return xmlQualifiedName;
+            }
+
+            XmlSchemaGroupBase GetRootSequence(XmlSchemaComplexType elementType)
+            {
+                if (elementType?.ContentModel?.Content is XmlSchemaComplexContentExtension extension)
+                {
+                    if (extension.Particle == null)
+                    {
+                        var rootSequence = new XmlSchemaSequence();
+                        extension.Particle = rootSequence;
+                        return rootSequence;
+                    }
+                    else
+                    {
+                        return extension.Particle as XmlSchemaSequence;
+                    }
+                }
+                else
+                {
+                    if (elementType.Particle == null)
+                    {
+                        var rootSequence = new XmlSchemaSequence();
+                        elementType.Particle = rootSequence;
+                        return rootSequence;
+                    }
+                    else
+                    {
+                        return elementType.Particle as XmlSchemaSequence;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Adds UxmlObjects as child elements to the schema.
+            /// </summary>
+            /// <param name="description"></param>
+            /// <param name="attributeDescription"></param>
+            /// <param name="elementType"></param>
+            /// <param name="schemaInfo"></param>
+            void AddAttributeUxmlObjectType(UxmlSerializedDataDescription description, UxmlSerializedUxmlObjectAttributeDescription attributeDescription, XmlSchemaComplexType elementType, SchemaInfo schemaInfo)
+            {
+                // Define sequence of child elements
+                var rootSequence = GetRootSequence(elementType);
+
+                // Create the attribute root element
+                if (!string.IsNullOrEmpty(attributeDescription.rootName))
+                {
+                    var attributeTypeName = description.uxmlName + attributeDescription.name + k_TypeSuffix;
+                    var rootType = new XmlSchemaComplexType { Name = attributeTypeName, ContentModel = new XmlSchemaComplexContent() };
+
+                    var restriction = new XmlSchemaComplexContentRestriction { BaseTypeName = s_BaseTypeAnyType };
+                    rootType.ContentModel.Content = restriction;
+
+                    schemaInfo.schema.Items.Add(rootType);
+                    rootSequence.Items.Add(new XmlSchemaElement
+                    {
+                        Name = attributeDescription.rootName,
+                        SchemaTypeName = new XmlQualifiedName(attributeTypeName, description.serializedDataType.Namespace),
+
+                        // We only have one root element.
+                        MinOccurs = 0,
+                        MaxOccurs = 1,
+
+                        // This tells the serializer that this element is not qualified with a namespace.
+                        Form = XmlSchemaForm.Unqualified
+                    });
+
+                    // We use sequence for lists and choice for single elements.
+                    // Use xsd:sequence when child elements must be present per their occurrence constraints and order does matters.
+                    // Use xsd:choice when one of the child element must be present.
+                    rootSequence = attributeDescription.isList ? new XmlSchemaSequence() : new XmlSchemaChoice();
+                    restriction.Particle = rootSequence;
+                }
+
+                foreach (var acceptedType in attributeDescription.uxmlObjectAcceptedTypes)
+                {
+                    var acceptedTypeDescription = UxmlSerializedDataRegistry.GetDescription(acceptedType.DeclaringType.FullName);
+                    if (acceptedTypeDescription == null)
+                        continue;
+
+                    var element = new XmlSchemaElement
+                    {
+                        RefName = new XmlQualifiedName(acceptedTypeDescription.uxmlName, acceptedType.DeclaringType.Namespace)
+                    };
+                    rootSequence.Items.Add(element);
+
+                    // We need to apply limits to the number of elements here as we can not do it in the root.
+                    if (!attributeDescription.isList && !string.IsNullOrEmpty(attributeDescription.rootName))
+                    {
+                        element.MinOccurs = 0;
+                        element.MaxOccurs = 1;
+                    }
+
+                    schemaInfo.importNamespaces.Add(acceptedType.DeclaringType.Namespace);
+                }
+            }
+
+            /// <summary>
+            /// Adds the enum type to the schema and returns the qualified name.
+            /// </summary>
+            /// <param name="type"></param>
+            /// <returns></returns>
+            XmlQualifiedName AddEnumType(Type type)
+            {
+                var schemaInfo = GetSchemaInfo(type.Namespace);
+
+                var simpleType = new XmlSchemaSimpleType();
+                simpleType.Name = type.Name + k_TypeSuffix;
+                schemaInfo.schema.Items.Add(simpleType);
+
+                var restriction = new XmlSchemaSimpleTypeRestriction();
+                simpleType.Content = restriction;
+                restriction.BaseTypeName = s_StringTypeQualifiedName;
+
+                foreach (var name in Enum.GetNames(type))
+                {
+                    var enumValue = new XmlSchemaEnumerationFacet();
+                    enumValue.Value = name;
+                    restriction.Facets.Add(enumValue);
+                }
+
+                return new XmlQualifiedName(simpleType.Name, type.Namespace);
+            }
+        }
+
+        /// <summary>
+        /// Generates the schema files.
+        /// </summary>
+        /// <param name="baseDir"></param>
+        internal static void GenerateSchemaFiles(string baseDir = null)
+        {
+            try
+            {
+                var schemaData = new SchemaGenerator();
+                EditorUtility.DisplayProgressBar(L10n.Tr("Generating UXML Schema Files"), L10n.Tr("Please wait..."), 0.0f);
+
+                schemaData.Generate();
+
+                EditorUtility.DisplayProgressBar(L10n.Tr("Generating UXML Schema Files"), L10n.Tr("Please wait..."), 0.75f);
+
+                schemaData.WriteSchemaFiles(baseDir);
             }
             finally
             {
-                if (!Application.isBatchMode)
-                {
-                    EditorUtility.ClearProgressBar();
-                }
+                EditorUtility.ClearProgressBar();
             }
         }
-
-        static void ProcessUxmlSerializedData(Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
-        {
-            var deferredFactories = new List<SerializedDataSchemaInfo>();
-
-            // Convert the UxmlSerializedData into schemas info.
-            foreach (var serializedDataType in UxmlSerializedDataRegistry.SerializedDataTypes)
-            {
-                var schemaInfo = new SerializedDataSchemaInfo(serializedDataType.Key, serializedDataType.Value.DeclaringType);
-                if (!ProcessSerializedData(schemaInfo, schemas, processingData))
-                {
-                    // Could not process the serialized data now, because it depends on a yet unprocessed serialized data.
-                    // Defer its processing.
-                    deferredFactories.Add(schemaInfo);
-                }
-            }
-
-            ProcessDeferredSchemaInfo(schemas, processingData, deferredFactories);
-        }
-
-        static void ProcessUxmlTraitFactories(Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
-        {
-            var deferredFactories = new List<IBaseUxmlFactory>();
-
-            foreach (var factories in VisualElementFactoryRegistry.factories)
-            {
-                if (factories.Value.Count == 0)
-                    continue;
-
-                // Only process the first factory, as the other factories define the same element.
-                var factory = factories.Value[0];
-
-                if (!ProcessFactory(factory, schemas, processingData))
-                {
-                    // Could not process the factory now, because it depends on a yet unprocessed factory.
-                    // Defer its processing.
-                    deferredFactories.Add(factory);
-                }
-            }
-
-            // Convert the factories into schemas info.
-            foreach (var factories in UxmlObjectFactoryRegistry.factories)
-            {
-                if (factories.Value.Count == 0)
-                    continue;
-
-                // Only process the first factory, as the other factories define the same element.
-                var factory = factories.Value[0];
-
-                if (!ProcessFactory(factory, schemas, processingData))
-                {
-                    // Could not process the factory now, because it depends on a yet unprocessed factory.
-                    // Defer its processing.
-                    deferredFactories.Add(factory);
-                }
-            }
-
-            ProcessDeferredSchemaInfo(schemas, processingData, deferredFactories);
-        }
-
-        static void ProcessDeferredSchemaInfo<T>(Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData, List<T> deferredSchemaInfo)
-        {
-            using (var pooled = ListPool<T>.Get(out var deferredSchemaInfoCopy))
-            {
-                do
-                {
-                    deferredSchemaInfoCopy.Clear();
-                    deferredSchemaInfoCopy.AddRange(deferredSchemaInfo);
-
-                    foreach (var schemaInfo in deferredSchemaInfoCopy)
-                    {
-                        deferredSchemaInfo.Remove(schemaInfo);
-                        var schemaInfoProcessed = false;
-
-                        if (typeof(T) == typeof(IBaseUxmlFactory))
-                        {
-                            schemaInfoProcessed = ProcessFactory(schemaInfo as IBaseUxmlFactory, schemas, processingData);
-                        }
-                        if (typeof(T) == typeof(SerializedDataSchemaInfo))
-                        {
-                            schemaInfoProcessed = ProcessSerializedData(schemaInfo as SerializedDataSchemaInfo, schemas, processingData);
-                        }
-
-                        // Could not process the factory now because it depends on a yet unprocessed factory.
-                        // Defer its processing again.
-                        if (!schemaInfoProcessed)
-                            deferredSchemaInfo.Add(schemaInfo);
-                    }
-                } while (deferredSchemaInfoCopy.Count > deferredSchemaInfo.Count);
-
-                if (deferredSchemaInfo.Count > 0)
-                {
-                    // log unprocessed schema types
-                    var log = new StringBuilder();
-                    foreach (var schemaInfo in deferredSchemaInfo)
-                    {
-                        if (typeof(T) == typeof(IBaseUxmlFactory))
-                        {
-                            var f = schemaInfo as IBaseUxmlFactory;
-                            log.Append($"{f?.uxmlName}, ");
-                        }
-                        if (typeof(T) == typeof(SerializedDataSchemaInfo))
-                        {
-                            var f = schemaInfo as SerializedDataSchemaInfo;
-                            log.Append($"{f?.uxmlName}, ");
-                        }
-                    }
-
-                    Debug.Log("Some element types could not be processed because their base type is missing: " + log.ToString().Substring(0, log.Length - 2));
-                }
-            }
-        }
-
-        internal static string GetFileNameForNamespace(string ns)
-        {
-            return string.IsNullOrEmpty(ns) ? k_GlobalNamespaceSchemaFileName : ns + k_SchemaFileExtension;
-        }
-
-        static bool ProcessFactory(IBaseUxmlFactory factory, Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
-        {
-            if (!string.IsNullOrEmpty(factory.substituteForTypeName))
-            {
-                if (!processingData.IsKnownElementType(factory.substituteForTypeName, factory.substituteForTypeNamespace))
-                {
-                    // substituteForTypeName is not yet known. Defer processing to later.
-                    return false;
-                }
-            }
-
-            var uxmlNamespace = factory.uxmlNamespace;
-            if (!schemas.TryGetValue(uxmlNamespace, out var schemaInfo))
-            {
-                schemaInfo = new SchemaInfo(uxmlNamespace);
-                schemas[uxmlNamespace] = schemaInfo;
-            }
-
-            var type = AddElementTypeToXmlSchema(factory, schemaInfo, processingData);
-            AddElementToXmlSchema(factory, schemaInfo, type);
-
-            processingData.RegisterElementType(factory.uxmlName, factory.uxmlNamespace);
-
-            return true;
-        }
-
-        static XmlSchemaParticle MakeChoiceSequence(IEnumerable<UxmlChildElementDescription> elements)
-        {
-            if (elements.GetCount() == 0)
-            {
-                return null;
-            }
-
-            var sequence = new XmlSchemaSequence();
-            sequence.MinOccurs = 0;
-            sequence.MaxOccursString = "unbounded";
-
-            if (elements.GetCount() == 1)
-            {
-                var enumerator = elements.GetEnumerator();
-                enumerator.MoveNext();
-                if (enumerator.Current != null)
-                {
-                    var elementRef = new XmlSchemaElement();
-                    elementRef.RefName = new XmlQualifiedName(enumerator.Current.elementName, enumerator.Current.elementNamespace);
-                    sequence.Items.Add(elementRef);
-                }
-            }
-            else
-            {
-                var choice = new XmlSchemaChoice();
-
-                foreach (var element in elements)
-                {
-                    if (element != null)
-                    {
-                        var elementRef = new XmlSchemaElement();
-                        elementRef.RefName = new XmlQualifiedName(element.elementName, element.elementNamespace);
-                        choice.Items.Add(elementRef);
-                    }
-                }
-                if (choice.Items.Count > 0)
-                    sequence.Items.Add(choice);
-            }
-
-            return sequence;
-        }
-
-        static XmlSchemaType AddElementTypeToXmlSchema(IBaseUxmlFactory factory, SchemaInfo schemaInfo, FactoryProcessingHelper processingData)
-        {
-            // We always have complex types with complex content.
-            var elementType = new XmlSchemaComplexType();
-            elementType.Name = factory.uxmlName + k_TypeSuffix;
-
-            // protect against adding duplicates
-            if (!schemaInfo.schema.Items.NoElementOfTypeMatchesPredicate<XmlSchemaType>(x => x.Name == elementType.Name))
-            {
-                return elementType;
-            }
-
-            var content = new XmlSchemaComplexContent();
-            elementType.ContentModel = content;
-
-            // We only support restrictions of base types.
-            var restriction = new XmlSchemaComplexContentRestriction();
-            content.Content = restriction;
-
-            if (factory.substituteForTypeName == string.Empty)
-            {
-                restriction.BaseTypeName = new XmlQualifiedName("anyType", k_XmlSchemaNamespace);
-            }
-            else
-            {
-                restriction.BaseTypeName = new XmlQualifiedName(factory.substituteForTypeName + k_TypeSuffix, factory.substituteForTypeNamespace);
-                schemaInfo.importNamespaces.Add(factory.substituteForTypeNamespace);
-            }
-
-            if (factory.canHaveAnyAttribute)
-            {
-                var anyAttribute = new XmlSchemaAnyAttribute();
-                anyAttribute.ProcessContents = XmlSchemaContentProcessing.Lax;
-                restriction.AnyAttribute = anyAttribute;
-            }
-
-            // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
-            if (factory.uxmlAttributesDescription != null)
-            {
-                foreach (var attrDesc in factory.uxmlAttributesDescription)
-                {
-                    // For user created types, they may `yield return null` which would create an array with a null, so we need
-                    // to check in order not to crash.
-                    if (attrDesc != null)
-                    {
-                        var typeName = AddAttributeTypeToXmlSchema(schemaInfo, attrDesc, factory, processingData);
-                        if (typeName != null)
-                        {
-                            AddAttributeToXmlSchema(restriction, attrDesc, typeName);
-                            schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
-                        }
-                    }
-                }
-            }
-
-            // For user created types, they may return null for uxmlChildElementsDescription, so we need to check in order not to crash.
-            if (factory.uxmlChildElementsDescription != null)
-            {
-                var hasChildElements = false;
-                foreach (var childDesc in factory.uxmlChildElementsDescription)
-                {
-                    // For user created types, they may `yield return null` which would create an array with a null, so we need
-                    // to check in order not to crash.
-                    if (childDesc != null)
-                    {
-                        hasChildElements = true;
-                        schemaInfo.importNamespaces.Add(childDesc.elementNamespace);
-                    }
-                }
-
-                if (hasChildElements)
-                {
-                    restriction.Particle = MakeChoiceSequence(factory.uxmlChildElementsDescription);
-                }
-            }
-
-            schemaInfo.schema.Items.Add(elementType);
-            return elementType;
-        }
-
-        static void AddElementToXmlSchema(IBaseUxmlFactory factory, SchemaInfo schemaInfo, XmlSchemaType type)
-        {
-            var element = new XmlSchemaElement();
-            element.Name = factory.uxmlName;
-
-            if (type != null)
-            {
-                element.SchemaTypeName = new XmlQualifiedName(type.Name, factory.uxmlNamespace);
-            }
-
-            if (factory.substituteForTypeName != string.Empty)
-            {
-                element.SubstitutionGroup = new XmlQualifiedName(factory.substituteForTypeName, factory.substituteForTypeNamespace);
-            }
-
-            // protect against adding duplicates
-            if (schemaInfo.schema.Items.NoElementOfTypeMatchesPredicate<XmlSchemaElement>(x => x.Name == element.Name))
-            {
-                schemaInfo.schema.Items.Add(element);
-            }
-        }
-
-        static XmlQualifiedName AddAttributeTypeToXmlSchema(SchemaInfo schemaInfo, UxmlAttributeDescription description, IBaseUxmlFactory factory, FactoryProcessingHelper processingData)
-        {
-            if (description.name == null)
-            {
-                return null;
-            }
-
-            var attrTypeName = $"{factory.uxmlQualifiedName}_{description.name}_{k_TypeSuffix}";
-            var attrTypeNameInBaseElement = $"{factory.substituteForTypeQualifiedName}_{description.name}_{k_TypeSuffix}";
-
-            if (processingData.attributeTypeNames.TryGetValue(attrTypeNameInBaseElement, out var attrRecord))
-            {
-                // If restriction != baseElement.restriction, we need to declare a new type.
-                // Note: we do not support attributes having a less restrictive restriction than its base type.
-                if ((description.restriction == null && attrRecord.desc.restriction == null) ||
-                    (description.restriction != null && description.restriction.Equals(attrRecord.desc.restriction)))
-                {
-                    // Register attrTypeName -> attrRecord for potential future derived elements.
-                    processingData.attributeTypeNames.TryAdd(attrTypeName, attrRecord);
-                    return attrRecord.name;
-                }
-            }
-
-            XmlQualifiedName xqn;
-            FactoryProcessingHelper.AttributeRecord attributeRecord;
-
-            if (description.restriction == null)
-            {
-                // Type is a built-in type.
-                xqn = new XmlQualifiedName(description.type, description.typeNamespace);
-                attributeRecord = new FactoryProcessingHelper.AttributeRecord { name = xqn, desc = description };
-                processingData.attributeTypeNames.TryAdd(attrTypeName, attributeRecord);
-                return xqn;
-            }
-
-            var attrTypeNameForSchema = $"{factory.uxmlName}_{description.name}_{k_TypeSuffix}";
-            xqn = new XmlQualifiedName(attrTypeNameForSchema, schemaInfo.schema.TargetNamespace);
-
-            var simpleType = new XmlSchemaSimpleType();
-            simpleType.Name = attrTypeNameForSchema;
-
-            if (description.restriction is UxmlEnumeration enumRestriction)
-            {
-                var restriction = new XmlSchemaSimpleTypeRestriction();
-                simpleType.Content = restriction;
-                restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
-
-                foreach (var v in enumRestriction.values)
-                {
-                    var enumValue = new XmlSchemaEnumerationFacet();
-                    enumValue.Value = v;
-                    restriction.Facets.Add(enumValue);
-                }
-            }
-            else
-            {
-                if (description.restriction is UxmlValueMatches regexRestriction)
-                {
-                    if (regexRestriction.regex == null)
-                    {
-                        Debug.LogWarning($"{nameof(UxmlValueMatches)} restriction '{description.name}' has null regex value.");
-                        return null;
-                    }
-
-                    var restriction = new XmlSchemaSimpleTypeRestriction();
-                    simpleType.Content = restriction;
-                    restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
-
-                    var pattern = new XmlSchemaPatternFacet();
-                    pattern.Value = regexRestriction.regex;
-                    restriction.Facets.Add(pattern);
-                }
-                else
-                {
-                    if (description.restriction is UxmlValueBounds bounds)
-                    {
-                        var restriction = new XmlSchemaSimpleTypeRestriction();
-                        simpleType.Content = restriction;
-                        restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
-
-                        if (!string.IsNullOrEmpty(bounds.min))
-                        {
-                            XmlSchemaFacet facet = bounds.excludeMin ? new XmlSchemaMinExclusiveFacet() :  new XmlSchemaMinInclusiveFacet();
-                            facet.Value = bounds.min;
-                            restriction.Facets.Add(facet);
-                        }
-
-                        if (!string.IsNullOrEmpty(bounds.max))
-                        {
-                            XmlSchemaFacet facet = bounds.excludeMax ? new XmlSchemaMaxExclusiveFacet() : new XmlSchemaMaxInclusiveFacet();
-                            facet.Value = bounds.max;
-                            restriction.Facets.Add(facet);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log("Unsupported restriction type.");
-                    }
-                }
-            }
-
-            attributeRecord = new FactoryProcessingHelper.AttributeRecord { name = xqn, desc = description };
-            processingData.attributeTypeNames.TryAdd(attrTypeName, attributeRecord);
-
-            schemaInfo.schema.Items.Add(simpleType);
-            return xqn;
-        }
-
-        static void AddAttributeToXmlSchema(XmlSchemaComplexContentRestriction restriction, UxmlAttributeDescription description, XmlQualifiedName typeName)
-        {
-            var attr = new XmlSchemaAttribute();
-            attr.Name = description.name;
-            attr.SchemaTypeName = typeName;
-
-            switch (description.use)
-            {
-                case UxmlAttributeDescription.Use.Optional:
-                    attr.Use = XmlSchemaUse.Optional;
-
-                    // clean up default value
-                    var defaultVal = description.defaultValueAsString?.Trim('\0');
-                    if (defaultVal is "True" or "False")
-                        defaultVal = defaultVal.ToLowerInvariant();
-                    if (description.type != "string" && defaultVal == "")
-                        defaultVal = null;
-
-                    attr.DefaultValue = defaultVal;
-                    break;
-
-                case UxmlAttributeDescription.Use.Prohibited:
-                    attr.Use = XmlSchemaUse.Prohibited;
-                    break;
-
-                case UxmlAttributeDescription.Use.Required:
-                    attr.Use = XmlSchemaUse.Required;
-                    break;
-
-                default:
-                    attr.Use = XmlSchemaUse.None;
-                    break;
-            }
-
-            // avoid duplicate attributes since overriding attributes is supported
-            foreach (var existingAttr in restriction.Attributes)
-            {
-                if (((XmlSchemaAttribute) existingAttr).Name == attr.Name)
-                    return;
-            }
-
-            restriction.Attributes.Add(attr);
-        }
-
-        static bool ProcessSerializedData(SerializedDataSchemaInfo serializedData, Dictionary<string, SchemaInfo> schemas, FactoryProcessingHelper processingData)
-        {
-            if (!string.IsNullOrEmpty(serializedData.baseTypeName))
-            {
-                if (!processingData.IsKnownElementType(serializedData.baseTypeName, serializedData.baseTypeNamespace))
-                {
-                    // Base type is not yet known. Defer processing to later.
-                    return false;
-                }
-            }
-
-            if (serializedData.type.ContainsGenericParameters || serializedData.type.IsAbstract)
-                return true;
-
-            var uxmlNamespace = serializedData.uxmlNamespace;
-            if (!schemas.TryGetValue(uxmlNamespace, out var schemaInfo))
-            {
-                schemaInfo = new SchemaInfo(uxmlNamespace);
-                schemas[uxmlNamespace] = schemaInfo;
-            }
-
-            var type = AddElementTypeToXmlSchema(serializedData, schemaInfo, processingData);
-            AddElementToXmlSchema(serializedData, schemaInfo, type);
-
-            processingData.RegisterElementType(serializedData.uxmlName, serializedData.uxmlNamespace);
-
-            return true;
-        }
-
-        static XmlSchemaType AddElementTypeToXmlSchema(SerializedDataSchemaInfo serializedData, SchemaInfo schemaInfo, FactoryProcessingHelper processingData)
-        {
-            // We always have complex types with complex content.
-            var elementType = new XmlSchemaComplexType();
-            elementType.Name = serializedData.uxmlName + k_TypeSuffix;
-
-            // protect against adding duplicates
-            if (!schemaInfo.schema.Items.NoElementOfTypeMatchesPredicate<XmlSchemaType>(x => x.Name == elementType.Name))
-            {
-                return elementType;
-            }
-
-            var content = new XmlSchemaComplexContent();
-            elementType.ContentModel = content;
-
-            // We only support restrictions of base types.
-            var restriction = new XmlSchemaComplexContentRestriction();
-            content.Content = restriction;
-
-            if (serializedData.baseTypeName == string.Empty)
-            {
-                restriction.BaseTypeName = new XmlQualifiedName("anyType", k_XmlSchemaNamespace);
-            }
-            else
-            {
-                restriction.BaseTypeName = new XmlQualifiedName(serializedData.baseTypeName + k_TypeSuffix, serializedData.baseTypeNamespace);
-                schemaInfo.importNamespaces.Add(serializedData.baseTypeNamespace);
-            }
-
-            var anyAttribute = new XmlSchemaAnyAttribute();
-            anyAttribute.ProcessContents = XmlSchemaContentProcessing.Lax;
-            restriction.AnyAttribute = anyAttribute;
-
-            // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
-            if (serializedData.uxmlAttributesDescription != null)
-            {
-                foreach (var attrDesc in serializedData.uxmlAttributesDescription)
-                {
-                    // For user created types, they may `yield return null` which would create an array with a null, so we need
-                    // to check in order not to crash.
-                    if (attrDesc != null)
-                    {
-                        // update type and restriction to use in the schema
-                        attrDesc.UpdateBaseType();
-                        attrDesc.UpdateSchemaRestriction();
-
-                        // Ignore Uxml Objects as they're not considered attributes
-                        if (attrDesc.isUxmlObject)
-                            continue;
-
-                        var typeName =
-                            AddAttributeTypeToXmlSchema(schemaInfo, attrDesc, serializedData, processingData);
-                        if (typeName != null)
-                        {
-                            AddAttributeToXmlSchema(restriction, attrDesc, typeName);
-                            schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
-                        }
-                    }
-                }
-            }
-
-            // adding skipped attributes to the schema
-            foreach (var attributeName in k_SkippedAttributeNames)
-            {
-                var attrDesc = new UxmlSerializedAttributeDescription
-                {
-                    name = attributeName,
-                    type = typeof(string),
-                    defaultValue = null
-                };
-
-                // update type to use in the schema
-                attrDesc.UpdateBaseType();
-
-                var typeName =
-                    AddAttributeTypeToXmlSchema(schemaInfo, attrDesc, serializedData, processingData);
-                if (typeName != null)
-                {
-                    AddAttributeToXmlSchema(restriction, attrDesc, typeName);
-                    schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
-                }
-            }
-
-            if (serializedData.uxmlChildElementsDescription != null)
-            {
-                var hasChildElements = false;
-                foreach (var childDesc in serializedData.uxmlChildElementsDescription)
-                {
-                    if (childDesc != null)
-                    {
-                        hasChildElements = true;
-                        schemaInfo.importNamespaces.Add(childDesc.elementNamespace);
-                    }
-                }
-
-                if (hasChildElements)
-                {
-                    restriction.Particle = MakeChoiceSequence(serializedData.uxmlChildElementsDescription);
-                }
-            }
-
-            schemaInfo.schema.Items.Add(elementType);
-            return elementType;
-        }
-
-        static void AddElementToXmlSchema(SerializedDataSchemaInfo serializedData, SchemaInfo schemaInfo, XmlSchemaType type)
-        {
-            var element = new XmlSchemaElement();
-            element.Name = serializedData.uxmlName;
-
-            if (type != null)
-            {
-                element.SchemaTypeName = new XmlQualifiedName(type.Name, serializedData.uxmlNamespace);
-            }
-
-            if (serializedData.baseTypeName != string.Empty)
-            {
-                element.SubstitutionGroup = new XmlQualifiedName(serializedData.baseTypeName, serializedData.baseTypeNamespace);
-            }
-
-            // protect against adding duplicates
-            if (schemaInfo.schema.Items.NoElementOfTypeMatchesPredicate<XmlSchemaElement>(x => x.Name == element.Name))
-            {
-                schemaInfo.schema.Items.Add(element);
-            }
-        }
-
-        static XmlQualifiedName AddAttributeTypeToXmlSchema(SchemaInfo schemaInfo, UxmlAttributeDescription description, SerializedDataSchemaInfo serializedData, FactoryProcessingHelper processingData)
-        {
-            if (description.name == null)
-            {
-                return null;
-            }
-
-            var attrTypeName = $"{serializedData.uxmlQualifiedName}_{description.name}_{k_TypeSuffix}";
-            var attrTypeNameInBaseElement = $"{serializedData.baseTypeQualifiedName}_{description.name}_{k_TypeSuffix}";
-
-            if (processingData.attributeTypeNames.TryGetValue(attrTypeNameInBaseElement, out var attrRecord))
-            {
-                // If restriction != baseElement.restriction, we need to declare a new type.
-                // Note: we do not support attributes having a less restrictive restriction than its base type.
-                if ((description.restriction == null && attrRecord.desc.restriction == null) ||
-                    (description.restriction != null && description.restriction.Equals(attrRecord.desc.restriction)))
-                {
-                    // Register attrTypeName -> attrRecord for potential future derived elements.
-                    processingData.attributeTypeNames.TryAdd(attrTypeName, attrRecord);
-                    return attrRecord.name;
-                }
-            }
-
-            XmlQualifiedName xqn;
-            FactoryProcessingHelper.AttributeRecord attributeRecord;
-
-            if (description.restriction == null)
-            {
-                // Type is a built-in type.
-                xqn = new XmlQualifiedName(description.type, description.typeNamespace);
-                attributeRecord = new FactoryProcessingHelper.AttributeRecord { name = xqn, desc = description };
-                processingData.attributeTypeNames.TryAdd(attrTypeName, attributeRecord);
-                return xqn;
-            }
-
-            var attrTypeNameForSchema = $"{serializedData.uxmlName}_{description.name}_{k_TypeSuffix}";
-            xqn = new XmlQualifiedName(attrTypeNameForSchema, schemaInfo.schema.TargetNamespace);
-
-            var simpleType = new XmlSchemaSimpleType();
-            simpleType.Name = attrTypeNameForSchema;
-
-            if (description.restriction is UxmlEnumeration enumRestriction)
-            {
-                var restriction = new XmlSchemaSimpleTypeRestriction();
-                simpleType.Content = restriction;
-                restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
-
-                foreach (var v in enumRestriction.values)
-                {
-                    var enumValue = new XmlSchemaEnumerationFacet();
-                    enumValue.Value = v;
-                    restriction.Facets.Add(enumValue);
-                }
-            }
-            else
-            {
-                if (description.restriction is UxmlValueMatches regexRestriction)
-                {
-                    if (regexRestriction.regex == null)
-                    {
-                        Debug.LogWarning($"{nameof(UxmlValueMatches)} restriction '{description.name}' has null regex value.");
-                        return null;
-                    }
-
-                    var restriction = new XmlSchemaSimpleTypeRestriction();
-                    simpleType.Content = restriction;
-                    restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
-
-                    var pattern = new XmlSchemaPatternFacet();
-                    pattern.Value = regexRestriction.regex;
-                    restriction.Facets.Add(pattern);
-                }
-                else
-                {
-                    if (description.restriction is UxmlValueBounds bounds)
-                    {
-                        var restriction = new XmlSchemaSimpleTypeRestriction();
-                        simpleType.Content = restriction;
-                        restriction.BaseTypeName = new XmlQualifiedName(description.type, description.typeNamespace);
-
-                        if (!string.IsNullOrEmpty(bounds.min))
-                        {
-                            XmlSchemaFacet facet;
-                            if (bounds.excludeMin)
-                            {
-                                facet = new XmlSchemaMinExclusiveFacet();
-                            }
-                            else
-                            {
-                                facet = new XmlSchemaMinInclusiveFacet();
-                            }
-                            facet.Value = bounds.min;
-                            restriction.Facets.Add(facet);
-                        }
-
-                        if (!string.IsNullOrEmpty(bounds.max))
-                        {
-                            XmlSchemaFacet facet;
-                            if (bounds.excludeMax)
-                            {
-                                facet = new XmlSchemaMaxExclusiveFacet();
-                            }
-                            else
-                            {
-                                facet = new XmlSchemaMaxInclusiveFacet();
-                            }
-
-                            facet.Value = bounds.max;
-                            restriction.Facets.Add(facet);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log("Unsupported restriction type.");
-                    }
-                }
-            }
-
-            attributeRecord = new FactoryProcessingHelper.AttributeRecord { name = xqn, desc = description };
-            processingData.attributeTypeNames.TryAdd(attrTypeName, attributeRecord);
-
-            schemaInfo.schema.Items.Add(simpleType);
-            return xqn;
-        }
-        #pragma warning restore CS0618 // Type or member is obsolete
     }
 }

@@ -35,7 +35,7 @@ namespace UnityEngine.Rendering
                 if (element == null)
                     continue; //missing script can cause this, preserve data, just not access it
 
-                settingsMap.Add(element.GetType(), i);
+                settingsMap[element.GetType()] = i;
             }
         }
 

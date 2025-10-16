@@ -10,6 +10,8 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEditorInternal;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace UnityEditor.AssetImporters
 {
@@ -614,6 +616,48 @@ namespace UnityEditor.AssetImporters
             {
                 RevertButton();
                 return ApplyButton();
+            }
+        }
+
+        public class ApplyRevertButtonContainer : VisualElement
+        {
+            public ApplyRevertButtonContainer(AssetImporterEditor editor)
+            {
+                style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.RowReverse);
+                var applyButton = new UnityEngine.UIElements.Button();
+                applyButton.text = "Apply";
+                applyButton.style.maxWidth = 50;
+                applyButton.name = "applyButton";
+                applyButton.clicked += editor.SaveChanges;
+
+                var revertButton = new UnityEngine.UIElements.Button();
+                revertButton.text = "Revert";
+                revertButton.style.maxWidth = 50;
+                revertButton.name = "revertButton";
+                revertButton.clicked += () =>
+                {
+                    editor.DiscardChanges();
+                    if (editor.HasModified())
+                    {
+                        Debug.LogError("Importer reports modified values after reset.");
+                    }
+                };
+
+                Add(applyButton);
+                Add(revertButton);
+                enabledSelf = editor.hasUnsavedChanges;
+
+                BindingExtensions.TrackSerializedObjectValue(this, editor.serializedObject,
+                    (e) => {
+                        enabledSelf = editor.HasModified();
+                    }
+                );
+                RegisterCallback<AttachToPanelEvent>(
+                    (e) =>
+                    {
+                        editor.m_ApplyRevertGUICalled = true;
+                    }
+                );
             }
         }
 

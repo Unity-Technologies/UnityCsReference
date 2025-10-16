@@ -121,15 +121,20 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public readonly partial struct ContactPairHeader
     {
-        internal readonly int m_BodyID;
-        internal readonly int m_OtherBodyID;
+        internal readonly EntityId m_BodyID;
+        internal readonly EntityId m_OtherBodyID;
         internal readonly IntPtr m_StartPtr;
         internal readonly uint m_NbPairs;
         internal readonly CollisionPairHeaderFlags m_Flags;
         internal readonly Vector3 m_RelativeVelocity;
 
+        [Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", false)]
         public int bodyInstanceID => m_BodyID;
+        [Obsolete("otherBodyInstanceID is deprecated, use otherBodyEntityId instead.", false)]
         public int otherBodyInstanceID => m_OtherBodyID;
+
+        public EntityId bodyEntityId => m_BodyID;
+        public EntityId otherBodyEntityId => m_OtherBodyID;
 
         public Component body => Physics.GetBodyByInstanceID(m_BodyID) as Component;
         public Component otherBody => Physics.GetBodyByInstanceID(m_OtherBodyID) as Component;
@@ -160,16 +165,21 @@ namespace UnityEngine
     {
         private const uint c_InvalidFaceIndex = 0xffffFFFF;
 
-        internal readonly int m_ColliderID;
-        internal readonly int m_OtherColliderID;
+        internal readonly EntityId m_ColliderID;
+        internal readonly EntityId m_OtherColliderID;
         internal readonly IntPtr m_StartPtr;
         internal readonly uint m_NbPoints;
         internal readonly CollisionPairFlags m_Flags;
         internal readonly CollisionPairEventFlags m_Events;
         internal readonly Vector3 m_ImpulseSum;
 
+        [Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", false)]
         public int colliderInstanceID => m_ColliderID;
+        [Obsolete("otherColliderInstanceID is deprecated, use otherColliderEntityId instead.", false)]
         public int otherColliderInstanceID => m_OtherColliderID;
+
+        public EntityId colliderEntityId => m_ColliderID;
+        public EntityId otherColliderEntityId => m_OtherColliderID;
 
         public Collider collider => m_ColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
         public Collider otherCollider => m_OtherColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
@@ -204,14 +214,14 @@ namespace UnityEngine
                 if (flipped)
                 {
                     contactPoint.m_Normal = -nativePoint.normal;
-                    contactPoint.m_ThisColliderInstanceID = m_OtherColliderID;
-                    contactPoint.m_OtherColliderInstanceID = m_ColliderID;
+                    contactPoint.m_ThisColliderEntityId = m_OtherColliderID;
+                    contactPoint.m_OtherColliderEntityId = m_ColliderID;
                 }
                 else
                 {
                     contactPoint.m_Normal = nativePoint.normal;
-                    contactPoint.m_ThisColliderInstanceID = m_ColliderID;
-                    contactPoint.m_OtherColliderInstanceID = m_OtherColliderID;
+                    contactPoint.m_ThisColliderEntityId = m_ColliderID;
+                    contactPoint.m_OtherColliderEntityId = m_OtherColliderID;
                 }
 
                 managedContainer.Add(contactPoint);
@@ -237,14 +247,14 @@ namespace UnityEngine
                 if (flipped)
                 {
                     contactPoint.m_Normal = -nativePoint.normal;
-                    contactPoint.m_ThisColliderInstanceID = m_OtherColliderID;
-                    contactPoint.m_OtherColliderInstanceID = m_ColliderID;
+                    contactPoint.m_ThisColliderEntityId = m_OtherColliderID;
+                    contactPoint.m_OtherColliderEntityId = m_ColliderID;
                 }
                 else
                 {
                     contactPoint.m_Normal = nativePoint.normal;
-                    contactPoint.m_ThisColliderInstanceID = m_ColliderID;
-                    contactPoint.m_OtherColliderInstanceID = m_OtherColliderID;
+                    contactPoint.m_ThisColliderEntityId = m_ColliderID;
+                    contactPoint.m_OtherColliderEntityId = m_OtherColliderID;
                 }
 
                 managedContainer[i] = contactPoint;

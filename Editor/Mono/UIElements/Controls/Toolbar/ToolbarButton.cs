@@ -23,7 +23,7 @@ namespace UnityEditor.UIElements
     /// SA: [[Button]], [[Toolbar]]
     /// </remarks>
     [Icon("UIToolkit/Icons/ToolbarButton.png")]
-    public class ToolbarButton : Button
+    public partial class ToolbarButton : Button
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : Button.UxmlSerializedData
@@ -36,17 +36,6 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarButton"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarButton, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarButton"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : Button.UxmlTraits {}
 
         /// <summary>
         /// USS class name of elements of this type.

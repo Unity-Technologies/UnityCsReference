@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements.StyleSheets
     }
 
     // Each struct represents on match for a visual element against a complex
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct SelectorMatchRecord : IEquatable<SelectorMatchRecord>
     {
         public StyleSheet sheet;

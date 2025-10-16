@@ -224,13 +224,13 @@ namespace UnityEditor
                 alwaysAddFirstItemToSearchResult = true;
             }
 
-            bool ShouldShowController(AudioMixerController controller, List<int> allowedInstanceIDs)
+            bool ShouldShowController(AudioMixerController controller, List<EntityId> allowedEntityIds)
             {
                 if (!controller)
                     return false;
 
-                if (allowedInstanceIDs != null && allowedInstanceIDs.Count > 0)
-                    return allowedInstanceIDs.Contains(controller.GetInstanceID());
+                if (allowedEntityIds != null && allowedEntityIds.Count > 0)
+                    return allowedEntityIds.Contains(controller.GetEntityId());
 
                 return true;
             }
@@ -241,13 +241,13 @@ namespace UnityEditor
                 m_RootItem = new TreeViewItem<EntityId>(EntityId.From(1010101010), depth, null, "InvisibleRoot");
                 SetExpanded(m_RootItem.id, true);
 
-                List<int> allowedInstanceIDs = ObjectSelector.get.allowedInstanceIDs;
+                List<EntityId> allowedEntityIds = ObjectSelector.get.allowedEntityIds;
 
                 var controllers = new List<AudioMixerController>();
                 foreach (var prop in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { "AudioMixerController" }, searchArea = SearchFilter.SearchArea.AllAssets }))
                 {
                     var controller = prop.pptrValue as AudioMixerController;
-                    if (ShouldShowController(controller, allowedInstanceIDs))
+                    if (ShouldShowController(controller, allowedEntityIds))
                         controllers.Add(controller);
                 }
 

@@ -13,21 +13,34 @@ namespace UnityEditor
 {
     internal class AboutWindow : EditorWindow
     {
-        const int VersionBoxLineHeight = 13;
-        const int VersionBoxHeight = VersionBoxLineHeight * 4;
-        static readonly Vector2 WindowSize = new Vector2(573, 545);
-        private const string AboutTitle = "";
+        // s_Instance is nulled when the window is closed (OnDestroy)
+        static AboutWindow s_Instance;
 
         [RequiredByNativeCode]
         internal static void ShowAboutWindow()
         {
-            var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
-            var aboutRect = EditorGUIUtility.GetCenteredWindowPosition(mainWindowRect, WindowSize);
+            // UUM-92333 HACK: In order for position to be correct, we need to close the existing instance
+            // Otherwise, the new instance will open with the wrong sizing.
+            s_Instance?.Close();
 
-            AboutWindow w = GetWindowWithRect<AboutWindow>(aboutRect, true, AboutTitle);
+            var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
+            var aboutRect = EditorGUIUtility.GetCenteredWindowPosition(mainWindowRect, new Vector2(573, 545));
+
+            // UUM-92333 HACK: Clear any stored window position so that we always open in the center of the main window
+            // If not, we run the risk of opening the about window at the wrong size if the main window was moved or resized between monitor setups
+            var key = typeof(AboutWindow).ToString();
+
+            EditorPrefs.DeleteKey(key + "x");
+            EditorPrefs.DeleteKey(key + "y");
+            EditorPrefs.DeleteKey(key + "w");
+            EditorPrefs.DeleteKey(key + "h");
+            EditorPrefs.DeleteKey(key + "z");
+
+            AboutWindow w = GetWindow<AboutWindow>(utility: true, title: string.Empty);
             w.position = aboutRect;
-            w.minSize = w.maxSize = WindowSize;
-            w.m_Parent.window.m_DontSaveToLayout = true;
+            w.minSize = w.maxSize = w.position.size;
+
+            s_Instance = w;
         }
 
         bool m_ShowDetailedVersion = false;

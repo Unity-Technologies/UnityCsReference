@@ -91,7 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else if (!string.IsNullOrEmpty(error.readMoreURL))
             {
-                buttonText = L10n.Tr("Read more");
+                buttonText = L10n.Tr("Learn More");
                 buttonAction = () =>
                 {
                     PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode}", packageVersion?.uniqueId);

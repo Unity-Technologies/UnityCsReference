@@ -182,7 +182,7 @@ namespace UnityEditor.UIElements.Debugger
                 var id = propertyInfo.id;
                 var val = StyleDebug.GetComputedStyleValue(m_SelectedElement.computedStyle, id);
 
-                m_PropertySpecificityDictionary.TryGetValue(id, out var specificity);
+                var specificity = m_PropertySpecificityDictionary.GetValueOrDefault(id, CSSSpec.InvalidSpecificityScore);
 
                 StyleField sf = null;
                 m_IdToFieldDictionary.TryGetValue(id, out sf);
@@ -599,25 +599,35 @@ namespace UnityEditor.UIElements.Debugger
         {
             m_specificity = specificity;
             var specificityString = "";
+            var tooltip = "";
             switch (specificity)
             {
                 case StyleDebug.UnitySpecificity:
                     specificityString = "unity stylesheet";
+                    tooltip = "The value is coming from a Unity style sheet or a theme style sheet.";
                     break;
                 case StyleDebug.InheritedSpecificity:
                     specificityString = "inherited";
+                    tooltip = "The value is inherited since there are no matching selector.";
                     break;
                 case StyleDebug.InlineSpecificity:
                     specificityString = "inline";
+                    tooltip = "The value has been inlined and will ignore the matching selector.";
                     break;
                 case StyleDebug.UndefinedSpecificity:
                     break;
                 default:
-                    specificityString = specificity.ToString();
+                    var s = new Specificity(specificity);
+                    specificityString = s.ToString();
+                    tooltip = s.isUniversal
+                        ? "The matching selector is a universal selector."
+                        : $"The matching selector contains {s.idScore} id{(s.idScore > 0 ? "s" : "")}, {s.classScore} class{(s.classScore > 0 ? "es" : "")}/pseudo-class{(s.classScore > 0 ? "es" : "")} and {s.typeScore} type{(s.typeScore > 0 ? "s" : "")}.";
+
                     break;
             }
 
             m_SpecificityLabel.text = specificityString;
+            m_SpecificityLabel.tooltip = tooltip;
         }
 
         private void SetPropertyValue(object newValue, int childIndex = -1)

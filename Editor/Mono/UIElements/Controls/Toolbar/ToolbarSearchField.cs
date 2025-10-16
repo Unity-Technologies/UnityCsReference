@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// A search field for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarSearchField|UXML element ToolbarSearchField]].
     /// </summary>
     [Icon("UIToolkit/Icons/ToolbarSearchField.png")]
-    public class ToolbarSearchField : SearchFieldBase<TextField, string>
+    public partial class ToolbarSearchField : SearchFieldBase<TextField, string>
     {
         // KEEP BELOW CODE TO BE BACKWARD COMPATIBLE WITH 2019.1 ToolbarSearchField
         /// <summary>
@@ -64,22 +64,6 @@ namespace UnityEditor.UIElements
 
             public override object CreateInstance() => new ToolbarSearchField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarSearchField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarSearchField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarSearchField"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a ToolbarSearchField element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : SearchFieldBase<TextField, string>.UxmlTraits {}
 
         /// <summary>
         /// Constructor.

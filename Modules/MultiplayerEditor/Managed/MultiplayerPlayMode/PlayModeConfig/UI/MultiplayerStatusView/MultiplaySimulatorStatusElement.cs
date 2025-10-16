@@ -37,7 +37,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private const string k_LocalPortDefaultText = "9000";
 
         private readonly InstanceDescription m_InstanceDescription;
-        private PlaymodeStatusElement.InstanceView m_ParentInstanceView;
         private Foldout m_MetaDataFoldout;
         private Foldout m_SimulationFoldout;
         private Button m_AllocateButton;
@@ -57,7 +56,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             var instance = GetInstanceForThisElement();
             if (instance != null)
-                instance.AddInstanceExecutionEventListener(OnInstanceExecutionUpdate);
+                instance.StatusRefreshed += OnInstanceExecutionUpdate;
 
         }
 
@@ -69,14 +68,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private Instance GetInstanceForThisElement()
         {
-            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            var currentConfig = ScenarioManagerProvider.instance.ActivePlayModeConfig as OrchestratedScenario;
             if (currentConfig == null || currentConfig.Scenario == null)
                 return null;
 
             return currentConfig.Scenario.GetInstanceByName(m_InstanceDescription.Name);
         }
 
-        private void OnInstanceExecutionUpdate(Instance instance, Node node)
+        private void OnInstanceExecutionUpdate(Instance instance, InstanceStatusData status)
         {
             RefreshStatusUI();
         }
@@ -107,8 +106,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             if (instance != null && instance.IsActive())
             {
-                var nodeStatus = instance.GetCurrentNodeStatus();
-                var currentStage = instance.GetCurrentStage();
                 if (initialiseFleetNode is InitialiseFleetNode fleetNode)
                 {
                     SetFieldValues(fleetNode);
@@ -120,30 +117,30 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
 
                 SetAllocationButtonEnabled(projectId, environmentId, authToken, fleetIDValue, instance, fleetNode: initialiseFleetNode);
-                m_ParentInstanceView.RefreshStatusUI(currentStage, nodeStatus);
                 return;
             }
 
             StopMetricsPolling();
             SetAllocationButtonEnabled(projectId, environmentId, authToken, fleetIDValue, instance, fleetNode: initialiseFleetNode);
             m_AllocateToggle.SetEnabled(!EditorApplication.isPlaying && !instance.IsActive());
-            m_ParentInstanceView.RefreshStatusUI(ExecutionStage.None, new List<NodeStatus>());
         }
 
         internal void BindSimulatedFoldOutElement(VisualElement contentContainer, VisualElement statusContainer,
-            VisualElement instanceContainer,
-            PlaymodeStatusElement.InstanceView parentInstanceView)
+            VisualElement instanceContainer)
         {
-            m_ParentInstanceView = parentInstanceView;
-
             m_SimulationFoldout = new Foldout
             {
                 text = k_SimulationFoldoutText,
                 name = "simulated-foldout",
                 value = false
             };
+
+            var ipContainer = new VisualElement();
+            ipContainer.style.marginTop = 5;
+
             var ipLabel = new Label { text = k_IPLabelText };
-            contentContainer.Add(ipLabel);
+            ipContainer.Add(ipLabel);
+            contentContainer.Add(ipContainer);
 
             m_SimulationFoldout.RegisterValueChangedCallback(evt =>
             {
@@ -272,7 +269,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (PlayModeManager.instance.CurrentState != PlayModeState.Running)
+                    if (PlayModeScenarioManager.State != PlayModeScenarioState.Running)
                     {
                         MppmLog.Debug("Metrics polling started but play mode is not active. Exiting polling.");
                         StopMetricsPolling();
@@ -485,7 +482,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 m_AllocateButton.SetEnabled(!String.IsNullOrEmpty(projectId) && !String.IsNullOrEmpty(environmentId) &&
                                             !String.IsNullOrEmpty(authToken) && !String.IsNullOrEmpty(fleetIDValue) &&
-                                            instance.IsActive() && instance.GetCurrentStage() == ExecutionStage.Run);
+                                            instance.IsActive() && instance.StatusData.CurrentStage == ExecutionStage.Run);
                 m_AllocateButton.text = String.IsNullOrEmpty(fleetNode.AllocationId.GetValue<string>())
                     ? k_AllocateButtonStartText
                     : k_AllocateButtonStopText;

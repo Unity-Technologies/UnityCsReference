@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.TerrainTools;
 using UnityEditor.ShortcutManagement;
+using System.Collections.Generic;
 
 namespace UnityEditor.TerrainTools
 {
@@ -125,21 +126,33 @@ namespace UnityEditor.TerrainTools
                 EditorGUILayout.Space();
             }
 
-            if (m_SelectedTerrainLayerIndex == -1)
-                m_SelectedTerrainLayerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrain, m_SelectedTerrainLayer);
+            Rect dropAreaRect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            m_SelectedTerrainLayerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, m_SelectedTerrainLayerIndex);
+            if (m_SelectedTerrainLayerIndex == -1)
+                m_SelectedTerrainLayerIndex = FindLayerIndex(terrain, m_SelectedTerrainLayer);
+
+            // Show the selection grid for terrain layers
+            int newSelectedTerrainLayerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, m_SelectedTerrainLayerIndex);
             EditorGUILayout.Space();
 
-            if (EditorGUI.EndChangeCheck())
+            // Update m_SelectedTerrainLayer if the selection index changed
+            if (newSelectedTerrainLayerIndex != m_SelectedTerrainLayerIndex)
             {
+                m_SelectedTerrainLayerIndex = newSelectedTerrainLayerIndex;
                 m_SelectedTerrainLayer = m_SelectedTerrainLayerIndex != -1 ? terrain.terrainData.terrainLayers[m_SelectedTerrainLayerIndex] : null;
             }
 
+            // Show the detailed inspector for the currently selected terrain layer
             TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_SelectedTerrainLayer, ref m_SelectedTerrainLayerInspector,
                 (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
             EditorGUILayout.Space();
 
+            EditorGUILayout.EndVertical();
+
+            // Handle drag and drop for this specific area
+            HandleLayerDragAndDrop(dropAreaRect, terrain);
+
+            EditorGUI.EndChangeCheck();
         }
 
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
@@ -154,6 +167,121 @@ namespace UnityEditor.TerrainTools
         public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             TextureToolSettingsGUI(terrain, editContext, true);
+        }
+
+        private int FindLayerIndex(Terrain terrain, TerrainLayer layer)
+        {
+            if (terrain == null || terrain.terrainData == null || layer == null)
+                return -1;
+
+            TerrainLayer[] layers = terrain.terrainData.terrainLayers;
+            for (int i = 0; i < layers.Length; i++)
+            {
+                if (layers[i] == layer)
+                    return i;
+            }
+            return -1;
+        }
+
+        private static List<TerrainLayer> s_inspectorDraggedLayersBuffer = new List<TerrainLayer>();
+        private static bool s_isDraggingTerrainLayersInInspector = false;
+
+        private static void CleanupInspectorDragState()
+        {
+            s_inspectorDraggedLayersBuffer.Clear();
+            s_isDraggingTerrainLayersInInspector = false;
+        }
+
+        private void HandleLayerDragAndDrop(Rect dropAreaRect, Terrain terrain)
+        {
+            Event evt = Event.current;
+
+            bool isMouseOverDropArea = dropAreaRect.Contains(evt.mousePosition);
+            bool isDragEvent = (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform || evt.type == EventType.DragExited);
+
+            // If not a drag event and no active drag, early exit.
+            if (!isDragEvent && !s_isDraggingTerrainLayersInInspector)
+            {
+                return;
+            }
+
+            // Handle DragExited globally to clean up state.
+            if (evt.type == EventType.DragExited)
+            {
+                if (s_isDraggingTerrainLayersInInspector)
+                {
+                    CleanupInspectorDragState();
+                }
+                return;
+            }
+
+            // For DragUpdated/DragPerform, require mouse to be over drop area.
+            if (!isMouseOverDropArea && (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform))
+            {
+                return;
+            }
+
+            // Populate buffer on first DragUpdated over the area.
+            if (evt.type == EventType.DragUpdated && !s_isDraggingTerrainLayersInInspector)
+            {
+                s_inspectorDraggedLayersBuffer.Clear();
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj is TerrainLayer layer)
+                    {
+                        s_inspectorDraggedLayersBuffer.Add(layer);
+                    }
+                }
+                s_isDraggingTerrainLayersInInspector = true;
+            }
+
+            // If no valid TerrainLayers are dragged, reject visually.
+            if (s_inspectorDraggedLayersBuffer.Count == 0 && (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform))
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                evt.Use();
+                return;
+            }
+
+            switch (evt.type)
+            {
+                case EventType.DragUpdated:
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                    evt.Use();
+                    break;
+
+                case EventType.DragPerform:
+                    DragAndDrop.AcceptDrag();
+                    bool anyLayerAdded = false;
+                    TerrainLayer lastDraggedLayer = null;
+
+                    if (terrain != null && terrain.terrainData != null)
+                    {
+                        foreach (var layer in s_inspectorDraggedLayersBuffer)
+                        {
+                            if (FindLayerIndex(terrain, layer) == -1)
+                            {
+                                TerrainLayerUtility.AddTerrainLayer(terrain, layer);
+                                anyLayerAdded = true;
+                            }
+                            lastDraggedLayer = layer;
+                        }
+
+                        if (anyLayerAdded)
+                        {
+                            EditorUtility.SetDirty(terrain);
+                        }
+
+                        if (lastDraggedLayer != null)
+                        {
+                            m_SelectedTerrainLayer = lastDraggedLayer;
+                            m_SelectedTerrainLayerIndex = FindLayerIndex(terrain, lastDraggedLayer);
+                        }
+                    }
+                    CleanupInspectorDragState();
+                    evt.Use();
+                    break;
+            }
         }
     }
 }

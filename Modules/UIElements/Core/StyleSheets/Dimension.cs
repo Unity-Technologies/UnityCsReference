@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements.StyleSheets
     // https://developer.mozilla.org/en-US/docs/Web/CSS/dimension
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal struct Dimension : IEquatable<Dimension>
     {
         public enum Unit

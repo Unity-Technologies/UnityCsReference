@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_Enabled;
         private long m_LoadMore;
         private string m_LoadedText;
-        private bool m_DoShowLoadMoreLabel;
+        private bool m_ShowLoadMoreButton;
         private bool m_LoadMoreInProgress;
         private bool m_LoadAllDiff;
 
@@ -64,7 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownButton.name = "loadAssetsDropdown";
             loadAssetsDropdownContainer.Add(dropdownButton);
 
-            loadMoreLabel.OnLeftClick(LoadItemsClicked);
+            loadMoreButton.clickable.clicked += LoadItemsClicked;
         }
 
         public void OnEnable()
@@ -138,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnInternetReachabilityChange(bool value)
         {
-            loadMoreLabel.SetEnabled(value && !m_LoadMoreInProgress);
+            loadMoreButton.SetEnabled(value && !m_LoadMoreInProgress);
         }
 
         public void UpdateVisibility(string pageId = null)
@@ -164,19 +164,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Total = total;
             m_NumberOfPackagesShown = current;
 
-            loadMoreLabel.SetEnabled(true);
+            loadMoreButton.SetEnabled(true);
             m_LoadMoreInProgress = false;
             UpdateLoadBarMessage();
         }
 
         internal void Reset()
         {
-            m_DoShowLoadMoreLabel = true;
+            m_ShowLoadMoreButton = true;
         }
 
         public void LoadItemsClicked()
         {
-            loadMoreLabel.SetEnabled(false);
+            loadMoreButton.SetEnabled(false);
             m_LoadMoreInProgress = true;
             m_PageManager.activePage.LoadMore(m_LoadMore);
             UpdateMenu();
@@ -192,7 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_Total <= m_NumberOfPackagesShown)
             {
-                m_DoShowLoadMoreLabel = false;
+                m_ShowLoadMoreButton = false;
                 m_LoadedText = m_Total == 1 ? L10n.Tr("One package shown") : string.Format(L10n.Tr("All {0} packages shown"), m_NumberOfPackagesShown);
             }
             else
@@ -217,23 +217,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetLabels()
         {
-            var loadAll = m_SettingsProxy.loadAssets == (int)AssetsToLoad.All ? true : false;
+            var loadAll = m_SettingsProxy.loadAssets == (int)AssetsToLoad.All;
             loadAssetsDropdown.text = loadAll || m_LoadAllDiff ? k_All : m_LoadMore.ToString();
 
             loadedLabel.text = m_LoadedText;
 
-            UIUtils.SetElementDisplay(loadAssetsDropdown, m_DoShowLoadMoreLabel);
-            UIUtils.SetElementDisplay(loadMoreLabel, m_DoShowLoadMoreLabel);
+            UIUtils.SetElementDisplay(loadAssetsDropdown, m_ShowLoadMoreButton);
+            UIUtils.SetElementDisplay(loadMoreButton, m_ShowLoadMoreButton);
 
             UIUtils.SetElementDisplay(loadBarContainer, true);
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
 
-        private Label loadedLabel { get { return cache.Get<Label>("loadedLabel"); } }
-        private Label loadMoreLabel { get { return cache.Get<Label>("loadMoreLabel"); } }
-        private VisualElement loadBarContainer { get { return cache.Get<VisualElement>("loadBarContainer"); } }
-        private VisualElement loadAssetsDropdownContainer { get { return cache.Get<VisualElement>("loadAssetsDropdownContainer"); } }
-        private DropdownButton loadAssetsDropdown { get { return cache.Get<DropdownButton>("loadAssetsDropdown"); } }
+        private Label loadedLabel => cache.Get<Label>("loadedLabel");
+        private Button loadMoreButton =>  cache.Get<Button>("loadMoreButton");
+        private VisualElement loadBarContainer =>  cache.Get<VisualElement>("loadBarContainer");
+        private VisualElement loadAssetsDropdownContainer => cache.Get<VisualElement>("loadAssetsDropdownContainer");
+        private DropdownButton loadAssetsDropdown => cache.Get<DropdownButton>("loadAssetsDropdown");
     }
 }

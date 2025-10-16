@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
     /// Makes a field to receive any object type. For more information, refer to [[wiki:UIE-uxml-element-ObjectField|UXML element ObjectField]].
     /// </summary>
     [Icon("UIToolkit/Icons/ObjectField.png")]
-    public class ObjectField : BaseField<Object>
+    public partial class ObjectField : BaseField<Object>
     {
         internal static readonly BindingId objectTypeProperty = nameof(objectType);
         internal static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
@@ -64,36 +64,6 @@ namespace UnityEditor.UIElements
                     e.allowSceneObjects = allowSceneObjects;
                 if (ShouldWriteAttributeValue(objectType_UxmlAttributeFlags))
                     e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
-            }
-        }
-
-        /// <summary>
-        /// Instantiates an <see cref="ObjectField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ObjectField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ObjectField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<Object>.UxmlTraits
-        {
-            UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", defaultValue = true };
-            UxmlTypeAttributeDescription<Object> m_ObjectType = new UxmlTypeAttributeDescription<Object> { name = "type", defaultValue = typeof(Object)};
-
-            /// <summary>
-            /// Initialize <see cref="ObjectField"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                ((ObjectField)ve).allowSceneObjects = m_AllowSceneObjects.GetValueFromBag(bag, cc);
-                ((ObjectField)ve).objectType = m_ObjectType.GetValueFromBag(bag, cc);
             }
         }
 
@@ -172,7 +142,7 @@ namespace UnityEditor.UIElements
             UpdateMixedValueContent();
         }
 
-        internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceInstanceIDValue != 0 && p.objectReferenceValue == null;
+        internal static bool IsMissingObjectReference(SerializedProperty p) => p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceEntityIdValue != 0 && p.objectReferenceValue == null;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal class ObjectFieldDisplay : VisualElement

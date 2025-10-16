@@ -13,7 +13,7 @@ namespace UnityEditor.Build.Content
 {
     [Serializable]
     [UsedByNativeCode]
-    [NativeHeader("Modules/ContentBuild/Editor/Public/BuildReferenceMap.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/BuildReferenceMap.h")]
     public class BuildReferenceMap : ISerializable, IDisposable
     {
         private IntPtr m_Ptr;

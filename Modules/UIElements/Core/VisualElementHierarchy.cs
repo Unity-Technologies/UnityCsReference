@@ -86,7 +86,7 @@ namespace UnityEngine.UIElements
         // this will be null until a visual tree is added to a panel
         internal BaseVisualElementPanel elementPanel
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
             get;
             private set;
         }
@@ -106,7 +106,7 @@ namespace UnityEngine.UIElements
         /// element's content container hierarchy is used instead of the element itself.
         /// This can lead to unexpected results, such as elements being ignored by the navigation events
         /// if they are not directly in the content container's hierarchy. Refer to <see cref="IFocusRing" /> for more information.
-        /// 
+        ///
         /// If the content container is the same as the element itself, child elements are added directly to the element.
         /// This is true for most elements but can be overridden by more complex types.
         ///
@@ -1026,7 +1026,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="predicate">The predicate to be satisfied by the ancestor to find.</param>
         /// <returns>The first ancestor satisfying the predicate or null otherwise.</returns>
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule", "UnityEditor.GraphToolkitModule")]
         internal VisualElement GetFirstAncestorWhere(Predicate<VisualElement> predicate)
         {
             VisualElement ancestor = hierarchy.parent;
@@ -1157,7 +1157,7 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal VisualElement GetRootVisualContainer()
+        internal VisualElement GetRootVisualContainer(bool stopAtNearestRoot = false)
         {
             VisualElement topMostRootContainer = null;
             var hierarchyParent = this;
@@ -1166,6 +1166,8 @@ namespace UnityEngine.UIElements
                 if (hierarchyParent.isRootVisualContainer)
                 {
                     topMostRootContainer = hierarchyParent;
+                    if (stopAtNearestRoot)
+                        return topMostRootContainer;
                 }
 
                 hierarchyParent = hierarchyParent.hierarchy.parent;

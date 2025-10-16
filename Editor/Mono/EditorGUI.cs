@@ -229,6 +229,7 @@ namespace UnityEditor
         static EditorGUI()
         {
             hyperLinkClicked += EditorGUI_OpenFileOnHyperLinkClicked;
+            ATGTextEventHandler.onComplexHyperlinkClicked += HandleComplexHyperlinkClicked;
         }
 
         internal static void BeginHandleMixedValueContentColor()
@@ -1520,6 +1521,14 @@ namespace UnityEditor
                     Application.OpenURL(path);
                 else
                     LogEntries.OpenFileOnSpecificLineAndColumn(path, line, -1);
+            }
+        }
+
+        private static void HandleComplexHyperlinkClicked(Dictionary<string, string> hyperLinkData)
+        {
+            if (hyperLinkData != null)
+            {
+                hyperLinkClicked(null, new HyperLinkClickedEventArgs(hyperLinkData));
             }
         }
 
@@ -4116,11 +4125,6 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null, true);
                         GUIUtility.keyboardControl = controlID;
@@ -4130,11 +4134,6 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(controlID))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         evt.Use();
@@ -7582,6 +7581,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Bounds:
                 case SerializedPropertyType.BoundsInt:
                 case SerializedPropertyType.Hash128:
+                case SerializedPropertyType.EntityId:
                     return false;
             }
 
@@ -7871,6 +7871,16 @@ namespace UnityEditor
                         if (EndChangeCheck())
                         {
                             property.hash128Value = Hash128.Parse(newValue);
+                        }
+                        break;
+                    }
+                    case SerializedPropertyType.EntityId:
+                    {
+                        BeginChangeCheck();
+                        string newValue = TextField(position, label, property.entityIdValue.ToString());
+                        if (EndChangeCheck())
+                        {
+                            property.entityIdValue = EntityId.Parse(newValue);
                         }
                         break;
                     }

@@ -14,11 +14,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_EntryHandle;
 
-        internal extern static InterfaceRegistrationStatementInternal Invalid();
-        internal extern bool IsValid();
-
-        internal extern bool IsGeneratorStatement(ShaderContainer container);
-        internal extern bool IsTemplateStatement(ShaderContainer container);
+        [ThreadSafe] internal extern static InterfaceRegistrationStatementInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         InterfaceRegistrationStatementInternal IInternalType<InterfaceRegistrationStatementInternal>.ConstructInvalid() => Invalid();
@@ -42,37 +39,17 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
 
-        public IEnumerable<ShaderAttribute> Attributes
-        {
-            get
-            {
-                var listHandle = statementInternal.m_AttributeListHandle;
-                return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
-            }
-        }
-        public bool IsGeneratorStatement => statementInternal.IsGeneratorStatement(container);
-        public bool IsTemplateStatement => statementInternal.IsTemplateStatement(container);
-        public string GeneratorName
-        {
-            get
-            {
-                if (container == null || !IsGeneratorStatement)
-                {
-                    var message = "Invalid call to 'InterfaceRegistrationStatement.GeneratorName'. " +
-                        "Statement is not a generator. Check IsGeneratorStatement before calling.";
-                    throw new InvalidOperationException(message);
-                }
-                return container.GetString(statementInternal.m_EntryHandle);
-            }
-        }
+        public IEnumerable<ShaderAttribute> Attributes =>
+            ListType.Enumerate<ShaderAttribute>(container, statementInternal.m_AttributeListHandle);
+
         public Template Template
         {
             get
             {
-                if (container == null || !IsTemplateStatement)
+                if (container == null)
                 {
                     var message = "Invalid call to 'InterfaceRegistrationStatement.Template'. " +
-                        "Statement is not a template. Check IsTemplateStatement before calling.";
+                        "Container is null, check the container";
                     throw new InvalidOperationException(message);
                 }
                 return new Template(container, statementInternal.m_EntryHandle);
@@ -94,7 +71,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static InterfaceRegistrationStatement Invalid => new InterfaceRegistrationStatement(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is InterfaceRegistrationStatement other && this.Equals(other);
         public bool Equals(InterfaceRegistrationStatement other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -106,15 +83,8 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
 
             public List<ShaderAttribute> Attributes;
-            public string GeneratorName { get; private set; }
             public Template Template { get; private set; }
             public ShaderContainer Container => container;
-
-            public Builder(ShaderContainer container, string generatorName)
-            {
-                this.container = container;
-                this.GeneratorName = generatorName;
-            }
 
             public Builder(ShaderContainer container, Template template)
             {
@@ -131,11 +101,9 @@ namespace UnityEditor.ShaderFoundry
             {
                 var statementInternal = new InterfaceRegistrationStatementInternal();
 
-                statementInternal.m_AttributeListHandle = HandleListInternal.Build(container, Attributes);
+                statementInternal.m_AttributeListHandle = ListType.Build(container, Attributes);
                 if (Template.IsValid)
                     statementInternal.m_EntryHandle = Template.handle;
-                else
-                    statementInternal.m_EntryHandle = container.AddString(GeneratorName);
 
                 var returnTypeHandle = container.Add(statementInternal);
                 return new InterfaceRegistrationStatement(container, returnTypeHandle);

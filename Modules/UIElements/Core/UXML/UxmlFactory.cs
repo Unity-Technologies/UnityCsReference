@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// UxmlTraits describes the UXML attributes and children elements of a class deriving from <see cref="VisualElement"/>. It is used by <see cref="BindableElement.UxmlFactory"/> to map UXML attributes to the C# class properties when reading UXML documents. It is also used to generate UXML schema definitions.
     /// </remarks>
-    [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
+    [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", VisualElement.UxmlTraitsObsoleteIsError)]
     public abstract class UxmlTraits : BaseUxmlTraits
     {
         /// <summary>
@@ -87,7 +87,10 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Override this function in your traits class to initialize your C# object with values read from the UXML document.
         /// </remarks>
-        public virtual void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc) {}
+        public virtual void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+        {
+            Debug.LogWarningFormat("Control {0} uses the deprecated UxmlTraits API. Its attributes were ignored on import, which may cause visual errors or missing data. Update the control’s script to use the UxmlAttribute API. <a href=\"https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html\">Learn more</a>.", ve.GetType().FullName);
+        }
     }
 
     /// <summary>
@@ -96,7 +99,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// UxmlTraits describes the UXML attributes and children elements of a class or structure. It is used by <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> to map UXML attributes to the C# class/struct properties when reading UXML documents. It is also used to generate UXML schema definitions.
     /// </remarks>
-    [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
+    [Obsolete("UxmlObjectTraits<T> is deprecated and will be removed. Use UxmlElementAttribute instead.", VisualElement.UxmlTraitsObsoleteIsError)]
     internal abstract class UxmlObjectTraits<T> : BaseUxmlTraits
     {
         /// <summary>
@@ -108,7 +111,10 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// UxmlObject are simple data classes or structs.
         /// </remarks>
-        public virtual void Init(ref T obj, IUxmlAttributes bag, CreationContext cc) {}
+        public virtual void Init(ref T obj, IUxmlAttributes bag, CreationContext cc)
+        {
+            Debug.LogWarningFormat("Control {0} uses the deprecated UxmlTraits API. Its attributes were ignored on import, which may cause visual errors or missing data. Update the control’s script to use the UxmlAttribute API. <a href=\"https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html\">Learn more</a>.", obj.GetType().FullName);
+        }
     }
 
     /// <summary>

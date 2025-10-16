@@ -41,7 +41,13 @@ namespace UnityEditor.UIElements
                 debuggerOverlayTmpPanel.overlayedOverPanel = panel;
                 debuggerOverlayTmpPanel.clearSettings = new PanelClearSettings();
                 debuggerOverlayPanel = debuggerOverlayTmpPanel;
-                debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
+
+
+                debuggerOverlayPanel.visualTree.style.position = Position.Absolute;
+                debuggerOverlayPanel.visualTree.style.top = panel.visualTree.layout.yMin;
+                debuggerOverlayPanel.visualTree.style.left = panel.visualTree.layout.xMin;
+                debuggerOverlayPanel.visualTree.style.width = panel.visualTree.layout.width;
+                debuggerOverlayPanel.visualTree.style.height = panel.visualTree.layout.height;
                 debugContainer = new VisualElement()
                 {
                     style =

@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DisplayName = L10n.Tr("Dependencies");
             m_PackageDatabase = packageDatabase;
 
-            var root = resourceLoader.GetTemplate("PackageDetailsDependenciesTab.uxml");
+            var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsDependenciesTab.uxml");
             m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
 
@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static SelectableLabel BuildSelectableLabel(string text, string clazz)
         {
             var label = new SelectableLabel();
-            label.SetValueWithoutNotify(text);
+            label.text = text;
             label.AddToClassList(clazz);
             label.tooltip = text;
             return label;
@@ -113,7 +113,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (installedVersion.HasTag(PackageTag.Local))
                 return L10n.Tr("(local)");
-            
+
             if (installedVersion.HasTag(PackageTag.Tarball))
                 return L10n.Tr("(tarball)");
 

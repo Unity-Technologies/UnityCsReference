@@ -12,7 +12,7 @@ namespace Shaders
 {
     public enum ShaderType
     {
-        Graphics,
+        Graphics, FirstStage = Graphics,
         Compute,
         RayTracing,
         // Surface is hidden
@@ -22,7 +22,7 @@ namespace Shaders
 
     public enum ShaderStage
     {
-        Vertex,
+        Vertex, FirstStage = Vertex,
         Fragment,
         Hull,
         Domain,
@@ -30,7 +30,8 @@ namespace Shaders
         Compute,
         RayTracing,
 
-        Count
+        Count,
+        GraphicsStageCount = Compute,
     }
 
     [Flags]
@@ -72,6 +73,8 @@ namespace Shaders
         extern public static bool IsShaderTypeEnabled(ShaderTypeFlags flags, ShaderType type);
         extern public static ShaderStageFlags ShaderStageToFlags(ShaderStage stage);
         extern public static ShaderTypeFlags ShaderTypeToFlags(ShaderType type);
+        extern public static ShaderStage GetPreviousStage(ShaderStage stage);
+        extern public static ShaderStage GetNextStage(ShaderStage stage);
     }
 } // namespace Shaders
 } // namespace UnityEngine

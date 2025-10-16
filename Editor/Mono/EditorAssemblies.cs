@@ -158,7 +158,8 @@ namespace UnityEditor
                     }
                     catch (Exception x)
                     {
-                        Debug.LogError(x);
+                        Debug.LogError($"Exception while executing InitializeOnLoad for {method.DeclaringType?.Name}.{method.Name}");
+                        Debug.LogException(x);
                     }
                 }
             }

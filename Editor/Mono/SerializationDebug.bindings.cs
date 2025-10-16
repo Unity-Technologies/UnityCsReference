@@ -69,7 +69,7 @@ namespace UnityEditor
                         break;
 
                     case SerializedPropertyType.ObjectReference:
-                        propertyValue = $"{{instanceID: {property.objectReferenceInstanceIDValue} ({property.objectReferenceStringValue})}}";
+                        propertyValue = $"{{instanceID: {property.objectReferenceEntityIdValue} ({property.objectReferenceStringValue})}}";
                         break;
 
                     case SerializedPropertyType.LayerMask:
@@ -125,7 +125,7 @@ namespace UnityEditor
                         break;
 
                     case SerializedPropertyType.ExposedReference:
-                        propertyValue = $"{{instanceID: {property.objectReferenceInstanceIDValue} ({property.objectReferenceStringValue})}}";
+                        propertyValue = $"{{instanceID: {property.objectReferenceEntityIdValue} ({property.objectReferenceStringValue})}}";
                         break;
 
                     case SerializedPropertyType.FixedBufferSize:
@@ -149,11 +149,15 @@ namespace UnityEditor
                         break;
 
                     case SerializedPropertyType.ManagedReference:
-                        propertyValue = $"{{instanceID: {property.objectReferenceInstanceIDValue} ({property.objectReferenceStringValue})}}";
+                        propertyValue = $"{{instanceID: {property.objectReferenceEntityIdValue} ({property.objectReferenceStringValue})}}";
                         break;
 
                     case SerializedPropertyType.Hash128:
                         propertyValue = $"{property.hash128Value}";
+                        break;
+
+                    case SerializedPropertyType.EntityId:
+                        propertyValue = $"{property.entityIdValue}";
                         break;
                 }
 

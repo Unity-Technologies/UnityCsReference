@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// A tree view with multi column support. For more information, refer to [[wiki:UIE-uxml-element-MultiColumnTreeView|MultiColumnTreeView]].
     /// </summary>
     [Icon("UIToolkit/Icons/MultiColumnTreeView.png")]
-    public class MultiColumnTreeView : BaseTreeView
+    public partial class MultiColumnTreeView : BaseTreeView
     {
         static readonly BindingId columnsProperty = nameof(columns);
         static readonly BindingId sortColumnDescriptionsProperty = nameof(sortColumnDescriptions);
@@ -75,58 +75,6 @@ namespace UnityEngine.UIElements
                     columns.Deserialize(c);
                     e.columns = c;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="MultiColumnTreeView"/> using data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> created from UXML.
-        /// </remarks>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<MultiColumnTreeView, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="MultiColumnTreeView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the MultiColumnTreeView element properties that you can use in a UI document asset (UXML file).
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseTreeView.UxmlTraits
-        {
-            readonly UxmlEnumAttributeDescription<ColumnSortingMode> m_SortingMode = new() { name = "sorting-mode", obsoleteNames = new[] { "sorting-enabled" } };
-            readonly UxmlObjectAttributeDescription<Columns> m_Columns = new ();
-            readonly UxmlObjectAttributeDescription<SortColumnDescriptions> m_SortColumnDescriptions = new ();
-
-            /// <summary>
-            /// Initializes <see cref="MultiColumnTreeView"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var treeView = (MultiColumnTreeView)ve;
-
-                // Convert potential sorting-enabled boolean attribute to a sorting mode enum value.
-                if (m_SortingMode.TryGetValueFromBagAsString(bag, cc, out var stringSortingMode))
-                {
-                    if (bool.TryParse(stringSortingMode, out var boolSortingMode))
-                    {
-                        treeView.sortingMode = boolSortingMode ? ColumnSortingMode.Custom : ColumnSortingMode.None;
-                    }
-                    else
-                    {
-                        treeView.sortingMode = m_SortingMode.GetValueFromBag(bag, cc);
-                    }
-                }
-
-                treeView.sortColumnDescriptions = m_SortColumnDescriptions.GetValueFromBag(bag, cc);
-                treeView.columns = m_Columns.GetValueFromBag(bag, cc);
             }
         }
 

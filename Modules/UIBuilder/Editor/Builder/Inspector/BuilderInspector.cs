@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -66,8 +67,10 @@ namespace Unity.UI.Builder
         const float m_PreviewMinHeight = 20;
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
-        VisualElement m_TextGeneratorStyle;
-        VisualElement m_TextAutoSizeStyle;
+        TextAutoSizeStyleField m_TextAutoSizeField;
+        EnumField m_TextGeneratorField;
+        BuilderStyleRow m_AtgWarningRow;
+        BuilderStyleRow m_AutoSizeWarningRow;
 
         // Controllers
         public UxmlBatchedChangesController batchedChangesController { get; }
@@ -106,6 +109,8 @@ namespace Unity.UI.Builder
 
         public BuilderInspectorCanvas canvasInspector => m_CanvasSection;
         public BuilderInspectorAttributes attributesSection => m_AttributesSection;
+        public BuilderInspectorLocalStyles localStyles => m_LocalStylesSection;
+        public BuilderInspectorInheritedStyles inheritedStyles => m_InheritedStyleSection;
 
         // Constants
         static readonly string s_UssClassName = "unity-builder-inspector";
@@ -259,12 +264,7 @@ namespace Unity.UI.Builder
                 BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uxml");
             template.CloneTree(this);
 
-            m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
-            m_TextAutoSizeStyle = this.Q<BuilderStyleRow>(null, "unity-text-auto-size");
-
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
-            m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
-            m_TextAutoSizeStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            BindAdvancedTextUI();
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -381,6 +381,29 @@ namespace Unity.UI.Builder
             m_RefreshAttributesAction = RefreshAttributesSection;
         }
 
+        void BindAdvancedTextUI()
+        {
+            m_TextGeneratorField   = this.Q<EnumField>("textgenerator-field");
+            m_TextAutoSizeField    = this.Q<TextAutoSizeStyleField>("text-auto-size");
+            m_AtgWarningRow        = this.Q<BuilderStyleRow>("atg-warning-row");
+            m_AutoSizeWarningRow   = this.Q<BuilderStyleRow>("autosize-warning-row");
+
+            m_TextAutoSizeField?.RegisterValueChangedCallback(_ => UpdateAdvancedTextHelpBox());
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged += _ => UpdateAdvancedTextHelpBox();
+        }
+
+        internal void UpdateAdvancedTextHelpBox()
+        {
+            bool isAdvanced = m_TextGeneratorField?.value != null && (TextGeneratorType)m_TextGeneratorField.value == TextGeneratorType.Advanced;
+
+            bool showAtg = isAdvanced && !UIToolkitProjectSettings.enableAdvancedText;
+            m_AtgWarningRow.style.display = showAtg ? DisplayStyle.Flex : DisplayStyle.None;
+
+            bool bestFit = m_TextAutoSizeField != null && m_TextAutoSizeField.IsBestFit;
+            bool showAutoSize = !isAdvanced && bestFit;
+            m_AutoSizeWarningRow.style.display = showAutoSize ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         public void Dispose()
         {
             m_LocalStylesSection.Dispose();
@@ -388,7 +411,6 @@ namespace Unity.UI.Builder
             m_HeaderSection.Dispose();
             m_PreviewWindow?.Close();
             batchedChangesController.Dispose();
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
@@ -1500,58 +1522,6 @@ namespace Unity.UI.Builder
                 or BuilderSelectionType.ElementInTemplateInstance or BuilderSelectionType.ElementInControlInstance;
         }
 
-        #pragma warning disable CS0618 // Type or member is obsolete
-        private UnityEngine.UIElements.UxmlTraits GetCurrentElementTraits()
-        {
-            var currentVisualElementTypeName = currentVisualElement.GetType().ToString();
-
-            if (!VisualElementFactoryRegistry.TryGetValue(currentVisualElementTypeName, out var factoryList))
-            {
-                // We fallback on the BindableElement factory if we don't find any so
-                // we can update the modified attributes. This fixes the TemplateContainer
-                // factory not found.
-                if (!VisualElementFactoryRegistry.TryGetValue(typeof(BindableElement).FullName,
-                        out factoryList))
-                {
-                    return null;
-                }
-            }
-
-            var traits = factoryList[0].GetTraits() as UxmlTraits;
-            return traits;
-        }
-        #pragma warning restore CS0618 // Type or member is obsolete
-
-        internal void CallInitOnElement()
-        {
-            var traits = GetCurrentElementTraits();
-
-            if (traits == null)
-                return;
-
-            // We need to clear bindings before calling Init to avoid corrupting the data source.
-            BuilderBindingUtility.ClearUxmlBindings(currentVisualElement);
-
-            var context = new CreationContext(null, null, visualTreeAsset, currentVisualElement);
-            var vea = currentVisualElement.GetVisualElementAsset();
-            traits.Init(currentVisualElement, vea, context);
-        }
-
-        internal void CallInitOnTemplateChild(VisualElement visualElement, VisualElementAsset vea,
-            List<CreationContext.AttributeOverrideRange> attributeOverridesRanges)
-        {
-            var traits = GetCurrentElementTraits();
-
-            if (traits == null)
-                return;
-
-            // We need to clear bindings before calling Init to avoid corrupting the data source.
-            BuilderBindingUtility.ClearUxmlBindings(currentVisualElement);
-
-            var context = new CreationContext(null, attributeOverridesRanges, null, null);
-            traits.Init(visualElement, vea, context);
-        }
-
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType = BuilderStylingChangeType.Default)
         {
             using var marker = k_StylingChangedMarker.Auto();
@@ -1604,7 +1574,7 @@ namespace Unity.UI.Builder
                 return FindStyleField(BuilderNameUtilities.ConvertStyleCSharpNameToUssName(propertyPath.Substring(k_StylePrefix.Length)));
             }
 
-            return FindAttributeField(attributeSection.GetRemapCSPropertyToAttributeName(propertyPath));
+            return FindAttributeField(propertyPath);
         }
 
         /// <summary>
@@ -1627,18 +1597,19 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Finds the inspector attribute field from the specified property name.
         /// </summary>
-        /// <param name="attributeName">The attribute name bound to the field to seek</param>
+        /// <param name="propertyName">The attribute name or property name bound to the field to seek</param>
         /// <returns>The attribute field found</returns>
-        public VisualElement FindAttributeField(string attributeName)
+        public VisualElement FindAttributeField(string propertyName)
         {
             bool IsFieldElement(VisualElement ve)
             {
                 var attribute = ve.GetLinkedAttributeDescription();
-                return attribute?.name == attributeName;
+                return attribute != null && (attribute.serializedField.Name == propertyName || attribute.name == propertyName);
             }
 
             VisualElement field;
-            if (attributeName is "data-source" or "data-source-type" or "data-source-path")
+            if (propertyName is "data-source" or "data-source-type" or "data-source-path"
+            or nameof(VisualElement.dataSource) or nameof(VisualElement.dataSourceType) or nameof(VisualElement.dataSourcePath))
                 field = m_HeaderSection.dataSourceAndPathView.attributesContainer.Query().Where(IsFieldElement);
             else
                 field = attributeSection.root.Query().Where(IsFieldElement);
@@ -1660,7 +1631,6 @@ namespace Unity.UI.Builder
             }
             return field;
         }
-
 
         /// <summary>
         /// Finds the inspector attribute field from the specified property name.
@@ -1767,25 +1737,52 @@ namespace Unity.UI.Builder
         }
 
         /// <summary>
+        /// Finds the inspector style field from the specified style name and throws an exception if not found.
+        /// </summary>
+        /// <param name="styleName">The style name bound to the field to seek</param>
+        /// <param name="expand">Whether to expand the parent foldouts</param>
+        /// <returns>The field found</returns>
+        public T MandatoryFindStyleField<T>(string styleName, bool expand = true) where T : VisualElement
+        {
+            var field = FindStyleField(styleName, expand) as T;
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Could cast style field {styleName} into {typeof(T)}");
+            }
+            return field;
+        }
+
+        /// <summary>
         /// Expands all parent foldouts of the specified field.
         /// </summary>
         /// <param name="field">The field to expand</param>
-        public void ExpandParentFoldouts(VisualElement field)
+        /// <returns>Returns whether an actual expansion occurred</returns>
+        public bool ExpandParentFoldouts(VisualElement field)
         {
+            bool expanded = false;
             var curParent = field.parent;
 
             while (curParent != this)
             {
                 if (curParent is Foldout foldout)
                 {
-                    foldout.value = true;
+                    if (!foldout.value)
+                    {
+                        foldout.value = true;
+                        expanded = true;
+                    }
                 }
                 else if (curParent is PersistedFoldout persistedFoldout)
                 {
-                    persistedFoldout.value = true;
+                    if (!persistedFoldout.value)
+                    {
+                        persistedFoldout.value = true;
+                        expanded = true;
+                    }
                 }
                 curParent = curParent.parent;
             }
+            return expanded;
         }
 
         /// <summary>
@@ -1939,12 +1936,6 @@ namespace Unity.UI.Builder
                     e.StopImmediatePropagation();
                 }
             });
-        }
-
-        void ChangeTextGeneratorStyleVisibility(bool show)
-        {
-            m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-            m_TextAutoSizeStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

@@ -60,6 +60,10 @@ namespace UnityEditor
         extern internal static  void DeletePreset(string presetName);
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
+        [NativeMethod("CanHideLODLabels")]
+        extern internal static bool CanHideLODLabels();
+
+        [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         [NativeMethod("ResetPresetsToFactorySettings")]
         extern internal static  void ResetToFactorySettings();
 
@@ -77,6 +81,9 @@ namespace UnityEditor
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         internal extern static bool showSelectionWire { get; set; }
+
+        [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
+        internal extern static bool showLODLabels { get; set; }
 
         [StaticAccessor("GetAnnotationManager()", StaticAccessorType.Dot)]
         internal extern static float iconSize { get; set; }

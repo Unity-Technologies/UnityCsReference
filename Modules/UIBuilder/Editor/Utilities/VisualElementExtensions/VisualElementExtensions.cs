@@ -16,17 +16,17 @@ namespace Unity.UI.Builder
     {
         public static bool HasLinkedAttributeDescription(this VisualElement ve)
         {
-            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) is UxmlAttributeDescription;
+            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) is UxmlSerializedAttributeDescription;
         }
 
-        public static UxmlAttributeDescription GetLinkedAttributeDescription(this VisualElement ve)
+        public static UxmlSerializedAttributeDescription GetLinkedAttributeDescription(this VisualElement ve)
         {
             // UxmlSerializedFields have a UxmlSerializedDataAttributeField as the parent
             var dataField = ve as UxmlSerializedDataAttributeField ?? ve.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
-            return (dataField ?? ve).GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
+            return (dataField ?? ve).GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlSerializedAttributeDescription;
         }
 
-        public static void SetLinkedAttributeDescription(this VisualElement ve, UxmlAttributeDescription attribute)
+        public static void SetLinkedAttributeDescription(this VisualElement ve, UxmlSerializedAttributeDescription attribute)
         {
             ve.SetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName, attribute);
         }
@@ -60,10 +60,6 @@ namespace Unity.UI.Builder
             list.Add(fieldElement);
             row.SetProperty(BuilderConstants.InspectorLinkedFieldsForStyleRowVEPropertyName, list);
         }
-
-
-
-
 
         public static VisualTreeAsset GetVisualTreeAsset(this VisualElement element)
         {
@@ -405,8 +401,6 @@ namespace Unity.UI.Builder
 
             return statusIndicator;
         }
-
-        public static IBuilderUxmlAttributeFieldFactory GetFieldFactory(this VisualElement field) => field.GetProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName) as IBuilderUxmlAttributeFieldFactory;
 
         public static string GetUxmlTypeName(this VisualElement element)
         {

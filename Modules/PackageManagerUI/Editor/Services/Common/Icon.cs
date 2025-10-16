@@ -26,9 +26,12 @@ internal enum Icon
     Resume,
     Cancel,
 
+    Info,
     Error,
     Warning,
     Success,
+
+    Verified,
 
     PullDown,
 

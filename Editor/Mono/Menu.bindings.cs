@@ -31,6 +31,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/MenuController.h")]
     public sealed class Menu
     {
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static event Action menuChanged;
 
         [NativeMethod("MenuController::SetChecked", true)]
@@ -61,6 +62,7 @@ namespace UnityEditor
         internal static extern void SetHotkey(string menuPath, string hotkey);
 
         [FreeFunction("MenuController::GetMenuItemHotkey")]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static extern string GetHotkey(string menuPath);
 
         [FreeFunction("MenuController::ExtractSubmenus")]
@@ -71,9 +73,11 @@ namespace UnityEditor
         internal static extern ScriptingMenuItem[] GetMenuItems(string menuPath, bool includeSeparators, bool localized);
 
         [FreeFunction("MenuController::AddMenuItem")]
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static extern void AddMenuItem(string name, string shortcut, bool @checked, int priority, System.Action execute, System.Func<bool> validate);
 
         [FreeFunction("MenuController::RemoveMenuItem")]
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static extern void RemoveMenuItem(string name);
 
         [FreeFunction("MenuController::AddSeparator")]

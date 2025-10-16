@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for describing an XML attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public abstract class UxmlAttributeDescription
     {
         protected const string xmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
@@ -313,6 +314,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for all the UXML specific attributes.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public abstract class TypedUxmlAttributeDescription<T> : UxmlAttributeDescription
     {
         /// <summary>
@@ -337,6 +339,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>string</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlStringAttributeDescription : TypedUxmlAttributeDescription<string>
     {
         /// <summary>
@@ -381,6 +384,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>float</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlFloatAttributeDescription : TypedUxmlAttributeDescription<float>
     {
         /// <summary>
@@ -433,6 +437,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>double</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlDoubleAttributeDescription : TypedUxmlAttributeDescription<double>
     {
         /// <summary>
@@ -485,6 +490,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>int</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlIntAttributeDescription : TypedUxmlAttributeDescription<int>
     {
         /// <summary>
@@ -538,6 +544,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>uint</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlUnsignedIntAttributeDescription : TypedUxmlAttributeDescription<uint>
     {
         /// <summary>
@@ -590,6 +597,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>ulong</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlUnsignedLongAttributeDescription : TypedUxmlAttributeDescription<ulong>
     {
         /// <summary>
@@ -642,6 +650,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>long</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlLongAttributeDescription : TypedUxmlAttributeDescription<long>
     {
         /// <summary>
@@ -694,6 +703,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>bool</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlBoolAttributeDescription : TypedUxmlAttributeDescription<bool>
     {
         /// <summary>
@@ -747,6 +757,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML attribute representing a <see cref="Color"/> as a <c>string</c>.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlColorAttributeDescription : TypedUxmlAttributeDescription<Color>
     {
         /// <summary>
@@ -799,6 +810,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes an XML <c>System.Type</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlTypeAttributeDescription<TBase> : TypedUxmlAttributeDescription<Type>
     {
         /// <summary>
@@ -868,6 +880,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML attribute representing an <c>enum</c> as a <c>string</c>.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlEnumAttributeDescription<T> : TypedUxmlAttributeDescription<T> where T : struct, IConvertible
     {
         /// <summary>
@@ -959,6 +972,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>Hash128</c> attribute.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlHash128AttributeDescription : TypedUxmlAttributeDescription<Hash128>
     {
         /// <summary>
@@ -997,74 +1011,6 @@ namespace UnityEngine.UIElements
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Hash128 value)
         {
             return TryGetValueFromBag(bag, cc, (s, i) => i = Hash128.Parse(s), defaultValue, ref value);
-        }
-    }
-
-    /// <summary>
-    /// Describes a UXML object defined as a child in Uxml. The UXML object then has a set of attributes.
-    /// </summary>
-    /// <typeparam name="T">Type of the created UXML object.</typeparam>
-    /// <remarks>UXML objects are defined using <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> and <see cref="UxmlObjectTraits{T}"/> on a simple class or structure.</remarks>
-    internal class UxmlObjectAttributeDescription<T> where T : new()
-    {
-        /// <summary>
-        /// The default value to be used for that specific attribute.
-        /// </summary>
-        public T defaultValue { get; set; }
-
-        /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
-        /// </summary>
-        /// <param name="bag">The bag of attributes.</param>
-        /// <param name="cc">The context in which the values are retrieved.</param>
-        /// <returns>The initialized UXML object.</returns>
-        public virtual T GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
-        {
-            var uxmlObjects = cc.visualTreeAsset?.GetUxmlObjects<T>(bag, cc);
-            if (uxmlObjects != null)
-            {
-                foreach (var child in uxmlObjects)
-                {
-                    return child;
-                }
-            }
-
-            return defaultValue;
-        }
-    }
-
-    /// <summary>
-    /// Describes a list of UXML objects defined as children in UXML. Each UXML object then has a set of attributes.
-    /// </summary>
-    /// <typeparam name="T">Type of the created UXML objects.</typeparam>
-    /// <remarks>UXML objects are defined using <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> and <see cref="UxmlObjectTraits{T}"/> on a simple class or structure.</remarks>
-    internal class UxmlObjectListAttributeDescription<T> : UxmlObjectAttributeDescription<List<T>> where T : new()
-    {
-        /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
-        /// </summary>
-        /// <param name="bag">The bag of attributes.</param>
-        /// <param name="cc">The context in which the values are retrieved.</param>
-        /// <returns>The list of initialized UXML objects.</returns>
-        public override List<T> GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
-        {
-            var uxmlObjects = cc.visualTreeAsset?.GetUxmlObjects<T>(bag, cc);
-            if (uxmlObjects != null)
-            {
-                List<T> list = null;
-
-                foreach (var child in uxmlObjects)
-                {
-                    if (list == null)
-                        list = new List<T>();
-
-                    list.Add(child);
-                }
-
-                return list;
-            }
-
-            return defaultValue;
         }
     }
 }

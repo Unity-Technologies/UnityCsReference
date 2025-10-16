@@ -23,6 +23,7 @@ namespace UnityEditor
         CSharp_NewTestScript,
         Shader_NewImageEffectShader,
         Shader_NewComputeShader,
+        Shader_NewEmptyHLSL,
         Shader_NewRayTracingShader,
         CSharp_NewStateMachineBehaviourScript,
         CSharp_NewSubStateMachineBehaviourScript,

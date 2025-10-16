@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
     /// A SerializedProperty wrapper VisualElement that, on [[BindingExtensions.Bind|Bind()]], will generate the correct field elements with the correct binding paths. For more information, refer to [[wiki:UIE-uxml-element-PropertyField|UXML element PropertyField]].
     /// </summary>
     [Icon("UIToolkit/Icons/PropertyField.png")]
-    public class PropertyField : VisualElement, IBindable
+    public partial class PropertyField : VisualElement, IBindable
     {
         static readonly BindingId labelProperty = nameof(label);
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
@@ -58,46 +58,6 @@ namespace UnityEditor.UIElements
                     e.bindingPath = bindingPath;
                 if (ShouldWriteAttributeValue(label_UxmlAttributeFlags))
                     e.label = label;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<PropertyField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="PropertyField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_PropertyPath;
-            UxmlStringAttributeDescription m_Label;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PropertyPath = new UxmlStringAttributeDescription { name = "binding-path" };
-                m_Label = new UxmlStringAttributeDescription { name = "label", defaultValue = null };
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var field = ve as PropertyField;
-                if (field == null)
-                    return;
-
-                field.label = m_Label.GetValueFromBag(bag, cc);
-
-                string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
-                if (!string.IsNullOrEmpty(propPath))
-                    field.bindingPath = propPath;
             }
         }
 
@@ -693,10 +653,7 @@ namespace UnityEditor.UIElements
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
 
-            // Make PropertyField foldout react even when disabled, like EditorGUILayout.Foldout.
             var foldoutToggle = foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
-            foldoutToggle.acceptClicksIfDisabled = true;
-
             // Get Foldout label.
             var foldoutLabel = foldoutToggle.Q<Label>(className: Toggle.textUssClassName);
             if (hasCustomLabel)
@@ -909,11 +866,6 @@ namespace UnityEditor.UIElements
             {
                 ConfigureListViewDebugHelpers(listView);
             }
-
-            // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
-            var toggle = listView.headerFoldout?.toggle;
-            if (toggle != null)
-                toggle.acceptClicksIfDisabled = true;
 
             return listView;
         }
@@ -1227,6 +1179,9 @@ namespace UnityEditor.UIElements
 
                 case SerializedPropertyType.Hash128:
                     return ConfigureField<Hash128Field, Hash128>(originalField as Hash128Field, property, () => new Hash128Field());
+
+                case SerializedPropertyType.EntityId:
+                    return ConfigureField<EntityIdField, EntityId>(originalField as EntityIdField, property, () => new EntityIdField());
 
                 case SerializedPropertyType.Generic:
                     if (property.type == nameof(ToggleButtonGroupState))

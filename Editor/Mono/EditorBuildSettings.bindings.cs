@@ -32,7 +32,7 @@ namespace UnityEditor
         {
             m_path = path.Replace("\\", "/");
             m_enabled = enabled;
-            GUID.TryParse(AssetDatabase.AssetPathToGUID(path), out m_guid);
+            m_guid = AssetDatabase.GUIDFromAssetPath(path);
         }
 
         public EditorBuildSettingsScene(GUID guid, bool enabled)
@@ -120,11 +120,12 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
+        internal static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
         {
-            if (!EditorUserBuildSettings.isBuildProfileAvailable
-                || BuildProfileContext.activeProfile is null
-                || !BuildProfileContext.activeProfile.overrideGlobalScenes)
+            if (!EditorUserBuildSettings.isBuildProfileAvailable)
+                return EditorUserBuildSettings.GetCachedActiveProfileScenes();
+
+            if (BuildProfileContext.activeProfile is null || !BuildProfileContext.activeProfile.overrideGlobalScenes)
                 return null;
 
             return BuildProfileContext.activeProfile.scenes;
@@ -149,7 +150,8 @@ namespace UnityEditor
             FailedTypeMismatch
         }
 
-        public static extern bool UseParallelAssetBundleBuilding { get; set; }
+        [Obsolete("UseParallelAssetBundleBuilding is obsolete and will be removed.")]
+        public static bool UseParallelAssetBundleBuilding { get; set; } = false;
 
         [NativeMethod("AddConfigObject")]
         static extern ConfigObjectResult AddConfigObjectInternal(string name, Object obj, bool overwrite);

@@ -15,7 +15,7 @@ namespace UnityEditor
     internal class CreateAssetUtility
     {
         [SerializeField]
-        EndNameEditAction m_EndAction;
+        AssetCreationEndAction m_EndAction;
         [SerializeField]
         int m_InstanceID;
         [SerializeField]
@@ -59,7 +59,7 @@ namespace UnityEditor
             get { return Path.GetFileNameWithoutExtension(m_Path); }
         }
 
-        public EndNameEditAction endAction
+        public AssetCreationEndAction endAction
         {
             get { return m_EndAction; }
         }
@@ -77,7 +77,7 @@ namespace UnityEditor
         }
 
         // Selection changes when calling BeginNewAsset if it succeeds
-        public bool BeginNewAssetCreation(int instanceID, EndNameEditAction newAssetEndAction, string filePath, Texture2D icon, string newAssetResourceFile, bool selectAssetBeingCreated = true)
+        public bool BeginNewAssetCreation(EntityId entityId, AssetCreationEndAction newAssetEndAction, string filePath, Texture2D icon, string newAssetResourceFile, bool selectAssetBeingCreated = true)
         {
             //Sanitize input
             string sanitizedFilePath = filePath != null ? filePath.ConvertSeparatorsToUnity() : filePath;
@@ -101,7 +101,7 @@ namespace UnityEditor
                 return false;
             }
 
-            m_InstanceID = instanceID;
+            m_InstanceID = entityId;
             m_Path = uniquePath;
             m_Icon = icon;
             m_EndAction = newAssetEndAction;
@@ -110,7 +110,7 @@ namespace UnityEditor
             if (selectAssetBeingCreated)
             {
                 // Change selection to none or instanceID
-                Selection.activeObject = EditorUtility.EntityIdToObject(instanceID);
+                Selection.activeObject = EditorUtility.EntityIdToObject(entityId);
             }
             return true;
         }
@@ -121,12 +121,12 @@ namespace UnityEditor
             string path = folder + "/" + name;
             if ((!String.IsNullOrEmpty(extension)) && (!path.EndsWith(extension, System.StringComparison.OrdinalIgnoreCase)))
                 path = path + extension;
-            EndNameEditAction endAction = m_EndAction;
-            int instanceID = m_InstanceID;
+            AssetCreationEndAction endAction = m_EndAction;
+            EntityId entityId = m_InstanceID;
             string resourceFile = m_ResourceFile;
             Clear(); // Ensure clear if anything goes bad in EndNameEditAction and gui is exited.
 
-            ProjectWindowUtil.EndNameEditAction(endAction, instanceID, path, resourceFile, true);
+            ProjectWindowUtil.EndNameEditAction(endAction, entityId, path, resourceFile, true);
         }
 
         public void EndNewAssetCreationCanceled(string name)

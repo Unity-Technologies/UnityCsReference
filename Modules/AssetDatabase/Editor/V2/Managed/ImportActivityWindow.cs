@@ -12,6 +12,7 @@ using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
 using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
@@ -61,9 +62,8 @@ namespace UnityEditor
             }
             else
             {
-                window.InitWithDimensions(window.position, selectedObjectGuid, openViaRightClick);
-
                 window.minSize = CalculateWindowMinSize(Screen.currentResolution);
+                window.InitWithDimensions(window.position, selectedObjectGuid, openViaRightClick);
             }
         }
 
@@ -117,7 +117,7 @@ namespace UnityEditor
             public (VisualElement container, Label header, Label content) editorRevision;
             public (VisualElement container, Label header, Label content) timeStamp;
             public (VisualElement container, Label header, Label content) duration;
-            public (VisualElement container, IMGUIContainer content, ArtifactBrowserTreeViewNested<ArtifactDifferenceReporter.ArtifactInfoDifference> treeView, Label header) reasonsForImport;
+            public (IMGUIContainer container, ArtifactBrowserTreeViewNested<ArtifactDifferenceReporter.ArtifactInfoDifference> treeView, Label header) reasonsForImport;
 
             public (VisualElement container, Label header, Label content) producedArtifacts;
             public Label dependencies;
@@ -246,8 +246,10 @@ namespace UnityEditor
         internal static ScalableGUIContent s_EmptyFolderIcon;
 
         public static float k_IconWidth = 16f;
-        public const int kLeftPadding = 12;
+        public const float kFirstColumnIndent = 5f;
+        public const float kContentsLeftPadding = 18f;
         public const int kRightAlignPadding = 8;
+        public const int kMarginBetweenSections = 16;
         private const float k_LabelColorDark = 38 / 255f;
         private const float k_LabelColorLight = 165 / 255f;
         private Color LabelColor => EditorGUIUtility.isProSkin ?
@@ -257,8 +259,8 @@ namespace UnityEditor
         private const float k_ListHeaderColorDark = 62 / 255f;
         private const float k_ListHeaderColorLight = 221 / 255f;
         private Color ListHeaderColor => EditorGUIUtility.isProSkin ?
-        new Color(k_ListHeaderColorDark, k_ListHeaderColorDark, k_ListHeaderColorDark) :
-        new Color(k_ListHeaderColorLight, k_ListHeaderColorLight, k_ListHeaderColorLight);
+        new Color(k_ListHeaderColorDark, k_ListHeaderColorDark, k_ListHeaderColorDark, 0) :
+        new Color(k_ListHeaderColorLight, k_ListHeaderColorLight, k_ListHeaderColorLight, 0);
 
         private VisualElement m_LeftContent;
         internal VisualElement m_RightContent;
@@ -300,6 +302,11 @@ namespace UnityEditor
         [field: SerializeField]
         public bool IsInitialized { get; set; }
 
+        // internal for testing
+        internal void SearchAllAssets(string search)
+        {
+            m_AllAssetsListView.searchString = search;
+        }
 
         public void ClearAll()
         {
@@ -344,21 +351,9 @@ namespace UnityEditor
 
             RestoreListViewSelection();
             if (m_RightContentState == RightContentState.ShowSelectedItem || openViaRightClick)
-                FocusOnSelectedItem(selectedObjectGuid, m_ImportActivityState.selectedArtifactID);
+                FocusOnSelectedItem(selectedObjectGuid, m_ImportActivityState.selectedImportResultID);
 
             m_DesiredDimensions = new Rect(windowPosition.x, windowPosition.y, windowPosition.width, windowPosition.height);
-        }
-
-        internal override void OnResized()
-        {
-            if (!IsInitialized)
-                return;
-
-            if (m_Toolbar.options.toolbar.ShowPreviousImports)
-            {
-                m_ItemContainers.SelectedItemSplitView.style.height = position.height;
-                m_ItemContainers.PreviousRevisionsContainer.style.height = position.height;
-            }
         }
 
         private void UpdateSelectedItemView(Rect windowPosition)
@@ -372,7 +367,6 @@ namespace UnityEditor
 
                 InstantiateSelectedItemSplitView(targetDimensions);
 
-                m_ItemContainers.SelectedItemSplitView.style.height = windowPosition.height;
                 m_ItemContainers.SelectedItemView.style.minWidth = 480;
 
                 m_ItemContainers.SelectedItemView.AddToClassList("split-container");
@@ -381,13 +375,13 @@ namespace UnityEditor
                 m_ItemContainers.SelectedItemSplitView.Add(m_ItemContainers.PreviousRevisionsContainer);
                 m_ItemContainers.SelectedItemSplitView.Add(m_ItemContainers.SelectedItemView);
 
-
                 m_ItemContainers.SelectedItemRoot.Add(m_ItemContainers.SelectedItemSplitView);
                 m_ItemContainers.SelectedItemRoot.style.minWidth = 580;
             }
             else
             {
                 m_ItemContainers.SelectedItemView = new VisualElement();
+                m_ItemContainers.SelectedItemView.style.paddingLeft = kContentsLeftPadding;
                 m_ItemContainers.SelectedItemView.style.minWidth = 480;
                 //Rebuild it
                 AddAllContainertoSelectedItemsView();
@@ -421,7 +415,7 @@ namespace UnityEditor
             m_Toolbar = new ToolBarContainer();
 
             if (m_Toolbar.options.toolbar == null)
-                m_Toolbar.options.toolbar = new ArtifactBrowserToolbar(windowPosition, OnOverviewClicked, UpdateSelectedItemView, OnToolbarSearch, OnShowPreviewImporterRevisions, m_ImportActivityState);
+                m_Toolbar.options.toolbar = new ArtifactBrowserToolbar(windowPosition, OnOverviewClicked, UpdateSelectedItemView, OnShowPreviewImporterRevisions, m_ImportActivityState);
 
             m_Toolbar.options.container = new IMGUIContainer(m_Toolbar.options.toolbar.OnGUI);
 
@@ -439,16 +433,10 @@ namespace UnityEditor
             OnSelectRevision(0);
         }
 
-        internal void OnToolbarSearch(string search)
-        {
-            m_AllAssetsListView.searchString = search;
-            m_AllAssetsListView.state.searchString = search;
-        }
-
         private void CreateOverview(Rect windowPosition)
         {
             m_Overview = new ProjectOverviewContainer();
-            m_Overview.overView = CreateListLabel("Overview", TextAnchor.MiddleCenter, 0, FontStyle.Bold, 16);
+            m_Overview.overView = CreateListLabel("Overview", TextAnchor.MiddleLeft, 0, FontStyle.Bold);
             m_Overview.overView.style.fontSize = 20;
             m_Overview.overView.style.borderBottomColor = ListHeaderColor;
 
@@ -460,52 +448,45 @@ namespace UnityEditor
             var projectAnalysisColumns = CreateColumns(new Column("Message", 720), new Column("Info", 1280));
 
             GetMostDependencyAssets();
-            m_Overview.mostDependencies.treeView = CreateTreeView(m_Overview.mostDependencies.treeView,
-                m_MostDependencyAssets, mostDependenciesColumns, MostDependenciesSelector);
-
+            m_Overview.mostDependencies.treeView = CreateTreeView(m_Overview.mostDependencies.treeView, m_MostDependencyAssets, mostDependenciesColumns, MostDependenciesSelector);
             m_Overview.mostDependencies.treeView.OnDoubleClickedItem = OnMostDependenciesDoubleClickedItem;
             m_Overview.mostDependencies.treeView.CanSort = false;
             m_Overview.mostDependencies.treeView.CellGUICallback = CellGUIForMostDependencies;
-
-            m_Overview.mostDependencies.container = new IMGUIContainer(m_Overview.mostDependencies.treeView.OnGUI);
-            m_Overview.mostDependencies.container.style.maxHeight = windowPosition.height * 0.25f;
-            m_Overview.mostDependencies.container.style.minHeight = windowPosition.height * 0.25f;
+            m_Overview.mostDependencies.container = m_Overview.mostDependencies.treeView.CreateAndSetupIMGUIContainer();
 
             GetLongestDurationAssets();
             m_Overview.longestDurationHeader = CreateListLabel("Longest Import Duration", TextAnchor.MiddleLeft, 0, FontStyle.Bold, 16, 8);
             m_Overview.longestDurationHeader.style.borderBottomColor = ListHeaderColor;
 
-            m_Overview.longestDuration.treeView = CreateTreeView(m_Overview.longestDuration.treeView,
-                m_LongestDurationAssets, longestDurationColumns, LongestDurationSelector);
-
+            m_Overview.longestDuration.treeView = CreateTreeView(m_Overview.longestDuration.treeView, m_LongestDurationAssets, longestDurationColumns, LongestDurationSelector);
             m_Overview.longestDuration.treeView.OnDoubleClickedItem = OnLongestDurationDoubleClickedItem;
             m_Overview.longestDuration.treeView.CanSort = false;
             m_Overview.longestDuration.treeView.CellGUICallback = CellGUIForLongestDuration;
+            m_Overview.longestDuration.container = m_Overview.longestDuration.treeView.CreateAndSetupIMGUIContainer();
 
-            m_Overview.longestDuration.container = new IMGUIContainer(m_Overview.longestDuration.treeView.OnGUI);
-            m_Overview.longestDuration.container.style.maxHeight = windowPosition.height * 0.25f;
-            m_Overview.longestDuration.container.style.minHeight = windowPosition.height * 0.25f;
-
+            // Analyze process button
             m_Overview.analyzeImportProcess = new Button(OnAnalyseImportProcessClicked);
             m_Overview.analyzeImportProcess.text = "Analyze Import Process";
-            m_Overview.analyzeImportProcess.style.maxWidth = windowPosition.width * 0.20f;
-            m_Overview.analyzeImportProcess.style.left = 8;
-            m_Overview.analyzeImportProcess.style.top = 16;
+            m_Overview.analyzeImportProcess.style.alignSelf = Align.FlexStart;  // makes sure the button uses a size based on its content
+            m_Overview.analyzeImportProcess.style.marginTop = 16;
+            m_Overview.analyzeImportProcess.style.marginBottom = 4;
+            m_Overview.analyzeImportProcess.style.marginLeft = 0;
+            m_Overview.analyzeImportProcess.style.paddingLeft = 30;
+            m_Overview.analyzeImportProcess.style.paddingRight = 30;
 
+            // Project Analysis section
             var importProcessAnalysisColumn = m_ImportActivityState.projectAnalysisState.GetVisibleColumns();
             m_Overview.importProcessAnalysis.treeView = CreateTreeView<ProjectAnalysisTreeViewItem>(m_Overview.importProcessAnalysis.treeView,
                 m_ProjectAnalysisResults, projectAnalysisColumns, ProjectAnalysisSelector, GetImportProcessAnalysisSortCallbacks(), visibleColumns: importProcessAnalysisColumn);
             m_Overview.importProcessAnalysis.treeView.CellGUICallback = CellGUIForProjectAnalysis;
             m_Overview.importProcessAnalysis.treeView.OnDoubleClickedItem = OnProjectAnalysisEntryDoubleClicked;
             m_Overview.importProcessAnalysis.treeView.Reload();
-
-            m_Overview.importProcessAnalysis.container = new IMGUIContainer(m_Overview.importProcessAnalysis.treeView.OnGUI);
+            m_Overview.importProcessAnalysis.container = m_Overview.importProcessAnalysis.treeView.CreateAndSetupIMGUIContainer();
             m_Overview.importProcessAnalysis.container.RegisterCallback<MouseUpEvent>(HandleProjectAnalysisRightClick);
-            m_Overview.importProcessAnalysis.container.style.maxHeight = windowPosition.height * 0.20f;
-            m_Overview.importProcessAnalysis.container.style.minHeight = windowPosition.height * 0.20f;
-            m_Overview.importProcessAnalysis.container.style.top = 24;
 
+            // Summary 
             m_Overview.SummaryView = new VisualElement();
+            m_Overview.SummaryView.style.paddingLeft = kContentsLeftPadding;
             m_Overview.SummaryView.Add(m_Overview.overView);
             m_Overview.SummaryView.Add(m_Overview.mostDependenciesHeader);
             m_Overview.SummaryView.Add(m_Overview.mostDependencies.container);
@@ -633,6 +614,7 @@ namespace UnityEditor
         private void CreateSelectedItemContainersWithSplitView(Rect windowPosition)
         {
             m_ItemContainers.SelectedItemRoot = new VisualElement();
+            m_ItemContainers.SelectedItemRoot.style.flexBasis = new StyleLength(new Length(100, LengthUnit.Percent));
             var targetDimensions = 300;
             InstantiateSelectedItemSplitView(targetDimensions);
             m_ItemContainers.SelectedItemRoot.style.minWidth = 580;
@@ -656,18 +638,20 @@ namespace UnityEditor
         {
             m_ItemContainers.PreviousRevisionsContainer = new VisualElement();
 
-            var previousRevisionsColumns = CreateColumns(new Column("Imported", 120), new Column("Artifact ID", 150), new Column("Importer", 150));
+            var previousRevisionsColumns = CreateColumns(new Column("Imported", 120), new Column("Import Result ID", 150), new Column("Importer", 150));
 
             var previousRevisionsVisibleColumns = m_ImportActivityState.previousRevisionsState.GetVisibleColumns();
-            m_ItemContainers.previousRevisions.treeView = CreateTreeView(m_ItemContainers.previousRevisions.treeView,
-                m_PreviousRevisionsList, previousRevisionsColumns,
-                PreviousRevisionSelector, GetPreviousRevisionSelectorSortCallbacks(), false, false, false, previousRevisionsVisibleColumns);
-
+            m_ItemContainers.previousRevisions.treeView = CreateTreeView(m_ItemContainers.previousRevisions.treeView, m_PreviousRevisionsList, previousRevisionsColumns,
+                PreviousRevisionSelector, GetPreviousRevisionSelectorSortCallbacks(), true, false, previousRevisionsVisibleColumns);
+            m_ItemContainers.previousRevisions.treeView.searchString = m_ImportActivityState.previousRevisionsState.searchString;
+            m_ItemContainers.previousRevisions.treeView.allowFullHeight = true;
+            m_ItemContainers.previousRevisions.treeView.renderBorder = false;
+            m_ItemContainers.previousRevisions.treeView.searchFieldHorizontalMargins = 2f;
             m_ItemContainers.previousRevisions.treeView.SelectionChangedCallback += OnSelectRevision;
             m_ItemContainers.previousRevisions.treeView.CellGUICallback = CellGUIForPreviousRevisions;
+            m_ItemContainers.previousRevisions.treeView.SearchHandlerCallback = SearchHandlerForPreviousRevisions;
             m_ItemContainers.previousRevisions.treeView.SetSorting(m_ImportActivityState.previousRevisionsState.sortedColumnIndex, m_ImportActivityState.previousRevisionsState.sortAscending);
-
-            m_ItemContainers.previousRevisions.container = new IMGUIContainer(m_ItemContainers.previousRevisions.treeView.OnGUI);
+            m_ItemContainers.previousRevisions.container = m_ItemContainers.previousRevisions.treeView.CreateAndSetupIMGUIContainer();
             m_ItemContainers.PreviousRevisionsContainer.Add(m_ItemContainers.previousRevisions.container);
             m_ItemContainers.PreviousRevisionsContainer.style.minWidth = 100;
         }
@@ -690,14 +674,15 @@ namespace UnityEditor
                 return revisions;
 
             //filter out preview importers
-            return revisions.Where(revision => !revision.artifactKey.importerType.ToString().EndsWith("PreviewImporter", StringComparison.Ordinal));
+            return revisions.Where(revision => revision.artifactKey.importerType == null || !revision.artifactKey.importerType.ToString().EndsWith("PreviewImporter", StringComparison.Ordinal));
         }
 
         private void CreateSelectedItemRightSideContainers(Rect windowPosition)
         {
             m_ItemContainers.SelectedItemView = new VisualElement();
             m_ItemContainers.SelectedItemView.style.minWidth = 480;
-            m_ItemContainers.assetName = CreateListLabel("", TextAnchor.MiddleLeft, 0);
+            m_ItemContainers.SelectedItemView.style.paddingLeft = 12;
+            m_ItemContainers.assetName = CreateListLabel("", TextAnchor.MiddleLeft, 0, FontStyle.Bold, 4, 12);
             m_ItemContainers.assetName.style.fontSize = 20;
 
             CreateAssetPathWithObjectField(windowPosition);
@@ -709,41 +694,29 @@ namespace UnityEditor
             m_ItemContainers.timeStamp.container = CreateHeaderAndContentLabelContainer(windowPosition, "Timestamp", "", out m_ItemContainers.timeStamp.header, out m_ItemContainers.timeStamp.content);
             m_ItemContainers.duration.container = CreateHeaderAndContentLabelContainer(windowPosition, "Duration", "", out m_ItemContainers.duration.header, out m_ItemContainers.duration.content);
 
-            m_ItemContainers.reasonsForImport.header =
-                CreateListLabel("Reason for Import", TextAnchor.MiddleLeft, 0, FontStyle.Bold, 4, 2);
-
+            // Reason for import section
             var reasonsForImportColumns = CreateColumns(new Column("Reason", 790));
-
-
-            m_ItemContainers.reasonsForImport.treeView = CreateTreeViewNested(m_ItemContainers.reasonsForImport.treeView, m_ReasonsToReimportList,
-                reasonsForImportColumns, ReasonForImportSelector, null, true, true, false);
-
+            m_ItemContainers.reasonsForImport.header = CreateListLabel("Reason for Import", TextAnchor.MiddleLeft, 0, FontStyle.Bold, 4, 2);
+            m_ItemContainers.reasonsForImport.header.style.marginTop = kMarginBetweenSections;
+            m_ItemContainers.reasonsForImport.treeView = CreateTreeViewNested(m_ItemContainers.reasonsForImport.treeView, m_ReasonsToReimportList, reasonsForImportColumns, ReasonForImportSelector, null, true, false);
             m_ItemContainers.reasonsForImport.treeView.CanSort = false;
             m_ItemContainers.reasonsForImport.treeView.Reload();
             m_ItemContainers.reasonsForImport.treeView.searchString = m_ImportActivityState.reasonForImportSearchString;
+            m_ItemContainers.reasonsForImport.container = m_ItemContainers.reasonsForImport.treeView.CreateAndSetupIMGUIContainer();
+            m_ItemContainers.reasonsForImport.container.RegisterCallback<MouseUpEvent>(HandleReasonsForReimportRightClick);
 
-            m_ItemContainers.reasonsForImport.content = new IMGUIContainer(m_ItemContainers.reasonsForImport.treeView.OnGUI);
-            m_ItemContainers.reasonsForImport.content.RegisterCallback<MouseUpEvent>(HandleReasonsForReimportRightClick);
-
-            m_ItemContainers.reasonsForImport.container = new VisualElement();
-            m_ItemContainers.reasonsForImport.container.style.paddingBottom = 32;
-
-            m_ItemContainers.reasonsForImport.container.Add(m_ItemContainers.reasonsForImport.header);
-            m_ItemContainers.reasonsForImport.container.Add(m_ItemContainers.reasonsForImport.content);
-
-            m_ItemContainers.dependencies = CreateListLabel("Dependencies", TextAnchor.MiddleLeft, 0, FontStyle.Bold, 16);
-
-            m_ProducedFilesListViewContainer = new IMGUIContainer(m_ProducedFilesListView.OnGUI);
-            CalculateMaxHeightFromItemCount(m_ProducedFilesList.Count, m_ProducedFilesListViewContainer);
+            // Produced files section
+            CreateProducedFilesContainer(windowPosition);
+            m_ProducedFilesListViewContainer = m_ProducedFilesListView.CreateAndSetupIMGUIContainer();
             m_ProducedFilesListViewContainer.RegisterCallback<MouseUpEvent>(HandleProducedArtifactsRightClick);
-            m_ProducedFilesListViewContainer.style.paddingLeft = kLeftPadding;
 
-            m_DependenciesListViewContainer = new IMGUIContainer(m_DependenciesListView.OnGUI);
-            CalculateMaxHeightFromItemCount(m_DependenciesList.Count, m_DependenciesListViewContainer);
-            m_DependenciesListViewContainer.style.paddingLeft = kLeftPadding;
+            // Dependencies section
+            m_ItemContainers.dependencies = CreateListLabel("Dependencies", TextAnchor.MiddleLeft, 0, FontStyle.Bold);
+            m_ItemContainers.dependencies.style.marginTop = kMarginBetweenSections;
+
+            m_DependenciesListViewContainer = m_DependenciesListView.CreateAndSetupIMGUIContainer();
             m_DependenciesListViewContainer.RegisterCallback<MouseUpEvent>(HandleDependenciesRightClick);
 
-            CreateProducedFilesContainer(windowPosition);
             AddAllContainertoSelectedItemsView();
         }
 
@@ -757,10 +730,13 @@ namespace UnityEditor
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.editorRevision.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.timeStamp.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.duration.container);
-            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.reasonsForImport.container);
-            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.producedArtifacts.container);
 
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.reasonsForImport.header);
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.reasonsForImport.container);
+
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.producedArtifacts.container);
             m_ItemContainers.SelectedItemView.Add(m_ProducedFilesListViewContainer);
+
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.dependencies);
             m_ItemContainers.SelectedItemView.Add(m_DependenciesListViewContainer);
         }
@@ -778,10 +754,11 @@ namespace UnityEditor
             m_ItemContainers.producedArtifacts.content.style.flexBasis = new StyleLength(contentLength);
 
             m_ItemContainers.producedArtifacts.content.style.unityTextAlign = TextAnchor.MiddleRight;
-            m_ItemContainers.producedArtifacts.content.style.paddingRight = kLeftPadding;
-
             m_ItemContainers.producedArtifacts.container.Add(m_ItemContainers.producedArtifacts.header);
             m_ItemContainers.producedArtifacts.container.Add(m_ItemContainers.producedArtifacts.content);
+            m_ItemContainers.producedArtifacts.container.style.marginTop = kMarginBetweenSections;
+            m_ItemContainers.producedArtifacts.container.style.marginBottom = 3;
+
         }
 
         private static string GetOSSpecificShowIn()
@@ -1069,7 +1046,7 @@ namespace UnityEditor
             [SerializeField] public int includePreviewImporter;
             [SerializeField] public RightContentState rightContentState;
             [SerializeField] public string toolBarSearchString;
-            [SerializeField] public string selectedArtifactID;
+            [SerializeField, FormerlySerializedAs("selectedArtifactID")] public string selectedImportResultID;
             [SerializeField] public string reasonForImportSearchString;
 
             [SerializeField] public ImportActivityTreeViewState allAssetsState;
@@ -1117,6 +1094,7 @@ namespace UnityEditor
             state.sortedColumnIndex = treeView.multiColumnHeader.sortedColumnIndex;
             state.sortAscending = treeView.multiColumnHeader.sortedColumnIndex != -1 && treeView.multiColumnHeader.IsSortedAscending(state.sortedColumnIndex);
             state.selectedItem = treeView.state.lastClickedID;
+            state.searchString = treeView.state.searchString;
             var visibleColumns = treeView.multiColumnHeader.state.visibleColumns;
             state.StoreVisibleColumns(visibleColumns);
         }
@@ -1142,16 +1120,11 @@ namespace UnityEditor
             // Project Analysis results
             StoreTreeViewToState(m_ImportActivityState.projectAnalysisState, m_Overview.importProcessAnalysis.treeView);
 
-            m_ImportActivityState.dependenciesState.searchString = m_DependenciesListView.searchString;
-
             // Whether or not to repopulate the import process list after domain reload
             m_ImportActivityState.populateImportProcessAnalysis = m_ProjectAnalysisResults.Count > 0;
 
-            //Toolbar
-            m_ImportActivityState.reasonForImportSearchString = m_ItemContainers.reasonsForImport.treeView.searchString;
-
             if (m_SelectedArtifactInfo != null)
-                m_ImportActivityState.selectedArtifactID = m_SelectedArtifactInfo.artifactID;
+                m_ImportActivityState.selectedImportResultID = m_SelectedArtifactInfo.importResultID;
 
             m_Instance = null;
         }
@@ -1170,7 +1143,7 @@ namespace UnityEditor
             m_Overview.importProcessAnalysis.treeView.RestoreSelection();
         }
 
-        public void FocusOnSelectedItem(string selectedObjectGuid, string selectedArtifactID = "")
+        public void FocusOnSelectedItem(string selectedObjectGuid, string selectedImportResultID = "")
         {
             if (string.IsNullOrEmpty(selectedObjectGuid))
                 return;
@@ -1186,12 +1159,12 @@ namespace UnityEditor
 
             m_SelectedArtifactInfo = m_AllAssetsList[selectedIndex].artifactInfo;
 
-            if (!string.IsNullOrEmpty(selectedArtifactID))
+            if (!string.IsNullOrEmpty(selectedImportResultID))
             {
                 var artifactInfos = AssetDatabase.GetArtifactInfos(new GUID(selectedObjectGuid));
                 foreach (var curInfo in artifactInfos)
                 {
-                    if (string.CompareOrdinal(curInfo.artifactID, selectedArtifactID) == 0)
+                    if (string.CompareOrdinal(curInfo.importResultID, selectedImportResultID) == 0)
                     {
                         m_SelectedArtifactInfo = curInfo;
                         break;
@@ -1206,7 +1179,6 @@ namespace UnityEditor
 
             // Keep the same selection in the tree list view, gui list view are not 0
             m_AllAssetsListView.SetSelection(new List<int> { selectedIndex + 1 }, TreeViewSelectionOptions.RevealAndFrame);
-            m_AllAssetsListView.Sort(m_AllAssetsListView.GetRows()); //Need to call sort before FrameItem, otherwise view gets out of order
             m_AllAssetsListView.FrameItem(selectedIndex + 1);
         }
 
@@ -1246,7 +1218,7 @@ namespace UnityEditor
         {
             var callbacks = new Func<TreeViewItem, TreeViewItem, int, List<ArtifactInfoTreeViewItem>, int>[3];
             callbacks[0] = PreviousRevisionSortSelector_ImportedTimeStamp;
-            callbacks[1] = PreviousRevisionSortSelector_ArtifactID;
+            callbacks[1] = PreviousRevisionSortSelector_ImportResultID;
             callbacks[2] = PreviousRevisionSortSelector_ImporterName;
             return callbacks;
         }
@@ -1268,39 +1240,37 @@ namespace UnityEditor
 
             var allAssetsVisibleColumns = m_ImportActivityState.allAssetsState.GetVisibleColumns();
 
-            m_AllAssetsListView = CreateTreeView(m_AllAssetsListView, m_AllAssetsList,
-                artifactColumns, ArtifactInfoSelector, GetArtifactInfoSortCallbacks(), false, false, true, allAssetsVisibleColumns);
-
+            m_AllAssetsListView = CreateTreeView(m_AllAssetsListView, m_AllAssetsList, artifactColumns, ArtifactInfoSelector, GetArtifactInfoSortCallbacks(), true, true, allAssetsVisibleColumns);
+            m_AllAssetsListView.searchString = m_ImportActivityState.allAssetsState.searchString;
+            m_AllAssetsListView.allowFullHeight = true;
+            m_AllAssetsListView.renderBorder = false;
+            m_AllAssetsListView.renderAlternatingRowBackgrounds = true;
+            m_AllAssetsListView.searchFieldHorizontalMargins = 4f;
             m_AllAssetsListView.CellGUICallback = CellGUIForAllAssets;
 
             var dependenciesVisibleColumns = m_ImportActivityState.dependenciesState.GetVisibleColumns();
-            m_DependenciesListView = CreateTreeView(null, m_DependenciesList,
-                dependenciesColumn, PropertySelector, GetPropertySelectorSortCallbacks(), true, true, true, dependenciesVisibleColumns);
-
+            m_DependenciesListView = CreateTreeView(null, m_DependenciesList, dependenciesColumn, PropertySelector, GetPropertySelectorSortCallbacks(), true, true, dependenciesVisibleColumns);
             m_DependenciesListView.searchString = m_ImportActivityState.dependenciesState.searchString;
             m_DependenciesListView.CellGUICallback = CellGUIForDependencies;
 
             var producedFilesVisibleColumns = m_ImportActivityState.producedFilesState.GetVisibleColumns();
-            m_ProducedFilesListView = CreateTreeView(m_ProducedFilesListView, m_ProducedFilesList,
-                producedFilesColumns, ProducedFilesInfoSelector, GetProducedFilesSelectorSortCallbacks(), false, true, true, producedFilesVisibleColumns);
-
+            m_ProducedFilesListView = CreateTreeView(m_ProducedFilesListView, m_ProducedFilesList, producedFilesColumns, ProducedFilesInfoSelector, GetProducedFilesSelectorSortCallbacks(), false, true, producedFilesVisibleColumns);
             m_ProducedFilesListView.CellGUICallback = CellGUIForProducedFiles;
 
             m_AllAssetsListView.Reload();
         }
 
-        private Rect DrawIconForArtifactInfo(Rect rect, TreeViewItem item, ArtifactInfo element)
+        private Rect DrawIconForArtifactInfo(Rect rect, TreeViewItem item, ArtifactInfo element, float leftMargin = 5f)
         {
             // Draw icon
             Rect iconRect = rect;
+            iconRect.x += leftMargin;
             iconRect.width = k_IconWidth;
-            iconRect.x += 2;
 
             Texture icon = GetIconForItem(item, element);
             if (icon != null)
                 GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
-            rect.x += k_IconWidth * 1.2f;
-            rect.width -= k_IconWidth * 1.2f;
+            rect.xMin = rect.xMin + k_IconWidth + leftMargin + 4f; // spacing between icon and label
             return rect;
         }
 
@@ -1319,7 +1289,7 @@ namespace UnityEditor
             return rect;
         }
 
-        private void DrawRightAlignedLabel(Rect rect, string textForLabel)
+        private void DrawRightAlignedLabel(Rect rect, string textForLabel, bool selected, bool focused)
         {
             rect.width -= kRightAlignPadding;
             TreeView.DefaultGUI.LabelRightAligned(rect, textForLabel, false, false);
@@ -1388,7 +1358,7 @@ namespace UnityEditor
             };
         }
 
-        private bool CellGUIForAllAssets(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem)
+        private bool CellGUIForAllAssets(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem, bool selected, bool focused)
         {
             ArtifactInfo elementForIcon = artifactInfoTreeViewItem.artifactInfo;
             var contentText = ArtifactInfoSelector(artifactInfoTreeViewItem, columnIndex).ToString();
@@ -1397,23 +1367,27 @@ namespace UnityEditor
                 rect = DrawIconForArtifactInfo(rect, item, elementForIcon);
             else if (columnIndex == 2)
             {
-                DrawRightAlignedLabel(rect, contentText);
+                DrawRightAlignedLabel(rect, contentText, selected, focused);
                 return true;
             }
 
-            var content = new GUIContent(contentText);
-
+            var content = GUIContent.Temp(contentText);
             if (columnIndex == 0)
                 content.tooltip = artifactInfoTreeViewItem.artifactInfo.importStats.assetPath;
             else if (columnIndex == 1 && elementForIcon.importStats.assetPath.StartsWith("Package", StringComparison.Ordinal))
                 content.tooltip = "Note: Assets inside packages may come from project templates and will have a timestamp which is relative to when the template was created.";
 
-            EditorGUI.LabelField(rect, content);
+            DrawCellLabel(rect, content, selected, focused);
 
             return true;
         }
 
-        private bool CellGUIForMostDependencies(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem)
+        void DrawCellLabel(Rect rect, GUIContent content, bool selected, bool focused)
+        {
+            TreeView.DefaultStyles.label.Draw(rect, content, false, false, selected, focused);
+        }
+
+        private bool CellGUIForMostDependencies(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem, bool selected, bool focused)
         {
             ArtifactInfo elementForIcon = artifactInfoTreeViewItem.artifactInfo;
             var contentText = MostDependenciesSelector(artifactInfoTreeViewItem, columnIndex).ToString();
@@ -1422,21 +1396,19 @@ namespace UnityEditor
                 rect = DrawIconForArtifactInfo(rect, item, elementForIcon);
             else if (columnIndex == 1)
             {
-                DrawRightAlignedLabel(rect, contentText);
+                DrawRightAlignedLabel(rect, contentText, selected, focused);
                 return true;
             }
 
-            var content = new GUIContent(contentText);
-
+            var content = GUIContent.Temp(contentText);
             if (columnIndex == 0)
                 content.tooltip = artifactInfoTreeViewItem.artifactInfo.importStats.assetPath;
-
-            EditorGUI.LabelField(rect, content);
+            DrawCellLabel(rect, content, selected, focused);
 
             return true;
         }
 
-        private bool CellGUIForLongestDuration(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem)
+        private bool CellGUIForLongestDuration(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem, bool selected, bool focused)
         {
             ArtifactInfo elementForIcon = artifactInfoTreeViewItem.artifactInfo;
             var contentText = LongestDurationSelector(artifactInfoTreeViewItem, columnIndex).ToString();
@@ -1445,29 +1417,26 @@ namespace UnityEditor
                 rect = DrawIconForArtifactInfo(rect, item, elementForIcon);
             else if (columnIndex == 1)
             {
-                DrawRightAlignedLabel(rect, contentText);
+                DrawRightAlignedLabel(rect, contentText, selected, focused);
                 return true;
             }
 
-            var content = new GUIContent(contentText);
-
+            var content = GUIContent.Temp(contentText);
             if (columnIndex == 0)
                 content.tooltip = artifactInfoTreeViewItem.artifactInfo.importStats.assetPath;
-
-            EditorGUI.LabelField(rect, content);
+            DrawCellLabel(rect, content, selected, focused);
 
             return true;
         }
 
-        private bool CellGUIForDependencies(Rect rect, TreeViewItem item, int columnIndex, (string, ArtifactInfoDependency) dependencyNameToArtifactInfoDependency)
+        private bool CellGUIForDependencies(Rect rect, TreeViewItem item, int columnIndex, (string, ArtifactInfoDependency) dependencyNameToArtifactInfoDependency, bool selected, bool focused)
         {
             var contentText = PropertySelector(dependencyNameToArtifactInfoDependency, columnIndex).ToString();
-            var content = new GUIContent(contentText);
-            EditorGUI.LabelField(rect, content);
+            DrawCellLabel(rect, GUIContent.Temp(contentText), selected, focused);
             return true;
         }
 
-        private bool CellGUIForProjectAnalysis(Rect rect, TreeViewItem treeViewItem, int columnIndex, ProjectAnalysisTreeViewItem item)
+        private bool CellGUIForProjectAnalysis(Rect rect, TreeViewItem treeViewItem, int columnIndex, ProjectAnalysisTreeViewItem item, bool selected, bool focused)
         {
             var contentText = columnIndex == 0 ? item.message : item.additionalInfo;
 
@@ -1475,29 +1444,38 @@ namespace UnityEditor
             if (columnIndex == 0)
                 rect = DrawIconForProjectAnalysisResult(rect, item);
 
-            var content = new GUIContent(contentText);
-            EditorGUI.LabelField(rect, content);
+            DrawCellLabel(rect, GUIContent.Temp(contentText), selected, focused);
             return true;
         }
 
-        private bool CellGUIForProducedFiles(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoProducedFiles producedFiles)
+        private bool CellGUIForProducedFiles(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoProducedFiles producedFiles, bool selected, bool focused)
         {
             var contentText = ProducedFilesInfoSelector(producedFiles, columnIndex).ToString();
-            var content = new GUIContent(contentText);
-            EditorGUI.LabelField(rect, content);
+            DrawCellLabel(rect, GUIContent.Temp(contentText), selected, focused);
             return true;
         }
 
-        private bool CellGUIForPreviousRevisions(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem)
+        private bool CellGUIForPreviousRevisions(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoTreeViewItem artifactInfoTreeViewItem, bool selected, bool focused)
         {
             var contentText = PreviousRevisionSelector(artifactInfoTreeViewItem, columnIndex).ToString();
-            var content = new GUIContent(contentText);
+            var content = GUIContent.Temp(contentText);
 
             if (artifactInfoTreeViewItem.artifactInfo.isCurrentArtifact)
-                EditorGUI.LabelField(rect, content, EditorStyles.boldLabel);
+                TreeView.DefaultStyles.boldLabel.Draw(rect, content, isHover: false, isActive: false, on: true, hasKeyboardFocus: true);
             else
-                EditorGUI.LabelField(rect, content);
+                DrawCellLabel(rect, content, selected, focused);
             return true;
+        }
+
+        private bool SearchHandlerForPreviousRevisions(TreeViewItem item, ArtifactInfoTreeViewItem info, string searchString)
+        {
+            if (string.IsNullOrEmpty(searchString))
+                return false;
+            if (info.importerName.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            if (info.artifactInfo.importResultID.IndexOf(searchString, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            return false;
         }
 
         private void OnOverviewClicked()
@@ -1638,7 +1616,7 @@ namespace UnityEditor
             return index switch
             {
                 0 => GetTimeStamp(element.artifactInfo),
-                1 => element.artifactInfo.artifactID,
+                1 => element.artifactInfo.importResultID,
                 2 => element.importerName,
                 _ => "",
             };
@@ -1651,11 +1629,11 @@ namespace UnityEditor
             return element1.artifactInfo.importStats.importedTimestamp.CompareTo(element2.artifactInfo.importStats.importedTimestamp);
         }
 
-        private static int PreviousRevisionSortSelector_ArtifactID(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> items)
+        private static int PreviousRevisionSortSelector_ImportResultID(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> items)
         {
             var element1 = items[item1.id - 1];
             var element2 = items[item2.id - 1];
-            return string.CompareOrdinal(element1.artifactInfo.artifactID, element2.artifactInfo.artifactID);
+            return string.CompareOrdinal(element1.artifactInfo.importResultID, element2.artifactInfo.importResultID);
         }
 
         private static int PreviousRevisionSortSelector_ImporterName(TreeViewItem item1, TreeViewItem item2, int index, List<ArtifactInfoTreeViewItem> items)
@@ -1771,24 +1749,20 @@ namespace UnityEditor
         private ArtifactBrowserTreeViewNested<T> CreateTreeViewNested<T>(ArtifactBrowserTreeViewNested<T> copy,
             List<T> list, MultiColumnHeaderState.Column[] columns,
             Func<T, int, IComparable> columnValueSelector, Func<TreeViewItem, TreeViewItem, int, List<T>, int>[] columnValueSortSelector,
-            bool searchState = false, bool padBorders = true, bool iconShowState = true, int[] visibleColumns = null)
+            bool searchState = false, bool iconShowState = true, int[] visibleColumns = null)
         {
             var headerState = new MultiColumnHeaderState(columns);
 
             if (visibleColumns != null)
                 headerState.visibleColumns = visibleColumns;
 
-
             var header = new MultiColumnHeader(headerState);
             var state = new TreeViewState();
 
             var tree = new ArtifactBrowserTreeViewNested<T>(list, state, header);
             tree.SetSearch(searchState);
-            tree.PadBorders = padBorders;
-
             tree.ColumnValueSelector = columnValueSelector;
             tree.ColumnValueSortSelector = columnValueSortSelector;
-
 
             // Copies all data from previous serialized window version.
             // This is needed to keep state after domain reload
@@ -1801,20 +1775,19 @@ namespace UnityEditor
         private ArtifactBrowserTreeView<T> CreateTreeView<T>(ArtifactBrowserTreeView<T> copy,
             List<T> list, MultiColumnHeaderState.Column[] columns,
             Func<T, int, IComparable> columnValueSelector, Func<TreeViewItem, TreeViewItem, int, List<T>, int>[] columnValueSortSelector = null,
-            bool searchState = false, bool padBorders = true, bool iconShowState = true, int[] visibleColumns = null)
+            bool searchState = false, bool iconShowState = true, int[] visibleColumns = null)
         {
             var headerState = new MultiColumnHeaderState(columns);
 
             if (visibleColumns != null)
                 headerState.visibleColumns = visibleColumns;
 
-
             var header = new MultiColumnHeader(headerState);
             var state = new TreeViewState();
 
             var tree = new ArtifactBrowserTreeView<T>(list, state, header);
+            tree.sortByNameAfterSearch = false; // we handle sorting ourselves
             tree.SetSearch(searchState);
-            tree.PadBorders = padBorders;
 
             tree.ColumnValueSelector = columnValueSelector;
             tree.ColumnValueSortSelector = columnValueSortSelector;
@@ -1855,37 +1828,28 @@ namespace UnityEditor
             m_LeftContent.AddToClassList("split-container");
             m_RightContent.AddToClassList("split-container");
 
-            // Adding a small padding to the splitter there is a
-            // gap between text on the left and on the right sides
-            m_LeftContent.style.paddingRight = 3;
-            m_RightContent.style.paddingLeft = 3;
-
             // Split view
             var targetDimensions = 460;
             m_SplitView = new TwoPaneSplitView(0, targetDimensions, TwoPaneSplitViewOrientation.Horizontal);
             m_SplitView.style.backgroundColor = ListHeaderColor;
+            m_SplitView.style.marginLeft = 0;
+            m_SplitView.style.marginRight = 12;
+            m_SplitView.style.marginBottom = 0;
+            m_SplitView.style.overflow = Overflow.Visible;
             m_SplitView.Add(m_LeftContent);
             m_SplitView.Add(m_RightContent);
             m_SplitView.CaptureMouse();
+
             rootVisualElement.Add(m_SplitView);
         }
 
         private void CreateListViewContainers(Rect windowPosition)
         {
             m_AllAssetsListViewContainer = new IMGUIContainer(m_AllAssetsListView.OnGUI);
-            m_AllAssetsListViewContainer.style.paddingLeft = 12;
-            m_AllAssetsListViewContainer.style.minHeight = 720 - (EditorGUI.kSingleLineHeight);
+            m_AllAssetsListViewContainer.style.minHeight = m_AllAssetsListView.minimumHeight;
             m_AllAssetsListView.SelectionChangedCallback += AllAssetListViewSelectionCallback;
 
             m_LeftContent.Add(m_AllAssetsListViewContainer);
-        }
-
-        private void CalculateMaxHeightFromItemCount(int count, VisualElement element)
-        {
-            count = Mathf.Clamp(count + 1, 1, 10);
-            var fixedSize = Math.Min(400, 28 + (count * 16));
-            element.style.maxHeight = fixedSize;
-            element.style.minHeight = fixedSize;
         }
 
         private Label CreateListLabel(string text, TextAnchor anchor = TextAnchor.MiddleCenter, int borderBottomWidth = 1, FontStyle fontStyle = FontStyle.Bold, int paddingTop = 4, int paddingBottom = 2)
@@ -1894,7 +1858,6 @@ namespace UnityEditor
             label.style.unityTextAlign = anchor;
             label.style.paddingTop = paddingTop;
             label.style.paddingBottom = paddingBottom;
-            label.style.paddingLeft = kLeftPadding;
             label.style.backgroundColor = ListHeaderColor;
             label.style.unityFontStyleAndWeight = fontStyle;
 
@@ -1909,7 +1872,7 @@ namespace UnityEditor
                 index = -1;
 
             var newlySelected = index != -1 ? m_AllAssetsList[index].artifactInfo : null;
-            var didSelectionChange = newlySelected?.artifactID != m_SelectedArtifactInfo?.artifactID;
+            var didSelectionChange = newlySelected?.importResultID != m_SelectedArtifactInfo?.importResultID;
 
             if (didSelectionChange || (!didSelectionChange && m_RightContentState == RightContentState.ShowOverview))
             {
@@ -1929,8 +1892,6 @@ namespace UnityEditor
                     previousInfo => new ArtifactInfoTreeViewItem() { artifactInfo = previousInfo }));
 
             m_ItemContainers.previousRevisions.treeView.Reload();
-            var rows = m_ItemContainers.previousRevisions.treeView.GetRows();
-            m_ItemContainers.previousRevisions.treeView.Sort(rows);
         }
 
         void UpdateViewToSelectedArtifactInfo(ArtifactInfo selectedArtifactInfo)
@@ -1943,7 +1904,7 @@ namespace UnityEditor
 
             if (m_Toolbar.options.toolbar.ShowPreviousImports)
             {
-                var index = m_PreviousRevisionsList.FindLastIndex(rev => rev.artifactInfo.artifactID == m_SelectedArtifactInfo.artifactID);
+                var index = m_PreviousRevisionsList.FindLastIndex(rev => rev.artifactInfo.importResultID == m_SelectedArtifactInfo.importResultID);
 
                 if (index != -1)
                     m_ItemContainers.previousRevisions.treeView.SetSelection(new List<int>() { index + 1 });
@@ -1951,14 +1912,12 @@ namespace UnityEditor
 
             UpdateItemContainers(selectedArtifactInfo, previousArtifactInfo);
             m_DependenciesList.Clear();
-            m_ProducedFilesList.Clear();
             m_DependenciesList.AddRange(selectedArtifactInfo.dependencies.Select(pair => (pair.Key, pair.Value))); //TODO: Make helper functions
+
+            m_ProducedFilesList.Clear();
             var producedFiles = selectedArtifactInfo.producedFiles;
             if (producedFiles != null)
                 m_ProducedFilesList.AddRange(producedFiles);
-
-            CalculateMaxHeightFromItemCount(m_DependenciesList.Count, m_DependenciesListViewContainer);
-            CalculateMaxHeightFromItemCount(m_ProducedFilesList.Count, m_ProducedFilesListViewContainer);
 
             //Clear the selection, so that the next frame will load the correct object
             m_ItemContainers.assetWithObjectField.loadedAsset = null;
@@ -2002,8 +1961,8 @@ namespace UnityEditor
 
             m_ItemContainers.reasonsForImport.treeView.UpdateItemList(m_ReasonsToReimportList);
             m_ItemContainers.reasonsForImport.treeView.Reload();
-            CalculateMaxHeightFromItemCount(m_ReasonsToReimportList.Count, m_ItemContainers.reasonsForImport.content);
         }
+
 
         private ArtifactInfo GetPreviouslySelectedArtifactInfo(ArtifactInfo selectedArtifactInfo)
         {
@@ -2017,7 +1976,7 @@ namespace UnityEditor
 
             foreach (var curInfo in infos)
             {
-                if (curInfo.artifactID == selectedArtifactInfo.artifactID)
+                if (curInfo.importResultID == selectedArtifactInfo.importResultID)
                     continue;
 
                 //Make sure its the same importer
@@ -2330,7 +2289,6 @@ namespace UnityEditor
             public bool[] m_Separator;
 
             public int counter;
-            private string m_SearchString;
 
             public bool ShowRelativeTimeStamps => m_Selected[(int)OptionsEnum.UseRelativeTimeStamps] != -1;
             public bool ShowPreviousImports => m_Selected[(int)OptionsEnum.ShowPreviousImports] != -1;
@@ -2339,7 +2297,6 @@ namespace UnityEditor
             private Rect m_WindowPosition;
             private Action m_OnOverviewClicked;
             private Action<Rect> m_OnShowPreviousImportsToggle;
-            private Action<string> m_OnSearchChanged;
             private Action m_OnShowPreviewImporterRevisionsToggle;
             private ImportActivityState m_State;
 
@@ -2350,13 +2307,12 @@ namespace UnityEditor
                 ShowPreviewImporterRevisions
             }
 
-            public ArtifactBrowserToolbar(Rect windowPosition, Action onOverViewClicked, Action<Rect> showPreviousImportsToggle, Action<string> onSearchChanged, Action showPreviewImporterRevisionsToggle, ImportActivityState state)
+            public ArtifactBrowserToolbar(Rect windowPosition, Action onOverViewClicked, Action<Rect> showPreviousImportsToggle, Action showPreviewImporterRevisionsToggle, ImportActivityState state)
             {
                 m_WindowPosition = windowPosition;
                 m_OnOverviewClicked = onOverViewClicked;
                 m_OnShowPreviousImportsToggle = showPreviousImportsToggle;
                 m_OnShowPreviewImporterRevisionsToggle = showPreviewImporterRevisionsToggle;
-                m_OnSearchChanged = onSearchChanged;
 
                 m_DropDownOptions = new[]
                 {
@@ -2375,10 +2331,6 @@ namespace UnityEditor
                 m_State = state;
                 m_Separator = new[] { false, false, false };
                 m_ShowingOverview = state.rightContentState != RightContentState.ShowOverview;
-                m_SearchString = state.toolBarSearchString;
-
-                if (!string.IsNullOrEmpty(m_SearchString))
-                    m_OnSearchChanged(m_SearchString);
             }
 
             private bool m_ShowingOverview = false;
@@ -2390,44 +2342,23 @@ namespace UnityEditor
 
             public void OnGUI()
             {
-                var rect = GUILayoutUtility.GetRect(0, 5000, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
-
-                var overviewRect = rect;
-                overviewRect.width = 120;
-
-                var disabledScope = new EditorGUI.DisabledScope(!m_ShowingOverview);
-
-                if (EditorGUI.Button(overviewRect, ShowOverviewText, EditorStyles.toolbarButton))
+                GUILayout.BeginHorizontal(EditorStyles.toolbar);
                 {
-                    m_OnOverviewClicked();
+                    var disabledScope = new EditorGUI.DisabledScope(!m_ShowingOverview);
+                    if (GUILayout.Button(ShowOverviewText, EditorStyles.toolbarButton))
+                    {
+                        m_OnOverviewClicked();
+                    }
+                    disabledScope.Dispose();
+
+                    if (EditorGUILayout.DropdownButton(Options, FocusType.Passive, EditorStyles.toolbarDropDownRight))
+                    {
+                        GUIUtility.hotControl = 0;
+                        EditorUtility.DisplayCustomMenuWithSeparators(GUILayoutUtility.topLevel.GetLast(), m_DropDownOptions, m_Separator, m_Selected, OnItemSelected, null);
+                    }
+                    GUILayout.FlexibleSpace();
                 }
-
-                disabledScope.Dispose();
-
-
-                var optionsRect = overviewRect;
-                optionsRect.x += overviewRect.width;
-                optionsRect.width = 120;
-
-                if (EditorGUI.DropdownButton(optionsRect, Options, FocusType.Passive, EditorStyles.toolbarDropDownRight))
-                {
-                    GUIUtility.hotControl = 0;
-                    EditorUtility.DisplayCustomMenuWithSeparators(optionsRect, m_DropDownOptions, m_Separator, m_Selected,
-                        OnItemSelected, null);
-                }
-
-                var searchFieldRect = optionsRect;
-                searchFieldRect.width = Math.Min(300, rect.width - optionsRect.xMax);
-                searchFieldRect.x = rect.width - searchFieldRect.width;
-                
-                var search = EditorGUI.ToolbarSearchField(searchFieldRect, m_SearchString, false);
-
-                if (search.GetHashCode() != m_SearchString.GetHashCode())
-                {
-                    m_SearchString = search;
-                    m_State.toolBarSearchString = m_SearchString;
-                    m_OnSearchChanged(m_SearchString);
-                }
+                GUILayout.EndHorizontal();
             }
 
             internal void OnItemSelected(object userdata, string[] options, int selected)
@@ -2462,65 +2393,65 @@ namespace UnityEditor
 
                 AddTopLevelDescription(ArtifactDifferenceReporter.kGlobal_artifactFormatVersion, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kGlobal_allImporterVersion, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_ImporterType, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegister_ImporterVersion, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_ImporterType, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_ImporterVersion, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_PostProcessorVersionHash, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_NameOfAsset, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_NameOfAsset, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_GuidOfPathLocation, ArtifactDifferenceReporter.DiffType.Added, "GuidOfPathLocation: a dependency on an asset has been added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_HashOfSourceAssetByGUID, ArtifactDifferenceReporter.DiffType.Added, "HashOfSourceAssetByGUID: a dependency on an asset has been added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfGuidsOfChildren, ArtifactDifferenceReporter.DiffType.Added, "HashOfGuidsOfChildren: a dependency on the Hash of all GUIDs belonging to assets in a folder was added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_MetaFileHash, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfContent, ArtifactDifferenceReporter.DiffType.Added, "HashOfContent: a dependency on an asset has been added");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_FileIdOfMainObject, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_Platform, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_Platform, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_TextureImportCompression, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_ColorSpace, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_GraphicsAPIMask, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_ScriptingRuntimeVersion, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_CustomDependency, ArtifactDifferenceReporter.DiffType.Added, "CustomDependency: A dependency on a custom dependency was added");
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_PlatformGroup, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_PlatformGroup, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kIndeterministicImporter, ArtifactDifferenceReporter.DiffType.Added, kNoTopLevelDescription);
 
                 AddTopLevelDescription(ArtifactDifferenceReporter.kGlobal_artifactFormatVersion, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kGlobal_allImporterVersion, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_ImporterType, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegister_ImporterVersion, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_ImporterType, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_ImporterVersion, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_PostProcessorVersionHash, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_NameOfAsset, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_NameOfAsset, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_GuidOfPathLocation, ArtifactDifferenceReporter.DiffType.Removed, "GuidOfPathLocation: a dependency on an Asset has been removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_HashOfSourceAssetByGUID, ArtifactDifferenceReporter.DiffType.Removed, "HashOfSourceAssetByGUID: a dependency on an Asset has been removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_MetaFileHash, ArtifactDifferenceReporter.DiffType.Removed, "MetaFileHash: a dependency on a .meta file has been removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfContent, ArtifactDifferenceReporter.DiffType.Removed, "HashOfContent: a dependency on an asset has been removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfGuidsOfChildren, ArtifactDifferenceReporter.DiffType.Removed, "HashOfGuidsOfChildren: a dependency on the Hash of all GUIDs belonging to assets in a folder was removed");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_FileIdOfMainObject, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_Platform, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_Platform, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_TextureImportCompression, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_ColorSpace, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_GraphicsAPIMask, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_ScriptingRuntimeVersion, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_CustomDependency, ArtifactDifferenceReporter.DiffType.Removed, "CustomDependency: a dependency on a custom dependency was removed");
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_PlatformGroup, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_PlatformGroup, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kIndeterministicImporter, ArtifactDifferenceReporter.DiffType.Removed, kNoTopLevelDescription);
 
                 AddTopLevelDescription(ArtifactDifferenceReporter.kGlobal_artifactFormatVersion, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kGlobal_allImporterVersion, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_ImporterType, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegister_ImporterVersion, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_ImporterType, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_ImporterVersion, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kImporterRegistry_PostProcessorVersionHash, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_NameOfAsset, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_NameOfAsset, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_GuidOfPathLocation, ArtifactDifferenceReporter.DiffType.Modified, "GuidOfPathLocation: an asset that is depended on has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_HashOfSourceAssetByGUID, ArtifactDifferenceReporter.DiffType.Modified, "HashOfSourceAssetByGUID: an asset that is depended on has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kSourceAsset_MetaFileHash, ArtifactDifferenceReporter.DiffType.Modified, "MetaFileHash: a .meta file that is depended on has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfContent, ArtifactDifferenceReporter.DiffType.Modified, "HashOfContent: a source asset that is depended on has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_HashOfGuidsOfChildren, ArtifactDifferenceReporter.DiffType.Modified, "HashOfGuidsOfChildren: the Hash of all GUIDs belonging to assets in a folder has been modified");
                 AddTopLevelDescription(ArtifactDifferenceReporter.kArtifact_FileIdOfMainObject, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_Platform, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_Platform, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_TextureImportCompression, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_ColorSpace, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_GraphicsAPIMask, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_ScriptingRuntimeVersion, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_CustomDependency, ArtifactDifferenceReporter.DiffType.Modified, "CustomDependency: a custom dependency was modified");
-                AddTopLevelDescription(ArtifactDifferenceReporter.kImportParameter_PlatformGroup, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
+                AddTopLevelDescription(ArtifactDifferenceReporter.kEnvironment_PlatformGroup, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
                 AddTopLevelDescription(ArtifactDifferenceReporter.kIndeterministicImporter, ArtifactDifferenceReporter.DiffType.Modified, kNoTopLevelDescription);
             }
 
@@ -2650,12 +2581,13 @@ namespace UnityEditor
 
             protected override void CellGUI(Rect cellRect, TreeViewItem item, int columnIndex, ref RowGUIArgs args)
             {
+                cellRect.xMin += kFirstColumnIndent;
                 if (args.item.depth == 0 && args.item.hasChildren)
                 {
                     cellRect.x += k_IconWidth;
                     var headerContent = new GUIContent(item.displayName);
 
-                    EditorGUI.LabelField(cellRect, headerContent);
+                    DefaultGUI.Label(cellRect, item.displayName, args.selected, args.focused);
                     return;
                 }
 
@@ -2663,12 +2595,9 @@ namespace UnityEditor
                     cellRect.x += k_IconWidth * 2;
 
                 var element = m_ItemList[args.item.id - 1];
-
                 CenterRectUsingSingleLineHeight(ref cellRect);
-
-                var content = new GUIContent(ColumnValueSelector(element, columnIndex).ToString());
-
-                EditorGUI.LabelField(cellRect, content);
+                var content = ColumnValueSelector(element, columnIndex).ToString();
+                DefaultGUI.Label(cellRect, content, args.selected, args.focused);
             }
 
             protected override void OnSortingChanged(MultiColumnHeader header)
@@ -2690,21 +2619,25 @@ namespace UnityEditor
         {
             public Func<T, int, IComparable> ColumnValueSelector { get; set; }
             public Func<TreeViewItem, TreeViewItem, int, List<T>, int>[] ColumnValueSortSelector;
-            public Func<Rect, TreeViewItem, int, T, bool> CellGUICallback { get; set; }
-
-            public Action<int> OnDoubleClickedItem;
-
-
+            public Func<Rect, TreeViewItem, int, T, bool, bool, bool> CellGUICallback { get; set; }
+            public Func<TreeViewItem, T, string, bool> SearchHandlerCallback { get; set; }
+            public Action<int> OnDoubleClickedItem { get; set; }
             public bool CanSort { get; set; }
-
             internal List<T> m_ItemList;
-
-            public bool PadBorders = false;
-
             public event Action<int> SelectionChangedCallback;
             private bool m_SearchEnabled;
             private IList<int> m_PrevSelectedIndices = new int[0];
             private int m_SelectedItem = -1;
+            internal float minimumHeight => (m_SearchEnabled ? k_SearchFieldTotalHeight : 0) + 77f; // 80 is for the treeview with header and vertical scroll bar that can show both arrows and a dragger
+            internal bool allowFullHeight { get; set; } = false;
+            internal bool renderBorder { get => showBorder; set => showBorder = value; }
+            internal bool renderAlternatingRowBackgrounds { get => showAlternatingRowBackgrounds; set => showAlternatingRowBackgrounds = value; }
+            internal float searchFieldHorizontalMargins { get; set; } = 0;
+
+            const float kSearchFieldHeight = EditorGUI.kSingleLineHeight;
+            const float kSearchFieldVerticalMargins = 4;
+
+            float k_SearchFieldTotalHeight => kSearchFieldHeight + kSearchFieldVerticalMargins;
 
             protected TreeViewItem m_RootItem = null;
             public ArtifactBrowserTreeView(List<T> items, TreeViewState treeViewState, MultiColumnHeader multicolumnHeader) : base(treeViewState, multicolumnHeader)
@@ -2727,6 +2660,15 @@ namespace UnityEditor
                 this.m_SelectedItem = copy.m_SelectedItem;
             }
 
+            public IMGUIContainer CreateAndSetupIMGUIContainer()
+            {
+                var imguiContainer = new IMGUIContainer(this.OnGUI);
+                imguiContainer.style.minHeight = minimumHeight;
+                imguiContainer.style.flexShrink = 1;
+                imguiContainer.style.flexGrow = 0;
+                return imguiContainer;
+            }
+
             public void RestoreSelection()
             {
                 if (state.selectedIDs != null && state.selectedIDs.Count > 0 && state.selectedIDs[0] > 0)
@@ -2743,7 +2685,6 @@ namespace UnityEditor
             public virtual void UpdateItemList(List<T> items)
             {
                 m_ItemList = items;
-                BuildRoot();
             }
 
             public void SetSearch(bool searchState)
@@ -2766,6 +2707,13 @@ namespace UnityEditor
 
                 SetupParentsAndChildrenFromDepths(m_RootItem, allItems);
                 return m_RootItem;
+            }
+
+            protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
+            {
+                var rows = base.BuildRows(root);
+                Sort(rows);
+                return rows;
             }
 
             protected override void SingleClickedItem(int id)
@@ -2794,32 +2742,46 @@ namespace UnityEditor
 
             public void OnGUI()
             {
-                var rect = GUILayoutUtility.GetRect(0, 10000, 0, 10000);
+                // Allocate rect in layout system
+                const float kScrollbarHeight = 14;
+                float heightNeeded = totalHeight + kScrollbarHeight + (m_SearchEnabled ? k_SearchFieldTotalHeight : 0);
+                if (heightNeeded < minimumHeight)
+                    heightNeeded = minimumHeight;
+                var availableRect = GUILayoutUtility.GetRect(0, 10000, 0, allowFullHeight ? 10000 : heightNeeded);
 
-                if (PadBorders)
-                {
-                    rect.x += kLeftPadding;
-                    rect.width -= kLeftPadding * 2;
-                }
-
+                // Search field
                 if (m_SearchEnabled)
                 {
-                    var searchFieldRect = rect;
-                    searchFieldRect.y += 4;
-                    searchFieldRect.height = EditorGUI.kSingleLineHeight;
-                    GUILayout.BeginHorizontal();
+                    var searchFieldRect = availableRect;
+                    searchFieldRect.x += searchFieldHorizontalMargins * 2;
+                    searchFieldRect.width -= searchFieldHorizontalMargins * 3;
+                    searchFieldRect.y += kSearchFieldVerticalMargins;
+                    searchFieldRect.height = kSearchFieldHeight;
                     var search = EditorGUI.ToolbarSearchField(searchFieldRect, searchString, false);
-                    GUILayout.EndHorizontal();
-
                     if (searchString != search)
-                    {
                         searchString = search;
-                    }
-
-                    rect.y += EditorGUI.kSingleLineHeight + 4;
                 }
 
-                base.OnGUI(rect);
+                // Tree view
+                Rect treeViewRect = availableRect;
+                if (m_SearchEnabled)
+                {
+                    treeViewRect.y += k_SearchFieldTotalHeight;
+                    treeViewRect.height -= k_SearchFieldTotalHeight;
+                }
+
+                base.OnGUI(treeViewRect);
+            }
+
+            protected override bool DoesItemMatchSearch(TreeViewItem item, string search)
+            {
+                if (SearchHandlerCallback != null)
+                {
+                    var element = m_ItemList[item.id - 1];
+                    return SearchHandlerCallback(item, element, search);
+                }
+                else
+                    return base.DoesItemMatchSearch(item, search);
             }
 
             protected override void RowGUI(RowGUIArgs args)
@@ -2840,7 +2802,10 @@ namespace UnityEditor
 
                 CenterRectUsingSingleLineHeight(ref cellRect);
 
-                CellGUICallback(cellRect, item, columnIndex, element);
+                if (columnIndex == 0)
+                    cellRect.xMin += kFirstColumnIndent;
+
+                CellGUICallback(cellRect, item, columnIndex, element, args.selected, args.focused);
             }
 
             protected virtual void OnSortingChanged(MultiColumnHeader header)
@@ -2952,7 +2917,6 @@ namespace UnityEditor
             // Update tree list view
             m_AllAssetsListView.UpdateItemList(m_AllAssetsList);
             m_AllAssetsListView.Reload();
-            m_AllAssetsListView.Sort(m_AllAssetsListView.GetRows());
             m_AllAssetsListView.RestoreSelection();
             m_DependenciesListView.RestoreSelection();
             m_ProducedFilesListView.RestoreSelection();

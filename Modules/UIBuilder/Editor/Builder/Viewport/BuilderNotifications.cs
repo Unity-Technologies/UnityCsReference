@@ -10,6 +10,13 @@ namespace Unity.UI.Builder
 {
     internal class BuilderNotifications : VisualElement
     {
+        public struct NotificationItem
+        {
+            public string key;
+            public string message;
+            public VisualElement panel;
+        }
+
         public struct NotificationData
         {
             public string key;
@@ -46,54 +53,62 @@ namespace Unity.UI.Builder
             public override object CreateInstance() => new BuilderNotifications();
         }
 
+        public List<NotificationItem> items { get; } = new();
+
         public BuilderNotifications()
         {
             m_NotificationEntryVTA = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(k_NotificationEntryVTAPath);
         }
 
+        public bool HasNotification(string notificationKey)
+        {
+            foreach (var notification in items)
+            {
+                if (notification.key == notificationKey)
+                    return true;
+            }
+            return false;
+        }
+
         public void ClearAllNotifications()
         {
+            items.Clear();
             Clear();
         }
 
         public void ClearNotifications(string notificationKey)
         {
-            var children = Children();
-            m_ChildrenToRemove.Clear();
-
-            foreach (var child in children)
+            for (var i = 0; i < items.Count; i++)
             {
-                if (child.userData != null && child.userData as string == notificationKey)
+                var notification = items[i];
+                if (notification.key == notificationKey)
                 {
-                    m_ChildrenToRemove.Add(child);
+                    notification.panel.RemoveFromHierarchy();
+                    items.RemoveAt(i);
+                    i--; // Adjust index after removal
                 }
-            }
-
-            foreach (var child in m_ChildrenToRemove)
-            {
-                child.RemoveFromHierarchy();
             }
         }
 
         public void AddNotification(NotificationData data)
         {
-            var newNotification = m_NotificationEntryVTA.CloneTree();
-            newNotification.AddToClassList(k_BuilderNotificationEntryClassName);
+            var newNotificationPanel = m_NotificationEntryVTA.CloneTree();
+            newNotificationPanel.AddToClassList(k_BuilderNotificationEntryClassName);
 
             switch (data.notificationType)
             {
                 case NotificationType.Warning:
-                    newNotification.AddToClassList(k_BuilderWarningNotificationEntryClassName);
+                    newNotificationPanel.AddToClassList(k_BuilderWarningNotificationEntryClassName);
                     break;
                 default:
-                    newNotification.AddToClassList(k_BuilderInfoNotificationEntryClassName);
+                    newNotificationPanel.AddToClassList(k_BuilderInfoNotificationEntryClassName);
                     break;
             }
 
-            var messageLabel = newNotification.Q<Label>(BuilderNotificationMessageName);
+            var messageLabel = newNotificationPanel.Q<Label>(BuilderNotificationMessageName);
             messageLabel.text = data.message;
 
-            var actionButton = newNotification.Q<Button>(BuilderNotificationActionButtonName);
+            var actionButton = newNotificationPanel.Q<Button>(BuilderNotificationActionButtonName);
             if (data.onActionButtonClicked != null)
             {
                 actionButton.text = data.actionButtonText;
@@ -105,20 +120,21 @@ namespace Unity.UI.Builder
             }
             actionButton.EnableInClassList(BuilderConstants.HiddenStyleClassName,  data.onActionButtonClicked == null);
 
-            var dismissButton = newNotification.Q<Button>(BuilderNotificationDismissButtonName);
+            var dismissButton = newNotificationPanel.Q<Button>(BuilderNotificationDismissButtonName);
             if (data.showDismissButton)
             {
                 dismissButton.clickable.clicked +=
                     () =>
                     {
-                        newNotification.RemoveFromHierarchy();
+                        newNotificationPanel.RemoveFromHierarchy();
                         data.onDismissButtonClicked?.Invoke();
                     };
             }
             dismissButton.EnableInClassList(BuilderConstants.HiddenStyleClassName,  !data.showDismissButton);
 
-            newNotification.userData = data.key;
-            Add(newNotification);
+            newNotificationPanel.userData = data.key;
+            Add(newNotificationPanel);
+            items.Add(new NotificationItem { key = data.key, message = data.message, panel = newNotificationPanel } );
         }
     }
 }

@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Element that can be bound to a property. For more information, refer to [[wiki:UIE-uxml-element-BindableElement|UXML element BindableElement]].
     /// </summary>
-    public class BindableElement : VisualElement, IBindable
+    public partial class BindableElement : VisualElement, IBindable
     {
         internal const string k_BindingPathTooltip = "Default method to define a path to a serialized property. Most often used for Editor extensions and inspectors.";
 
@@ -42,47 +42,6 @@ namespace UnityEngine.UIElements
                 {
                     var e = (BindableElement)obj;
                     e.bindingPath = bindingPath;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="BindableElement"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<BindableElement, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BindableElement"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_PropertyPath;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PropertyPath = new UxmlStringAttributeDescription { name = "binding-path" };
-            }
-
-            /// <summary>
-            /// Initialize <see cref="BindableElement"/> properties using values from the attribute bag.
-            /// </summary>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
-
-                if (!string.IsNullOrEmpty(propPath))
-                {
-                    var field = ve as IBindable;
-                    if (field != null)
-                    {
-                        field.bindingPath = propPath;
-                    }
                 }
             }
         }

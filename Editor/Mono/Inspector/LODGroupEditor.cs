@@ -33,6 +33,7 @@ namespace UnityEditor
         private SerializedProperty m_LastLODIsBillboard;
         private SerializedProperty m_LODs;
         private SerializedProperty m_LODSize;
+        private SerializedProperty m_GlobalIlluminationLOD;
 
         private AnimBool m_ShowAnimateCrossFading = new AnimBool();
         private AnimBool m_ShowFadeTransitionWidth = new AnimBool();
@@ -83,6 +84,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            m_GlobalIlluminationLOD = serializedObject.FindProperty("m_GlobalIlluminationLOD");
             m_FadeMode = serializedObject.FindProperty("m_FadeMode");
             m_AnimateCrossFading = serializedObject.FindProperty("m_AnimateCrossFading");
             m_LastLODIsBillboard = serializedObject.FindProperty("m_LastLODIsBillboard");
@@ -233,14 +235,7 @@ namespace UnityEditor
 
         public static bool IsSceneGUIEnabled()
         {
-            if (Event.current.type != EventType.Repaint
-                || Camera.current == null
-                || SceneView.lastActiveSceneView != SceneView.currentDrawingSceneView)
-            {
-                return false;
-            }
-
-            return true;
+            return LODGUI.IsDrawingLabelInCurrentSceneView();
         }
 
         public void OnSceneGUI()
@@ -261,7 +256,7 @@ namespace UnityEditor
             var info = LODUtility.CalculateVisualizationData(camera, lodGroup, -1);
             float size = info.worldSpaceSize;
 
-            LODGUI.DrawLODLabel(camera, worldReferencePoint, size, info.activeLODLevel, LODGUI.kLODColors, "LOD ");
+            LODGUI.DrawLODLabel(camera, worldReferencePoint, size, info.activeLODLevel, lodGroup.lodCount, LODGUI.kLODColors, "LOD ");
         }
 
         private Vector3 m_LastCameraPos = Vector3.zero;
@@ -407,6 +402,7 @@ namespace UnityEditor
                 {
                     serializedObject.ApplyModifiedProperties();
                     ResetValuesAfterLODObjectIsModified();
+                    UpdateEnabledMeshLods();
                 }
             }
 
@@ -673,6 +669,10 @@ namespace UnityEditor
                 ResetFoldoutLists();
             }
 
+            // Flush this editor's mesh LOD state if it's out of sync with serialized data
+            if (m_EnabledMeshLods.Length != m_LODs.arraySize)
+                UpdateEnabledMeshLods();
+
             EditorGUILayout.PropertyField(m_FadeMode);
 
             m_ShowAnimateCrossFading.target = m_FadeMode.intValue != (int)LODFadeMode.None;
@@ -685,9 +685,10 @@ namespace UnityEditor
             // This could happen when you select a newly inserted LOD level and then undo the insertion.
             // It's valid for m_SelectedLOD to become -1, which means nothing is selected.
             if (m_SelectedLOD >= m_NumberOfLODs)
-            {
                 m_SelectedLOD = m_NumberOfLODs - 1;
-            }
+
+            // Shows a combo box in the UI specifying which LOD level is used for baking (GFXFEAT-865)
+            // This is disabled for now as the feature is only supported by the Unified Baker
 
             if (targets.Length > 1)
             {
@@ -1086,6 +1087,7 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
             m_LODGroup.RecalculateBounds();
             ResetValuesAfterLODObjectIsModified();
+            UpdateEnabledMeshLods();
             ExpandSelectedHeaderAndCloseRemaining(activeLOD);
         }
 
@@ -1122,7 +1124,7 @@ namespace UnityEditor
                 {
                     if (m_Percentage > lod.RawScreenPercent)
                     {
-                        insertIndex = lod.LODLevel;
+                        insertIndex = lod.LODIndex;
                         break;
                     }
                 }
@@ -1158,14 +1160,14 @@ namespace UnityEditor
                 // Check for range click
                 foreach (var lod in m_LODs)
                 {
-                    var numberOfRenderers = m_ObjectRef.FindProperty(string.Format(kRenderRootPath, lod.LODLevel)).arraySize;
+                    var numberOfRenderers = m_ObjectRef.FindProperty(string.Format(kRenderRootPath, lod.LODIndex)).arraySize;
                     if (lod.m_RangePosition.Contains(m_ClickedPosition) && (numberOfRenderers == 0
                                                                             || EditorUtility.DisplayDialog("Delete LOD",
                                                                                 "Are you sure you wish to delete this LOD?",
                                                                                 "Yes",
                                                                                 "No")))
                     {
-                        var lodData = m_ObjectRef.FindProperty(string.Format(kLODDataPath, lod.LODLevel));
+                        var lodData = m_ObjectRef.FindProperty(string.Format(kLODDataPath, lod.LODIndex));
                         lodData.DeleteCommand();
 
                         m_ObjectRef.ApplyModifiedProperties();
@@ -1177,11 +1179,18 @@ namespace UnityEditor
             }
         }
 
-        private void DeletedLOD()
+        void OnInsertLOD()
+        {
+            ResetValuesAfterLODObjectIsModified();
+            UpdateEnabledMeshLods();
+        }
+
+        void OnDeleteLOD()
         {
             m_SelectedLOD--;
 
             ResetValuesAfterLODObjectIsModified();
+            UpdateEnabledMeshLods();
         }
 
         // Set the camera distance so that the current LOD group covers the desired percentage of the screen
@@ -1196,22 +1205,7 @@ namespace UnityEditor
             // Figure out a distance based on the percentage
             var distance = LODUtility.CalculateDistance(sceneCamera, percentage, group);
 
-            // We need to do inverse of SceneView.cameraDistance:
-            // given the distance, need to figure out "size" to focus the scene view on.
-            float size;
-            if (sceneCamera.orthographic)
-            {
-                size = distance;
-                if (sceneCamera.aspect < 1.0)
-                    size *= sceneCamera.aspect;
-            }
-            else
-            {
-                var fov = sceneCamera.fieldOfView;
-                size = distance * Mathf.Sin(fov * 0.5f * Mathf.Deg2Rad);
-            }
-
-            SceneView.lastActiveSceneView.LookAtDirect(worldReferencePoint, sceneCamera.transform.rotation, size);
+            LODGUI.UpdateCameraFromLODSlider(worldReferencePoint, sceneCamera, distance);
         }
 
         private void UpdateSelectedLODFromCamera(IEnumerable<LODGUI.LODInfo> lods, float cameraPercent)
@@ -1220,7 +1214,7 @@ namespace UnityEditor
             {
                 if (cameraPercent > lod.RawScreenPercent)
                 {
-                    m_SelectedLOD = lod.LODLevel;
+                    m_SelectedLOD = lod.LODIndex;
                     break;
                 }
             }
@@ -1255,7 +1249,7 @@ namespace UnityEditor
                         else
                         {
                             pm.AddItem(EditorGUIUtility.TrTextContent("Insert Before"), false,
-                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, ResetValuesAfterLODObjectIsModified).
+                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, OnInsertLOD).
                                 InsertLOD);
                         }
 
@@ -1268,7 +1262,7 @@ namespace UnityEditor
                             pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
                         else
                             pm.AddItem(EditorGUIUtility.TrTextContent("Delete"), false,
-                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, DeletedLOD).
+                                new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, OnDeleteLOD).
                                 DeleteLOD);
                         pm.ShowAsContext();
 
@@ -1278,7 +1272,7 @@ namespace UnityEditor
                         {
                             if (lod.m_RangePosition.Contains(evt.mousePosition))
                             {
-                                m_SelectedLOD = lod.LODLevel;
+                                m_SelectedLOD = lod.LODIndex;
                                 selected = true;
                                 break;
                             }
@@ -1306,8 +1300,8 @@ namespace UnityEditor
                         var clickedButton = false;
 
                         // case:464019 have to re-sort the LOD array for these buttons to get the overlaps in the right order...
-                        var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODLevel);
-                        var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODLevel);
+                        var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODIndex);
+                        var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODIndex);
 
                         var lodButtonOrder = new List<LODGUI.LODInfo>();
                         lodButtonOrder.AddRange(lodsLeft);
@@ -1317,7 +1311,7 @@ namespace UnityEditor
                         {
                             if (lod.m_ButtonPosition.Contains(evt.mousePosition))
                             {
-                                m_SelectedLODSlider = lod.LODLevel;
+                                m_SelectedLODSlider = lod.LODIndex;
                                 clickedButton = true;
                                 // Bias by 0.1% so that there is no skipping when sliding
                                 BeginLODDrag(lod.RawScreenPercent + 0.001f, m_LODGroup);
@@ -1333,7 +1327,7 @@ namespace UnityEditor
                                 if (lod.m_RangePosition.Contains(evt.mousePosition))
                                 {
                                     m_SelectedLODSlider = -1;
-                                    m_SelectedLOD = lod.LODLevel;
+                                    m_SelectedLOD = lod.LODIndex;
                                     ExpandSelectedHeaderAndCloseRemaining(m_SelectedLOD);
                                     break;
                                 }
@@ -1352,7 +1346,7 @@ namespace UnityEditor
                         var cameraPercent = LODGUI.GetCameraPercent(evt.mousePosition, sliderPosition);
                         // Bias by 0.1% so that there is no skipping when sliding
                         LODGUI.SetSelectedLODLevelPercentage(cameraPercent - 0.001f, m_SelectedLODSlider, lods);
-                        var percentageProperty = serializedObject.FindProperty(string.Format(kPixelHeightDataPath, lods[m_SelectedLODSlider].LODLevel));
+                        var percentageProperty = serializedObject.FindProperty(string.Format(kPixelHeightDataPath, lods[m_SelectedLODSlider].LODIndex));
                         percentageProperty.floatValue = lods[m_SelectedLODSlider].RawScreenPercent;
 
                         UpdateLODDrag(cameraPercent, m_LODGroup);
@@ -1384,7 +1378,7 @@ namespace UnityEditor
                     {
                         if (lod.m_RangePosition.Contains(evt.mousePosition))
                         {
-                            lodLevel = lod.LODLevel;
+                            lodLevel = lod.LODIndex;
                             break;
                         }
                     }
@@ -1463,9 +1457,9 @@ namespace UnityEditor
                     relativeHeight = 1.0f;
 
                 var cameraRect = LODGUI.CalcLODButton(sliderPosition, Mathf.Clamp01(relativeHeight));
-                var cameraIconRect = new Rect(cameraRect.center.x - 15, cameraRect.y - 25, 32, 32);
-                var cameraLineRect = new Rect(cameraRect.center.x - 1, cameraRect.y, 2, cameraRect.height);
-                var cameraPercentRect = new Rect(cameraIconRect.center.x - 5, cameraLineRect.yMax, 35, 20);
+                var cameraIconRect = LODGUI.CalcLODCameraIconRect(cameraRect);
+                var cameraLineRect = LODGUI.CalcLODCameraLineRect(cameraRect);
+                var cameraPercentRect = LODGUI.CalcLODCameraPctRect(cameraIconRect, cameraLineRect);
 
                 switch (evt.GetTypeForControl(camerId))
                 {
@@ -1675,7 +1669,7 @@ namespace UnityEditor
                 int lodIndex = LODSelected ? activeLOD : 0; // display LOD0 if no LOD is selected
                 if (lodIndex >= 0 && lodIndex < lodArray.Length)
                 {
-                    renderers = lodArray[lodIndex].renderers; 
+                    renderers = lodArray[lodIndex].renderers;
                 }
             }
             if (renderers == null)

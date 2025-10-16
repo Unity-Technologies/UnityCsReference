@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -109,24 +110,42 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     public struct ChangeGameObjectParentEventArgs
     {
-        public int instanceId => m_InstanceId;
-        public int previousParentInstanceId => m_PreviousParentInstanceId;
-        public int newParentInstanceId => m_NewParentInstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
+
+        [Obsolete("previousParentInstanceId is deprecated. Use previousParentEntityId instead.")]
+        public int previousParentInstanceId => m_PreviousParentEntityId;
+        public EntityId previousParentEntityId => m_PreviousParentEntityId;
+
+        [Obsolete("newParentInstanceId is deprecated. Use newParentEntityId instead.")]
+        public int newParentInstanceId => m_NewParentEntityId;
+        public EntityId newParentEntityId => m_NewParentEntityId;
+
         public Scene previousScene => m_PreviousScene;
         public Scene newScene => m_NewScene;
 
+        public ChangeGameObjectParentEventArgs(EntityId entityId, Scene previousScene, EntityId previousParentEntityId, Scene newScene, EntityId newParentEntityId)
+        {
+            m_EntityId = entityId;
+            m_PreviousParentEntityId = previousParentEntityId;
+            m_NewParentEntityId = newParentEntityId;
+            m_PreviousScene = previousScene;
+            m_NewScene = newScene;
+        }
+        [Obsolete("ChangeGameObjectParentEventArgs(int instanceId, Scene previousScene, int previousParentInstanceId, Scene newScene, int newParentInstanceId) is deprecated. Use ChangeGameObjectParentEventArgs(EntityId entityId, Scene previousScene, EntityId previousParentEntityId, Scene newScene, EntityId newParentEntityId) instead.")]
         public ChangeGameObjectParentEventArgs(int instanceId, Scene previousScene, int previousParentInstanceId, Scene newScene, int newParentInstanceId)
         {
-            m_InstanceId = instanceId;
-            m_PreviousParentInstanceId = previousParentInstanceId;
-            m_NewParentInstanceId = newParentInstanceId;
+            m_EntityId = instanceId;
+            m_PreviousParentEntityId = previousParentInstanceId;
+            m_NewParentEntityId = newParentInstanceId;
             m_PreviousScene = previousScene;
             m_NewScene = newScene;
         }
 
-        private int m_InstanceId;
-        private int m_PreviousParentInstanceId;
-        private int m_NewParentInstanceId;
+        private EntityId m_EntityId;
+        private EntityId m_PreviousParentEntityId;
+        private EntityId m_NewParentEntityId;
         private Scene m_PreviousScene;
         private Scene m_NewScene;
     }
@@ -134,32 +153,51 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     public struct ChangeChildrenOrderEventArgs
     {
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
+
         public Scene scene => m_Scene;
 
-        public ChangeChildrenOrderEventArgs(int instanceId, Scene scene)
+        public ChangeChildrenOrderEventArgs(EntityId entityId, Scene scene)
         {
-            m_InstanceId = instanceId;
+            m_EntityId = entityId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
+        [Obsolete("ChangeChildrenOrderEventArgs(int instanceId, Scene scene) is deprecated. Use ChangeChildrenOrderEventArgs(EntityId entityId, Scene scene) instead.")]
+        public ChangeChildrenOrderEventArgs(int instanceId, Scene scene)
+        {
+            m_EntityId = instanceId;
+            m_Scene = scene;
+        }
+
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ChangeRootOrderEventArgs
     {
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
+
         public Scene scene => m_Scene;
 
+        public ChangeRootOrderEventArgs(EntityId entityId, Scene scene)
+        {
+            m_EntityId = entityId;
+            m_Scene = scene;
+        }
+        [Obsolete("ChangeRootOrderEventArgs(int instanceId, Scene scene) is deprecated. Use ChangeRootOrderEventArgs(EntityId entityId, Scene scene) instead.")]
         public ChangeRootOrderEventArgs(int instanceId, Scene scene)
         {
-            m_InstanceId = instanceId;
+            m_EntityId = instanceId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
@@ -179,90 +217,148 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     public struct CreateGameObjectHierarchyEventArgs
     {
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
         public Scene scene => m_Scene;
 
-        public CreateGameObjectHierarchyEventArgs(int instanceId, Scene scene)
+        public CreateGameObjectHierarchyEventArgs(EntityId entityId, Scene scene)
         {
-            m_InstanceId = instanceId;
+            m_EntityId = entityId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
+        [Obsolete("CreateGameObjectHierarchyEventArgs(int instanceId, Scene scene) is deprecated. Use CreateGameObjectHierarchyEventArgs(EntityId entityId, Scene scene) instead.")]
+        public CreateGameObjectHierarchyEventArgs(int instanceId, Scene scene)
+        {
+            m_EntityId = instanceId;
+            m_Scene = scene;
+        }
+
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ChangeGameObjectStructureHierarchyEventArgs
     {
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
+
         public Scene scene => m_Scene;
 
-        public ChangeGameObjectStructureHierarchyEventArgs(int instanceId, Scene scene)
+        public ChangeGameObjectStructureHierarchyEventArgs(EntityId entityId, Scene scene)
         {
-            m_InstanceId = instanceId;
+            m_EntityId = entityId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
+        [Obsolete("ChangeGameObjectStructureHierarchyEventArgs(int instanceId, Scene scene) is deprecated. Use ChangeGameObjectStructureHierarchyEventArgs(EntityId entityId, Scene scene) instead.")]
+        public ChangeGameObjectStructureHierarchyEventArgs(int instanceId, Scene scene)
+        {
+            m_EntityId = instanceId;
+            m_Scene = scene;
+        }
+
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ChangeGameObjectStructureEventArgs
     {
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
         public Scene scene => m_Scene;
 
-        public ChangeGameObjectStructureEventArgs(int instanceId, Scene scene)
+        public ChangeGameObjectStructureEventArgs(EntityId entityId, Scene scene)
         {
-            m_InstanceId = instanceId;
+            m_EntityId = entityId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
+        [Obsolete("ChangeGameObjectStructureEventArgs(int instanceId, Scene scene) is deprecated. Use ChangeGameObjectStructureEventArgs(EntityId entityId, Scene scene) instead.")]
+        public ChangeGameObjectStructureEventArgs(int instanceId, Scene scene)
+        {
+            m_EntityId = instanceId;
+            m_Scene = scene;
+        }
+
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ChangeGameObjectOrComponentPropertiesEventArgs
     {
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
         public Scene scene => m_Scene;
 
-        public ChangeGameObjectOrComponentPropertiesEventArgs(int instanceId, Scene scene)
+        public ChangeGameObjectOrComponentPropertiesEventArgs(EntityId entityId, Scene scene)
         {
-            m_InstanceId = instanceId;
+            m_EntityId = entityId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
+        [Obsolete("ChangeGameObjectOrComponentPropertiesEventArgs(int instanceId, Scene scene) is deprecated. Use ChangeGameObjectOrComponentPropertiesEventArgs(EntityId entityId, Scene scene) instead.")]
+        public ChangeGameObjectOrComponentPropertiesEventArgs(int instanceId, Scene scene)
+        {
+            m_EntityId = instanceId;
+            m_Scene = scene;
+        }
+
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct DestroyGameObjectHierarchyEventArgs
     {
-        public int instanceId => m_InstanceId;
-        public int parentInstanceId => m_ParentInstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
+
+        [Obsolete("parentInstanceId is deprecated. Use parentEntityId instead.")]
+        public int parentInstanceId => m_ParentEntityId;
+        public EntityId parentEntityId => m_ParentEntityId;
+
         public Scene scene => m_Scene;
 
+        public DestroyGameObjectHierarchyEventArgs(EntityId entityId, Scene scene)
+        {
+            m_EntityId = entityId;
+            m_ParentEntityId = EntityId.None;
+            m_Scene = scene;
+        }
+        [Obsolete("DestroyGameObjectHierarchyEventArgs(int instanceId, Scene scene) is deprecated. Use DestroyGameObjectHierarchyEventArgs(EntityId entityId, Scene scene) instead.")]
         public DestroyGameObjectHierarchyEventArgs(int instanceId, Scene scene)
         {
-            m_InstanceId = instanceId;
-            m_ParentInstanceId = 0;
+            m_EntityId = instanceId;
+            m_ParentEntityId = 0;
             m_Scene = scene;
         }
 
+        public DestroyGameObjectHierarchyEventArgs(EntityId entityId, EntityId parentEntityId, Scene scene)
+        {
+            m_EntityId = entityId;
+            m_ParentEntityId = parentEntityId;
+            m_Scene = scene;
+        }
+
+        [Obsolete("DestroyGameObjectHierarchyEventArgs(int instanceId, int parentInstanceId, Scene scene) is deprecated. Use DestroyGameObjectHierarchyEventArgs(EntityId entityId, EntityId parentEntityId, Scene scene) instead.")]
         public DestroyGameObjectHierarchyEventArgs(int instanceId, int parentInstanceId, Scene scene)
         {
-            m_InstanceId = instanceId;
-            m_ParentInstanceId = parentInstanceId;
+            m_EntityId = instanceId;
+            m_ParentEntityId = parentInstanceId;
             m_Scene = scene;
         }
 
-        private int m_InstanceId;
-        private int m_ParentInstanceId;
+        private EntityId m_EntityId;
+        private EntityId m_ParentEntityId;
         private Scene m_Scene;
     }
 
@@ -270,18 +366,28 @@ namespace UnityEditor
     public struct CreateAssetObjectEventArgs
     {
         public GUID guid => m_Guid;
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
         public Scene scene => m_Scene;
 
+        public CreateAssetObjectEventArgs(GUID guid, EntityId entityId, Scene scene)
+        {
+            m_Guid = guid;
+            m_EntityId = entityId;
+            m_Scene = scene;
+        }
+
+        [Obsolete("CreateAssetObjectEventArgs(GUID guid, int instanceId, Scene scene) is deprecated. Use CreateAssetObjectEventArgs(GUID guid, EntityId entityId, Scene scene) instead.")]
         public CreateAssetObjectEventArgs(GUID guid, int instanceId, Scene scene)
         {
             m_Guid = guid;
-            m_InstanceId = instanceId;
+            m_EntityId = instanceId;
             m_Scene = scene;
         }
 
         private GUID m_Guid;
-        private int m_InstanceId;
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
@@ -289,18 +395,28 @@ namespace UnityEditor
     public struct DestroyAssetObjectEventArgs
     {
         public GUID guid => m_Guid;
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
         public Scene scene => m_Scene;
 
+        public DestroyAssetObjectEventArgs(GUID guid, EntityId entityId, Scene scene)
+        {
+            m_Guid = guid;
+            m_EntityId = entityId;
+            m_Scene = scene;
+        }
+
+        [Obsolete("DestroyAssetObjectEventArgs(GUID guid, int instanceId, Scene scene) is deprecated. Use DestroyAssetObjectEventArgs(GUID guid, EntityId entityId, Scene scene) instead.")]
         public DestroyAssetObjectEventArgs(GUID guid, int instanceId, Scene scene)
         {
             m_Guid = guid;
-            m_InstanceId = instanceId;
+            m_EntityId = instanceId;
             m_Scene = scene;
         }
 
         private GUID m_Guid;
-        private int m_InstanceId;
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
@@ -308,18 +424,29 @@ namespace UnityEditor
     public struct ChangeAssetObjectPropertiesEventArgs
     {
         public GUID guid => m_Guid;
-        public int instanceId => m_InstanceId;
+        [Obsolete("instanceId is deprecated. Use entityId instead.")]
+        public int instanceId => m_EntityId;
+        public EntityId entityId => m_EntityId;
+
         public Scene scene => m_Scene;
 
+        public ChangeAssetObjectPropertiesEventArgs(GUID guid, EntityId entityId, Scene scene)
+        {
+            m_Guid = guid;
+            m_EntityId = entityId;
+            m_Scene = scene;
+        }
+
+        [Obsolete("ChangeAssetObjectPropertiesEventArgs(GUID guid, int instanceId, Scene scene) is deprecated. Use ChangeAssetObjectPropertiesEventArgs(GUID guid, EntityId entityId, Scene scene) instead.")]
         public ChangeAssetObjectPropertiesEventArgs(GUID guid, int instanceId, Scene scene)
         {
             m_Guid = guid;
-            m_InstanceId = instanceId;
+            m_EntityId = instanceId;
             m_Scene = scene;
         }
 
         private GUID m_Guid;
-        private int m_InstanceId;
+        private EntityId m_EntityId;
         private Scene m_Scene;
     }
 
@@ -327,16 +454,26 @@ namespace UnityEditor
     public struct UpdatePrefabInstancesEventArgs
     {
         public Scene scene => m_Scene;
-        public NativeArray<int>.ReadOnly instanceIds => m_InstanceIds;
 
+        [Obsolete("instanceIds is deprecated. Use entityIds instead.")]
+        public NativeArray<int>.ReadOnly instanceIds => m_EntityIds.Reinterpret<int>();
+        public NativeArray<EntityId>.ReadOnly entityIds => m_EntityIds;
+
+        public UpdatePrefabInstancesEventArgs(Scene scene, NativeArray<EntityId>.ReadOnly entityIds)
+        {
+            m_Scene = scene;
+            m_EntityIds = entityIds;
+        }
+
+        [Obsolete("UpdatePrefabInstancesEventArgs(Scene scene, NativeArray<int>.ReadOnly instanceIds) is deprecated. Use UpdatePrefabInstancesEventArgs(Scene scene, NativeArray<EntityId>.ReadOnly entityIds) instead.")]
         public UpdatePrefabInstancesEventArgs(Scene scene, NativeArray<int>.ReadOnly instanceIds)
         {
             m_Scene = scene;
-            m_InstanceIds = instanceIds;
+            m_EntityIds = instanceIds.Reinterpret<EntityId>();
         }
 
         private Scene m_Scene;
-        private NativeArray<int>.ReadOnly m_InstanceIds;
+        private NativeArray<EntityId>.ReadOnly m_EntityIds;
     }
 
     public struct ObjectChangeEventStream : IDisposable
@@ -430,8 +567,8 @@ namespace UnityEditor
             {
                 int s = sizeof(UpdatePrefabInstancesHeader);
                 void* offset = (byte*)m_Payload.m_Buffer + evt.offset + s;
-                int elements = (evt.size - s) / sizeof(int);
-                var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(offset, elements, Allocator.Invalid);
+                int elements = (evt.size - s) / sizeof(EntityId);
+                var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(offset, elements, Allocator.Invalid);
                 var ash = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(m_Payload);
                 NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, ash);
                 data = new UpdatePrefabInstancesEventArgs(header.scene, arr.AsReadOnly());
@@ -539,10 +676,10 @@ namespace UnityEditor
             {
                 Scene scene = data.scene;
                 PushEvent(ObjectChangeKind.UpdatePrefabInstances, ref scene);
-                AtomicSafetyHandle.CheckReadAndThrow(data.instanceIds.m_Safety);
+                AtomicSafetyHandle.CheckReadAndThrow(data.entityIds.m_Safety);
                 unsafe
                 {
-                    AppendToLastEvent(data.instanceIds.m_Buffer, data.instanceIds.m_Length * sizeof(int));
+                    AppendToLastEvent(data.entityIds.m_Buffer, data.entityIds.m_Length * sizeof(EntityId));
                 }
             }
 

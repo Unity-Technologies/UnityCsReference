@@ -53,7 +53,9 @@ namespace UnityEditor
             public SerializedProperty lightmapping { get; private set; }
             public SerializedProperty areaSizeX { get; private set; }
             public SerializedProperty areaSizeY { get; private set; }
-            public SerializedProperty bakedShadowRadiusProp { get; private set; }
+            [Obsolete("This property has been deprecated. Use shapeRadius instead.")]
+            public SerializedProperty bakedShadowRadiusProp { get => shapeRadius; }
+            public SerializedProperty shapeRadius { get; private set; }
             public SerializedProperty bakedShadowAngleProp { get; private set; }
 
             Texture2D m_KelvinGradientTexture;
@@ -91,6 +93,7 @@ namespace UnityEditor
                 public static readonly GUIContent LightBounceIntensity = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Determines the intensity of indirect light being contributed to to the scene. Has no effect when Baked Global Illumination is disabled. If this value is 0, Baked and Mixed lights no longer emit indirect lighting.");
                 public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type", "Specifies whether Hard Shadows, Soft Shadows, or No Shadows will be cast by the light.");
                 public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether Soft Shadows or No Shadows will be cast by the light.");
+                public static readonly GUIContent ShapeRadius = EditorGUIUtility.TrTextContent("Shape Radius", "Controls the amount of artificial softening applied to the edges of shadows cast by the Point or Spot light.");
                 //realtime
                 public static readonly GUIContent ShadowRealtimeSettings = EditorGUIUtility.TrTextContent("Realtime Shadows", "Settings for realtime direct shadows.");
                 public static readonly GUIContent ShadowStrength = EditorGUIUtility.TrTextContent("Strength", "Controls how dark the shadows cast by the light will be.");
@@ -99,7 +102,6 @@ namespace UnityEditor
                 public static readonly GUIContent ShadowNormalBias = EditorGUIUtility.TrTextContent("Normal Bias", "Controls distance at which the shadow casting surfaces will be shrunk along the surface normal. Useful for avoiding false self-shadowing artifacts.");
                 public static readonly GUIContent ShadowNearPlane = EditorGUIUtility.TrTextContent("Near Plane", "Controls the value for the near clip plane when rendering shadows. Currently clamped to 0.1 units or 1% of the lights range property, whichever is lower.");
                 //baked
-                public static readonly GUIContent BakedShadowRadius = EditorGUIUtility.TrTextContent("Baked Shadow Radius", "Controls the amount of artificial softening applied to the edges of shadows cast by the Point or Spot light.");
                 public static readonly GUIContent BakedShadowAngle = EditorGUIUtility.TrTextContent("Baked Shadow Angle", "Controls the amount of artificial softening applied to the edges of shadows cast by directional lights.");
 
                 public static readonly GUIContent Cookie = EditorGUIUtility.TrTextContent("Cookie", "Specifies the Texture mask to cast shadows, create silhouettes, or patterned illumination for the light.");
@@ -219,7 +221,7 @@ namespace UnityEditor
                 lightmapping = m_SerializedObject.FindProperty("m_Lightmapping");
                 areaSizeX = m_SerializedObject.FindProperty("m_AreaSize.x");
                 areaSizeY = m_SerializedObject.FindProperty("m_AreaSize.y");
-                bakedShadowRadiusProp = m_SerializedObject.FindProperty("m_ShadowRadius");
+                shapeRadius = m_SerializedObject.FindProperty("m_ShapeRadius");
                 bakedShadowAngleProp = m_SerializedObject.FindProperty("m_ShadowAngle");
 
                 if (m_KelvinGradientTexture == null)
@@ -631,11 +633,11 @@ namespace UnityEditor
                 }
             }
 
-            public void DrawBakedShadowRadius()
+            public void DrawShapeRadius()
             {
                 using (new EditorGUI.DisabledScope(shadowsType.intValue != (int)LightShadows.Soft))
                 {
-                    EditorGUILayout.PropertyField(bakedShadowRadiusProp, Styles.BakedShadowRadius);
+                    EditorGUILayout.PropertyField(shapeRadius, Styles.ShapeRadius);
                 }
             }
 
@@ -682,7 +684,7 @@ namespace UnityEditor
         AnimBool m_AnimShowRuntimeOptions = new AnimBool();
         AnimBool m_AnimShowShadowOptions = new AnimBool();
         AnimBool m_AnimBakedShadowAngleOptions = new AnimBool();
-        AnimBool m_AnimBakedShadowRadiusOptions = new AnimBool();
+        AnimBool m_AnimBakedShapeRadiusOptions = new AnimBool();
         AnimBool m_AnimShowLightBounceIntensity = new AnimBool();
 
         private bool m_CommandBuffersShown = true;
@@ -720,7 +722,7 @@ namespace UnityEditor
         bool dirOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Directional; } }
         bool areaOptionsValue { get { return settings.typeIsSame && settings.isAreaLightType; } }
         bool runtimeOptionsValue { get { return settings.typeIsSame && ((settings.light.type != LightType.Rectangle && settings.light.type != LightType.Disc) && !settings.isCompletelyBaked); } }
-        bool bakedShadowRadius { get { return settings.typeIsSame && (settings.light.type == LightType.Point || settings.light.type == LightType.Spot) && settings.isBakedOrMixed; } }
+        bool shapeRadiusOptionsValue { get { return settings.typeIsSame && (settings.light.type == LightType.Point || settings.light.type == LightType.Spot) && settings.isBakedOrMixed; } }
         bool bakedShadowAngle { get { return settings.typeIsSame && settings.light.type == LightType.Directional && settings.isBakedOrMixed; } }
         bool shadowOptionsValue { get { return settings.shadowTypeIsSame && settings.light.shadows != LightShadows.None; } }
 
@@ -733,7 +735,7 @@ namespace UnityEditor
             SetOptions(m_AnimShowAreaOptions, initialize, areaOptionsValue);
             SetOptions(m_AnimShowRuntimeOptions, initialize, runtimeOptionsValue);
             SetOptions(m_AnimBakedShadowAngleOptions, initialize, bakedShadowAngle);
-            SetOptions(m_AnimBakedShadowRadiusOptions, initialize, bakedShadowRadius);
+            SetOptions(m_AnimBakedShapeRadiusOptions, initialize, shapeRadiusOptionsValue);
             SetOptions(m_AnimShowLightBounceIntensity, initialize, true);
         }
 
@@ -886,8 +888,8 @@ namespace UnityEditor
             float show = m_AnimShowShadowOptions.faded;
 
             // Baked Shadow radius
-            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowRadiusOptions.faded))
-                settings.DrawBakedShadowRadius();
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShapeRadiusOptions.faded))
+                settings.DrawShapeRadius();
             EditorGUILayout.EndFadeGroup();
 
             // Baked Shadow angle

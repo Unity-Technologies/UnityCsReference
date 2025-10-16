@@ -23,8 +23,6 @@ namespace Unity.UI.Builder
         }
         static readonly string s_TempSerializedRootPath = nameof(TempSerializedData.serializedData);
 
-        static readonly List<UxmlAttributeDescription> s_EmptyAttributeList = new();
-
         /// <summary>
         /// Scope to disable undo when editing UXML attributes using a given context for the duration of the scope.
         /// </summary>
@@ -86,16 +84,6 @@ namespace Unity.UI.Builder
         public UxmlSerializedDataDescription uxmlSerializedDataDescription { get; private set; }
 
         /// <summary>
-        /// The list of UxmlAttributeDescriptions for the current element.
-        /// </summary>
-        public List<UxmlAttributeDescription> uxmlTraitAttributes { get; private set; } = s_EmptyAttributeList;
-
-        /// <summary>
-        /// Returns the list of attributes.
-        /// </summary>
-        public IReadOnlyList<UxmlAttributeDescription> attributes => usesUxmlTraits ? uxmlTraitAttributes : uxmlSerializedDataDescription.serializedAttributes;
-
-        /// <summary>
         /// The serialized object created from the current VisualTreeAsset. This serialized object is used to resolved paths to serialized attribute properties.
         /// </summary>
         internal SerializedObject rootSerializedObject { get; private set; }
@@ -115,17 +103,12 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Indicates whether the current element uses UxmlTraits for attribute editing.
         /// </summary>
-        public bool usesUxmlTraits => Builder.alwaysUseUxmlTraits || uxmlSerializedDataDescription == null;
+        public bool usesUxmlTraits => uxmlSerializedDataDescription == null;
 
         /// <summary>
         /// Indicates whether the undo system is enabled for this context.
         /// </summary>
         public bool undoEnabled { get; set; } = true;
-
-        /// <summary>
-        /// Indicates whether UxmlTraits.Init() should be invoked on attribute value change.
-        /// </summary>
-        public bool callInitOnValueChange { get; set; } = true;
 
         /// <summary>
         /// Indicates whether we are able to edit the element or just view its data.
@@ -177,8 +160,8 @@ namespace Unity.UI.Builder
             this.element = element;
             uxmlSerializedDataDescription = null;
             rootSerializedObject = null;
-            uxmlTraitAttributes = s_EmptyAttributeList;
             serializedBasePath = null;
+            tempSerializedData = null;
             this.isInTemplateInstance = isInTemplateInstance;
             this.batchedChangesController = batchedChangesController;
             Init();
@@ -255,8 +238,6 @@ namespace Unity.UI.Builder
                     }
                 }
 
-                uxmlTraitAttributes = element.GetAttributeDescriptions(true);
-
                 // Special case for toggle button groups.
                 // We want to sync the length of the state with the number of buttons in the hierarchy.
                 if (element is ToggleButtonGroup group)
@@ -280,7 +261,6 @@ namespace Unity.UI.Builder
                     }
                 }
             }
-            callInitOnValueChange = usesUxmlTraits;
         }
 
         /// <summary>
@@ -293,8 +273,8 @@ namespace Unity.UI.Builder
             element = null;
             elementAsset = null;
             rootSerializedObject = null;
+            tempSerializedData = null;
             uxmlSerializedDataDescription = null;
-            uxmlTraitAttributes = s_EmptyAttributeList;
             serializedBasePath = string.Empty;
             tempSerializedData = null;
             batchedChangesController = null;

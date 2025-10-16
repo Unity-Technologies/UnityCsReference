@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Unity.Audio;
 using Unity.Collections.LowLevel.Unsafe;
@@ -15,16 +14,23 @@ namespace UnityEngine.Audio
 {
 #pragma warning disable 0169, 0649
 
+    /// <summary>
+    /// Utilities and additional compiler overloads for particular message payloads.
+    /// </summary>
     public static unsafe partial class MessageExtensions
     {
         /// <summary>
         /// Return the inner reference sent.
         /// </summary>
+        /// <remarks>
+        /// This is an overload to specifically extract managed classes sent through messages.
+        /// </remarks>
+        /// <param name="message">The message to evaluate.</param>
         /// <exception cref="InvalidCastException">
         /// Thrown if the inner piece of data doesn't match the type of <typeparamref name="T"/>.
         /// </exception>
-        /// <seealso cref="Processor.Message.Get{T}"/>
-        public static T Get<T>(in this Processor.Message message)
+        /// <seealso cref="ProcessorInstance.Message.Get"/>
+        public static T Get<T>(in this ProcessorInstance.Message message)
             where T : class
         {
             if (!message.Is<T>())
@@ -34,20 +40,20 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Send a message with a piece of data to be immediately evaluated by the <see cref="IProcessorControl{TProcessor}.OnMessage"/>
+        /// Send a message with a piece of data to be immediately evaluated by the <see cref="ProcessorInstance.IControl{TRealtime}.OnMessage"/>
         /// </summary>
         /// <remarks>
         /// This is an overload specifically for sending class types to processors.
         /// </remarks>
         /// <returns>
-        /// <see cref="Processor.MessageStatus.Handled"/> if this <see cref="Processor"/> acknowledged and processed the message,
-        /// <see cref="Processor.MessageStatus.Unhandled"/> if not or ignored.
+        /// <see cref="ProcessorInstance.Response.Handled"/> if this <see cref="ProcessorInstance"/> acknowledged and processed the message,
+        /// <see cref="ProcessorInstance.Response.Unhandled"/> if not or ignored.
         /// </returns>
-        /// <seealso cref="ControlContext.SendMessage{T}(Processor, ref T)"/>
-        public static Processor.MessageStatus SendMessage<T>(this ControlContext context, Processor processor, T message)
+        /// <seealso cref="ControlContext.SendMessage"/>
+        public static ProcessorInstance.Response SendMessage<T>(this ControlContext context, ProcessorInstance processorInstance, T message)
             where T : class
         {
-            return context.SendManagedMessage(processor, message);
+            return context.SendManagedMessage(processorInstance, message);
         }
     }
 
@@ -60,38 +66,17 @@ namespace UnityEngine.Audio
         // More stuff here, careful.
     }
 
-
     /// <summary>
-    /// Internal representation of flags controlling how a <see cref="Processor"/> is handled over the course of its lifetime.
+    /// Control data communication, scripting-, creation-, destruction- and data query of <see cref="ProcessorInstance"/>s in an audio system.
     /// </summary>
-    /// <seealso cref="ControlContext.ProcessorUpdateSetting"/>
-    [System.Flags]
-    internal enum ProcessorInitializationFlags : UInt32
-    {
-        /// <summary>
-        /// Invoke <see cref="Processor.IControl{TProcessor}.Update"/> only if data has been returned from
-        /// <see cref="Processor.Pipe.SendData"/> since the last update.
-        /// </summary>
-        UpdateControlIfDataIsAvailable = 1 << 1,
-        /// <summary>
-        /// Always invoke <see cref="Processor.IControl{TProcessor}.Update"/> on this processor on every update.
-        /// </summary>
-        UpdateControlAlways = 1 << 2,
-
-
-        /// <summary>
-        /// Invoke <see cref="Processor.IProcessor.Update"/> only if data has been sent from
-        /// <see cref="Processor.Pipe.SendData"/> or <see cref="ControlContext.SendData"/> since the last update.
-        /// </summary>
-        UpdateProcessorIfDataIsAvailable = 1 << 3,
-        /// <summary>
-        /// Always invoke <see cref="Processor.IProcessor.Update"/> on this processor on every update.
-        /// </summary>
-        UpdateProcessorAlways = 1 << 4,
-    }
-
+    /// <remarks>
+    /// A <see cref="ControlContext"/> effectively represents an instance of an audio system, and is responsible for synchronizing efficient and
+    /// deterministic data communication between a controlling thread and a realtime audio rendering thread.
+    /// Use <see cref="ControlContext.builtIn"/> for scripting the shared audio system Unity uses,
+    /// or use <see cref="ControlContext.CreateManualControlContext"/> for exercising your own auxillary system.
+    /// </remarks>
     [NativeHeader("Modules/Audio/Public/ScriptableProcessors/ScriptBindings/ScriptableProcessor.bindings.h"), RequiredByNativeCode]
-    public unsafe partial struct ControlContext : IAudioScriptingContext
+    public unsafe partial struct ControlContext : ProcessorInstance.IContext
     {
         /// <summary>
         /// A manually-managed <see cref="ControlContext"/> for usage outside of the normal Unity audio system (tests, custom audio system).
@@ -102,29 +87,57 @@ namespace UnityEngine.Audio
         /// </remarks>
         public struct Manual : IDisposable
         {
+            /// <summary>
+            /// The context being manually driven.
+            /// </summary>
             public ControlContext context => m_Context;
+
             ControlContext m_Context;
 
-            public ProcessingContext? BeginMix(ulong dspTick)
+            /// <summary>
+            /// Begin a mix.
+            /// </summary>
+            /// <remarks>
+            /// "Mixes" in Unity span a period of time where you can issue processing calls.
+            /// They must be ended in pairs with a call to <see cref="Manual.EndMix"/>.
+            /// </remarks>
+            /// <param name="dspTick"></param>
+            /// <returns>
+            /// A nullable <see cref="RealtimeContext"/>.
+            /// This might hold no value in cases where audio is temporarily bypassed on the device, or similar.
+            /// You should only <see cref="Manual.EndMix"/> if there's a non-null return from this function.
+            /// </returns>
+            public RealtimeContext? BeginMix(ulong dspTick)
             {
-                ProcessingContext ret;
+                RealtimeContext ret;
                 if (InternalBeginManualMixFromControlContext(m_Context.m_Header, dspTick, &ret))
                     return ret;
 
                 return null;
             }
 
+            /// <summary>
+            /// End a previously begun mix, additionally rendering any <see cref="RootOutputInstance"/>s into <paramref name="result"/>.
+            /// </summary>
+            /// <param name="result">
+            /// A buffer with a size that matches the <see cref="AudioFormat"/> of the <see cref="ControlContext"/>,
+            /// usually specified on creation through <see cref="ControlContext.CreateManualControlContext"/>.
+            /// </param>
             public void EndMix(ChannelBuffer result)
             {
                 InternalEndMixManualControlContext(m_Context.m_Header, result.Buffer);
             }
 
             /// <summary>
-            /// Update and submit any queued commands found on <see cref="ControlContext"/>, making them available to the mixing functionality functions.
+            /// Update and submit any queued commands found on <see cref="ControlContext"/>,
+            /// making them available to the mixing functionality functions.
             /// </summary>
             /// <remarks>
-            /// This also performs general maintenance and disposes processors asynchronously.
+            /// This also performs general maintenance and disposes <see cref="ProcessorInstance"/>s asynchronously.
+            /// This must currently not be called while a mix is ongoing (<see cref="ControlContext.Manual"/> can currently only be used from one thread).
+            /// This is called automatically on <see cref="ControlContext.builtIn"/> as a part of the normal Unity audio system update.
             /// </remarks>
+            /// <seealso cref="PlayerLoop.PostLateUpdate.UpdateAudio"/>
             public void Update()
             {
                 InternalUpdateManualControlContext(m_Context.m_Header);
@@ -149,12 +162,15 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Settings controlling how a <see cref="Processor"/> is updated over the course of its lifetime.
+        /// Settings controlling how a <see cref="ProcessorInstance"/> is updated over the course of its lifetime.
         /// </summary>
+        /// <seealso cref="ProcessorInstance.CreationParameters"/>
+        /// <seealso cref="ProcessorInstance.IControl{TRealtime}.Update"/>
+        /// <seealso cref="ProcessorInstance.IRealtime.Update"/>
         public enum ProcessorUpdateSetting
         {
             /// <summary>
-            /// The default update setting for a <see cref="Processor"/>.
+            /// The default update setting for a <see cref="ProcessorInstance"/>.
             /// </summary>
             /// <remarks>
             /// This is equivalent to <see cref="UpdateIfDataIsAvailable"/>.
@@ -163,56 +179,20 @@ namespace UnityEngine.Audio
             Default = 0,
 
             /// <summary>
-            /// Never invoke <see cref="Processor.IControl{TProcessor}.Update"/> on this processor nor <see cref="Processor.IProcessor.Update"/>.
+            /// Never invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> on this processor nor <see cref="ProcessorInstance.IRealtime.Update"/>.
             /// </summary>
             NeverUpdate = 1,
 
             /// <summary>
-            /// Invoke <see cref="Processor.IControl{TProcessor}.Update"/> or <see cref="Processor.IProcessor.Update"/>
-            /// only if data has been sent or returned from <see cref="Processor.Pipe.SendData"/> since the last update.
+            /// Invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> or <see cref="ProcessorInstance.IRealtime.Update"/>
+            /// only if data has been sent or returned from <see cref="ProcessorInstance.Pipe.SendData"/> since the last update.
             /// </summary>
             UpdateIfDataIsAvailable = 2,
             /// <summary>
-            /// Always invoke <see cref="Processor.IControl{TProcessor}.Update"/> or <see cref="Processor.IProcessor.Update"/>
-            /// on this <see cref="Processor"> on every update.
+            /// Always invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> or <see cref="ProcessorInstance.IRealtime.Update"/>
+            /// on this <see cref="ProcessorInstance"/> on every update.
             /// </summary>
             UpdateAlways = 3,
-        }
-
-        /// <summary>
-        /// Additional data and parameters specifying how a <see cref="Processor"/> should be created.
-        /// </summary>
-        /// <remarks>
-        /// These are generally suggested setup from whomever is creating the <see cref="Processor"/>, such as a <see cref="IGeneratorDefinition"/>.
-        /// You can change properties to suit your particular needs.
-        /// </remarks>
-        public struct ProcessorCreationParameters
-        {
-            /// <summary>
-            /// Control under what circumstances <see cref="Processor.IControl{TProcessor}.Update"/> will be called.
-            /// </summary>
-            public ProcessorUpdateSetting controlUpdateSetting { get; set; }
-            /// <summary>
-            /// Control under what circumstances <see cref="Processor.IProcessor.Update"/> will be called.
-            /// </summary>
-            public ProcessorUpdateSetting processorUpdateSetting { get; set; }
-
-            internal readonly ProcessorInitializationFlags BuildInitializationFlags()
-            {
-                ProcessorInitializationFlags flags = 0;
-
-                if (controlUpdateSetting == ProcessorUpdateSetting.UpdateIfDataIsAvailable)
-                    flags |= ProcessorInitializationFlags.UpdateControlIfDataIsAvailable;
-                else if (controlUpdateSetting == ProcessorUpdateSetting.UpdateAlways)
-                    flags |= ProcessorInitializationFlags.UpdateControlAlways;
-
-                if (processorUpdateSetting == ProcessorUpdateSetting.UpdateIfDataIsAvailable)
-                    flags |= ProcessorInitializationFlags.UpdateProcessorIfDataIsAvailable;
-                else if (processorUpdateSetting == ProcessorUpdateSetting.UpdateAlways)
-                    flags |= ProcessorInitializationFlags.UpdateProcessorAlways;
-
-                return flags;
-            }
         }
 
         ControlHeader* m_Header;
@@ -224,6 +204,10 @@ namespace UnityEngine.Audio
         /// The default provided <see cref="ControlContext"/>
         /// which is used and updated in tandem with Unity's built-in audio system.
         /// </summary>
+        /// <remarks>
+        /// Referencing this instance guarantees that any changes and communication happen in atomic lockstep
+        /// with the built in audio system, for deterministic audio results.
+        /// </remarks>
         public static ControlContext builtIn => new(InternalGetBuiltInControlHeader());
 
         internal ControlContext(void* headerThatShouldBeOfResourceType)
@@ -236,67 +220,90 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Allocate a <see cref="Generator"/> with the specified processor and control state.
+        /// Allocate a <see cref="GeneratorInstance"/> with the specified realtime and control state.
         /// </summary>
-        /// <seealso cref="IGeneratorDefinition.CreateRuntime(ControlContext, DSPConfiguration?, ProcessorCreationParameters)"/>
-        /// <param name="nestedConfiguration">
-        /// If not null, the returned <see cref="Generator"/> will be treated as nested and use this configuration.
+        /// <remarks>
+        /// This can generally be used to render the output of a <see cref="IAudioGenerator"/>, potentially from within another <see cref="GeneratorInstance"/>.
+        /// </remarks>
+        /// <seealso cref="IAudioGenerator.CreateInstance"/>
+        /// <param name="controlState">The initial state available from the control thread.</param>
+        /// <param name="realtimeState">The initial state available from the control thread.</param>
+        /// <param name="nestedFormat">
+        /// If not null, the returned <see cref="GeneratorInstance"/> will be treated as nested and use this format.
         /// </param>
         /// <param name="creationParameters">
         /// Additional parameters and initialization state for the processor.
-        /// This is generally received from <see cref="IGeneratorDefinition.CreateRuntime(ControlContext, DSPConfiguration?, ProcessorCreationParameters)"/>
+        /// This is generally received from <see cref="IAudioGenerator.CreateInstance"/>
         /// </param>
-        public readonly Generator AllocateGenerator<TProcessor, TControl>(
-            in TProcessor processorState,
+        /// <returns>
+        /// A <see cref="GeneratorInstance"/> you own and control, that must later be destroyed with <see cref="ControlContext.Destroy(GeneratorInstance)"/>.
+        /// </returns>
+        public readonly GeneratorInstance AllocateGenerator<TRealtime, TControl>(
+            in TRealtime realtimeState,
             in TControl controlState,
-            DSPConfiguration? nestedConfiguration = null,
-            in ProcessorCreationParameters creationParameters = default
+            AudioFormat? nestedFormat = null,
+            in ProcessorInstance.CreationParameters creationParameters = default
         )
-            where TProcessor : unmanaged, Generator.IProcessor
-            where TControl : unmanaged, Generator.IControl<TProcessor>
+            where TRealtime : unmanaged, GeneratorInstance.IRealtime
+            where TControl : unmanaged, GeneratorInstance.IControl<TRealtime>
         {
             m_Handle.CheckValidOrThrow();
 
-            var generatorChunk = ProcessorExtensions.CAllocChunk<IGeneratorControlExtensions.JobStruct<TControl, TProcessor>.ControlStorage>();
+            var generatorChunk = ProcessorExtensions.CAllocChunk<IGeneratorControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage>();
 
             var header = &generatorChunk->HeaderAndProcessor.Header;
 
-            header->Processor.ProcessorReflectionData = IGeneratorProcessorExtensions.GetReflectionData<TProcessor>();
-            header->Processor.ControlReflectionData = IGeneratorControlExtensions.GetReflectionData<TControl, TProcessor>();
+            header->Processor.ProcessorReflectionData = IGeneratorProcessorExtensions.GetReflectionData<TRealtime>();
+            header->Processor.ControlReflectionData = IGeneratorControlExtensions.GetReflectionData<TControl, TRealtime>();
 
-            header->Configuration.IsRealtime = processorState.isRealtime;
-            header->Configuration.IsFinite = processorState.isFinite;
+            header->Configuration.IsRealtime = realtimeState.isRealtime;
+            header->Configuration.IsFinite = realtimeState.isFinite;
 
-            if (processorState.length is DiscreteTime time)
+            if (realtimeState.length is DiscreteTime time)
             {
                 header->Configuration.ReportedLength = time;
                 header->Configuration.HasKnownLength = true;
             }
 
-            generatorChunk->HeaderAndProcessor.UserProcessor = processorState;
+            generatorChunk->HeaderAndProcessor.UserProcessor = realtimeState;
             generatorChunk->UserControl = controlState;
 
-            var config = (nestedConfiguration ?? default).audioConfiguration;
+            var config = (nestedFormat ?? default).audioConfiguration;
 
-            ScriptableGeneratorBindings.InitializeGeneratorHandle(header, m_Header, nestedConfiguration.HasValue ? &config : null, creationParameters.BuildInitializationFlags());
+            ScriptableGeneratorBindings.InitializeGeneratorHandle(header, m_Header, nestedFormat.HasValue ? &config : null, creationParameters.BuildInitializationFlags());
 
             return new(header);
         }
 
-        public readonly RootOutput AllocateRootOutput<TProcessor, TControl>(in TProcessor processorState, in TControl controlState, in ProcessorCreationParameters creationParameters = default)
-            where TProcessor : unmanaged, RootOutput.IProcessor
-            where TControl : unmanaged, RootOutput.IControl<TProcessor>
+        /// <summary>
+        /// Allocate a <see cref="RootOutputInstance"/> with the specified processor and control state.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="RootOutputInstance"/>s have low-level acces to the threading model of the audio system and the final audio output,
+        /// and are generally used to integrate larger internal or external audio systems.
+        /// </remarks>
+        /// <param name="controlState">The initial state available from the control thread.</param>
+        /// <param name="realtimeState">The initial state available from the control thread.</param>
+        /// <param name="creationParameters">
+        /// Additional parameters and initialization state for the processor.
+        /// </param>
+        /// <returns>
+        /// A <see cref="RootOutputInstance"/> you own and control, that must later be destroyed with <see cref="ControlContext.Destroy(RootOutputInstance)"/>.
+        /// </returns>
+        public readonly RootOutputInstance AllocateRootOutput<TRealtime, TControl>(in TRealtime realtimeState, in TControl controlState, in ProcessorInstance.CreationParameters creationParameters = default)
+            where TRealtime : unmanaged, RootOutputInstance.IRealtime
+            where TControl : unmanaged, RootOutputInstance.IControl<TRealtime>
         {
             m_Handle.CheckValidOrThrow();
 
-            var outputChunk = ProcessorExtensions.CAllocChunk<IRootOutputControlExtensions.JobStruct<TControl, TProcessor>.ControlStorage>();
+            var outputChunk = ProcessorExtensions.CAllocChunk<IRootOutputControlExtensions.JobStruct<TControl, TRealtime>.ControlStorage>();
 
             var header = &outputChunk->HeaderAndProcessor.Header;
 
-            header->ProcessorReflectionData = IRootOutputProcessorExtensions.GetReflectionData<TProcessor>();
-            header->ControlReflectionData = IRootOutputControlExtensions.GetReflectionData<TControl, TProcessor>();
+            header->ProcessorReflectionData = IRootOutputProcessorExtensions.GetReflectionData<TRealtime>();
+            header->ControlReflectionData = IRootOutputControlExtensions.GetReflectionData<TControl, TRealtime>();
 
-            outputChunk->HeaderAndProcessor.UserProcessor = processorState;
+            outputChunk->HeaderAndProcessor.UserProcessor = realtimeState;
             outputChunk->UserControl = controlState;
 
             IRootOutputProcessorExtensions.InitializeRootOutputHandle(header, m_Header, creationParameters.BuildInitializationFlags());
@@ -304,61 +311,72 @@ namespace UnityEngine.Audio
             return new(header);
         }
 
-        public readonly bool IsGenerator<TGenerator, TControl>(Processor processor)
-            where TGenerator : unmanaged, Generator.IProcessor
-            where TControl : unmanaged, Generator.IControl<TGenerator>
+        /// <summary>
+        /// Test whether <paramref name="processorInstance"/> is a <see cref="GeneratorInstance"/> built from a
+        /// <typeparamref name="TRealtime"/> and <typeparamref name="TControl"/>.
+        /// </summary>
+        public readonly bool IsGenerator<TRealtime, TControl>(ProcessorInstance processorInstance)
+            where TRealtime : unmanaged, GeneratorInstance.IRealtime
+            where TControl : unmanaged, GeneratorInstance.IControl<TRealtime>
         {
             m_Handle.CheckValidOrThrow();
-            processor.Handle.CheckValidOrThrow();
+            processorInstance.Handle.CheckValidOrThrow();
 
-            return processor.Header->ControlReflectionData == IGeneratorControlExtensions.GetReflectionData<TControl, TGenerator>();
-        }
-
-        public readonly bool IsRootOutput<TRootOutput, TControl>(Processor processor)
-            where TRootOutput : unmanaged, RootOutput.IProcessor
-            where TControl : unmanaged, RootOutput.IControl<TRootOutput>
-        {
-            m_Handle.CheckValidOrThrow();
-            processor.Handle.CheckValidOrThrow();
-
-            return processor.Header->ControlReflectionData == IRootOutputControlExtensions.GetReflectionData<TControl, TRootOutput>();
-        }
-
-        public bool Exists(Processor processor)
-        {
-            m_Handle.CheckValidOrThrow();
-            return ScriptableProcessorBindings.CheckProcessorExists(processor.Handle, m_Header);
+            return processorInstance.Header->ControlReflectionData == IGeneratorControlExtensions.GetReflectionData<TControl, TRealtime>();
         }
 
         /// <summary>
-        /// Send a message with a piece of data to be immediately evaluated by the <see cref="IProcessorControl{TProcessor}.OnMessage"/>.
+        /// Test whether <paramref name="processorInstance"/> is a <see cref="RootOutputInstance"/> built from a
+        /// <typeparamref name="TRealtime"/> and <typeparamref name="TControl"/>.
+        /// </summary>
+        public readonly bool IsRootOutput<TRealtime, TControl>(ProcessorInstance processorInstance)
+            where TRealtime : unmanaged, RootOutputInstance.IRealtime
+            where TControl : unmanaged, RootOutputInstance.IControl<TRealtime>
+        {
+            m_Handle.CheckValidOrThrow();
+            processorInstance.Handle.CheckValidOrThrow();
+
+            return processorInstance.Header->ControlReflectionData == IRootOutputControlExtensions.GetReflectionData<TControl, TRealtime>();
+        }
+
+        /// <summary>
+        /// Test whether <paramref name="processorInstance"/> is valid and belongs to this <see cref="ControlContext"/>.
+        /// </summary>
+        public bool Exists(ProcessorInstance processorInstance)
+        {
+            m_Handle.CheckValidOrThrow();
+            return ScriptableProcessorBindings.CheckProcessorExists(processorInstance.Handle, m_Header);
+        }
+
+        /// <summary>
+        /// Send a message with a piece of data to be immediately evaluated by the <see cref="ProcessorInstance.IControl{TRealtime}.OnMessage"/>.
         /// </summary>
         /// <remarks>
-        /// The <paramref name="message"/> will be passed to the processor by reference, so the processor can modify it.
+        /// The <paramref name="message"/> will be passed to the <paramref name="processorInstance"/> by reference, so the <paramref name="processorInstance"/> can modify it.
         /// </remarks>
         /// <returns>
-        /// <see cref="Processor.MessageStatus.Handled"/> if this <see cref="Processor"/> acknowledged and processed the message,
-        /// <see cref="Processor.MessageStatus.Unhandled"/> if not or ignored.
+        /// <see cref="ProcessorInstance.Response.Handled"/> if <paramref name="processorInstance"/> acknowledged and processed the message,
+        /// <see cref="ProcessorInstance.Response.Unhandled"/> if not or ignored.
         /// </returns>
-        public Processor.MessageStatus SendMessage<T>(Processor processor, ref T message)
+        public ProcessorInstance.Response SendMessage<T>(ProcessorInstance processorInstance, ref T message)
             where T : unmanaged
         {
             m_Handle.CheckValidOrThrow();
 
             fixed (T* pT = &message)
             {
-                Processor.Message transport = new Processor.Message
+                ProcessorInstance.Message transport = new ProcessorInstance.Message
                 {
                     TypeHash = BurstRuntime.GetHashCode64<T>(),
                     Data = pT,
                     ManagedHandle = default
                 };
 
-                return ScriptableProcessorBindings.SendMessageToProcessor(processor.Header, Header, &transport);
+                return ScriptableProcessorBindings.SendMessageToProcessor(processorInstance.Header, Header, &transport);
             }
         }
 
-        internal Processor.MessageStatus SendManagedMessage<T>(Processor processor, T message)
+        internal ProcessorInstance.Response SendManagedMessage<T>(ProcessorInstance processorInstance, T message)
             where T : class
         {
             m_Handle.CheckValidOrThrow();
@@ -378,14 +396,14 @@ namespace UnityEngine.Audio
                 Header->ManagedTransport = GCHandle.ToIntPtr(target);
             }
 
-            Processor.Message transport = new Processor.Message
+            ProcessorInstance.Message transport = new ProcessorInstance.Message
             {
                 TypeHash = BurstRuntime.GetHashCode64<T>(),
                 Data = null,
                 ManagedHandle = GCHandle.ToIntPtr(target)
             };
 
-            var ret = ScriptableProcessorBindings.SendMessageToProcessor(processor.Header, Header, &transport);
+            var ret = ScriptableProcessorBindings.SendMessageToProcessor(processorInstance.Header, Header, &transport);
 
             target.Target = prior;
 
@@ -393,22 +411,24 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Send a piece of data to make it available to the processor in the next <see cref="Processor.IProcessor.Update"/>.
+        /// Send a piece of data to make it available to the processor in the next <see cref="ProcessorInstance.IRealtime.Update"/>.
         /// </summary>
-        public unsafe void SendData<T>(Processor processor, in T data)
+        /// <param name="processorInstance">The <see cref="ProcessorInstance"/> to send data to.</param>
+        /// <param name="data">A piece of data that will be copied over and transmitted in a batch.</param>
+        public unsafe void SendData<T>(ProcessorInstance processorInstance, in T data)
             where T : unmanaged
         {
             m_Handle.CheckValidOrThrow();
-            processor.Handle.CheckValidOrThrow();
+            processorInstance.Handle.CheckValidOrThrow();
 
-            if (!processor.Header->IsSameControl(Header))
-                throw new ArgumentException($"{nameof(Processor)} belongs to a different {nameof(ControlContext)}");
+            if (!processorInstance.Header->IsSameControl(Header))
+                throw new ArgumentException($"{nameof(ProcessorInstance)} belongs to a different {nameof(ControlContext)}");
 
             fixed (T* pData = &data)
             {
                 var ret = ScriptableProcessorBindings.AddDataToProcessorHandle(
                     m_Header,
-                    processor.Handle,
+                    processorInstance.Handle,
                     pData,
                     sizeof (T),
                     UnsafeUtility.AlignOf<T>(),
@@ -421,26 +441,47 @@ namespace UnityEngine.Audio
             }
         }
 
-        public Processor.AvailableData GetAvailableData(Processor processor)
+        /// <summary>
+        /// Access an enumerator to the currently available data on the <see cref="ProcessorInstance"/>.
+        /// </summary>
+        /// <remarks>
+        /// Data here has been communicated back and accumulated from the <see cref="ProcessorInstance"/> itself through
+        /// <see cref="ProcessorInstance.Pipe.SendData"/> together with a <see cref="RealtimeContext"/> or a <see cref="ProcessorInstance.UpdatedDataContext"/>.
+        /// </remarks>
+        /// <param name="processorInstance">The processor to query data for.</param>
+        /// <returns>A temporary collection of available data.</returns>
+        /// <seealso cref="ProcessorInstance.AvailableData"/>
+        public ProcessorInstance.AvailableData GetAvailableData(ProcessorInstance processorInstance)
         {
             m_Handle.CheckValidOrThrow();
-            processor.Handle.CheckValidOrThrow();
+            processorInstance.Handle.CheckValidOrThrow();
 
-            var dataElement = ScriptableProcessorBindings.GetAvailableDataForControl(m_Header, processor.Handle);
+            var dataElement = ScriptableProcessorBindings.GetAvailableDataForControl(m_Header, processorInstance.Handle);
 
-            return new Processor.AvailableData(dataElement);
+            return new ProcessorInstance.AvailableData(dataElement);
         }
 
-        public void Destroy(Generator generator) => DestroyProcessor(generator.Processor);
-        public void Destroy(RootOutput root) => DestroyProcessor(root.Processor);
+        /// <summary>
+        /// Destroy a <see cref="GeneratorInstance"/> previously allocated with <see cref="ControlContext.AllocateGenerator"/>.
+        /// </summary>
+        public void Destroy(GeneratorInstance generatorInstance) => DestroyProcessor(generatorInstance.m_ProcessorInstance);
 
-        public Generator.Configuration GetConfiguration(Generator generator)
+        /// <summary>
+        /// Destroy a <see cref="RootOutputInstance"/> previously allocated with <see cref="ControlContext.AllocateRootOutput"/>.
+        /// </summary>
+        public void Destroy(RootOutputInstance root) => DestroyProcessor(root.m_ProcessorInstance);
+
+        /// <summary>
+        /// Get the declared configuration <paramref name="generatorInstance"/> runs in.
+        /// </summary>
+        /// <seealso cref="GeneratorInstance.IControl{TRealtime}.Configure"/>
+        public GeneratorInstance.Configuration GetConfiguration(GeneratorInstance generatorInstance)
         {
             m_Handle.CheckValidOrThrow();
 
-            generator.Processor.Handle.CheckValidOrThrow();
+            generatorInstance.m_ProcessorInstance.Handle.CheckValidOrThrow();
 
-            return ((Generator.GeneratorHeader*)generator.Processor.Header)->Configuration;
+            return ((GeneratorInstance.GeneratorHeader*)generatorInstance.m_ProcessorInstance.Header)->Configuration;
         }
 
         /// <summary>
@@ -459,21 +500,28 @@ namespace UnityEngine.Audio
         /// <summary>
         /// Create a new <see cref="ControlContext"/> with additional functionality you can drive manually.
         /// </summary>
+        /// <param name="format">
+        /// The initial <see cref="AudioFormat"/> the returned <see cref="ControlContext.Manual"/> will run in.
+        /// </param>
         /// <remarks>
         /// This context is completely separate from <see cref="builtIn"/> and shares no data, lifetime or callbacks.
+        /// It's an error to mix and match <see cref="ProcessorInstance"/>s from different <see cref="ControlContext"/>s.
         /// You must manually destroy this instance.
         /// </remarks>
-        public static Manual CreateManualControlContext(in DSPConfiguration config)
+        /// <returns>
+        /// A <see cref="ControlContext.Manual"/> you own and control, that must later be disposed.
+        /// </returns>
+        public static Manual CreateManualControlContext(in AudioFormat format)
         {
             var ret = new ControlContext(InternalCreateControlContext());
             ret.m_Handle.CheckValidOrThrow();
 
-            InternalSetConfigurationManualControlContext(ret.m_Header, config.audioConfiguration);
+            InternalSetConfigurationManualControlContext(ret.m_Header, format.audioConfiguration);
 
             return new(ret);
         }
 
-        Processor.AvailableData IAudioScriptingContext.GetAvailableData(Handle handle)
+        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(Handle handle)
         {
             m_Handle.CheckValidOrThrow();
 
@@ -484,10 +532,10 @@ namespace UnityEngine.Audio
 
             var dataElement = ScriptableProcessorBindings.GetAvailableDataForControl(m_Header, handle);
 
-            return new Processor.AvailableData(dataElement);
+            return new ProcessorInstance.AvailableData(dataElement);
         }
 
-        unsafe bool IAudioScriptingContext.SendData(Handle handle, void* data, int size, int align, long typehash)
+        unsafe bool ProcessorInstance.IContext.SendData(Handle handle, void* data, int size, int align, long typehash)
         {
             return ScriptableProcessorBindings.AddDataToProcessorHandle(
                 m_Header,
@@ -499,14 +547,14 @@ namespace UnityEngine.Audio
             );
         }
 
-        internal void DestroyProcessor(Processor processor)
+        internal void DestroyProcessor(ProcessorInstance processorInstance)
         {
             m_Handle.CheckValidOrThrow();
 
-            if (processor.Handle.Equals(default))
+            if (processorInstance.Handle.Equals(default))
                 throw new InvalidOperationException("Default / zero-initialized value of processor being destroyed");
 
-            ScriptableProcessorBindings.QueueProcessorDispose(processor.Header, m_Header);
+            ScriptableProcessorBindings.QueueProcessorDispose(processorInstance.Header, m_Header);
         }
 
         [RequiredByNativeCode(GenerateProxy = true)]

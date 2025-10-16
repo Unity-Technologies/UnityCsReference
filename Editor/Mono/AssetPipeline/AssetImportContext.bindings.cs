@@ -106,7 +106,7 @@ namespace UnityEditor.AssetImporters
 
         public string GetArtifactFilePath(GUID guid, string fileName)
         {
-            return GetArtifactFilePath(new ArtifactKey(guid), fileName);
+            return GetArtifactFilePath(AssetDatabaseExperimental.CreateArtifactKey(guid), fileName);
         }
 
         public extern string GetArtifactFilePath(ArtifactKey key, string fileName);

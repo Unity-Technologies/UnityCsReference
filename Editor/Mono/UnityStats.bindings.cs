@@ -4,10 +4,32 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.Properties;
 using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [StructLayout(LayoutKind.Sequential)]
+    struct KeyStats
+    {
+        public int drawCallsCount;
+        public int instancesCount;
+        public int srpBatcherDrawCalls;
+        public int srpBatcherInstances;
+        public int hybridBatcherDrawCalls;
+        public int hybridBatcherInstances;
+        public int standardInstancedDrawCalls;
+        public int standardInstancedInstances;
+        
+        public int standardIndirectDrawCalls;
+        public int hybridIndirectDrawCalls;
+        public int nullGeometryDrawCalls;
+        public int nullGeometryIndirectDrawCalls;
+
+        public UInt64 trisCount;
+        public UInt64 vertsCount;
+        public UInt64 setPassCallsCount;
+    }
     [StructLayout(LayoutKind.Sequential)]
     struct StateStats
     {
@@ -25,13 +47,9 @@ namespace UnityEditor
     }
 
     [NativeType(CodegenOptions.Force)]
-    struct DrawStats
+    struct BatchStats
     {
         public int batches;
-        public int calls;
-        public int indirectCalls;
-        public UInt64 tris, trisSent;
-        public UInt64 verts;
         public int dynamicBatches;
         public int dynamicBatchedCalls;
         public UInt64 dynamicBatchedTris;
@@ -44,14 +62,13 @@ namespace UnityEditor
         public int instancedBatchedCalls;
         public UInt64 instancedTris;
         public UInt64 instancedVerts;
-        public UInt64 setPassCalls;
 
         public int usedTextureCount;
         public Int64 usedTextureBytes;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct MemoryStats
+    struct ScreenStats
     {
         public int screenWidth, screenHeight;
         public int screenFrontBPP, screenBackBPP, screenDepthBPP;
@@ -62,7 +79,7 @@ namespace UnityEditor
     //*undocumented*
     // Undocumented, but left public. Some people want to figure out draw calls from editor scripts to do some performance checking
     // optimizations.
-    [StaticAccessor("GfxDeviceStats::Get().GetLegacyFrameStats()", StaticAccessorType.Dot)]
+    [StaticAccessor("GfxDeviceStats::Get().GetBlittableStats()", StaticAccessorType.Dot)]
     [NativeHeader("Runtime/GfxDevice/GfxDeviceStats.h")]
     [NativeHeader("Runtime/GfxDevice/GfxDevice.h")]
     [NativeHeader("Modules/Audio/Public/AudioManager.h")]
@@ -70,49 +87,100 @@ namespace UnityEditor
     [NativeHeader("Runtime/Profiler/MemoryProfilerStats.h")]
     public sealed class UnityStats
     {
-        internal extern static DrawStats drawStats { get; }
-        internal extern static MemoryStats memoryStats { get; }
+        internal extern static KeyStats keyStats { get; }
+        internal extern static BatchStats batchStats { get; }
+        internal extern static ScreenStats screenStats { get; }
         internal extern static ClientStats clientStats { get; }
         internal extern static StateStats stateChanges { get; }
 
+        // The TOTAL number of draw calls made this frame (sum of all categories).
+        public static int drawCalls =>
+            keyStats.drawCallsCount +
+            keyStats.srpBatcherDrawCalls +
+            keyStats.hybridBatcherDrawCalls +
+            keyStats.standardInstancedDrawCalls +
+            keyStats.standardIndirectDrawCalls +
+            keyStats.hybridIndirectDrawCalls +
+            keyStats.nullGeometryDrawCalls +
+            keyStats.nullGeometryIndirectDrawCalls;
 
-        // The number of batches rendered this frame.
-        public static int batches => drawStats.batches;
+        // The TOTAL number of instances in this frame (sum of all categories).
+        public static int instances =>
+            keyStats.instancesCount +
+            keyStats.srpBatcherInstances +
+            keyStats.hybridBatcherInstances +
+            keyStats.standardInstancedInstances;
 
-        // The number of draw calls made this frame.
-        public static int drawCalls => drawStats.calls;
-        
-        // The number of indirect draw calls made this frame.
-        public static int indirectDrawCalls => drawStats.indirectCalls;
+        // The TOTAL number of indirect draw calls made this frame.
+        public static int totalIndirectDrawCalls =>
+            keyStats.standardIndirectDrawCalls +
+            keyStats.hybridIndirectDrawCalls +
+            keyStats.nullGeometryIndirectDrawCalls;
+
+        // The number of SRP Batcher draw calls this frame.
+        public static int srpBatcherDrawCalls => keyStats.srpBatcherDrawCalls;
+
+        // The number of SRP Batcher instances this frame.
+        public static int srpBatcherInstances => keyStats.srpBatcherInstances;
+
+        // The number of Hybrid Batcher draw calls this frame.
+        public static int hybridBatcherDrawCalls => keyStats.hybridBatcherDrawCalls;
+
+        // The number of Hybrid Batcher instances this frame.
+        public static int hybridBatcherInstances => keyStats.hybridBatcherInstances;
+
+        // The number of Non-SRP Batcher compatible standard draw calls this frame.
+        public static int standardDrawCalls => keyStats.drawCallsCount;
+
+        // The number of Non-SRP Batcher compatible standard instances this frame.
+        public static int standardInstances => keyStats.instancesCount;
+
+        // The number of standard instanced draw calls this frame.
+        public static int standardInstancedDrawCalls => keyStats.standardInstancedDrawCalls;
+
+        // The number of standard instanced instances this frame.
+        public static int standardInstancedInstances => keyStats.standardInstancedInstances;
+
+        // The number of standard indirect draw calls this frame.
+        public static int standardIndirectDrawCalls => keyStats.standardIndirectDrawCalls;
+
+        // The number of hybrid indirect draw calls this frame.
+        public static int hybridIndirectDrawCalls => keyStats.hybridIndirectDrawCalls;
+
+        // The number of null geometry draw calls this frame.
+        public static int nullGeometryDrawCalls => keyStats.nullGeometryDrawCalls;
+
+        // The number of null geometry indirect draw calls this frame.
+        public static int nullGeometryIndirectDrawCalls => keyStats.nullGeometryIndirectDrawCalls;
 
         // The number of draw calls that got dynamically batched this frame.
-        public static int dynamicBatchedDrawCalls => drawStats.dynamicBatchedCalls;
+        public static int dynamicBatchedDrawCalls => batchStats.dynamicBatchedCalls;
 
         // The number of draw calls that got statically batched this frame.
-        public static int staticBatchedDrawCalls => drawStats.staticBatchedCalls;
+        public static int staticBatchedDrawCalls => batchStats.staticBatchedCalls;
 
         // The number of draw calls that got instanced this frame.
-        public static int instancedBatchedDrawCalls => drawStats.instancedBatchedCalls;
+        public static int instancedBatchedDrawCalls => batchStats.instancedBatchedCalls;
 
         // The number of dynamic batches rendered this frame.
-        public static int dynamicBatches => drawStats.dynamicBatches;
+        public static int dynamicBatches => batchStats.dynamicBatches;
 
         // The number of static batches rendered this frame.
-        public static int staticBatches => drawStats.staticBatches;
+        public static int staticBatches => batchStats.staticBatches;
 
         // The number of instanced batches rendered this frame.
-        public static int instancedBatches => drawStats.instancedBatches;
+        public static int instancedBatches => batchStats.instancedBatches;
 
         // The number of calls to SetPass.
-        public static int setPassCalls => (int)drawStats.setPassCalls;
+        public static int setPassCalls => (int)keyStats.setPassCallsCount;
 
-        public static int triangles => (int)drawStats.tris;
-        public static int vertices => (int)drawStats.verts;
+        public static int triangles => (int)keyStats.trisCount;
+        public static int vertices => (int)keyStats.vertsCount;
 
         // Temporary API for game view stats window, so it can display proper numbers for >2B cases. Profiling Counters API
         // should happen in the future to solve this properly.
-        internal static long trianglesLong => (long)drawStats.tris;
-        internal static long verticesLong => (long)drawStats.verts;
+        internal static long trianglesLong => (long)keyStats.trisCount;
+        internal static long verticesLong => (long)keyStats.vertsCount;
 
         // The number of shadow casters rendered in this frame.
         public static int shadowCasters => clientStats.shadowCasters;
@@ -120,7 +188,10 @@ namespace UnityEditor
         // The number of render texture changes made this frame.
         public static int renderTextureChanges => stateChanges.renderTexture;
 
+        [Obsolete("UnityStats.frametime is deprecated. Use FrameTimingManager.GetLatestTimings to get CPU frame times instead.", false)]
         [NativeName("MainThreadFrameTime")] public extern static float frameTime { get; }
+
+        [Obsolete("UnityStats.renderTime is deprecated. Use FrameTimingManager.GetLatestTimings to get CPU frame times instead.", false)]
         [NativeName("RenderThreadFrameTime")] public extern static float renderTime { get; }
 
         public extern static float audioLevel { [FreeFunction("GetAudioManager().GetMasterGroupLevel")] get; }
@@ -152,12 +223,12 @@ namespace UnityEditor
         {
             get
             {
-                var stats = memoryStats;
-                return $"{memoryStats.screenWidth}x{memoryStats.screenHeight}";
+                var stats = screenStats;
+                return $"{screenStats.screenWidth}x{screenStats.screenHeight}";
             }
         }
 
-        public static int screenBytes => (int)memoryStats.screenBytes;
+        public static int screenBytes => (int)screenStats.screenBytes;
 
         public extern static int vboTotal { [FreeFunction("GetGfxDevice().GetTotalBufferCount")] get; }
         public extern static int vboTotalBytes { [FreeFunction("GetGfxDevice().GetTotalBufferBytes")] get; }
@@ -171,6 +242,14 @@ namespace UnityEditor
         {
             [NativeConditional("ENABLE_PROFILER")]
             [FreeFunction("SkinnedMeshRenderer::GetVisibleSkinnedMeshRendererCount")]
+            [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h")]
+            get;
+        }
+
+        public extern static int updatedOffscreenMeshes
+        {
+            [NativeConditional("ENABLE_PROFILER")]
+            [FreeFunction("SkinnedMeshRenderer::GetOffscreenUpdatedRendererCount")]
             [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h")]
             get;
         }

@@ -171,6 +171,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void CalculateTabHeaderDropdown()
         {
+            // if the elementPanel is null (when the panel is not visible) we get a warning when we try to measure the size of elements
+            // so we just skip the calculation in this case, especially since the panel is not visible anyway
+            if (elementPanel == null)
+                return;
             var tabIdsAndAssociatedWidths = m_ValidTabIds.Select(t => (t, GetTotalWidthForTabHeader(t))).ToArray();
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);

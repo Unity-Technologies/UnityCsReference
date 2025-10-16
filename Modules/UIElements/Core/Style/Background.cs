@@ -205,7 +205,10 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public static bool operator==(Background lhs, Background rhs)
         {
-            return lhs.texture == rhs.texture && lhs.sprite == rhs.sprite && lhs.renderTexture == rhs.renderTexture && lhs.vectorImage == rhs.vectorImage;
+            return lhs.texture == rhs.texture &&
+                   lhs.sprite == rhs.sprite &&
+                   lhs.renderTexture == rhs.renderTexture &&
+                   lhs.vectorImage == rhs.vectorImage;
         }
 
         /// <undoc/>

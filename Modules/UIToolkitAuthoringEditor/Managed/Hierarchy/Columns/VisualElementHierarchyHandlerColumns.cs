@@ -21,7 +21,7 @@ internal static class VisualElementHierarchyHandlerColumns
             if (handler == null)
                 return;
 
-            HierarchyViewColumnUtility.CreateCellValueEditor<HierarchyNode, Toggle, bool>(
+            var ed = HierarchyViewColumnUtility.CreateCellValueEditor<HierarchyNode, Toggle, bool>(
                 cell.Node, cell,
                 getModelValue: ed => handler.GetEnabled(ed.Cell.View, ed.Model),
                 setModelValue: (ed, value) =>
@@ -32,6 +32,8 @@ internal static class VisualElementHierarchyHandlerColumns
                     }
                 },
                 isDefaultValue: (ed, value) => value == true);
+            
+            ed.Element.SetEnabled(false);
         };
         desc.UnbindCell = cell =>
         {

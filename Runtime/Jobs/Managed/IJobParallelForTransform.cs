@@ -25,7 +25,7 @@ namespace UnityEngine.Jobs
     {
         internal struct TransformParallelForLoopStruct<T> where T : struct, IJobParallelForTransform
         {
-            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<TransformParallelForLoopStruct<T>>();
+            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<TransformParallelForLoopStruct<T>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()

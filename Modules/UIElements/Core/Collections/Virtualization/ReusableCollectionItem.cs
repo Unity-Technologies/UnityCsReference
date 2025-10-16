@@ -81,8 +81,11 @@ namespace UnityEngine.UIElements
             bindableElement.style.display = isDragGhost ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
-        protected void OnGeometryChanged(GeometryChangedEvent evt)
+        protected virtual void OnGeometryChanged(GeometryChangedEvent evt)
         {
+            rootElement.UpdateWorldTransform();
+            bindableElement.UpdateWorldTransform();
+            bindableElement.IncrementVersion(VersionChangeType.Transform);
             onGeometryChanged?.Invoke(this);
         }
     }

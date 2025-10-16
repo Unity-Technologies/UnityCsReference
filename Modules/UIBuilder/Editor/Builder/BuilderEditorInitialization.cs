@@ -11,11 +11,7 @@ namespace Unity.UI.Builder
         [RegisterUxmlCache]
         public static void Register()
         {
-            BackgroundPositionStyleField.UxmlSerializedData.Register();
-            BackgroundRepeatStyleField.UxmlSerializedData.Register();
-            BackgroundSizeStyleField.UxmlSerializedData.Register();
             BuilderPane.UxmlSerializedData.Register();
-            CategoryDropdownField.UxmlSerializedData.Register();
             CursorStyleField.UxmlSerializedData.Register();
             DimensionStyleField.UxmlSerializedData.Register();
             FieldStatusIndicator.UxmlSerializedData.Register();
@@ -26,7 +22,6 @@ namespace Unity.UI.Builder
             ModalPopup.UxmlSerializedData.Register();
             MultiTypeField.UxmlSerializedData.Register();
             NumericStyleField.UxmlSerializedData.Register();
-            PercentSlider.UxmlSerializedData.Register();
             PersistedFoldout.UxmlSerializedData.Register();
             RotateStyleField.UxmlSerializedData.Register();
             ScaleStyleField.UxmlSerializedData.Register();

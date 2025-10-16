@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -28,13 +29,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             [SerializeReference] public List<Node> Nodes;
         }
 
+        internal static readonly ExecutionStage[] k_Stages = Enum.GetValues(typeof(ExecutionStage)) as ExecutionStage[];
+        internal static readonly int k_StagesCount = k_Stages.Length;
+
         [SerializeField] private StageData[] m_Stages;
         [SerializeField] private bool m_HasStarted;
         [SerializeReference] private List<NodeInput> m_ConnectedInputs;
 
         private StageData[] Stages => m_Stages;
-        internal static int StagesCount => Enum.GetValues(typeof(ExecutionStage)).Length;
         internal bool HasStarted => m_HasStarted;
+        internal event Action StatusRefreshed;
 
         // The results of an executed stage
         internal struct ExecutionResult
@@ -64,23 +68,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        // Listeners for the notification of Execution updates.
-        private event Action<Node> m_ExecutionEventListener;
-        public void SetNodeExecutionEventListener(Action<Node> listener)
-        {
-            m_ExecutionEventListener = listener;
-        }
-
-        // Notification of ExecutionEventListeners on both state and progress node changes
-        private void OnNodeProgressChanged(Node node, float progress) => m_ExecutionEventListener?.Invoke(node);
-        private void OnNodeStateChanged(Node node, ExecutionState state) => m_ExecutionEventListener?.Invoke(node);
         private void SetupNodeEvents(Node node)
         {
-            node.ProgressChanged -= OnNodeProgressChanged;
-            node.ProgressChanged += OnNodeProgressChanged;
-
-            node.StateChanged -= OnNodeStateChanged;
-            node.StateChanged += OnNodeStateChanged;
+            node.StatusRefreshed -= StatusRefreshed;
+            node.StatusRefreshed += StatusRefreshed;
         }
 
         public void OnBeforeSerialize()
@@ -99,8 +90,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public ExecutionGraph()
         {
             // On init, prepare m_stages to be configured with Node data.
-            m_Stages = new StageData[StagesCount];
-            for (int i = 0; i < StagesCount; i++)
+            m_Stages = new StageData[k_StagesCount];
+            for (int i = 0; i < k_StagesCount; i++)
             {
                 m_Stages[i] = new StageData()
                 {
@@ -150,6 +141,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             Stages[(int)stage].Nodes.Add(node);
             SetupNodeEvents(node);
+            StatusRefreshed?.Invoke();
         }
 
         private void ValidateHasNotStarted()
@@ -157,7 +149,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (m_HasStarted)
                 throw new InvalidOperationException("Cannot modify the execution graph after it has started.");
         }
-        
+
         internal void ConnectConstant<T>(NodeInput<T> input, T value, bool reconnectConstant = false)
         {
             if (input is null)

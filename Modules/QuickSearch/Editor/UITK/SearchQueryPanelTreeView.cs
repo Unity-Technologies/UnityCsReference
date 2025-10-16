@@ -12,14 +12,11 @@ namespace UnityEditor.Search
 {
     class SearchQueryTreeViewItem : SearchElement
     {
-        const string k_UssClassName = "search-query-tree-panel-item";
         const string k_ListItemClassName = "search-query-treeview-item";
-        const string k_UssTreeViewClassName = "search-query-tree-panel";
 
         static readonly string k_NameLabelClassName = k_ListItemClassName.WithUssElement("label");
-
         internal static readonly string CountLabelClassName = k_ListItemClassName.WithUssElement("count");
-        internal static readonly string HeaderClassName = k_UssTreeViewClassName.WithUssElement("header");
+        internal static readonly string RootItemClassName = k_ListItemClassName.WithUssElement("root-item");
 
         RenamableLabel m_Label;
         VisualElement m_Icon;
@@ -385,9 +382,9 @@ namespace UnityEditor.Search
 
             var rootElement = m_TreeView.GetRootElementForIndex(index);
             if (item.Data.IsRoot)
-                rootElement.AddToClassList(SearchQueryTreeViewItem.HeaderClassName);
+                rootElement.AddToClassList(SearchQueryTreeViewItem.RootItemClassName);
             else
-                rootElement.RemoveFromClassList(SearchQueryTreeViewItem.HeaderClassName);
+                rootElement.RemoveFromClassList(SearchQueryTreeViewItem.RootItemClassName);
 
             handler?.BindItem(m_TreeView, item, index);
             TreeViewItems[index] = item;

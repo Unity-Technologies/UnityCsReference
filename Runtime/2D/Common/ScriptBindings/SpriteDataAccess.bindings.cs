@@ -238,6 +238,21 @@ namespace UnityEngine.U2D
             SetBoneTransformsArray(spriteRenderers, buffers.GetUnsafeReadOnlyPtr(), bufferSizes.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
         }
 
+        /// <summary>
+        /// Performs a batch update of boneTransformIndex and AABB for the specified SpriteRenderers.
+        /// </summary>
+        internal static unsafe void SetBatchBoneTransformIndexAndLocalAABBArray(SpriteRenderer[] spriteRenderers, NativeArray<int> boneTransformIndices, NativeArray<Bounds> bounds)
+        {
+            int count = spriteRenderers.Length;
+            if (count != boneTransformIndices.Length
+                || count != bounds.Length)
+            {
+                throw new ArgumentException("Input array sizes are not the same.");
+            }
+
+            SetBatchBoneTransformIndexAndLocalAABBArray(spriteRenderers, boneTransformIndices.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
+        }
+
         internal unsafe static bool IsUsingDeformableBuffer(this SpriteRenderer spriteRenderer, IntPtr buffer)
         {
             return IsUsingDeformableBuffer(spriteRenderer, (void*)buffer);
@@ -261,6 +276,8 @@ namespace UnityEngine.U2D
         extern private unsafe static void SetBoneTransforms([NotNull] SpriteRenderer spriteRenderer, void* src, int count);
 
         extern private unsafe static void SetBoneTransformsArray(SpriteRenderer[] spriteRenderers, void* buffers, void* bufferSizes, void* bounds, int count);
+
+        extern private unsafe static void SetBatchBoneTransformIndexAndLocalAABBArray(SpriteRenderer[] spriteRenderers, void* boneTransformIndices, void* bounds, int count);
 
         extern internal unsafe static void SetupMaterialProperties([NotNull] SpriteRenderer spriteRenderer);
 

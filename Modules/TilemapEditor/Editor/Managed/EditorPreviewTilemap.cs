@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Tilemaps;
@@ -11,8 +12,28 @@ namespace UnityEditor
     [RequiredByNativeCode]
     internal class EditorPreviewTilemap : ITilemap
     {
+        [InitializeOnLoadMethod]
+        private static void InitializeOnLoad()
+        {
+            RegisterCreateITilemapFunc(CreateInstanceFromTilemapDefault, 1);
+        }
+
+        internal static Func<Tilemap, ITilemap> createEditorPreviewTilemap;
+
+        internal static void RegisterCreateEditorPreviewTilemapFunc(Func<Tilemap, ITilemap> func)
+        {
+            createEditorPreviewTilemap += func;
+        }
+
         private EditorPreviewTilemap()
         {
+        }
+
+        private EditorPreviewTilemap(Tilemap tilemap)
+        {
+            if (tilemap == null)
+                throw new ArgumentNullException("Argument tilemap cannot be null");
+            m_Tilemap = tilemap;
         }
 
         // Tile
@@ -51,8 +72,14 @@ namespace UnityEditor
             return m_Tilemap.GetAnyTile<T>(position);
         }
 
+        public override EntityId GetTileEntityId(Vector3Int position)
+        {
+            return m_Tilemap.GetAnyTileEntityId(position);
+        }
+
         // Called from native code - TilemapScripting.cpp
-        private TileBase CreateInvalidTile()
+        [RequiredByNativeCode]
+        private static TileBase CreateInvalidTile()
         {
             Texture2D tex = Texture2D.whiteTexture;
             Sprite sprite = Sprite.Create(tex, new Rect(0.0f, 0.0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width);
@@ -67,12 +94,10 @@ namespace UnityEditor
             return tile;
         }
 
-        // Called from native code - TilemapScripting.cpp
-        [UsedByNativeCode]
-        private static ITilemap CreateInstance()
+        [RequiredByNativeCode]
+        private static ITilemap CreateInstanceFromTilemapDefault(Tilemap tilemap)
         {
-            s_Instance = new EditorPreviewTilemap();
-            return s_Instance;
+            return new EditorPreviewTilemap(tilemap);
         }
     }
 }

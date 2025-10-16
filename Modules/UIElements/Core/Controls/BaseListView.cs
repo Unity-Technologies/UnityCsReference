@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
-    public abstract class BaseListView : BaseVerticalCollectionView
+    public abstract partial class BaseListView : BaseVerticalCollectionView
     {
         private static readonly string k_SizeFieldLabel = "Size";
 
@@ -116,61 +116,6 @@ namespace UnityEngine.UIElements
                     e.showBoundCollectionSize = showBoundCollectionSize;
                 if (ShouldWriteAttributeValue(bindingSourceSelectionMode_UxmlAttributeFlags))
                     e.bindingSourceSelectionMode = bindingSourceSelectionMode;
-            }
-        }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseListView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the list view element properties that you can use in a UI document asset (UXML file).
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseVerticalCollectionView.UxmlTraits
-        {
-            private readonly UxmlBoolAttributeDescription m_ShowFoldoutHeader = new UxmlBoolAttributeDescription { name = "show-foldout-header", defaultValue = false };
-            private readonly UxmlStringAttributeDescription m_HeaderTitle = new UxmlStringAttributeDescription() { name = "header-title", defaultValue = string.Empty };
-            private readonly UxmlBoolAttributeDescription m_ShowAddRemoveFooter = new UxmlBoolAttributeDescription { name = "show-add-remove-footer", defaultValue = false };
-            private readonly UxmlBoolAttributeDescription m_AllowAdd = new UxmlBoolAttributeDescription{ name = "allow-add", defaultValue = true };
-            private readonly UxmlBoolAttributeDescription m_AllowRemove = new UxmlBoolAttributeDescription{ name = "allow-remove", defaultValue = true };
-            private readonly UxmlEnumAttributeDescription<ListViewReorderMode> m_ReorderMode = new UxmlEnumAttributeDescription<ListViewReorderMode>() { name = "reorder-mode", defaultValue = ListViewReorderMode.Simple };
-            private readonly UxmlBoolAttributeDescription m_ShowBoundCollectionSize = new UxmlBoolAttributeDescription { name = "show-bound-collection-size", defaultValue = true };
-            private readonly UxmlEnumAttributeDescription<BindingSourceSelectionMode> m_BindingSourceSelectionMode = new () { name = "binding-source-selection-mode", defaultValue = BindingSourceSelectionMode.Manual };
-
-            /// <summary>
-            /// Returns an empty enumerable, because list views usually do not have child elements.
-            /// </summary>
-            /// <returns>An empty enumerable.</returns>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            /// <summary>
-            /// Initializes <see cref="BaseListView"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var view = (BaseListView)ve;
-                view.reorderMode = m_ReorderMode.GetValueFromBag(bag, cc);
-                view.showFoldoutHeader = m_ShowFoldoutHeader.GetValueFromBag(bag, cc);
-                view.headerTitle = m_HeaderTitle.GetValueFromBag(bag, cc);
-                view.showAddRemoveFooter = m_ShowAddRemoveFooter.GetValueFromBag(bag, cc);
-                view.allowAdd = m_AllowAdd.GetValueFromBag(bag, cc);
-                view.allowRemove = m_AllowRemove.GetValueFromBag(bag, cc);
-                view.showBoundCollectionSize = m_ShowBoundCollectionSize.GetValueFromBag(bag, cc);
-                view.bindingSourceSelectionMode = m_BindingSourceSelectionMode.GetValueFromBag(bag, cc);
-            }
-
-            protected UxmlTraits()
-            {
-                // Ignore by default, because the ListView content can have empty space when using footer for example.
-                // PointerEvents are registered on the ScrollView, which is pickingMode = PickingMode.Position.
-                m_PickingMode.defaultValue = PickingMode.Ignore;
             }
         }
 

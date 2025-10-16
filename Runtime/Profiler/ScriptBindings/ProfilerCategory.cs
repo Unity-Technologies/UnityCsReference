@@ -79,7 +79,7 @@ namespace Unity.Profiling
         /// </summary>
         public static ProfilerCategory Ai => new ProfilerCategory(ProfilerUnsafeUtility.CategoryAi);
         /// <summary>
-        /// A ProfilerMarker that belongs the to Audio system.
+        /// A ProfilerMarker that belongs to the Audio system.
         /// </summary>
         public static ProfilerCategory Audio => new ProfilerCategory(ProfilerUnsafeUtility.CategoryAudio);
         /// <summary>

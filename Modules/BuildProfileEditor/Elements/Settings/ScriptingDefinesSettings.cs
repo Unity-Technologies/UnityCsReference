@@ -47,7 +47,10 @@ namespace UnityEditor.Build.Profile.Elements
                 revertDefinesButton.text = TrText.revert;
                 recompileDefinesButton.text = TrText.apply;
 
-                recompileDefinesButton.clicked += () => BuildProfileModuleUtil.RequestScriptCompilation(profile);
+                recompileDefinesButton.clicked += () => {
+                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
+                BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+                };
                 revertDefinesButton.clicked += RevertScriptingDefines;
 
                 var property = serializedObject.FindProperty("m_ScriptingDefines");
@@ -135,8 +138,11 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
                 }
 
-                if (EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
+                bool isAutomatedEnvironment = UnityEngine.Application.isBatchMode || BuildPipeline.isBuildingPlayer;
+        
+                if (isAutomatedEnvironment || EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
                 {
+                    m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
                     BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
                 }
                 else

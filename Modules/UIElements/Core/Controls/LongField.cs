@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/LongField.png")]
-    public class LongField : TextValueField<long>
+    public partial class LongField : TextValueField<long>
     {
         // This property to alleviate the fact we have to cast all the time
         LongInput longInput => (LongInput)textInputBase;
@@ -30,17 +30,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new LongField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="LongField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<LongField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="LongField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<long, UxmlLongAttributeDescription> {}
 
         /// <summary>
         /// Converts the given long integer to a string.

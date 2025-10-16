@@ -52,6 +52,9 @@ namespace UnityEditor.Build.Profile.Elements
             m_SharedSceneListElement = parent.rootVisualElement.Q<VisualElement>(buildProfileSharedSceneListElement);
         }
 
+        public void HideClassicPlatformListView() => m_PlatformListView.Hide();
+        public void ShowClassicPlatformListView() => m_PlatformListView.Show();
+
         internal void Create()
         {
             m_SharedSceneListItem = m_Parent.CreateEditableLabelItem();
@@ -246,6 +249,19 @@ namespace UnityEditor.Build.Profile.Elements
         {
             if (TrySelectCustomBuildProfile())
                 return;
+
+            // When classic platforms are hidden, default to selecting the first available
+            // build profile if no active one is found. Onboarding view is default when
+            // no build profiles are found.
+            if (EditorSettings.hideBuildProfileClassicPlatforms)
+            {
+                if (m_DataSource.customBuildProfiles.Count > 0)
+                {
+                    SelectBuildProfile(0);
+                }
+
+                return;
+            }
 
             if (TrySelectClassicPlatform())
                 return;

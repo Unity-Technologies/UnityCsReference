@@ -14,6 +14,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     internal class LocalDeviceRunNode : Node, IInstanceRunNode
     {
         private const int k_LogMonitorIntervalMS = 100;

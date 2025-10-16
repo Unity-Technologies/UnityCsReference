@@ -23,19 +23,16 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal FoundryHandle m_LocationHandle;
+        internal FoundryHandle m_InitializerLocationHandle;
         internal Flags m_Flags;
 
-        internal static extern StructFieldInternal Invalid();
-        internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-        internal extern string GetName(ShaderContainer container);
+        [ThreadSafe] internal static extern StructFieldInternal Invalid();
+        internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
+        [ThreadSafe] internal extern string GetName(ShaderContainer container);
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
-        {
-            var list = new HandleListInternal(m_AttributeListHandle);
-            return list.Select<ShaderAttribute>(container, (handle) => (new ShaderAttribute(container, handle)));
-        }
-
-        internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+            => ListType.Enumerate<ShaderAttribute>(container, m_AttributeListHandle);
 
         // IInternalType
         StructFieldInternal IInternalType<StructFieldInternal>.ConstructInvalid() => Invalid();
@@ -61,6 +58,8 @@ namespace UnityEditor.ShaderFoundry
         public string Name => field.GetName(container);
         public ShaderType Type => new ShaderType(container, field.m_TypeHandle);
         public IEnumerable<ShaderAttribute> Attributes => field.Attributes(container);
+        public Location Location => new Location(container, field.m_LocationHandle);
+        public Location InitializerLocation => new Location(container, field.m_InitializerLocationHandle);
         public bool IsInput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kInput);
         public bool IsOutput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kOutput);
         internal bool HasFlag(StructFieldInternal.Flags flags) => field.m_Flags.HasFlag(flags);
@@ -74,17 +73,12 @@ namespace UnityEditor.ShaderFoundry
 
         public static StructField Invalid => new StructField(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is StructField other && this.Equals(other);
         public bool Equals(StructField other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
         public static bool operator==(StructField lhs, StructField rhs) => lhs.Equals(rhs);
         public static bool operator!=(StructField lhs, StructField rhs) => !lhs.Equals(rhs);
-
-        public bool ValueEquals(in StructField other)
-        {
-            return StructFieldInternal.ValueEquals(container, handle, other.container, other.handle);
-        }
 
         public class Builder
         {
@@ -92,6 +86,8 @@ namespace UnityEditor.ShaderFoundry
             internal string name;
             internal ShaderType type = ShaderType.Invalid;
             internal List<ShaderAttribute> attributes;
+            public Location location;
+            public Location initializerLocation;
             internal StructFieldInternal.Flags m_Flags = StructFieldInternal.Flags.kNone;
 
             public Builder(ShaderContainer container, string name, ShaderType type)
@@ -101,19 +97,15 @@ namespace UnityEditor.ShaderFoundry
                 this.type = type;
             }
             public Builder(ShaderContainer container, string name, ShaderType type, bool isInput, bool isOutput)
+                : this(container, name, type)
             {
-                this.container = container;
-                this.name = name;
-                this.type = type;
                 IsInput = isInput;
                 IsOutput = isOutput;
             }
 
             public void AddAttribute(ShaderAttribute attribute)
             {
-                if (attributes == null)
-                    attributes = new List<ShaderAttribute>();
-                attributes.Add(attribute);
+                Utilities.AddToList(ref attributes, attribute);
             }
             public bool IsInput
             {
@@ -138,7 +130,9 @@ namespace UnityEditor.ShaderFoundry
                 var structFieldInternal = new StructFieldInternal();
                 structFieldInternal.m_NameHandle = container.AddString(name);
                 structFieldInternal.m_TypeHandle = type.handle;
-                structFieldInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes, (a) => (a.handle));
+                structFieldInternal.m_AttributeListHandle = ListType.Build(container, attributes);
+                structFieldInternal.m_LocationHandle = location.handle;
+                structFieldInternal.m_InitializerLocationHandle = initializerLocation.handle;
                 structFieldInternal.m_Flags = m_Flags;
                 var returnHandle = container.Add(structFieldInternal);
                 return new StructField(container, returnHandle);

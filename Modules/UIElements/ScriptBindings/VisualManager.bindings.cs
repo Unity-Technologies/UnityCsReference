@@ -78,11 +78,13 @@ sealed class VisualManager : IDisposable
         if (!s_AppDomainUnloadRegistered)
         {
             // important: this will always be called from a special unload thread (main thread will be blocking on this)
+#pragma warning disable UAC0006 // CORECLR_FIXME: CoreCLR should use BeforeCodeUnloading for shutdown
             AppDomain.CurrentDomain.DomainUnload += (_, __) =>
             {
                 if (s_Initialized)
                     Shutdown();
             };
+#pragma warning restore UAC0006
 
             s_AppDomainUnloadRegistered = true;
         }

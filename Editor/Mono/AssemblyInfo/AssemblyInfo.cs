@@ -36,9 +36,11 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.BuildPipeline")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Builds")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Insights")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.CrashReporting")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.DeploymentTargets")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.EditorApplication")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.EditorDeeplink")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.EditorUI")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.GameCore")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.GameView")]
@@ -75,6 +77,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS5.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
 [assembly: InternalsVisibleTo("Unity.Automation.Players.WebGL")]
 [assembly: InternalsVisibleTo("Unity.WebGL.Extensions")]
@@ -95,7 +98,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Analytics")]
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEditor.Lumin")]
-[assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.EditorTestsRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner.Tests")]
@@ -103,6 +105,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("ExternalCSharpCompiler")]
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.ImportActivityWindow.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.UnityPackage.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
@@ -112,6 +115,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ComponentUtility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
@@ -161,6 +168,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")]
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor.Experimental")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.PackageCleanConsoleTest.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]
@@ -194,6 +202,7 @@ using UnityEngine;
 
 
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Tests")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch2.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
 //For add Component tests
@@ -207,7 +216,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Automation.Players.EmbeddedLinux")]
 [assembly: InternalsVisibleTo("Unity.Automation.Players.QNX")]
 
-[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
+[assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")]
 
 // Module test assemblies
 [assembly: InternalsVisibleTo("Unity.Modules.Scripting.APIUpdater.Misc.Tests.Editor")]
@@ -218,13 +227,16 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.PlatformIcons.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfileEditor.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.Server.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.AssetPostProcessor.Tests.Editor")]
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.EditorBake.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.Prefabs.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 
@@ -237,8 +249,13 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
-[assembly: InternalsVisibleTo("Unity.Core.InspectorFramework.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.InspectorFramework.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Undo.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.UnityType.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Camera.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Core.VersionControl.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.ProjectAuditor.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Analytics.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.AssetLoading.Tests.Editor")]
 

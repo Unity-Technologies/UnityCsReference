@@ -14,6 +14,9 @@ namespace UnityEngine.UIElements
         float m_SelectionHeight;
         float m_LocalOffsetOnStart;
         Vector3 m_CurrentPointerPosition;
+        StyleLength m_WidthBackup;
+        StyleLength m_HeightBackup;
+
         ReusableCollectionItem m_Item;
         ReusableCollectionItem m_OffsetItem;
         public bool isDragging { get; private set; }
@@ -50,6 +53,8 @@ namespace UnityEngine.UIElements
             var y = m_Item.rootElement.layout.y;
             m_SelectionHeight = m_Item.rootElement.layout.height;
 
+            m_WidthBackup = m_Item.rootElement.style.width;
+            m_HeightBackup = m_Item.rootElement.style.height;
             m_Item.rootElement.style.position = Position.Absolute;
             m_Item.rootElement.style.height = m_Item.rootElement.layout.height;
             m_Item.rootElement.style.width = m_Item.rootElement.layout.width;
@@ -95,9 +100,9 @@ namespace UnityEngine.UIElements
             m_CurrentPointerPosition = pointerPosition;
             var positionInContainer = targetScrollView.contentContainer.WorldToLocal(m_CurrentPointerPosition);
 
-            var itemLayout = m_Item.rootElement.layout;
             var contentHeight = targetScrollView.contentContainer.layout.height;
-            itemLayout.y = Mathf.Clamp(positionInContainer.y - m_LocalOffsetOnStart, 0, contentHeight - m_SelectionHeight);
+
+            var itemYPosition = Mathf.Clamp(positionInContainer.y - m_LocalOffsetOnStart, 0, contentHeight - m_SelectionHeight);
 
             var y = targetScrollView.contentContainer.resolvedStyle.paddingTop;
             m_CurrentIndex = -1;
@@ -110,10 +115,10 @@ namespace UnityEngine.UIElements
                 {
                     var nextExpectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index + 1);
                     // If the drop position is at the end, we will let the conditional check that is outside the loop to handle the animating.
-                    if (Mathf.Approximately(itemLayout.y + nextExpectedHeight, contentHeight))
+                    if (Mathf.Approximately(itemYPosition + nextExpectedHeight, contentHeight))
                         continue;
 
-                    if (itemLayout.y <= y + nextExpectedHeight * 0.5f)
+                    if (itemYPosition <= y + nextExpectedHeight * 0.5f)
                     {
                         m_CurrentIndex = item.index;
                     }
@@ -122,7 +127,7 @@ namespace UnityEngine.UIElements
                 }
 
                 var expectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index);
-                if (itemLayout.y <= y + expectedHeight * 0.5f)
+                if (itemYPosition <= y + expectedHeight * 0.5f)
                 {
                     if (m_CurrentIndex == -1)
                         m_CurrentIndex = item.index;
@@ -146,7 +151,7 @@ namespace UnityEngine.UIElements
                 m_OffsetItem = null;
             }
 
-            m_Item.rootElement.layout = itemLayout;
+            m_Item.rootElement.style.translate = new Translate(0, itemYPosition - m_Item.rootElement.layout.y);
             m_Item.rootElement.BringToFront();
         }
 
@@ -182,8 +187,12 @@ namespace UnityEngine.UIElements
 
             // Stop dragging first, to allow the list to refresh properly dragged items.
             isDragging = false;
-
-            m_Item.rootElement.ClearManualLayout();
+            m_Item.rootElement.style.translate = StyleKeyword.Initial;
+            m_Item.rootElement.style.paddingTop = 0;
+            m_Item.rootElement.style.position = Position.Relative;
+            m_Item.rootElement.style.top = 0;
+            m_Item.rootElement.style.height = m_HeightBackup;
+            m_Item.rootElement.style.width = m_WidthBackup;
 
             targetView.virtualizationController.EndDrag(m_CurrentIndex);
 

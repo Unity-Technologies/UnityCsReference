@@ -26,7 +26,7 @@ namespace UnityEditor
                     {
                         stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
 
-                        OnGameObjectChanged(TryGetGameObject(e.instanceId));
+                        OnGameObjectChanged(TryGetGameObject(e.entityId));
                     }
                     break;
 
@@ -34,11 +34,11 @@ namespace UnityEditor
                     {
                         stream.GetChangeGameObjectParentEvent(i, out var e);
 
-                        if (e.previousParentInstanceId != 0)
-                            OnGameObjectChanged(TryGetGameObject(e.previousParentInstanceId));
+                        if (e.previousParentEntityId != EntityId.None)
+                            OnGameObjectChanged(TryGetGameObject(e.previousParentEntityId));
 
-                        if (e.newParentInstanceId != 0)
-                            OnGameObjectChanged(TryGetGameObject(e.newParentInstanceId));
+                        if (e.newParentEntityId != EntityId.None)
+                            OnGameObjectChanged(TryGetGameObject(e.newParentEntityId));
                     }
                     break;
 
@@ -46,7 +46,7 @@ namespace UnityEditor
                     {
                         stream.GetChangeGameObjectStructureEvent(i, out var e);
 
-                        OnGameObjectChanged(TryGetGameObject(e.instanceId));
+                        OnGameObjectChanged(TryGetGameObject(e.entityId));
                     }
                     break;
 
@@ -54,7 +54,7 @@ namespace UnityEditor
                     {
                         stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
 
-                        OnGameObjectChanged(TryGetGameObject(e.instanceId));
+                        OnGameObjectChanged(TryGetGameObject(e.entityId));
                     }
                     break;
 
@@ -62,8 +62,8 @@ namespace UnityEditor
                     {
                         stream.GetUpdatePrefabInstancesEvent(i, out var e);
 
-                        for (int index = 0; index < e.instanceIds.Length; index++)
-                            OnGameObjectChanged(TryGetGameObject(e.instanceIds[index]));
+                        for (int index = 0; index < e.entityIds.Length; index++)
+                            OnGameObjectChanged(TryGetGameObject(e.entityIds[index]));
                     }
                     break;
 
@@ -71,7 +71,7 @@ namespace UnityEditor
                     {
                         stream.GetCreateGameObjectHierarchyEvent(i, out var e);
 
-                        GameObject go = TryGetGameObject(e.instanceId);
+                        GameObject go = TryGetGameObject(e.entityId);
                         if (go != null && go.transform.parent)
                         {
                             go = go.transform.parent.gameObject;
@@ -85,7 +85,7 @@ namespace UnityEditor
                     {
                         stream.GetDestroyGameObjectHierarchyEvent(i, out var e);
 
-                        GameObject goParent = TryGetGameObject(e.parentInstanceId);
+                        GameObject goParent = TryGetGameObject(e.parentEntityId);
                         if (goParent != null)
                             OnGameObjectChanged(goParent);
                     }
@@ -94,13 +94,13 @@ namespace UnityEditor
             }
         }
 
-        private static GameObject TryGetGameObject(int instanceId)
+        private static GameObject TryGetGameObject(EntityId entityId)
         {
-            Component comp = EditorUtility.EntityIdToObject(instanceId) as Component;
+            Component comp = EditorUtility.EntityIdToObject(entityId) as Component;
             if (comp)
                 return comp.gameObject;
 
-            return EditorUtility.EntityIdToObject(instanceId) as GameObject;
+            return EditorUtility.EntityIdToObject(entityId) as GameObject;
         }
 
         private static void OnGameObjectChanged(GameObject go)

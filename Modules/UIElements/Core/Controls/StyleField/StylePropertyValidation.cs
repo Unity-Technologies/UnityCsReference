@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This represents a collection of Syntax in StyleFields.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [UxmlObject]
     internal abstract class StylePropertyValidation : INotifyBindablePropertyChanged
     {
@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     [UxmlObject]
     internal class Syntax : StylePropertyValidation
     {

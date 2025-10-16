@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// If no <see cref="IGroupBox"/> is found in the hierarchy, the default container will be the panel.
     /// </summary>
     [Icon("UIToolkit/Icons/GroupBox.png")]
-    public class GroupBox : BindableElement, IGroupBox
+    public partial class GroupBox : BindableElement, IGroupBox
     {
         internal static readonly BindingId textProperty = nameof(text);
 
@@ -48,33 +48,6 @@ namespace UnityEngine.UIElements
                     var e = (GroupBox)obj;
                     e.text = text;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="GroupBox"/> using data from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<GroupBox, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="GroupBox"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-
-            /// <summary>
-            /// Initializes <see cref="GroupBox"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((GroupBox)ve).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 

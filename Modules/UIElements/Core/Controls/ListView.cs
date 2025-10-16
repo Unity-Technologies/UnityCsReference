@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
     [Icon("UIToolkit/Icons/ListView.png")]
-    public class ListView : BaseListView
+    public partial class ListView : BaseListView
     {
         internal static readonly BindingId itemTemplateProperty = nameof(itemTemplate);
         internal static readonly BindingId makeItemProperty = nameof(makeItem);
@@ -105,38 +105,6 @@ namespace UnityEngine.UIElements
                 {
                     var e = (ListView)obj;
                     e.itemTemplate = itemTemplate;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="ListView"/> using data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> created from UXML.
-        /// </remarks>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ListView, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ListView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the ListView element properties that you can use in a UI document asset (UXML file).
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseListView.UxmlTraits
-        {
-            UxmlAssetAttributeDescription<VisualTreeAsset> m_ItemTemplate = new UxmlAssetAttributeDescription<VisualTreeAsset> { name = "item-template" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var view = ve as ListView;
-
-                if (m_ItemTemplate.TryGetValueFromBag(bag, cc, out var itemTemplate))
-                {
-                    view.itemTemplate = itemTemplate;
                 }
             }
         }

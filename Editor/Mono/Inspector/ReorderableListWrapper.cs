@@ -225,7 +225,11 @@ namespace UnityEditorInternal
                         }
                         else continue;
 
-                        if (Event.current.type == EventType.DragPerform) ReorderableList.defaultBehaviours.DoAddButton(m_ReorderableList, validatedObject);
+                        if (Event.current.type == EventType.DragPerform)
+                        {
+                            ReorderableList.defaultBehaviours.DoAddButton(m_ReorderableList, validatedObject);
+                            GUI.changed = true;
+                        }
                     }
                     DragAndDrop.AcceptDrag();
                     Event.current.Use();

@@ -406,6 +406,11 @@ namespace UnityEngine
             get { return SupportsMultisampledBackBuffer(); }
         }
 
+        public static bool supportsMemorylessTextures
+        {
+            get { return SupportsMemorylessTextures(); }
+        }
+
         public static bool supportsMultisampleAutoResolve
         {
             get { return SupportsMultisampleAutoResolve(); }
@@ -948,6 +953,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledBackBuffer")]
         static extern bool SupportsMultisampledBackBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMemorylessTextures")]
+        static extern bool SupportsMemorylessTextures();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
         static extern bool SupportsMultisampleAutoResolve();

@@ -16,7 +16,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     [StructLayout(LayoutKind.Sequential)]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     internal partial class ContainerWindow : ScriptableObject
     {
         [SerializeField] MonoReloadableIntPtr m_WindowPtr;
@@ -298,6 +298,7 @@ namespace UnityEditor
             return true;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static bool CanClose(EditorWindow dockedTab)
         {
             if (Application.isHumanControllingUs && dockedTab.hasUnsavedChanges)
@@ -352,7 +353,7 @@ namespace UnityEditor
 
                 option = EditorDialog.DisplayComplexDecisionDialog(
                     (string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
-                    allUnsaved[0].saveChangesMessage,                   
+                    allUnsaved[0].saveChangesMessage,
                     L10n.Tr("Save"),
                     L10n.Tr("Discard"),
                     default);

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -286,7 +287,11 @@ namespace Unity.UI.Builder
             {
                 foldoutField.header.AddManipulator(new ContextualMenuManipulator(BuildStyleFieldContextualMenu));
                 SetUpContextualMenuOnStyleField(foldoutField.propertyField);
-                foldoutField.propertyField.getContent = GetTransitionPropertyContent;
+                foldoutField.propertyField.RegisterCallback<CategoryDropdownField.WillDisplayContentEvent, BuilderInspectorStyleFields>((evt, self) =>
+                {
+                    evt.field.recentCategoryContent = self.GetTransitionPropertyContentOverrides();
+                }, this);
+                foldoutField.propertyField.categoryContent = TransitionPropertyDropdownContent.Content;
 
                 SetUpContextualMenuOnStyleField(foldoutField.durationField);
                 SetUpContextualMenuOnStyleField(foldoutField.timingFunctionField);
@@ -686,7 +691,7 @@ namespace Unity.UI.Builder
             NotifyStyleChanges(s_StyleChangeList, true);
         }
 
-        CategoryDropdownContent GetTransitionPropertyContent()
+        CategoryDropdownContent GetTransitionPropertyContentOverrides()
         {
             var content = new CategoryDropdownContent();
 
@@ -714,8 +719,6 @@ namespace Unity.UI.Builder
             {
                 ListPool<string>.Release(setProperties);
             }
-
-            content.AppendContent(TransitionPropertyDropdownContent.Content);
 
             return content;
         }

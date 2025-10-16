@@ -367,6 +367,11 @@ namespace UnityEditor.IMGUI.Controls
             public Rect DoBorder(Rect rect)
             {
                 EditorGUI.DrawOutline(rect, borderWidth, EditorGUI.kSplitLineSkinnedColor.color);
+                return GetRectWithinBorders(rect);
+            }
+
+            public Rect GetRectWithinBorders(Rect rect)
+            {
                 return new Rect(rect.x + borderWidth, rect.y + borderWidth, rect.width - 2 * borderWidth, rect.height - 2 * borderWidth);
             }
         }

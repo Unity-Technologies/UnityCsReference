@@ -87,17 +87,17 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetDatabase/Editor/V2/ArtifactInfo.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    internal class ArtifactInfo : IDisposable
+    internal partial class ArtifactInfo : IDisposable
     {
-        private static readonly string kInvalidArtifactID = "00000000000000000000000000000000";
+        private static readonly string kInvalidImportResultID = "00000000000000000000000000000000";
         private IntPtr m_Ptr;
 
-        private string m_ArtifactID;
+        private string m_ImportResultID;
 
         internal ArtifactInfo()
         {
             m_Ptr = Internal_Create();
-            m_ArtifactID = kInvalidArtifactID;
+            m_ImportResultID = kInvalidImportResultID;
         }
 
         ~ArtifactInfo()
@@ -123,7 +123,7 @@ namespace UnityEditor
 
         private bool IsValid()
         {
-            return string.CompareOrdinal(m_ArtifactID, kInvalidArtifactID) != 0;
+            return string.CompareOrdinal(m_ImportResultID, kInvalidImportResultID) != 0;
         }
 
         private static extern IntPtr Internal_Create();
@@ -131,11 +131,11 @@ namespace UnityEditor
         [FreeFunction("ArtifactInfoBindings::Internal_Destroy", IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
-        [FreeFunction("ArtifactInfoBindings::GetArtifactID_Internal")]
-        private static extern string GetArtifactID_Internal(ArtifactInfo self);
+        [FreeFunction("ArtifactInfoBindings::GetImportResultID_Internal")]
+        private static extern string GetImportResultID_Internal(ArtifactInfo self);
 
-        [FreeFunction("ArtifactInfoBindings::GetArtifactKey_Internal")]
-        private static extern ArtifactKey GetArtifactKey_Internal(ArtifactInfo self);
+        [FreeFunction("ArtifactInfoBindings::GetImportAddress_Internal")]
+        private static extern ArtifactKey GetImportAddress_Internal(ArtifactInfo self);
 
         [FreeFunction("ArtifactInfoBindings::GetAssetPath_Internal")]
         private static extern string GetAssetPath_Internal(ArtifactInfo self);
@@ -164,17 +164,17 @@ namespace UnityEditor
         [FreeFunction("ArtifactInfoBindings::GetDependencyCount_Internal")]
         private static extern int GetDependencyCount_Internal(ArtifactInfo self);
 
-        internal string artifactID
+        internal string importResultID
         {
             get
             {
-                m_ArtifactID = m_ArtifactID ?? GetArtifactID_Internal(this);
-                return m_ArtifactID;
+                m_ImportResultID = m_ImportResultID ?? GetImportResultID_Internal(this);
+                return m_ImportResultID;
             }
         }
 
         internal string assetPath { get { return GetAssetPath_Internal(this); } }
-        internal ArtifactKey artifactKey { get { return GetArtifactKey_Internal(this); } }
+        internal ArtifactKey artifactKey { get { return GetImportAddress_Internal(this); } }
         internal bool isCurrentArtifact { get { return GetIsCurrentArtifact_Internal(this); } }
 
         private ulong m_ImportDuration = 0;

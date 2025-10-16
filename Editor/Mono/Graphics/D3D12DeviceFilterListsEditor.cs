@@ -308,6 +308,7 @@ namespace UnityEditor
             elementRect.height = EditorGUIUtility.singleLineHeight;
             elementRect.y += D3D12DeviceFilterUI.Styles.kHeightBetweenFields;
             elementRect.x += EditorGUI.kIndentPerLevel; // Indent for the foldout
+            elementRect.width -= EditorGUI.kIndentPerLevel;
 
             if (list.serializedProperty.name == "m_AllowFilterList")
             {

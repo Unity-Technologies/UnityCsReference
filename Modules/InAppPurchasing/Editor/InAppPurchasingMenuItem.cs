@@ -14,12 +14,25 @@ namespace UnityEditor.InAppPurchasing
     {
         private static string s_MenuPath = "Services/In-App Purchasing/Install";
         private static string s_MenuInstallationMethod = "menuItem";
+        private static bool s_menuItemChanged = false;
 
         [InitializeOnLoadMethod]
         private static void Initialize()
         {
             // Add a callback to check the condition periodically
             EditorApplication.update += UpdateMenuItem;
+
+            // UUM-113166 - See comment in LevelPlayMenuItem.cs
+            EditorApplication.delayCall += RefreshMenu;
+        }
+
+        private static void RefreshMenu()
+        {
+            if (s_menuItemChanged)
+            {
+                EditorUtility.Internal_UpdateAllMenus();
+                s_menuItemChanged = false;
+            }
         }
 
         private static void UpdateMenuItem()
@@ -38,11 +51,13 @@ namespace UnityEditor.InAppPurchasing
                 PackageManager.Client.Add(InAppPurchasingInstaller.s_ManagementPackageId);
                 InAppPurchasingQuickInstallAnalytic.SendEvent(s_MenuInstallationMethod);
             }, null);
+            s_menuItemChanged = true;
         }
 
         private static void RemoveMenuItem()
         {
             Menu.RemoveMenuItem(s_MenuPath);
+            s_menuItemChanged = true;
         }
     }
 }

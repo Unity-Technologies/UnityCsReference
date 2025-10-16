@@ -43,7 +43,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             MainView = new MainView();
             rootVisualElement.Add(MainView);
-            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig;
+            var currentConfig = PlayModeScenarioManager.ActiveScenario;
             MainView.SetEnabled(currentConfig.name == "Default");
             UnityPlayer[] players = MultiplayerPlaymode.Players;
             DisabledHelpBox.style.display = currentConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
@@ -54,9 +54,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             DisabledHelpBox.style.alignSelf = Align.Auto;
             DisabledHelpBox.style.height = 95;
 
-            PlayModeManager.instance.ConfigAssetChanged += () =>
+            ScenarioManagerProvider.instance.ConfigAssetChanged += () =>
             {
-                var newConfig = PlayModeManager.instance.ActivePlayModeConfig;
+                var newConfig = PlayModeScenarioManager.ActiveScenario;
                 MainView.SetEnabled(newConfig.name == "Default");
                 DisabledHelpBox.style.display = newConfig.name == "Default" ? DisplayStyle.None : DisplayStyle.Flex;
                 foreach (var player in players)

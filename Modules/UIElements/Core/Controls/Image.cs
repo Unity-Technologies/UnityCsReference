@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
     /// <a href="https://docs.unity3d.com/Packages/com.unity.ugui@latest/index.html?subfolder=/api/UnityEngine.UI.Image.html">UnityEngine.UI.Image</a> uGUI control.
     /// </remarks>
     [Icon("UIToolkit/Icons/Image.png")]
-    public class Image : VisualElement
+    public partial class Image : VisualElement
     {
         internal static readonly BindingId sourceProperty = nameof(source);
         internal static readonly BindingId imageProperty = nameof(image);
@@ -75,27 +75,6 @@ namespace UnityEngine.UIElements
                     e.uv = uv;
                 if (ShouldWriteAttributeValue(scaleMode_UxmlAttributeFlags))
                     e.scaleMode = scaleMode;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates an <see cref="Image"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Image, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Image"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            /// <summary>
-            /// Returns an empty enumerable, as images generally do not have children.
-            /// </summary>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
             }
         }
 
@@ -356,9 +335,9 @@ namespace UnityEngine.UIElements
             mgc.meshGenerator.DrawRectangle(rectParams);
         }
 
-        static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");
-        static CustomStyleProperty<Sprite> s_SpriteProperty = new CustomStyleProperty<Sprite>("--unity-image");
-        static CustomStyleProperty<VectorImage> s_VectorImageProperty = new CustomStyleProperty<VectorImage>("--unity-image");
+        internal static CustomStyleProperty<Texture2D> s_ImageProperty = new CustomStyleProperty<Texture2D>("--unity-image");
+        internal static CustomStyleProperty<Sprite> s_SpriteProperty = new CustomStyleProperty<Sprite>("--unity-image");
+        internal static CustomStyleProperty<VectorImage> s_VectorImageProperty = new CustomStyleProperty<VectorImage>("--unity-image");
         static CustomStyleProperty<string> s_ScaleModeProperty = new CustomStyleProperty<string>("--unity-image-size");
         static CustomStyleProperty<Color> s_TintColorProperty = new CustomStyleProperty<Color>("--unity-image-tint-color");
 

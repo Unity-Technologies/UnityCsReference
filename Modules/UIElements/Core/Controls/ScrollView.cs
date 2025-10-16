@@ -110,7 +110,7 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_ScrollTo.cs"/>
     /// </example>
     [Icon("UIToolkit/Icons/ScrollView.png")]
-    public class ScrollView : VisualElement
+    public partial class ScrollView : VisualElement
     {
         internal static readonly BindingId horizontalScrollerVisibilityProperty = nameof(horizontalScrollerVisibility);
         internal static readonly BindingId verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
@@ -220,93 +220,6 @@ namespace UnityEngine.UIElements
                     e.elasticity = elasticity;
                 if (ShouldWriteAttributeValue(elasticAnimationIntervalMs_UxmlAttributeFlags))
                     e.elasticAnimationIntervalMs = elasticAnimationIntervalMs;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="ScrollView"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits> { }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ScrollView"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlEnumAttributeDescription<ScrollViewMode> m_ScrollViewMode = new UxmlEnumAttributeDescription<ScrollViewMode>
-            { name = "mode", defaultValue = ScrollViewMode.Vertical };
-
-            UxmlEnumAttributeDescription<NestedInteractionKind> m_NestedInteractionKind = new UxmlEnumAttributeDescription<NestedInteractionKind>
-            { name = "nested-interaction-kind", defaultValue = NestedInteractionKind.Default };
-
-            UxmlBoolAttributeDescription m_ShowHorizontal = new UxmlBoolAttributeDescription
-            { name = "show-horizontal-scroller" };
-
-            UxmlBoolAttributeDescription m_ShowVertical = new UxmlBoolAttributeDescription
-            { name = "show-vertical-scroller" };
-
-            UxmlEnumAttributeDescription<ScrollerVisibility> m_HorizontalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility>
-            { name = "horizontal-scroller-visibility" };
-
-            UxmlEnumAttributeDescription<ScrollerVisibility> m_VerticalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility>
-            { name = "vertical-scroller-visibility" };
-
-            UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription
-            { name = "horizontal-page-size", defaultValue = k_UnsetPageSizeValue };
-
-            UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription
-            { name = "vertical-page-size", defaultValue = k_UnsetPageSizeValue };
-
-            UxmlFloatAttributeDescription m_MouseWheelScrollSize = new UxmlFloatAttributeDescription
-            { name = "mouse-wheel-scroll-size", defaultValue = k_MouseWheelScrollSizeDefaultValue };
-
-            UxmlEnumAttributeDescription<TouchScrollBehavior> m_TouchScrollBehavior = new UxmlEnumAttributeDescription<TouchScrollBehavior>
-            { name = "touch-scroll-type", defaultValue = TouchScrollBehavior.Clamped };
-
-            UxmlFloatAttributeDescription m_ScrollDecelerationRate = new UxmlFloatAttributeDescription
-            { name = "scroll-deceleration-rate", defaultValue = k_DefaultScrollDecelerationRate };
-
-            UxmlFloatAttributeDescription m_Elasticity = new UxmlFloatAttributeDescription
-            { name = "elasticity", defaultValue = k_DefaultElasticity };
-
-
-            /// <summary>
-            /// Initialize <see cref="ScrollView"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                ScrollView scrollView = (ScrollView)ve;
-                scrollView.mode = m_ScrollViewMode.GetValueFromBag(bag, cc);
-
-                // Remove once showHorizontal and showVertical are fully deprecated.
-#pragma warning disable 618
-                var horizontalVisibility = ScrollerVisibility.Auto;
-                if (m_HorizontalScrollerVisibility.TryGetValueFromBag(bag, cc, ref horizontalVisibility))
-                    scrollView.horizontalScrollerVisibility = horizontalVisibility;
-                else
-                    scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag, cc);
-
-                var verticalVisibility = ScrollerVisibility.Auto;
-                if (m_VerticalScrollerVisibility.TryGetValueFromBag(bag, cc, ref verticalVisibility))
-                    scrollView.verticalScrollerVisibility = verticalVisibility;
-                else
-                    scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
-#pragma warning restore 618
-
-                scrollView.nestedInteractionKind = m_NestedInteractionKind.GetValueFromBag(bag, cc);
-                scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
-                scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag, cc);
-                scrollView.mouseWheelScrollSize = m_MouseWheelScrollSize.GetValueFromBag(bag, cc);
-                scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
-                scrollView.touchScrollBehavior = m_TouchScrollBehavior.GetValueFromBag(bag, cc);
-                scrollView.elasticity = m_Elasticity.GetValueFromBag(bag, cc);
             }
         }
 
@@ -449,7 +362,7 @@ namespace UnityEngine.UIElements
         /// The current scrolling position.
         /// </summary>
         /// <remarks>
-        /// You can set this property to scroll the content to a specific position. For example, 
+        /// You can set this property to scroll the content to a specific position. For example,
         /// to scroll to the bottom of the ScrollView, set this property to the maximum value of the vertical scroller.
         /// Refer to the [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]] user manual page for an example.
         /// </remarks>
@@ -470,7 +383,12 @@ namespace UnityEngine.UIElements
 
                     if (panel != null)
                     {
-                        UpdateScrollers(needsHorizontal, needsVertical);
+                        // We only want to refresh the high/low values if two conditions are true, 1) something changed them before a scrollOffset call and
+                        // 2) it has not exceeded the scrollable point. For any other use cases, the geometry change code path should refresh them accordingly.
+                        if (!Mathf.Approximately(m_ContentAndVerticalScrollContainer.layout.height - contentViewport.layout.height, 0))
+                        {
+                            UpdateScrollers(needsHorizontal, needsVertical);
+                        }
                         UpdateContentViewTransform();
                     }
 
@@ -1218,8 +1136,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_AttachedRootVisualContainer = GetRootVisualContainer();
+            // There is a chance the root visual container has not had its pseudo style resolved yet.
+            m_AttachedRootVisualContainer = GetRootVisualContainer() ?? evt.destinationPanel.visualTree;
             m_AttachedRootVisualContainer?.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
             MarkSingleLineHeightDirty();
 
             if (evt.destinationPanel.contextType == ContextType.Player)
@@ -1248,6 +1168,7 @@ namespace UnityEngine.UIElements
 
             m_AttachedRootVisualContainer?.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
             m_AttachedRootVisualContainer = null;
+            UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
 
             if (evt.originPanel.contextType == ContextType.Player)
             {
@@ -1916,9 +1837,13 @@ namespace UnityEngine.UIElements
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
 
-            if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline && m_SingleLineHeightDirtyFlag)
+            if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline)
             {
-                ReadSingleLineHeight();
+                if (m_SingleLineHeightDirtyFlag || (parent is { isRootVisualContainer: true } && parent != m_AttachedRootVisualContainer))
+                {
+                    // Potential special case: single line height is not dirty, but the parent is a different root visual container.
+                    ReadSingleLineHeight();
+                }
             }
 
             var mouseScrollFactor = m_MouseWheelScrollSizeIsInline ? mouseWheelScrollSize : m_SingleLineHeight;
@@ -1972,25 +1897,37 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            var currentParent = (VisualElement)this;
-            while (currentParent != null)
+            if (computedStyle.customProperties != null &&
+                computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
             {
-                if (currentParent.computedStyle.customProperties != null &&
-                    currentParent.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+                m_SingleLineHeightDirtyFlag = false;
+                if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
                 {
-                    m_SingleLineHeightDirtyFlag = false;
-                    if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
-                    {
-                        m_SingleLineHeight = dimension.value;
-                        return;
-                    }
+                    m_SingleLineHeight = dimension.value;
+                    return;
                 }
-                else if (currentParent == m_AttachedRootVisualContainer)
-                {
-                    break;
-                }
+            }
 
-                currentParent = currentParent.parent;
+            var updatedRoot = GetFirstAncestorWhere((x) => x.isRootVisualContainer);
+            // If, in between the time the line height has been marked dirty and a scroll view update, the root visual container has changed,
+            // then update the root.
+            if (updatedRoot != m_AttachedRootVisualContainer)
+            {
+                m_AttachedRootVisualContainer.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+                m_AttachedRootVisualContainer = updatedRoot;
+                m_AttachedRootVisualContainer.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
+            }
+            // Check if the property is set on the root visual element.
+            if (m_AttachedRootVisualContainer is { computedStyle.customProperties: not null } &&
+                     m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customRootProp))
+            {
+
+                m_SingleLineHeightDirtyFlag = false;
+                if (customRootProp.sheet.TryReadDimension(customRootProp.handle, out var dimension))
+                {
+                    m_SingleLineHeight = dimension.value;
+                    return;
+                }
             }
             m_SingleLineHeight = UIElementsUtility.singleLineHeight;
             m_SingleLineHeightDirtyFlag = false;

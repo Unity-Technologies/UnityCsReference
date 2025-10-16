@@ -318,12 +318,6 @@ namespace UnityEngine
         // Divides a vector by a number.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector4 operator/(in Vector4 a, float d) => new Vector4(a.x / d, a.y / d, a.z / d, a.w / d);
-        // Multiplies two vectors component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator*(in Vector4 a, in Vector4 b) => new Vector4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
-        // Divides two vectors component-wise.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator/(in Vector4 a, in Vector4 b) => new Vector4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
 
         // Returns true if the vectors are equal.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

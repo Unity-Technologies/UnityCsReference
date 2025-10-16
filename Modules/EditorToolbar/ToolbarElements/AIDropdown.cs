@@ -12,7 +12,7 @@ class AIDropdown : EditorToolbarDropdown
     internal static AIDropdown instance;
 
     [UnityOnlyMainToolbarPreset]
-    [MainToolbarElement("Services/AI", true, defaultDockIndex = 12, defaultDockPosition = MainToolbarDockPosition.Left)]
+    [MainToolbarElement("Services/AI", defaultDockIndex = 12, defaultDockPosition = MainToolbarDockPosition.Left)]
     static MainToolbarElement Create()
     {
         if (instance is null)

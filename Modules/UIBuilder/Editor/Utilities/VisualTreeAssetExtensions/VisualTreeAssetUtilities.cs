@@ -19,11 +19,11 @@ namespace Unity.UI.Builder
             public int hierarchyDepth { get; set; }
         }
 
-        public static VisualTreeAsset CreateInstance()
+        public static VisualTreeAsset CreateInstanceWithHideFlags()
         {
             var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
 
-            vta.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            vta.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
 
             var uxmlTagElement = new VisualElementAsset(BuilderConstants.UxmlTagTypeName);
             var engineNamespaceDefinition = new UxmlNamespaceDefinition {prefix = UXMLConstants.UxmlEngineNamespaceDefaultPrefix, resolvedNamespace = UXMLConstants.UxmlEngineNamespace };

@@ -56,6 +56,12 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static event Action<BuildProfile> OnUpdateActiveEditors;
 
+        /// <summary>
+        /// Internal static callback requesting an update of the build profile window when
+        /// editor settings change.
+        /// </summary>
+        public static Action OnEditorSettingsChanged;
+
         public static void UpdateActiveEditors(BuildProfile profile)
         {
             OnUpdateActiveEditors?.Invoke(profile);
@@ -106,6 +112,9 @@ namespace UnityEditor.Build.Profile
         public static Texture2D GetPlatformIcon(GUID platformId)
         {
             if (LoadBuildProfileIcon(platformId, out Texture2D icon))
+                return icon;
+
+            if(LoadPlatformMipIcon(platformId, out icon))
                 return icon;
 
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId));
@@ -436,6 +445,29 @@ namespace UnityEditor.Build.Profile
             return result;
         }
 
+        public static BuildTargetDiscovery.PlatformGroup[] GetAllPlatformGroups()
+        {
+            var allGroups = BuildTargetDiscovery.GetPlatformGroups();
+
+            for (int i = 0; i < allGroups.Length; i++)
+            {
+                var platforms = new List<GUID>();
+
+                foreach (var platformGuid in allGroups[i].platforms)
+                {
+                    var installed = BuildTargetDiscovery.BuildPlatformIsInstalled(platformGuid);
+                    if (!installed && BuildTargetDiscovery.BuildPlatformIsHiddenInUI(platformGuid))
+                        continue;
+
+                    platforms.Add(platformGuid);
+                }
+
+                allGroups[i].platforms = platforms.ToArray();
+            }
+
+            return allGroups;
+        }
+
         public static bool IsPlatformVisibleInPlatformBrowserOnly(GUID platformGuid)
         {
             return BuildTargetDiscovery.BuildPlatformIsVisibleInPlatformBrowserOnly(platformGuid);
@@ -676,6 +708,18 @@ namespace UnityEditor.Build.Profile
             EditorPrefs.SetString(key, value);
         }
 
+        /// <summary>
+        /// Attempts to load the Mip mapped icon for the given platformId.
+        /// </summary>
+        /// <param name="icon">The loaded icon, or <see langword="null"/> if no icon could be found.</param>
+        /// <param name="platformId">The platform GUID to load the icon for.</param>
+        /// <returns><see langword="true"/> if a mip map icon exists.</returns>
+        static bool LoadPlatformMipIcon(GUID platformId, out Texture2D icon)
+        {
+            icon = EditorGUIUtility.FindTexture($"{GetModuleName(platformId)} Icon");
+            return icon != null;
+        }
+
         static bool LoadBuildProfileIcon(GUID platformId, out Texture2D icon)
         {
             var moduleName = GetModuleName(platformId);
@@ -750,6 +794,11 @@ namespace UnityEditor.Build.Profile
         public static string BuildPlatformDescription(GUID platformGuid)
         {
             return BuildTargetDiscovery.BuildPlatformDescription(platformGuid);
+        }
+
+        public static string GetPlatformColorString(GUID platformGuid)
+        {
+            return BuildTargetDiscovery.GetPlatformColorString(platformGuid);
         }
 
         public static void OnActiveProfileGraphicsSettingsChanged(bool hasGraphicsSettings)
@@ -948,9 +997,19 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        /// <summary>
+        /// Normalizes and removes invalid scripting defines from the provided array.
+        /// </summary>
+        public static string[] RemoveInvalidScriptingDefines(string[] defines)
+        {
+            // Converts to string and back to array to normalize, remove duplicates and empty entries.
+            return ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(
+              ScriptingDefinesHelper.ConvertScriptingDefineArrayToString(defines));
+        }
+
         /*
-         * private helper functions
-         */
+        * private helper functions
+        */
         private static bool ContainsPlayerSetting(PlayerSettingsRequiringRestart[] playerSettings, PlayerSettingsRequiringRestart targetSetting)
         {
             foreach (PlayerSettingsRequiringRestart setting in playerSettings)

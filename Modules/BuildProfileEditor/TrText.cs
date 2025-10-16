@@ -15,6 +15,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string cleanBuild = L10n.Tr("Clean Build...");
         public static readonly string assetImportOverrides = L10n.Tr("Asset Import Overrides");
         public static readonly string playerSettings = L10n.Tr("Player Settings");
+        public static readonly string noBuildProfilesFound = L10n.Tr("No build profiles in your project.");
+        public static readonly string welcomeToBuildProfiles = L10n.Tr("Welcome to Build Profiles.");
+        public static readonly string welcomeToBuildProfilesMessage = L10n.Tr("Add a Build Profile to configure as many builds as you need for any supported platform."
+            + " Build profiles are stored as assets you can share with your team.");
         public static readonly string buildProfileWelcome = L10n.Tr("Welcome to Build Profiles."
             + "\n\nAdd a Build Profile to configure as many builds as you need for any supported platform. "
             + "Build profiles are stored as assets you can share with your team");

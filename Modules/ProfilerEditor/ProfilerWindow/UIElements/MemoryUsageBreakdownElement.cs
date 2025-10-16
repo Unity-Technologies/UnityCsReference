@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -237,43 +238,74 @@ namespace Unity.Profiling.Editor
             SetValues(m_TotalBytes, m_UsedBytes);
         }
 
-        /// <summary>
-        /// Instantiates a <see cref="MemoryUsageBreakdownElement"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<MemoryUsageBreakdownElement, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="MemoryUsageBreakdownElement"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        [Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text", defaultValue = "Other" };
-            UxmlStringAttributeDescription m_ColorClass = new UxmlStringAttributeDescription { name = "background-color-class", defaultValue = "" };
-            UxmlBoolAttributeDescription m_ShowUsed = new UxmlBoolAttributeDescription { name = "show-used", defaultValue = false };
-            UxmlLongAttributeDescription m_Used = new UxmlLongAttributeDescription { name = "used-bytes", defaultValue = 50 };
-            UxmlLongAttributeDescription m_Total = new UxmlLongAttributeDescription { name = "total-bytes", defaultValue = 100 };
-            UxmlBoolAttributeDescription m_ShowSelected = new UxmlBoolAttributeDescription { name = "show-selected", defaultValue = false };
-            UxmlLongAttributeDescription m_Selected = new UxmlLongAttributeDescription { name = "selected-bytes", defaultValue = 0};
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
             {
-                get { yield break; }
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(text), "text"),
+                    new (nameof(backgroundColorClass), "background-color-class"),
+                    new (nameof(showUsed), "show-used"),
+                    new (nameof(usedBytes), "used-bytes"),
+                    new (nameof(totalBytes), "total-bytes"),
+                    new (nameof(showSelected), "show-selected"),
+                    new (nameof(selectedBytes), "selected-bytes"),
+                }, true);
             }
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var text = m_Text.GetValueFromBag(bag, cc);
-                var showUsed = m_ShowUsed.GetValueFromBag(bag, cc);
-                var total = m_Total.GetValueFromBag(bag, cc);
-                var showSelected = m_ShowSelected.GetValueFromBag(bag, cc);
-                var used = Mathf.Clamp(m_Used.GetValueFromBag(bag, cc), 0, total);
-                var selected = Mathf.Clamp(m_Selected.GetValueFromBag(bag, cc), 0, total);
-                var color = m_ColorClass.GetValueFromBag(bag, cc);
+            #pragma warning disable 649
+            [SerializeField] string text;
+            [SerializeField] string backgroundColorClass;
+            [SerializeField] long usedBytes;
+            [SerializeField] long totalBytes;
+            [SerializeField] long selectedBytes;
+            [SerializeField] bool showUsed;
+            [SerializeField] bool showSelected;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags backgroundColorClass_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showUsed_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usedBytes_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags totalBytes_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showSelected_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectedBytes_UxmlAttributeFlags;
+            #pragma warning restore 649
 
-                ((MemoryUsageBreakdownElement)ve).Init(text, showUsed, (ulong)used, (ulong)total, showSelected, (ulong)selected, color);
+            public override object CreateInstance() => new MemoryUsageBreakdownElement();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (MemoryUsageBreakdownElement)obj;
+
+                string resolvedText = "Other";
+                string resolvedBackgroundColorClass = "";
+                bool resolvedShowUsed = false;
+                bool resolvedShowSelected = false;
+                long resolvedUsedBytes = 50;
+                long resolvedTotalBytes = 100;
+                long resolvedSelectedBytes = 0;
+
+                if (ShouldWriteAttributeValue(text_UxmlAttributeFlags))
+                    resolvedText = text;
+                if (ShouldWriteAttributeValue(backgroundColorClass_UxmlAttributeFlags))
+                    resolvedBackgroundColorClass = backgroundColorClass;
+                if (ShouldWriteAttributeValue(showUsed_UxmlAttributeFlags))
+                    resolvedShowUsed = showUsed;
+                if (ShouldWriteAttributeValue(usedBytes_UxmlAttributeFlags))
+                    resolvedUsedBytes = usedBytes;
+                if (ShouldWriteAttributeValue(totalBytes_UxmlAttributeFlags))
+                    resolvedTotalBytes = totalBytes;
+                if (ShouldWriteAttributeValue(showSelected_UxmlAttributeFlags))
+                    resolvedShowSelected = showSelected;
+                if (ShouldWriteAttributeValue(selectedBytes_UxmlAttributeFlags))
+                    resolvedSelectedBytes = selectedBytes;
+
+                e.Init(resolvedText, resolvedShowUsed, (ulong)resolvedUsedBytes, (ulong)resolvedTotalBytes, resolvedShowSelected, (ulong)resolvedSelectedBytes, resolvedBackgroundColorClass);
             }
         }
     }

@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     value = sheet.ReadColor(handle).ToString();
                     break;
                 case StyleValueType.ResourcePath:
-                    value = sheet.ReadResourcePath(handle);
+                    value = sheet.ReadResourcePath(handle).ToString();
                     break;
                 case StyleValueType.String:
                     value = sheet.ReadString(handle);

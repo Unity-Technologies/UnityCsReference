@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.ShortcutManagement
 {
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     class Discovery : IDiscovery
     {
         IEnumerable<IDiscoveryShortcutProvider> m_ShortcutProviders;

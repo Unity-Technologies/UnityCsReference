@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel;
 using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -263,6 +264,7 @@ namespace UnityEditor.Overlays
 
         internal bool userControlledVisibility => !(this is IControlVisibility || this is ITransientOverlay);
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal OverlayContainer container
         {
             get => m_Container;
@@ -587,7 +589,7 @@ namespace UnityEditor.Overlays
         // the requested layout, the overlay will be collapsed (the collapsed property will not be modified, and the
         // next time RebuildContent is invoked this method will try again to build the requested layout and un-collapse
         // the Overlay).
-        internal void RebuildContent()
+        internal void RebuildContent(bool forceCreateContent = true)
         {
             if (m_Container == null)
                 return;
@@ -598,13 +600,14 @@ namespace UnityEditor.Overlays
             var prevLayout = m_ActiveLayout;
             m_ActiveLayout = GetBestLayoutForState();
 
-            // Clear any existing contents.
-            m_CurrentContent?.RemoveFromHierarchy();
-            collapsedContent.RemoveFromHierarchy();
-            m_CurrentContent = null;
-
             if (!displayed)
+            {
+                // Clear any existing contents.
+                collapsedContent.RemoveFromHierarchy();
+                m_CurrentContent?.RemoveFromHierarchy();
+                m_CurrentContent = null;
                 return;
+            }
 
             // An Overlay can collapsed by request, or by necessity. If collapsed due to invalid layout/container match,
             // the collapsed property is not modified. The next time a content rebuild is requested we'll try again to
@@ -637,15 +640,24 @@ namespace UnityEditor.Overlays
             rootVisualElement.EnableInClassList(k_Collapsed, isCollapsed);
             rootVisualElement.EnableInClassList(k_Expanded, !isCollapsed);
 
-            if (isCollapsed)
+            if (forceCreateContent || wasCollapsed != isCollapsed || prevLayout != activeLayout)
             {
-                if (collapsedContent.parent != contentRoot)
-                    contentRoot.Add(collapsedContent);
-            }
-            else
-            {
-                m_CurrentContent = CreateContent(m_ActiveLayout);
-                contentRoot.Add(m_CurrentContent);
+                // Clear any existing contents.
+                collapsedContent.RemoveFromHierarchy();
+                m_CurrentContent?.RemoveFromHierarchy();
+                m_CurrentContent = null;
+
+                if (isCollapsed)
+                {
+                    if (collapsedContent.parent != contentRoot)
+                        contentRoot.Add(collapsedContent);
+                }
+                else
+                {
+                    m_CurrentContent = CreateContent(m_ActiveLayout);
+                    contentRoot.Add(m_CurrentContent);
+                }
+
             }
 
             // Disable drop zone previews when floating
@@ -740,6 +752,9 @@ namespace UnityEditor.Overlays
 
             var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
+            
+            if (m_ModalPopup != null)
+                ApplyPopupSize();
         }
 
         void ApplySize(VisualElement element, bool resizableLayout, bool sizeOverridden)
@@ -845,7 +860,7 @@ namespace UnityEditor.Overlays
             }
 
             m_ModalPopup = OverlayPopup.CreateUnderOverlay(this);
-            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
+            ApplyPopupSize();
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>
             {
@@ -874,6 +889,11 @@ namespace UnityEditor.Overlays
         public void RefreshPopup()
         {
             m_ModalPopup?.Refresh();
+        }
+
+        void ApplyPopupSize()
+        {
+            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
         }
 
         void ClosePopup()
@@ -935,7 +955,7 @@ namespace UnityEditor.Overlays
         internal void Initialize(string _id, string _uss, string _display, Vector2 defaultSize, Vector2 minSize, Vector2 maxSize, int menuPriority, string menuGroup)
         {
             m_RootVisualElementName = _uss;
-            string name = string.IsNullOrEmpty(_display) ? m_RootVisualElementName : _display;
+            string name = string.IsNullOrEmpty(_display) ? GetType().Name : _display;
             m_Id = string.IsNullOrEmpty(_id) ? name : _id;
             displayName = L10n.Tr(name);
             rootVisualElement.style.display = DisplayStyle.None;

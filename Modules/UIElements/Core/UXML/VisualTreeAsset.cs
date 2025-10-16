@@ -219,7 +219,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField] internal StyleSheet inlineSheet;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleSheet GetOrCreateInlineStyleSheet()
         {
             if (inlineSheet == null)
@@ -240,7 +240,7 @@ namespace UnityEngine.UIElements
 
         internal VisualElementAsset visualTree
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get
             {
                 if (m_VisualTree != null)
@@ -356,42 +356,6 @@ namespace UnityEngine.UIElements
                 asset.SetVisualTreeAssetWithOutNotify(this);
             }
         }
-
-        // Obsolete - Used by UxmlTraits system
-        #pragma warning disable CS0618 // Type or member is obsolete
-        internal List<T> GetUxmlObjects<T>(IUxmlAttributes asset, CreationContext cc) where T : new()
-        {
-            if (asset is UxmlAsset ua)
-            {
-                using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
-                ua.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
-
-                if (uxmlObjectAssets != null)
-                {
-                    List<T> uxmlObjects = null;
-
-                    foreach (var uxmlObjectAsset in uxmlObjectAssets)
-                    {
-                        var factory = GetUxmlObjectFactory(uxmlObjectAsset);
-
-                        if (!(factory is IUxmlObjectFactory<T> typedFactory))
-                            continue;
-
-                        var obj = typedFactory.CreateObject(uxmlObjectAsset, cc);
-
-                        if (uxmlObjects == null)
-                            uxmlObjects = new List<T>() { obj };
-                        else
-                            uxmlObjects.Add(obj);
-                    }
-
-                    return uxmlObjects;
-                }
-            }
-
-            return null;
-        }
-        #pragma warning restore CS0618 // Type or member is obsolete
 
         [SerializeField]
         List<AssetEntry> m_AssetEntries = new List<AssetEntry>();

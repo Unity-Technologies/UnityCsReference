@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 
 namespace UnityEditor.Scripting.APIUpdater
 {
     [Serializable]
+    [DataContract]
     internal class AssemblyDependencyGraph
     {
         public AssemblyDependencyGraph()
@@ -258,10 +260,10 @@ namespace UnityEditor.Scripting.APIUpdater
             stream.Write(h, 0, h.Length); // Write the hash length
             stream.Write(hash, 0, hash.Length); // and reserve space of the "payload" hash.
 
-            var formatter = new BinaryFormatter();
-#pragma warning disable SYSLIB0011
-            formatter.Serialize(stream, this);
-#pragma warning restore SYSLIB0011
+            var serializer = new DataContractSerializer(
+                typeof(AssemblyDependencyGraph),
+                new DataContractSerializerSettings { PreserveObjectReferences = true });
+            serializer.WriteObject(stream, this);
 
             var endOfStream = stream.Position;
 
@@ -302,10 +304,10 @@ namespace UnityEditor.Scripting.APIUpdater
 
             stream.Position = startOfSerializedData;
 
-            var serializer = new BinaryFormatter();
-#pragma warning disable SYSLIB0011
-            return (AssemblyDependencyGraph)serializer.Deserialize(stream);
-#pragma warning restore SYSLIB0011
+            var serializer = new DataContractSerializer(
+                typeof(AssemblyDependencyGraph),
+                new DataContractSerializerSettings { PreserveObjectReferences = true });
+            return (AssemblyDependencyGraph)serializer.ReadObject(stream);
         }
 
         internal DependencyEntry FindAssembly(string dependent)
@@ -314,9 +316,12 @@ namespace UnityEditor.Scripting.APIUpdater
         }
 
         [Serializable]
+        [DataContract]
         internal class DependencyEntry : IComparable<DependencyEntry>
         {
+            [DataMember]
             public string m_Name;
+            [DataMember]
             public List<DependencyEntry> m_Dependencies;
 
             public DependencyEntry()
@@ -329,8 +334,8 @@ namespace UnityEditor.Scripting.APIUpdater
                 m_Dependencies = new List<DependencyEntry>();
             }
 
+            [DataMember]
             public AssemblyStatus Status { get; set; }
-
             public string Name => m_Name;
 
             public int CompareTo(DependencyEntry other)
@@ -349,7 +354,9 @@ namespace UnityEditor.Scripting.APIUpdater
             }
         }
 
+        [DataMember]
         List<DependencyEntry> m_Graph;
+        [DataMember]
         HashSet<string> m_Processed; // used to ignore cycles.
     }
 

@@ -101,7 +101,6 @@ namespace UnityEditor.Build.Profile
         /// <param name="objectToAdd"></param>
         /// <exception cref="ArgumentNullException">Thrown when objectToAdd is null.</exception>
         /// <exception cref="ArgumentException">Thrown if adding a sub-asset of an existing component type.</exception>
-        [VisibleToOtherModules]
         public void AddComponent<T>(T objectToAdd) where T : UnityEngine.Object
         {
             if (objectToAdd == null)
@@ -149,7 +148,6 @@ namespace UnityEditor.Build.Profile
         /// <param name="objectToRemove">Object to remove.</param>
         /// <exception cref="ArgumentNullException">objectToRemove is null.</exception>
         /// <exception cref="ArgumentException">objectToRemove is not part of the build profile.</exception>
-        [VisibleToOtherModules]
         public void RemoveComponent<T>(T objectToRemove) where T : UnityEngine.Object
         {
             if (objectToRemove == null)

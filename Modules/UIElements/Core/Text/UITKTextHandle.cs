@@ -69,8 +69,9 @@ namespace UnityEngine.UIElements
                 return ComputeTextSize(new RenderedText(textToMeasure), width, height, fontsize);
             }
             var scale = GetPixelsPerPoint();
-            width = Mathf.Round(width * scale);
-            height = Mathf.Round(height * scale);
+            // We need to Floor instead of Round here to make sure we don't overflow the maximum rect.
+            width = Mathf.Floor(width * scale);
+            height = Mathf.Floor(height * scale);
 
             ComputeNativeTextSize(textToMeasure, width, height, fontsize);
 
@@ -84,8 +85,9 @@ namespace UnityEngine.UIElements
                 return Vector2.zero;
             }
             var scale = GetPixelsPerPoint();
-            width = Mathf.Round(width * scale);
-            height = Mathf.Round(height * scale);
+            // We need to Floor instead of Round here to make sure we don't overflow the maximum rect.
+            width = Mathf.Floor(width * scale);
+            height = Mathf.Floor(height * scale);
 
             ConvertUssToTextGenerationSettings(populateScreenRect: false, fontsize);
             settings.renderedText = textToMeasure;
@@ -325,11 +327,7 @@ namespace UnityEngine.UIElements
             bool usesATG = TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
             if (!usesATG)
             {
-                if (textGenerationInfo != IntPtr.Zero)
-                {
-                    TextGenerationInfo.Destroy(textGenerationInfo);
-                    textGenerationInfo = IntPtr.Zero;
-                }
+                RemoveFromPermanentCacheATG();
 
                 if (m_ATGTextEventHandler != null)
                 {
@@ -344,11 +342,10 @@ namespace UnityEngine.UIElements
             else
             {
                 if (IsCachedPermanentTextCore)
-                    s_PermanentCache.RemoveFromCache(this);
-                   
-                if(IsCachedTemporary)
-                    s_TemporaryCache.RemoveFromCache(this);
+                    RemoveFromPermanentCacheTextCore();
 
+                if(IsCachedTemporary)
+                    RemoveFromTemporaryCache();
 
                 if (m_TextEventHandler!= null)
                 {

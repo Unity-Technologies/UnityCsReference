@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class VisualElementFactoryRegistry
     {
-        #pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
 
         private static Dictionary<string, List<IUxmlFactory>> s_Factories;
         private static Dictionary<string, List<IUxmlFactory>> s_MovedTypesFactories;
@@ -180,6 +180,6 @@ namespace UnityEngine.UIElements
             // In the Player, we filter assemblies to only introspect types of user assemblies
             // which will exclude Unity builtin assemblies (i.e. runtime modules).
         }
-        #pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning restore CS0618 // Type or member is obsolete
     }
 }

@@ -321,10 +321,10 @@ namespace Unity.UI.Builder
             if (document.activeStyleSheet == null)
             {
                 m_ElementHierarchyView.container.style.justifyContent = Justify.Center;
-                m_ElementHierarchyView.treeView.style.flexGrow = document.activeOpenUXMLFile.isChildSubDocument ? 1 : 0;
+                m_ElementHierarchyView.treeView.style.flexGrow = 1;
                 m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.Flex;
+                m_EmptyStyleSheetsPaneLabel.pickingMode = PickingMode.Ignore;
                 m_ElementHierarchyView.container.Add(m_EmptyStyleSheetsPaneLabel);
-                m_EmptyStyleSheetsPaneLabel.SendToBack();
             }
             else if (m_EmptyStyleSheetsPaneLabel.parent == m_ElementHierarchyView.container)
             {

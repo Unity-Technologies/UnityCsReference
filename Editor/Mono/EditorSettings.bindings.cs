@@ -199,6 +199,12 @@ namespace UnityEditor
         public static extern bool asyncShaderCompilation { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool blockShaders { get; set; }
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        internal static extern bool unlockBlockShaders { get; set; }
+        
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static bool cachingShaderPreprocessor { get { return true; } set {} }
 
         public static string[] projectGenerationUserExtensions
@@ -328,5 +334,8 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool forceAssetUnloadAndGCOnSceneLoad { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool hideBuildProfileClassicPlatforms { get; set; }
     }
 }

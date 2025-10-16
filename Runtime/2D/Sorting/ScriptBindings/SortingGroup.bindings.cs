@@ -31,5 +31,8 @@ namespace UnityEngine.Rendering
         internal extern int sortingGroupOrder { get; }
         internal extern int index { get; }
         internal extern uint sortingKey { get; }
+
+        internal extern bool sort3DAs2D { get; }
     }
+
 }

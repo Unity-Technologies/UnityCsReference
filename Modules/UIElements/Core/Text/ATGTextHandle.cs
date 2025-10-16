@@ -31,8 +31,8 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(nativeSettings.text) && m_TextElement.isInputField)
                 nativeSettings.text = "\u200B";
 
-            nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
-            nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
+            nativeSettings.screenWidth = (float.IsNaN(width) || float.IsNegative(width)) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
+            nativeSettings.screenHeight = (float.IsNaN(height) || float.IsNegative(height)) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
 
             if (textGenerationInfo == IntPtr.Zero)
             {
@@ -90,7 +90,6 @@ namespace UnityEngine.UIElements
             }
 
             IsCachedPermanentATG = true;
-            IsCachedPermanent = true;
             textGenerationInfo = TextGenerationInfo.Create(IsCachedPermanent);
         }
 
@@ -181,7 +180,7 @@ namespace UnityEngine.UIElements
             var style = m_TextElement.computedStyle;
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
             {
-                var effectiveFontsize = (int)((style.fontSize.value) * GetPixelsPerPoint());
+                var effectiveFontsize = (int)Math.Round((style.fontSize.value) * GetPixelsPerPoint(), MidpointRounding.AwayFromZero);
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
@@ -196,18 +195,23 @@ namespace UnityEngine.UIElements
             var scale = GetPixelsPerPoint();
             var style = m_TextElement.computedStyle;
 
+            nativeSettings.preProcessFlags = PreProcessFlags.None;
             nativeSettings.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedTextString;
             if (textToMeasure != null)
                 nativeSettings.text = textToMeasure;
             if (nativeSettings.text == null)
                 nativeSettings.text = "";
-            var effectiveFontsize = (int)( ( fontsize ?? style.fontSize.value) * scale);
+            var effectiveFontsize = (int)Math.Round((fontsize ?? style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
             nativeSettings.fontSize = effectiveFontsize * 64;
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
             nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);
 
-            nativeSettings.wordWrap = style.whiteSpace.toTextCore(m_TextElement.isInputField);
+            nativeSettings.wordWrapEnabled = style.whiteSpace == WhiteSpace.Normal || style.whiteSpace == WhiteSpace.PreWrap;
+            if (!m_TextElement.isInputField && (style.whiteSpace == WhiteSpace.NoWrap || style.whiteSpace == WhiteSpace.Normal))
+                nativeSettings.preProcessFlags |= PreProcessFlags.CollapseWhiteSpaces;
+            if (m_TextElement.parseEscapeSequences)
+                nativeSettings.preProcessFlags |= PreProcessFlags.ParseEscapeSequences;
             nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow, style.unityTextOverflowPosition);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
             nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
@@ -248,6 +252,8 @@ namespace UnityEngine.UIElements
             nativeSettings.screenHeight =  Mathf.RoundToInt(size.y * 64.0f * scale);
 
             var fa = TextUtilities.GetFontAsset(m_TextElement);
+            if (fa == null)
+                return false;
 
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
@@ -262,12 +268,11 @@ namespace UnityEngine.UIElements
             nativeSettings.fontAsset = fa.nativeFontAsset;
             nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
 
-            if (m_TextElement.parseEscapeSequences)
-            {
-                RichTextTagParser.PreProcessString(ref nativeSettings.text);
-            }
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))
             {
+                // If we're not using richTextTags, we're doing this on the native side to avoid allocations.
+                TextPreprocessor.PreProcessString(ref nativeSettings.text, nativeSettings.preProcessFlags);
+                nativeSettings.preProcessFlags = PreProcessFlags.None;
                 //TODO GetBlurryFontAssetMapping for other fonts in the rich text tags
                 CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor, GetPixelsPerPoint(), TextUtilities.GetTextSettingsFrom(m_TextElement));
             }

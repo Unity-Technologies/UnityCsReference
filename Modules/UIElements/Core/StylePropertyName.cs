@@ -15,12 +15,12 @@ namespace UnityEngine.UIElements
     {
         internal StylePropertyId id
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get;
         }
         private string name { get; }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static StylePropertyId StylePropertyIdFromString(string name)
         {
             if (StylePropertyUtil.s_NameToId.TryGetValue(name, out StylePropertyId id))
@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
             return StylePropertyId.Unknown;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StylePropertyName(StylePropertyId stylePropertyId)
         {
             id = stylePropertyId;
@@ -47,11 +47,7 @@ namespace UnityEngine.UIElements
         public StylePropertyName(string name)
         {
             id = StylePropertyIdFromString(name);
-            this.name = default;
-            if (id != StylePropertyId.Unknown)
-            {
-                this.name = name;
-            }
+            this.name = name;
         }
 
         /// <summary>

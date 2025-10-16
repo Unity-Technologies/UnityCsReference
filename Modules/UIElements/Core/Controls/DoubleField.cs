@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/DoubleField.png")]
-    public class DoubleField : TextValueField<double>
+    public partial class DoubleField : TextValueField<double>
     {
         // This property to alleviate the fact we have to cast all the time
         DoubleInput doubleInput => (DoubleInput)textInputBase;
@@ -30,17 +30,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new DoubleField();
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="DoubleField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<DoubleField, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="DoubleField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextValueFieldTraits<double, UxmlDoubleAttributeDescription> {}
 
         /// <summary>
         /// Converts the given double to a string.

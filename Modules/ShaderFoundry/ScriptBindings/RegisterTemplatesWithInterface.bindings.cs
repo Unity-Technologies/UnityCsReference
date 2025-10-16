@@ -15,8 +15,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_BlockShaderInterfaceHandle;
         internal FoundryHandle m_RegistrationStatementListHandle;
 
-        internal extern static RegisterTemplatesWithInterfaceInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static RegisterTemplatesWithInterfaceInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         RegisterTemplatesWithInterfaceInternal IInternalType<RegisterTemplatesWithInterfaceInternal>.ConstructInvalid() => Invalid();
@@ -41,23 +41,11 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
 
-        public IEnumerable<ShaderAttribute> Attributes
-        {
-            get
-            {
-                var listHandle = internalData.m_AttributeListHandle;
-                return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
-            }
-        }
+        public IEnumerable<ShaderAttribute> Attributes =>
+            ListType.Enumerate<ShaderAttribute>(container, internalData.m_AttributeListHandle);
         public BlockShaderInterface Interface => new BlockShaderInterface(container, internalData.m_BlockShaderInterfaceHandle);
-        public IEnumerable<InterfaceRegistrationStatement> RegistrationStatements
-        {
-            get
-            {
-                var listHandle = internalData.m_RegistrationStatementListHandle;
-                return HandleListInternal.Enumerate<InterfaceRegistrationStatement>(container, listHandle);
-            }
-        }
+        public IEnumerable<InterfaceRegistrationStatement> RegistrationStatements =>
+            ListType.Enumerate<InterfaceRegistrationStatement>(container, internalData.m_RegistrationStatementListHandle);
         // private
         internal RegisterTemplatesWithInterface(ShaderContainer container, FoundryHandle handle)
         {
@@ -68,7 +56,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static RegisterTemplatesWithInterface Invalid => new RegisterTemplatesWithInterface(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is RegisterTemplatesWithInterface other && this.Equals(other);
         public bool Equals(RegisterTemplatesWithInterface other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -103,8 +91,8 @@ namespace UnityEditor.ShaderFoundry
             {
                 var internalData = new RegisterTemplatesWithInterfaceInternal();
                 internalData.m_BlockShaderInterfaceHandle = blockShaderInterface.handle;
-                internalData.m_AttributeListHandle = HandleListInternal.Build(container, Attributes);
-                internalData.m_RegistrationStatementListHandle = HandleListInternal.Build(container, RegistrationStatements);
+                internalData.m_AttributeListHandle = ListType.Build(container, Attributes);
+                internalData.m_RegistrationStatementListHandle = ListType.Build(container, RegistrationStatements);
 
                 if (RegistrationStatements != null)
                 {
@@ -112,7 +100,7 @@ namespace UnityEditor.ShaderFoundry
                     {
                         if (!registrationStatement.RegisterWithInterface(blockShaderInterface, container))
                         {
-                            var templateName = registrationStatement.IsTemplateStatement ? registrationStatement.Template.Name : ("generator " + registrationStatement.GeneratorName);
+                            var templateName = registrationStatement.Template.Name;
                             var message = "Failed to register template " + templateName + " with the block shader interface.";
                             throw new InvalidOperationException(message);
                         }

@@ -29,7 +29,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_Title = "Instances Status";
 
         public static readonly Vector2 windowSize = new Vector2(300, 175);
-        static Dictionary<InstanceView, Node> m_ViewToNode = new();
+        static Dictionary<InstanceView, Instance> m_ViewToInstance = new();
 
         public override Vector2 GetWindowSize()
         {
@@ -52,7 +52,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             statusButton.tooltip = "Open Play Mode Status Window";
 
-            statusButton.RegisterCallback<ClickEvent>(evt => PlayModeStatusWindow.OpenWindow());
+            statusButton.RegisterCallback<ClickEvent>(evt => ActiveScenarioWindow.OpenWindow());
 
             headlineContainer.Add(headline);
             headlineContainer.Add(statusButton);
@@ -63,44 +63,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var stylesheet = EditorGUIUtility.isProSkin ? k_StylesheetDark : k_StylesheetLight;
             container.styleSheets.Add(EditorGUIUtility.LoadRequired(stylesheet) as StyleSheet);
 
-            m_ViewToNode.Clear();
-            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            m_ViewToInstance.Clear();
+            var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
 
             if (currentConfig == null)
                 return new VisualElement() { name = "no content" };
 
-            var instances = currentConfig.GetAllInstances();
-            foreach (var instance in instances)
+            var instanceDescriptions = currentConfig.GetAllInstances();
+
+            foreach (var instanceDescription in instanceDescriptions)
             {
-                var instanceView = new InstanceView(instance);
-                m_ViewToNode.Add(instanceView, GetRunNodeForNodeName(instance.CorrespondingNodeId));
+                var instance = GetInstanceFromDescription(instanceDescription);
+                if (instance == null)
+                    continue;
+
+                var instanceView = new InstanceView(instanceDescription);
+                m_ViewToInstance.Add(instanceView, instance);
                 container.Add(instanceView);
             }
 
             return container;
         }
 
-        Node GetRunNodeForNodeName(string nodeName)
-        {
-            if (ScenarioRunner.instance.ActiveScenario == null)
-                return null;
-
-            var runNodes = ScenarioRunner.instance.ActiveScenario.GetNodes(ExecutionStage.Run);
-            foreach (var node in runNodes)
-            {
-                if (node.Name == nodeName)
-                    return node;
-            }
-
-            return null;
-        }
-
         static void UpdateInstanceStatus()
         {
-            foreach (var (view, node) in m_ViewToNode)
+            foreach (var (view, instance) in m_ViewToInstance)
             {
-                view.SetStatus(node?.State ?? ExecutionState.Idle);
-                view.RefreshRunMode();
+                view.SetStatus(instance.StatusData.OverallStatus.State);
+                view.RefreshFreeRunUI();
             }
         }
 
@@ -108,6 +98,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             internal readonly InstanceDescription m_InstanceDescription;
             readonly VisualElement m_StatusIndicator;
+            readonly VisualElement m_DriftIndicator;
             readonly Image m_RunModeIndicator;
             const string k_InstanceViewClass = "instance-view";
             const string k_InstanceIconName = "instance-icon";
@@ -116,9 +107,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             const string k_StatusContainerName = "status-container";
             const string k_StatusIndicatorName = "status-indicator";
             const string k_RunModeIndicatorName = "runmode-indicator";
+            const string k_DriftIconName = "drift-icon";
+            const string k_DriftToolTip = "This instance might be drifting. This is caused by running an instance for a long time while possible changes were detected in the Main Editor. Consider exiting and restarting the instance.";
 
             const string k_ActiveClass = "active";
             const string k_ErrorClass = "error";
+            const string k_LoadingClass = "loading";
             const string k_IdleClass = "idle";
 
             internal InstanceView(InstanceDescription instance)
@@ -138,10 +132,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var statusContainer = new VisualElement() { name = k_StatusContainerName };
                 m_StatusIndicator = new VisualElement() { name = k_StatusIndicatorName };
                 m_StatusIndicator.AddToClassList("icon");
+                m_DriftIndicator = new VisualElement() { name = k_DriftIconName };
+                m_DriftIndicator.AddToClassList("icon");
+                m_DriftIndicator.tooltip = k_DriftToolTip;
+                m_DriftIndicator.style.backgroundImage = Icons.GetImage(Icons.ImageName.Drift);
                 m_RunModeIndicator = new Image() { name = k_RunModeIndicatorName };
                 m_RunModeIndicator.AddToClassList("icon");
                 m_RunModeIndicator.style.paddingRight = 2;
 
+                statusContainer.Add(m_DriftIndicator);
                 statusContainer.Add(m_RunModeIndicator);
                 statusContainer.Add(m_StatusIndicator);
 
@@ -195,12 +194,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 RemoveFromClassList(k_ActiveClass);
                 RemoveFromClassList(k_ErrorClass);
+                RemoveFromClassList(k_LoadingClass);
                 RemoveFromClassList(k_IdleClass);
                 switch (status)
                 {
                     case ExecutionState.Active:
                         AddToClassList(k_ActiveClass);
                         m_StatusIndicator.tooltip = "active";
+                        break;
+                    case ExecutionState.Running:
+                        AddToClassList(k_LoadingClass);
+                        m_StatusIndicator.tooltip = "loading";
                         break;
                     case ExecutionState.Failed:
                         AddToClassList(k_ErrorClass);
@@ -213,7 +217,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
             }
 
-            internal void RefreshRunMode()
+            internal void RefreshFreeRunUI()
             {
                 // Grab the running mode and update the visual icon if it's changed.
                 var currRunMode = m_InstanceDescription.RunModeState;
@@ -223,6 +227,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var toolTipText = GetRunModeToolTip(currRunMode, m_InstanceDescription);
                 if (!m_RunModeIndicator.tooltip.Equals(toolTipText))
                     m_RunModeIndicator.tooltip = toolTipText;
+
+                // Refresh the coherence drift UI for free run instances
+                var instance = ScenarioRunner.instance.ActiveScenario?.GetInstanceByName(m_InstanceDescription.Name);
+                if (instance != null)
+                    m_DriftIndicator.visible = instance.Drifted;
             }
 
             private string GetRunModeToolTip(RunModeState runMode, InstanceDescription instanceDescription)
@@ -250,5 +259,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        private Instance GetInstanceFromDescription(InstanceDescription instanceDescription)
+        {
+            var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
+            if (currentConfig == null || currentConfig.Scenario == null)
+                return null;
+
+            return currentConfig.Scenario.GetInstanceByName(instanceDescription.Name);
+        }
     }
 }

@@ -10,7 +10,7 @@ using UnityEngine.UIElements.StyleSheets;
 namespace UnityEngine.UIElements
 {
     [Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class StyleRule
     {
         [SerializeField]
@@ -111,13 +111,25 @@ namespace UnityEngine.UIElements
         public StyleProperty AddProperty(string propertyName)
         {
             var property = new StyleProperty { name = propertyName };
+            AddPropertyToArray(property);
+            return property;
+        }
+
+        public StyleProperty AddProperty(StylePropertyId id)
+        {
+            var property = new StyleProperty { id = id };
+            AddPropertyToArray(property);
+            return property;
+        }
+
+        private void AddPropertyToArray(StyleProperty property)
+        {
             CollectionExtensions.AddToArray(ref m_Properties, property);
 
             if (property.isCustomProperty)
                 ++customPropertiesCount;
 
             styleSheet.RequestRebuild();
-            return property;
         }
 
         public bool RemoveProperty(StyleProperty property)
@@ -149,6 +161,16 @@ namespace UnityEngine.UIElements
             for (var i = properties.Length - 1; i >= 0; --i)
             {
                 if (properties[i].name == propertyName)
+                    return properties[i];
+            }
+            return null;
+        }
+
+        public StyleProperty FindLastProperty(StylePropertyId id)
+        {
+            for (var i = properties.Length - 1; i >= 0; --i)
+            {
+                if (properties[i].id == id)
                     return properties[i];
             }
             return null;

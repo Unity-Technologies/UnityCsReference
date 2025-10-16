@@ -378,7 +378,7 @@ namespace UnityEditor.Search
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string propertyName, string value, bool saveKeyword)
         {
             IndexProperty(documentIndex, propertyName, value, saveKeyword);
-            MapProperty(propertyName, propertyName, propertyName, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            MapProperty(documentIndex, propertyName, propertyName, propertyName, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword)")]
@@ -390,7 +390,7 @@ namespace UnityEditor.Search
         internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, string keywordLabel, string keywordHelp)
         {
             IndexProperty(documentIndex, name, value, saveKeyword);
-            MapProperty(name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+            MapProperty(documentIndex, name, keywordLabel, keywordHelp, typeof(TProperty).AssemblyQualifiedName, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         [Obsolete("IndexProperty with variations is no longer supported. Variations are handled automatically internally. Please use IndexProperty(int documentIndex, string name, string value, bool saveKeyword, string keywordLabel, string keywordHelp)")]
@@ -582,7 +582,7 @@ namespace UnityEditor.Search
             if (p.depth <= 1 && p.isArray && p.propertyType != SerializedPropertyType.String)
             {
                 IndexNumber(documentIndex, fieldName, p.arraySize);
-                LogProperty(fieldName, p, propositionGenerationOptions, p.arraySize);
+                LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.arraySize);
             }
 
             if (p.depth > maxDepth)
@@ -603,53 +603,57 @@ namespace UnityEditor.Search
                     {
                         var boolStringValue = p.intValue == 0 ? "false" : "true";
                         IndexProperty(documentIndex, fieldName, boolStringValue, saveKeyword: false);
-                        LogProperty(fieldName, p, propositionGenerationOptions, boolStringValue);
+                        LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, boolStringValue);
                     }
                     else
-                        LogProperty(fieldName, p, propositionGenerationOptions, p.intValue);
+                        LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.intValue);
                     break;
                 case SerializedPropertyType.Boolean:
                     IndexProperty(documentIndex, fieldName, p.boolValue.ToString(), saveKeyword: false);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.boolValue);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.boolValue);
                     break;
                 case SerializedPropertyType.Float:
                     IndexNumber(documentIndex, fieldName, (double)p.floatValue);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.floatValue);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.floatValue);
                     break;
                 case SerializedPropertyType.String:
                     if (IndexPropertyStringComponents(documentIndex, fieldName, p.stringValue))
-                        LogProperty(fieldName, p, propositionGenerationOptions, p.stringValue);
+                        LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.stringValue);
                     break;
                 case SerializedPropertyType.Enum:
                     IndexEnum(documentIndex, fieldName, p, propositionGenerationOptions);
                     break;
                 case SerializedPropertyType.Color:
                     IndexerExtensions.IndexColor(fieldName, p.colorValue, this, documentIndex);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.colorValue);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.colorValue);
                     break;
                 case SerializedPropertyType.Vector2:
                     IndexerExtensions.IndexVector(fieldName, p.vector2Value, this, documentIndex);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.vector2Value);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.vector2Value);
                     break;
                 case SerializedPropertyType.Vector3:
                     IndexerExtensions.IndexVector(fieldName, p.vector3Value, this, documentIndex);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.vector3Value);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.vector3Value);
                     break;
                 case SerializedPropertyType.Vector4:
                     IndexerExtensions.IndexVector(fieldName, p.vector4Value, this, documentIndex);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.vector4Value);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.vector4Value);
                     break;
                 case SerializedPropertyType.Quaternion:
                     IndexerExtensions.IndexVector(fieldName, p.quaternionValue.eulerAngles, this, documentIndex);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.quaternionValue.eulerAngles);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.quaternionValue.eulerAngles);
                     break;
                 case SerializedPropertyType.ObjectReference:
                     AddReference(documentIndex, fieldName, p.objectReferenceValue);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.objectReferenceValue);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.objectReferenceValue);
                     break;
                 case SerializedPropertyType.Hash128:
                     IndexProperty(documentIndex, fieldName, p.hash128Value.ToString(), saveKeyword: true);
-                    LogProperty(fieldName, p, propositionGenerationOptions, p.hash128Value);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.hash128Value);
+                    break;
+                case SerializedPropertyType.EntityId:
+                    IndexProperty(documentIndex, fieldName, p.entityIdValue.ToString(), saveKeyword: true);
+                    LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, p.entityIdValue);
                     break;
             }
         }
@@ -671,7 +675,7 @@ namespace UnityEditor.Search
             // Add the complete Flag list:
             var flagValue = m_FlagsPool.Count == 1 ? m_FlagsPool[0] : string.Join(",", m_FlagsPool);
             IndexProperty(documentIndex, fieldName, flagValue, saveKeyword: true);
-            LogProperty(fieldName, p, propositionGenerationOptions, flagValue);
+            LogProperty(documentIndex, fieldName, p, propositionGenerationOptions, flagValue);
         }
 
         bool IndexPropertyStringComponents(in int documentIndex, in string fieldName, in string sv)
@@ -686,12 +690,12 @@ namespace UnityEditor.Search
             return true;
         }
 
-        void LogProperty(in string fieldName, in SerializedProperty p, SearchPropositionGenerationOptions propositionGenerationOptions = SearchPropositionGenerationOptions.None, object value = null)
+        void LogProperty(int documentIndex, in string fieldName, in SerializedProperty p, SearchPropositionGenerationOptions propositionGenerationOptions = SearchPropositionGenerationOptions.None, object value = null)
         {
             using var _ = k_LogPropertyMarker.Auto();
             var propertyType = SearchUtils.GetPropertyManagedTypeString(p);
             if (propertyType != null)
-                MapProperty(fieldName, p.displayName, p.tooltip, propertyType, p.serializedObject?.targetObject?.GetType().AssemblyQualifiedName, propositionGenerationOptions, removeNestedKeys: true);
+                MapProperty(documentIndex, fieldName, p.displayName, p.tooltip, propertyType, p.serializedObject?.targetObject?.GetType().AssemblyQualifiedName, propositionGenerationOptions, removeNestedKeys: true);
         }
 
         internal void AddReference(int documentIndex, string assetPath, bool saveKeyword = false)
@@ -701,7 +705,7 @@ namespace UnityEditor.Search
                 return;
 
             IndexProperty(documentIndex, "ref", assetPath, saveKeyword);
-            var assetInstanceID = Utils.GetMainAssetInstanceID(assetPath);
+            var assetInstanceID = Utils.GetMainAssetEntityId(assetPath);
             var gid = GlobalObjectId.GetGlobalObjectIdSlow((EntityId)assetInstanceID);
             if (gid.identifierType != 0)
                 IndexProperty(documentIndex, "ref", gid.ToString(), saveKeyword);
@@ -748,9 +752,9 @@ namespace UnityEditor.Search
                 IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false);
             if (settings.options.properties)
             {
-                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.RemoveInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
+                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.ReplaceInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
                 if (label != null && ownerPropertyType != null)
-                    MapProperty(propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName);
+                    MapProperty(documentIndex, propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName);
             }
         }
 

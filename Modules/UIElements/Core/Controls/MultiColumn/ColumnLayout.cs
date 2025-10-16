@@ -216,6 +216,7 @@ namespace UnityEngine.UIElements
 
             var totalColumnsWidth = 0f;
             var fixedColumnsWidth = 0f;
+            var deltaWidthOfRelativeWidthColumns = 0f;
             var totalStretchableWidth = 0f;
             var stretchableColumnsWithInvalidWidth = new List<Column>();
             var stretchableColumnsWithValidWidth = new List<Column>();
@@ -260,7 +261,9 @@ namespace UnityEngine.UIElements
 
                     if (columns.stretchMode == Columns.StretchMode.Grow && column.width.unit == LengthUnit.Percent)
                     {
+                        var oldWidth = column.desiredWidth;
                         column.desiredWidth = Mathf.Clamp(columnWidth, minWidth, maxWidth);
+                        deltaWidthOfRelativeWidthColumns += column.desiredWidth - oldWidth;
                     }
                 }
 
@@ -312,7 +315,11 @@ namespace UnityEngine.UIElements
                 if (m_Columns.stretchMode == Columns.StretchMode.Grow)
                 {
                     if (!float.IsNaN(m_PreviousWidth))
-                        deltaWidth = m_PreviousWidth - width;
+                    {
+                        // Remove the delta width of the columns with percentage width.
+                        // They already have been resized. Therefore, their growth/shrink must be accounted for.
+                        deltaWidth = m_PreviousWidth - width + deltaWidthOfRelativeWidthColumns;
+                    }
                 }
                 else
                     deltaWidth = columnsWidth - Mathf.Clamp(width, minColumnsWidth, maxColumnsWidth);
@@ -840,7 +847,7 @@ namespace UnityEngine.UIElements
             ClearCache();
             foreach (var column in m_Columns.visibleList)
             {
-                if (column.stretchable && columns.stretchMode == Columns.StretchMode.GrowAndFill)
+                if (column.stretchable)
                     m_StretchableColumns.Add(column);
                 else if (column.width.unit == LengthUnit.Pixel)
                     m_FixedColumns.Add(column);

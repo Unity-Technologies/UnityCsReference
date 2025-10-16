@@ -12,11 +12,12 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_CustomEditorClassNameHandle;         // string
         internal FoundryHandle m_RenderPipelineAssetClassNameHandle;  // string
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static ShaderCustomEditorInternal Invalid();
-        internal extern bool IsValid();
-        internal extern string GetCustomEditorClassName(ShaderContainer container);
-        internal extern string GetRenderPipelineAssetClassName(ShaderContainer container);
+        [ThreadSafe] internal extern static ShaderCustomEditorInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern string GetCustomEditorClassName(ShaderContainer container);
+        [ThreadSafe] internal extern string GetRenderPipelineAssetClassName(ShaderContainer container);
 
         // IInternalType
         ShaderCustomEditorInternal IInternalType<ShaderCustomEditorInternal>.ConstructInvalid() => Invalid();
@@ -40,12 +41,17 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
 
-        public ShaderCustomEditor(ShaderContainer container, string customEditorClassName, string renderPipelineAssetClassName)
-            : this(container, container.AddString(customEditorClassName), container.AddString(renderPipelineAssetClassName))
+        internal ShaderCustomEditor(ShaderContainer container, string customEditorClassName, string renderPipelineAssetClassName)
+            : this(container, customEditorClassName, renderPipelineAssetClassName, Location.Invalid)
         {
         }
 
-        internal ShaderCustomEditor(ShaderContainer container, FoundryHandle customEditorClassNameHandle, FoundryHandle renderPipelineAssetClassNameHandle)
+        internal ShaderCustomEditor(ShaderContainer container, string customEditorClassName, string renderPipelineAssetClassName, Location location)
+            : this(container, container.AddString(customEditorClassName), container.AddString(renderPipelineAssetClassName), location)
+        {
+        }
+
+        internal ShaderCustomEditor(ShaderContainer container, FoundryHandle customEditorClassNameHandle, FoundryHandle renderPipelineAssetClassNameHandle, Location location)
         {
             if ((container == null) || !customEditorClassNameHandle.IsValid) // rpAsset is allowed to be invalid
             {
@@ -55,6 +61,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 shaderCustomEditor.m_CustomEditorClassNameHandle = customEditorClassNameHandle;
                 shaderCustomEditor.m_RenderPipelineAssetClassNameHandle = renderPipelineAssetClassNameHandle;
+                shaderCustomEditor.m_LocationHandle = location.handle;
                 handle = container.Add(shaderCustomEditor);
                 this.container = handle.IsValid ? container : null;
             }
@@ -62,6 +69,7 @@ namespace UnityEditor.ShaderFoundry
 
         public string CustomEditorClassName => shaderCustomEditor.GetCustomEditorClassName(container);
         public string RenderPipelineAssetClassName => shaderCustomEditor.GetRenderPipelineAssetClassName(container);
+        public Location Location => new Location(container, shaderCustomEditor.m_LocationHandle);
 
         internal ShaderCustomEditor(ShaderContainer container, FoundryHandle handle)
         {
@@ -72,7 +80,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static ShaderCustomEditor Invalid => new ShaderCustomEditor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is ShaderCustomEditor other && this.Equals(other);
         public bool Equals(ShaderCustomEditor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -92,6 +100,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             string customEditorClassName;
             string renderPipelineAssetClassName;
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -104,7 +113,7 @@ namespace UnityEditor.ShaderFoundry
 
             public ShaderCustomEditor Build()
             {
-                return new ShaderCustomEditor(container, customEditorClassName, renderPipelineAssetClassName);
+                return new ShaderCustomEditor(container, customEditorClassName, renderPipelineAssetClassName, location);
             }
         }
     }

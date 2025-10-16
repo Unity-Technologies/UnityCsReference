@@ -27,37 +27,37 @@ namespace UnityEngine
     public partial struct Mathf
     {
         // Returns the sine of angle /f/ in radians.
-        public static float Sin(float f) { return (float)Math.Sin(f); }
+        public static float Sin(float f) => (float)Math.Sin(f);
 
         // Returns the cosine of angle /f/ in radians.
-        public static float Cos(float f) { return (float)Math.Cos(f); }
+        public static float Cos(float f) => (float)Math.Cos(f);
 
         // Returns the tangent of angle /f/ in radians.
-        public static float Tan(float f) { return (float)Math.Tan(f); }
+        public static float Tan(float f) => (float)Math.Tan(f);
 
         // Returns the arc-sine of /f/ - the angle in radians whose sine is /f/.
-        public static float Asin(float f) { return (float)Math.Asin(f); }
+        public static float Asin(float f) => (float)Math.Asin(f);
 
         // Returns the arc-cosine of /f/ - the angle in radians whose cosine is /f/.
-        public static float Acos(float f) { return (float)Math.Acos(f); }
+        public static float Acos(float f) => (float)Math.Acos(f);
 
         // Returns the arc-tangent of /f/ - the angle in radians whose tangent is /f/.
-        public static float Atan(float f) { return (float)Math.Atan(f); }
+        public static float Atan(float f) => (float)Math.Atan(f);
 
         // Returns the angle in radians whose ::ref::Tan is @@y/x@@.
-        public static float Atan2(float y, float x) { return (float)Math.Atan2(y, x); }
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
 
         // Returns square root of /f/.
-        public static float Sqrt(float f) { return (float)Math.Sqrt(f); }
+        public static float Sqrt(float f) => (float)Math.Sqrt(f);
 
         // Returns the absolute value of /f/.
-        public static float Abs(float f) { return Math.Abs(f); }
+        public static float Abs(float f) => Math.Abs(f);
 
         // Returns the absolute value of /value/.
-        public static int Abs(int value) { return Math.Abs(value); }
+        public static int Abs(int value) => Math.Abs(value);
 
         /// *listonly*
-        public static float Min(float a, float b) { return a < b ? a : b; }
+        public static float Min(float a, float b) => a < b ? a : b;
         // Returns the smallest of two or more values.
         public static float Min(params float[] values)
         {
@@ -74,7 +74,7 @@ namespace UnityEngine
         }
 
         /// *listonly*
-        public static int Min(int a, int b) { return a < b ? a : b; }
+        public static int Min(int a, int b) => a < b ? a : b;
         // Returns the smallest of two or more values.
         public static int Min(params int[] values)
         {
@@ -91,7 +91,7 @@ namespace UnityEngine
         }
 
         /// *listonly*
-        public static float Max(float a, float b) { return a > b ? a : b; }
+        public static float Max(float a, float b) => a > b ? a : b;
         // Returns largest of two or more values.
         public static float Max(params float[] values)
         {
@@ -108,7 +108,7 @@ namespace UnityEngine
         }
 
         /// *listonly*
-        public static int Max(int a, int b) { return a > b ? a : b; }
+        public static int Max(int a, int b) => a > b ? a : b;
         // Returns the largest of two or more values.
         public static int Max(params int[] values)
         {
@@ -125,41 +125,41 @@ namespace UnityEngine
         }
 
         // Returns /f/ raised to power /p/.
-        public static float Pow(float f, float p) { return (float)Math.Pow(f, p); }
+        public static float Pow(float f, float p) => (float)Math.Pow(f, p);
 
         // Returns e raised to the specified power.
-        public static float Exp(float power) { return (float)Math.Exp(power); }
+        public static float Exp(float power) => (float)Math.Exp(power);
 
         // Returns the logarithm of a specified number in a specified base.
-        public static float Log(float f, float p) { return (float)Math.Log(f, p); }
+        public static float Log(float f, float p) => (float)Math.Log(f, p);
 
         // Returns the natural (base e) logarithm of a specified number.
-        public static float Log(float f) { return (float)Math.Log(f); }
+        public static float Log(float f) => (float)Math.Log(f);
 
         // Returns the base 10 logarithm of a specified number.
-        public static float Log10(float f) { return (float)Math.Log10(f); }
+        public static float Log10(float f) => (float)Math.Log10(f);
 
         // Returns the smallest integer greater to or equal to /f/.
-        public static float Ceil(float f) { return (float)Math.Ceiling(f); }
+        public static float Ceil(float f) => (float)Math.Ceiling(f);
 
         // Returns the largest integer smaller to or equal to /f/.
-        public static float Floor(float f) { return (float)Math.Floor(f); }
+        public static float Floor(float f) => (float)Math.Floor(f);
 
         // Returns /f/ rounded to the nearest integer.
-        public static float Round(float f) { return (float)Math.Round(f); }
+        public static float Round(float f) => (float)Math.Round(f);
 
         // Returns the smallest integer greater to or equal to /f/.
-        public static int CeilToInt(float f) { return (int)Math.Ceiling(f); }
+        public static int CeilToInt(float f) => (int)Math.Ceiling(f);
 
         // Returns the largest integer smaller to or equal to /f/.
-        public static int FloorToInt(float f) { return (int)Math.Floor(f); }
+        public static int FloorToInt(float f) => (int)Math.Floor(f);
 
         // Returns /f/ rounded to the nearest integer.
-        public static int RoundToInt(float f) { return (int)Math.Round(f); }
+        public static int RoundToInt(float f) => (int)Math.Round(f);
 
         // Returns the sign of /f/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Sign(float f) { return f >= 0F ? 1F : -1F; }
+        public static float Sign(float f) => f >= 0F ? 1F : -1F;
 
         // The infamous ''3.14159265358979...'' value (RO).
         public const float PI = (float)Math.PI;
@@ -185,50 +185,22 @@ namespace UnityEngine
             : UnityEngineInternal.MathfInternal.FloatMinDenormal;
 
         // Clamps a value between a minimum float and maximum float value.
-        public static float Clamp(float value, float min, float max)
-        {
-            if (value < min)
-                value = min;
-            else if (value > max)
-                value = max;
-            return value;
-        }
+        public static float Clamp(float value, float min, float max) => value < min ? min : value > max ? max : value;
 
         // Clamps value between min and max and returns value.
         // Set the position of the transform to be that of the time
         // but never less than 1 or more than 3
         //
-        public static int Clamp(int value, int min, int max)
-        {
-            if (value < min)
-                value = min;
-            else if (value > max)
-                value = max;
-            return value;
-        }
+        public static int Clamp(int value, int min, int max) => value < min ? min : value > max ? max : value;
 
         // Clamps value between 0 and 1 and returns value
-        public static float Clamp01(float value)
-        {
-            if (value < 0F)
-                return 0F;
-            else if (value > 1F)
-                return 1F;
-            else
-                return value;
-        }
+        public static float Clamp01(float value) => value < 0F ? 0F : value > 1F ? 1F : value;
 
         // Interpolates between /a/ and /b/ by /t/. /t/ is clamped between 0 and 1.
-        public static float Lerp(float a, float b, float t)
-        {
-            return a + (b - a) * Clamp01(t);
-        }
+        public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
 
         // Interpolates between /a/ and /b/ by /t/ without clamping the interpolant.
-        public static float LerpUnclamped(float a, float b, float t)
-        {
-            return a + (b - a) * t;
-        }
+        public static float LerpUnclamped(float a, float b, float t) => a + (b - a) * t;
 
         // Same as ::ref::Lerp but makes sure the values interpolate correctly when they wrap around 360 degrees.
         public static float LerpAngle(float a, float b, float t)
@@ -242,9 +214,10 @@ namespace UnityEngine
         // Moves a value /current/ towards /target/.
         static public float MoveTowards(float current, float target, float maxDelta)
         {
-            if (Mathf.Abs(target - current) <= maxDelta)
+            float diff = target - current;
+            if (Mathf.Abs(diff) <= maxDelta)
                 return target;
-            return current + Mathf.Sign(target - current) * maxDelta;
+            return current + Mathf.Sign(diff) * maxDelta;
         }
 
         // Same as ::ref::MoveTowards but makes sure the values interpolate correctly when they wrap around 360 degrees.
@@ -277,33 +250,23 @@ namespace UnityEngine
             return negative ? -result : result;
         }
 
+        private static readonly float ApproxEpsilon = Epsilon * 8;
+
         // Compares two floating point values if they are similar.
-        public static bool Approximately(float a, float b)
-        {
-            // If a or b is zero, compare that the other is less or equal to epsilon.
-            // If neither a or b are 0, then find an epsilon that is good for
-            // comparing numbers at the maximum magnitude of a and b.
-            // Floating points have about 7 significant digits, so
-            // 1.000001f can be represented while 1.0000001f is rounded to zero,
-            // thus we could use an epsilon of 0.000001f for comparing values close to 1.
-            // We multiply this epsilon by the biggest magnitude of a and b.
-            return Abs(b - a) < Max(0.000001f * Max(Abs(a), Abs(b)), Epsilon * 8);
-        }
+        // If a or b is zero, compare that the other is less or equal to epsilon.
+        // If neither a or b are 0, then find an epsilon that is good for
+        // comparing numbers at the maximum magnitude of a and b.
+        // Floating points have about 7 significant digits, so
+        // 1.000001f can be represented while 1.0000001f is rounded to zero,
+        // thus we could use an epsilon of 0.000001f for comparing values close to 1.
+        // We multiply this epsilon by the biggest magnitude of a and b.
+        public static bool Approximately(float a, float b) => Abs(b - a) < Max(0.000001f * Max(Abs(a), Abs(b)), ApproxEpsilon);
 
         [uei.ExcludeFromDocs]
-        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, float maxSpeed)
-        {
-            float deltaTime = Time.deltaTime;
-            return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
-        }
+        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, float maxSpeed) => SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, Time.deltaTime);
 
         [uei.ExcludeFromDocs]
-        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime)
-        {
-            float deltaTime = Time.deltaTime;
-            float maxSpeed = Mathf.Infinity;
-            return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
-        }
+        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime) => SmoothDamp(current, target, ref currentVelocity, smoothTime, Mathf.Infinity, Time.deltaTime);
 
         // Gradually changes a value towards a desired goal over time.
         public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime)
@@ -337,19 +300,10 @@ namespace UnityEngine
         }
 
         [uei.ExcludeFromDocs]
-        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, float maxSpeed)
-        {
-            float deltaTime = Time.deltaTime;
-            return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
-        }
+        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, float maxSpeed) => SmoothDampAngle(current, target, ref currentVelocity, smoothTime, maxSpeed, Time.deltaTime);
 
         [uei.ExcludeFromDocs]
-        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime)
-        {
-            float deltaTime = Time.deltaTime;
-            float maxSpeed = Mathf.Infinity;
-            return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
-        }
+        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime) => SmoothDampAngle(current, target, ref currentVelocity, smoothTime, Mathf.Infinity, Time.deltaTime);
 
         // Gradually changes an angle given in degrees towards a desired goal angle over time.
         public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime)
@@ -359,10 +313,7 @@ namespace UnityEngine
         }
 
         // Loops the value t, so that it is never larger than length and never smaller than 0.
-        public static float Repeat(float t, float length)
-        {
-            return Clamp(t - Mathf.Floor(t / length) * length, 0.0f, length);
-        }
+        public static float Repeat(float t, float length) => Clamp(t - Mathf.Floor(t / length) * length, 0.0f, length);
 
         // PingPongs the value t, so that it is never larger than length and never smaller than 0.
         public static float PingPong(float t, float length)
@@ -372,13 +323,7 @@ namespace UnityEngine
         }
 
         // Calculates the ::ref::Lerp parameter between of two values.
-        public static float InverseLerp(float a, float b, float value)
-        {
-            if (a != b)
-                return Clamp01((value - a) / (b - a));
-            else
-                return 0.0f;
-        }
+        public static float InverseLerp(float a, float b, float value) => a != b ? Clamp01((value - a) / (b - a)) : 0.0f;
 
         // Calculates the shortest difference between two given angles.
         public static float DeltaAngle(float current, float target)
@@ -503,15 +448,9 @@ namespace UnityEngine
             return Mathf.Pow(10, Mathf.RoundToInt(Mathf.Log10(positiveNumber)));
         }
 
-        internal static int GetNumberOfDecimalsForMinimumDifference(float minDifference)
-        {
-            return Mathf.Clamp(-Mathf.FloorToInt(Mathf.Log10(Mathf.Abs(minDifference))), 0, kMaxDecimals);
-        }
+        internal static int GetNumberOfDecimalsForMinimumDifference(float minDifference) => Mathf.Clamp(-Mathf.FloorToInt(Mathf.Log10(Mathf.Abs(minDifference))), 0, kMaxDecimals);
 
-        internal static int GetNumberOfDecimalsForMinimumDifference(double minDifference)
-        {
-            return (int)System.Math.Max(0.0, -System.Math.Floor(System.Math.Log10(System.Math.Abs(minDifference))));
-        }
+        internal static int GetNumberOfDecimalsForMinimumDifference(double minDifference) => (int)System.Math.Max(0.0, -System.Math.Floor(System.Math.Log10(System.Math.Abs(minDifference))));
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static float RoundBasedOnMinimumDifference(float valueToRound, float minDifference)
@@ -553,13 +492,13 @@ namespace UnityEngine
 
         public static int NextPowerOfTwo(int value)
         {
-            value -= 1;
-            value |= value >> 16;
-            value |= value >> 8;
-            value |= value >> 4;
-            value |= value >> 2;
-            value |= value >> 1;
-            return value + 1;
+            int v = value - 1;
+            v |= v >> 16;
+            v |= v >> 8;
+            v |= v >> 4;
+            v |= v >> 2;
+            v |= v >> 1;
+            return v + 1;
         }
         public static int ClosestPowerOfTwo(int value)
         {
@@ -571,9 +510,6 @@ namespace UnityEngine
             else
                 return nextPower;
         }
-        public static bool IsPowerOfTwo(int value)
-        {
-            return (value & (value - 1)) == 0;
-        }
+        public static bool IsPowerOfTwo(int value) => (value & (value - 1)) == 0;
     }
 }

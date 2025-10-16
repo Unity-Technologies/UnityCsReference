@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
     /// SA: [[MinMaxSlider]]
     /// </remarks>
     [Icon("UIToolkit/Icons/Slider.png")]
-    public class Slider : BaseSlider<float>
+    public partial class Slider : BaseSlider<float>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseSlider<float>.UxmlSerializedData
@@ -73,46 +73,6 @@ namespace UnityEngine.UIElements
                     e.showInputField = showInputField;
                 if (ShouldWriteAttributeValue(inverted_UxmlAttributeFlags))
                     e.inverted = inverted;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Slider"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Slider, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Slider"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : UxmlTraits<UxmlFloatAttributeDescription>
-        {
-            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value" };
-            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
-            UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "page-size", defaultValue = kDefaultPageSize };
-            UxmlBoolAttributeDescription m_ShowInputField = new UxmlBoolAttributeDescription { name = "show-input-field", defaultValue = kDefaultShowInputField };
-            UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Horizontal };
-            UxmlBoolAttributeDescription m_Inverted = new UxmlBoolAttributeDescription { name = "inverted", defaultValue = kDefaultInverted };
-
-            /// <summary>
-            /// Initialize <see cref="Slider"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                var f = (Slider)ve;
-
-                f.lowValue = m_LowValue.GetValueFromBag(bag, cc);
-                f.highValue = m_HighValue.GetValueFromBag(bag, cc);
-                f.direction = m_Direction.GetValueFromBag(bag, cc);
-                f.pageSize = m_PageSize.GetValueFromBag(bag, cc);
-                f.showInputField = m_ShowInputField.GetValueFromBag(bag, cc);
-                f.inverted = m_Inverted.GetValueFromBag(bag, cc);
-
-                base.Init(ve, bag, cc);
             }
         }
 

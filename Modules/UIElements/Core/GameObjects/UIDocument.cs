@@ -101,7 +101,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     [Icon("UIToolkit/Icons/TemplateContainer.png")]
     internal class UIDocumentRootElement : TemplateContainer
     {
@@ -328,7 +328,7 @@ namespace UnityEngine.UIElements
 
         private int m_FirstChildInsertIndex;
 
-        internal int firstChildInserIndex
+        internal int firstChildInsertIndex
         {
             get => m_FirstChildInsertIndex;
         }
@@ -553,8 +553,13 @@ namespace UnityEngine.UIElements
 
         bool m_RootHasWorldTransform;
 
+        void LateUpdate()
+        {
+            DoUpdate();
+        }
+
         // Used by unit tests.
-        internal void LateUpdate()
+        internal void DoUpdate()
         {
             if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
             {
@@ -1300,13 +1305,32 @@ namespace UnityEngine.UIElements
         private void OnValidate()
         {
             s_OnValidateCalled++;
+            Validate(false);
+        }
+
+        internal void Validate(bool forced)
+        {
+            // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
+            // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
+            // systems listening to the panel creation to initialize themselves, which may do invalid
+            // operations for an OnValidate() call.
+            // Note that starting in 6000.2, the EventSystem doesn't create GameObjects on panel creation,
+            // but wait for the next call to Update to do it.
+            // UUM-119306: Sort order is also undefined if not initialized.
+            // UUM-120369: Direct assignation from the Inspector needs to update the panelSettings property
+            // immediately, otherwise we will not get another chance later.
+            if (m_PanelSettings != null && !m_PanelSettings.isInitialized && !forced)
+            {
+                return;
+            }
 
             if (!gameObject.activeInHierarchy)
             {
                 return;
             }
 
-            if (m_PreviousPanelSettings != m_PanelSettings)
+            if (m_PreviousPanelSettings != m_PanelSettings &&
+                (m_PanelSettings == null || m_RootVisualElement?.panel != null || forced))
             {
                 // We'll use the setter as it guarantees the right behavior.
                 // It's necessary for the setter that the old value is still in place.

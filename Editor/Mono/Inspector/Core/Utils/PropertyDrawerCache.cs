@@ -41,7 +41,7 @@ namespace UnityEditor
             int key = property.serializedObject.targetObject.GetInstanceID() ^ property.hashCodeForPropertyPathWithoutArrayIndex;
             if (property.propertyType == SerializedPropertyType.ObjectReference)
             {
-                key ^= property.objectReferenceInstanceIDValue;
+                key ^= property.objectReferenceEntityIdValue;
             }
             return key;
         }

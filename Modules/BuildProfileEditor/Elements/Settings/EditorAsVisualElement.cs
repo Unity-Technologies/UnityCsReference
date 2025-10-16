@@ -13,12 +13,14 @@ namespace UnityEditor.Build.Profile.Elements
     /// </summary>
     class EditorAsVisualElement : VisualElement
     {
+        bool m_HasCustomEditor = false;
         ScriptableObject m_TargetObject;
         Editor m_Editor = null;
 
-        public EditorAsVisualElement(ScriptableObject target)
+        public EditorAsVisualElement(ScriptableObject target, bool hasCustomEditor)
         {
             m_TargetObject = target;
+            m_HasCustomEditor = hasCustomEditor;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -27,7 +29,17 @@ namespace UnityEditor.Build.Profile.Elements
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
             m_Editor = Editor.CreateEditor(m_TargetObject);
-            var inspectorGUI = m_Editor.CreateInspectorGUI();
+            VisualElement inspectorGUI;
+
+            if (!m_HasCustomEditor)
+            {
+                inspectorGUI = new IMGUIContainer(() => m_Editor.DrawDefaultInspector());
+            }
+            else
+            {
+                inspectorGUI = m_Editor.CreateInspectorGUI() ?? new IMGUIContainer(() => m_Editor.OnInspectorGUI());
+            }
+
             this.Add(inspectorGUI);
         }
 

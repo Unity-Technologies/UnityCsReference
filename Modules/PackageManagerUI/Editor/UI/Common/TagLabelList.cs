@@ -32,13 +32,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ShowAllButton = new Button
             {
                 name = "showAllButton",
-                classList = { "link", "moreless" },
+                classList = { "moreless" },
                 text = "Show all"
             };
             m_ShowLessButton = new Button
             {
                 name = "showLessButton",
-                classList = { "link", "moreless" },
+                classList = { "moreless" },
                 text = "Show less"
             };
             m_ShowAllButton.clickable.clicked += ShowAllClicked;

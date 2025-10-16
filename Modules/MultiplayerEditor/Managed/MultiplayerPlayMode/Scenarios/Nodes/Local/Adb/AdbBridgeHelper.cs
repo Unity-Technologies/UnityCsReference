@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 using Object = System.Object;
+using UnityEngine.Assemblies;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -39,7 +40,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (s_AndroidExtensions != null)
                     return s_AndroidExtensions;
                 var assemblyName = "UnityEditor.Android.Extensions";
-                var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                var loadedAssemblies = CurrentAssemblies.GetLoadedAssemblies();
 
                 s_AndroidExtensions = null;
                 foreach (var a in loadedAssemblies)

@@ -120,7 +120,7 @@ namespace UnityEditor.Overlays
             floating = container is FloatingOverlayContainer;
 
             if (!existsInContainer)
-                RebuildContent();
+                RebuildContent(false);
 
             dockingCompleted?.Invoke(container);
 

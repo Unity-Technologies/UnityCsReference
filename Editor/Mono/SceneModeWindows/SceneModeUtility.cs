@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditorInternal;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -183,6 +185,18 @@ namespace UnityEditor
 
         public static bool SetStaticFlags(Object[] targetObjects, int changedFlags, bool flagValue)
         {
+            return SetStaticFlags(targetObjects.AsSpan(), changedFlags, flagValue);
+        }
+
+        internal static bool SetStaticFlags(GameObject gameObject, int changedFlags, bool flagValue)
+        {
+            using var r = new RentSpan<Object>(1);
+            r.Span[0] = gameObject;
+            return SetStaticFlags(r.Span, changedFlags, flagValue);
+        }
+
+        internal static bool SetStaticFlags(ReadOnlySpan<Object> targetObjects, int changedFlags, bool flagValue)
+        {
             bool allFlagsAreChanged = (changedFlags == int.MaxValue);
             var msgChangedFlags = changedFlags;
             if (msgChangedFlags < 0 && !allFlagsAreChanged)
@@ -198,23 +212,35 @@ namespace UnityEditor
 
                 msgChangedFlags = msgChangedFlags & allPossibleValues;
             }
-            StaticEditorFlags flag = allFlagsAreChanged ?
-                (StaticEditorFlags)0 :
-                (StaticEditorFlags)Enum.Parse(typeof(StaticEditorFlags), msgChangedFlags.ToString());
 
+            StaticEditorFlags flag = allFlagsAreChanged ? (StaticEditorFlags)0 : (StaticEditorFlags)Enum.Parse(typeof(StaticEditorFlags), msgChangedFlags.ToString());
+
+            var includeChildren = GameObjectUtility.ShouldIncludeChildren.HasNoChildren;
 
             // Should we include child objects?
-            GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targetObjects.OfType<GameObject>(), "Change Static Flags",
-                allFlagsAreChanged ?
-                "Do you want to " + (flagValue ? "enable" : "disable") + " the static flags for all the child objects as well?" :
-                "Do you want to " + (flagValue ? "enable" : "disable") + " the " + ObjectNames.NicifyVariableName(flag.ToString()) + " flag for all the child objects as well?");
-
-            if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
+            if (GameObjectUtility.HasChildren(targetObjects))
             {
-                EditorGUIUtility.ExitGUI();
-                return false;
+                includeChildren = GameObjectUtility.DisplayUpdateChildrenDialog("Change Static Flags",
+                    allFlagsAreChanged ? "Do you want to " + (flagValue ? "enable" : "disable") + " the static flags for all the child objects as well?" : "Do you want to " + (flagValue ? "enable" : "disable") + " the " + ObjectNames.NicifyVariableName(flag.ToString()) + " flag for all the child objects as well?");
+
+                if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
+                {
+                    EditorGUIUtility.ExitGUI();
+                    return false;
+                }
             }
-            var objects = GetObjects(targetObjects, includeChildren == GameObjectUtility.ShouldIncludeChildren.IncludeChildren);
+
+            // filter out non GameObjects in targetObjects
+            using var r = new RentSpan<GameObject>(targetObjects.Length);
+            int count = 0;
+            foreach (var obj in targetObjects)
+            {
+                if (obj is GameObject go)
+                    r.Span[count++] = go;
+            }
+            var targetGameObjectsSpan = r.Span[..count];
+
+            var objects = GetObjectsSpan(targetGameObjectsSpan, includeChildren == GameObjectUtility.ShouldIncludeChildren.IncludeChildren);
             Undo.RecordObjects(objects, "Change Static Flags");
 
             // Calculate new flags value separately for each object so other flags are not affected.
@@ -231,9 +257,7 @@ namespace UnityEditor
                 if (goFlags == int.MaxValue && flagValue == false)
                     goFlags = (int)Math.Pow(2, Enum.GetNames(typeof(StaticEditorFlags)).Length - 1) - 1;
 
-                goFlags = flagValue ?
-                    goFlags | changedFlags :
-                    goFlags & ~changedFlags;
+                goFlags = flagValue ? goFlags | changedFlags : goFlags & ~changedFlags;
                 GameObjectUtility.SetStaticEditorFlags(go, (StaticEditorFlags)goFlags);
             }
 
@@ -248,8 +272,11 @@ namespace UnityEditor
         }
 
         public static GameObject[] GetObjects(Object[] gameObjects, bool includeChildren)
+            => GetObjectsSpan(gameObjects.OfType<GameObject>().ToArray(), includeChildren);
+
+        internal static GameObject[] GetObjectsSpan(ReadOnlySpan<GameObject> gameObjects, bool includeChildren)
         {
-            List<GameObject> allObjects = new List<GameObject>();
+            using var pooledList = ListPool<GameObject>.Get(out var allObjects);
             if (!includeChildren)
             {
                 foreach (GameObject go in gameObjects)
@@ -261,6 +288,32 @@ namespace UnityEditor
                     GetObjectsRecurse(go.transform, allObjects);
             }
             return allObjects.ToArray();
+        }
+
+        internal static void SetLayer(GameObject gameObject, int value, string targetTitle)
+        {
+            using var r = new RentSpan<GameObject>(1);
+            r.Span[0] = gameObject;
+            SetLayer(r.Span, value, targetTitle);
+        }
+
+        internal static void SetLayer(ReadOnlySpan<GameObject> gameObjects, int layer, string targetTitle)
+        {
+            var includeChildren = GameObjectUtility.ShouldIncludeChildren.HasNoChildren;
+
+            if (GameObjectUtility.HasChildren(gameObjects))
+            {
+                includeChildren = GameObjectUtility.DisplayUpdateChildrenDialog(L10n.Tr("Change Layer"), string.Format(L10n.Tr("Do you want to set layer to {0} for all child objects as well?"), InternalEditorUtility.GetLayerName(layer)));
+                if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
+                    return;
+            }
+
+            var objects = GetObjectsSpan(gameObjects, includeChildren is GameObjectUtility.ShouldIncludeChildren.IncludeChildren);
+            Undo.RecordObjects(objects, "Change Layer of " + targetTitle);
+            foreach (var o in objects)
+            {
+                o.layer = layer;
+            }
         }
     }
 }

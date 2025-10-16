@@ -10,6 +10,15 @@ namespace UnityEngine.Tilemaps
     [RequiredByNativeCode]
     public abstract class TileBase : ScriptableObject
     {
+        private EntityId m_EntityId;
+        public EntityId cachedEntityId => m_EntityId;
+
+        public virtual void OnEnable()
+        {
+            m_EntityId = GetEntityId();
+        }
+        public virtual void OnDisable() { }
+
         [RequiredByNativeCode]
         public virtual void RefreshTile(Vector3Int position, ITilemap tilemap) { tilemap.RefreshTile(position); }
 
@@ -24,12 +33,6 @@ namespace UnityEngine.Tilemaps
 
         [RequiredByNativeCode]
         public virtual bool GetTileAnimationData(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData) { return false; }
-        private TileAnimationData GetTileAnimationDataNoRef(Vector3Int position, ITilemap tilemap)
-        {
-            TileAnimationData tileAnimationData = new TileAnimationData();
-            GetTileAnimationData(position, tilemap, ref tileAnimationData);
-            return tileAnimationData;
-        }
 
         [RequiredByNativeCode]
         private void GetTileAnimationDataRef(Vector3Int position, ITilemap tilemap, ref TileAnimationData tileAnimationData, ref bool hasAnimation)
@@ -42,5 +45,6 @@ namespace UnityEngine.Tilemaps
 
         [RequiredByNativeCode]
         private void StartUpRef(Vector3Int position, ITilemap tilemap, GameObject go, ref bool startUpInvokedByUser) { startUpInvokedByUser = StartUp(position, tilemap, go); }
+
     }
 }

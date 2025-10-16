@@ -37,17 +37,17 @@ namespace UnityEngine
 
         public static extern int ReturnInt();
 
-        [NativeThrows] public static extern void ParameterIntDynamicArray(int[] param);
+        [NativeThrows] public static extern void ParameterIntVector(int[] param);
 
-        [NativeThrows] public static extern void ParameterIntNullableDynamicArray(int[] param);
+        [NativeThrows] public static extern void ParameterIntNullableVector(int[] param);
 
-        public static extern int[] ReturnIntDynamicArray();
+        public static extern int[] ReturnIntVector();
 
-        public static extern int[] ReturnNullIntDynamicArray();
+        public static extern int[] ReturnNullIntVector();
 
-        public static extern bool[] ReturnBoolDynamicArray();
+        public static extern bool[] ReturnBoolVector();
 
-        public static extern char[] ReturnCharDynamicArray();
+        public static extern char[] ReturnCharVector();
     }
 
     // --------------------------------------------------------------------
@@ -87,8 +87,6 @@ namespace UnityEngine
 
         [NativeThrows] public static extern void ParameterCoreStringVector(string[] param);
 
-        [NativeThrows] public static extern void ParameterCoreStringDynamicArray(string[] param);
-
         [NativeThrows] public static extern void ParameterStructCoreString(StructCoreString param);
 
         [NativeThrows] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
@@ -100,8 +98,7 @@ namespace UnityEngine
         public static extern string ReturnConstCharPtr();
 
         public static extern string[] ReturnCoreStringVector();
-        public static extern string[] ReturnCoreStringDynamicArray();
-        public static extern string[] ReturnNullStringDynamicArray();
+        public static extern string[] ReturnNullStringVector();
 
         public static extern StructCoreString ReturnStructCoreString();
 
@@ -166,13 +163,13 @@ namespace UnityEngine
 
         public static extern StructNestedBlittable ReturnNestedBlittableStruct();
 
-        [NativeThrows] public static extern void ParameterStructIntDynamicArray(StructInt[] param);
+        [NativeThrows] public static extern void ParameterStructIntVector(StructInt[] param);
 
-        public static extern StructInt[] ReturnStructIntDynamicArray();
+        public static extern StructInt[] ReturnStructIntVector();
 
-        [NativeThrows] public static extern void ParameterStructNestedBlittableDynamicArray(StructNestedBlittable[] param);
+        [NativeThrows] public static extern void ParameterStructNestedBlittableVector(StructNestedBlittable[] param);
 
-        public static extern StructNestedBlittable[] ReturnStructNestedBlittableDynamicArray();
+        public static extern StructNestedBlittable[] ReturnStructNestedBlittableVector();
 
         [NativeThrows] public static extern void ParameterStructFixedBuffer(StructFixedBuffer param);
 
@@ -194,13 +191,6 @@ namespace UnityEngine
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructIntPtrObjectVector
-    {
-        public MyIntPtrObject[] field;
-    }
-
-    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
-    [ExcludeFromDocs]
-    internal struct StructIntPtrObjectDynamicArray
     {
         public MyIntPtrObject[] field;
     }
@@ -256,13 +246,13 @@ namespace UnityEngine
     {
         [NativeThrows] public static extern void ParameterIntPtrObject(MyIntPtrObject param);
 
-        [NativeThrows] public static extern void ParameterIntPtrObjectDynamicArray(MyIntPtrObject[] param);
+        [NativeThrows] public static extern void ParameterIntPtrObjectVector(MyIntPtrObject[] param);
 
         [NativeThrows] public static extern void ParameterStructIntPtrObject(StructIntPtrObject param);
 
-        public static extern MyIntPtrObject[] ReturnIntPtrObjectDynamicArray();
+        public static extern MyIntPtrObject[] ReturnIntPtrObjectVector();
 
-        [NativeThrows] public static extern void ParameterStructIntPtrObjectDynamicArray(StructIntPtrObjectDynamicArray param);
+        [NativeThrows] public static extern void ParameterStructIntPtrObjectVector(StructIntPtrObjectVector param);
 
         public static extern MyIntPtrObject ReturnIntPtrObject(int value);
     }
@@ -335,13 +325,6 @@ namespace UnityEngine
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
-    internal struct StructUnityObjectDynamicArray
-    {
-        public MarshallingTestObject[] field;
-    }
-
-    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
-    [ExcludeFromDocs]
     internal class UnityObjectTests
     {
         [NativeThrows] public static extern void ParameterUnityObject(MarshallingTestObject param);
@@ -354,11 +337,11 @@ namespace UnityEngine
 
         [NativeThrows] public static extern void ParameterStructUnityObjectPPtr(StructUnityObjectPPtr param);
 
-        [NativeThrows] public static extern void ParameterStructUnityObjectDynamicArray(StructUnityObjectDynamicArray param);
+        [NativeThrows] public static extern void ParameterStructUnityObjectVector(StructUnityObjectVector param);
 
-        [NativeThrows] public static extern void ParameterUnityObjectDynamicArray(MarshallingTestObject[] param);
+        [NativeThrows] public static extern void ParameterUnityObjectVector(MarshallingTestObject[] param);
 
-        [NativeThrows] public static extern void ParameterUnityObjectPPtrDynamicArray(MarshallingTestObject[] param);
+        [NativeThrows] public static extern void ParameterUnityObjectPPtrVector(MarshallingTestObject[] param);
 
         public static extern MarshallingTestObject ReturnUnityObject();
         public static extern MarshallingTestObject ReturnInUnityObject(MarshallingTestObject obj);
@@ -369,19 +352,19 @@ namespace UnityEngine
 
         public static extern MarshallingTestObject ReturnUnityObjectPPtr();
 
-        public static extern MarshallingTestObject[] ReturnUnityObjectDynamicArray();
+        public static extern MarshallingTestObject[] ReturnUnityObjectVector();
 
-        public static extern MarshallingTestObject[] ReturnUnityObjectPPtrDynamicArray();
+        public static extern MarshallingTestObject[] ReturnUnityObjectPPtrVector();
 
         public static extern StructUnityObject ReturnStructUnityObject();
 
         public static extern StructUnityObjectPPtr ReturnStructUnityObjectPPtr();
 
-        public static extern StructUnityObject[] ReturnStructUnityObjectDynamicArray();
+        public static extern StructUnityObject[] ReturnStructUnityObjectVector();
 
-        public static extern StructUnityObjectPPtr[] ReturnStructUnityObjectPPtrDynamicArray();
+        public static extern StructUnityObjectPPtr[] ReturnStructUnityObjectPPtrVector();
 
-        public static extern StructUnityObjectDynamicArray[] ReturnStructUnityObjectDynamicArrayDynamicArray();
+        public static extern StructUnityObjectVector[] ReturnStructUnityObjectVectorVector();
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
@@ -467,9 +450,9 @@ namespace UnityEngine
         public static extern StructSystemType CanUnmarshallSystemTypeStructField();
         public static extern StructSystemTypeArray CanUnmarshallSystemTypeArrayStructField();
 
-        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToDynamicArrayOfScriptingSystemTypeObjectPtr(System.Type[] param);
-        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToDynamicArrayOfUnityType(System.Type[] param);
-        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToDynamicArrayOfScriptingClassPtr(System.Type[] param);
+        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToVectorOfScriptingSystemTypeObjectPtr(System.Type[] param);
+        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToVectorOfUnityType(System.Type[] param);
+        public static extern string[] CanUnmarshallArrayOfSystemTypeArgumentToVectorOfScriptingClassPtr(System.Type[] param);
 
         public static extern System.Type CanUnmarshallScriptingSystemTypeObjectPtrToSystemType();
         public static extern System.Type CanUnmarshallUnityTypeToSystemType();
@@ -506,8 +489,8 @@ namespace UnityEngine
         public static extern string CanMarshallSystemReflectionFieldInfoStructField(StructSystemReflectionFieldInfo param);
         public static extern string[] CanMarshallSystemReflectionFieldInfoArrayStructField(StructSystemReflectionFieldInfoArray param);
 
-        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToDynamicArrayOfScriptingFieldInfoObjectPtr(System.Reflection.FieldInfo[] param);
-        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToDynamicArrayOfScriptingFieldPtr(System.Reflection.FieldInfo[] param);
+        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToVectorOfScriptingFieldInfoObjectPtr(System.Reflection.FieldInfo[] param);
+        public static extern string[] CanMarshallArrayOfFieldInfoArgumentToVectorOfScriptingFieldPtr(System.Reflection.FieldInfo[] param);
 
         public static extern StructSystemReflectionFieldInfo CanUnmarshallSystemReflectionFieldInfoStructField();
         public static extern StructSystemReflectionFieldInfoArray CanUnmarshallSystemReflectionFieldInfoArrayStructField();
@@ -545,8 +528,8 @@ namespace UnityEngine
         public static extern string CanMarshallSystemReflectionMethodInfoStructField(StructSystemReflectionMethodInfo param);
         public static extern string[] CanMarshallSystemReflectionMethodInfoArrayStructField(StructSystemReflectionMethodInfoArray param);
 
-        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToDynamicArrayOfScriptingMethodInfoObjectPtr(System.Reflection.MethodInfo[] param);
-        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToDynamicArrayOfScriptingMethodPtr(System.Reflection.MethodInfo[] param);
+        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToVectorOfScriptingMethodInfoObjectPtr(System.Reflection.MethodInfo[] param);
+        public static extern string[] CanMarshallArrayOfMethodInfoArgumentToVectorOfScriptingMethodPtr(System.Reflection.MethodInfo[] param);
 
         public static extern StructSystemReflectionMethodInfo CanUnmarshallSystemReflectionMethodInfoStructField();
         public static extern StructSystemReflectionMethodInfoArray CanUnmarshallSystemReflectionMethodInfoArrayStructField();
@@ -675,8 +658,8 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class EnumTests
     {
-        [NativeThrows] public static extern void ParameterDynamicArrayEnum(SomeEnum[] enumArray);
-        public static extern void ParameterOutDynamicArrayEnum([Out] SomeEnum[] enumArray);
+        [NativeThrows] public static extern void ParameterVectorEnum(SomeEnum[] enumArray);
+        public static extern void ParameterOutVectorEnum([Out] SomeEnum[] enumArray);
     }
 
     // --------------------------------------------------------------------
@@ -977,10 +960,10 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
         [NativeThrows] public static extern void ParameterStructWithSelfPointerSpan(Span<StructWithSelfPointer> param);
         public static extern Span<int> ReturnsArrayRefWritableAsSpan(int val1, int val2, int val3);
-        public static extern Span<int> ReturnsCoreVectorRefAsSpan(int val1, int val2, int val3);
+        public static extern Span<int> ReturnsVectorRefAsSpan(int val1, int val2, int val3);
         public static extern Span<int> ReturnsScriptingSpanAsSpan(int val1, int val2, int val3);
         public static extern ReadOnlySpan<int> ReturnsArrayRefWritableAsReadOnlySpan(int val1, int val2, int val3);
-        public static extern ReadOnlySpan<int> ReturnsCoreVectorRefAsReadOnlySpan(int val1, int val2, int val3);
+        public static extern ReadOnlySpan<int> ReturnsVectorRefAsReadOnlySpan(int val1, int val2, int val3);
         public static extern ReadOnlySpan<int> ReturnsArrayRefAsReadOnlySpan(int val1, int val2, int val3);
         public static extern ReadOnlySpan<int> ReturnsScriptingReadOnlySpanAsSpan(int val1, int val2, int val3);
     }
@@ -1277,7 +1260,7 @@ namespace UnityEngine
         [NativeMethod("BlittableStructTests::ParameterStructIntByRef", IsFreeFunction = true, ThrowsException = true)]
         public extern static void PassClassWithPinnableInnerData_PinnedRef(ClassWithPinnableInnerData c);
 
-        [NativeMethod("BlittableStructTests::ParameterStructIntDynamicArray", IsFreeFunction = true, ThrowsException = true)]
+        [NativeMethod("BlittableStructTests::ParameterStructIntVector", IsFreeFunction = true, ThrowsException = true)]
         public extern static void PassClassWithPinnableInnerData_AsArray(ClassWithPinnableInnerData[] arr);
     }
 

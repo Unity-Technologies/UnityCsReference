@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -48,27 +47,11 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
+        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlFactoryObsoleteIsError)]
         public new class UxmlFactory : UxmlFactory<Pill, UxmlTraits> {}
 
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlBoolAttributeDescription m_Highlighted = new UxmlBoolAttributeDescription { name = "highlighted" };
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((Pill)ve).highlighted = m_Highlighted.GetValueFromBag(bag, cc);
-                ((Pill)ve).text = m_Text.GetValueFromBag(bag, cc);
-            }
-        }
+        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", UxmlTraitsObsoleteIsError)]
+        public new class UxmlTraits : VisualElement.UxmlTraits {}
 
         private readonly Label m_TitleLabel;
         private readonly Image m_Icon;

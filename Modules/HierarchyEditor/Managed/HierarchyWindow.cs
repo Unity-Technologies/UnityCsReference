@@ -14,8 +14,10 @@ using UnityEditor.SearchService;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.HierarchyV2;
 using static UnityEditor.SearchableEditorWindow;
 
 namespace Unity.Hierarchy.Editor
@@ -23,7 +25,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The Unity editor Hierarchy window.
     /// </summary>
-    [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
+    [EditorWindowTitle(title = "Hierarchy")]
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal sealed partial class HierarchyWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver, IFramableContainer, ISearchableContainer, IHierarchyWindow
     {
@@ -178,7 +180,7 @@ namespace Unity.Hierarchy.Editor
             query = query ?? string.Empty;
             var clearSearchText = !string.IsNullOrEmpty(m_HierarchyView.Filter) && string.IsNullOrEmpty(query);
             ((ISearchView)m_SearchView).SetSearchText(query, TextCursorPlacement.Default);
-            m_SearchField.searchTextInput.SetValueWithoutNotify(query);
+            m_SearchField.SetValueWithoutNotify(query);
             m_HierarchyView.Filter = query;
 
             SynchronizeSearchWithSearchableWindows(query);
@@ -214,6 +216,8 @@ namespace Unity.Hierarchy.Editor
 
         void OnEnable()
         {
+            titleContent.image = EditorGUIUtility.LoadIconRequired(typeof(HierarchyWindow).ToString());
+
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).OnEnable()");
 
             m_CommandSubscriberHelper = new CommandSubscriberHelper(rootVisualElement);
@@ -245,7 +249,7 @@ namespace Unity.Hierarchy.Editor
 
             m_HierarchyView.ListView.showAlternatingRowBackgrounds = HierarchyPreferences.AlternatingRowBackground
                 ? AlternatingRowBackground.All : AlternatingRowBackground.None;
-            m_HierarchyView.ListView.headerContextMenuPopulateEvent += OnHeaderContextMenu;
+            m_HierarchyView.ListViewLayoutConfiguration.headerContextMenuPopulateEvent += OnHeaderContextMenu;
             m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
             m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
             m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
@@ -377,6 +381,8 @@ namespace Unity.Hierarchy.Editor
                 m_HierarchyView.ListView?.UnregisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
                 m_HierarchyView.ListView?.UnregisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
+                if (m_HierarchyView.ListViewLayoutConfiguration != null)
+                    m_HierarchyView.ListViewLayoutConfiguration.headerContextMenuPopulateEvent -= OnHeaderContextMenu;
                 m_HierarchyView.SourceHierarchyChanged -= OnSourceHierarchyChanged;
                 m_HierarchyView.Initializing -= OnHierarchyViewInitializing;
                 m_HierarchyView.BindViewItem -= OnBindViewItem;
@@ -393,6 +399,11 @@ namespace Unity.Hierarchy.Editor
                     m_Hierarchy.Dispose();
                 m_Hierarchy = null;
             }
+        }
+
+        void CreateGUI()
+        {
+            m_SearchField.queryBuilder.blocksSupportExclude = false;
         }
 
         void OnHierarchyWindowMouseUp(PointerUpEvent evt)
@@ -760,6 +771,12 @@ namespace Unity.Hierarchy.Editor
 
         void OnKeyDown(KeyDownEvent evt)
         {
+            if (EditorGUIUtility.HandleDefaultRenameEvent(evt.imguiEvent, this))
+            {
+                evt.StopPropagation();
+                return;
+            }
+
             if (evt.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
             {
                 CutBoard.Reset();
@@ -1159,7 +1176,7 @@ namespace Unity.Hierarchy.Editor
             menu.AddSeparator("");
 
             menu.AddItem(new GUIContent("Reset Columns"), false, () => ResetColumns());
-            menu.AddItem(new GUIContent("Copy to Clipboard"), false, () => CopyQueryToClipboard());
+            menu.AddItem(new GUIContent("Copy Search Text"), false, () => CopyQueryToClipboard());
         }
 
         internal void OnToggleQueryBuilder()
@@ -1173,7 +1190,6 @@ namespace Unity.Hierarchy.Editor
         void CopyQueryToClipboard()
         {
             var trimmedQuery = Utils.TrimText(m_HierarchyView.Filter);
-            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, trimmedQuery);
             EditorGUIUtility.systemCopyBuffer = Utils.TrimText(trimmedQuery);
         }
 

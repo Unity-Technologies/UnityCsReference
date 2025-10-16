@@ -21,9 +21,13 @@ internal class Sidebar : ScrollView
     private IProjectSettingsProxy m_SettingsProxy;
     private IPageManager m_PageManager;
     private IPackageDatabase m_PackageDatabase;
+    private IPackageManagerPrefs m_PackageManagerPrefs;
 
     private Dictionary<string, SidebarRow> m_ScopedRegistryRows = new();
     private SidebarRow m_CurrentlySelectedRow;
+    private Foldout m_RegistriesFoldout;
+
+    private readonly string k_FoldoutClassName = "sidebarFoldout";
 
     private void ResolveDependencies()
     {
@@ -32,6 +36,7 @@ internal class Sidebar : ScrollView
         m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
         m_PageManager = container.Resolve<IPageManager>();
         m_PackageDatabase = container.Resolve<IPackageDatabase>();
+        m_PackageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
     }
 
     public Sidebar()
@@ -49,7 +54,7 @@ internal class Sidebar : ScrollView
 
     public void OnCreateGUI()
     {
-        CreateRows();
+        CreateRowsAndFoldouts();
         OnActivePageChanged(m_PageManager.activePage);
     }
 
@@ -59,40 +64,54 @@ internal class Sidebar : ScrollView
         m_UpmRegistryClient.onRegistriesModified -= UpdateComplianceRelatedRow;
         m_PageManager.onActivePageChanged -= OnActivePageChanged;
         m_PackageDatabase.onPackagesChanged -= OnPackageChanged;
+
+        m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus = Children().OfType<Foldout>().Select(i => i.value).ToArray();
     }
 
-    private void CreateRows()
+    private void CreateRowsAndFoldouts()
     {
-        CreateAndAddSeparator();
-        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id));
-        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id), isIndented: true);
-        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectNonCompliancePage.k_Id), isIndented: true);
-        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id), isIndented: true);
-        CreateAndAddSeparator();
-        CreateAndAddSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id));
-        CreateAndAddSidebarRow(m_PageManager.GetPage(MyAssetsPage.k_Id));
-        CreateAndAddSidebarRow(m_PageManager.GetPage(BuiltInPage.k_Id));
-        CreateAndAddSeparator();
+        var projectFoldout = CreateAndAddFoldout(L10n.Tr("Project"));
+        projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id)));
+        projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id)));
+        projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectNonCompliancePage.k_Id)));
+        projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id)));
 
+        var sourcesFoldout = CreateAndAddFoldout(L10n.Tr("Sources"));
+        sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(MyAssetsPage.k_Id)));
+        sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id)));
+        sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(BuiltInPage.k_Id)));
+
+        var cloudFoldout = CreateAndAddFoldout(L10n.Tr("Cloud"));
         foreach (var page in m_PageManager.orderedExtensionPages)
-            CreateAndAddSidebarRow(page);
+            cloudFoldout.Add(CreateSidebarRow(page));
 
-        CreateAndAddSeparator();
-        CreateAndAddSidebarRow(m_PageManager.GetPage(MyRegistriesPage.k_Id));
+        m_RegistriesFoldout = CreateAndAddFoldout(L10n.Tr("My Registries"));
+
+        var foldouts = Children().OfType<Foldout>().ToArray();
+        if (m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus?.Length == foldouts.Length)
+            for (var i = 0; i < foldouts.Length; i++)
+                foldouts[i].value = m_PackageManagerPrefs.orderedSidebarFoldoutsExpandedStatus[i];
 
         UpdateComplianceRelatedRow();
         UpdateErrorsAndWarningsRelatedRow();
         UpdateScopedRegistryRelatedRows();
     }
 
-    private void CreateAndAddSidebarRow(IPage page, bool isScopedRegistryPage = false, bool isIndented = false)
+    private Foldout CreateAndAddFoldout(string foldoutName)
+    {
+        var foldout = new Foldout {text = foldoutName};
+        foldout.AddToClassList(k_FoldoutClassName);
+        foldout.tooltip = foldoutName;
+        Add(foldout);
+        return foldout;
+    }
+
+    private SidebarRow CreateSidebarRow(IPage page)
     {
         var pageId = page.id;
-        var sidebarRow = new SidebarRow(page.id, page.displayName, page.icon, isIndented);
+        var sidebarRow = new SidebarRow(page.id, page.displayName, page.icon);
         sidebarRow.OnLeftClick(() => OnRowClick(pageId));
-        if (isScopedRegistryPage)
-            m_ScopedRegistryRows[page.id] = sidebarRow;
-        Add(sidebarRow);
+        return sidebarRow;
     }
 
     private void CreateAndAddSeparator()
@@ -156,37 +175,23 @@ internal class Sidebar : ScrollView
 
     private void UpdateScopedRegistryRelatedRows()
     {
-        var scopedRegistryPages = m_SettingsProxy.scopedRegistries.Select(r => m_PageManager.GetPage(r)).ToArray();
+        var scopedRegistries = m_SettingsProxy.scopedRegistries.ToArray();
+        var newPages = scopedRegistries.Length > 0 ? new []{ m_PageManager.GetPage(MyRegistriesPage.k_Id) }.Concat(scopedRegistries.Select(r => m_PageManager.GetPage(r))).ToArray() : Array.Empty<IPage>();
+        var oldRows = m_RegistriesFoldout.Children().OfType<SidebarRow>().ToDictionary(r => r.pageId);
 
-        // We remove the rows from the hierarchy so we can add it back later with the right order
-        foreach (var row in m_ScopedRegistryRows.Values)
-            Remove(row);
+        m_RegistriesFoldout.Clear();
+        foreach (var page in newPages)
+            m_RegistriesFoldout.Add(oldRows.GetValueOrDefault(page.id) ?? CreateSidebarRow(page));
 
-        var deletedOrHiddenPageIds = m_ScopedRegistryRows.Keys.ToHashSet();
-        foreach (var page in scopedRegistryPages)
-        {
-            if (m_ScopedRegistryRows.TryGetValue(page.id, out var row))
-            {
-                deletedOrHiddenPageIds.Remove(page.id);
-                Add(row);
-            }
-            else
-                CreateAndAddSidebarRow(page, true, true);
-        }
+        UIUtils.SetElementDisplay(m_RegistriesFoldout, newPages.Length > 0);
 
-        foreach (var pageId in deletedOrHiddenPageIds)
-            m_ScopedRegistryRows.Remove(pageId);
-
-        var myRegistriesRowVisible = scopedRegistryPages.Any();
-        UIUtils.SetElementDisplay(GetRow(MyRegistriesPage.k_Id), myRegistriesRowVisible);
-        if (!myRegistriesRowVisible)
-            deletedOrHiddenPageIds.Add(MyRegistriesPage.k_Id);
-        if (deletedOrHiddenPageIds.Contains(m_PageManager.activePage.id))
+        var activePageId = m_PageManager.activePage.id;
+        if (oldRows.ContainsKey(activePageId) && newPages.All(p => p.id != activePageId))
             m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
     }
 
     public SidebarRow GetRow(string pageId)
     {
-        return Children().OfType<SidebarRow>().FirstOrDefault(i => i.pageId == pageId);
+        return Children().OfType<Foldout>().SelectMany(f => f.Children().OfType<SidebarRow>()).FirstOrDefault(i => i.pageId == pageId);
     }
 }

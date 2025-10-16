@@ -159,10 +159,11 @@ namespace UnityEditor.Search
     [StructLayout(LayoutKind.Sequential)]
     struct SearchIndexArtifactKeywordEntry
     {
-        public const int ByteSize = sizeof(int) * 2; // PropertyNameId, HelpId
+        public const int ByteSize = sizeof(int) * 3; // PropertyNameId, HelpId, DocumentIndex
 
         public int PropertyNameId;
         public int HelpId;
+        public int DocumentIndex;
     }
 
     enum SearchIndexArtifactKeywordRemoveType : byte
@@ -174,10 +175,11 @@ namespace UnityEditor.Search
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     struct SearchIndexArtifactKeywordRemoveEntry
     {
-        public const int ByteSize = sizeof(byte) + sizeof(int); // RemoveType + PropertyNameId
+        public const int ByteSize = sizeof(byte) + sizeof(int) * 2; // RemoveType + PropertyNameId + DocumentIndex
 
         public SearchIndexArtifactKeywordRemoveType RemoveType;
         public int PropertyNameId;
+        public int DocumentIndex;
     }
 
     // This storage is optimized for artifacts that are not meant to be modified or searched after creation.
@@ -203,7 +205,10 @@ namespace UnityEditor.Search
         SearchNativeList<byte> m_StringTable = new(1024, Allocator.Persistent);
         Dictionary<string, int> m_StringTableAccelerator = new(StringComparer.Ordinal);
 
-        public const int DefaultVersion = 0x01;
+        // Versions:
+        // 1: Initial version.
+        // 2: Keywords per document.
+        public const int DefaultVersion = 2;
 
         public int Version { get; set; }
         public long Timestamp { get; set; }
@@ -275,13 +280,13 @@ namespace UnityEditor.Search
         public IEnumerable<string> GetKeywords()
         {
             // This method does not need to be optimal, this will not be called outside of testing.
-            var keywordIdsToRemove = new Dictionary<int, SearchIndexArtifactKeywordRemoveType>();
+            var keywordIdsToRemove = new Dictionary<(int, int), SearchIndexArtifactKeywordRemoveType>();
             for (var i = 0; i < m_KeywordRemoveEntries.Count; ++i)
             {
                 var entry = m_KeywordRemoveEntries[i];
                 if (entry.RemoveType == SearchIndexArtifactKeywordRemoveType.Empty)
                 {
-                    keywordIdsToRemove.TryAdd(entry.PropertyNameId, SearchIndexArtifactKeywordRemoveType.Empty);
+                    keywordIdsToRemove.TryAdd((entry.PropertyNameId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.Empty);
                 }
                 else if (entry.RemoveType == SearchIndexArtifactKeywordRemoveType.NestedKeys)
                 {
@@ -291,29 +296,30 @@ namespace UnityEditor.Search
                         int keywordId;
                         // Remove all nested keywords
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".x", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".y", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".z", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".w", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".r", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".g", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".b", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                         if (m_StringTableAccelerator.TryGetValue(propertyName + ".a", out keywordId))
-                            keywordIdsToRemove.TryAdd(keywordId, SearchIndexArtifactKeywordRemoveType.NestedKeys);
+                            keywordIdsToRemove.TryAdd((keywordId, entry.DocumentIndex), SearchIndexArtifactKeywordRemoveType.NestedKeys);
                     }
                 }
             }
 
+            var keywordSet = new HashSet<string>();
             for (var i = 0; i < m_KeywordEntries.Count; ++i)
             {
                 var entry = m_KeywordEntries[i];
-                if (keywordIdsToRemove.TryGetValue(entry.PropertyNameId, out var removeType))
+                if (keywordIdsToRemove.TryGetValue((entry.PropertyNameId, entry.DocumentIndex), out var removeType))
                 {
                     if (removeType == SearchIndexArtifactKeywordRemoveType.Empty && entry.HelpId == k_InvalidStringId)
                         continue; // Skip empty keywords
@@ -325,10 +331,12 @@ namespace UnityEditor.Search
                     continue;
                 var help = GetStringFromStringTable(entry.HelpId);
                 if (string.IsNullOrEmpty(help))
-                    yield return propertyName + ":";
+                    keywordSet.Add(propertyName + ":");
                 else
-                    yield return propertyName + ":" + help;
+                    keywordSet.Add(propertyName + ":" + help);
             }
+
+            return keywordSet;
         }
 
         public void SetMetaInfo(string documentId, string metadata)
@@ -673,7 +681,7 @@ namespace UnityEditor.Search
             var entry = new SearchIndexArtifactPropertyDoubleEntry() { NameId = nameId, DocumentIndex = documentIndex, Score = score, Value = value };
 
             m_PropertyDoubleEntries.Add(entry);
-            AddPropertyKeyword(name, string.Empty, false);
+            AddPropertyKeyword(documentIndex, name, string.Empty, false);
         }
 
         public void AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword)
@@ -684,23 +692,23 @@ namespace UnityEditor.Search
             var entry = new SearchIndexArtifactPropertyStringEntry() { NameId = nameId, DocumentIndex = documentIndex, Score = score, Value = valueId };
 
             m_PropertyStringEntries.Add(entry);
-            AddPropertyKeyword(name, value, saveKeyword);
+            AddPropertyKeyword(documentIndex, name, value, saveKeyword);
         }
 
-        public void MapProperty(string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys)
+        public void MapProperty(int documentIndex, string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys)
         {
             if (propositionGenerationOptions != SearchPropositionGenerationOptions.None)
-                AddPropertyKeyword(name, $"|{label}|{help}|{propertyType}|{ownerTypeName}|{(int)propositionGenerationOptions}", true);
+                AddPropertyKeyword(documentIndex, name, $"|{label}|{help}|{propertyType}|{ownerTypeName}|{(int)propositionGenerationOptions}", true);
             else
-                AddPropertyKeyword(name, $"|{label}|{help}|{propertyType}|{ownerTypeName}", true);
+                AddPropertyKeyword(documentIndex, name, $"|{label}|{help}|{propertyType}|{ownerTypeName}", true);
 
             var propertyNameId = AddStringToStringTable(name);
             // Add the command to remove the empty keyword.
-            m_KeywordRemoveEntries.Add(new SearchIndexArtifactKeywordRemoveEntry { RemoveType = SearchIndexArtifactKeywordRemoveType.Empty, PropertyNameId = propertyNameId });
+            m_KeywordRemoveEntries.Add(new SearchIndexArtifactKeywordRemoveEntry { RemoveType = SearchIndexArtifactKeywordRemoveType.Empty, PropertyNameId = propertyNameId, DocumentIndex = documentIndex });
 
             if (removeNestedKeys)
             {
-                var entry = new SearchIndexArtifactKeywordRemoveEntry { RemoveType = SearchIndexArtifactKeywordRemoveType.NestedKeys, PropertyNameId = propertyNameId };
+                var entry = new SearchIndexArtifactKeywordRemoveEntry { RemoveType = SearchIndexArtifactKeywordRemoveType.NestedKeys, PropertyNameId = propertyNameId, DocumentIndex = documentIndex };
                 m_KeywordRemoveEntries.Add(entry);
             }
         }
@@ -947,7 +955,7 @@ namespace UnityEditor.Search
             throw new NotSupportedException($"{nameof(SearchTerm)} is not supported by {nameof(SearchIndexArtifactStorage)}");
         }
 
-        void AddPropertyKeyword(string propertyName, string propertyValue, bool saveValueKeyword)
+        void AddPropertyKeyword(int documentIndex, string propertyName, string propertyValue, bool saveValueKeyword)
         {
             var propertyNameId = AddStringToStringTable(propertyName);
 
@@ -958,7 +966,7 @@ namespace UnityEditor.Search
                 propertyValueId = AddStringToStringTable(propertyValue);
             }
 
-            var entry = new SearchIndexArtifactKeywordEntry { PropertyNameId = propertyNameId, HelpId = propertyValueId };
+            var entry = new SearchIndexArtifactKeywordEntry { PropertyNameId = propertyNameId, HelpId = propertyValueId, DocumentIndex = documentIndex };
             m_KeywordEntries.Add(entry);
         }
 

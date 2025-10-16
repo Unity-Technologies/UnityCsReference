@@ -50,7 +50,7 @@ namespace UnityEditor.Search
                 var perTypeMarkers = new List<MarkerData>();
                 var genericMarkers = new List<MarkerData>();
 
-                var reportDir = "IndexingPerformanceReport";
+                var reportDir = "Logs/IndexingPerformanceReport";
                 if (!Directory.Exists(reportDir))
                 {
                     Directory.CreateDirectory(reportDir);

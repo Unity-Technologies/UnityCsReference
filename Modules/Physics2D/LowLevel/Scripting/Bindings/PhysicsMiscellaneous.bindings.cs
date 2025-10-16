@@ -15,15 +15,15 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsTransform::MultiplyTransform", IsThreadSafe = true)] extern internal static PhysicsTransform PhysicsTransform_MultiplyTransform(PhysicsTransform transform1, PhysicsTransform PhysicsTransform);
         [NativeMethod(Name = "PhysicsTransform::InverseMultiplyTransform", IsThreadSafe = true)] extern internal static PhysicsTransform PhysicsTransform_InverseMultiplyTransform(PhysicsTransform transform1, PhysicsTransform PhysicsTransform);
 
+        [NativeMethod(Name = "PhysicsRotate::Create", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_CreateDirection(in Vector2 direction);
+        [NativeMethod(Name = "PhysicsRotate::Create", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_CreateAngle(float angle);
         [NativeMethod(Name = "PhysicsRotate::IsValid", IsThreadSafe = true)] extern internal static bool PhysicsRotate_IsValid(PhysicsRotate rotation);
         [NativeMethod(Name = "PhysicsRotate::GetAngle", IsThreadSafe = true)] extern internal static float PhysicsRotate_GetAngle(PhysicsRotate rotate);
-        [NativeMethod(Name = "PhysicsRotate::SetAngle", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_SetAngle(float angle);
         [NativeMethod(Name = "PhysicsRotate::GetRelativeAngle", IsThreadSafe = true)] extern internal static float PhysicsRotate_GetRelativeAngle(PhysicsRotate rotation1, PhysicsRotate rotation2);
         [NativeMethod(Name = "PhysicsRotate::UnwindAngle", IsThreadSafe = true)] extern internal static float PhysicsRotate_UnwindAngle(float angle);
         [NativeMethod(Name = "PhysicsRotate::IntegrateRotation", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_IntegrateRotation(PhysicsRotate rotation, float deltaAngle);
         [NativeMethod(Name = "PhysicsRotate::LerpRotation", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_LerpRotation(PhysicsRotate rotationA, PhysicsRotate rotationB, float interval);
         [NativeMethod(Name = "PhysicsRotate::AngularVelocity", IsThreadSafe = true)] extern internal static float PhysicsRotate_AngularVelocity(PhysicsRotate rotationA, PhysicsRotate rotationB, float deltaTime);
-        [NativeMethod(Name = "PhysicsRotate::Normalize", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_Normalize(PhysicsRotate rotation);
         [NativeMethod(Name = "PhysicsRotate::IsNormalized", IsThreadSafe = true)] extern internal static bool PhysicsRotate_IsNormalized(PhysicsRotate rotation);
         [NativeMethod(Name = "PhysicsRotate::MultiplyRotation", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_MultiplyRotation(PhysicsRotate rotation1, PhysicsRotate rotation2);
         [NativeMethod(Name = "PhysicsRotate::InverseMultiplyRotation", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsRotate_InverseMultiplyRotation(PhysicsRotate rotation1, PhysicsRotate rotation2);
@@ -51,6 +51,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsMath::Atan2", IsThreadSafe = true)] extern internal static float PhysicsMath_Atan2(float y, float x);
         [NativeMethod(Name = "PhysicsMath::CosSin", IsThreadSafe = true)] extern internal static void PhysicsMath_CosSin(float angle, out float cos, out float sin);
         [NativeMethod(Name = "PhysicsMath::SpringDamper", IsThreadSafe = true)] extern internal static float PhysicsMath_SpringDamper(float frequency, float damping, float translation, float speed, float deltaTime);
+
+        [NativeMethod(Name = "PhysicsUserData::GetObject", IsThreadSafe = true)] extern internal static Object PhysicsUserData_GetObject(EntityId entityId);
 
         #region Globals
 

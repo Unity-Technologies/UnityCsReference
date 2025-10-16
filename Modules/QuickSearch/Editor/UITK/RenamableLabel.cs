@@ -71,7 +71,10 @@ namespace UnityEditor.Search
 
         void AcceptRename(string newName)
         {
-            text = Utils.Simplify(newName);
+            var simplifiedName = Utils.Simplify(newName);
+            if (!string.IsNullOrWhiteSpace(simplifiedName))
+                text = simplifiedName;
+
             StopRename();
             SendRenameFinishedEvent();
         }
@@ -95,7 +98,8 @@ namespace UnityEditor.Search
             var textField = new TextField
             {
                 multiline = false,
-                isDelayed = true
+                isDelayed = true,
+                maxLength = 256
             };
             return textField;
         }

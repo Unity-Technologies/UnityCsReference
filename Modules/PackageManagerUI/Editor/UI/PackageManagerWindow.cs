@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
 using UnityEditor.PackageManager.UI.Internal;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.PackageManager.UI
 {
@@ -68,25 +69,21 @@ namespace UnityEditor.PackageManager.UI
         private void BuildGUI()
         {
             var container = ServicesContainer.instance;
-            var resourceLoader = container.Resolve<IResourceLoader>();
-            var extensionManager = container.Resolve<IExtensionManager>();
-            var selection = container.Resolve<ISelectionProxy>();
-            var packageManagerPrefs = container.Resolve<IPackageManagerPrefs>();
-            var packageDatabase = container.Resolve<IPackageDatabase>();
-            var pageManager = container.Resolve<IPageManager>();
-            var unityConnectProxy = container.Resolve<IUnityConnectProxy>();
-            var applicationProxy = container.Resolve<IApplicationProxy>();
-            var upmClient = container.Resolve<IUpmClient>();
-            var assetStoreCachePathProxy = container.Resolve<IAssetStoreCachePathProxy>();
-            var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
-            var operationDispatcher = container.Resolve<IPackageOperationDispatcher>();
-            var delayedSelectionHandler = container.Resolve<IDelayedSelectionHandler>();
-            var displayDialogCustomProxy = container.Resolve<ICustomDisplayDialog>();
-            var packageCreator = container.Resolve<IPackageCreator>();
-
-            // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
-            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler,
-                operationDispatcher, delayedSelectionHandler, displayDialogCustomProxy, packageCreator);
+            // Adding the ScrollView object here because it really needs to be the first child under rootVisualElement for it to work properly.
+            m_Root = new PackageManagerWindowRoot(
+                container.Resolve<IResourceLoader>(),
+                container.Resolve<IExtensionManager>(),
+                container.Resolve<ISelectionProxy>(),
+                container.Resolve<IPackageManagerPrefs>(),
+                container.Resolve<IPackageDatabase>(),
+                container.Resolve<IPageManager>(),
+                container.Resolve<IUnityConnectProxy>(),
+                container.Resolve<IApplicationProxy>(),
+                container.Resolve<IUpmClient>(),
+                container.Resolve<IAssetStoreCachePathProxy>(),
+                container.Resolve<IPageRefreshHandler>(),
+                container.Resolve<IDelayedSelectionHandler>(),
+                container.Resolve<IDropdownHandler>());
             try
             {
                 m_Root.OnEnable();
@@ -188,14 +185,9 @@ namespace UnityEditor.PackageManager.UI
 
         private static void OpenAddPackageByName(string url)
         {
-            if (float.IsNaN(instance.position.x) || float.IsNaN(instance.position.y))
-            {
-                EditorApplication.delayCall += () => OpenAddPackageByName(url);
-                return;
-            }
-
+            ShowWindow();
             instance.Focus();
-            instance.m_Root.OpenAddPackageByNameDropdown(url, instance);
+            instance.m_Root.OpenAddPackageByNameDropdown(url);
         }
 
         [UsedByNativeCode]
@@ -203,7 +195,7 @@ namespace UnityEditor.PackageManager.UI
         {
             ShowWindow();
             instance.Focus();
-            instance.m_Root.OpenCreatePackageDropdown(instance);
+            instance.m_Root.OpenCreatePackageDropdown();
         }
 
         [UsedByNativeCode]

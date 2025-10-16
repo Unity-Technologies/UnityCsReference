@@ -120,7 +120,8 @@ namespace UnityEditor
 
         ~HierarchyProperty() { Dispose(false); }
 
-        public extern int instanceID { get; }
+        extern EntityId entityId { get; }
+        public int instanceID => entityId;
         public extern Object pptrValue { [FreeFunction("HierarchyPropertyBindings::PPtrValue", HasExplicitThis = true)] get; }
         public extern string name { get; }
 
@@ -161,8 +162,8 @@ namespace UnityEditor
         public bool Previous(int[] expanded) => Previous_internal(expanded, expanded != null && expanded.Length == 0);
         public extern bool Parent();
         [FreeFunction("HierarchyPropertyBindings::Find", HasExplicitThis = true)]
-        private extern bool Find_internal(int instanceID, int[] expanded, bool nonNullEmptyArray);
-        public bool Find(int instanceID, int[] expanded) => Find_internal(instanceID, expanded, expanded != null && expanded.Length == 0);
+        private extern bool Find_internal(EntityId instanceID, int[] expanded, bool nonNullEmptyArray);
+        public bool Find(int instanceID, int[] expanded) => Find_internal((EntityId)instanceID, expanded, expanded != null && expanded.Length == 0);
         [FreeFunction("HierarchyPropertyBindings::Skip", HasExplicitThis = true)]
         private extern bool Skip_internal(int count, int[] expanded, bool nonNullEmptyArray);
         public bool Skip(int count, int[] expanded) =>Skip_internal(count, expanded, expanded != null && expanded.Length == 0);
@@ -190,9 +191,11 @@ namespace UnityEditor
 
         [FreeFunction("HierarchyPropertyBindings::SetSearchFilterImpl", HasExplicitThis = true)]
         extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, SceneHandle[] sceneHandles, string[] regex, int[] productIds, bool anyWithAssetOrigin, bool showAllHits, ImportLogFlags importLogFlags, bool filterByTypeIntersection);
-      
+
         [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObject")]
-        public static extern void FilterSingleSceneObject(int instanceID, bool otherVisibilityState);
+        static extern void FilterSingleSceneObject(EntityId instanceID, bool otherVisibilityState);
+
+        public static void FilterSingleSceneObject(int instanceID, bool otherVisibilityState) => FilterSingleSceneObject((EntityId)instanceID, otherVisibilityState);
 
         [FreeFunction("HierarchyPropertyBindings::FindAllAncestors", HasExplicitThis = true)]
         public extern int[] FindAllAncestors(int[] instanceIDs);

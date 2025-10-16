@@ -168,7 +168,7 @@ namespace UnityEditor
         Texture GetAssetPreviewTexture()
         {
             Texture tex = null;
-            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetInstanceID());
+            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetEntityId());
             tex = AssetPreview.GetAssetPreview(target);
             if (!tex)
             {

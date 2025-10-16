@@ -189,7 +189,7 @@ namespace Unity.UI.Builder
                             yield return valueHandle.sheet.ReadColor(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.ResourcePath:
-                            yield return valueHandle.sheet.ReadResourcePath(valueHandle.handle);
+                            yield return valueHandle.sheet.ReadResourcePath(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.AssetReference:
                             yield return valueHandle.sheet.ReadAssetReference(valueHandle.handle).ToString();
@@ -523,12 +523,12 @@ namespace Unity.UI.Builder
                 case StyleValueType.ResourcePath:
                     if (value is UnityEngine.Object resourceObject)
                     {
-                        var resourcesPath = BuilderAssetUtilities.GetResourcesPathForAsset(resourceObject);
-                        styleSheet.WriteResourcePath(ref handle.handle, resourcesPath);
+                        BuilderAssetUtilities.TryGetResourcesPathForAsset(resourceObject, out var resolvedResourcePath);
+                        styleSheet.WriteResourcePath(ref handle.handle, resolvedResourcePath);
                     }
                     else
                     {
-                        styleSheet.WriteResourcePath(ref handle.handle, (string)(object)value);
+                        styleSheet.WriteResourcePath(ref handle.handle, new ResolvedResourcePath((string)(object)value, null));
                     }
                     break;
                 case StyleValueType.AssetReference:
@@ -577,7 +577,7 @@ namespace Unity.UI.Builder
                     manipulator.AddColor((Color)(object) value);
                     break;
                 case StyleValueType.ResourcePath:
-                    manipulator.AddResourcePath((string)(object) value);
+                    manipulator.AddResourcePath(new ResolvedResourcePath((string)(object) value, null));
                     break;
                 case StyleValueType.AssetReference:
                     manipulator.AddAssetReference((UnityEngine.Object)(object) value);

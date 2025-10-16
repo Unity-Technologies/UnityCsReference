@@ -20,6 +20,15 @@ namespace UnityEditor.UIElements
 
         public override void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler)
         {
+            if (CheckIfEventMatches(evt))
+            {
+                DisplayMenu(evt, eventHandler);
+                evt.StopPropagation();
+            }
+        }
+
+        internal override bool CheckIfEventMatches(EventBase evt)
+        {
             if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
                 if (evt.eventTypeId == PointerDownEvent.TypeId() ||
@@ -30,9 +39,7 @@ namespace UnityEditor.UIElements
                     if (e.button == (int)MouseButton.RightMouse ||
                         (e.button == (int)MouseButton.LeftMouse && e.modifiers == EventModifiers.Control))
                     {
-                        DisplayMenu(evt, eventHandler);
-                        evt.StopPropagation();
-                        return;
+                        return true;
                     }
                 }
             }
@@ -44,9 +51,7 @@ namespace UnityEditor.UIElements
                     IPointerEvent e = (IPointerEvent) evt;
                     if (e.button == (int)MouseButton.RightMouse)
                     {
-                        DisplayMenu(evt, eventHandler);
-                        evt.StopPropagation();
-                        return;
+                        return true;
                     }
                 }
             }
@@ -56,14 +61,22 @@ namespace UnityEditor.UIElements
                 KeyUpEvent e = evt as KeyUpEvent;
                 if (e.keyCode == KeyCode.Menu)
                 {
-                    DisplayMenu(evt, eventHandler);
-                    evt.StopPropagation();
+                    return true;
                 }
             }
+
+            return false;
         }
 
         protected internal override void DoDisplayMenu(DropdownMenu menu, EventBase triggerEvent)
         {
+            // Force repaint on the panel because they won't get another chance when the menu is up
+            if (triggerEvent.elementTarget.elementPanel is EditorPanel editorPanel &&
+                editorPanel.ownerObject is GUIView view)
+            {
+                view.RepaintImmediately();
+            }
+
             menu.DoDisplayEditorMenu(triggerEvent);
         }
     }

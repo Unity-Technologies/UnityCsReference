@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager
             return new AddRequest(operationId, status);
         }
 
-        public static AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null)
+        public static AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null, bool dryRun = false)
         {
             packagesToAdd = packagesToAdd ?? Array.Empty<string>();
             packagesToRemove = packagesToRemove ?? Array.Empty<string>();
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager
             }
 
             long operationId;
-            var status = AddAndRemove(out operationId, packagesToAdd, packagesToRemove);
+            var status = AddAndRemove(out operationId, packagesToAdd, packagesToRemove, dryRun);
             return new AddAndRemoveRequest(operationId, status);
         }
 

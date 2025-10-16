@@ -23,13 +23,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
                 return;
 
-            Menu.AddMenuItem("Window/Multiplayer/Play Mode Scenarios", "", false, default, PlayModeConfigurationsWindow.ShowWindow, null);
-            Menu.AddMenuItem("Window/Multiplayer/Play Mode Status", "", false, default, PlayModeStatusWindow.OpenWindow, null);
-            Menu.AddMenuItem("Window/Multiplayer/Multiplayer Play Mode", "", false, default, MultiplayerWindowController.ShowConfiguration, null);
+            Menu.AddMenuItem("Window/Multiplayer/Multiplayer Play Mode", "", false, 3010, MultiplayerWindowController.ShowConfiguration, null);
+            Menu.AddMenuItem("Window/Play Mode/Scenarios", "", false, 3011, PlayModeScenariosWindow.ShowWindow, null);
+            Menu.AddMenuItem("Window/Play Mode/Active Scenario", "", false, 3011, ActiveScenarioWindow.OpenWindow, null);
 
             if (DebugUtils.IsDebugFlagEnabled(DebugUtils.DebugFlags.MppmAnalysisWindow))
             {
-                Menu.AddMenuItem("Window/Analysis/Play Mode Scenarios Analysis", "", false, default, ScenarioStatusWindow.OpenWindow, null);
+                Menu.AddMenuItem("Window/Analysis/Play Mode Scenarios", "", false, 1000, ScenarioStatusWindow.OpenWindow, null);
             }
         }
     }

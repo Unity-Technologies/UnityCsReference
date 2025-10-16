@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.ShortcutManagement
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     interface IContextManager
     {
         void SetFocusedWindow(EditorWindow window);

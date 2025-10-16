@@ -272,7 +272,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Advanced = extraDataSerializedObject.FindProperty("info.settings");
             m_Visibility = extraDataSerializedObject.FindProperty("info.settings.visibility");
             m_DependenciesList = new ReorderableList(extraDataSerializedObject,
-                extraDataSerializedObject.FindProperty("dependencies"), true, false, true, true)
+                extraDataSerializedObject.FindProperty("dependencies"), true, true, true, true)
             {
                 drawElementCallback = DrawDependencyListElement,
                 drawHeaderCallback = DrawDependencyHeaderElement,
@@ -319,7 +319,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
             packageName.stringValue = EditorGUI.TextField(rect, packageName.stringValue);
 
-            if (!string.IsNullOrWhiteSpace(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
+            if (!string.IsNullOrWhiteSpace(packageName.stringValue) && !PackageValidator.ValidateCompleteTechnicalName(packageName.stringValue))
                 errorMessages.Add($"Invalid Dependency Package Name '{packageName.stringValue}'");
 
             if (isFeatureSet)
@@ -368,7 +368,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 EditorGUILayout.PropertyField(m_Name, Styles.name);
-                m_OrganizationName.stringValue = PackageSanitizer.SanitizePackageName(EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames));
+                m_OrganizationName.stringValue = PackageValidator.SanitizePackageTechnicalName(EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames));
                 EditorGUILayout.PropertyField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.PropertyField(m_Version, Styles.version);
                 EditorGUILayout.PropertyField(m_DocumentationUrl, Styles.documentationUrl);
@@ -446,12 +446,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void PerformValidation()
         {
             var canBuildCompleteName = true;
-            if (!PackageValidation.ValidateOrganizationName(m_OrganizationName.stringValue) && !string.IsNullOrWhiteSpace(m_OrganizationName.stringValue))
+            if (!PackageValidator.ValidateOrganizationName(m_OrganizationName.stringValue) && !string.IsNullOrWhiteSpace(m_OrganizationName.stringValue))
             {
                 canBuildCompleteName = false;
                 errorMessages.Add($"Invalid Package Organization Name '{m_OrganizationName.stringValue}'");
             }
-            if (!PackageValidation.ValidateName(m_Name.stringValue))
+            if (!PackageValidator.ValidatePartialTechnicalName(m_Name.stringValue))
             {
                 canBuildCompleteName = false;
                 errorMessages.Add($"Invalid Package Name '{m_Name.stringValue}'");
@@ -459,7 +459,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (canBuildCompleteName)
             {
                 var completePackageName = BuildCompletePackageName(packageState.info.packageName.domain, m_OrganizationName.stringValue, m_Name.stringValue);
-                if (!PackageValidation.ValidateCompleteName(completePackageName))
+                if (!PackageValidator.ValidateCompleteTechnicalName(completePackageName))
                     errorMessages.Add($"Invalid Complete Package Name '{completePackageName}'");
             }
 
@@ -467,7 +467,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_UnityVersionEnabled.boolValue)
             {
-                if (!PackageValidation.ValidateUnityVersion(m_UnityMajor.stringValue, m_UnityMinor.stringValue,
+                if (!PackageValidator.ValidateUnityVersion(m_UnityMajor.stringValue, m_UnityMinor.stringValue,
                     m_UnityRelease.stringValue))
                 {
                     var unityVersion = string.Join(".", new[] { m_UnityMajor.stringValue, m_UnityMinor.stringValue });
@@ -738,9 +738,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (json == null)
                 return;
 
-            var completePackageName = BuildCompletePackageName(packageState.info.packageName);
-            if (!string.IsNullOrWhiteSpace(completePackageName))
-                json[k_ManifestFieldName] = completePackageName;
+            var renameFolder = false;
+            var newCompletePackageName = BuildCompletePackageName(packageState.info.packageName);
+            if (!string.IsNullOrWhiteSpace(newCompletePackageName))
+            {
+                renameFolder = newCompletePackageName != packageState.info.packageName.completeName &&
+                               ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialog(
+                                   "matchPackageFolderName",
+                                   L10n.Tr("Update Folder Name to Match"),
+                                   L10n.Tr("You changed the package’s technical name. Do you also want to update the package’s folder to match the technical name?"), "Update Name", "Keep Current");
+                json[k_ManifestFieldName] = newCompletePackageName;
+            }
 
             if (!string.IsNullOrWhiteSpace(packageState.info.displayName))
                 json[k_ManifestFieldDisplayName] = packageState.info.displayName.Trim();
@@ -838,7 +846,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 ioProxy.FileWriteAllText(assetPath, Json.Serialize(json, true));
-                Client.Resolve();
+
+                if (renameFolder)
+                {
+                    var packageFolder = ioProxy.GetParentDirectory(assetPath);
+                    var newPackageFolder = ioProxy.PathsCombine(ioProxy.GetParentDirectory(packageFolder), newCompletePackageName);
+                    ioProxy.Move(packageFolder, newPackageFolder);
+                }
             }
             catch (System.IO.IOException)
             {
@@ -848,6 +862,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 Debug.LogError($"Access denied when accessing package manifest file {assetPath}. Please make sure the file is not read-only.");
             }
+
+            Client.Resolve();
         }
 
         [OnOpenAsset(OnOpenAssetAttributeMode.Validate)]
@@ -906,7 +922,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal static void ValidateVersion(string packageName, string version, List<string> errorMessages, List<string> warningMessages)
         {
-            if (!PackageValidation.ValidateVersion(version, out var majorStr, out var minorStr, out var patchStr))
+            if (!PackageValidator.ValidateVersion(version, out var majorStr, out var minorStr, out var patchStr))
             {
                 if (string.IsNullOrEmpty(packageName))
                     errorMessages.Add($"Invalid version '{version}'");

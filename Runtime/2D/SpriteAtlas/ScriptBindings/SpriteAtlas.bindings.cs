@@ -3,12 +3,77 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.U2D
 {
+
+    /// <summary>
+    /// ObjectData holds information about a packed Object such as Sprite in the sprite atlas.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObjectData
+    {
+        /// <summary>
+        /// Entity ID of the sprite.
+        /// </summary>
+        public EntityId     asset;
+
+        /// <summary>
+        /// Packing information for this object. X, Y coordinates of the packed position.
+        /// </summary>
+        public Vector4      packInfo;
+    };
+
+    /// <summary>
+    /// TextureData holds information about a texture in the sprite atlas.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TextureData
+    {
+        /// <summary>
+        /// Entity ID of the packed texture
+        /// </summary>
+        public EntityId     texture;
+
+        /// <summary>
+        /// Name of the material map associated with this texture.
+        /// </summary>
+        public string       mapName;
+    };
+
+    /// <summary>
+    /// AtlasPage holds information about a page in the sprite atlas. 
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AtlasPage
+    {
+        /// <summary>
+        /// Array of object data (packables) for this atlas page.
+        /// </summary>
+        public ObjectData[]     assets;
+
+        /// <summary>
+        /// Array of texture (packed textures) data for this atlas page.
+        /// </summary>
+        public TextureData[]    packedTextures;
+    };
+
+    /// <summary>
+    /// Configuration settings for the sprite atlas at runtime.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]    
+    public struct SpriteAtlasRuntimeConfig
+    {
+        /// <summary>
+        /// Scale multiplier to be applied to the sprite.
+        /// </summary>
+        public float scaleMultiplier;
+    }
+
     [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlasManager.h")]
     [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlas.h")]
     [StaticAccessor("GetSpriteAtlasManager()", StaticAccessorType.Dot)]
@@ -36,6 +101,9 @@ namespace UnityEngine.U2D
         }
 
         extern internal static void Register(SpriteAtlas spriteAtlas);
+
+        [FreeFunction("SpriteAtlasManager::CreateSpriteAtlas", ThrowsException = true)]
+        extern public static void CreateSpriteAtlas(string name, SpriteAtlasRuntimeConfig config, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AtlasPage[] pages);
     }
 
     [NativeHeader("Runtime/Graphics/SpriteFrame.h")]

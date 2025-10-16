@@ -9,15 +9,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class DropdownContent : VisualElement
     {
-        internal EditorWindow container { get; set; }
+        public EditorWindow container { get; set; }
 
-        internal Rect position { get; set; }
+        public abstract Vector2 windowSize { get; }
 
-        internal abstract Vector2 windowSize { get; }
+        public abstract void OnDropdownShown();
 
-        internal abstract void OnDropdownShown();
-
-        internal abstract void OnDropdownClosed();
+        public abstract void OnDropdownClosed();
 
         protected void ShowWithNewWindowSize()
         {
@@ -33,13 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void Close()
         {
-            if (container != null)
-                container.Close();
-            else
-            {
-                var dropdownElement = parent as DropdownElement;
-                dropdownElement?.Hide();
-            }
+            container?.Close();
         }
     }
 }

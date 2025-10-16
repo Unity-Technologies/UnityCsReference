@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 
 namespace UnityEngine.Assemblies;
@@ -14,7 +15,8 @@ namespace UnityEngine.Assemblies;
 /// <summary>
 /// Provides utility methods to enumerate assemblies loaded and managed by Unity.
 /// </summary>
-internal static class CurrentAssemblies
+[VisibleToOtherModules]
+public static class CurrentAssemblies
 {
     private struct AssemblyLoadContextStateHelper
     {
@@ -73,7 +75,8 @@ internal static class CurrentAssemblies
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAC0006:AppDomain usage", Justification = "Used as fallback for IL2CPP")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeReloadSafety", "UAC0005:AppDomain.GetAssemblies()", Justification = "Used as fallback for IL2CPP")]
-    internal static IReadOnlyList<Assembly> GetLoadedAssemblies()
+    [VisibleToOtherModules]
+    public static IReadOnlyList<Assembly> GetLoadedAssemblies()
     {
 
         // Fallback to AppDomain.CurrentDomain.GetAssemblies() if we are not running in ALC mode.

@@ -92,7 +92,7 @@ namespace UnityEditor.Search
         bool m_AboutToFocusWindow;
 
         SearchPropositionOptions options { get; set; }
-        SortedSet<SearchProposition> propositions { get; set; }
+        List<SearchProposition> propositions { get; set; }
 
         public float x
         {
@@ -235,7 +235,8 @@ namespace UnityEditor.Search
         {
             m_AboutToFocusWindow = false;
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
-            propositions = SearchProposition.Fetch(context, options);
+            propositions = new List<SearchProposition>(SearchProposition.Fetch(context, options));
+            propositions.Sort();
 
             enabled = propositions.Count > 0;
             if (!enabled)
@@ -447,7 +448,8 @@ namespace UnityEditor.Search
         void HandleTextFieldChanged(ChangeEvent<string> evt)
         {
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
-            propositions = SearchProposition.Fetch(context, options);
+            propositions = new List<SearchProposition>(SearchProposition.Fetch(context, options));
+            propositions.Sort();
             if (propositions.Count <= 0 || !UpdateCompleteList(m_TextField, options))
                 Close();
         }

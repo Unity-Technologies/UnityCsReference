@@ -200,7 +200,7 @@ namespace Unity.UI.Builder
                 if (m_VisualTreeAssetRef.isSet && m_VisualTreeAssetRef.asset != null)
                     m_VisualTreeAsset = m_VisualTreeAssetRef.asset;
                 else
-                    m_VisualTreeAsset = VisualTreeAssetUtilities.CreateInstance();
+                    m_VisualTreeAsset = VisualTreeAssetUtilities.CreateInstanceWithHideFlags();
 
                 m_ContentHash = m_VisualTreeAsset.contentHash;
                 return m_VisualTreeAsset;
@@ -334,11 +334,15 @@ namespace Unity.UI.Builder
                 EditorUtility.SetDirty(openUSS.styleSheet);
         }
 
-        public void AddStyleSheetToDocument(StyleSheet styleSheet, string ussPath)
+        public void AddStyleSheetToDocument(StyleSheet styleSheet, string ussPath, int index = -1)
         {
             var newOpenUssFile = new BuilderDocumentOpenUSS();
             newOpenUssFile.Set(styleSheet, ussPath);
-            m_OpenUSSFiles.Add(newOpenUssFile);
+
+            if (index == -1)
+                m_OpenUSSFiles.Add(newOpenUssFile);
+            else
+                m_OpenUSSFiles.Insert(index, newOpenUssFile);
 
             AddStyleSheetsToAllRootElements();
 
@@ -528,6 +532,12 @@ namespace Unity.UI.Builder
             if (documentRootElement != null)
                 ReloadDocumentToCanvas(documentRootElement);
 
+            ClearVisualTreeAssetDirtyFlags();
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                EditorUtility.ClearDirty(openUSSFile.styleSheet);
+            }
+
             hasUnsavedChanges = false;
             return needsFullRefresh;
         }
@@ -625,16 +635,16 @@ namespace Unity.UI.Builder
                 // the choice of either keeping the UI Builder unsaved changes, use the external changes, or save the
                 // work in progress in the UI Builder to a temporary file and use the external changes.
                 var ussWasModified = false;
-                foreach (var openUssFiles in m_OpenUSSFiles)
+                foreach (var openUssFile in m_OpenUSSFiles)
                 {
                     var h = new Hash128();
-                    byte[] b = Encoding.UTF8.GetBytes(openUssFiles.ussPreview);
+                    byte[] b = Encoding.UTF8.GetBytes(openUssFile.ussPreview);
                     if (b.Length > 0)
                     {
                         HashUtilities.ComputeHash128(b, ref h);
                     }
 
-                    if (openUssFiles.contentHash != h.GetHashCode())
+                    if (openUssFile.contentHash != h.GetHashCode())
                     {
                         ussWasModified = true;
                         break;
@@ -927,12 +937,17 @@ namespace Unity.UI.Builder
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
                 m_ContentHash = m_VisualTreeAsset.contentHash;
 
-                EditorUtility.SetDirty(visualTreeAsset);
+                // Restore the VTA name.
+                if (!string.IsNullOrEmpty(uxmlOldPath))
+                    m_VisualTreeAsset.name = Path.GetFileNameWithoutExtension(uxmlOldPath);
+
                 if (hasUnsavedChanges && !isAnonymousDocument)
                 {
                     BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy |
                                                      BuilderAssetUtilities.LiveReloadChanges.Styles);
                 }
+
+                ClearVisualTreeAssetDirtyFlags();
             }
 
             hasUnsavedChanges = false;
@@ -953,6 +968,7 @@ namespace Unity.UI.Builder
             // Reimport the uxml preview from the UI Builder.
             var uxmlImporter = new BuilderVisualTreeAssetImporter();
             uxmlImporter.ImportXmlFromString(uxmlPreview, out var restoredVisualTreeAsset);
+            restoredVisualTreeAsset.name = visualTreeAsset.name;
             restoredVisualTreeAsset.DeepOverwrite(visualTreeAsset);
 
             OnAfterBuilderDeserialize(m_CurrentDocumentRootElement, true);
@@ -1023,6 +1039,12 @@ namespace Unity.UI.Builder
 
             foreach (var openUSSFile in m_OpenUSSFiles)
                 openUSSFile.ClearUndo();
+        }
+
+        void ClearVisualTreeAssetDirtyFlags()
+        {
+            EditorUtility.ClearDirty(visualTreeAsset);
+            EditorUtility.ClearDirty(visualTreeAsset.inlineSheet);
         }
 
         bool WriteUXMLToFile(string uxmlPath)

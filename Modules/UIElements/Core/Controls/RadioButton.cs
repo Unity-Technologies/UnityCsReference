@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// A control that allows users to select a single option inside a <see cref="RadioButtonGroup"/>. For more information, refer to [[wiki:UIE-uxml-element-RadioButton|UXML element RadioButton]].
     /// </summary>
     [Icon("UIToolkit/Icons/RadioButton.png")]
-    public class RadioButton : BaseBoolField, IGroupBoxOption
+    public partial class RadioButton : BaseBoolField, IGroupBoxOption
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseBoolField.UxmlSerializedData
@@ -41,33 +41,6 @@ namespace UnityEngine.UIElements
                     var e = (RadioButton)obj;
                     e.text = text;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="RadioButton"/> using data from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<RadioButton, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="RadioButton"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseFieldTraits<bool, UxmlBoolAttributeDescription>
-        {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
-
-            /// <summary>
-            /// Initializes <see cref="RadioButton"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                ((RadioButton)ve).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 

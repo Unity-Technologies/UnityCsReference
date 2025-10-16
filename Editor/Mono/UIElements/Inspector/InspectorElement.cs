@@ -19,7 +19,7 @@ namespace UnityEditor.UIElements
     /// <remarks>
     /// Upon Bind(), the InspectorElement will generate PropertyFields inside according to the SerializedProperties inside the bound SerializedObject.
     /// </remarks>
-    public class InspectorElement : BindableElement
+    public partial class InspectorElement : BindableElement
     {
         /// <summary>
         /// The framework that should be used to build and run the UI. This is only used for default inspectors (i.e. editors of type <see cref="GenericInspector"/>)
@@ -115,27 +115,6 @@ namespace UnityEditor.UIElements
             public new static void Register()
             {
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="InspectorElement"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<InspectorElement, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="InspectorElement"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                m_PickingMode.defaultValue = PickingMode.Ignore;
             }
         }
 

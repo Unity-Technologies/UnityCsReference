@@ -9,7 +9,7 @@ namespace UnityEditor.Multiplayer.Internal
     class MultiplayerRoleDropdown : EditorToolbarDropdown
     {
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement("Multiplayer/Multiplayer Role", true, defaultDockIndex = 5, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement("Multiplayer/Multiplayer Role", defaultDockIndex = 5, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement Create()
         {
             return new MainToolbarCustom(() => new MultiplayerRoleDropdown());

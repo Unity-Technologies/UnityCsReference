@@ -73,6 +73,12 @@ namespace UnityEditor.IMGUI.Controls
         internal bool searchable { get; set; } = true;
         internal bool closeOnSelection { get; set; } = true;
 
+        internal void SetDataSourceDirty()
+        {
+            m_DirtyList = true;
+            Repaint();
+        }
+
         protected virtual bool isSearchFieldDisabled { get; set; }
         protected virtual bool setInitialSelectionPosition { get; } = true;
 

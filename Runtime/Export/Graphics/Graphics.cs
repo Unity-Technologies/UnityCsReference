@@ -39,7 +39,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public partial struct RenderBuffer
     {
-        internal int m_RenderTextureInstanceID;
+        internal EntityId m_RenderTextureInstanceID;
         internal IntPtr m_BufferPtr;
 
         internal RenderBufferLoadAction  loadAction  { get { return GetLoadAction();  } set { SetLoadAction(value); } }
@@ -1038,10 +1038,21 @@ namespace UnityEngine
         /// </summary>
         public static event Action<int,int> activeQualityLevelChanged;
 
+        /// <summary>
+        /// Callback raised when the current active quality level is being renamed.
+        /// It passed the previous and the new name to the callback.
+        /// </summary>
+        public static event Action<string, string> activeQualityLevelRenamed;
+
         [RequiredByNativeCode]
         internal static void OnActiveQualityLevelChanged(int previousQualityLevel, int currentQualityLevel)
         {
             activeQualityLevelChanged?.Invoke(previousQualityLevel, currentQualityLevel);
+        }
+
+        internal static void OnActiveQualityLevelRenamed(string previousName, string newName)
+        {
+            activeQualityLevelRenamed?.Invoke(previousName, newName);
         }
 
         public static void IncreaseLevel([uei.DefaultValue("false")] bool applyExpensiveChanges)

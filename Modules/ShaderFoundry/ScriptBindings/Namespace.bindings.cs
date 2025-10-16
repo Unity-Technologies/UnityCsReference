@@ -13,8 +13,8 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ContainingNamespaceHandle;
 
-        internal extern static NamespaceInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static NamespaceInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         NamespaceInternal IInternalType<NamespaceInternal>.ConstructInvalid() => Invalid();
@@ -51,7 +51,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static Namespace Invalid => new Namespace(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is Namespace other && this.Equals(other);
         public bool Equals(Namespace other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();

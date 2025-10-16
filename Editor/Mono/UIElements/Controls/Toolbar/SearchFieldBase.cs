@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// The base class for a search field.
     /// </summary>
-    public abstract class SearchFieldBase<TextInputType, T> : VisualElement, INotifyValueChanged<T>
+    public abstract partial class SearchFieldBase<TextInputType, T> : VisualElement, INotifyValueChanged<T>
         where TextInputType : TextInputBaseField<T>, new()
     {
         internal static readonly BindingId valueProperty = nameof(value);
@@ -110,25 +110,6 @@ namespace UnityEditor.UIElements
                     var e = (SearchFieldBase<TextInputType, T>)obj;
                     e.placeholderText = placeholderText;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Defines <see cref="SearchFieldBase.UxmlTraits"/> for the <see cref="SearchFieldBase"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a SearchFieldBase element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
             }
         }
 

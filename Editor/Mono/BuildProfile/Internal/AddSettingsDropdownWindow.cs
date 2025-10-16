@@ -20,6 +20,8 @@ namespace UnityEditor.Build.Profile.Internal
     internal class AddSettingsDropdownWindow : AdvancedDropdownWindow
     {
         const string k_ComponentSearchString = "BuildProfileComponentSearchString";
+        const int k_WindowMinSize = 325;
+        const int k_WindowMaxSize = 325;
 
         static AdvancedDropdownState s_State = new AdvancedDropdownState();
 
@@ -44,6 +46,8 @@ namespace UnityEditor.Build.Profile.Internal
             window.gui = new AdvancedDropdownGUI(window.dataSource);
             window.state = s_State;
             window.m_OnSelection = onSelection;
+            window.minSize = new Vector2(rect.width, k_WindowMinSize);
+            window.maxSize = new Vector2(rect.width, k_WindowMaxSize);
             window.Init(rect);
             return window;
         }

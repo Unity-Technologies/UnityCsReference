@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
 {
+    [NativeHeader("Modules/ShaderFoundry/Utilities/NamespaceBuilding.h")]
     internal struct Utilities
     {
         static internal void AddToList<T>(ref List<T> list, T value)
@@ -15,22 +17,18 @@ namespace UnityEditor.ShaderFoundry
             list.Add(value);
         }
 
-        static internal Namespace BuildDefaultObjectNamespace(ShaderContainer container, string objectName)
+        [FreeFunction("ShaderFoundry::BuildSymbolNamespace")]
+        extern internal static string BuildSymbolNamespace(string symbolName, DataType dataType);
+
+        static internal Namespace BuildSymbolNamespace(ShaderContainer container, string objectName, DataType dataType)
         {
-            var builder = new Namespace.Builder(container, $"{objectName}_Namespace");
+            string namespaceName = BuildSymbolNamespace(objectName, dataType);
+            var builder = new Namespace.Builder(container, namespaceName);
             return builder.Build();
         }
     }
     static class SelectExtensions
     {
-        static internal IEnumerable<BlockVariable> Select(this IEnumerable<BlockVariable> items, BlockVariableInternal.Flags flags)
-        {
-            foreach (var item in items)
-            {
-                if (item.HasFlag(flags))
-                    yield return item;
-            }
-        }
         static internal IEnumerable<StructField> Select(this IEnumerable<StructField> items, StructFieldInternal.Flags flags)
         {
             foreach (var item in items)

@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// The pop-up search field for the toolbar. The search field includes a menu button. For more information, refer to [[wiki:UIE-uxml-element-ToolbarPopupSearchField|UXML element ToolbarPopupSearchField]].
     /// </summary>
     [Icon("UIToolkit/Icons/ToolbarPopupSearchField.png")]
-    public class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
+    public partial class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
         internal static readonly BindingId menuProperty = nameof(menu);
 
@@ -29,22 +29,6 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarPopupSearchField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarPopupSearchField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarPopupSearchField"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a ToolbarPopupSearchField element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : ToolbarSearchField.UxmlTraits {}
 
         /// <summary>
         /// The menu used by the pop-up search field element.

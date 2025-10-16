@@ -61,16 +61,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageTypeIcon = new Label { name = "packageTypeIcon" };
             m_LeftContainer.Add(m_PackageTypeIcon);
 
-            m_NameLabel = new Label {name = "packageName", classList = {"name"}};
+            m_NameLabel = new Label { name = "packageName", classList = {"name"} };
+            m_LeftContainer.Add(m_NameLabel);
+
             if (isFeature)
             {
                 m_MainItem.AddToClassList("feature");
-                m_NumPackagesInFeature = new Label { name = "numPackages" };
-
-                var leftMiddleContainer = new VisualElement { name = "leftMiddleContainer" };
-                leftMiddleContainer.Add(m_NameLabel);
-                leftMiddleContainer.Add(m_NumPackagesInFeature);
-                m_LeftContainer.Add(leftMiddleContainer);
+                m_FeaturePackageNumberLabel = new Label { name = "featurePackageNumber" };
+                m_LeftContainer.Add(m_FeaturePackageNumberLabel);
             }
             else
             {
@@ -103,12 +101,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LockedIcon = new VisualElement { name = "lockedIcon", classList = { "lock" } };
             m_MainItem.Add(m_LockedIcon);
 
-            if (isFeature)
-            {
-                m_InfoStateIcon = new VisualElement { name = "versionState" };
-                m_StateContainer.Add(m_InfoStateIcon);
-            }
-
             UIUtils.SetElementDisplay(m_PackageTypeIcon, true);
         }
 
@@ -126,10 +118,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             EnableInClassList("invisible", !visualState.visible);
             m_NameLabel.text = targetVersion?.displayName ?? string.Empty;
-            m_VersionLabel.text = targetVersion.versionString ?? string.Empty;
 
-            if (m_NumPackagesInFeature != null)
-                m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
+            if (m_FeaturePackageNumberLabel != null)
+                m_FeaturePackageNumberLabel.text = "(" + (package?.versions.primary?.dependencies?.Length ?? 0) + ")";
+
+            m_VersionLabel.text = targetVersion?.versionString ?? string.Empty;
 
             var showVersionLabel = !package.versions.primary.HasTag(PackageTag.BuiltIn | PackageTag.Feature);
             UIUtils.SetElementDisplay(m_VersionLabel, showVersionLabel);
@@ -225,9 +218,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (primaryVersion is not { isInstalled: true } || !primaryVersion.HasTag(PackageTag.Feature))
                 return;
 
-            var featureCustomized = m_PackageDatabase.GetCustomizedDependencies(targetVersion)?.Length > 0;
-            m_InfoStateIcon.EnableInClassList("customized", featureCustomized);
-            m_InfoStateIcon.tooltip = featureCustomized ? L10n.Tr("This feature has been manually customized") : string.Empty;
+            var featureCustomized = m_PackageDatabase.GetCustomizedDependencies(targetVersion, CustomizedDependencyType.All)?.Length > 0;
+            m_StateIcon.EnableInClassList("customized", featureCustomized);
+            m_StateIcon.tooltip = featureCustomized ? L10n.Tr("This feature has been manually customized") : string.Empty;
         }
 
         public void RefreshSelection()
@@ -275,11 +268,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private Label m_NameLabel;
+        private Label m_FeaturePackageNumberLabel;
         private PackageDynamicTagLabel m_TagLabel;
         private VisualElement m_MainItem;
         private VisualElement m_StateIcon;
         private VisualElement m_LockedIcon;
-        private VisualElement m_InfoStateIcon;
         private VisualElement m_StateContainer;
         private Label m_EntitlementLabel;
         private Label m_VersionLabel;
@@ -287,7 +280,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label m_PackageTypeIcon;
         private VisualElement m_LeftContainer;
         private VisualElement m_RightContainer;
-        private Label m_NumPackagesInFeature;
 
         private static readonly string[] k_TooltipsByState =
         {

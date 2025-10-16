@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// A drop-down menu for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarMenu|UXML element ToolbarMenu]].
     /// </summary>
     [Icon("UIToolkit/Icons/ToolbarMenu.png")]
-    public class ToolbarMenu : TextElement, IToolbarMenuElement
+    public partial class ToolbarMenu : TextElement, IToolbarMenuElement
     {
         internal static readonly BindingId menuProperty = nameof(menu);
         internal static readonly BindingId variantProperty = nameof(variant);
@@ -30,17 +30,6 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
         }
-
-        /// <summary>
-        /// Instantiates a <see cref="ToolbarMenu"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ToolbarMenu, UxmlTraits> {}
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="ToolbarMenu"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextElement.UxmlTraits {}
 
         /// <summary>
         /// Display styles for the menu.

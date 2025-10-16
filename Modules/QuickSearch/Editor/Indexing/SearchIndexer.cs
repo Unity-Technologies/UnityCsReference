@@ -254,7 +254,9 @@ namespace UnityEditor.Search
 
         // 1- Initial version after removing the old SearchIndexEntry
         // 2- Fix Search Areas for sub assets and sub objects
-        internal const int version = 2;
+        // 3- Add metadata to document hash.
+        // 4- Keywords per document.
+        internal const int version = 4;
 
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>
@@ -741,10 +743,10 @@ namespace UnityEditor.Search
             return success;
         }
 
-        internal void MapProperty(in string name, in string label, in string help, in string propertyType, in string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions = SearchPropositionGenerationOptions.None, bool removeNestedKeys = false)
+        internal void MapProperty(int documentIndex, in string name, in string label, in string help, in string propertyType, in string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions = SearchPropositionGenerationOptions.None, bool removeNestedKeys = false)
         {
             using var _ = k_MapPropertyMarker.Auto();
-            m_Storage.MapProperty(name, label, help, propertyType, ownerTypeName, propositionGenerationOptions, removeNestedKeys);
+            m_Storage.MapProperty(documentIndex, name, label, help, propertyType, ownerTypeName, propositionGenerationOptions, removeNestedKeys);
         }
 
         [Obsolete("This method is no longer supported. The content of the indexer is automatically saved on disk.")]

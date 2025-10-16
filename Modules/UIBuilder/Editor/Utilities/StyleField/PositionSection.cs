@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -20,7 +21,7 @@ namespace Unity.UI.Builder
         static readonly string k_FieldClassName = "unity-position-section";
 
         static readonly string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/PositionSection.uxml";
-        static readonly string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/PositionSection";
+        static readonly string k_UssPathNoExt = BuilderConstants.UIToolkitAuthoringControlsPath + "/PositionSection";
         internal static readonly string k_PositionAnchorsFieldName = "anchors";
 
         PositionStyleField m_PositionTopField;
@@ -33,8 +34,8 @@ namespace Unity.UI.Builder
         {
             AddToClassList(BuilderConstants.InspectorContainerClassName);
             AddToClassList(k_FieldClassName);
-            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPathNoExt + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss"));
-            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssPathNoExt + ".uss"));
+            styleSheets.Add(EditorGUIUtility.Load(k_UssPathNoExt + (EditorGUIUtility.isProSkin ? "Dark" : "Light") + ".uss") as StyleSheet);
+            styleSheets.Add(EditorGUIUtility.Load(k_UssPathNoExt + ".uss") as StyleSheet);
 
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(k_UxmlPath);
 

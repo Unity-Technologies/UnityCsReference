@@ -349,7 +349,7 @@ namespace UnityEditor
                     GUIPopup(s_Texts.meshDistribution, m_MeshDistribution, s_Texts.meshDistributionOptions);
                     DoListOfMeshesGUI();
 
-                    if (renderModeChanged && m_Meshes[0].objectReferenceInstanceIDValue == 0 && !m_Meshes[0].hasMultipleDifferentValues)
+                    if (renderModeChanged && m_Meshes[0].objectReferenceEntityIdValue == EntityId.None && !m_Meshes[0].hasMultipleDifferentValues)
                         m_Meshes[0].objectReferenceValue = Resources.GetBuiltinResource(typeof(Mesh), "Cube.fbx");
                 }
                 else if (renderMode == RenderMode.Stretch3D)

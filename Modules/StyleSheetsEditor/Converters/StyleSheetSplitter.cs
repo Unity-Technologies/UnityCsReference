@@ -151,7 +151,7 @@ namespace UnityEditor.StyleSheets
                     case StyleValueType.ResourcePath:
                         var rp1 = s1Cache.sheet.ReadResourcePath(v1);
                         var rp2 = s2Cache.sheet.ReadResourcePath(v2);
-                        if (rp1 != rp2)
+                        if (!rp1.Equals(rp2))
                         {
                             return false;
                         }

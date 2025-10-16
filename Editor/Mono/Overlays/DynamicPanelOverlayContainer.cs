@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Collections;
+using UnityEditorInternal.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -91,21 +93,42 @@ namespace UnityEditor.Overlays
         }
 
         [Serializable]
-        public struct ContainerSaveData
+        public struct ContainerSaveData : IEquatable<ContainerSaveData>
         {
             public State state;
             public List<OverlaySaveData> overlayData;
+
+            public bool Equals(ContainerSaveData other)
+            {
+                if (overlayData == other.overlayData)
+                    return true;
+
+                if (overlayData == null || other.overlayData == null)
+                    return false;
+
+                foreach (var data in other.overlayData)
+                    if (!overlayData.ContainsByEquals(data))
+                        return false;
+
+                return state.Equals(other.state);
+            }
         }
 
         [Serializable]
-        public struct OverlaySaveData
+        public struct OverlaySaveData : IEquatable<OverlaySaveData>
         {
             public string overlayId;
             public MetaData metaData;
+
+            public bool Equals(OverlaySaveData other)
+            {
+                return overlayId == other.overlayId
+                    && metaData.Equals(other.metaData);
+            }
         }
 
         [Serializable]
-        public struct MetaData
+        public struct MetaData : IEquatable<MetaData>
         {
             public static readonly MetaData @default = new MetaData(-1);
 
@@ -119,6 +142,11 @@ namespace UnityEditor.Overlays
             public bool IsAuto()
             {
                 return currentHeight < 0;
+            }
+
+            public bool Equals(MetaData other)
+            {
+                return currentHeight == other.currentHeight;
             }
         }
 

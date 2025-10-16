@@ -12,14 +12,13 @@ namespace UnityEditor.ShaderFoundry
     internal struct BlockSequenceElementInternal : IInternalType<BlockSequenceElementInternal>
     {
         internal FoundryHandle m_AttributeListHandle;
-        internal FoundryHandle m_BlockHandle;
-        internal FoundryHandle m_CustomizationPointHandle;
+        internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_InstanceNameHandle;
-        internal FoundryHandle m_InputLinkOverridesListHandle;
-        internal FoundryHandle m_OutputLinkOverridesListHandle;
+        internal FoundryHandle m_LinkOverridesListHandle;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static BlockSequenceElementInternal Invalid();
-        internal extern bool IsValid();
+        [ThreadSafe] internal extern static BlockSequenceElementInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
 
         // IInternalType
         BlockSequenceElementInternal IInternalType<BlockSequenceElementInternal>.ConstructInvalid() => Invalid();
@@ -41,13 +40,18 @@ namespace UnityEditor.ShaderFoundry
 
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
-        public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, element.m_AttributeListHandle);
-        public Block Block => new Block(container, element.m_BlockHandle);
-        public CustomizationPoint CustomizationPoint => new CustomizationPoint(container, element.m_CustomizationPointHandle);
+        public IEnumerable<ShaderAttribute> Attributes => ListType.Enumerate<ShaderAttribute>(container, element.m_AttributeListHandle);
+        public IPublicType Type => container?.ConstructTypeFromHandle(element.m_TypeHandle);
+        [Obsolete("Use '(Type as Block)' instead")]
+        public Block Block => (Type is Block block) ? block : Block.Invalid;
+        [Obsolete("Use '(Type as CustomizationPoint)' instead")]
+        public CustomizationPoint CustomizationPoint => (Type is CustomizationPoint cp) ? cp : CustomizationPoint.Invalid;
         public string InstanceName => container?.GetString(element.m_InstanceNameHandle) ?? string.Empty;
 
-        public IEnumerable<BlockLinkOverride> InputLinkOverrides => element.m_InputLinkOverridesListHandle.AsListEnumerable<BlockLinkOverride>(container, (container, handle) => (new BlockLinkOverride(container, handle)));
-        public IEnumerable<BlockLinkOverride> OutputLinkOverrides => element.m_OutputLinkOverridesListHandle.AsListEnumerable<BlockLinkOverride>(container, (container, handle) => (new BlockLinkOverride(container, handle)));
+        public IEnumerable<BlockLinkOverride> LinkOverrides =>
+            ListType.Enumerate<BlockLinkOverride>(container, element.m_LinkOverridesListHandle);
+
+        public Location Location => new Location(container, element.m_LocationHandle);
 
         // private
         internal BlockSequenceElement(ShaderContainer container, FoundryHandle handle)
@@ -59,7 +63,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static BlockSequenceElement Invalid => new BlockSequenceElement(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is BlockSequenceElement other && this.Equals(other);
         public bool Equals(BlockSequenceElement other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -70,52 +74,44 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             public List<ShaderAttribute> attributes;
-            public Block block { get; private set; }
-            public CustomizationPoint customizationPoint { get; private set; }
+            public IPublicType Type { get; private set; }
             public string instanceName;
-            public List<BlockLinkOverride> inputOverrides;
-            public List<BlockLinkOverride> outputOverrides;
+            public List<BlockLinkOverride> linkOverrides;
+            public Location location;
 
             public ShaderContainer Container => container;
 
             public Builder(ShaderContainer container, Block block)
             {
                 this.container = container;
-                this.block = block;
-                this.customizationPoint = CustomizationPoint.Invalid;
+                this.Type = block;
+            }
+
+            public Builder(ShaderContainer container, BlockSequence blockSequence)
+            {
+                this.container = container;
+                this.Type = blockSequence;
             }
 
             public Builder(ShaderContainer container, CustomizationPoint customizationPoint)
             {
                 this.container = container;
-                this.customizationPoint = customizationPoint;
-                this.block = Block.Invalid;
+                this.Type = customizationPoint;
             }
 
-            public void AddAttribute(ShaderAttribute attribute) => Utilities.AddToList(ref attributes, attribute);
-            public void AddInputOverride(BlockLinkOverride linkOverride)
-            {
-                if (inputOverrides == null)
-                    inputOverrides = new List<BlockLinkOverride>();
-                inputOverrides.Add(linkOverride);
-            }
-
-            public void AddOutputOverride(BlockLinkOverride linkOverride)
-            {
-                if (outputOverrides == null)
-                    outputOverrides = new List<BlockLinkOverride>();
-                outputOverrides.Add(linkOverride);
-            }
+            public void AddAttribute(ShaderAttribute attribute) =>
+                Utilities.AddToList(ref attributes, attribute);
+            public void AddLinkOverride(BlockLinkOverride linkOverride) =>
+                Utilities.AddToList(ref linkOverrides, linkOverride);
 
             public BlockSequenceElement Build()
             {
                 var internalResult = new BlockSequenceElementInternal();
-                internalResult.m_AttributeListHandle = HandleListInternal.Build(container, attributes);
-                internalResult.m_BlockHandle = block.handle;
-                internalResult.m_CustomizationPointHandle = customizationPoint.handle;
+                internalResult.m_AttributeListHandle = ListType.Build(container, attributes);
+                internalResult.m_TypeHandle = Type.Handle;
                 internalResult.m_InstanceNameHandle = container.AddString(instanceName);
-                internalResult.m_InputLinkOverridesListHandle = HandleListInternal.Build(container, inputOverrides, (o) => (o.handle));
-                internalResult.m_OutputLinkOverridesListHandle = HandleListInternal.Build(container, outputOverrides, (o) => (o.handle));
+                internalResult.m_LinkOverridesListHandle = ListType.Build(container, linkOverrides);
+                internalResult.m_LocationHandle = location.handle;
                 var returnTypeHandle = container.Add(internalResult);
                 return new BlockSequenceElement(container, returnTypeHandle);
             }

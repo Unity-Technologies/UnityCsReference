@@ -55,11 +55,6 @@ namespace UnityEditor
             get { return EditorGUI.IsEditingTextField() && !EditorGUIUtility.textFieldHasSelection; }
         }
 
-        internal bool readyToAutoSave
-        {
-            get { return !m_SavingHasFailed && !hasMissingScripts && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing && !EditorApplication.isCompiling; }
-        }
-
         bool hasMissingScripts
         {
             get { return m_PrefabsWithMissingScript.Count > 0; }
@@ -77,7 +72,9 @@ namespace UnityEditor
             {
                 EditorApplication.update -= WaitToApplyChanges;
                 m_HasPendingChanges = false;
-                SaveDirtyPrefabAssets(false);
+
+                // (UUM-111102) Do not call SaveDirtyPrefabAssets() from here in OnDisable as we might be in the beginning of a domain reload
+                // where saving prefabs are not allowed. Any changes will be ensured to be saved in OnDestroy 
             }
 
             ObjectChangeEvents.changesPublished -= ObjectChangeEventPublished;
@@ -91,25 +88,25 @@ namespace UnityEditor
 
             for (int i = 0; i < stream.length; ++i)
             {
-                int instanceId = 0;
+                EntityId entityId = EntityId.None;
                 if (stream.GetEventType(i) == ObjectChangeKind.ChangeGameObjectOrComponentProperties)
                 {
                     stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var changeGameObjectOrComponent);
-                    instanceId = changeGameObjectOrComponent.instanceId;
+                    entityId = changeGameObjectOrComponent.entityId;
                 }
                 else if (stream.GetEventType(i) == ObjectChangeKind.ChangeGameObjectStructure)
                 {
                     stream.GetChangeGameObjectStructureEvent(i, out var changeGameObject);
-                    instanceId = changeGameObject.instanceId;
+                    entityId = changeGameObject.entityId;
                 }
 
-                if (instanceId == 0)
+                if (entityId == EntityId.None)
                     continue;
 
-                var asset = EditorUtility.EntityIdToObject(instanceId);
+                var asset = EditorUtility.EntityIdToObject(entityId);
                 if (IsTargetAsset(asset))
                 {
-                    if (CanSave())
+                    if (CanAutoSave())
                     {
                         SaveDirtyPrefabAssets(true);
                     }
@@ -146,7 +143,7 @@ namespace UnityEditor
         void OnDestroy()
         {
             // Ensure to save unsaved changes (regardless of hotcontrol etc)
-            if (!m_SavingHasFailed && !hasMissingScripts)
+            if (!m_SavingHasFailed && !hasMissingScripts && !EditorApplication.isCompiling)
                 SaveDirtyPrefabAssets(false);
         }
 
@@ -155,8 +152,12 @@ namespace UnityEditor
         /// Auto-saving is disabled if a UI field is focused or the CurveEditorWindow, ColorPicker or GradientPicker is visible.
         /// </summary>
         /// <returns>Returns true if auto-saving is allowed; otherwise, returns false.</returns>
-        internal bool CanSave() => !EditorFocusMonitor.AreBindableElementsSelected() &&
-            readyToAutoSave &&
+        internal bool CanAutoSave() => !EditorFocusMonitor.AreBindableElementsSelected() &&
+            !m_SavingHasFailed &&
+            !hasMissingScripts &&
+            GUIUtility.hotControl == 0 &&
+            !isTextFieldCaretShowing &&
+            !EditorApplication.isCompiling &&
             !CurveEditorWindow.visible &&
             !ColorPicker.visible &&
             !GradientPicker.visible;
@@ -168,7 +169,7 @@ namespace UnityEditor
             {
                 m_NextUpdate = time + 0.2;
 
-                if (CanSave())
+                if (CanAutoSave())
                     SaveDirtyPrefabAssets(true);
             }
         }
@@ -182,8 +183,8 @@ namespace UnityEditor
             if (assetTarget == null)
                 return;
 
-            if (reloadInspectors && !CanSave())
-                Debug.LogWarning("SaveDirtyPrefabAssets should not be called when CanSave is false and reloading inspectors.");
+            if (reloadInspectors && !CanAutoSave())
+                Debug.LogWarning("SaveDirtyPrefabAssets should not be called when CanAutoSave is false and reloading inspectors.");
 
             m_DirtyPrefabAssets.Clear();
             foreach (var asset in assetTargets)

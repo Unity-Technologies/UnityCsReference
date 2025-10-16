@@ -327,17 +327,17 @@ namespace UnityEditor.Search
 
                     case ShaderPropertyType.Int:
                         indexer.AddNumber(propertyName, property.intValue, indexer.settings.baseScore, context.documentIndex);
-                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
+                        indexer.MapProperty(context.documentIndex, propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
                     case ShaderPropertyType.Float:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
-                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
+                        indexer.MapProperty(context.documentIndex, propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
                     case ShaderPropertyType.Range:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
-                        indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
+                        indexer.MapProperty(context.documentIndex, propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
                     case ShaderPropertyType.Texture:
@@ -383,7 +383,7 @@ namespace UnityEditor.Search
             indexer.AddNumber(propertyName + ".b", c.b, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".a", c.a, indexer.settings.baseScore, documentIndex);
             if (label != null && ownerType != null)
-                indexer.MapProperty(propertyName, label ?? propertyName, null, "Color", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
+                indexer.MapProperty(documentIndex, propertyName, label ?? propertyName, null, "Color", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         internal static void IndexVector(string propertyName, in Vector2 v, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
@@ -391,7 +391,7 @@ namespace UnityEditor.Search
             indexer.AddNumber(propertyName + ".x", v.x, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
             if (label != null && ownerType != null)
-                indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector2", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
+                indexer.MapProperty(documentIndex, propertyName, label ?? propertyName, null, "Vector2", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         internal static void IndexVector(string propertyName, in Vector3 v, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
@@ -400,7 +400,7 @@ namespace UnityEditor.Search
             indexer.AddNumber(propertyName + ".y", v.y, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".z", v.z, indexer.settings.baseScore, documentIndex);
             if (label != null && ownerType != null)
-                indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector3", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
+                indexer.MapProperty(documentIndex, propertyName, label ?? propertyName, null, "Vector3", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         internal static void IndexVector(string propertyName, in Vector4 v, ObjectIndexer indexer, int documentIndex, in string label = null, in System.Type ownerType = null)
@@ -410,7 +410,7 @@ namespace UnityEditor.Search
             indexer.AddNumber(propertyName + ".z", v.z, indexer.settings.baseScore, documentIndex);
             indexer.AddNumber(propertyName + ".w", v.w, indexer.settings.baseScore, documentIndex);
             if (label != null && ownerType != null)
-                indexer.MapProperty(propertyName, label ?? propertyName, null, "Vector4", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
+                indexer.MapProperty(documentIndex, propertyName, label ?? propertyName, null, "Vector4", ownerType?.AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         [SceneQueryEngineFilter("material", new[] { ":" }, "material:<$object:none,Material$>")]

@@ -140,6 +140,7 @@ namespace UnityEngine.UIElements
 
         private static readonly Regex s_InternalStyleSheetPath = new Regex("^instanceId:[-0-9]+$", RegexOptions.Compiled);
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal void AddStyleSheetPath(string sheetPath)
         {
             // getting the scaling is impossible when the asset is not in a panel, and this is often the case when loading the assets.

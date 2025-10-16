@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a field for entering Rotate.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class RotateField : BaseField<Rotate>, IValueField<Rotate>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

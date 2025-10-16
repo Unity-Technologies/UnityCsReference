@@ -5,20 +5,22 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.Hierarchy
 {
     /// <summary>
     /// Container holding the data needed to start a drag and drop operation.
     /// </summary>
-    /// <remarks>Do not keep a reference to this class or any of its data past the scope of <see cref="HierarchyNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/>.</remarks>
+    /// <remarks>Do not keep a reference to this class or any of its data past the scope of <see cref="IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/>.</remarks>
+    [VisibleToOtherModules]
     internal readonly ref struct HierarchyViewDragAndDropSetupData
     {
         readonly Dictionary<string, object> m_GenericData;
 
         /// <summary>
         /// The <see cref="HierarchyNode"/>s that are being dragged. These nodes need to be converted into the proper
-        /// drag and drop data by the <see cref="HierarchyNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/> method.
+        /// drag and drop data by the <see cref="IHierarchyEditorNodeTypeHandler.OnStartDrag(in HierarchyViewDragAndDropSetupData)"/> method.
         /// </summary>
         public ReadOnlySpan<HierarchyNode> Nodes { get; }
 

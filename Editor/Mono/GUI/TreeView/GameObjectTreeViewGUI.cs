@@ -380,8 +380,9 @@ namespace UnityEditor
             SceneVisibilityHierarchyGUI.DoItemGUI(rect, goItem, selected && !IsRenaming(item.id), m_TreeView.hoveredItem == goItem, focused, isDragging);
         }
 
-        internal static void UserCallbackRowGUI(int itemID, Rect rect)
+        internal static void UserCallbackRowGUI(EntityId itemID, Rect rect)
         {
+            #pragma warning disable 618
             if (EditorApplication.hierarchyWindowItemOnGUI != null)
             {
                 // Adjust rect for the right aligned column for the prefab isolation button
@@ -390,6 +391,17 @@ namespace UnityEditor
                     GameObjectStyles.rightArrow.margin.horizontal;
 
                 EditorApplication.hierarchyWindowItemOnGUI(itemID, rect);
+            }
+            #pragma warning restore 618
+
+            if (EditorApplication.hierarchyWindowItemByEntityIdOnGUI != null)
+            {
+                // Adjust rect for the right aligned column for the prefab isolation button
+                rect.xMax -=
+                    GameObjectStyles.rightArrow.fixedWidth +
+                    GameObjectStyles.rightArrow.margin.horizontal;
+
+                EditorApplication.hierarchyWindowItemByEntityIdOnGUI(itemID, rect);
             }
         }
 
@@ -667,8 +679,8 @@ namespace UnityEditor
             }
 
             var scene = goItem.scene;
-            var entityId = scene.defaultParent;
-            if (entityId != EntityId.None && (EditorSceneManager.GetActiveScene().guid == scene.guid || PrefabStageUtility.GetCurrentPrefabStage() != null))
+            var defaultParentId = scene.defaultParent;
+            if (defaultParentId != EntityId.None && goItem.id == defaultParentId && (EditorSceneManager.GetActiveScene().guid == scene.guid || PrefabStageUtility.GetCurrentPrefabStage() != null))
             {
                 lineStyle = Styles.lineBoldStyle;
             }

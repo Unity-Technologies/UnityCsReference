@@ -15,7 +15,7 @@ namespace UnityEditor.Build.Content
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class PreloadInfo
     {
         [NativeName("preloadObjects")]
@@ -32,7 +32,7 @@ namespace UnityEditor.Build.Content
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class AssetLoadInfo
     {
         [NativeName("asset")]
@@ -72,7 +72,7 @@ namespace UnityEditor.Build.Content
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class AssetBundleInfo
     {
         [NativeName("bundleName")]
@@ -98,7 +98,7 @@ namespace UnityEditor.Build.Content
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class SceneLoadInfo
     {
         [NativeName("asset")]
@@ -130,7 +130,7 @@ namespace UnityEditor.Build.Content
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class SceneBundleInfo
     {
         [NativeName("bundleName")]
@@ -180,7 +180,7 @@ namespace UnityEditor.Build.Content
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
     public class WriteCommand
     {
         [NativeName("fileName")]

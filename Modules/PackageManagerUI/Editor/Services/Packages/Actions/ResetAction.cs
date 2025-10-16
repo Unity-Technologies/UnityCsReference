@@ -28,8 +28,8 @@ internal class ResetAction : PackageAction
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version);
-        if (!packagesToUninstall.Any())
+        var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.Resettable);
+        if (packagesToUninstall.Length == 0)
             return false;
 
         var packageNameAndVersions = string.Join("\n\u2022 ",
@@ -58,7 +58,9 @@ internal class ResetAction : PackageAction
     {
         return version.isInstalled
                && version.HasTag(PackageTag.Feature)
-               && m_PackageDatabase.GetCustomizedDependencies(version).Any();
+               // We use CustomizedDependencyType.All here because we want to show the Reset action even if there are only non-resettable customized dependencies.
+               // We have the `DisableIfCannotReset` condition to disable the action and show the correct tooltip in this case.
+               && m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.All).Length > 0;
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -77,20 +79,17 @@ internal class ResetAction : PackageAction
     {
         public DisableIfCannotReset(IPackageDatabase packageDatabase, IPackageVersion version)
         {
-            var customizedDependencies = packageDatabase.GetCustomizedDependencies(version);
-            var oneDependencyIsInDevelopment = customizedDependencies.Any(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
-            if (oneDependencyIsInDevelopment)
-            {
-                active = true;
-                tooltip =string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. You must remove them manually. See the list of packages in the {0} for more information."), version.GetDescriptor());
-            }
-            else
-            {
-                var oneDependencyIsDirectAndMatchManifestVersion = customizedDependencies.Any(p => (p.versions.installed?.isDirectDependency ?? false) &&
-                                                                                                   p.versions.installed?.versionString == p.versions.installed?.versionInManifest);
-                active = !oneDependencyIsDirectAndMatchManifestVersion;
-                tooltip = string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. See the list of packages in the {0} for more information."), version.GetDescriptor());
-            }
+            var nonResettableCustomizedDependencies = packageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.NonResettable);
+            active = nonResettableCustomizedDependencies.Length > 0;
+            if (!active)
+                return;
+
+            var anyCustomDependencies = nonResettableCustomizedDependencies.AnyMatches(p => p.versions.installed?.HasTag(PackageTag.Custom) ?? false);
+            tooltip = anyCustomDependencies ?
+                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. " +
+                                      "You must remove them manually. See the list of packages in the {0} for more information."), version.GetDescriptor()) :
+                string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. " +
+                                      "See the list of packages in the {0} for more information."), version.GetDescriptor());
         }
     }
 

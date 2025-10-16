@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using ShaderStage = UnityEngine.Shaders.ShaderStage;
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
@@ -19,10 +20,11 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_TagDescriptorListHandle;
         internal FoundryHandle m_PackageRequirementListHandle;
         internal bool m_EnableDebugging;
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static TemplatePassInternal Invalid();
-        internal extern bool IsValid();
-        internal extern bool IsUsePass();
+        [ThreadSafe] internal extern static TemplatePassInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern bool IsUsePass();
 
         // IInternalType
         TemplatePassInternal IInternalType<TemplatePassInternal>.ConstructInvalid() => Invalid();
@@ -50,9 +52,9 @@ namespace UnityEditor.ShaderFoundry
         public string UsePassName => container?.GetString(templatePass.m_UsePassNameHandle) ?? string.Empty;
         public string PassName => container?.GetString(templatePass.m_PassNameHandle) ?? string.Empty;
 
-        public StageDescription GetStageDescription(PassStageType stageType)
+        public StageDescription GetStageDescription(ShaderStage stageType)
         {
-            var stages = HandleListInternal.Enumerate<StageDescription>(container, templatePass.m_StageDescriptionListHandle);
+            var stages = ListType.Enumerate<StageDescription>(container, templatePass.m_StageDescriptionListHandle);
             foreach(var stage in stages)
             {
                 if (stage.StageType == stageType)
@@ -65,7 +67,7 @@ namespace UnityEditor.ShaderFoundry
         {
             get
             {
-                var items = HandleListInternal.Enumerate<StageDescription>(container, templatePass.m_StageDescriptionListHandle);
+                var items = ListType.Enumerate<StageDescription>(container, templatePass.m_StageDescriptionListHandle);
                 foreach (var item in items)
                 {
                     if (item.IsValid)
@@ -74,39 +76,20 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        public IEnumerable<RenderStateDescriptor> RenderStateDescriptors
-        {
-            get
-            {
-                var localContainer = Container;
-                var list = new HandleListInternal(templatePass.m_RenderStateDescriptorListHandle);
-                return list.Select(localContainer, (handle) => (new RenderStateDescriptor(localContainer, handle)));
-            }
-        }
+        public IEnumerable<RenderStateDescriptor> RenderStateDescriptors =>
+            ListType.Enumerate<RenderStateDescriptor>(container, templatePass.m_RenderStateDescriptorListHandle);
 
-        public IEnumerable<PragmaDescriptor> PragmaDescriptors
-        {
-            get
-            {
-                var localContainer = Container;
-                var list = new HandleListInternal(templatePass.m_PragmaDescriptorListHandle);
-                return list.Select(localContainer, (handle) => (new PragmaDescriptor(localContainer, handle)));
-            }
-        }
+        public IEnumerable<PragmaDescriptor> PragmaDescriptors =>
+            ListType.Enumerate<PragmaDescriptor>(container, templatePass.m_PragmaDescriptorListHandle);
 
-        public IEnumerable<TagDescriptor> TagDescriptors
-        {
-            get
-            {
-                var localContainer = Container;
-                var list = new HandleListInternal(templatePass.m_TagDescriptorListHandle);
-                return list.Select(localContainer, (handle) => (new TagDescriptor(localContainer, handle)));
-            }
-        }
+        public IEnumerable<TagDescriptor> TagDescriptors =>
+            ListType.Enumerate<TagDescriptor>(container, templatePass.m_TagDescriptorListHandle);
 
-        public IEnumerable<PackageRequirement> PackageRequirements => templatePass.m_PackageRequirementListHandle.AsListEnumerable<PackageRequirement>(container, (container, handle) => (new PackageRequirement(container, handle)));
+        public IEnumerable<PackageRequirement> PackageRequirements =>
+            ListType.Enumerate<PackageRequirement>(container, templatePass.m_PackageRequirementListHandle);
 
         public bool EnableDebugging => templatePass.m_EnableDebugging;
+        public Location Location => new Location(container, templatePass.m_LocationHandle);
 
         // private
         internal TemplatePass(ShaderContainer container, FoundryHandle handle)
@@ -118,7 +101,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static TemplatePass Invalid => new TemplatePass(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is TemplatePass other && this.Equals(other);
         public bool Equals(TemplatePass other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -129,6 +112,7 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             string usePassName;
+            public Location location;
 
             public UsePassBuilder(ShaderContainer container, string usePassName)
             {
@@ -146,7 +130,8 @@ namespace UnityEditor.ShaderFoundry
                     m_PassNameHandle = invalid,
                     m_TagDescriptorListHandle = invalid,
                     m_PackageRequirementListHandle = invalid,
-                    m_EnableDebugging = false
+                    m_EnableDebugging = false,
+                    m_LocationHandle = location.handle,
                 };
 
                 var passHandle = container.Add(templatePassInternal);
@@ -160,8 +145,9 @@ namespace UnityEditor.ShaderFoundry
             List<StageDescription> stageDescriptions;
             List<RenderStateDescriptor> renderStateDescriptors;
             List<PragmaDescriptor> pragmaDescriptors;
-            List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
+            List<TagDescriptor> tagDescriptors;
             List<PackageRequirement> packageRequirements;
+            public Location location;
 
             public string PassName { get; set; }
             public bool EnableDebugging { get; set; }
@@ -171,36 +157,30 @@ namespace UnityEditor.ShaderFoundry
             {
                 this.container = container;
                 stageDescriptions = new List<StageDescription>();
-                for (var i = 0; i < (int)PassStageType.Count; ++i)
+                for (var i = 0; i < (int)ShaderStage.Count; ++i)
                     stageDescriptions.Add(StageDescription.Invalid);
             }
 
             public void AddRenderStateDescriptor(RenderStateDescriptor renderStateDescriptor)
             {
-                if (renderStateDescriptors == null)
-                    renderStateDescriptors = new List<RenderStateDescriptor>();
-                renderStateDescriptors.Add(renderStateDescriptor);
+                Utilities.AddToList(ref renderStateDescriptors, renderStateDescriptor);
             }
 
             public void AddPragmaDescriptor(PragmaDescriptor pragmaDescriptor)
             {
-                if (pragmaDescriptors == null)
-                    pragmaDescriptors = new List<PragmaDescriptor>();
-                pragmaDescriptors.Add(pragmaDescriptor);
+                Utilities.AddToList(ref pragmaDescriptors, pragmaDescriptor);
             }
 
             public void AddTagDescriptor(TagDescriptor tagDescriptor)
             {
-                tagDescriptors.Add(tagDescriptor);
+                Utilities.AddToList(ref tagDescriptors, tagDescriptor);
             }
 
             public void AddPackageRequirement(PackageRequirement packageRequirement)
             {
                 if (packageRequirement.IsValid)
                 {
-                    if (packageRequirements == null)
-                        packageRequirements = new List<PackageRequirement>();
-                    packageRequirements.Add(packageRequirement);
+                    Utilities.AddToList(ref packageRequirements, packageRequirement);
                 }
             }
 
@@ -234,11 +214,12 @@ namespace UnityEditor.ShaderFoundry
                 };
 
 
-                templatePassInternal.m_StageDescriptionListHandle = HandleListInternal.Build(container, BuildValidStages());
-                templatePassInternal.m_RenderStateDescriptorListHandle = HandleListInternal.Build(container, renderStateDescriptors, (o) => (o.handle));
-                templatePassInternal.m_PragmaDescriptorListHandle = HandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
-                templatePassInternal.m_TagDescriptorListHandle = HandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
-                templatePassInternal.m_PackageRequirementListHandle = HandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
+                templatePassInternal.m_StageDescriptionListHandle = ListType.Build(container, BuildValidStages());
+                templatePassInternal.m_RenderStateDescriptorListHandle = ListType.Build(container, renderStateDescriptors);
+                templatePassInternal.m_PragmaDescriptorListHandle = ListType.Build(container, pragmaDescriptors);
+                templatePassInternal.m_TagDescriptorListHandle = ListType.Build(container, tagDescriptors);
+                templatePassInternal.m_PackageRequirementListHandle = ListType.Build(container, packageRequirements);
+                templatePassInternal.m_LocationHandle = location.handle;
 
                 var returnTypeHandle = container.Add(templatePassInternal);
                 return new TemplatePass(container, returnTypeHandle);

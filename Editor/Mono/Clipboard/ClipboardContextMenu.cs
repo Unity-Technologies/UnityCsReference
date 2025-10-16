@@ -150,6 +150,12 @@ namespace UnityEditor
                         p => Clipboard.hasHash128,
                         p => p.hash128Value = Clipboard.hash128Value);
                     break;
+                case SerializedPropertyType.EntityId:
+                    SetupAction(property, menu, evt,
+                        p => Clipboard.entityIdValue = p.entityIdValue,
+                        p => Clipboard.hasEntityId,
+                        p => p.entityIdValue = Clipboard.entityIdValue);
+                    break;
                 case SerializedPropertyType.Generic:
                     if (property.type == "MinMaxGradient")
                     {
@@ -628,7 +634,7 @@ namespace UnityEditor
                 p.objectReferenceValue = Clipboard.objectValue;
             else if (Clipboard.hasGuid)
                 p.objectReferenceValue = AssetDatabase.LoadMainAssetAtGUID(Clipboard.guidValue);
-            else if (!new GUID(AssetDatabase.AssetPathToGUID(Clipboard.stringValue)).Empty())
+            else if (!AssetDatabase.GUIDFromAssetPath(Clipboard.stringValue).Empty())
                 p.objectReferenceValue = AssetDatabase.LoadMainAssetAtPath(Clipboard.stringValue);
             p.serializedObject.ApplyModifiedProperties();
         }
@@ -637,7 +643,7 @@ namespace UnityEditor
         {
             var hasPasteObject = Clipboard.hasObject;
             var hasPasteGuid = Clipboard.hasGuid;
-            var hasPastePath = !new GUID(AssetDatabase.AssetPathToGUID(Clipboard.stringValue)).Empty();
+            var hasPastePath = !AssetDatabase.GUIDFromAssetPath(Clipboard.stringValue).Empty();
             var obj = property.objectReferenceValue;
 
             var canCopy = !property.hasMultipleDifferentValues && obj != null;
@@ -654,7 +660,7 @@ namespace UnityEditor
                 if (hasAsset)
                 {
                     menu.AddItem(kCopyPathContent, false, o => Clipboard.stringValue = AssetDatabase.GetAssetPath((UnityEngine.Object)o).ToString(), obj);
-                    menu.AddItem(kCopyGuidContent, false, o => Clipboard.guidValue = new GUID(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath((UnityEngine.Object)o))), obj);
+                    menu.AddItem(kCopyGuidContent, false, o => Clipboard.guidValue = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath((UnityEngine.Object)o)), obj);
                 }
                 else
                 {

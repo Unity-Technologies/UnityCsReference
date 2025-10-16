@@ -47,7 +47,7 @@ namespace UnityEditor.Search
         bool IBlockSource.formatNames => formatNames;
         internal virtual bool formatNames => true;
         internal virtual bool wantsEvents => false;
-        internal virtual bool canExclude => true;
+        internal virtual bool canExclude => source.blocksSupportExclude;
         internal virtual bool canDisable => true;
         internal virtual bool canOpenEditorOnValueClicked => false;
         internal virtual bool draggable => true;
@@ -146,7 +146,7 @@ namespace UnityEditor.Search
         internal virtual void AddContextualMenuItems(GenericMenu menu) {}
         internal virtual string FormatUIValue(string originalValue)
         {
-            return originalValue;
+            return SearchUtils.GetNiceDisplayLabel(originalValue);
         }
 
         private bool OpenEditor(Event evt, in Rect rect)

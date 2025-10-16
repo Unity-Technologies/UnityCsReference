@@ -36,7 +36,7 @@ namespace UnityEditor.Build.Profile
         Image m_SelectedCardImage;
         Label m_SelectedDisplayNameLabel;
         VisualElement m_SelectedDescription;
-
+        VisualElement m_PlatformBrowserHeaderBG;
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
@@ -57,6 +57,7 @@ namespace UnityEditor.Build.Profile
         Label m_BuildProfileNameLabel;
 
         TextField m_BuildProfileNameTextField;
+        List<BuildProfilePlatformGroup> m_PlatformGroups;
 
         /// <summary>
         /// Warning message displayed when the selected card's platform
@@ -82,7 +83,7 @@ namespace UnityEditor.Build.Profile
 
         public static void AddBuildProfile(GUID platformId)
         {
-            var platforms = FindAllVisiblePlatforms();
+            var platforms = FindAllVisiblePlatforms(BuildProfileModuleUtil.FindAllViewablePlatforms().ToArray());
             foreach (var card in platforms)
             {
                 if (card.platformId != platformId)
@@ -123,10 +124,10 @@ namespace UnityEditor.Build.Profile
             }));
         }
 
-        static BuildProfileCard[] FindAllVisiblePlatforms()
+        static BuildProfileCard[] FindAllVisiblePlatforms(GUID[] platforms)
         {
             var cards = new List<BuildProfileCard>();
-            foreach (var platformId in BuildProfileModuleUtil.FindAllViewablePlatforms())
+            foreach (var platformId in platforms)
             {
                 if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(platformId, SystemInfo.operatingSystemFamily))
                     continue;
@@ -150,6 +151,7 @@ namespace UnityEditor.Build.Profile
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
                     platformId = platformId,
                     description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    platformBannerBgColorHex = BuildProfileModuleUtil.GetPlatformColorString(platformId),
                     internalPackages = internalPackages,
                     partnerPackages = partnerPackages,
                     preconfiguredSettingsVariants = preconfiguredSettingsVariants
@@ -176,6 +178,7 @@ namespace UnityEditor.Build.Profile
             m_AddBuildProfileButton = rootVisualElement.Q<Button>("add-build-profile-button");
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
+            m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
             m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
@@ -241,8 +244,8 @@ namespace UnityEditor.Build.Profile
             m_AddBuildProfileButton.text = TrText.addBuildProfile;
 
             // Build dynamic visual elements.
-            m_Cards = FindAllVisiblePlatforms();
-            var cards = CreateCardListView();
+            m_Cards = FindAllVisiblePlatforms(BuildProfileModuleUtil.FindAllViewablePlatforms().ToArray());
+            CreatePlatformView();
 
             if (BuildProfileContext.packageServiceInfoProvider.FetchInfo())
                 BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated += OnPackageInfoUpdated;
@@ -262,7 +265,7 @@ namespace UnityEditor.Build.Profile
             };
 
             // First element should match standalone platform.
-            cards.SetSelection(0);
+            OnCardSelected(m_Cards[0]);
         }
 
         void OnPackageInfoUpdated()
@@ -354,8 +357,7 @@ namespace UnityEditor.Build.Profile
                 var card = m_Cards[index];
                 if (card.platformId == platformGuid)
                 {
-                    var cardListView = rootVisualElement.Q<ListView>("cards-root-listview");
-                    cardListView.SetSelection(index);
+                    OnCardSelected(card);
                     break;
                 }
             }
@@ -375,15 +377,22 @@ namespace UnityEditor.Build.Profile
         /// Verify editor can create build profiles for the currently selected card. Otherwise
         /// display relevant documentation to the user.
         /// </summary>
-        void OnCardSelected(BuildProfileCard card)
+        internal void OnCardSelected(BuildProfileCard card)
         {
             ClearWindowData();
             m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(
                 BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId));
             m_SelectedCard = card;
+            SetCardSelected(card);
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIconHero(card.platformId);
             m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
+
+            // Only color if not a default color and color can be parsed.
+            if (!card.platformBannerBgColorHex.Equals("#00000000") && ColorUtility.TryParseHtmlString(card.platformBannerBgColorHex, out Color bgColor))
+                m_PlatformBrowserHeaderBG.style.backgroundColor = bgColor;
+            else
+                m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
 
             if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
                 m_HelpBoxWrapper.Show();
@@ -475,39 +484,32 @@ namespace UnityEditor.Build.Profile
             UpdateAddBuildProfileButton();
         }
 
-        ListView CreateCardListView()
+        void CreatePlatformView()
         {
-            var cards = rootVisualElement.Q<ListView>("cards-root-listview");
-            cards.Q<ScrollView>().verticalScrollerVisibility = ScrollerVisibility.Hidden;
-            cards.itemsSource = m_Cards;
-            cards.makeItem = () =>
+            var allGroups = BuildProfileModuleUtil.GetAllPlatformGroups();
+            var platformContainer = rootVisualElement.Q<VisualElement>("platforms-list-container");
+            m_PlatformGroups = new List<BuildProfilePlatformGroup>();
+
+            int i = 0;
+            foreach (var platformGroup in allGroups)
             {
-                var label = new BuildProfileListLabel();
-                label.AddToClassList("pl-small");
-                return label;
-            };
-            cards.bindItem = (VisualElement element, int index) =>
-            {
-                if (element is not BuildProfileListLabel card)
+                BuildProfileCard[] cards = FindAllVisiblePlatforms(platformGroup.platforms);
+
+                if (cards.Length > 0)
                 {
-                    Debug.LogWarning("Unexpected element type in Platform Browser. element=" + element);
-                    return;
+                    var item = new BuildProfilePlatformGroup(this);
+                    item.Set(platformGroup.groupName, cards);
+                    item.AddToClassList("platform-group");
+                    platformContainer.Insert(i, item);
+                    m_PlatformGroups.Add(item);
+                    i++;
                 }
+            }
+        }
 
-                var cardDescription = m_Cards[index];
-                card.Set(
-                    cardDescription.displayName,
-                    BuildProfileModuleUtil.GetPlatformIconSmall(cardDescription.platformId));
-            };
-            cards.selectedIndicesChanged += (indices) =>
-            {
-                using var index = indices.GetEnumerator();
-                if (!index.MoveNext())
-                    return;
-
-                OnCardSelected(m_Cards[index.Current]);
-            };
-            return cards;
+        void SetCardSelected(BuildProfileCard card)
+        {
+            m_PlatformGroups.ForEach(group => group.SetCardSelected(card));
         }
 
         void UpdateAddBuildProfileButton()

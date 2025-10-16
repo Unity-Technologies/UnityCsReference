@@ -500,7 +500,7 @@ namespace UnityEditor.UIElements
     /// For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
     /// </summary>
     [Icon("UIToolkit/Icons/MaskField.png")]
-    public class MaskField : BaseMaskField<int>
+    public partial class MaskField : BaseMaskField<int>
     {
         internal override int MaskToValue(int newMask) => newMask;
         internal override int ValueToMask(int value) => value;
@@ -535,47 +535,6 @@ namespace UnityEditor.UIElements
                     var e = (MaskField)obj;
                     e.choices = choices;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="MaskField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="MaskField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
-            UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
-
-            /// <summary>
-            /// Initializes the <see cref="UxmlTraits"/> for <see cref="MaskField"/>.
-            /// </summary>
-            /// <param name="ve">The VisualElement that will be populated.</param>
-            /// <param name="bag">The bag from where the attributes are taken.</param>
-            /// <param name="cc">The creation context, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                var f = (MaskField)ve;
-
-                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
-
-
-                var listOfChoices = UxmlUtility.ParseStringListAttribute(choicesFromBag);
-
-                if (listOfChoices != null && listOfChoices.Count > 0)
-                {
-                    f.choices = listOfChoices;
-                }
-                // The mask is simply an int
-                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
-
-                base.Init(ve, bag, cc);
             }
         }
 

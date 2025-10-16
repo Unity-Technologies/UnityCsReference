@@ -214,13 +214,25 @@ namespace UnityEditor.Search
         }
     }
 
+    internal enum SearchListSortingStrategy
+    {
+        Manual,
+        OnAddItems,
+        OnAddItemsThrottled
+    }
+
     class SortedSearchList : BaseSearchList
     {
         private List<SearchItem> m_IncomingBatch;
         private HashSet<int> m_IdHashes = new HashSet<int>();
         private List<SearchItem> m_Items = new List<SearchItem>();
         private ISearchListComparer m_Comparer = new SortByScoreComparer();
+        readonly SearchListSortingStrategy m_SortingStrategy;
+        bool m_Sorted;
+        static readonly TimeSpan k_ThrottleDelay = TimeSpan.FromSeconds(1);
+        double m_ThrottleTimer;
 
+        internal bool Sorted => m_Sorted;
         public override int Count => m_Items.Count;
 
         public override SearchItem this[int index]
@@ -229,9 +241,11 @@ namespace UnityEditor.Search
             set => throw new NotSupportedException();
         }
 
-        public SortedSearchList(SearchContext searchContext) : base(searchContext)
+        public SortedSearchList(SearchContext searchContext, SearchListSortingStrategy sortingStrategy = SearchListSortingStrategy.Manual) : base(searchContext)
         {
             Clear();
+            m_SortingStrategy = sortingStrategy;
+            m_ThrottleTimer = 0;
         }
 
         public void FromEnumerable(IEnumerable<SearchItem> items)
@@ -290,6 +304,21 @@ namespace UnityEditor.Search
         {
             foreach (var item in items)
                 Add(item);
+
+            if (!Sorted)
+            {
+                if (m_SortingStrategy == SearchListSortingStrategy.OnAddItems)
+                {
+                    Sort();
+                }
+                else if (m_SortingStrategy == SearchListSortingStrategy.OnAddItemsThrottled)
+                {
+                    if (Delayer.ThrottleTrigger(ref m_ThrottleTimer, k_ThrottleDelay))
+                    {
+                        Sort();
+                    }
+                }
+            }
         }
 
         public override void Clear()
@@ -297,6 +326,7 @@ namespace UnityEditor.Search
             m_Items.Clear();
             m_IdHashes.Clear();
             m_IncomingBatch?.Clear();
+            m_Sorted = true;
         }
 
         public override IEnumerator<SearchItem> GetEnumerator()
@@ -323,10 +353,24 @@ namespace UnityEditor.Search
             var itemHash = item.GetHashCode();
             if (m_IdHashes.Contains(itemHash))
             {
-                var startIndex = m_Items.BinarySearch(item, m_Comparer);
-                if (startIndex < 0)
-                    startIndex = ~startIndex;
-                var itemIndex = m_Items.IndexOf(item, Math.Max(startIndex - 1, 0));
+                // TODO: We should revisit this. There is an inconsistency in how we deal with ordering and score.
+                // If an item has the same id, a higher score (high score=sorted last) but sorted first based on the sorting method, it will not be replaced by the new item.
+                // Which is ok if we consider that we want to keep the first result based on the sorting method. However,
+                // if the existing item is sorted last, but has a lower score (lower score=sorted first), it will not be replaced and the new item will not be added, so the behavior
+                // is not the same as the other case.
+
+                var itemIndex = -1;
+                if (m_Sorted)
+                {
+                    var startIndex = m_Items.BinarySearch(item, m_Comparer);
+                    if (startIndex < 0)
+                        startIndex = ~startIndex;
+                    itemIndex = m_Items.IndexOf(item, Math.Max(startIndex - 1, 0));
+                }
+                else
+                {
+                    itemIndex = m_Items.IndexOf(item);
+                }
                 if (itemIndex >= 0 && item.score < m_Items[itemIndex].score)
                 {
                     m_Items.RemoveAt(itemIndex);
@@ -336,16 +380,11 @@ namespace UnityEditor.Search
                     return false;
             }
 
-            var insertAt = m_Items.BinarySearch(item, m_Comparer);
-            if (insertAt < 0)
-            {
-                insertAt = ~insertAt;
-                m_Items.Insert(insertAt, item);
-                m_IdHashes.Add(itemHash);
-                return true;
-            }
-
-            return false;
+            m_Items.Add(item);
+            m_IdHashes.Add(itemHash);
+            m_Sorted = false;
+            
+            return true;
         }
 
         public override void Add(SearchItem item)
@@ -373,6 +412,14 @@ namespace UnityEditor.Search
                 return m_Items.Remove(item);
             return false;
         }
+
+        public void Sort()
+        {
+            if (m_Sorted)
+                return;
+            m_Items.Sort(m_Comparer);
+            m_Sorted = true;
+        }
     }
 
     interface IGroup
@@ -395,7 +442,7 @@ namespace UnityEditor.Search
 
     class GroupedSearchList : BaseSearchList
     {
-        class Group : IGroup
+        internal class Group : IGroup
         {
             public string id { get; private set; }
             public string name { get; private set; }
@@ -403,6 +450,7 @@ namespace UnityEditor.Search
             public bool optional { get; set; }
             public IEnumerable<SearchItem> items => m_Items;
             public int count => m_Items.Count;
+            public bool sorted;
 
             public int priority { get; set; }
 
@@ -420,12 +468,14 @@ namespace UnityEditor.Search
                 m_Items = new List<SearchItem>();
                 m_IdHashes = new HashSet<int>();
                 m_Comparer = comparer ?? new SortByScoreComparer();
+                sorted = true;
             }
 
             public void Clear()
             {
                 m_Items.Clear();
                 m_IdHashes.Clear();
+                sorted = true;
             }
 
             public SearchItem ElementAt(int index)
@@ -443,10 +493,20 @@ namespace UnityEditor.Search
                     // Which is ok if we consider that we want to keep the first result based on the sorting method. However,
                     // if the existing item is sorted last, but has a lower score (lower score=sorted first), it will not be replaced and the new item will not be added, so the behavior
                     // is not the same as the other case.
-                    var startIndex = m_Items.BinarySearch(item, m_Comparer);
-                    if (startIndex < 0)
-                        startIndex = ~startIndex;
-                    var itemIndex = m_Items.IndexOf(item, Math.Max(startIndex - 1, 0));
+
+                    var itemIndex = -1;
+                    if (sorted)
+                    {
+                        var startIndex = m_Items.BinarySearch(item, m_Comparer);
+                        if (startIndex < 0)
+                            startIndex = ~startIndex;
+                        itemIndex = m_Items.IndexOf(item, Math.Max(startIndex - 1, 0));
+                    }
+                    else
+                    {
+                        itemIndex = m_Items.IndexOf(item);
+                    }
+
                     if (itemIndex >= 0 && item.score < m_Items[itemIndex].score)
                     {
                         m_Items.RemoveAt(itemIndex);
@@ -456,16 +516,11 @@ namespace UnityEditor.Search
                         return false;
                 }
 
-                var insertAt = m_Items.BinarySearch(item, m_Comparer);
-                if (insertAt < 0)
-                {
-                    insertAt = ~insertAt;
-                    m_Items.Insert(insertAt, item);
-                    m_IdHashes.Add(itemHash);
-                    return true;
-                }
+                m_Items.Add(item);
+                m_IdHashes.Add(itemHash);
+                sorted = false;
 
-                return false;
+                return true;
             }
 
             public int IndexOf(SearchItem item)
@@ -484,6 +539,7 @@ namespace UnityEditor.Search
                     return;
 
                 m_Items.Sort(m_Comparer);
+                sorted = true;
             }
 
             void IGroup.SortBy(ISearchListComparer comparer)
@@ -496,6 +552,7 @@ namespace UnityEditor.Search
 
                 m_Comparer = comparer;
                 m_Items.Sort(comparer);
+                sorted = true;
             }
         }
 
@@ -504,9 +561,18 @@ namespace UnityEditor.Search
         private string m_CurrentGroupId;
         private readonly List<IGroup> m_Groups = new List<IGroup>();
         private ISearchListComparer m_DefaultComparer;
+        readonly SearchListSortingStrategy m_SortingStrategy;
+        double m_ThrottlerTimer;
+        static readonly TimeSpan k_ThrottleDelay = TimeSpan.FromSeconds(1);
 
+        public bool Sorted => m_Groups.All(g => ((Group)g).sorted);
         public override int Count => m_Groups[m_CurrentGroupIndex >= 0 ? m_CurrentGroupIndex : 0].count;
         public int TotalCount => m_Groups[0].count;
+
+        IGroup CreateGroup(string id, string type, string name, ISearchListComparer comparer, int priority = int.MaxValue, bool optional = true)
+        {
+            return new Group(id, type, name, comparer, priority) { optional = optional };
+        }
 
         public override SearchItem this[int index]
         {
@@ -514,15 +580,17 @@ namespace UnityEditor.Search
             set => throw new NotSupportedException();
         }
 
-        public GroupedSearchList(SearchContext searchContext)
-            : this(searchContext, defaultComparer: null)
+        public GroupedSearchList(SearchContext searchContext, SearchListSortingStrategy sortingStrategy = SearchListSortingStrategy.Manual)
+            : this(searchContext, null, sortingStrategy)
         {
         }
 
-        public GroupedSearchList(SearchContext searchContext, ISearchListComparer defaultComparer)
+        public GroupedSearchList(SearchContext searchContext, ISearchListComparer defaultComparer, SearchListSortingStrategy sortingStrategy = SearchListSortingStrategy.Manual)
             : base(searchContext, false)
         {
+            m_SortingStrategy = sortingStrategy;
             m_DefaultComparer = defaultComparer;
+            m_ThrottlerTimer = 0;
             Clear();
         }
 
@@ -594,7 +662,7 @@ namespace UnityEditor.Search
         {
             var defaultGroups = context.providers
                 .Where(p => p.showDetailsOptions.HasFlag(ShowDetailsOptions.DefaultGroup))
-                .Select(p => new Group(p.id, p.type, p.name, m_DefaultComparer, p.priority) { optional = false });
+                .Select(p => CreateGroup(p.id, p.type, p.name, m_DefaultComparer, p.priority, optional: false));
             m_Groups.AddRange(defaultGroups);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
         }
@@ -604,7 +672,7 @@ namespace UnityEditor.Search
             var itemGroup = m_Groups.Find(g => string.Equals(g.id, searchProvider.id, StringComparison.Ordinal));
             if (itemGroup != null)
                 return itemGroup;
-            itemGroup = new Group(searchProvider.id, searchProvider.type, searchProvider.name, m_DefaultComparer, searchProvider.priority);
+            itemGroup = CreateGroup(searchProvider.id, searchProvider.type, searchProvider.name, m_DefaultComparer, searchProvider.priority);
             m_Groups.Add(itemGroup);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
             if (!string.IsNullOrEmpty(m_CurrentGroupId))
@@ -619,6 +687,21 @@ namespace UnityEditor.Search
             foreach (var item in items)
                 Add(item);
 
+            if (!Sorted)
+            {
+                if (m_SortingStrategy == SearchListSortingStrategy.OnAddItems)
+                {
+                    SortAllGroups();
+                }
+                else if (m_SortingStrategy == SearchListSortingStrategy.OnAddItemsThrottled)
+                {
+                    if (Delayer.ThrottleTrigger(ref m_ThrottlerTimer, k_ThrottleDelay))
+                    {
+                        SortAllGroups();
+                    }
+                }
+            }
+
             // Restore current group if possible
             if (m_CurrentGroupIndex == -1 && !string.IsNullOrEmpty(m_CurrentGroupId))
                 RestoreCurrentGroup(m_CurrentGroupId);
@@ -629,7 +712,7 @@ namespace UnityEditor.Search
             if (m_Groups.Count == 0)
             {
                 m_CurrentGroupIndex = 0;
-                m_Groups.Add(new Group(allGroupId, allGroupId, "All", m_DefaultComparer, int.MinValue));
+                m_Groups.Add(CreateGroup(allGroupId, allGroupId, "All", m_DefaultComparer, int.MinValue));
                 AddDefaultGroups();
             }
             else
@@ -676,6 +759,11 @@ namespace UnityEditor.Search
             }
         }
 
+        internal IGroup GetCurrentGroup()
+        {
+            return m_Groups[m_CurrentGroupIndex];
+        }
+
         private bool RestoreCurrentGroup(string groupId)
         {
             m_CurrentGroupIndex = m_Groups.FindIndex(g => g.id == groupId);
@@ -706,7 +794,17 @@ namespace UnityEditor.Search
 
         public void Sort()
         {
-            m_Groups[m_CurrentGroupIndex].Sort();
+            if (!((Group)m_Groups[m_CurrentGroupIndex]).sorted)
+                m_Groups[m_CurrentGroupIndex].Sort();
+        }
+
+        public void SortAllGroups()
+        {
+            foreach (var group in m_Groups)
+            {
+                if (!((Group)group).sorted)
+                    group.Sort();
+            }
         }
 
         public override void SortBy(ISearchListComparer comparer)

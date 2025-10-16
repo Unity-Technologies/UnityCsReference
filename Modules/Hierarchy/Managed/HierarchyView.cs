@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.HierarchyV2;
 
 namespace Unity.Hierarchy
 {
@@ -71,7 +72,8 @@ namespace Unity.Hierarchy
         readonly CircularBuffer<Action> m_PostUpdateActionQueue = new(16);
 
         // UX elements
-        readonly MultiColumnListView m_MultiColumnListView;
+        readonly CollectionView m_CollectionView;
+        readonly MultiColumnLayoutConfiguration m_MultiColumnLayoutConfiguration;
         readonly HierarchyViewItemColumn m_NameColumn;
         readonly HierarchyViewDragHandler m_DragHandler;
         readonly VisualElement m_ListViewContentContainer;
@@ -240,9 +242,14 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// The <see cref="MultiColumnListView"/> used to display the hierarchy.
+        /// The <see cref="CollectionView"/> used to display the hierarchy.
         /// </summary>
-        public MultiColumnListView ListView => m_MultiColumnListView;
+        internal CollectionView ListView => m_CollectionView;
+
+        /// <summary>
+        /// Gets the <see cref="MultiColumnLayoutConfiguration"/> used to configure the columns and layout of the hierarchy view.
+        /// </summary>
+        internal MultiColumnLayoutConfiguration ListViewLayoutConfiguration => m_MultiColumnLayoutConfiguration;
 
         internal bool DataUpdateNeeded => m_Hierarchy.UpdateNeeded || m_HierarchyFlattened.UpdateNeeded || m_HierarchyViewModel.UpdateNeeded;
         internal bool DisplayUpdateNeeded => m_Version != m_HierarchyViewModel.Version;
@@ -271,7 +278,11 @@ namespace Unity.Hierarchy
             AddToClassList(k_HierarchyViewRootStyleName);
             this.AddManipulator(new ContextualMenuManipulator(InvokePopulateContextMenu));
 
-            m_MultiColumnListView = new MultiColumnListView
+            m_MultiColumnLayoutConfiguration = new()
+            {
+                columns = { stretchMode = Columns.StretchMode.Grow }
+            };
+            m_CollectionView = new CollectionView
             {
                 name = k_ListViewName,
                 fixedItemHeight = k_ItemHeight,
@@ -279,34 +290,33 @@ namespace Unity.Hierarchy
                 reorderMode = ListViewReorderMode.Simple,
                 reorderable = true,
                 itemsSource = null,
-                columns = { stretchMode = Columns.StretchMode.Grow }
             };
 
             m_NameColumn = new HierarchyViewItemColumn(this);
             m_DragHandler = new HierarchyViewDragHandler(this);
 
-            m_MultiColumnListView.selectedIndicesChanged += OnSelectedIndicesChanged;
-            m_MultiColumnListView.AddToClassList(k_ListViewName);
-            m_MultiColumnListView.RegisterCallback<PointerUpEvent>(OnPointerUp);
-            m_MultiColumnListView.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
-            m_MultiColumnListView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            m_MultiColumnListView.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
-            m_MultiColumnListView.Q(className: ScrollView.contentAndVerticalScrollUssClassName).RegisterCallback<ClickEvent>(OnListViewClick);
-            m_MultiColumnListView.columns.Add(m_NameColumn);
+            m_CollectionView.selectedIndicesChanged += OnSelectedIndicesChanged;
+            m_CollectionView.AddToClassList(k_ListViewName);
+            m_CollectionView.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            m_CollectionView.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+            m_CollectionView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
+            m_CollectionView.scrollView.RegisterCallback<ClickEvent>(OnListViewClick);
+            m_MultiColumnLayoutConfiguration.columns.Add(m_NameColumn);
             m_NameColumn.stretchable = true;
             m_NameColumn.OnBindItem += OnBindItem;
             m_NameColumn.OnUnbindItem += OnUnbindItem;
 
-            var listViewInnerScrollView = m_MultiColumnListView.Q<ScrollView>();
+            m_CollectionView.layoutConfiguration = m_MultiColumnLayoutConfiguration;
+
+            var listViewInnerScrollView = m_CollectionView.scrollView;
             m_ListViewContentContainer = listViewInnerScrollView.contentContainer;
-            listViewInnerScrollView.mode = ScrollViewMode.VerticalAndHorizontal;
             m_ListViewContentContainer.RegisterCallback<ClickEvent>(OnClickEvent);
             m_ListViewContentContainer.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
 
             // UX update state
             m_StyleContainer = new();
             m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
-            m_StyleContainer.Add(m_MultiColumnListView);
+            m_StyleContainer.Add(m_CollectionView);
             this.Add(m_StyleContainer);
 
             m_LastMouseUpSelectionIndex = -1;
@@ -360,7 +370,7 @@ namespace Unity.Hierarchy
             m_ScheduledItem = null;
 
             // Reset UX elements
-            m_MultiColumnListView.itemsSource = null;
+            m_CollectionView.itemsSource = null;
 
             // Reset Data update state
             m_PostUpdateActionQueue.Clear();
@@ -397,7 +407,7 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel.Update();
 
             // Update the list view items source
-            m_MultiColumnListView.itemsSource = m_HierarchyViewModel.AsReadOnlyList();
+            m_CollectionView.itemsSource = m_HierarchyViewModel.AsReadOnlyList();
 
             // Update other UX elements
             BindColumns();
@@ -477,13 +487,13 @@ namespace Unity.Hierarchy
             UnbindHandlers();
 
             // Remove then style container
-            m_StyleContainer.Remove(m_MultiColumnListView);
+            m_StyleContainer.Remove(m_CollectionView);
             m_StyleContainer.RemoveFromHierarchy();
 
             // Make a new style container
             m_StyleContainer = new VisualElement();
             m_StyleContainer.AddToClassList(k_HierarchyViewStyleContainerStyleName);
-            m_StyleContainer.Add(m_MultiColumnListView);
+            m_StyleContainer.Add(m_CollectionView);
             Add(m_StyleContainer);
         }
 
@@ -763,10 +773,10 @@ namespace Unity.Hierarchy
             }
 
             // Note: There is no way to set all columns at the same time in the ListView.
-            m_MultiColumnListView.columns.Clear();
+            m_MultiColumnLayoutConfiguration.columns.Clear();
             foreach (var col in columns)
             {
-                m_MultiColumnListView.columns.Add(col);
+                m_MultiColumnLayoutConfiguration.columns.Add(col);
             }
 
             // Bind columns
@@ -834,7 +844,8 @@ namespace Unity.Hierarchy
 
             if (viewState.ValidContent.HasFlag(HierarchyViewState.Content.ScrollPosition))
             {
-                m_MultiColumnListView.scrollView.scrollOffset = new Vector2(viewState.ScrollPositionX, viewState.ScrollPositionY);
+                m_CollectionView.scrollView.verticalScroller.value = viewState.ScrollPositionY;
+                m_CollectionView.scrollView.horizontalScroller.value = viewState.ScrollPositionX;
             }
         }
 
@@ -858,19 +869,18 @@ namespace Unity.Hierarchy
 
             if (windowState.ValidContent.HasFlag(HierarchyViewState.Content.ScrollPosition))
             {
-                var scrollPos = m_MultiColumnListView.Q<ScrollView>()?.scrollOffset ?? new Vector2(-1, -1);
-                windowState.ScrollPositionX = scrollPos.x;
-                windowState.ScrollPositionY = scrollPos.y;
+                windowState.ScrollPositionX = m_CollectionView.scrollView.horizontalScroller.value;
+                windowState.ScrollPositionY = m_CollectionView.scrollView.verticalScroller.value;
             }
 
             if (windowState.ValidContent.HasFlag(HierarchyViewState.Content.Columns))
             {
-                windowState.Columns = new HierarchyViewColumnState[m_MultiColumnListView.columns.Count];
+                windowState.Columns = new HierarchyViewColumnState[m_MultiColumnLayoutConfiguration.columns.Count];
                 // Note: There is currently no way of knowing the column ordering (visibleIndex is internal): gather all columnHeader and use their name (which corresponds to ColumnId)
                 // to know their index.
-                var columnHeaders = m_MultiColumnListView.Query<VisualElement>(null, "unity-multi-column-header__column").ToList();
+                var columnHeaders = m_CollectionView.Query<VisualElement>(null, "unity-multi-column-header__column").ToList();
                 var i = 0;
-                foreach (var column in m_MultiColumnListView.columns)
+                foreach (var column in m_MultiColumnLayoutConfiguration.columns)
                 {
                     var columnId = HierarchyViewColumnUtility.GetColumnId(column);
                     var visibleIndex = columnHeaders.FindIndex(header => header.name == columnId);
@@ -923,7 +933,7 @@ namespace Unity.Hierarchy
 
         internal int GetIndexFromLocalPosition(Vector2 pos)
         {
-            return m_MultiColumnListView.virtualizationController.GetIndexFromPosition(pos);
+            return m_CollectionView.GetIndexFromPosition(pos);
         }
 
         internal int GetIndexFromWorldPosition(Vector2 worldPos, float offset = 0)
@@ -961,15 +971,17 @@ namespace Unity.Hierarchy
             // not specific to any one view item if the view item == null.
             if (item == null)
             {
-                m_MultiColumnListView.ClearSelection();
+                m_CollectionView.ClearSelection();
                 foreach (var handler in m_Hierarchy.EnumerateNodeTypeHandlers())
                 {
-                    handler.Internal_PopulateContextMenu(this, null, evt.menu);
+                    if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                        editorHandler.PopulateContextMenu(this, null, evt.menu);
                 }
             }
             else
             {
-                item.Handler?.Internal_PopulateContextMenu(this, item, evt.menu);
+                if (item.Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                    editorHandler.PopulateContextMenu(this, item, evt.menu);
             }
 
             PopulateContextMenu?.Invoke(item, evt.menu);
@@ -977,7 +989,8 @@ namespace Unity.Hierarchy
 
         internal void InvokeGetTooltip(HierarchyViewItem item, bool filtering, StringBuilder tooltip)
         {
-            item.Handler?.Internal_GetTooltip(item, filtering, tooltip);
+            if (item.Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                editorHandler.GetTooltip(item, filtering, tooltip);
             GetTooltip?.Invoke(item, filtering, tooltip);
         }
 
@@ -985,11 +998,16 @@ namespace Unity.Hierarchy
         internal void PingNode(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).PingNode({node})");
+            // Expand node parents
+            ExpandParents(in node);
+            m_HierarchyViewModel.Update();
+            UpdateListView();
+
             var index = m_HierarchyViewModel.IndexOf(in node);
             if (index < 0)
                 return;
 
-            m_MultiColumnListView.ScrollToItem(index);
+            m_CollectionView.ScrollToItem(index);
             var item = GetHierarchyViewItemFromIndex(index);
             if (item == null)
                 return;
@@ -1000,11 +1018,6 @@ namespace Unity.Hierarchy
 
             if (rowContainer.ClassListContains(k_HierarchyPingBase))
                 return;
-
-            // Expand node parents
-            ExpandParents(in node);
-            m_HierarchyViewModel.Update();
-            UpdateListView();
 
             // Begin ping animation
             // Note: Trigger start of anim next frame so the previous AnimatedValue resolved style is properly setup and Transition will occur.
@@ -1049,7 +1062,7 @@ namespace Unity.Hierarchy
             var index = m_HierarchyViewModel.IndexOf(in node);
             if (index >= 0)
             {
-                m_MultiColumnListView.ScrollToItem(index);
+                m_CollectionView.ScrollToItem(index);
             }
         }
 
@@ -1147,7 +1160,8 @@ namespace Unity.Hierarchy
             {
                 ref readonly var node = ref m_HierarchyViewModel[itemIndex];
                 var handler = m_Hierarchy.GetNodeTypeHandler(in node);
-                handler?.DoubleClick(this, in node);
+                if (handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                    editorHandler.OnDoubleClick(this, in node);
             }
 
             m_LastMouseUpSelectionIndex = itemIndex;
@@ -1175,12 +1189,12 @@ namespace Unity.Hierarchy
                 case KeyCode.PageUp:
                 case KeyCode.Home:
                     // Select first item
-                    m_MultiColumnListView.SetSelection(0);
+                    m_CollectionView.SetSelection(0);
                     break;
                 case KeyCode.PageDown:
                 case KeyCode.End:
                     // Select last item
-                    m_MultiColumnListView.SetSelection(m_MultiColumnListView.itemsSource.Count - 1);
+                    m_CollectionView.SetSelection(m_CollectionView.itemsSource.Count - 1);
                     break;
                 case KeyCode.Escape:
                     // Reset selected indices state
@@ -1204,7 +1218,7 @@ namespace Unity.Hierarchy
                 return;
 
             var shouldStopPropagation = true;
-            var selectedIndex = m_MultiColumnListView.selectedIndex;
+            var selectedIndex = m_CollectionView.selectedIndex;
 
             if (selectedIndex == -1)
             {
@@ -1212,7 +1226,7 @@ namespace Unity.Hierarchy
                 {
                     case NavigationMoveEvent.Direction.Up:
                     case NavigationMoveEvent.Direction.Down:
-                        m_MultiColumnListView.SetSelection(0);
+                        m_CollectionView.SetSelection(0);
                         break;
                     default:
                         shouldStopPropagation = false;
@@ -1248,20 +1262,6 @@ namespace Unity.Hierarchy
                 evt.StopPropagation();
         }
 
-        void OnNavigationSubmit(NavigationSubmitEvent evt)
-        {
-            if (m_IsRenamingItem)
-                return;
-
-            var item = GetHierarchyViewItemFromIndex(m_MultiColumnListView
-                .selectedIndex);
-            if (item == null)
-                return;
-
-            item.BeginRename();
-            evt.StopPropagation();
-        }
-
         void OnNavigationCancel(NavigationCancelEvent evt)
         {
             ClearFlags(HierarchyNodeFlags.Cut);
@@ -1272,7 +1272,7 @@ namespace Unity.Hierarchy
         void OnListViewClick(ClickEvent evt)
         {
             var target = evt.target as VisualElement;
-            if (target != m_MultiColumnListView.Q(className: ScrollView.contentAndVerticalScrollUssClassName))
+            if (target != m_CollectionView.scrollView.contentContainer)
                 return;
 
             ClearFlags(HierarchyNodeFlags.Selected);
@@ -1296,19 +1296,19 @@ namespace Unity.Hierarchy
             if (index == -1)
                 return null;
 
-            var root = m_MultiColumnListView.GetRootElementForIndex(index);
+            var root = m_CollectionView.GetRootElementForIndex(index);
             var item = root?.Q<HierarchyViewItem>();
             return item;
         }
 
-        void OnSelectedIndicesChanged(IEnumerable<int> indices)
+        void OnSelectedIndicesChanged()
         {
-            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).OnSelectedIndicesChanged(indices={HierarchyLogging.ToString(indices)})");
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).OnSelectedIndicesChanged(indices={HierarchyLogging.ToString(m_CollectionView.selectedIndices)})");
 
             // Convert enumerable to list and check if the LastSelected index is still valid
             var lastMouseSelectionValid = false;
             m_SelectedIndices.Clear();
-            foreach (var index in indices)
+            foreach (var index in m_CollectionView.selectedIndices)
             {
                 if (index < 0)
                     continue;
@@ -1340,8 +1340,9 @@ namespace Unity.Hierarchy
                 m_HierarchyViewModel.SetFlags(nodes.Span, HierarchyNodeFlags.Selected);
             }
 
-            // If called from pointer down event, wait for pointer up to change the global selection
-            if (m_MultiColumnListView.processingPointerDownEvent)
+            // If called from pointer down event, wait for pointer up to change the global selection unless it's a right click.
+            if (m_CollectionView.pointerProcessingState == CollectionView.pointerProcessingStateEnum.PointerDown
+                && m_CollectionView.currentPointerButton != (int)MouseButton.RightMouse)
             {
                 m_SelectedIndicesChangedFromPointerDown = true;
                 return;
@@ -1384,7 +1385,7 @@ namespace Unity.Hierarchy
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).UpdateListView()");
 
             // Refresh the list view
-            m_MultiColumnListView.RefreshItems();
+            m_CollectionView.RefreshItems();
 
             // Refresh selected items
             var selectedCount = m_HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
@@ -1417,13 +1418,13 @@ namespace Unity.Hierarchy
                     filteredSelection.Span[filteredSelectionLength++] = value;
             }
 
-            m_MultiColumnListView.SetSelectionWithoutNotify(filteredSelection.Span[..filteredSelectionLength]);
+            m_CollectionView.SetSelectionWithoutNotify(filteredSelection.Span[..filteredSelectionLength]);
         }
 
         void SetColumnState(HierarchyViewState state)
         {
             var columns = ListPool<Column>.Get();
-            foreach (var column in m_MultiColumnListView.columns)
+            foreach (var column in m_MultiColumnLayoutConfiguration.columns)
             {
                 columns.Add(column);
             }
@@ -1435,7 +1436,7 @@ namespace Unity.Hierarchy
         {
             // Note: current MultiColumnListView doesn't handle Unbinding and Destroying cells when the list is disposed.
             // Implement this workflow directly for the hierarchy view cells:
-            var rows = m_MultiColumnListView.Query<VisualElement>("unity-multi-column-view__row-container").ToList();
+            var rows = m_CollectionView.Query<VisualElement>("unity-multi-column-view__row-container").ToList();
 
             // Note: If there are no rows, we still need to unbind the columns.
             foreach (var row in rows)
@@ -1449,7 +1450,7 @@ namespace Unity.Hierarchy
                 }
             }
 
-            foreach (var column in m_MultiColumnListView.columns)
+            foreach (var column in m_MultiColumnLayoutConfiguration.columns)
             {
                 if (column is HierarchyViewColumn hc)
                 {
@@ -1460,7 +1461,7 @@ namespace Unity.Hierarchy
 
         void BindColumns()
         {
-            foreach (var column in m_MultiColumnListView.columns)
+            foreach (var column in m_MultiColumnLayoutConfiguration.columns)
             {
                 if (column is HierarchyViewColumn hc)
                 {

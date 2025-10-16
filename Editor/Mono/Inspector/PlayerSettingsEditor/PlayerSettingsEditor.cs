@@ -156,7 +156,7 @@ namespace UnityEditor
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic") };
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanNumSwapchainBuffers = EditorGUIUtility.TrTextContent("Number of swapchain buffers*");
-            public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Acquire swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
+            public static readonly GUIContent vulkanEnableLateAcquireNextImage = EditorGUIUtility.TrTextContent("Get swapchain image late as possible*", "If set, renders to a staging image to delay acquiring the swapchain buffer.");
             public static readonly GUIContent vulkanEnableCommandBufferRecycling = EditorGUIUtility.TrTextContent("Recycle command buffers*", "When enabled, command buffers are recycled after they have been executed as opposed to being freed.");
             public static readonly GUIContent d3d12FilterLists = EditorGUIUtility.TrTextContent("Device Filtering Asset", "This asset defines one or more device filter lists that may allow or disallow the use of the D3D12 API on a given device or a set a preferred graphics mode for devices that match a given filter.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
@@ -168,6 +168,7 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
             public static readonly GUIContent graphicsJobsSyncAfterKick = EditorGUIUtility.TrTextContent("Sync after kick (fallback)", "This prevents graphics jobs from running in parallel to the render thread. Enable this if you see artifacts with graphics jobs.");
+            public static readonly GUIContent unsetApplicationIdentifierWarning = EditorGUIUtility.TrTextContent("Don't forget to set the Application Identifier.");
             public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
             public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
             public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
@@ -531,6 +532,12 @@ namespace UnityEditor
         // Preset check
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
+
+        // True when current graphics API mismatches with top of the list one
+        private static bool hasPendingGraphicsAPIChange = false;
+
+        // True when user has modified auto graphics API setting in the current session
+        private static bool isAutoGraphicsAPITouched = false;
 
         /// <summary>
         /// Internal callback set by the build profile window when tracking
@@ -1024,6 +1031,11 @@ namespace UnityEditor
                 return;
             }
 
+            if (BuildProfileContext.activeProfile != null)
+            {
+                BuildProfileContext.HandleScriptingDefinesChanged();
+            }
+
             var reasons = ConvertReasonsToString();
             PlayerSettings.RecompileScripts(reasons);
             m_Reasons.Clear();
@@ -1496,6 +1508,23 @@ namespace UnityEditor
             return list.list.Count >= 2;
         }
 
+        private bool CheckRemoveFallbackGraphicsDeviceElement(GraphicsDeviceType removed, BuildTarget target, ReorderableList list)
+        {
+            bool isWindows = ((target == BuildTarget.StandaloneWindows) || (target == BuildTarget.StandaloneWindows64));
+            bool isUWP = (target == BuildTarget.WSAPlayer);
+
+            bool fallbackWindows = ((isUWP || isWindows) && (removed == GraphicsDeviceType.Direct3D11));
+            bool fallbackAndroid = ((target == BuildTarget.Android) && (removed == GraphicsDeviceType.OpenGLES3));
+
+            if (fallbackWindows || fallbackAndroid)
+            {
+                string text = $"It is recommended to keep {GraphicsDeviceTypeToString(target, removed)} as a fallback graphics API. Removing this from the list may prevent the application from running on older and lower-end devices.";
+                var result = EditorUtility.DisplayDialog("Removing fallback graphics API", text, "Proceed", "Cancel");
+                return result;
+            }
+            return true;
+        }
+
         private void RemoveGraphicsDeviceElement(BuildTarget target, ReorderableList list)
         {
             var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(target);
@@ -1509,10 +1538,14 @@ namespace UnityEditor
             }
 
             var apiList = apis.ToList();
-            apiList.RemoveAt(list.index);
-            apis = apiList.ToArray();
+            var removedElement = apiList[list.index];
+            if (CheckRemoveFallbackGraphicsDeviceElement(removedElement, target, list))
+            {
+                apiList.RemoveAt(list.index);
+                apis = apiList.ToArray();
 
-            ApplyChangedGraphicsAPIList(target, apis, list.index == 0);
+                ApplyChangedGraphicsAPIList(target, apis, list.index == 0);
+            }
         }
 
         private void ReorderGraphicsDeviceElement(BuildTarget target, ReorderableList list)
@@ -1520,9 +1553,12 @@ namespace UnityEditor
             var previousAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(target);
             var apiList = (List<GraphicsDeviceType>)list.list;
             var apis = apiList.ToArray();
+            var currentDevice = SystemInfo.graphicsDeviceType;
 
             var firstAPIDifferent = (previousAPIs[0] != apis[0]);
-            ApplyChangedGraphicsAPIList(target, apis, firstAPIDifferent);
+            var requiresRestart = apis[0] != currentDevice;
+
+            ApplyChangedGraphicsAPIList(target, apis, firstAPIDifferent && requiresRestart);
         }
 
         // these two methods are needed for cases when you want to take some action depending on user choice
@@ -1533,7 +1569,7 @@ namespace UnityEditor
             public readonly bool changeList, reloadGfx;
             public ChangeGraphicsApiAction(bool doChange, bool doReload) { changeList = doChange; reloadGfx = doReload; }
         }
-        private ChangeGraphicsApiAction CheckApplyGraphicsAPIList(BuildTarget target, bool firstEntryChanged)
+        private ChangeGraphicsApiAction CheckApplyGraphicsAPIList(BuildTarget target, bool firstEntryChanged, bool cancelAPIChange)
         {
             bool doRestart = false;
             // If we're changing the first API for relevant editor, this will cause editor to switch: ask for scene save & confirmation
@@ -1552,7 +1588,7 @@ namespace UnityEditor
                 {
                     var result = EditorUtility.DisplayDialogComplex("Changing editor graphics API",
                         "You've changed the active graphics API. This requires a restart of the Editor. Do you want to save the Scene when restarting?",
-                        "Save and Restart", "Cancel Changing API", "Discard Changes and Restart");
+                        "Save and Restart", cancelAPIChange ? "Cancel Changing API" : "Not now", "Discard Changes and Restart");
                     if (result == 1)
                     {
                         doRestart = false; // Cancel was selected
@@ -1592,15 +1628,18 @@ namespace UnityEditor
             }
         }
 
-        private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)
+        private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action, bool skipRemoveCached)
         {
+            hasPendingGraphicsAPIChange = true;
             if (action.changeList)
             {
                 m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
                 OnTargetObjectChangedDirectly();
             }
-            else
+            else if (!skipRemoveCached)
+            {
                 m_GraphicsDeviceLists.Remove(target); // we cancelled the list change, so remove the cached one
+            }
 
             if (action.reloadGfx)
             {
@@ -1611,8 +1650,8 @@ namespace UnityEditor
 
         private void ApplyChangedGraphicsAPIList(BuildTarget target, GraphicsDeviceType[] apis, bool firstEntryChanged)
         {
-            ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(target, firstEntryChanged);
-            ApplyChangeGraphicsApiAction(target, apis, action);
+            ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(target, firstEntryChanged, true);
+            ApplyChangeGraphicsApiAction(target, apis, action, false);
         }
 
         private void DrawGraphicsDeviceElement(BuildTarget target, Rect rect, int index, bool selected, bool focused)
@@ -1748,64 +1787,86 @@ namespace UnityEditor
             automatic = EditorGUILayout.Toggle(platformTitleContent ?? GUIContent.none, automatic);
             if (EditorGUI.EndChangeCheck())
             {
+                isAutoGraphicsAPITouched = true;
                 Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
                 m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, automatic);
                 OnTargetObjectChangedDirectly();
+                if (WillEditorUseFirstGraphicsAPI(targetPlatform))
+                    hasPendingGraphicsAPIChange = false;
             }
+
+            string displayTitle = String.Empty;
+            if (platformTitleContent != null)
+            {
+                displayTitle = platformTitleContent.text;
+                if (displayTitle.StartsWith("Auto "))
+                    displayTitle = displayTitle.Substring(5);
+            }
+
+            if (targetPlatform == BuildTarget.PS5)
+            {
+                ExclusiveGraphicsAPIsGUI(targetPlatform, displayTitle);
+                return;
+            }
+
+            GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
+            var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
+            // create reorderable list for this target if needed
+            if (!m_GraphicsDeviceLists.ContainsKey(targetPlatform))
+            {
+                var rlist = new ReorderableList(devicesList, typeof(GraphicsDeviceType), true, true, true, true);
+                rlist.onAddDropdownCallback = (rect, list) => AddGraphicsDeviceElement(targetPlatform, rect, list);
+                rlist.onCanRemoveCallback = CanRemoveGraphicsDeviceElement;
+                rlist.onRemoveCallback = (list) => RemoveGraphicsDeviceElement(targetPlatform, list);
+                rlist.onReorderCallback = (list) => ReorderGraphicsDeviceElement(targetPlatform, list);
+                rlist.drawElementCallback = (rect, index, isActive, isFocused) => DrawGraphicsDeviceElement(targetPlatform, rect, index, isActive, isFocused);
+                rlist.drawHeaderCallback = (rect) => GUI.Label(rect, displayTitle, EditorStyles.label);
+                rlist.elementHeight = 16;
+
+                m_GraphicsDeviceLists.Add(targetPlatform, rlist);
+            }
+
+            var deviceList = m_GraphicsDeviceLists[targetPlatform];
+            GraphicsDeviceType? selectedDevice = deviceList.count > 0 ? (GraphicsDeviceType)deviceList.list[0] : null;
+            var currentDevice = SystemInfo.graphicsDeviceType;
+            bool firstAPIDifferent = currentDevice != selectedDevice;
+
+            if (selectedDevice != null && firstAPIDifferent && WillEditorUseFirstGraphicsAPI(targetPlatform) && isAutoGraphicsAPITouched)
+            {
+                string text = $"Auto Graphics API was changed, but requires an Editor restart to take Effect. The Editor will restart using {GraphicsDeviceTypeToString(targetPlatform, (GraphicsDeviceType)selectedDevice)}";
+                EditorGUILayout.HelpBox(text, MessageType.Warning, true);
+                if (!hasPendingGraphicsAPIChange)
+                {
+                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(targetPlatform, true, false);
+                    var apiList = (List<GraphicsDeviceType>)deviceList.list;
+                    var apis = apiList.ToArray();
+                    ApplyChangeGraphicsApiAction(targetPlatform, apis, action, true);
+                }
+            }
+
+            EditorGUI.BeginDisabledGroup(automatic);
 
             // graphics API list if not automatic
-            if (!automatic)
+            // note that editor will use first item, when we're in standalone settings
+            if (WillEditorUseFirstGraphicsAPI(targetPlatform))
             {
-                // note that editor will use first item, when we're in standalone settings
-                if (WillEditorUseFirstGraphicsAPI(targetPlatform))
-                {
-                    EditorGUILayout.HelpBox(SettingsContent.recordingInfo.text, MessageType.Info, true);
-                }
-
-                string displayTitle = String.Empty;
-                if (platformTitleContent != null)
-                {
-                    displayTitle = platformTitleContent.text;
-                    if (displayTitle.StartsWith("Auto "))
-                        displayTitle = displayTitle.Substring(5);
-                }
-
-                if (targetPlatform == BuildTarget.PS5)
-                {
-                    ExclusiveGraphicsAPIsGUI(targetPlatform, displayTitle);
-                    return;
-                }
-
-                GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
-                var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
-                // create reorderable list for this target if needed
-                if (!m_GraphicsDeviceLists.ContainsKey(targetPlatform))
-                {
-                    var rlist = new ReorderableList(devicesList, typeof(GraphicsDeviceType), true, true, true, true);
-                    rlist.onAddDropdownCallback = (rect, list) => AddGraphicsDeviceElement(targetPlatform, rect, list);
-                    rlist.onCanRemoveCallback = CanRemoveGraphicsDeviceElement;
-                    rlist.onRemoveCallback = (list) => RemoveGraphicsDeviceElement(targetPlatform, list);
-                    rlist.onReorderCallback = (list) => ReorderGraphicsDeviceElement(targetPlatform, list);
-                    rlist.drawElementCallback = (rect, index, isActive, isFocused) => DrawGraphicsDeviceElement(targetPlatform, rect, index, isActive, isFocused);
-                    rlist.drawHeaderCallback = (rect) => GUI.Label(rect, displayTitle, EditorStyles.label);
-                    rlist.elementHeight = 16;
-
-                    m_GraphicsDeviceLists.Add(targetPlatform, rlist);
-                }
-
-                if (targetPlatform == BuildTarget.StandaloneOSX && m_GraphicsDeviceLists[BuildTarget.StandaloneOSX].list.Contains(GraphicsDeviceType.OpenGLCore))
-                {
-                    EditorGUILayout.HelpBox(SettingsContent.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
-                }
-
-                m_GraphicsDeviceLists[targetPlatform].DoLayoutList();
-
-                bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
-                if (containsDeprecatedAPIs)
-                    EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
-
-                //@TODO: undo
+                EditorGUILayout.HelpBox(SettingsContent.recordingInfo.text, MessageType.Info, true);
             }
+
+            if (targetPlatform == BuildTarget.StandaloneOSX && m_GraphicsDeviceLists[BuildTarget.StandaloneOSX].list.Contains(GraphicsDeviceType.OpenGLCore))
+            {
+                EditorGUILayout.HelpBox(SettingsContent.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
+            }
+
+            deviceList.DoLayoutList();
+
+            bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
+            if (containsDeprecatedAPIs)
+                EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
+
+            //@TODO: undo
+
+            EditorGUI.EndDisabledGroup();
 
             // ES3.1 options
             OpenGLES31OptionsGUI(targetGroup, targetPlatform);
@@ -2365,6 +2426,7 @@ namespace UnityEditor
                 foreach (GraphicsDeviceType api in gfxAPIs)
                 {
                     if (api == GraphicsDeviceType.Switch ||
+                        api == GraphicsDeviceType.Switch2 ||
                         api == GraphicsDeviceType.PlayStation5 ||
                         api == GraphicsDeviceType.PlayStation5NGGC ||
                         api == GraphicsDeviceType.Direct3D11 ||
@@ -2702,7 +2764,7 @@ namespace UnityEditor
                             if (oldUseHDRDisplay != m_UseHDRDisplay.boolValue)
                                 requestRepaint = true;
 
-                            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.iOS)
+                            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.NintendoSwitch2)
                             {
                                 using (new EditorGUI.DisabledScope(!m_UseHDRDisplay.boolValue))
                                 {
@@ -2948,68 +3010,126 @@ namespace UnityEditor
 
         internal void ShowApplicationIdentifierUI(BuildTargetGroup targetGroup, string label, string tooltip)
         {
-            var overrideDefaultID = m_OverrideDefaultApplicationIdentifier.boolValue;
-            var defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
-            var oldIdentifier = "";
-            var currentIdentifier = PlayerSettings.SanitizeApplicationIdentifier(defaultIdentifier, targetGroup);
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
-            var warningMessage = SettingsContent.applicationIdentifierWarning.text;
-            var errorMessage = GetApplicationIdentifierError(targetGroup).text;
-
-            string GetSanitizedApplicationIdentifier()
-            {
-                var sanitizedIdentifier = PlayerSettings.SanitizeApplicationIdentifier(currentIdentifier, targetGroup);
-
-                if (currentIdentifier != oldIdentifier)
-                {
-                    if (!overrideDefaultID && !PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
-                        Debug.LogError(errorMessage);
-                    else if (overrideDefaultID && sanitizedIdentifier != currentIdentifier)
-                        Debug.LogWarning(warningMessage);
-                }
-
-                return sanitizedIdentifier;
-            }
-
             if (!m_ApplicationIdentifier.serializedObject.isEditingMultipleObjects)
             {
+                var overrideDefaultID = m_OverrideDefaultApplicationIdentifier.boolValue;
+                var defaultIdentifier = String.Format("com.{0}.{1}", m_CompanyName.stringValue, m_ProductName.stringValue);
+                var sanitizedDefault = PlayerSettings.SanitizeApplicationIdentifier(defaultIdentifier, targetGroup);
+                var oldIdentifier = "";
+                var buildTargetGroup = BuildPipeline.GetBuildTargetGroupName(targetGroup);
+                string currentIdentifier;
+
                 m_ApplicationIdentifier.TryGetMapEntry(buildTargetGroup, out var entry);
 
                 if (entry != null)
                     oldIdentifier = entry.FindPropertyRelative("second").stringValue;
 
-                if (currentIdentifier != oldIdentifier)
+                if (overrideDefaultID)
+                    currentIdentifier = oldIdentifier;
+                else
                 {
-                    if (overrideDefaultID)
-                        currentIdentifier = oldIdentifier;
-                    else
-                        m_ApplicationIdentifier.SetMapValue(buildTargetGroup, currentIdentifier);
+                    currentIdentifier = defaultIdentifier;
+                    if (sanitizedDefault != oldIdentifier)
+                        m_ApplicationIdentifier.SetMapValue(buildTargetGroup, sanitizedDefault);
                 }
 
                 EditorGUILayout.BeginVertical();
                 EditorGUI.BeginChangeCheck();
 
+                ApplicationIdentifierValidationResult validatedIdentifier;
                 using (new EditorGUI.DisabledScope(!overrideDefaultID))
                 {
-                    currentIdentifier = GetSanitizedApplicationIdentifier();
-                    currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), currentIdentifier);
+                    validatedIdentifier = ValidateApplicationIdentifier(currentIdentifier, targetGroup);
+                    currentIdentifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), validatedIdentifier.sanitizedIdentifier);
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    currentIdentifier = GetSanitizedApplicationIdentifier();
-                    m_ApplicationIdentifier.SetMapValue(buildTargetGroup, currentIdentifier);
+                    validatedIdentifier = ValidateApplicationIdentifier(currentIdentifier, targetGroup);
+                    m_ApplicationIdentifier.SetMapValue(buildTargetGroup, validatedIdentifier.sanitizedIdentifier);
+                    validatedIdentifier.LogMessage();
                 }
 
-                if (currentIdentifier == "com.Company.ProductName" || currentIdentifier == "com.unity3d.player")
-                    EditorGUILayout.HelpBox("Don't forget to set the Application Identifier.", MessageType.Warning);
-                else if (!PlayerSettings.IsApplicationIdentifierValid(currentIdentifier, targetGroup))
-                    EditorGUILayout.HelpBox(errorMessage, MessageType.Error);
-                else if (!overrideDefaultID && currentIdentifier != defaultIdentifier)
-                    EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
+                validatedIdentifier.ShowHelpBox();
 
                 EditorGUILayout.EndVertical();
             }
+        }
+
+        internal struct ApplicationIdentifierValidationResult
+        {
+            public string sanitizedIdentifier { get; private set; }
+            public LogType? logMessageType { get; private set; }
+            public string logMessage { get; private set; }
+            public MessageType? helpBoxMessageType { get; private set; }
+            public string helpBoxMessage { get; private set; }
+
+            public ApplicationIdentifierValidationResult(string sanitizedIdentifier, LogType? logMessageType = null, string logMessage = null,
+                MessageType? helpBoxMessageType = null, string helpBoxMessage = null)
+            {
+                this.sanitizedIdentifier = sanitizedIdentifier;
+                this.logMessageType = logMessageType;
+                this.logMessage = logMessage;
+                this.helpBoxMessageType = helpBoxMessageType;
+                this.helpBoxMessage = helpBoxMessage;
+            }
+
+            public void LogMessage()
+            {
+                if (!logMessageType.HasValue)
+                    return;
+                switch (logMessageType.Value)
+                {
+                    case LogType.Warning:
+                        Debug.LogWarning(logMessage);
+                        break;
+                    case LogType.Error:
+                        Debug.LogError(logMessage);
+                        break;
+                }
+            }
+
+            public void ShowHelpBox()
+            {
+                if (helpBoxMessageType.HasValue)
+                    EditorGUILayout.HelpBox(helpBoxMessage, helpBoxMessageType.Value);
+            }
+        }
+        internal static ApplicationIdentifierValidationResult ValidateApplicationIdentifier(string id, BuildTargetGroup buildTarget)
+        {
+            switch (id)
+            {
+                case "com.unity3d.player":
+                case "com.Company.ProductName":
+                    var warning = SettingsContent.unsetApplicationIdentifierWarning.text;
+                    return new ApplicationIdentifierValidationResult(
+                        id,
+                        LogType.Warning, warning,
+                        MessageType.Warning, warning
+                    );
+            }
+
+            string sanitizedId = PlayerSettings.SanitizeApplicationIdentifier(id, buildTarget);
+            if (!PlayerSettings.IsApplicationIdentifierValid(sanitizedId, buildTarget))
+            {
+                var errorMessage = GetApplicationIdentifierError(buildTarget).text;
+                return new ApplicationIdentifierValidationResult(
+                    sanitizedId,
+                    LogType.Error, errorMessage,
+                    MessageType.Error, errorMessage
+                );
+            }
+            if (sanitizedId != id)
+            {
+                var warningMessage = SettingsContent.applicationIdentifierWarning.text;
+                return new ApplicationIdentifierValidationResult(
+                    sanitizedId,
+                    LogType.Warning, warningMessage,
+                    MessageType.Warning, warningMessage
+                );
+            }
+
+            return new ApplicationIdentifierValidationResult(id);
         }
 
         internal static void ShowBuildNumberUI(SerializedProperty prop, NamedBuildTarget buildTarget, string label, string tooltip)

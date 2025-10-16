@@ -59,9 +59,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override SemVersion? supportedVersion => m_SupportedUnityVersion;
 
-        public override IEnumerable<SemVersion> supportedVersions => m_SupportedUnityVersions;
+        public override IReadOnlyCollection<SemVersion> supportedVersions => m_SupportedUnityVersions;
 
-        public override IEnumerable<PackageSizeInfo> sizes => m_SizeInfos;
+        public override IReadOnlyCollection<PackageSizeInfo> sizes => m_SizeInfos;
 
         public override IEnumerable<Asset> importedAssets => m_ImportedPackage;
 

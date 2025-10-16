@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.SearchService
@@ -37,7 +38,35 @@ namespace UnityEditor.SearchService
         public IEnumerable<Type> requiredTypes { get; set; }
         public IEnumerable<string> requiredTypeNames { get; set; }
         public VisibleObjects visibleObjects { get; set; }
-        public IEnumerable<int> allowedInstanceIds { get; set; }
+        [Obsolete("allowedInstanceIds is deprecated. Use allowedEntityIds instead.")]
+        public IEnumerable<int> allowedInstanceIds
+        {
+            get
+            {
+                if (allowedEntityIds == null)
+                    return null;
+
+                var myInstanceIds = new List<int>();
+                foreach (var i in allowedEntityIds)
+                    myInstanceIds.Add(i);
+                return myInstanceIds;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    allowedEntityIds = null;
+                    return;
+                }
+
+                var myEntityIds = new List<EntityId>();
+                foreach (var i in value)
+                    myEntityIds.Add(i);
+                allowedEntityIds = myEntityIds;
+            }
+        }
+
+        public IEnumerable<EntityId> allowedEntityIds { get; set; }
         public ObjectSelectorSearchEndSessionModes endSessionModes { get; set; }
         internal SearchFilter searchFilter { get; set; }
     }

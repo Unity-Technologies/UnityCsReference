@@ -17,6 +17,12 @@ class VisualElementSelectionEditor : UnityEditor.Editor
         // Intentionally left empty to override the header.
     }
 
+    public override bool UseDefaultMargins()
+    {
+        // We don't want to have an artificial padding
+        return false;
+    }
+
     public override VisualElement CreateInspectorGUI()
     {
         var inspector = new VisualElementInspector

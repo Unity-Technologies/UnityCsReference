@@ -19,7 +19,7 @@ namespace UnityEditor.PackageManager
         private static extern NativeStatusCode Add([Out] out long operationId, string packageId);
 
         [FreeFunction("PackageManager::AddAndRemove::StartOperation")]
-        private static extern NativeStatusCode AddAndRemove([Out] out long operationId, string[] packagesToAdd, string[] packagesToRemove);
+        private static extern NativeStatusCode AddAndRemove([Out] out long operationId, string[] packagesToAdd, string[] packagesToRemove, bool dryRun);
 
         [FreeFunction("PackageManager::AddScopedRegistry::StartOperation")]
         private static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes, bool dryRun);

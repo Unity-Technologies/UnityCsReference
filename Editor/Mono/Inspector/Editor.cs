@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor.AssetImporters;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
@@ -411,6 +412,7 @@ namespace UnityEditor
 
         internal static float kLineHeight = EditorGUI.kSingleLineHeight;
 
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal bool hideInspector = false;
 
         const float kImageSectionWidth = 44;
@@ -1066,7 +1068,7 @@ namespace UnityEditor
             Texture2D icon = null;
 
             //  Fetch isLoadingAssetPreview to ensure that there is no situation where a preview needs a repaint because it hasn't finished loading yet.
-            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetInstanceID());
+            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetEntityId());
             icon = AssetPreview.GetAssetPreview(target);
             if (!icon)
             {

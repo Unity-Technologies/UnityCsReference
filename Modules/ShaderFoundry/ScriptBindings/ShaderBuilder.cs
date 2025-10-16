@@ -367,9 +367,9 @@ namespace UnityEditor.ShaderFoundry
             return (c >= '0') && (c <= '9');
         }
 
-        static bool TryParseInt(string str, int startOffsetInclusive, int endOffsetExclusive, out int value, out int end)
+        static bool TryParseUInt64(string str, int startOffsetInclusive, int endOffsetExclusive, out ulong value, out int end)
         {
-            // search for the end of the int
+            // search for the end of the number
             int offset;
             for (offset = startOffsetInclusive; offset < endOffsetExclusive; offset++)
             {
@@ -380,10 +380,10 @@ namespace UnityEditor.ShaderFoundry
             }
             end = offset;
             var intString = str.Substring(startOffsetInclusive, end - startOffsetInclusive);
-            return Int32.TryParse(intString, out value);
+            return UInt64.TryParse(intString, out value);
         }
 
-        int ParseSimpleToken(string str, int startOffsetInclusive, int endOffsetExclusive, char token)
+        ulong ParseSimpleToken(string str, int startOffsetInclusive, int endOffsetExclusive, char token)
         {
             // Expected Format: "{Token}:{id}"
             if (str[startOffsetInclusive + 1] != ':')
@@ -392,18 +392,18 @@ namespace UnityEditor.ShaderFoundry
                 throw new Exception($"Malformed token found when parsing '{tokenSubStr}'. Expected ':' after '${token}'");
             }
 
-            if (!TryParseInt(str, startOffsetInclusive + 2, endOffsetExclusive, out int tokenId, out int end))
+            if (!TryParseUInt64(str, startOffsetInclusive + 2, endOffsetExclusive, out ulong tokenId, out int end))
             {
                 var tokenSubStr = str.Substring(startOffsetInclusive, endOffsetExclusive - startOffsetInclusive);
-                throw new Exception($"Token '{tokenSubStr}' is malformed. The identifier number is not a valid integer.");
+                throw new Exception($"Token '{tokenSubStr}' is malformed. The identifier number is not a valid handle.");
             }
             return tokenId;
         }
 
-        void ParseTokenWithName(string str, int startOffsetInclusive, int endOffsetExclusive, char token, out int tokenId, out string outName)
+        void ParseTokenWithName(string str, int startOffsetInclusive, int endOffsetExclusive, char token, out ulong tokenId, out string outName)
         {
             // Expected Format: "{Token}:{id},{name}"
-            tokenId = -1;
+            tokenId = 0;
             outName = null;
             int offset = startOffsetInclusive + 1;
             if (str[offset] != ':')
@@ -413,10 +413,10 @@ namespace UnityEditor.ShaderFoundry
             }
 
             ++offset;
-            if (!TryParseInt(str, offset, endOffsetExclusive, out tokenId, out int end))
+            if (!TryParseUInt64(str, offset, endOffsetExclusive, out tokenId, out int end))
             {
                 var tokenSubStr = str.Substring(startOffsetInclusive, endOffsetExclusive - startOffsetInclusive);
-                throw new Exception($"Token '{tokenSubStr}' is malformed. The identifier number is not a valid integer.");
+                throw new Exception($"Token '{tokenSubStr}' is malformed. The identifier number is not a valid handle.");
             }
 
             offset = end;
@@ -447,28 +447,28 @@ namespace UnityEditor.ShaderFoundry
             {
                 case 'V': // variable declaration
                 {
-                    ParseTokenWithName(str, startOffsetInclusive, endOffsetExclusive, 'V', out int shaderTypeIndex, out string varName);
+                    ParseTokenWithName(str, startOffsetInclusive, endOffsetExclusive, 'V', out ulong shaderTypeIndex, out string varName);
                     // declare it!
                     FoundryHandle shaderTypeHandle = new FoundryHandle();
-                    shaderTypeHandle.Handle = (uint)shaderTypeIndex;
+                    shaderTypeHandle.Handle = shaderTypeIndex;
                     var shaderType = new ShaderType(container, shaderTypeHandle);
                     VariableDeclarationInternal(shaderType, varName, DeclarationMode.NoSemicolon);
                     break;
                 }
                 case 'F': // function call - function name
                 {
-                    int tokenId = ParseSimpleToken(str, startOffsetInclusive, endOffsetExclusive, 'F');
+                    ulong tokenId = ParseSimpleToken(str, startOffsetInclusive, endOffsetExclusive, 'F');
                     FoundryHandle shaderFunctionHandle = new FoundryHandle();
-                    shaderFunctionHandle.Handle = (uint)tokenId;
+                    shaderFunctionHandle.Handle = tokenId;
                     var shaderFunction = new ShaderFunction(container, shaderFunctionHandle);
                     AddFunctionNameInternal(shaderFunction);
                     break;
                 }
                 case 'T': // type name
                 {
-                    int typeId = ParseSimpleToken(str, startOffsetInclusive, endOffsetExclusive, 'T');
+                    ulong typeId = ParseSimpleToken(str, startOffsetInclusive, endOffsetExclusive, 'T');
                     FoundryHandle shaderTypeHandle = new FoundryHandle();
-                    shaderTypeHandle.Handle = (uint)typeId;
+                    shaderTypeHandle.Handle = typeId;
                     var shaderType = new ShaderType(container, shaderTypeHandle);
                     AddNonArrayTypeNameInternal(shaderType);
                     break;

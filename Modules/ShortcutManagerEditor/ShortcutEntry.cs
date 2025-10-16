@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -22,6 +23,7 @@ namespace UnityEditor.ShortcutManagement
         public ShortcutStage stage;
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     enum ShortcutType
     {
         Action,
@@ -30,6 +32,7 @@ namespace UnityEditor.ShortcutManagement
     }
 
     [Serializable]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     struct Identifier
     {
         public string path;
@@ -51,6 +54,7 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     class ShortcutEntry
     {
         readonly Identifier m_Identifier;
@@ -82,6 +86,7 @@ namespace UnityEditor.ShortcutManagement
 
         internal ShortcutModifiers m_ReservedModifier;
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, string displayName = null, int priority = int.MaxValue)
             : this(id, defaultCombination, action, context, null, type, displayName, priority) {}
 

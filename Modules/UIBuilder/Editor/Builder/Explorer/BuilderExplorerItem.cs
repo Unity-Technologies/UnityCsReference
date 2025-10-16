@@ -121,6 +121,7 @@ namespace Unity.UI.Builder
             m_RenameTextField = new TextField()
             {
                 name = BuilderConstants.ExplorerItemRenameTextfieldName,
+                maxLength = BuilderConstants.ElementNameMaxLength,
                 isDelayed = true
             };
             m_RenameTextField.AddToClassList(BuilderConstants.ExplorerItemRenameTextfieldClassName);
@@ -275,8 +276,7 @@ namespace Unity.UI.Builder
                         vea .serializedData = desc.CreateDefaultSerializedData();
 
                     var attribute = desc.FindAttributeWithPropertyName("name");
-                    attribute.SetSerializedValue(vea.serializedData, value);
-                    attribute.SetSerializedValueAttributeFlags(vea.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                    attribute.SetSerializedValue(vea.serializedData, value, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                 }
 
                 selection.NotifyOfHierarchyChange(null, null, BuilderHierarchyChangeType.ElementName);

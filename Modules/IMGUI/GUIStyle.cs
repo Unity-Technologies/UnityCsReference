@@ -411,11 +411,14 @@ namespace UnityEngine
         // Get the pixel position of a given string index.
         public Vector2 GetCursorPixelPosition(Rect position, GUIContent content, int cursorStringIndex)
         {
-            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(position), content.textWithWhitespace, Color.white);
+            Rect drawRect = position;
+            drawRect.width = fixedWidth == 0f ? drawRect.width : fixedWidth;
+            drawRect.height = fixedHeight == 0f ? drawRect.height : fixedHeight;
+            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(drawRect), content.textWithWhitespace, Color.white);
             var cursorPos = handle.GetCursorPositionFromStringIndexUsingLineHeight(cursorStringIndex);
             cursorPos = new Vector2(Mathf.Max(0.0f, cursorPos.x), cursorPos.y);
-            var rectOffset = Internal_GetTextRectOffset(position, content, new Vector2(handle.preferredSize.x, handle.preferredSize.y > 0 ? handle.preferredSize.y : lineHeight));
-            return cursorPos + rectOffset - new Vector2(0, lineHeight);
+            var rectOffset = Internal_GetTextRectOffset(drawRect, content, new Vector2(handle.preferredSize.x, handle.preferredSize.y > 0 ? handle.preferredSize.y : lineHeight));
+            return cursorPos + rectOffset + Internal_clipOffset - new Vector2(0, lineHeight);
         }
 
         internal Rect[] GetHyperlinkRects(IMGUITextHandle handle, Rect content)

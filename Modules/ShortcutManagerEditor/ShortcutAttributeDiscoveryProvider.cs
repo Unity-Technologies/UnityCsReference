@@ -9,6 +9,7 @@ using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -57,8 +58,10 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     class MethodSourceFinderUtility
     {
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal struct SourceInfo
         {
             public int lineNumber;
@@ -81,7 +84,7 @@ namespace UnityEditor.ShortcutManagement
         {
             var assembly = methodInfo.DeclaringType.Assembly;
             var parms = new ReaderParameters { ReadSymbols = true };
-            using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(assembly.Location, parms))
+            using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(assembly.GetLoadedAssemblyPath(), parms))
             {
 
                 var convertedFullName = methodInfo.DeclaringType.FullName.Replace("+", "/");
@@ -114,6 +117,7 @@ namespace UnityEditor.ShortcutManagement
             return null;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static SourceInfo GetSourceInfo(MethodInfo methodInfo)
         {
             var seq = FromMethodInfo(methodInfo);

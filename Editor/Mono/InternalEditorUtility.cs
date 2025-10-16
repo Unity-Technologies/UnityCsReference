@@ -42,6 +42,7 @@ namespace UnityEditorInternal
                 case "physicmaterial": return EditorGUIUtility.FindTexture(typeof(PhysicsMaterial));
                 case "prefab": return EditorGUIUtility.FindTexture("Prefab Icon");
                 case "shader": return EditorGUIUtility.FindTexture(typeof(Shader));
+                case "blockshader": return EditorGUIUtility.FindTexture("BlockShaderContainer Icon");
                 case "txt": return EditorGUIUtility.FindTexture(typeof(TextAsset));
                 case "unity": return EditorGUIUtility.FindTexture(typeof(SceneAsset));
                 case "prefs": return EditorGUIUtility.FindTexture(typeof(EditorSettings));
@@ -51,7 +52,9 @@ namespace UnityEditorInternal
                 case "uxml": return EditorGUIUtility.FindTexture(typeof(UnityEngine.UIElements.VisualTreeAsset));
                 case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
                 case "lighting": return EditorGUIUtility.FindTexture(typeof(UnityEngine.LightingSettings));
+                case "controller": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Animations.AnimatorController));
                 case "overridecontroller": return EditorGUIUtility.FindTexture(typeof(AnimatorOverrideController));
+                case "mask": return EditorGUIUtility.FindTexture(typeof(AvatarMask));
                 case "scenetemplate": return EditorGUIUtility.FindTexture("UnityEditor/SceneTemplate/SceneTemplateAsset Icon");
                 case "ttf": case "otf": case "fon": case "fnt":
                     return EditorGUIUtility.FindTexture(typeof(Font));
@@ -243,7 +246,7 @@ namespace UnityEditorInternal
                 return false; // Íf instance id is 0 in safe mode, then don't try to produce it. InstanceIDs are 0 for non script assets in safe mode.
 
             GUID lookupGUID = new GUID(entry.guid);
-            var hash = UnityEditor.Experimental.AssetDatabaseExperimental.ProduceArtifactAsync(new ArtifactKey(lookupGUID));
+            var hash = UnityEditor.Experimental.AssetDatabaseExperimental.ProduceArtifactAsync(AssetDatabaseExperimental.CreateArtifactKey(lookupGUID));
             if (!hash.isValid)
                 return false;
 

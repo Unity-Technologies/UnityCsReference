@@ -35,13 +35,17 @@ internal sealed class VisualElementInspector : VisualElement
     public const string UssClass = "unity-visual-element-inspector";
     public const string HeaderUssClass = UssClass + "__header";
     public const string OpenInBuilderUssClass = UssClass + "__open-in-builder-button";
+    public const string StyleInspectorClass = UssClass + "__style-inspector";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualElementInspector.uxml";
+    private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
+    private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
     private VisualElement m_Element;
 
     private readonly VisualElementHeader m_Header;
     private readonly OpenInBuilderElement m_OpenInBuilder;
+    private readonly StyleInspectorElement m_StyleInspector;
 
     [CreateProperty]
     public VisualElement Element
@@ -58,6 +62,7 @@ internal sealed class VisualElementInspector : VisualElement
             if (m_Element == null)
             {
                 m_OpenInBuilder.VisualTreeAsset = null;
+                m_StyleInspector.Element = null;
             }
             else
             {
@@ -65,6 +70,7 @@ internal sealed class VisualElementInspector : VisualElement
                     ? m_Element.visualTreeAssetSource
                     : m_Element.GetFirstAncestorWhere(ve => ve.visualTreeAssetSource)?.visualTreeAssetSource;
                 m_OpenInBuilder.VisualTreeAsset = visualTreeAsset;
+                m_StyleInspector.Element = m_Element;
             }
             NotifyPropertyChanged(ElementProperty);
         }
@@ -77,8 +83,13 @@ internal sealed class VisualElementInspector : VisualElement
         var vta = EditorGUIUtility.Load(k_VisualTreeAsset) as VisualTreeAsset;
         vta.CloneTree(this);
 
+        var styleSheetPath = EditorGUIUtility.isProSkin ? k_StyleSheetDark : k_StyleSheetLight;
+        var styleSheet = EditorGUIUtility.Load(styleSheetPath) as StyleSheet;
+        styleSheets.Add(styleSheet);
+
         m_Header = this.Q<VisualElementHeader>(className:HeaderUssClass);
         m_Header.SetEnabled(false);
         m_OpenInBuilder = this.Q<OpenInBuilderElement>(className:OpenInBuilderUssClass);
+        m_StyleInspector = this.Q<StyleInspectorElement>(className:StyleInspectorClass);
     }
 }

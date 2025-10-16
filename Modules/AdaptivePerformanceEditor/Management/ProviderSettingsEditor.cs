@@ -401,8 +401,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
             rect.width -= 6;
             rect.height = EditorGUIUtility.singleLineHeight;
-
-            scalerProfileSettingInfo.showScalerProfileSettings = EditorGUI.Foldout(rect, scalerProfileSettingInfo.showScalerProfileSettings, new GUIContent($"{name}"), true);
+            var style = new GUIStyle(EditorStyles.foldout);
+            style.clipping = TextClipping.Ellipsis;
+            scalerProfileSettingInfo.showScalerProfileSettings = EditorGUI.Foldout(rect, scalerProfileSettingInfo.showScalerProfileSettings, new GUIContent($"{name}"), true, style);
             if (scalerProfileSettingInfo.showScalerProfileSettings)
             {
                 AdaptivePerformanceScalerSettings settingsObject = new AdaptivePerformanceScalerSettings();

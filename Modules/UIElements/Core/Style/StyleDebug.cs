@@ -10,11 +10,11 @@ using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static partial class StyleDebug
     {
-        internal const int UnitySpecificity = -1;
-        internal const int UndefinedSpecificity = 0;
+        internal const int UnitySpecificity = -2;
+        internal const int UndefinedSpecificity = -1;
         internal const int InheritedSpecificity = int.MaxValue - 1;
         internal const int InlineSpecificity = int.MaxValue;
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using static UnityEditor.EditorWindow;
 
@@ -43,7 +44,7 @@ namespace UnityEditor.Overlays
 
         internal override void AddMenuItems(AbstractGenericMenu menu)
         {
-            OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow, new DefaultOverlayPreset());
+            OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow, true, null, new DefaultOverlayPreset());
         }
 
         internal override string GetValueToDisplay()
@@ -60,12 +61,50 @@ namespace UnityEditor.Overlays
 
     [Overlay(typeof(EditorWindow), k_Id, k_DisplayName , k_UssName, defaultDockZone = DockZone.LeftColumn, defaultLayout = Layout.HorizontalToolbar, defaultDisplay = true, defaultDockIndex = 0, group = OverlayAttribute.unityGroup)]
     [Icon("Icons/Overlays/OverlayMenu.png")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     sealed class OverlayMenu : Overlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
 
         const string k_DisplayName = "Overlay Menu";
         internal const string k_Id = "Overlays/OverlayMenu"; // Used by tests
         const string k_UssName = "overlay-menu";
+
+        public class OverlayMenuData : ScriptableSingleton<OverlayMenuData>
+        {
+            [SerializeField]
+            List<string> m_FoldoutStatesData = new();
+
+            public bool IsFoldoutExpanded(string groupName)
+            {
+                return m_FoldoutStatesData.Contains(groupName);
+            }
+
+            public void SetFoldoutState(string groupName, bool isExpanded)
+            {
+                if (isExpanded)
+                {
+                    if (!m_FoldoutStatesData.Contains(groupName))
+                        m_FoldoutStatesData.Add(groupName);
+                }
+                else
+                {
+                    m_FoldoutStatesData.Remove(groupName);
+                }
+            }
+        }
+
+        static class OverlayMenuState
+        {
+            public static bool IsFoldoutExpanded(string groupName)
+            {
+                return OverlayMenuData.instance.IsFoldoutExpanded(groupName);
+            }
+
+            public static void SetFoldoutState(string groupName, bool isExpanded)
+            {
+                OverlayMenuData.instance.SetFoldoutState(groupName, isExpanded);
+            }
+        }
 
         internal sealed class OverlayGroupData : IComparable<OverlayGroupData>
         {
@@ -141,6 +180,12 @@ namespace UnityEditor.Overlays
                 m_GlobalToolbar.Clear();
                 m_Overlays.Clear();
 
+                if (!m_Menu.HasOverlaysToShowInMenu())
+                {
+                    m_GlobalToolbar.Add(m_Menu.GetReplacementText(m_GlobalToolbar.resolvedStyle.flexDirection == FlexDirection.Column));
+                    return;
+                }
+
                 foreach (var overlay in m_Menu.canvas.overlays)
                 {
                     if (!m_Menu.ShouldShowOverlay(overlay) || overlay is OverlayMenu)
@@ -180,6 +225,20 @@ namespace UnityEditor.Overlays
             HostView.populateDefaultMenuItems += PopulateDefaultMenuItems;
         }
 
+        internal bool HasOverlaysToShowInMenu()
+        {
+            if (canvas.HasTransientOverlays())
+                return true;
+
+            // If at least one overlay that is not the Overlay Menu itself
+            foreach (var overlay in canvas.overlays)
+            {
+                if (overlay.userControlledVisibility && overlay.hasMenuEntry && !(overlay is OverlayMenu))
+                    return true;
+            }
+            return false;
+        }
+
         static void PopulateDefaultMenuItems(GenericMenu menu, EditorWindow targetWindow)
         {
             if (targetWindow is ISupportsOverlays)
@@ -197,6 +256,7 @@ namespace UnityEditor.Overlays
                 {
                     menu.AddItem(overlayMenuItemContent, false,
                         () => { targetWindow.overlayCanvas.ShowPopup<OverlayMenu>(); });
+
                     menu.AddSeparator("Overlays/");
                     menu.AddItem(enableOverlaysContent, overlaysEnabled,
                         () => targetWindow.overlayCanvas.overlaysEnabled = !overlaysEnabled);
@@ -222,7 +282,9 @@ namespace UnityEditor.Overlays
         static void ShowOverlayMenu(ShortcutArguments args)
         {
             if (args.context is OverlayShortcutContext context)
+            {
                 context.editorWindow.overlayCanvas.ShowPopupAtMouse<OverlayMenu>();
+            }
         }
 
         public override void OnCreated()
@@ -348,6 +410,15 @@ namespace UnityEditor.Overlays
             return groups;
         }
 
+        internal Label GetReplacementText(bool isVerticalToolbar = false)
+        {
+            var label = new Label(isVerticalToolbar ? "None" : "No Overlays");
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.tooltip = $"No overlays in the current {canvas.containerWindow.name}";
+
+            return label;
+        }
+
         void RebuildList()
         {
             if (m_ListRoot == null)
@@ -355,10 +426,23 @@ namespace UnityEditor.Overlays
 
             m_ListRoot.Clear();
 
+            if (!HasOverlaysToShowInMenu())
+            {
+                m_ListRoot.Add(GetReplacementText());
+                return;
+            }
+
             var groups = GetGroups(this, canvas.overlays);
             foreach (var group in groups)
             {
                 var groupItem = new OverlayGroupMenuItem(group.name, group.overlays);
+
+                groupItem.value = OverlayMenuState.IsFoldoutExpanded(group.name);
+                groupItem.toggle.RegisterValueChangedCallback(evt =>
+                {
+                    OverlayMenuState.SetFoldoutState(group.name, evt.newValue);
+                });
+
                 foreach (var overlay in group.overlays)
                     groupItem.Add(new OverlayMenuItem(overlay));
 

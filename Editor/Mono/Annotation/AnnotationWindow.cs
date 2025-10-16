@@ -86,6 +86,7 @@ namespace UnityEditor
         GUIContent terrainDebugWarnings = EditorGUIUtility.TrTextContent("Terrain Debug Warnings");
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
         GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
+        GUIContent showLODLabelContent = EditorGUIUtility.TrTextContent("LOD Labels", "Show or Hide LOD Labels for Mesh LOD and LODGroup. Disabled if MeshRenderer, SkinnedMeshRenderer or LODGroup Gizmos are are hidden");
         GUIContent fadeGizmosContent = EditorGUIUtility.TrTextContent("Fade Gizmos", "Fade out and stop rendering gizmos that are small on screen");
         GUIContent lightProbeVisualizationContent = EditorGUIUtility.TrTextContent("Light Probe Visualization");
         GUIContent displayWeightsContent = EditorGUIUtility.TrTextContent("Display Weights");
@@ -375,6 +376,14 @@ namespace UnityEditor
                 toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
                 AnnotationUtility.showSelectionWire = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionWire, showWireframeContent);
                 curY += rowHeight;
+
+                // LOD labels
+                using (new EditorGUI.DisabledScope(!AnnotationUtility.CanHideLODLabels()))
+                {
+                    toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+                    AnnotationUtility.showLODLabels = GUI.Toggle(toggleRect, AnnotationUtility.showLODLabels, showLODLabelContent);
+                    curY += rowHeight;
+                }
 
                 // TODO: Change to Debug Errors & Debug Warnings
                 toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
@@ -763,5 +772,12 @@ namespace UnityEditor
         {
             AnnotationUtility.showSelectionWire = !AnnotationUtility.showSelectionWire;
         }
+
+        [Shortcut("Scene View/Toggle LOD Labels", typeof(SceneView))]
+        static void ToggleLODLabels()
+        {
+            AnnotationUtility.showLODLabels = !AnnotationUtility.showLODLabels;
+        }
+
     }
 }

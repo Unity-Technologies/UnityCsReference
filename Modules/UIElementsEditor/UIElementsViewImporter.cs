@@ -9,15 +9,14 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using ExCSS;
 using Unity.Profiling;
 using UnityEditor.AssetImporters;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
-using Object = UnityEngine.Object;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 using StyleSheet = UnityEngine.UIElements.StyleSheet;
 
 namespace UnityEditor.UIElements
@@ -25,7 +24,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 24, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 25, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -327,6 +326,7 @@ namespace UnityEditor.UIElements
             inlineSheet.name = "inlineStyle";
             m_Builder.BuildTo(inlineSheet);
             vta.inlineSheet = inlineSheet;
+            vta.inlineSheet.hideFlags = HideFlags.NotEditable;
         }
 
         void CreateVisualTreeAsset(out VisualTreeAsset vta, Hash128 contentHash)
@@ -453,6 +453,9 @@ namespace UnityEditor.UIElements
                 {
                     if (asset is VisualTreeAsset treeAsset)
                     {
+                        if (validationResponse.resolvedUrlChanged)
+                            vta.importerWithUpdatedUrls = true;
+
                         vta.RegisterTemplate(name, treeAsset);
                     }
                     else
@@ -761,25 +764,19 @@ namespace UnityEditor.UIElements
             }
             else if (hasSrc)
             {
-                string errorMessage, projectRelativePath;
-
-                URIValidationResult result = URIHelpers.ValidAssetURL(assetPath, srcAttr.Value, out errorMessage, out projectRelativePath);
-
-                if (result != URIValidationResult.OK)
+                var validationResponse = ValidateAndLoadResource(styleElt, vta, srcAttr.Value).response;
+                if (validationResponse.result == URIValidationResult.OK)
                 {
-                    LogError(vta, ImportErrorType.Semantic, ConvertErrorCode(result), errorMessage, styleElt);
-                }
-                else
-                {
-                    Object asset = DeclareDependencyAndLoad(projectRelativePath);
-
-                    if (asset is StyleSheet)
+                    var asset = DeclareDependencyAndLoad(validationResponse.resolvedProjectRelativePath);
+                    if (asset is StyleSheet styleSheet)
                     {
-                        vea.stylesheets.Add(asset as StyleSheet);
+                        if (validationResponse.resolvedUrlChanged)
+                            vta.importerWithUpdatedUrls = true;
+                        vea.stylesheets.Add(styleSheet);
                     }
                     else
                     {
-                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, projectRelativePath, styleElt);
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidAssetType, validationResponse.resolvedProjectRelativePath, styleElt);
                     }
                 }
             }
@@ -999,7 +996,7 @@ namespace UnityEditor.UIElements
                 return (response, asset);
             }
 
-            return (default, null);
+            return (response, null);
         }
 
         static bool IsBuiltinResource(string path)
@@ -1045,15 +1042,6 @@ namespace UnityEditor.UIElements
 
         void ParseAttributes(XElement elt, UxmlAsset res, VisualTreeAsset vta, UxmlAsset parent)
         {
-            // Since the import process depends on the existence of the type and any UXMLAssetAttributeDescription members
-            // We must declare a dependency to the type with the Asset Database to cause reimports when the factories change
-            // (See comments in UXMLAssetAttributeSet)
-            if (m_Context != null)
-            {
-                string dependencyKeyName = UxmlCodeDependencies.instance.FormatDependencyKeyName(res.fullTypeName);
-                m_Context.DependsOnCustomDependency(dependencyKeyName);
-            }
-
             var vea = res as VisualElementAsset;
             UxmlSerializedDataDescription uxmlSerializedDataDescription = null;
             foreach (var xattr in elt.Attributes())

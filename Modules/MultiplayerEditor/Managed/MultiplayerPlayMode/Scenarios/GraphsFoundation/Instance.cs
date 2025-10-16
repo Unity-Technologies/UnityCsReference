@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.PlayMode.Editor;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -23,79 +24,111 @@ namespace Unity.Multiplayer.PlayMode.Editor
     internal class Instance : ISerializationCallbackReceiver
     {
         [SerializeField] private ExecutionGraph m_ExecutionGraph;
-        [SerializeField] public String m_Name;
-        [SerializeField] public String m_InstanceDescriptionType;
+        [SerializeField] private string m_Name;
+        [SerializeField] private string m_InstanceDescriptionType;
         [SerializeField] private CancellationTokenSource m_FreeRunCancelTokenSource;
         [SerializeField] private bool m_HasCompleted;
         [SerializeField] private bool m_HasDeployedAndRun;
-        [SerializeField] public string m_BuildTarget;
-        [SerializeField] public string m_MultiplayerRole;
+        [SerializeField] private string m_BuildTarget;
+        [SerializeField] private bool m_Drifted;
+        [SerializeField] private RunModeState m_RunModeState;
+        [SerializeField] private string m_MultiplayerRole;
+        [SerializeField] private InstanceStatusData m_StatusData;
+        [SerializeReference] private PlayModeController m_PlayModeController;
+        [SerializeReference] private InstanceDescription m_InstanceDescription;
 
         // TODO: MTT-10016 Migrate towards a single Monitoring Task per instance.
         private List<Task> m_CurrentMonitoringTasks = new List<Task>();
-        private List<NodeStatus> m_CurrentStatus = new List<NodeStatus>();
-        private ExecutionStage m_CurrentStage = ExecutionStage.None;
 
+        internal event Action<Instance, InstanceStatusData> StatusRefreshed;
+
+        internal string Name => m_Name;
+        internal PlayModeController Controller => m_PlayModeController;
+        internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
         internal List<Task> GetCurrentMonitoringTasksForScenario() => m_CurrentMonitoringTasks;
-        internal List<NodeStatus> GetCurrentNodeStatus() => m_CurrentStatus;
-        internal ExecutionStage GetCurrentStage() => m_CurrentStage;
         internal bool HasDeployedAndRun() => m_HasDeployedAndRun;
-
-        // Listeners for the notification of Execution updates.
-        private event Action<Instance, Node> m_InstanceExecutionEventListener;
-        internal void AddInstanceExecutionEventListener(Action<Instance, Node> listener)
+        internal bool Drifted
         {
-            m_InstanceExecutionEventListener -= listener;
-            m_InstanceExecutionEventListener += listener;
-        }
-
-        internal void RemoveInstanceExecutionEventListener(Action<Instance, Node> listener)
-        {
-            m_InstanceExecutionEventListener -= listener;
-        }
-
-        private void OnNodeExecutionEventUpdate(Node node)
-        {
-            // Refresh this instance's status
-            RefreshInstanceStatus();
-
-            // Notify listeners of node events (usually a Scenario)
-            m_InstanceExecutionEventListener?.Invoke(this, node);
-        }
-
-        internal static Instance Create(InstanceDescription description = null)
-        {
-            // Instance are configured as MainEditorInstanceDescription by default
-            if (description == null)
+            get => m_Drifted;
+            set
             {
-                description = new MainEditorInstanceDescription();
-                description.Name = "Main Editor";
+                m_Drifted = value;
+                RefreshAndNotifyStatus();
             }
+        }
+
+        internal RunModeState RunModeState
+        {
+            set
+            {
+                if (IsActive())
+                {
+                    Debug.LogWarning("Cannot set RunModeState while the instance is active.");
+                    return;
+                }
+
+                if (m_RunModeState == value)
+                    return;
+
+                m_RunModeState = value;
+                RefreshAndNotifyStatus();
+            }
+        }
+
+        internal Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
+        {
+            return m_PlayModeController.ValidateForRunningAsync(cancellationToken);
+        }
+
+        internal static Instance Create()
+        {
+            var description = new MainEditorInstanceDescription() { Name = "Main Editor" };
+            var controller = new EditorInstanceController(description);
+            return Create(description, controller);
+        }
+
+        internal static Instance Create(InstanceDescription description, PlayModeController playModeController)
+        {
+            Assert.IsNotNull(description, "InstanceDescription cannot be null");
+            Assert.IsNotNull(playModeController, "PlayModeController cannot be null");
 
             // For each instance, wire up an Execution Graph
             var instance = new Instance();
             var executionGraph = new ExecutionGraph();
-            executionGraph.SetNodeExecutionEventListener(instance.OnNodeExecutionEventUpdate);
+            executionGraph.StatusRefreshed += instance.OnGraphStatusRefreshed;
+            instance.m_PlayModeController = playModeController;
+            instance.m_InstanceDescription = description;
             instance.m_ExecutionGraph = executionGraph;
             instance.m_InstanceDescriptionType = description.InstanceTypeName;
+            instance.m_RunModeState = description.RunModeState;
             instance.m_BuildTarget = description.BuildTargetType;
             instance.m_MultiplayerRole = description.MultiplayerRole;
             instance.m_Name = description.Name;
             return instance;
         }
 
+        void OnGraphStatusRefreshed()
+        {
+            RefreshAndNotifyStatus();
+        }
+
+        void RefreshAndNotifyStatus()
+        {
+            RefreshStatusData();
+            StatusRefreshed?.Invoke(this, StatusData);
+        }
+
         public void OnBeforeSerialize()
         {
             // Clear out all listeners before Domain Reload Serialization
             m_CurrentMonitoringTasks.Clear();
-            m_ExecutionGraph.SetNodeExecutionEventListener(null);
         }
 
         public void OnAfterDeserialize()
         {
             // Re-attach listeners after Domain Reload Deserialization
-            m_ExecutionGraph.SetNodeExecutionEventListener(OnNodeExecutionEventUpdate);
+            m_ExecutionGraph.StatusRefreshed += OnGraphStatusRefreshed;
         }
 
         internal void Reset()
@@ -104,37 +137,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_HasDeployedAndRun = false;
             m_HasCompleted = false;
             m_CurrentMonitoringTasks.Clear();
-            m_CurrentStatus.Clear();
+            m_StatusData = default;
 
             // Reset the Execution graph
             m_ExecutionGraph.Reset();
+
+            RefreshAndNotifyStatus();
         }
 
         // Returns the Instance's Description configuration from the current Scenario Config
         internal InstanceDescription GetInstanceDescription()
         {
-            // var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
-            // if (currentConfig == null)
-            //     return null;
-
-            // return currentConfig.GetInstanceDescriptionByName(m_Name);
-
-            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig;
-            if (currentConfig == null || currentConfig.GetType().Name != "ScenarioConfig")
-                return null;
-
-            var getDescriptionMethod = currentConfig.GetType().GetMethod("GetInstanceDescriptionByName",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            Assert.IsNotNull(getDescriptionMethod,
-                $"The current config {currentConfig.GetType().Name} does not have a method GetInstanceDescriptionByName");
-
-            return getDescriptionMethod.Invoke(currentConfig, new object[] { m_Name }) as InstanceDescription;
+            return m_InstanceDescription;
         }
 
         internal bool IsFreeRunMode()
         {
-            var config = GetInstanceDescription();
-            return config != null && config.RunModeState == RunModeState.ManualControl;
+            return m_RunModeState == RunModeState.ManualControl;
         }
 
         // This is used for the Analytics OnPlayFromScenario event's UseMultiplay data
@@ -149,6 +168,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 RemoteInstanceDescription remoteInstanceDescription => "Multiplay",
                 _ => string.Empty
             };
+        }
+
+        // Returns the array of analytics InstanceData from Instances
+        internal static InstanceData[] GetAnalyticsDataArray(List<Instance> instances)
+        {
+            var result = new List<InstanceData>();
+            foreach (var instance in instances)
+            {
+                var data = instance.GetAnalyticsData();
+                result.Add(data);
+            }
+            return result.ToArray();
         }
 
         // Returns the analytics InstanceData from Instance
@@ -215,14 +246,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal async Task StartOrResumeAsFreeRunning(bool shouldResume)
         {
+            // Create a cancellation source by which to stop the Free run instance
+            m_FreeRunCancelTokenSource = new CancellationTokenSource();
+
+            // Check instance setup before it starts running
+            var preStartCheck = await TryRunPreStartChecksAsync(m_FreeRunCancelTokenSource.Token);
+            if (!preStartCheck)
+            {
+                StopAsFreeRunning();
+                return;
+            }
+
             // Refresh this instance if starting for the first time.
             if (!shouldResume)
                 Reset();
 
-            RefreshInstanceStatus();
-
-            // Create a cancellation source by which to stop the Free run instance
-            m_FreeRunCancelTokenSource = new CancellationTokenSource();
+            RefreshStatusData();
 
             // Prepare the stages that this Instance, once started, will execute on.
             var executionStages = new Queue<ExecutionStage>(new ExecutionStage[]
@@ -253,6 +292,48 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        private async Task<bool> TryRunPreStartChecksAsync(CancellationToken cancellationToken)
+        {
+            Scenario.ValidationResult validationResult;
+            try
+            {
+                validationResult = await ValidateForRunningAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+
+            if (!validationResult.IsValid)
+            {
+                var instanceData = new[] { GetAnalyticsData() };
+                var errorData = GetValidationErrorData(validationResult);
+
+                AnalyticsOnPlayFromScenarioEvent.SendValidationErrorData(
+                    instanceData,
+                    new[] { errorData }
+                );
+
+                EditorUtility.DisplayDialog(
+                    "Play Mode Scenario - Manual Control Instance Setup Error",
+                    $"{validationResult.Message}. Please check the console for more details.",
+                    "OK"
+                );
+                return false;
+            }
+            return true;
+        }
+
+        internal static ErrorData GetValidationErrorData(Scenario.ValidationResult result)
+        {
+            // Create an ErrorData object from the validation result
+            return new ErrorData
+            {
+                ExceptionType = typeof(InvalidOperationException).ToString(),
+                Message = result.Message,
+            };
+        }
+
         internal void StopAsFreeRunning()
         {
             // Sanity checks from stopping twice.
@@ -262,6 +343,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_FreeRunCancelTokenSource.Cancel();
             m_FreeRunCancelTokenSource = null;
             m_HasCompleted = true;
+            m_Drifted = false;
         }
 
         internal bool HasStartedAsFreeRunning()
@@ -304,111 +386,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_FreeRunCancelTokenSource = null;
         }
 
-        // Refresh and compute the current stage and status of this Instance.
-        internal void RefreshInstanceStatus()
+        void RefreshStatusData()
         {
-            var mStages = Enum.GetValues(typeof(ExecutionStage));
-            var errors = new List<Node.Error>();
-            m_CurrentStage = ExecutionStage.None;
-            m_CurrentStatus.Clear();
+            m_StatusData.Clear();
 
-            for (var i = mStages.Length - 1; i >= 0; i--)
+            foreach (var stage in ExecutionGraph.k_Stages)
             {
-                var targetExecutionStage = (ExecutionStage)mStages.GetValue(i);
-                ComputeStageState(
-                    targetExecutionStage,
-                    out var _,
-                    out var instanceStageState,
-                    progressSum: out var _,
-                    idleNodes: out var _,
-                    runningNodes: out var _,
-                    completedNodes: out var _,
-                    activeNodes: out var _,
-                    failedNodes: out var _,
-                    abortedNodes: out var _,
-                    errors: ref errors,
-                    nodeStatuses: ref m_CurrentStatus);
+                ref var stageStatus = ref m_StatusData.StageStatuses[(int)stage];
 
-                // If the Instance Stage is Not Running or Active, Set it as the current
-                if (instanceStageState != ExecutionState.Idle && m_CurrentStage == ExecutionStage.None)
-                    m_CurrentStage = targetExecutionStage;
+                stageStatus.Aggregate(m_ExecutionGraph.GetNodes(stage));
+                m_StatusData.OverallStatus.Aggregate(stageStatus);
+
+                if (stageStatus.IdleNodesCount < stageStatus.NodesCount)
+                    m_StatusData.CurrentStage = stage;
             }
-        }
-
-        internal void ComputeStageState(
-            ExecutionStage targetStage,
-            out int totalNodes,
-            out ExecutionState state,
-            out float progressSum,
-            out int idleNodes,
-            out int runningNodes,
-            out int completedNodes,
-            out int activeNodes,
-            out int failedNodes,
-            out int abortedNodes,
-            ref List<Node.Error> errors,
-            ref List<NodeStatus> nodeStatuses)
-        {
-            state = ExecutionState.Invalid;
-            progressSum = 0.0f;
-            idleNodes = 0;
-            runningNodes = 0;
-            completedNodes = 0;
-            activeNodes = 0;
-            failedNodes = 0;
-            abortedNodes = 0;
-
-            // Possible for an instance to not have node tasks for a particular
-            // Execution stage. Simply mark it as completed and return.
-            var nodes = m_ExecutionGraph.GetNodes(targetStage);
-            totalNodes = nodes.Count;
-            if (totalNodes == 0)
-                return;
-
-            foreach (var node in nodes)
-            {
-                progressSum += node.Progress;
-
-                switch (node.State)
-                {
-                    case ExecutionState.Idle:
-                        idleNodes++;
-                        break;
-                    case ExecutionState.Running:
-                        runningNodes++;
-                        break;
-                    case ExecutionState.Completed:
-                        completedNodes++;
-                        break;
-                    case ExecutionState.Active:
-                        activeNodes++;
-                        break;
-                    case ExecutionState.Failed:
-                        failedNodes++;
-                        errors.Add(node.ErrorInfo);
-                        break;
-                    case ExecutionState.Aborted:
-                        abortedNodes++;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
-                nodeStatuses.Add(new NodeStatus(node.Name, node.State, node.TimeData, node.Progress));
-            }
-
-            if (failedNodes > 0)
-                state = ExecutionState.Failed;
-            else if (abortedNodes > 0)
-                state = ExecutionState.Aborted;
-            else if (runningNodes > 0)
-                state = ExecutionState.Running;
-            else if (activeNodes > 0)
-                state = ExecutionState.Active;
-            else if (idleNodes > 0)
-                state = ExecutionState.Idle;
-            else if (completedNodes == nodes.Count)
-                state = ExecutionState.Completed;
         }
     }
 }

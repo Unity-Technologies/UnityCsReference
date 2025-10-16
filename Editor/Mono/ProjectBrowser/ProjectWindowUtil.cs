@@ -14,17 +14,13 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
-using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
 using UnityEngine;
-using UnityEditor.U2D;
-using UnityEngine.Internal;
 using UnityEngine.Audio;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
-using UnityEngine.U2D;
 
 namespace UnityEditor
 {
@@ -44,15 +40,32 @@ namespace UnityEditor
     // needs to survive an assembly reload.
     namespace ProjectWindowCallback
     {
-        public abstract class EndNameEditAction : ScriptableObject
+        [Obsolete("EndNameEditAction is obsolete. Use AssetCreationEndAction that uses EntityId instead of int for instance IDs.")]
+        public abstract class EndNameEditAction : AssetCreationEndAction
+        {
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
+            {
+                Action(entityId, pathName, resourceFile);
+            }
+
+            public override void Cancelled(EntityId entityId, string pathName, string resourceFile)
+            {
+                Cancelled(entityId, pathName, resourceFile);
+            }
+
+            public abstract void Action(int instanceId, string pathName, string resourceFile);
+            public virtual void Cancelled(int instanceId, string pathName, string resourceFile) {}
+        }
+
+        public abstract class AssetCreationEndAction : ScriptableObject
         {
             public virtual void OnEnable()
             {
                 hideFlags = HideFlags.HideAndDontSave;
             }
 
-            public abstract void Action(int instanceId, string pathName, string resourceFile);
-            public virtual void Cancelled(int instanceId, string pathName, string resourceFile) {}
+            public abstract void Action(EntityId entityId, string pathName, string resourceFile);
+            public virtual void Cancelled(EntityId entityId, string pathName, string resourceFile) {}
 
             public virtual void CleanUp()
             {
@@ -60,45 +73,46 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreateNewDefaultAsset : EndNameEditAction
+
+        internal class DoCreateNewDefaultAsset : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 var cleanPath = AssetDatabase.GenerateUniqueAssetPath(pathName);
-                AssetDatabase.CreateAsset(EditorUtility.EntityIdToObject(instanceId),
+                AssetDatabase.CreateAsset(EditorUtility.EntityIdToObject(entityId),
                     cleanPath);
                 var obj = AssetDatabase.LoadMainAssetAtPath(cleanPath);
                 var name = obj.name;
                 ObjectFactory.FinalizeObjectAndAwake(obj);
                 obj.name = name;
                 AssetDatabase.SaveAssetIfDirty(obj);
-                ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+                ProjectWindowUtil.FrameObjectInProjectWindow(entityId);
             }
 
-            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            public override void Cancelled(EntityId entityId, string pathName, string resourceFile)
             {
                 Selection.activeObject = null;
             }
         }
 
-        internal class DoCreateNewAsset : EndNameEditAction
+        internal class DoCreateNewAsset : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
-                AssetDatabase.CreateAsset(EditorUtility.EntityIdToObject(instanceId),
+                AssetDatabase.CreateAsset(EditorUtility.EntityIdToObject(entityId),
                     AssetDatabase.GenerateUniqueAssetPath(pathName));
-                ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
+                ProjectWindowUtil.FrameObjectInProjectWindow(entityId);
             }
 
-            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            public override void Cancelled(EntityId entityId, string pathName, string resourceFile)
             {
                 Selection.activeObject = null;
             }
         }
 
-        internal class DoCreateFolder : EndNameEditAction
+        internal class DoCreateFolder : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 string guid = AssetDatabase.CreateFolder(Path.GetDirectoryName(pathName), Path.GetFileName(pathName));
                 Object o = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(guid), typeof(Object));
@@ -106,9 +120,9 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreateScene : EndNameEditAction
+        internal class DoCreateScene : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 bool createDefaultGameObjects = true;
                 if (EditorSceneManager.CreateSceneAsset(pathName, createDefaultGameObjects))
@@ -119,7 +133,7 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreateFolderWithTemplates : EndNameEditAction
+        internal class DoCreateFolderWithTemplates : AssetCreationEndAction
         {
             public string ResourcesTemplatePath = "Resources/ScriptTemplates";
 
@@ -127,7 +141,7 @@ namespace UnityEditor
 
             public IList<string> templates { get; set; }
 
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 var fileName = Path.GetFileName(pathName);
                 string guid = AssetDatabase.CreateFolder(Path.GetDirectoryName(pathName), fileName);
@@ -147,9 +161,9 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreatePrefab : EndNameEditAction
+        internal class DoCreatePrefab : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 var empty = new GameObject("New Prefab");
                 try
@@ -164,9 +178,9 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreatePrefabVariant : EndNameEditAction
+        internal class DoCreatePrefabVariant : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 GameObject go = AssetDatabase.LoadAssetAtPath<GameObject>(resourceFile);
                 Object o = PrefabUtility.CreateVariant(go, pathName);
@@ -174,9 +188,9 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreateScriptAsset : EndNameEditAction
+        internal class DoCreateScriptAsset : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 Object o = ProjectWindowUtil.CreateScriptAssetFromTemplate(pathName, resourceFile);
                 ProjectWindowUtil.ShowCreatedAsset(o);
@@ -184,28 +198,32 @@ namespace UnityEditor
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal class DoCreateAssetWithContent : EndNameEditAction
+        internal class DoCreateAssetWithContent : AssetCreationEndAction
         {
             public string filecontent;
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public Action<int> onComplete;
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 Object o = ProjectWindowUtil.CreateScriptAssetWithContent(pathName, filecontent);
                 ProjectWindowUtil.ShowCreatedAsset(o);
+
+                // Call the completion callback
+                onComplete?.Invoke(o.GetInstanceID());
             }
         }
 
-        internal class DoCreateAnimatorController : EndNameEditAction
+        internal class DoCreateAnimatorController : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 Animations.AnimatorController controller = Animations.AnimatorController.CreateAnimatorControllerAtPath(pathName);
                 ProjectWindowUtil.ShowCreatedAsset(controller);
             }
         }
 
-        internal class DoCreateAudioMixer : EndNameEditAction
+        internal class DoCreateAudioMixer : AssetCreationEndAction
         {
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 AudioMixerController controller = AudioMixerController.CreateMixerControllerAtPath(pathName);
 
@@ -224,7 +242,7 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreateAudioRandomContainer : EndNameEditAction
+        internal class DoCreateAudioRandomContainer : AssetCreationEndAction
         {
             public Object[] selection;
 
@@ -269,7 +287,7 @@ namespace UnityEditor
                 ProjectWindowUtil.ShowCreatedAsset(container);
             }
 
-            public override void Action(int instanceId, string path, string resourceFile)
+            public override void Action(EntityId entityId, string path, string resourceFile)
             {
                 if (ActiveSelectionIsAudioClipList())
                 {
@@ -299,6 +317,7 @@ namespace UnityEditor
         }
 
         // Returns the path of currently selected folder. If multiple are selected, returns the first one.
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static string GetActiveFolderPath()
         {
             ProjectBrowser projectBrowser = GetProjectBrowserIfExists();
@@ -323,15 +342,15 @@ namespace UnityEditor
             return true;
         }
 
-        internal static void EndNameEditAction(EndNameEditAction action, int instanceId, string pathName, string resourceFile, bool accepted)
+        internal static void EndNameEditAction(AssetCreationEndAction action, EntityId entityId, string pathName, string resourceFile, bool accepted)
         {
             pathName = AssetDatabase.GenerateUniqueAssetPath(pathName);
             if (action != null)
             {
                 if (accepted)
-                    action.Action(instanceId, pathName, resourceFile);
+                    action.Action(entityId, pathName, resourceFile);
                 else
-                    action.Cancelled(instanceId, pathName, resourceFile);
+                    action.Cancelled(entityId, pathName, resourceFile);
                 action.CleanUp();
             }
         }
@@ -339,14 +358,14 @@ namespace UnityEditor
         [UsedByNativeCode]
         private static void CreateDefaultAsset(Object asset, string pathName)
         {
-            StartNameEditingIfProjectWindowExists(asset.GetInstanceID(), ScriptableObject.CreateInstance<DoCreateNewDefaultAsset>(), pathName, AssetPreview.GetMiniThumbnail(asset), null);
+            StartNameEditingIfProjectWindowExists(asset.GetEntityId(), ScriptableObject.CreateInstance<DoCreateNewDefaultAsset>(), pathName, AssetPreview.GetMiniThumbnail(asset), null);
         }
 
         // Create a standard Object-derived asset.
         [RequiredByNativeCode]
         public static void CreateAsset(Object asset, string pathName)
         {
-            StartNameEditingIfProjectWindowExists(asset.GetInstanceID(), ScriptableObject.CreateInstance<DoCreateNewAsset>(), pathName, AssetPreview.GetMiniThumbnail(asset), null);
+            StartNameEditingIfProjectWindowExists(asset.GetEntityId(), ScriptableObject.CreateInstance<DoCreateNewAsset>(), pathName, AssetPreview.GetMiniThumbnail(asset), null);
         }
 
         // Create a folder
@@ -354,7 +373,7 @@ namespace UnityEditor
         [ShortcutManagement.ShortcutAttribute("Project Browser/Create/Folder", typeof(ProjectBrowser), KeyCode.N, ShortcutManagement.ShortcutModifiers.Shift | ShortcutManagement.ShortcutModifiers.Action)]
         public static void CreateFolder()
         {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
         }
 
         internal static void CreateFolderWithTemplates(string defaultName, params string[] templates)
@@ -365,7 +384,7 @@ namespace UnityEditor
 
             var endNameEditAction = ScriptableObject.CreateInstance<DoCreateFolderWithTemplates>();
             endNameEditAction.templates = templates;
-            StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(folderIcon).image as Texture2D, null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, endNameEditAction, defaultName, EditorGUIUtility.IconContent(folderIcon).image as Texture2D, null);
         }
 
         internal static void CreateFolderWithTemplatesWithCustomResourcesPath(string defaultName, string customResPath, params string[] templates)
@@ -378,20 +397,20 @@ namespace UnityEditor
             endNameEditAction.templates = templates;
             endNameEditAction.ResourcesTemplatePath = customResPath;
             endNameEditAction.UseCustomPath = true;
-            StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(folderIcon).image as Texture2D, null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, endNameEditAction, defaultName, EditorGUIUtility.IconContent(folderIcon).image as Texture2D, null);
         }
 
         [RequiredByNativeCode]
         public static void CreateScene()
         {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
         }
 
         [MenuItem("Assets/Create/Scene/Prefab", false, 21)]
         static void CreatePrefab()
         {
             StartNameEditingIfProjectWindowExists(
-                0,
+                EntityId.None,
                 ScriptableObject.CreateInstance<DoCreatePrefab>(),
                 "New Prefab.prefab",
                 EditorGUIUtility.FindTexture("Prefab Icon"),
@@ -431,7 +450,7 @@ namespace UnityEditor
                 string variantPath = GetPrefabVariantPath(sourceDir, go);
 
                 StartNameEditingIfProjectWindowExists(
-                    0,
+                    EntityId.None,
                     ScriptableObject.CreateInstance<DoCreatePrefabVariant>(),
                     variantPath,
                     EditorGUIUtility.FindTexture("PrefabVariant Icon"),
@@ -489,11 +508,12 @@ namespace UnityEditor
                 return string.Format("{0}/{1} Variant.prefab", folder, gameObject.name);
         }
 
-        public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
+        public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, Action<int> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
-            StartNameEditingIfProjectWindowExists(0, action, filename, icon, null);
+            action.onComplete = onRenameComplete;
+            StartNameEditingIfProjectWindowExists(EntityId.None, action, filename, icon, null);
         }
 
         [RequiredByNativeCode]
@@ -526,7 +546,7 @@ namespace UnityEditor
                     icon = EditorGUIUtility.IconContent<TextAsset>().image as Texture2D;
                     break;
             }
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), defaultNewFileName, icon, templatePath);
+            StartNameEditingIfProjectWindowExists(EntityId.None, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), defaultNewFileName, icon, templatePath);
         }
 
         public static void ShowCreatedAsset(Object o)
@@ -541,14 +561,14 @@ namespace UnityEditor
         static private void CreateAnimatorController()
         {
             var icon = EditorGUIUtility.IconContent<Animations.AnimatorController>().image as Texture2D;
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAnimatorController>(), "New Animator Controller.controller", icon, null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, ScriptableObject.CreateInstance<DoCreateAnimatorController>(), "New Animator Controller.controller", icon, null);
         }
 
         [RequiredByNativeCode]
         static private void CreateAudioMixer()
         {
             var icon = EditorGUIUtility.IconContent<AudioMixerController>().image as Texture2D;
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
         }
 
         [RequiredByNativeCode]
@@ -559,7 +579,7 @@ namespace UnityEditor
 
             scriptableObject.selection = Selection.objects;
 
-            StartNameEditingIfProjectWindowExists(0, scriptableObject, "New Audio Random Container.asset", icon, null);
+            StartNameEditingIfProjectWindowExists(EntityId.None, scriptableObject, "New Audio Random Container.asset", icon, null);
         }
 
         internal static string SetLineEndings(string content, LineEndingsMode lineEndingsMode)
@@ -704,39 +724,46 @@ namespace UnityEditor
             return content;
         }
 
+        [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         internal static Object CreateScriptAssetFromTemplate(string pathName, string resourceFile)
         {
             string content = File.ReadAllText(resourceFile);
             return CreateScriptAssetWithContent(pathName, PreprocessScriptAssetTemplate(pathName, content));
         }
 
+        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string) instead.")]
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
+            => StartNameEditingIfProjectWindowExists((EntityId)instanceID, (AssetCreationEndAction)endAction, pathName, icon, resourceFile);
+        public static void StartNameEditingIfProjectWindowExists(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile)
         {
-            StartNameEditingIfProjectWindowExists(instanceID, endAction, pathName, icon, resourceFile, true);
+            StartNameEditingIfProjectWindowExists(entityId, endAction, pathName, icon, resourceFile, true);
         }
 
+        [Obsolete("StartNameEditingIfProjectWindowExists(int, EndNameEditAction, string, Texture2D, string, bool) is obsolete. Use StartNameEditingIfProjectWindowExists(EntityId, AssetCreationEndAction, string, Texture2D, string, bool) instead.")]
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
+            => StartNameEditingIfProjectWindowExists((EntityId)instanceID, (AssetCreationEndAction)endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
+        public static void StartNameEditingIfProjectWindowExists(EntityId entityId, AssetCreationEndAction endAction, string pathName, Texture2D icon, string resourceFile, bool selectAssetBeingCreated)
         {
             // instanceID 0 is used for assets that haven't been imported, which can conflict with
             // asset under creations, which might also use instanceID 0. To avoid this conflict the instanceID
             // is changed if 0.
-            if (instanceID == 0)
-                instanceID = ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets;
+            if (entityId == EntityId.None)
+                entityId = ProjectBrowser.kAssetCreationInstanceID_ForNonExistingAssets;
 
             ProjectBrowser pb = GetProjectBrowserIfExists();
             if (pb)
             {
                 pb.Focus();
-                pb.BeginPreimportedNameEditing(instanceID, endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
+                pb.BeginPreimportedNameEditing(entityId, endAction, pathName, icon, resourceFile, selectAssetBeingCreated);
                 pb.Repaint();
             }
             else
             {
                 if (!pathName.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
                     pathName = "Assets/" + pathName;
-                EndNameEditAction(endAction, instanceID, pathName, resourceFile, true);
+                EndNameEditAction(endAction, entityId, pathName, resourceFile, true);
                 if (selectAssetBeingCreated)
-                    Selection.activeObject = EditorUtility.EntityIdToObject(instanceID);
+                    Selection.activeObject = EditorUtility.EntityIdToObject(entityId);
             }
         }
 
@@ -745,12 +772,12 @@ namespace UnityEditor
             return ProjectBrowser.s_LastInteractedProjectBrowser;
         }
 
-        internal static void FrameObjectInProjectWindow(int instanceID)
+        internal static void FrameObjectInProjectWindow(EntityId entityId)
         {
             ProjectBrowser pb = GetProjectBrowserIfExists();
             if (pb)
             {
-                pb.FrameObject(instanceID, false);
+                pb.FrameObject(entityId, false);
             }
         }
 
@@ -895,9 +922,12 @@ namespace UnityEditor
             }
         }
 
-        public static bool IsFolder(int instanceID)
+        [Obsolete("IsFolder(int instanceID) is deprecated. Use IsFolder(EntityId entityId) instead.")]
+        public static bool IsFolder(int instanceID) => IsFolder((EntityId)instanceID);
+
+        public static bool IsFolder(EntityId entityId)
         {
-            return AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath((EntityId)instanceID));
+            return AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath(entityId));
         }
 
         // Returns containing folder if possible otherwise null.

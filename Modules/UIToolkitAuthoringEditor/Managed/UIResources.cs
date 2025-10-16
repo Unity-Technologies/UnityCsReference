@@ -16,7 +16,7 @@ namespace Unity.UIToolkit.Editor
     /// <summary>
     /// Utility class to retrieve UI Toolkit-related resources.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal static class UIResources
     {
         /// <summary>
@@ -84,6 +84,22 @@ namespace Unity.UIToolkit.Editor
             return background.GetSelectedImage()
                 ? background
                 : GetIconForSkin("UIToolkit/Icons/CustomCSharpElement.png", requestSize, scaledPixelsPerPoint, theme);
+        }
+
+        /// <summary>
+        /// Returns the icon at the provided path.
+        /// </summary>
+        /// <param name="path">The path of the icon</param>
+        /// <param name="requestSize">Indicates the requested size so the correct "@_x" version is chosen.</param>
+        /// <param name="scaledPixelsPerPoint">The scaled pixel per point to use.</param>
+        /// <returns>A <see cref="Background"/> of the requested icon at the path provided or <see langword="default"/>.</returns>
+        public static Background LoadIcon(string path, RequestSize requestSize = RequestSize.Px16,  float scaledPixelsPerPoint = 1.0f, EditorTheme theme = EditorTheme.Current)
+        {
+            var background = GetIconForSkin(path, requestSize, scaledPixelsPerPoint, theme);
+            return background.GetSelectedImage()
+                ? background
+                : GetIconForSkin("UIToolkit/Icons/CustomCSharpElement.png", requestSize, scaledPixelsPerPoint, theme);
+
         }
 
         private static string GetResolution(RequestSize requestSize, bool isVectorImage, float scaledPixelsPerPoint = 1.0f)

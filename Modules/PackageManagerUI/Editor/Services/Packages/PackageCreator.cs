@@ -65,14 +65,14 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
             : k_DefaultOrgName;
         var oldDisplayName = displayName;
         displayName = IsValidPackageNameAndNamespaceAfterSanitization(displayName)
-            ? PackageSanitizer.SanitizeDisplayName(displayName)
+            ? PackageValidator.SanitizeDisplayName(displayName)
             : k_DefaultDisplayName;
 
         if(!displayName.Equals(oldDisplayName))
             Debug.LogWarning(string.Format(k_PackageDisplayNameChangedMessage, oldDisplayName, displayName));
 
         var packageName = GenerateUniquePackageNameAndUpdateDisplayName(organization, ref displayName);
-        var rootNamespace = PackageSanitizer.SanitizeNamespace(organization) + "." + PackageSanitizer.SanitizeNamespace(displayName);
+        var rootNamespace = PackageValidator.SanitizeNamespace(organization) + "." + PackageValidator.SanitizeNamespace(displayName);
 
         var destinationDirName = m_IOProxy.PathsCombine("Packages", packageName);
         var variables = CreateTemplateVariables(packageName, displayName, rootNamespace);
@@ -143,7 +143,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
 
     private string GenerateUniquePackageNameAndUpdateDisplayName(string organization, ref string displayName)
     {
-        var packageName = "com." + PackageSanitizer.SanitizePackageName(organization) + "." + PackageSanitizer.SanitizePackageName(displayName);
+        var packageName = "com." + PackageValidator.SanitizePackageTechnicalName(organization) + "." + PackageValidator.SanitizePackageTechnicalName(displayName);
         var packageNameWithoutSuffixNumber = RemoveSuffixNumber(packageName);
         var potentialNameConflicts = m_PackageDatabase.allPackages.Where(i =>
                 i.versions.installed != null && i.name.StartsWith(packageNameWithoutSuffixNumber))
@@ -186,7 +186,7 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     // we know for sure it will also be good to be used as package name after sanitization.
     private bool IsValidPackageNameAndNamespaceAfterSanitization(string value)
     {
-        var sanitizedValue = PackageSanitizer.SanitizeNamespace(value);
+        var sanitizedValue = PackageValidator.SanitizeNamespace(value);
         return !string.IsNullOrEmpty(sanitizedValue) && ValidateNamespace(sanitizedValue);
     }
 

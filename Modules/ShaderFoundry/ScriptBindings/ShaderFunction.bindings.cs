@@ -18,13 +18,14 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_IncludeListHandle;
         internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_ContainingNamespaceHandle;
+        internal FoundryHandle m_LocationHandle;
+        internal FoundryHandle m_BodyLocationHandle;
+        internal bool m_IsStatic;
 
-        internal extern static ShaderFunctionInternal Invalid();
-        internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-        internal extern string GetName(ShaderContainer container);
-        internal extern string GetBody(ShaderContainer container);
-
-        internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
+        [ThreadSafe] internal extern static ShaderFunctionInternal Invalid();
+        internal extern bool IsValid { [NativeMethod(Name = "IsValid", IsThreadSafe = true)] get; }
+        [ThreadSafe] internal extern string GetName(ShaderContainer container);
+        [ThreadSafe] internal extern string GetBody(ShaderContainer container);
 
         // IInternalType
         ShaderFunctionInternal IInternalType<ShaderFunctionInternal>.ConstructInvalid() => Invalid();
@@ -50,32 +51,21 @@ namespace UnityEditor.ShaderFoundry
 
         public bool Exists => (container != null) && handle.IsValid;
         public bool IsValid => Exists && function.IsValid;
-
+        public bool IsStatic => function.m_IsStatic;
         public string Name => function.GetName(container);
         public string Body => function.GetBody(container);
         public ShaderType ReturnType => new ShaderType(container, function.m_ReturnTypeHandle);
-        public IEnumerable<FunctionParameter> Parameters
-        {
-            get
-            {
-                var localContainer = container;
-                var blockHandles = new HandleListInternal(function.m_ParameterListHandle);
-                return blockHandles.Select(localContainer, (handle) => (new FunctionParameter(localContainer, handle)));
-            }
-        }
+        public IEnumerable<FunctionParameter> Parameters =>
+            ListType.Enumerate<FunctionParameter>(container, function.m_ParameterListHandle);
 
-        public IEnumerable<IncludeDescriptor> Includes
-        {
-            get
-            {
-                var localContainer = Container;
-                var list = new HandleListInternal(function.m_IncludeListHandle);
-                return list.Select<IncludeDescriptor>(localContainer, (handle) => (new IncludeDescriptor(localContainer, handle)));
-            }
-        }
+        public IEnumerable<IncludeDescriptor> Includes =>
+            ListType.Enumerate<IncludeDescriptor>(container, function.m_IncludeListHandle);
 
-        public IEnumerable<ShaderAttribute> Attributes => function.m_AttributeListHandle.AsListEnumerable(container, (container, handle) => new ShaderAttribute(container, handle));
+        public IEnumerable<ShaderAttribute> Attributes =>
+            ListType.Enumerate<ShaderAttribute>(container, function.m_AttributeListHandle);
         public Namespace ContainingNamespace => new Namespace(container, function.m_ContainingNamespaceHandle);
+        public Location Location => new Location(container, function.m_LocationHandle);
+        public Location BodyLocation => new Location(container, function.m_BodyLocationHandle);
 
         internal ShaderFunction(ShaderContainer container, FoundryHandle handle)
         {
@@ -84,36 +74,34 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer.Get(container, handle, out function);
         }
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is ShaderFunction other && this.Equals(other);
         public bool Equals(ShaderFunction other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
         public static bool operator==(ShaderFunction lhs, ShaderFunction rhs) => lhs.Equals(rhs);
         public static bool operator!=(ShaderFunction lhs, ShaderFunction rhs) => !lhs.Equals(rhs);
 
-        public bool ValueEquals(in ShaderFunction other)
-        {
-            return ShaderFunctionInternal.ValueEquals(container, handle, other.container, other.handle);
-        }
-
         public class Builder : ShaderBuilder
         {
             ShaderContainer container;
             readonly internal FoundryHandle functionHandle = FoundryHandle.Invalid();
             ShaderFoundry.Block.Builder parentBlockBuilder;
-            protected string name;
+            private string name;
             ShaderType returnType = ShaderType.Invalid;
             List<FunctionParameter> parameters;
             List<IncludeDescriptor> includes;
             List<ShaderAttribute> attributes;
             public Namespace containingNamespace;
+            public Location location;
+            public Location bodyLocation;
+            public bool isStatic = false;
             bool finalized = false;
 
             public ShaderContainer Container => container;
 
             // Construct a function with void return type in the global scope
             public Builder(ShaderContainer container, string name)
-                : this(container, name, container._void, null)
+                : this(container, name, container.Void, null)
             {
             }
 
@@ -125,7 +113,7 @@ namespace UnityEditor.ShaderFoundry
 
             // Construct a function with void return type in the specified block scope
             public Builder(ShaderFoundry.Block.Builder blockBuilder, string name)
-                : this(blockBuilder.Container, name, blockBuilder.Container._void, blockBuilder)
+                : this(blockBuilder.Container, name, blockBuilder.Container.Void, blockBuilder)
             {
             }
 
@@ -142,14 +130,12 @@ namespace UnityEditor.ShaderFoundry
                 this.returnType = returnType;
                 functionHandle = container.Create<ShaderFunctionInternal>();
                 this.parentBlockBuilder = parentBlockBuilder;
-                this.containingNamespace = parentBlockBuilder?.containingNamespace ?? Namespace.Invalid;
+                this.containingNamespace = Namespace.Invalid;
             }
 
             public void AddParameter(FunctionParameter parameter)
             {
-                if (parameters == null)
-                    parameters = new List<FunctionParameter>();
-                parameters.Add(parameter);
+                Utilities.AddToList(ref parameters, parameter);
             }
 
             public void AddInput(ShaderType type, string name)
@@ -166,16 +152,12 @@ namespace UnityEditor.ShaderFoundry
 
             public void AddInclude(IncludeDescriptor descriptor)
             {
-                if (includes == null)
-                    includes = new List<IncludeDescriptor>();
-                includes.Add(descriptor);
+                Utilities.AddToList(ref includes, descriptor);
             }
 
             public void AddAttribute(ShaderAttribute attribute)
             {
-                if (attributes == null)
-                    attributes = new List<ShaderAttribute>();
-                attributes.Add(attribute);
+                Utilities.AddToList(ref attributes, attribute);
             }
 
             public ShaderFunction Build()
@@ -189,11 +171,14 @@ namespace UnityEditor.ShaderFoundry
                 var shaderFunctionInternal = new ShaderFunctionInternal();
                 shaderFunctionInternal.m_NameHandle = container.AddString(name);
                 shaderFunctionInternal.m_BodyHandle = container.AddString(body);
-                shaderFunctionInternal.m_ReturnTypeHandle = container.AddShaderType(returnType, true);
-                shaderFunctionInternal.m_ParameterListHandle = HandleListInternal.Build(container, parameters, (p) => (p.handle));
-                shaderFunctionInternal.m_IncludeListHandle = HandleListInternal.Build(container, includes, (i) => (i.handle));
-                shaderFunctionInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes, (a) => (a.handle));
+                shaderFunctionInternal.m_ReturnTypeHandle = returnType.handle;
+                shaderFunctionInternal.m_ParameterListHandle = ListType.Build(container, parameters);
+                shaderFunctionInternal.m_IncludeListHandle = ListType.Build(container, includes);
+                shaderFunctionInternal.m_AttributeListHandle = ListType.Build(container, attributes);
                 shaderFunctionInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
+                shaderFunctionInternal.m_LocationHandle = location.handle;
+                shaderFunctionInternal.m_BodyLocationHandle = bodyLocation.handle;
+                shaderFunctionInternal.m_IsStatic = isStatic;
                 container.Set(functionHandle, shaderFunctionInternal);
                 var builtFunction = new ShaderFunction(container, functionHandle);
 

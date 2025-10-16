@@ -1371,9 +1371,15 @@ namespace UnityEditor.TextCore.Text
         void SaveNewFontAsset(Object sourceObject)
         {
             string filePath;
+            string originPath = AssetDatabase.GetAssetPath(sourceObject);
+
+            if (originPath == null || !originPath.StartsWith("Assets"))
+            {
+                originPath = "Assets/";
+            }
 
             // Save new Font Asset and open save file requester at Source Font File location.
-            string saveDirectory = new FileInfo(AssetDatabase.GetAssetPath(sourceObject)).DirectoryName;
+            string saveDirectory = new FileInfo(originPath).DirectoryName;
 
             if (((GlyphRasterModes)m_GlyphRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
             {

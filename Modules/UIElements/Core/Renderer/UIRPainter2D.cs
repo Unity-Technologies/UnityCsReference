@@ -113,6 +113,8 @@ namespace UnityEngine.UIElements
         FillGradient m_FillGradient;
         Texture2D m_FillTexture;
 
+        FillGradient m_StrokeFillGradient;
+
         internal bool isDetached => m_DetachedAllocator != null;
 
         List<Painter2DJobData> m_JobSnapshots = null;
@@ -281,6 +283,26 @@ namespace UnityEngine.UIElements
                 m_FillGradient = value;
                 UIPainter2D.SetFillGradient(m_Handle, value);
             }
+        }
+
+        /// <summary>
+        /// The stroke fill gradient to use when using. <see cref="Stroke"/>.
+        /// </summary>
+        /// <remarks>
+        /// Setting a stroke fill gradient will override the currently set <see cref="strokeColor"/>.
+        /// </remarks>
+        public FillGradient strokeFillGradient
+        {
+            set
+            {
+                m_StrokeFillGradient = value;
+                UIPainter2D.SetStrokeFillGradient(m_Handle, value);
+            }
+        }
+
+        private bool hasStrokeFillGradient
+        {
+            get => UIPainter2D.HasStrokeFillGradient(m_Handle);
         }
 
         private bool hasFillGradient
@@ -496,12 +518,17 @@ namespace UnityEngine.UIElements
                 if (isDetached)
                 {
                     var meshData = UIPainter2D.Stroke(m_Handle, true);
-
                     if (meshData.vertexCount == 0)
                         return;
 
                     // transfer all data in a single batch
                     var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
+
+                    if (hasStrokeFillGradient)
+                    {
+                        m_DetachedAllocator.AddGradient(m_StrokeFillGradient);
+                    }
+
                     unsafe
                     {
                         var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
@@ -512,10 +539,22 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
+                    IntPtr vectorImagePtr = IntPtr.Zero;
+
+                    if (hasStrokeFillGradient)
+                    {
+                        VectorImage vi = ScriptableObject.CreateInstance<VectorImage>();
+                        m_VectorImageToRelease.Add(vi);
+                        CreateTextureAndGradientSettings(ref m_StrokeFillGradient, out Texture2D texture, out GradientSettings gradientSettings);
+                        vi.atlas = texture;
+                        vi.settings = new GradientSettings[] { gradientSettings };
+                        vectorImagePtr = m_Ctx.renderData.parent.renderTree.m_GCHandlePool.GetIntPtr(vi);
+                    }
+
                     // Take a snapshot for the job system
                     m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                     int snapshotIndex = UIPainter2D.TakeStrokeSnapshot(m_Handle);
-                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex, vectorImagePtr = IntPtr.Zero, texturePtr = IntPtr.Zero });
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex, vectorImagePtr = vectorImagePtr, texturePtr = IntPtr.Zero });
                 }
             }
         }

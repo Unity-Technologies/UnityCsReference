@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// A SplitView that contains two resizable panes. One pane is fixed-size while the other pane has flex-grow style set to 1 to take all remaining space. The border between the panes is draggable to resize both panes. Both horizontal and vertical modes are supported. Requires exactly two child elements to operate.
     /// </summary>
     [Icon("UIToolkit/Icons/TwoPaneSplitView.png")]
-    public class TwoPaneSplitView : VisualElement
+    public partial class TwoPaneSplitView : VisualElement
     {
         internal static readonly BindingId fixedPaneIndexProperty = nameof(fixedPaneIndex);
         internal static readonly BindingId fixedPaneInitialDimensionProperty = nameof(fixedPaneInitialDimension);
@@ -69,38 +69,6 @@ namespace UnityEngine.UIElements
                     var e = (TwoPaneSplitView)obj;
                     e.Init(fixedPaneIndex, fixedPaneInitialDimension, orientation);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="TwoPaneSplitView"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TwoPaneSplitView, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TwoPaneSplitView"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_FixedPaneIndex = new UxmlIntAttributeDescription { name = "fixed-pane-index", defaultValue = 0 };
-            UxmlIntAttributeDescription m_FixedPaneInitialDimension = new UxmlIntAttributeDescription { name = "fixed-pane-initial-dimension", defaultValue = (int)k_FixedPaneInitialDimension };
-            UxmlEnumAttributeDescription<TwoPaneSplitViewOrientation> m_Orientation = new UxmlEnumAttributeDescription<TwoPaneSplitViewOrientation> { name = "orientation", defaultValue = TwoPaneSplitViewOrientation.Horizontal };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var fixedPaneIndex = m_FixedPaneIndex.GetValueFromBag(bag, cc);
-                var fixedPaneInitialSize = m_FixedPaneInitialDimension.GetValueFromBag(bag, cc);
-                var orientation = m_Orientation.GetValueFromBag(bag, cc);
-
-                ((TwoPaneSplitView)ve).Init(fixedPaneIndex, fixedPaneInitialSize, orientation);
             }
         }
 

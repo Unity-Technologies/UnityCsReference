@@ -8,9 +8,11 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Unity.PlayMode.Editor;
+using System;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     [CanRequestDomainReload]
     class EditorMultiplayerPlaymodeRunNode : Node, IInstanceRunNode
     {
@@ -67,7 +69,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             if (player.Type == PlayerType.Main)
             {
-                EditorApplication.EnterPlaymode();
+                EditorPlayModeGuard.EnterPlayModeSafely();
             }
 
             // Entering play mode could take a few frames, so we wait until the state changes (clone receive a message to go into playmode from MPPM)
@@ -118,7 +120,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // TODO - Remove in favor of new Playmode API, where we can rebuild graphs
             // directly from instance configurations (with new API) instead of a shallow reset.
             var isFreeRunningPlayer = false;
-            if (PlayModeManager.instance.ActivePlayModeConfig is ScenarioConfig config)
+            if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config)
             {
                 var instance = config.Scenario.GetInstanceByName(player.Name);
                 isFreeRunningPlayer = instance != null && instance.IsFreeRunMode();

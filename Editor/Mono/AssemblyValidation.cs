@@ -34,6 +34,7 @@ namespace UnityEditor
             public ErrorFlags flags;
             public string message;
             public string assemblyPath;
+            public string assemblyName;
 
             public void Add(ErrorFlags newFlags, string newMessage)
             {
@@ -247,12 +248,19 @@ namespace UnityEditor
             AssemblyDefinition[] assemblyDefinitions)
         {
             var errors = new Error[assemblyPaths.Length];
+            for (int i = 0; i < errors.Length; i++)
+            {
+                errors[i].assemblyPath = assemblyPaths[i];
+                errors[i].assemblyName = assemblyDefinitions[i].Name.Name;
+            }
 
             CheckAssemblyReferences(assemblyPaths,
                 errors,
                 assemblyDefinitions);
 
-            return errors;
+            return errors
+                .Where(x => x.flags != ErrorFlags.None)
+                .ToArray();
         }
 
         public static AssemblyDefinition[] LoadAssemblyDefinitions(string[] assemblyPaths, string[] searchPaths)

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 [assembly:InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly:InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
+[assembly:InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 
 [assembly:InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 [assembly:InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]

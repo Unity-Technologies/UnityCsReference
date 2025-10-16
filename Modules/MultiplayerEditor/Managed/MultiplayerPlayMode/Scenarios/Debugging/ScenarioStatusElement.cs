@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor
@@ -13,14 +14,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
     internal class ScenarioStatusElement : VisualElement
     {
         private Scenario m_Scenario;
+        private SerializedObject m_SerializedScenario;
         private Dictionary<ExecutionStage, StageStatusElement> m_StageElements = new Dictionary<ExecutionStage, StageStatusElement>();
 
-        private Label m_StateLabel;
+        private PropertyField m_StatusField;
+        private Label m_NameLabel;
         private Label m_MessageLabel;
 
-        public ScenarioStatusElement(Scenario config)
+        public ScenarioStatusElement(Scenario scenario)
         {
-            m_Scenario = config;
+            m_Scenario = scenario;
+            m_SerializedScenario = new SerializedObject(scenario);
+            this.Bind(m_SerializedScenario);
+
             BuildUI();
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -29,29 +35,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            EditorApplication.update += Refresh;
+            m_Scenario.StatusRefreshed += OnScenarioStatusUpdated;
+            Refresh();
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
-            EditorApplication.update -= Refresh;
+            m_Scenario.StatusRefreshed -= OnScenarioStatusUpdated;
         }
 
         private void BuildUI()
         {
             AddToClassList("scenario-status");
 
-            if (m_Scenario == null || m_Scenario.Status.StageState == ExecutionState.Invalid)
+            if (m_Scenario == null)
                 return;
 
-            var nameLabel = new Label($"Scenario: {m_Scenario.Name}") { name = "scenario-name" };
-            m_StateLabel = new Label("[]") { name = "scenario-state" };
+            m_NameLabel = new Label($"Scenario: {m_Scenario.name}") { name = "scenario-name" };
+            m_StatusField = new PropertyField(m_SerializedScenario.FindProperty("m_Status"))
+            {
+                label = "Status Data",
+                enabledSelf = false,
+            };
             m_MessageLabel = new Label("Message:") { name = "scenario-message" };
             var stagesScrollView = new ScrollView(ScrollViewMode.Horizontal) { name = "stages-scroll-view" };
             var stagesContainer = new VisualElement { name = "stages-container" };
 
-            Add(nameLabel);
-            Add(m_StateLabel);
+            Add(m_NameLabel);
+            Add(m_StatusField);
             Add(m_MessageLabel);
             Add(stagesScrollView);
             stagesScrollView.Add(stagesContainer);
@@ -65,37 +76,42 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        private void OnScenarioStatusUpdated(ScenarioStatusData status)
+        {
+            Refresh();
+        }
+
         private void Refresh()
         {
-            if (m_Scenario == null || m_Scenario.Status.StageState == ExecutionState.Invalid)
+            if (m_Scenario == null)
                 return;
 
-            var state = m_Scenario.Status;
+            var statusData = m_Scenario.StatusData;
 
             var message = new StringBuilder();
-            foreach (var error in state.Errors)
+            foreach (var error in m_Scenario.GetAllNonFreeRunNodeErrors())
             {
                 message.AppendLine(error.Message);
             }
 
-            m_StateLabel.text = $"[{state.State} ({state.CurrentStage}) - total progress: {state.TotalProgress * 100}%]";
+            m_NameLabel.text = $"Scenario: {m_Scenario.name} (Stage: {statusData.CurrentStage}, State: {statusData.OverallStatus.State}, Progress: {statusData.OverallStatus.Progress:P1})";
             m_MessageLabel.text = $"Message: {message}";
 
             var stageKeys = Enum.GetValues(typeof(ExecutionStage));
             foreach (ExecutionStage stage in stageKeys)
             {
                 var stageElement = m_StageElements[stage];
-                var stageState = CalculateStageState(state, stage);
-                stageElement.SetState(stageState, state.TotalProgress);
+                var stageState = CalculateStageState(statusData, stage);
+                stageElement.SetState(stageState, statusData.OverallStatus.Progress);
             }
         }
 
-        private static ExecutionState CalculateStageState(ScenarioStatus scenarioState, ExecutionStage stage)
+        private static ExecutionState CalculateStageState(ScenarioStatusData scenarioState, ExecutionStage stage)
         {
-            if (scenarioState.StageStates == null || scenarioState.StageStates.Length == 0)
+            if (scenarioState.StageStatuses == null || scenarioState.StageStatuses.Length == 0)
                 return ExecutionState.Invalid;
 
-            return scenarioState.StageStates[(int)stage];
+            return scenarioState.StageStatuses[(int)stage].State;
         }
     }
 }

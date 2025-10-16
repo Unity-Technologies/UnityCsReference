@@ -92,9 +92,6 @@ namespace UnityEditor
         [SerializeField]
         CamerasOverlay m_Overlay;
 
-        [SerializeField]
-        PropertyEditor m_ActiveEditor;
-
         public CameraInspectProperties(CamerasOverlay overlay) : base()
         {
             icon = EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow");
@@ -121,13 +118,7 @@ namespace UnityEditor
             if (m_Overlay.viewpoint == null)
                 return;
 
-            if (m_ActiveEditor != null)
-            {
-                m_ActiveEditor.Focus();
-                return;
-            }
-
-            m_ActiveEditor = PropertyEditor.OpenPropertyEditor(m_Overlay.viewpoint.TargetObject, true);
+            PropertyEditor.OpenPropertyEditor(m_Overlay.viewpoint.TargetObject, true);
         }
     }
 
@@ -563,7 +554,11 @@ namespace UnityEditor
                 m_SavedStateBeforeReduceMode = new OverlaySavedState(sizeOverridden, size.y);
 
                 float delta = m_CameraPreview != null? m_CameraPreview.resolvedStyle.height : 0;
-                m_CurrentBaseHeight = resizeTarget.resolvedStyle.height - delta + 5f;
+                var targetHeight = resizeTarget.resolvedStyle.height;
+                if (collapsed && popup != null)
+                    targetHeight = popup.resolvedStyle.height;
+                
+                m_CurrentBaseHeight = targetHeight - delta + 5f;
 
                 // Lock the height. User can't resize the Overlay vertically in reduce mode.
                 maxSize = new Vector2(maxSize.x, m_CurrentBaseHeight);

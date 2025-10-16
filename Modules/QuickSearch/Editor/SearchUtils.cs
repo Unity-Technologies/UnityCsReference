@@ -27,7 +27,6 @@ namespace UnityEditor.Search
     {
         private static readonly string[] k_Dots = { ".", "..", "..." };
         internal static readonly char[] KeywordsValueDelimiters = new[] { ':', '=', '<', '>', '!', '|' };
-        private static readonly char[] k_AdbInvalidCharacters = {'/', '?', '<', '>', '\\', ':', '*', '|', '"' };
 
         /// <summary>
         /// Separators used to split an entry into indexable tokens.
@@ -149,7 +148,7 @@ namespace UnityEditor.Search
 
         public static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators, int minTokenLength)
         {
-            path = Utils.RemoveInvalidCharsFromPath(path, '_');
+            path = Utils.ReplaceInvalidCharsFromPath(path, '_');
             var name = Path.GetFileNameWithoutExtension(path);
             var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
             var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
@@ -532,7 +531,7 @@ namespace UnityEditor.Search
             return null;
         }
 
-        static Dictionary<Type, List<Type>> s_BaseTypes = new Dictionary<Type, List<Type>>();
+        internal static Dictionary<Type, List<Type>> s_BaseTypes = new ();
         internal static IEnumerable<SearchProposition> FetchTypePropositions<T>(string category = "Types", Type blockType = null, int priority = -1444) where T : UnityEngine.Object
         {
             if (category != null)
@@ -589,39 +588,54 @@ namespace UnityEditor.Search
                      t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1;
         }
 
+        static string[] s_Tokens = new string[10];
+        static bool GetKeywordTokens(in string keyword, out string fieldName, out string displayName, out string helpText, out string propertyType, out string ownerTypeStr, out string propositionOptions)
+        {
+            fieldName = displayName = helpText = propertyType = ownerTypeStr = propositionOptions = "";
+            if (string.IsNullOrEmpty(keyword))
+                return false;
+            var tokenCount = SplitTokens(keyword, '|', s_Tokens);
+            if (tokenCount < 5)
+                return false;
+            fieldName = s_Tokens[0];
+            displayName = s_Tokens[1];
+            helpText = s_Tokens[2];
+            propertyType = s_Tokens[3];
+            ownerTypeStr = s_Tokens[4];
+            if (tokenCount > 5)
+                propositionOptions = s_Tokens[5];
+            return true;
+        }
+
         internal static SearchProposition CreateKeywordProposition(in string keyword)
         {
-            if (keyword.IndexOf('|') == -1)
+            if (!GetKeywordTokens(keyword, out var fieldName, out var displayName, out var help, out var valueType, out var ownerTypeStr, out var propositionsOptions ))
                 return SearchProposition.invalid;
 
-            var tokens = keyword.Split('|');
-            if (tokens.Length < 5)
-                return SearchProposition.invalid;
-
-            // <0:fieldname>:|<1:display name>|<2:help text>|<3:property type>|<4: owner type string>|<5:propositionOptions>
-            var valueType = tokens[3];
-            var replacement = ParseBlockContent(valueType, tokens[0], out Type blockType);
-            var ownerType = FindType<UnityEngine.Object>(tokens[4]);
+            var replacement = ParseBlockContent(valueType, fieldName, out Type blockType);
+            var ownerType = FindType<UnityEngine.Object>(ownerTypeStr);
             if (ownerType == null)
                 return SearchProposition.invalid;
             var generationOptions = SearchPropositionGenerationOptions.None;
-            if (tokens.Length >= 6 && !string.IsNullOrWhiteSpace(tokens[5]))
+            if (!string.IsNullOrWhiteSpace(propositionsOptions))
             {
-                if (Utils.TryParse<int>(tokens[5], out var temp))
+                if (Utils.TryParse<int>(propositionsOptions, out var temp))
                 {
                     generationOptions = (SearchPropositionGenerationOptions)temp;
                 }
             }
+
+            var icon = blockType != null
+                ? GetTypeIcon(blockType, null) ?? GetTypeIcon(ownerType)
+                : GetTypeIcon(ownerType);
             return new SearchProposition(
                 category: $"Properties/{ObjectNames.NicifyVariableName(ownerType.Name)}",
-                label: $"{tokens[1]} ({blockType?.Name ?? valueType})",
+                label: $"{displayName} ({blockType?.Name ?? valueType})",
                 replacement: replacement,
-                help: tokens[2],
-                priority: (ownerType.Name[0] << 4) + tokens[1][0],
+                help: help,
+                priority: (ownerType.Name[0] << 4) + displayName[0],
                 moveCursor: TextCursorPlacement.MoveAutoComplete,
-                icon:
-                    AssetPreview.GetMiniTypeThumbnailFromType(blockType) ??
-                    GetTypeIcon(ownerType),
+                icon: icon,
                 type: null,
                 data: null,
                 color: replacement.StartsWith("#", StringComparison.Ordinal) ? QueryColors.property : QueryColors.filter,
@@ -676,22 +690,38 @@ namespace UnityEditor.Search
             }
         }
 
-        static Dictionary<Type, Texture2D> s_TypeIcons = new Dictionary<Type, Texture2D>();
+        static readonly Dictionary<Type, Texture2D> s_TypeIcons = new Dictionary<Type, Texture2D>();
+        static Texture2D s_DefaultIcon;
         public static Texture2D GetTypeIcon(in Type type)
         {
-            if (s_TypeIcons.TryGetValue(type, out var t) && t)
-                return t;
+            if (!s_DefaultIcon)
+                s_DefaultIcon = AssetPreview.GetMiniTypeThumbnail(typeof(MonoScript));
+            return GetTypeIcon(type, s_DefaultIcon);
+        }
+
+        internal static Texture2D GetTypeIcon(in Type type, Texture2D defaultIcon)
+        {
+            if (s_TypeIcons.TryGetValue(type, out var typeIcon))
+                return typeIcon ?? defaultIcon;
             if (!type.IsAbstract && typeof(MonoBehaviour) != type && typeof(MonoBehaviour).IsAssignableFrom(type))
             {
                 var script = EditorGUIUtility.GetScript(type.Name);
                 if (!script)
-                    return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(DefaultAsset));
-
-                var obj = EditorUtility.EntityIdToObject(script.GetEntityId());
-                var customIcon = AssetPreview.GetMiniThumbnail(obj);
-                return s_TypeIcons[type] = customIcon;
+                {
+                    typeIcon = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(DefaultAsset));
+                }
+                else
+                {
+                    var obj = EditorUtility.EntityIdToObject(script.GetEntityId());
+                    typeIcon = AssetPreview.GetMiniThumbnail(obj);
+                }
             }
-            return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(MonoScript));
+            else
+            {
+                typeIcon = AssetPreview.GetMiniTypeThumbnail(type);
+            }
+            s_TypeIcons[type] = typeIcon;
+            return typeIcon ?? defaultIcon;
         }
 
         internal static IEnumerable<SearchProposition> EnumeratePropertyPropositions(IEnumerable<UnityEngine.Object> objs, Func<SerializedObject, IEnumerable<SerializedProperty>> nonVisiblePropertyIterator = null)
@@ -1014,10 +1044,10 @@ namespace UnityEditor.Search
             if (del != -1)
                 replacement = content.Substring(0, del);
 
-            valueType = Type.GetType(type);
+            valueType = FindType<UnityEngine.Object>(type);
             type = valueType?.Name ?? type;
 
-            if (QueryListBlockAttribute.TryGetReplacement(replacement.ToLower(), type, ref valueType, out var replacementText))
+            if (QueryListBlockAttribute.TryGetReplacement(replacement, type, ref valueType, out var replacementText))
                 return replacementText;
 
             switch (type)
@@ -1069,7 +1099,7 @@ namespace UnityEditor.Search
             return type != null;
         }
 
-        static Dictionary<string, Type> s_CachedTypes = new Dictionary<string, Type>();
+        static readonly Dictionary<string, Type> s_CachedTypes = new();
         internal static Type FindType<T>(in string typeString)
         {
             if (s_CachedTypes.TryGetValue(typeString, out var foundType))
@@ -1194,10 +1224,9 @@ namespace UnityEditor.Search
             return Utils.FormatBytes(byteCount);
         }
 
-        public static int GetMainAssetInstanceID(string assetPath)
-        {
-            return Utils.GetMainAssetInstanceID(assetPath);
-        }
+        [Obsolete("GetMainAssetInstanceID is obsolete, use GetMainAssetEntityId instead")]
+        public static int GetMainAssetInstanceID(string assetPath) => GetMainAssetEntityId(assetPath);
+        public static EntityId GetMainAssetEntityId(string assetPath) => Utils.GetMainAssetEntityId(assetPath);
 
         public static void PingAsset(string assetPath)
         {
@@ -1377,14 +1406,6 @@ namespace UnityEditor.Search
             return query;
         }
 
-        internal static string RemoveInvalidChars(string filename)
-        {
-            filename = string.Concat(filename.Split(Paths.invalidFilenameChars));
-            if (filename.Length > 0 && !char.IsLetterOrDigit(filename[0]))
-                filename = filename.Substring(1);
-            return filename;
-        }
-
         internal static bool ValidateAssetPath(ref string path, string requiredExtensionWithDot, out string errorMessage)
         {
             if (!Paths.IsValidAssetPath(path, requiredExtensionWithDot, out errorMessage))
@@ -1396,7 +1417,7 @@ namespace UnityEditor.Search
             var fileName = Path.GetFileName(path);
 
             // On Mac Path.GetInvalidFileNameChars() doesn't include <,> but these characters are invalid for ADB.
-            if (fileName.IndexOfAny(k_AdbInvalidCharacters) >= 0)
+            if (fileName.IndexOfAny(Utils.k_AdbInvalidCharacters) >= 0)
             {
                 errorMessage = $"Filename has invalid characters.";
                 return false;
@@ -1435,11 +1456,11 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(query))
                 return OpenDefaultQuickSearch();
 
-            providers ??= new [] { AssetProvider.type, AdbProvider.type, BuiltInSceneObjectsProvider.type};
+            providers ??= new [] { AssetProvider.type, BuiltInSceneObjectsProvider.type};
 
             return OpenWithContextualProviders(query,
                 providers,
-                contextualFlags: OpenWithContextualProvidersFlags.UseExplicitProvidersAsNormalProviders,
+                contextualFlags: OpenWithContextualProvidersFlags.None,
                 eventContext: "FindReferences");
         }
 
@@ -1757,7 +1778,7 @@ namespace UnityEditor.Search
 
             return groupId;
         }
-        
+
         internal static string ToEngineeringNotation(double d, bool printSign = false)
         {
             var sign = !printSign || d < 0 ? "" : "+";
@@ -1886,6 +1907,42 @@ namespace UnityEditor.Search
             }
 
             return false;
+        }
+
+        internal static string UnescapeLiteralString(in string value)
+        {
+            if (value != null && value.Length > 2 && value[0] == '"' && value[value.Length - 1] == '"')
+                return value.Substring(1, value.Length - 2);
+            return value;
+        }
+
+        internal static string GetNiceDisplayLabel(string label)
+        {
+            label = SearchUtils.UnescapeLiteralString(label);
+            label = ObjectNames.NicifyVariableName(label);
+            return label;
+        }
+
+        internal static int SplitTokens(string source, char c, string[] tokens)
+        {
+            var start = 0;
+            var tokenCount = 0;
+            for (var i = 0; i < source.Length; ++i)
+            {
+                if (source[i] == c)
+                {
+                    tokens[tokenCount++] = source.Substring(start, i - start);
+                    if (tokenCount == tokens.Length)
+                        break;
+                    start = i + 1;
+                }
+            }
+
+            if (tokenCount < tokens.Length)
+            {
+                tokens[tokenCount++] = start < source.Length ? source.Substring(start) : "";
+            }
+            return tokenCount;
         }
     }
 }

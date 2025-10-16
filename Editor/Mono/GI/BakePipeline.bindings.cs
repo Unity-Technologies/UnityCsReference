@@ -9,6 +9,35 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.LightBaking
 {
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PostProcessProbeRequest
+    {
+        public bool dering;
+        public float indirectScale;
+        public string outputFolderPath;
+    };
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Editor/Src/GI/BakePipeline/BakePipeline.bindings.h")]
+    internal class PostProcessRequests
+    {
+        private IntPtr _ptr;
+
+        public PostProcessRequests(IntPtr ptr)
+        {
+            _ptr = ptr;
+        }
+
+        internal extern void SetProbeRequests(PostProcessProbeRequest[] requests);
+        internal extern PostProcessProbeRequest[] GetProbeRequests();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToUnmanaged(PostProcessRequests connection) => connection._ptr;
+        }
+    }
+
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Editor/Src/GI/BakePipeline/BakePipeline.bindings.h")]
@@ -26,6 +55,10 @@ namespace UnityEditor.LightBaking
         {
             _ptr = ptr;
             _ownsPtr = false;
+        }
+        ~BakePipelineDriver()
+        {
+            Destroy();
         }
 
         public void Dispose()

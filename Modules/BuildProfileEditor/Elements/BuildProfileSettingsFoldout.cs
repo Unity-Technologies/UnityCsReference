@@ -26,19 +26,16 @@ namespace UnityEditor.Build.Profile.Elements
         IBuildProfileSettingsProvider m_Provider;
         BuildProfile m_BuildProfile;
         Foldout m_Root;
-        Action m_OnRepaint;
         Action<BuildProfile> m_OnReset;
 
         public BuildProfileSettingsFoldout(
             SerializedObject serializedObject,
             BuildProfile profile,
-            IBuildProfileSettingsProvider provider,
-            Action onRepaintRequired) : base()
+            IBuildProfileSettingsProvider provider) : base()
         {
             m_BuildProfile = profile;
             m_Provider = provider;
             m_OnReset = provider.GetResetAction();
-            m_OnRepaint = onRepaintRequired;
             m_DataKey = "bp-settings-foldout-" + provider.GetType().Name;
 
             var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
@@ -104,7 +101,7 @@ namespace UnityEditor.Build.Profile.Elements
             }
 
             m_OnReset?.Invoke(m_BuildProfile);
-            m_OnRepaint();
+            BuildProfileModuleUtil.UpdateActiveEditors(m_BuildProfile);
         }
 
         void OnRemove()
@@ -118,7 +115,7 @@ namespace UnityEditor.Build.Profile.Elements
             }
 
             m_Provider.OnRemove(m_BuildProfile);
-            m_OnRepaint();
+            BuildProfileModuleUtil.UpdateActiveEditors(m_BuildProfile);
         }
     }
 }

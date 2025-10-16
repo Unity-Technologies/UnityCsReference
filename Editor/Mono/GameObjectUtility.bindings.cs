@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.Linq;
+using System;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -48,11 +48,6 @@ namespace UnityEditor
             return false;
         }
 
-        internal static bool HasChildren(IEnumerable<GameObject> gameObjects)
-        {
-            return gameObjects.Any(go => go.transform.childCount > 0);
-        }
-
         internal enum ShouldIncludeChildren
         {
             HasNoChildren = -1,
@@ -61,12 +56,30 @@ namespace UnityEditor
             Cancel = 2
         }
 
-        internal static ShouldIncludeChildren DisplayUpdateChildrenDialogIfNeeded(IEnumerable<GameObject> gameObjects,
-            string title, string message)
+        internal static bool HasChildren(ReadOnlySpan<Object> objects)
         {
-            if (!HasChildren(gameObjects))
-                return ShouldIncludeChildren.HasNoChildren;
+            foreach (var o in objects)
+            {
+                if (o is GameObject go && go && go.transform.childCount > 0)
+                    return true;
+            }
 
+            return false;
+        }
+
+        internal static bool HasChildren(ReadOnlySpan<GameObject> gameObjects)
+        {
+            foreach (var go in gameObjects)
+            {
+                if (go && go.transform.childCount > 0)
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static ShouldIncludeChildren DisplayUpdateChildrenDialog(string title, string message)
+        {
             var result = EditorDialog.DisplayComplexDecisionDialog(
                 title,
                 message,

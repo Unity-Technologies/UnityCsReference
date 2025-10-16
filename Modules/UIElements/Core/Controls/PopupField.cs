@@ -108,6 +108,24 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// <inheritdoc/>
+        /// </summary>
+        public override List<T> choices
+        {
+            get => base.choices;
+            set
+            {
+                // Update the value if we have a valid index (UUM-120183)
+                if (m_Index >= 0 && m_Index < value?.Count)
+                {
+                    rawValue = value[m_Index];
+                }
+
+                base.choices = value;
+            }
+        }
+
+        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-popup-field";

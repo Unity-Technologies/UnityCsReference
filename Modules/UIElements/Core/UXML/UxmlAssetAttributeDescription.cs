@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a UXML <c>Object</c> attribute referencing an asset in the project. In UXML, this is referenced as a string URI.
     /// </summary>
+    [Obsolete("UxmlTraits system is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
     public class UxmlAssetAttributeDescription<T> : TypedUxmlAttributeDescription<T>, IUxmlAssetAttributeDescription where T : Object
     {
         /// <summary>

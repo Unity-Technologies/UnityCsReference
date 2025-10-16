@@ -12,6 +12,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Bindings;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 using Object = UnityEngine.Object;
@@ -24,7 +25,6 @@ namespace Unity.UI.Builder
     internal class BuilderUxmlAttributesView : IDisposable, IBatchedUxmlChangesListener
     {
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
-        static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
         static readonly string s_UxmlButtonUssClassName = "unity-builder-uxml-object-button";
         static readonly string s_UxmlMenuUssClassName = "unity-builder-uxml-object-menu";
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
@@ -69,19 +69,6 @@ namespace Unity.UI.Builder
         {
         }
 
-        internal enum AttributeFieldSource
-        {
-            /// <summary>
-            /// Uses BindableElements
-            /// </summary>
-            UxmlTraits,
-
-            /// <summary>
-            /// Uses UxmlSerializedDataAttributeField with nested BindableElements.
-            /// </summary>
-            UxmlSerializedData,
-        }
-
         public UxmlSerializedData uxmlSerializedData => context.uxmlSerializedData;
 
         /// <summary>
@@ -108,13 +95,6 @@ namespace Unity.UI.Builder
         /// Returns the uxml element of which attributes are being edited by the view.
         /// </summary>
         public UxmlAsset attributesUxmlOwner => context.elementAsset;
-
-        /// <summary>
-        /// Returns the list of attributes.
-        /// </summary>
-        public IReadOnlyList<UxmlAttributeDescription> attributes => context.attributes;
-
-        internal AttributeFieldSource currentFieldSource => context.usesUxmlTraits ? AttributeFieldSource.UxmlTraits : AttributeFieldSource.UxmlSerializedData;
 
         public BuilderUxmlAttributesView(BuilderInspector inspector = null)
         {
@@ -158,24 +138,6 @@ namespace Unity.UI.Builder
                 ve = ve.parent;
             }
             return false;
-        }
-
-        /// <summary>
-        /// Finds the attribute description with the specified name.
-        /// </summary>
-        /// <param name="attributeName">The name of the attribute to seek.</param>
-        /// <returns>The attribute description to seek.</returns>
-        public UxmlAttributeDescription FindAttribute(string attributeName) => FindAttribute(attributeName, attributes);
-
-        static UxmlAttributeDescription FindAttribute(string attributeName, IEnumerable<UxmlAttributeDescription> uxmlAttributes)
-        {
-            foreach (var attr in uxmlAttributes)
-            {
-                if (attr.name == attributeName)
-                    return attr;
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -287,12 +249,12 @@ namespace Unity.UI.Builder
 
             attributesContainer.Clear();
 
-            if (context.element == null || attributes.Count == 0)
+            if (context.element == null)
                 return;
 
-            if (currentFieldSource == AttributeFieldSource.UxmlTraits)
+            if (context.uxmlSerializedDataDescription == null)
             {
-                GenerateUxmlTraitsAttributeFields();
+                ShowUxmlTraitsUsageWarningBox();
             }
             else
             {
@@ -300,15 +262,8 @@ namespace Unity.UI.Builder
             }
         }
 
-        protected virtual void GenerateUxmlTraitsAttributeFields()
+        protected virtual void ShowUxmlTraitsUsageWarningBox()
         {
-            foreach (var attribute in attributes)
-            {
-                if (attribute == null || attribute.name == null || IsAttributeIgnored(attribute))
-                    continue;
-
-                CreateTraitsAttributeRow(attribute);
-            }
         }
 
         /// <summary>
@@ -367,180 +322,6 @@ namespace Unity.UI.Builder
             }
         }
 
-        /// <summary>
-        /// Indicates whether the specified uxml attribute should be ignored.
-        /// </summary>
-        /// <param name="attribute">The attribute to evaluate.</param>
-        /// <returns></returns>
-        protected virtual bool IsAttributeIgnored(UxmlAttributeDescription attribute)
-        {
-            if (context.element != null)
-            {
-                // Temporary check until we add an "obsolete" mechanism to uxml attribute description.
-                return attribute.name == "show-horizontal-scroller" || attribute.name == "show-vertical-scroller" || attribute.name == "name";
-            }
-            return false;
-        }
-
-        private static string GetRemapAttributeNameToCSProperty(object attributesOwner, string attributeName)
-        {
-            if (attributesOwner is VisualElement)
-            {
-                if (attributesOwner is ObjectField && attributeName == "type")
-                    return "objectType";
-                if (attributeName == "readonly")
-                    return "isReadOnly";
-                if (attributeName == "enabled")
-                    return "enabledSelf";
-            }
-
-            var camel = StyleSheetUtility.ConvertDashToCamel(attributeName);
-            return camel;
-        }
-
-        internal string GetRemapAttributeNameToCSProperty(string attributeName)
-        {
-            return GetRemapAttributeNameToCSProperty(context.element, attributeName);
-        }
-
-        internal string GetRemapCSPropertyToAttributeName(string CSProperty)
-        {
-            if (context.element != null)
-            {
-                if (context.element is ObjectField && CSProperty == "objectType")
-                    return "type";
-                if (CSProperty == "isReadonly")
-                    return "readOnly";
-                if (CSProperty == "enabledSelf")
-                    return "enabled";
-            }
-
-            return StyleSheetUtility.ConvertCamelToDash(CSProperty);
-        }
-
-        object GetAttributeValueNotMatchingCSPropertyName(string attributeName)
-        {
-            if (context.element is ScrollView scrollView)
-            {
-                if (attributeName == "show-horizontal-scroller")
-                {
-                    return scrollView.horizontalScrollerVisibility != ScrollerVisibility.Hidden;
-                }
-                else if (attributeName == "show-vertical-scroller")
-                {
-                    return scrollView.verticalScrollerVisibility != ScrollerVisibility.Hidden;
-                }
-                else if (attributeName == "touch-scroll-type")
-                {
-                    return scrollView.touchScrollBehavior;
-                }
-            }
-            else if (context.element is ListView listView)
-            {
-                if (attributeName == "horizontal-scrolling")
-                    return listView.horizontalScrollingEnabled;
-            }
-            else if (context.element is BoundsField boundsField)
-            {
-                if (attributeName == "cx")
-                    return boundsField.value.center.x;
-                else if (attributeName == "cy")
-                    return boundsField.value.center.y;
-                else if (attributeName == "cz")
-                    return boundsField.value.center.z;
-                else
-                    if (attributeName == "ex")
-                    return boundsField.value.size.x;
-                else
-                    if (attributeName == "ey")
-                    return boundsField.value.size.y;
-                else
-                    if (attributeName == "ez")
-                    return boundsField.value.size.z;
-            }
-            else if (context.element is BoundsIntField boundsIntField)
-            {
-                if (attributeName == "px")
-                    return boundsIntField.value.position.x;
-                else if (attributeName == "py")
-                    return boundsIntField.value.position.y;
-                else if (attributeName == "pz")
-                    return boundsIntField.value.position.z;
-                else
-                    if (attributeName == "sx")
-                    return boundsIntField.value.size.x;
-                else
-                    if (attributeName == "sy")
-                    return boundsIntField.value.size.y;
-                else
-                    if (attributeName == "sz")
-                    return boundsIntField.value.size.z;
-            }
-            else if (context.element is RectField rectField)
-            {
-                if (attributeName == "x")
-                    return rectField.value.x;
-                else if (attributeName == "y")
-                    return rectField.value.y;
-                else if (attributeName == "w")
-                    return rectField.value.width;
-                else if (attributeName == "h")
-                    return rectField.value.height;
-            }
-            else if (context.element is Vector2Field vec2Field)
-            {
-                if (attributeName == "x")
-                    return vec2Field.value.x;
-                else if (attributeName == "y")
-                    return vec2Field.value.y;
-            }
-            else if (context.element is Vector3Field vec3Field)
-            {
-                if (attributeName == "x")
-                    return vec3Field.value.x;
-                else if (attributeName == "y")
-                    return vec3Field.value.y;
-                else if (attributeName == "z")
-                    return vec3Field.value.z;
-            }
-            else if (context.element is Vector4Field vec4Field)
-            {
-                if (attributeName == "x")
-                    return vec4Field.value.x;
-                else if (attributeName == "y")
-                    return vec4Field.value.y;
-                else if (attributeName == "z")
-                    return vec4Field.value.z;
-                else if (attributeName == "w")
-                    return vec4Field.value.w;
-            }
-            else if (context.element is Vector2IntField vec2IntField)
-            {
-                if (attributeName == "x")
-                    return vec2IntField.value.x;
-                else if (attributeName == "y")
-                    return vec2IntField.value.y;
-            }
-            else if (context.element is Vector3IntField vec3IntField)
-            {
-                if (attributeName == "x")
-                    return vec3IntField.value.x;
-                else if (attributeName == "y")
-                    return vec3IntField.value.y;
-                else if (attributeName == "z")
-                    return vec3IntField.value.z;
-            }
-            else if (currentElement is TextElement textElement)
-            {
-                if (attributeName == "selectable")
-                {
-                    return textElement.selection.isSelectable;
-                }
-            }
-
-            return null;
-        }
-
         internal static VisualElement GetRootFieldElement(VisualElement visualElement)
         {
             if (visualElement == null)
@@ -575,41 +356,7 @@ namespace Unity.UI.Builder
             return GetRootFieldElement(visualElement).GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
         }
 
-        IEnumerable<VisualElement> GetAttributeFields()
-        {
-            if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
-                return attributesContainer.Query<UxmlSerializedDataAttributeField>().Where(ve => ve.HasLinkedAttributeDescription()).Build();
-            return attributesContainer.Query<BindableElement>().Where(e => !string.IsNullOrEmpty(e.bindingPath)).Build();
-        }
-
-        /// <summary>
-        /// Creates a row in the fields container for the specified attribute using the UxmlTraits system.
-        /// </summary>
-        /// <param name="attribute">The target attribute</param>
-        /// <param name="parent">The parent where to add the row</param>
-        /// <returns></returns>
-        protected virtual BuilderStyleRow CreateTraitsAttributeRow(UxmlAttributeDescription attribute, VisualElement parent = null)
-        {
-            var fieldElement = CreateTraitsAttributeField(attribute);
-
-            parent ??= attributesContainer;
-
-            // Create row.
-            var styleRow = new BuilderStyleRow();
-
-            styleRow.AddToClassList($"{s_AttributeFieldRowUssClassName}-{attribute.name}");
-            styleRow.Add(fieldElement);
-
-            // Ensure the row is added to the inspector hierarchy before refreshing
-            parent.Add(styleRow);
-
-            // Setup field binding path.
-            fieldElement.bindingPath = attribute.name;
-
-            SetupStyleRow(styleRow, fieldElement, attribute);
-
-            return styleRow;
-        }
+        IEnumerable<VisualElement> GetAttributeFields() => attributesContainer.Query<UxmlSerializedDataAttributeField>().Where(ve => ve.HasLinkedAttributeDescription()).Build();
 
         protected VisualElement CreateUxmlObjectAttributeRow(UxmlSerializedAttributeDescription attribute, string propertyPath)
         {
@@ -703,9 +450,9 @@ namespace Unity.UI.Builder
 
             var propertyField = new PropertyField { bindingPath = serializedProperty.propertyPath };
             drawerRoot.Add(propertyField);
-            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, context.visualTree, context.element != null );
+            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, context.visualTree, context.element != null);
 
-            // The hiearachy is not complete yet so we need to defer the update
+            // The hierarchy is not complete yet so we need to defer the update
             root.schedule.Execute(() => UpdateCustomPropertyDrawerAttributeOverrideStyle(drawerRoot));
         }
 
@@ -808,6 +555,9 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
+                    var serializedReferencesFound = TrackPropertySerializedReferences(property, fieldElement);
+
+                    fieldElement.name = property.name;
                     var propertyField = new PropertyField
                     {
                         name = builderSerializedPropertyFieldName,
@@ -824,14 +574,23 @@ namespace Unity.UI.Builder
                         TrackElementPropertyValue(propertyField, property);
                     }
 
-                    fieldElement.Add(propertyField);
+                    // if a serialized reference was found, we need to add the property field the CustomPropertyDrawerField,
+                    // which is the child of the UxmlSerializedDataAttributeField.
+                    // This is to ensure that the CustomPropertyDrawerField override can be updated correctly.
+                    if (serializedReferencesFound)
+                    {
+                        var customPropertyDrawerField = fieldElement.Q<CustomPropertyDrawerField>();
+                        customPropertyDrawerField.Insert(0, propertyField);
+                    }
+                    else
+                        fieldElement.Add(propertyField);
 
                     propertyField.Bind(context.rootSerializedObject);
 
                     // Special case for ToggleButtonGroup
                     if (context.element is ToggleButtonGroup && attribute.name == nameof(ToggleButtonGroup.value))
                     {
-                        propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnPropertyFieldBound);
+                        propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnToggleButtonGroupValuePropertyFieldBound);
                     }
                 }
             }
@@ -850,7 +609,27 @@ namespace Unity.UI.Builder
             return styleRow;
         }
 
-        void OnPropertyFieldBound(SerializedPropertyBindEvent evt)
+        bool TrackPropertySerializedReferences(SerializedProperty property,
+            UxmlSerializedDataAttributeField fieldElement)
+        {
+            var drawerRoot = new CustomPropertyDrawerField();
+            var attributeDescription = context.uxmlSerializedDataDescription.FindAttributeWithPropertyName(property.name);
+            if (attributeDescription == null || !inspector.batchedChangesController.FindSerializedReferenceAndTrackChildProperties((property), p =>
+            {
+                var attributeField = new UxmlSerializedDataAttributeField { name = p.name };
+                attributeField.SetLinkedAttributeDescription(attributeDescription);
+                drawerRoot.Add(attributeField);
+                inspector.batchedChangesController.TrackPropertyValue(attributeField, p, this, uxmlDocument);
+            }))
+                return false;
+
+            // We found a serialized reference, so we need to add the item root to the FieldElement.
+            drawerRoot.AddManipulator(new ContextualMenuManipulator(BuildCustomPropertyDrawerMenu));
+            fieldElement.Add(drawerRoot);
+            return true;
+        }
+
+        void OnToggleButtonGroupValuePropertyFieldBound(SerializedPropertyBindEvent evt)
         {
             if (context.element is not ToggleButtonGroup groupElement)
                 return;
@@ -906,7 +685,7 @@ namespace Unity.UI.Builder
             });
         }
 
-        protected void SetupStyleRow(BuilderStyleRow styleRow, VisualElement fieldElement, UxmlAttributeDescription attribute)
+        protected void SetupStyleRow(BuilderStyleRow styleRow, VisualElement fieldElement, UxmlSerializedAttributeDescription  attribute)
         {
             // Link the PropertyField to the BuilderStyleRow.
             fieldElement.SetContainingRow(styleRow);
@@ -916,18 +695,7 @@ namespace Unity.UI.Builder
             fieldElement.SetLinkedAttributeDescription(attribute);
 
             // Save the property name.
-            var propertyName = attribute.name;
-
-            if (attribute is UxmlSerializedAttributeDescription serializedAttributeDescription)
-            {
-                fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, serializedAttributeDescription.serializedField.Name);
-            }
-            else
-            {
-                var bindingProperty = GetRemapAttributeNameToCSProperty(propertyName);
-                fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, bindingProperty);
-            }
-
+            fieldElement.SetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName, attribute.serializedField.Name);
 
             // Set initial value.
             UpdateAttributeField(fieldElement);
@@ -981,26 +749,11 @@ namespace Unity.UI.Builder
         }
 
         /// <summary>
-        /// Creates a field from the specified attribute using the UxmlTraits system.
-        /// </summary>
-        /// <param name="attribute">The target attribute</param>
-        /// <returns></returns>
-        protected virtual BindableElement CreateTraitsAttributeField(UxmlAttributeDescription attribute)
-        {
-            var attributesOwner = context.element;
-            var factory = BuilderUxmlAttributeFieldFactoryRegistry.GetFactory(attributesOwner, attributesUxmlOwner, attribute);
-            var uiField = factory.CreateField(attributesOwner, attributesUxmlOwner, attribute, OnAttributeValueChanged);
-            uiField.AddToClassList($"{s_AttributeFieldUssClassName}-{attribute.name}");
-            uiField.SetProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName, factory);
-            return uiField as BindableElement;
-        }
-
-        /// <summary>
         /// Gets the value of the specified attribute.
         /// </summary>
         /// <param name="attribute">The target attribute.</param>
         /// <returns></returns>
-        protected virtual object GetAttributeValue(UxmlAttributeDescription attribute)
+        protected virtual object GetAttributeValue(UxmlSerializedAttributeDescription attribute)
         {
             var attributesOwner = context.element;
             if (attribute is UxmlSerializedAttributeDescription uxmlSerializedAttribute)
@@ -1008,14 +761,7 @@ namespace Unity.UI.Builder
                 uxmlSerializedAttribute.TryGetValueFromObject(attributesOwner, out var value);
                 return value;
             }
-            else
-            {
-                var objType = attributesOwner.GetType();
-                var csPropertyName = GetRemapAttributeNameToCSProperty(attribute.name);
-                var fieldInfo = objType.GetProperty(csPropertyName,
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase);
-                return fieldInfo == null ? GetAttributeValueNotMatchingCSPropertyName(attribute.name) : fieldInfo.GetValue(attributesOwner, null);
-            }
+            return null;
         }
 
         public void ToggleUxmlChangeFlagForView(bool enabled)
@@ -1086,58 +832,6 @@ namespace Unity.UI.Builder
         /// <param name="fieldElement">The field to refresh</param>
         void UpdateAttributeField(VisualElement fieldElement)
         {
-            var attribute = fieldElement.GetLinkedAttributeDescription();
-
-            if (attribute is not UxmlSerializedAttributeDescription)
-            {
-                var fieldValue = GetAttributeValue(attribute);
-
-                if (fieldValue == null)
-                {
-                    if (context.element is EnumField defaultEnumField &&
-                        attribute.name == "value")
-                    {
-                        if (defaultEnumField.type == null)
-                        {
-                            fieldElement.SetEnabled(false);
-                        }
-                        else
-                        {
-                            ((EnumField)fieldElement).PopulateDataFromType(defaultEnumField.type);
-                            fieldElement.SetEnabled(true);
-                        }
-                    }
-
-                    else if (context.element is EnumFlagsField defaultEnumFlagsField &&
-                             attribute.name == "value")
-                    {
-                        if (defaultEnumFlagsField.type == null)
-                        {
-                            fieldElement.SetEnabled(false);
-                        }
-                        else
-                        {
-                            ((EnumFlagsField)fieldElement).PopulateDataFromType(defaultEnumFlagsField.type);
-                            fieldElement.SetEnabled(true);
-                        }
-                    }
-                    else if (!(fieldElement is ObjectField or BaseField<string>))
-                    {
-                        return;
-                    }
-                }
-
-                if ((attribute.name.Equals("allow-add") || attribute.name.Equals("allow-remove")) &&
-                    context.element is BaseListView)
-                {
-                    var styleRow =
-                        fieldElement.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as VisualElement;
-                    styleRow?.contentContainer.AddToClassList(BuilderConstants.InspectorListViewAllowAddRemoveFieldClassName);
-                }
-
-                UpdateAttributeField(fieldElement, attribute, fieldValue);
-            }
-
             UpdateAttributeOverrideStyle(fieldElement);
             UpdateFieldStatus(fieldElement);
         }
@@ -1170,66 +864,6 @@ namespace Unity.UI.Builder
             }
 
             row.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, attributeIsOverriden);
-
-            // We dont do this in UxmlSerialized data as it breaks UxmlObject overrides, each field is responsible for its own override state.
-            if (currentFieldSource == AttributeFieldSource.UxmlTraits)
-            {
-                row.Query<BindableElement>().ForEach(styleField =>
-                {
-                    styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleResetClassName);
-
-                    if (attributeIsOverriden)
-                    {
-                        string bindingPath = null;
-                        string attributeName = null;
-
-                        if (attribute is UxmlSerializedAttributeDescription serializedAttributeDescription && styleField.bindingPath != null)
-                        {
-                            var pathParts = styleField.bindingPath.Split(".");
-                            bindingPath = pathParts[^1];
-                            attributeName = serializedAttributeDescription.serializedField.Name;
-                        }
-                        else
-                        {
-                            bindingPath = styleField.bindingPath;
-                            attributeName = attribute.name;
-                        }
-
-                        if (attributeName == bindingPath)
-                        {
-                            styleField.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-                        }
-                        else if (!string.IsNullOrEmpty(bindingPath) &&
-                                 attributeName != bindingPath &&
-                                 !styleField.ClassListContains(BuilderConstants.InspectorLocalStyleOverrideClassName))
-                        {
-                            styleField.AddToClassList(BuilderConstants.InspectorLocalStyleResetClassName);
-                        }
-                    }
-                    else
-                    {
-                        styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleResetClassName);
-                        styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-                    }
-                });
-            }
-        }
-
-        /// <summary>
-        /// Refreshes the value and status of the specified field.
-        /// </summary>
-        /// <param name="fieldElement">The field to refresh</param>
-        /// <para name="attribute">The attribute related to the field</para>
-        /// <param name="value">The new value</param>
-        protected void UpdateAttributeField(VisualElement fieldElement, UxmlAttributeDescription attribute, object value)
-        {
-            var attributesOwner = context.element;
-            if (fieldElement.HasProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName))
-            {
-                var fieldFactory = fieldElement.GetProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName) as
-                        IBuilderUxmlAttributeFieldFactory;
-                fieldFactory.SetFieldValue(fieldElement, attributesOwner, uxmlDocument, attributesUxmlOwner, attribute, value);
-            }
         }
 
         /// <summary>
@@ -1264,9 +898,6 @@ namespace Unity.UI.Builder
 
             fieldElement.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
             BuilderInspector.UpdateFieldStatusIconAndStyling(inspector?.currentVisualElement, fieldElement, valueInfo, false);
-
-            if (currentFieldSource == AttributeFieldSource.UxmlTraits)
-                BuilderInspector.UpdateFieldTooltip(fieldElement, valueInfo, context.element);
         }
 
         public void SendNotifyAttributesChanged() => NotifyAttributesChanged();
@@ -1280,31 +911,24 @@ namespace Unity.UI.Builder
 
         protected bool IsAttributeOverriden(VisualElement fieldElement)
         {
+            if (readOnly)
+                return false;
+
             var attribute = fieldElement.GetLinkedAttributeDescription();
-
-            if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
+            var rootElement = fieldElement?.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>();
+            if (rootElement == null)
             {
-                if (readOnly)
-                    return false;
-
-                var rootElement = fieldElement?.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>();
-                if (rootElement == null)
-                {
-                    Debug.LogError("[UI Builder] Serialization error. Root can't be found.");
-                    return false;
-                }
-
-                var result = BuilderAssetUtilities.SynchronizePath(context, rootElement.rootPath, false);
-                if (result.success)
-                {
-                    return IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, attribute);
-                }
-
+                Debug.LogError("[UI Builder] Serialization error. Root can't be found.");
                 return false;
             }
 
-            var attributesOwner = context.element;
-            return IsAttributeOverriden(attributesOwner, attributesUxmlOwner, attribute);
+            var result = BuilderAssetUtilities.SynchronizePath(context, rootElement.rootPath, false);
+            if (result.success)
+            {
+                return IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, attribute);
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1312,7 +936,7 @@ namespace Unity.UI.Builder
         /// </summary>
         /// <param name="attributesOwner">An instance of the uxml element that owns the uxml attribute</param>
         /// <param name="attribute">The uxml attribute</param>
-        public static bool IsAttributeOverriden(VisualElement attributesOwner, UxmlAttributeDescription attribute)
+        public static bool IsAttributeOverriden(VisualElement attributesOwner, UxmlSerializedAttributeDescription attribute)
         {
             return IsAttributeOverriden(attributesOwner, attributesOwner.GetVisualElementAsset(), attribute);
         }
@@ -1324,7 +948,7 @@ namespace Unity.UI.Builder
         /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute to evaluate.</param>
         /// <param name="attribute">The uxml attribute.</param>
         /// <returns></returns>
-        public static bool IsAttributeOverriden(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        public static bool IsAttributeOverriden(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlSerializedAttributeDescription attribute)
         {
             if (attribute is UxmlSerializedAttributeDescription { isUxmlObject: true })
                 return false;
@@ -1334,8 +958,7 @@ namespace Unity.UI.Builder
                 if (attributeUxmlOwner != null && attribute.name == "picking-mode")
                 {
                     var veaAttributeValue = attributeUxmlOwner.GetAttributeValue(attribute.name);
-                    var bindingProperty = GetRemapAttributeNameToCSProperty(attributeOwner, attribute.name);
-                    var isBound = DataBindingUtility.TryGetBinding(ve, new PropertyPath(bindingProperty), out _);
+                    var isBound = DataBindingUtility.TryGetBinding(ve, new PropertyPath(attribute.name), out _);
                     if (isBound || veaAttributeValue != null &&
                         veaAttributeValue.ToLower() != attribute.defaultValueAsString.ToLower())
                         return true;
@@ -1354,8 +977,7 @@ namespace Unity.UI.Builder
                     var template = BuilderAssetUtilities.GetVisualElementRootTemplate(ve);
                     var templateVta = template?.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
                     var linkedOpenVta = ve.GetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName) as VisualTreeAsset;
-                    var bindingProperty = GetRemapAttributeNameToCSProperty(attributeOwner, attribute.name);
-                    if ((templateVta == null || templateVta == linkedOpenVta) && DataBindingUtility.TryGetBinding(ve, new PropertyPath(bindingProperty), out _))
+                    if ((templateVta == null || templateVta == linkedOpenVta) && DataBindingUtility.TryGetBinding(ve, new PropertyPath(attribute.name), out _))
                     {
                         return true;
                     }
@@ -1384,93 +1006,15 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Resets the value of the specified attribute field to its default value.
         /// </summary>
-        /// <param name="fieldElement">The field to reset.</param>
-        /// <param name="removeBinding">Whether the binding in this field is removed or not</param>
-        void ResetAttributeFieldToDefault(VisualElement fieldElement, bool removeBinding)
-        {
-            var attribute = fieldElement.GetLinkedAttributeDescription();
-
-            if (removeBinding)
-            {
-                // Remove bindings
-                var bindingProperty = GetBindingPropertyName(fieldElement);
-                var hasBinding = DataBindingUtility.TryGetBinding(context.element, new PropertyPath(bindingProperty),
-                    out _);
-
-                if (hasBinding)
-                {
-                    context.element.ClearBinding(bindingProperty);
-                    context.visualTree.RemoveBinding(context.element.GetVisualElementAsset(), bindingProperty);
-                }
-            }
-
-            ResetAttributeFieldToDefault(fieldElement, attribute);
-
-            UpdateAttributeOverrideStyle(fieldElement);
-
-            // Clear override.
-            var styleRow = GetLinkedStyleRow(fieldElement);
-
-            // Some fields dont have a style row, e.g Name field.
-            if (styleRow == null)
-                return;
-            styleRow.RemoveFromClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-
-            if (currentFieldSource == AttributeFieldSource.UxmlTraits)
-            {
-                var styleFields = styleRow.Query<BindableElement>().Build();
-                foreach (var styleField in styleFields)
-                {
-                    styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleResetClassName);
-                    styleField.RemoveFromClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resets the value of the specified attribute field to its default value.
-        /// </summary>
         /// <param name="fieldElement">The field to reset</param>
         /// <para name="attribute">The attribute related to the field</para>
-        protected virtual void ResetAttributeFieldToDefault(VisualElement fieldElement, UxmlAttributeDescription attribute)
+        protected virtual void ResetAttributeFieldToDefault(VisualElement fieldElement, UxmlSerializedAttributeDescription attribute)
         {
-            if (fieldElement.HasProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName))
-            {
-                var fieldFactory = fieldElement.GetProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName) as IBuilderUxmlAttributeFieldFactory;
-                fieldFactory.ResetFieldValue(fieldElement, context.element, uxmlDocument, attributesUxmlOwner, attribute);
-            }
-            else
-            {
-                var desc = attribute as UxmlSerializedAttributeDescription;
-
-                desc.SyncDefaultValue(uxmlSerializedData, true);
-                context.rootSerializedObject.UpdateIfRequiredOrScript();
-                BuilderAssetUtilities.CallDeserializeOnElement(context);
-
-                // Rebind to the new default value
-                fieldElement.Bind(context.rootSerializedObject);
-            }
-        }
-
-        protected VisualElement FindField(string propertyPath)
-        {
-            foreach (var e in attributesContainer.Query().Build())
-            {
-                if (e is PropertyField propertyField)
-                {
-                    if (propertyField.bindingPath == propertyPath)
-                        return e;
-                }
-                else if (e is BindableElement bindableElement)
-                {
-                    if (bindableElement.bindingPath == propertyPath)
-                        return e;
-                }
-
-                if (e.userData is SerializedProperty property && property.propertyPath == propertyPath)
-                    return e;
-            }
-            return null;
+            attribute.SyncDefaultValue(uxmlSerializedData, true);
+            context.rootSerializedObject.UpdateIfRequiredOrScript();
+            BuilderAssetUtilities.CallDeserializeOnElement(context);
+            // Rebind to the new default value
+            fieldElement.Bind(context.rootSerializedObject);
         }
 
         void BuildAttributeFieldContextualMenu(ContextualMenuPopulateEvent evt) => BuildAttributeFieldContextualMenu(evt.menu, evt.currentTarget as BuilderStyleRow);
@@ -1513,7 +1057,7 @@ namespace Unity.UI.Builder
             var fieldElement = fields[0]; // Assume there's only one field for default case.
 
             // Dont add menu items to the root of UxmlObjects, they conflict with the field menu items, e.g multiple "Unset" menu items would be added.
-            if (fieldElement.GetLinkedAttributeDescription() is UxmlSerializedAttributeDescription desc && desc.isUxmlObject)
+            if (fieldElement.GetLinkedAttributeDescription() is { } desc && desc.isUxmlObject)
                 return;
 
             menu.AppendAction(
@@ -1533,20 +1077,12 @@ namespace Unity.UI.Builder
 
                     // Check UxmlObjects
                     bool hasAttributeOverride = false;
-                    if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
-                    {
-                        var root = field.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>();
+                    var root = field.GetFirstAncestorOfType<UxmlAssetSerializedDataRoot>();
 
-                        var result = BuilderAssetUtilities.SynchronizePath(context, root.rootPath, false);
-                        if (result.success)
-                        {
-                            hasAttributeOverride = IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, field.GetLinkedAttributeDescription());
-                        }
-                    }
-                    else
-                    {
-                        hasAttributeOverride = attributesUxmlOwner?.HasAttribute(attributeName) == true;
-                    }
+                    var result = BuilderAssetUtilities.SynchronizePath(context, root.rootPath, false);
+                    if (result.success)
+                        hasAttributeOverride = IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, field.GetLinkedAttributeDescription());
+
                     return hasAttributeOverride || isAttributeOverrideAttribute || canUnsetBinding
                         ? DropdownMenuAction.Status.Normal
                         : DropdownMenuAction.Status.Disabled;
@@ -1566,7 +1102,7 @@ namespace Unity.UI.Builder
 
         internal bool IsAnyAttributeSet()
         {
-            foreach (var attribute in attributes)
+            foreach (var attribute in context.uxmlSerializedDataDescription.serializedAttributes)
             {
                 if (attribute?.name == null)
                     continue;
@@ -1625,46 +1161,23 @@ namespace Unity.UI.Builder
             }
             else
             {
-                if (currentFieldSource == AttributeFieldSource.UxmlTraits)
+                // Clear UxmlObjects
+                attributesUxmlOwner.RemoveUxmlObjectAssetChildren();
+
+                // Clear attribute overrides
+                foreach (var attribute in context.uxmlSerializedDataDescription.serializedAttributes)
                 {
-                    foreach (var attribute in attributes)
-                    {
-                        if (attribute?.name == null)
-                            continue;
+                    if (attribute.isUxmlObject)
+                        continue;
 
-                        // Unset value in asset.
-                        attributesUxmlOwner.RemoveAttribute(attribute.name);
-                    }
-
-                    var fields = GetAttributeFields();
-                    foreach (var fieldElement in fields)
-                    {
-                        // Reset UI value.
-                        ResetAttributeFieldToDefault(fieldElement, true);
-                        UpdateFieldStatus(fieldElement);
-                    }
-                    BuilderAssetUtilities.CallInitOnElement(context);
+                    context.elementAsset.RemoveAttribute(attribute.name);
                 }
-                else
-                {
-                    // Clear UxmlObjects
-                    attributesUxmlOwner.RemoveUxmlObjectAssetChildren();
 
-                    // Clear attribute overrides
-                    foreach (var attribute in context.uxmlSerializedDataDescription.serializedAttributes)
-                    {
-                        if (attribute.isUxmlObject)
-                            continue;
-
-                        context.elementAsset.RemoveAttribute(attribute.name);
-                    }
-
-                    // Reset the whole UxmlSerializedData but keep the id.
-                    var uxmlAssetId = context.elementAsset.serializedData.uxmlAssetId;
-                    context.elementAsset.serializedData = context.uxmlSerializedDataDescription.CreateDefaultSerializedData();
-                    context.elementAsset.serializedData.uxmlAssetId = uxmlAssetId;
-                    BuilderAssetUtilities.CallDeserializeOnElement(context);
-                }
+                // Reset the whole UxmlSerializedData but keep the id.
+                var uxmlAssetId = context.elementAsset.serializedData.uxmlAssetId;
+                context.elementAsset.serializedData = context.uxmlSerializedDataDescription.CreateDefaultSerializedData();
+                context.elementAsset.serializedData.uxmlAssetId = uxmlAssetId;
+                BuilderAssetUtilities.CallDeserializeOnElement(context);
 
                 // Notify of changes.
                 NotifyAttributesChanged();
@@ -1700,6 +1213,7 @@ namespace Unity.UI.Builder
                 result.attributeDescription.SyncDefaultValue(result.serializedData, true);
                 BuilderAssetUtilities.CallDeserializeOnElement(context);
 
+                // TODO: Can we remove this?
                 UnsetEnumValue(result.attributeDescription.name, removeBinding);
 
                 NotifyAttributesChanged(result.attributeDescription.name);
@@ -1731,30 +1245,16 @@ namespace Unity.UI.Builder
                     currentSerializedData = result.serializedData as UxmlSerializedData;
                 }
 
-                if (currentFieldSource == AttributeFieldSource.UxmlTraits)
+                if (removeBinding)
                 {
-                    currentAttributesUxmlOwner.RemoveAttribute(attributeName);
-
-                    // Reset UI value.
-                    ResetAttributeFieldToDefault(fieldElement, removeBinding);
-
-                    // Call Init();
-                    BuilderAssetUtilities.CallInitOnElement(context);
+                    var bindingProperty = GetBindingPropertyName(fieldElement);
+                    RemoveBindingFromSerializedData(fieldElement, bindingProperty);
                 }
-                else
-                {
-                    if (removeBinding)
-                    {
-                        var bindingProperty = GetBindingPropertyName(fieldElement);
-                        RemoveBindingFromSerializedData(fieldElement, bindingProperty);
-                    }
 
-                    currentAttributesUxmlOwner.RemoveAttribute(attributeName);
-                    var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-                    description.SyncDefaultValue(currentSerializedData, true);
-
-                    BuilderAssetUtilities.CallDeserializeOnElement(context);
-                }
+                currentAttributesUxmlOwner.RemoveAttribute(attributeName);
+                var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
+                description.SyncDefaultValue(currentSerializedData, true);
+                BuilderAssetUtilities.CallDeserializeOnElement(context);
 
                 UnsetEnumValue(attributeName, removeBinding);
 
@@ -1840,69 +1340,15 @@ namespace Unity.UI.Builder
             }
 
             // Sync with serialized property
-            if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
-            {
-                var prop = context.rootSerializedObject.FindProperty($"{serializedRootPath}.{field.bindingPath}");
+            var prop = context.rootSerializedObject.FindProperty($"{serializedRootPath}.{field.bindingPath}");
 
-                Undo.RegisterCompleteObjectUndo(prop.m_SerializedObject.targetObject, BuilderAssetUtilities.GetUndoMessage(prop));
+            Undo.RegisterCompleteObjectUndo(prop.m_SerializedObject.targetObject, BuilderAssetUtilities.GetUndoMessage(prop));
 
-                prop.stringValue = evt.newValue;
-                context.rootSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+            prop.stringValue = evt.newValue;
+            context.rootSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
-                // Change is added manually because input validation takes priority over tracking update.
-                inspector.batchedChangesController.AddBatchedChange(field, prop, this, uxmlDocument);
-            }
-            else
-            {
-                OnAttributeValueChange(evt);
-            }
-        }
-
-        void OnAttributeValueChanged(VisualElement field, UxmlAttributeDescription attribute, object value, string uxmlValue)
-        {
-            var attributeType = attribute.GetType();
-            bool needRefresh = false;
-
-            if (value is Object asset)
-            {
-                var assetType = attributeType.IsGenericType ? attributeType.GetGenericArguments()[0] : (attribute as IUxmlAssetAttributeDescription)?.assetType;
-
-                if (!string.IsNullOrEmpty(uxmlValue) && !uxmlDocument.AssetEntryExists(uxmlValue, assetType))
-                    uxmlDocument.RegisterAssetEntry(uxmlValue, assetType, asset);
-            }
-            else if (currentFieldSource == AttributeFieldSource.UxmlTraits &&
-                attributeType.IsGenericType &&
-                !attributeType.GetGenericArguments()[0].IsEnum &&
-                attributeType.GetGenericArguments()[0] is Type)
-            {
-                if (context.element is EnumField)
-                {
-                    // If the current value is not defined in the new enum type, we need to clear the property because
-                    // it will otherwise throw an exception.
-                    var valueField = attributesContainer.Query<EnumField>().Where(f => f.label == "Value").First();
-                    UnsetAttributeProperty(valueField, true);
-                    needRefresh = true;
-                }
-                else if (context.element is EnumFlagsField)
-                {
-                    // If the current value is not defined in the new enum type, we need to clear the property because
-                    // it will otherwise throw an exception.
-                    var valueField = attributesContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
-                    UnsetAttributeProperty(valueField, true);
-                    needRefresh = true;
-                }
-
-                // If the type of an object field changes, we have to refresh the inspector to ensure it has the correct type associated with it.
-                if (context.element is ObjectField && attribute.name == "type")
-                {
-                    needRefresh = true;
-                }
-            }
-
-            PostAttributeValueChange(field, uxmlValue);
-
-            if (needRefresh)
-                Refresh();
+            // Change is added manually because input validation takes priority over tracking update.
+            inspector.batchedChangesController.AddBatchedChange(field, prop, this, uxmlDocument);
         }
 
         void PostAttributeValueChange(VisualElement field, string value, UxmlAsset uxmlAsset = null)
@@ -1935,8 +1381,7 @@ namespace Unity.UI.Builder
             // Set value in asset.
             if (context.isInTemplateInstance)
             {
-                TemplateContainer templateContainerParent =
-                    BuilderAssetUtilities.GetVisualElementRootTemplate(context.element);
+                TemplateContainer templateContainerParent = BuilderAssetUtilities.GetVisualElementRootTemplate(context.element);
 
                 if (templateContainerParent != null)
                 {
@@ -1956,16 +1401,8 @@ namespace Unity.UI.Builder
                             if (templateVea == null)
                                 return;
 
-                            if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
-                            {
-                                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(context.visualTree), false);
-                                BuilderAssetUtilities.CallDeserializeOnElement(context, x);
-                            }
-                            else
-                            {
-                                var attributeOverrides = BuilderAssetUtilities.GetAccumulatedAttributeOverrides(context.element);
-                                BuilderAssetUtilities.CallInitOnTemplateChild(context, x, templateVea, attributeOverrides);
-                            }
+                            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(context.visualTree), false);
+                            BuilderAssetUtilities.CallDeserializeOnElement(context, x);
                         });
                     }
                 }
@@ -1974,9 +1411,6 @@ namespace Unity.UI.Builder
             {
                 uxmlAsset ??= attributesUxmlOwner;
                 uxmlAsset.SetAttribute(attributeName, value);
-
-                // Call Init();
-                BuilderAssetUtilities.CallInitOnElement(context);
             }
         }
 

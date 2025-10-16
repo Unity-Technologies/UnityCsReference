@@ -11,6 +11,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.UIElements.MeshGenerationContext;
@@ -18,6 +19,7 @@ using static UnityEngine.UIElements.MeshGenerationContext;
 namespace UnityEngine.UIElements.UIR
 {
     // For tests
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
@@ -33,6 +35,7 @@ namespace UnityEngine.UIElements.UIR
         public void ScheduleJobs(MeshGenerationContext mgc);
     }
 
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     class MeshGenerator : IMeshGenerator, IDisposable
     {
         const string k_MemoryLabelName = $"Renderer.{nameof(MeshGenerator)}";
@@ -182,6 +185,7 @@ namespace UnityEngine.UIElements.UIR
 
             internal MeshGenerationContext.MeshFlags meshFlags;
 
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
             public static RectangleParams MakeSolid(Rect rect, Color color, Color playModeTintColor)
             {
                 return new RectangleParams
@@ -704,14 +708,14 @@ namespace UnityEngine.UIElements.UIR
                         {
                             texture = (Texture2D)fa.material.mainTexture;
                             renderMode = fa.atlasRenderMode;
-                        } 
+                        }
                     }
                     else
                     {
                         texture = (Texture2D)meshInfo.material.mainTexture;
                         renderMode = meshInfo.glyphRenderMode;
                     }
-                       
+
                     m_Atlases.Add(texture);
                     m_RenderModes.Add(renderMode);
                     float sdfScale = 0;

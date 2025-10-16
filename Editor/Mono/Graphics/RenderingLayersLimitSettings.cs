@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
 {
+    [Serializable]
     public abstract class RenderingLayersLimitSettings : IRenderPipelineGraphicsSettings
     {
         #region Version

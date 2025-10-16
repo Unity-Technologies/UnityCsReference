@@ -83,7 +83,7 @@ namespace UnityEngine
             // We can't order the enum from its MetadataToken if its Assembly Dynamic because of a bug in .NET
             try
             {
-                var location = enumfieldlist.First().Module.Assembly.Location;
+                var location = enumfieldlist.First().Module.Assembly.GetLoadedAssemblyPath();
                 if (!string.IsNullOrEmpty(location))
                 {
                     enumfieldlist = enumfieldlist.OrderBy(f => f.MetadataToken).ToList();

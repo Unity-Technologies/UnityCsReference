@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Xml;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.UIElements;
@@ -24,35 +23,6 @@ namespace Unity.UI.Builder
 {
     class BuilderLibraryProjectScanner
     {
-        #pragma warning disable CS0618 // Type or member is obsolete
-        class FactoryProcessingHelper
-        {
-            public class AttributeRecord
-            {
-                public XmlQualifiedName name { get; set; }
-                public UxmlAttributeDescription desc { get; set; }
-            }
-
-            public Dictionary<string, AttributeRecord> attributeTypeNames;
-
-            public SortedDictionary<string, IUxmlFactory> knownTypes;
-
-            public FactoryProcessingHelper()
-            {
-                attributeTypeNames = new Dictionary<string, AttributeRecord>();
-                knownTypes = new SortedDictionary<string, IUxmlFactory>();
-            }
-
-            public void RegisterElementType(IUxmlFactory factory)
-            {
-                knownTypes.Add(XmlQualifiedName.ToString(factory.uxmlName, factory.uxmlNamespace), factory);
-            }
-
-            public bool IsKnownElementType(string elementName, string elementNameSpace)
-            {
-                return knownTypes.ContainsKey(XmlQualifiedName.ToString(elementName, elementNameSpace));
-            }
-        }
         static readonly List<string> s_NameSpacesToAvoid = new List<string> { "Unity", "UnityEngine", "UnityEditor" };
 
         private static readonly HashSet<string> s_PermittedPackagesSet = new HashSet<string>()
@@ -81,33 +51,10 @@ namespace Unity.UI.Builder
                 s_PermittedPackagesSet.Contains(packageInfo.name);
         }
 
-        bool ProcessFactory(IUxmlFactory factory, FactoryProcessingHelper processingData)
-        {
-            if (!string.IsNullOrEmpty(factory.substituteForTypeName))
-            {
-                if (!processingData.IsKnownElementType(factory.substituteForTypeName, factory.substituteForTypeNamespace))
-                {
-                    // substituteForTypeName is not yet known. Defer processing to later.
-                    return false;
-                }
-            }
-
-            processingData.RegisterElementType(factory);
-
-            return true;
-        }
-
         public void ImportUxmlSerializedDataFromSource(BuilderLibraryItem sourceCategory)
         {
             var categoryStack = new List<BuilderLibraryItem>();
             var emptyNamespaceControls = new List<TreeViewItem>();
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                var customControlsCategory = BuilderLibraryContent.CreateItem(BuilderConstants.LibraryCustomControlsSectionUxmlSerializedData, null, null, null);
-                sourceCategory.AddChild(customControlsCategory);
-                sourceCategory = customControlsCategory;
-            }
 
             var shownTypes = new HashSet<Type>();
 
@@ -164,8 +111,7 @@ namespace Unity.UI.Builder
                         name = elementType.Name;
 
                     // Generate a unique id.
-                    // We prepend the name as its possible the same Type may be displayed for both UxmlSerializedData and UxmlTraits so we need to ensure the ids do not conflict.
-                    var idCode = ("uxml-serialized-data" + elementType.FullName + elementType.FullName).GetHashCode();
+                    var idCode = elementType.FullName.GetHashCode();
 
                     var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
                     {
@@ -214,7 +160,6 @@ namespace Unity.UI.Builder
         {
             var uxmlElementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
 
-            // Skip traits classes
             if (uxmlElementAttribute == null) return;
 
             var baseType = elementType.BaseType;
@@ -236,144 +181,6 @@ namespace Unity.UI.Builder
 
                 baseType = baseType.BaseType;
             }
-        }
-
-
-        public void ImportFactoriesFromSource(BuilderLibraryItem sourceCategory)
-        {
-            var deferredFactories = new List<IUxmlFactory>();
-            var processingData = new FactoryProcessingHelper();
-            var emptyNamespaceControls = new List<TreeViewItem>();
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                var customControlsCategory = BuilderLibraryContent.CreateItem(BuilderConstants.LibraryCustomControlsSectionUxmTraits, null, null, null);
-                sourceCategory.AddChild(customControlsCategory);
-                sourceCategory = customControlsCategory;
-            }
-
-            foreach (var factories in VisualElementFactoryRegistry.factories)
-            {
-                if (factories.Value.Count == 0)
-                    continue;
-
-                var factory = factories.Value[0];
-                if (!ProcessFactory(factory, processingData))
-                {
-                    // Could not process the factory now, because it depends on a yet unprocessed factory.
-                    // Defer its processing.
-                    deferredFactories.Add(factory);
-                }
-            }
-
-            List<IUxmlFactory> deferredFactoriesCopy;
-            do
-            {
-                deferredFactoriesCopy = new List<IUxmlFactory>(deferredFactories);
-                foreach (var factory in deferredFactoriesCopy)
-                {
-                    deferredFactories.Remove(factory);
-                    if (!ProcessFactory(factory, processingData))
-                    {
-                        // Could not process the factory now, because it depends on a yet unprocessed factory.
-                        // Defer its processing again.
-                        deferredFactories.Add(factory);
-                    }
-                }
-            }
-            while (deferredFactoriesCopy.Count > deferredFactories.Count);
-
-            if (deferredFactories.Count > 0)
-            {
-                Debug.Log("Some factories could not be processed because their base type is missing.");
-            }
-
-            var categoryStack = new List<BuilderLibraryItem>();
-            foreach (var known in processingData.knownTypes.Values)
-            {
-                var split = known.uxmlNamespace.Split('.');
-                if (split.Length == 0)
-                    continue;
-
-                // Avoid adding our own internal factories (like Package Manager templates).
-                if (!Unsupported.IsDeveloperMode() && split.Length > 0 && s_NameSpacesToAvoid.Contains(split[0]))
-                {
-                    if (!AllowPackageType(known.uxmlType))
-                        continue;
-                }
-
-                // Avoid adding UI Builder's own types, even in internal mode.
-                if (split.Length >= 3 && split[0] == "Unity" && split[1] == "UI" && split[2] == "Builder")
-                    continue;
-
-                var asset = new VisualElementAsset(known.uxmlQualifiedName);
-                var slots = new Dictionary<string, VisualElement>();
-                var overrides = new List<CreationContext.AttributeOverrideRange>();
-                var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
-                var context = new CreationContext(slots, overrides, vta, null);
-
-                Type elementType = null;
-                var factoryType = known.GetType();
-                while (factoryType != null && elementType == null)
-                {
-                    if (factoryType.IsGenericType && factoryType.GetGenericTypeDefinition() == typeof(UxmlFactory<,>))
-                        elementType = factoryType.GetGenericArguments()[0];
-                    else
-                        factoryType = factoryType.BaseType;
-                }
-
-                if (elementType == typeof(TemplateContainer))
-                    continue;
-
-                // Ignore UxmlSerialized elements in non-developer mode
-                if (!Unsupported.IsDeveloperMode() && UxmlSerializedDataRegistry.GetDescription(elementType?.FullName) != null)
-                    continue;
-
-                TreeViewItemData<BuilderLibraryTreeItem> newItem = default;
-
-                // Special case for the TwoPaneSplitView as we need to add two children to not get an error log.
-                if (elementType == typeof(TwoPaneSplitView))
-                {
-                    newItem = BuilderLibraryContent.CreateItem(known.uxmlName, "CustomCSharpElement", elementType, () =>
-                    {
-                        var splitView = known.Create(asset, context);
-                        splitView.Add(new VisualElement());
-                        splitView.Add(new VisualElement());
-                        return splitView;
-                    }, (treeAsset, veaParent, element) =>
-                    {
-                        var visualElementAsset = treeAsset.AddVisualElementAssetFromVisualElement(veaParent, element);
-
-                        for (var i = 0; i < element.childCount; ++i)
-                            treeAsset.AddVisualElementAssetFromVisualElement(visualElementAsset, element[i]);
-
-                        return visualElementAsset;
-                    });
-                }
-                else
-                {
-                    newItem = BuilderLibraryContent.CreateItem(
-                        known.uxmlName, "CustomCSharpElement", elementType, () => known.Create(asset, context));
-                }
-                newItem.data.hasPreview = true;
-
-                if (string.IsNullOrEmpty(split[0]))
-                {
-                    emptyNamespaceControls.Add(newItem);
-                }
-                else
-                {
-                    AddCategoriesToStack(sourceCategory, categoryStack, split, "csharp-uxml-traits-");
-                    if (categoryStack.Count == 0)
-                        sourceCategory.AddChild(newItem);
-                    else
-                        categoryStack.Last().AddChild(newItem);
-                }
-
-                vta.Destroy();
-            }
-
-            sourceCategory.AddChildren(emptyNamespaceControls);
         }
 
         static void AddCategoriesToStack(BuilderLibraryItem sourceCategory, List<BuilderLibraryItem> categoryStack, string[] split, string idNamePrefix)
@@ -505,7 +312,6 @@ namespace Unity.UI.Builder
                     categoryStack.Last().AddChild(newItem);
             }
         }
-        #pragma warning restore CS0618 // Type or member is obsolete
 
         internal void FindAssets()
         {

@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements
 
         internal string property
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get;
             set;
         }

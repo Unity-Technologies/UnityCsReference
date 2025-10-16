@@ -75,12 +75,15 @@ namespace UnityEngine.UIElements
 
         internal StyleRule[] rules
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_Rules;
         }
 
         // Only the importer should write to these fields
         // Normal usage should only go through ReadXXX methods
+        [SerializeField]
+        internal ResourcePath[] resourcePaths = Array.Empty<ResourcePath>();
+
         [SerializeField]
         internal float[] floats = Array.Empty<float>();
 
@@ -237,7 +240,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal StyleRule AddRule() => AddRuleAtIndex(-1);
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -470,6 +473,15 @@ namespace UnityEngine.UIElements
 
         internal int AddValue(string value) => AddValueToArray(ref strings, value);
 
+        internal int AddValue(ResourcePath value) => AddValueToArray(ref resourcePaths, value);
+
+        internal int AddValue(ResolvedResourcePath value)
+        {
+            var handle = default(StyleValueHandle);
+            WriteResourcePath(ref handle, value);
+            return handle.valueIndex;
+        }
+
         internal int AddValue(Object value) => AddValueToArray(ref assets, value);
 
         internal int AddValue(Enum value)
@@ -620,14 +632,30 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal string ReadResourcePath(StyleValueHandle handle)
+        internal ResolvedResourcePath ReadResourcePath(StyleValueHandle handle)
         {
-            return CheckAccess(strings, StyleValueType.ResourcePath, handle);
+            var resourcePath = CheckAccess(resourcePaths, StyleValueType.ResourcePath, handle);
+
+            if (!resourcePath.isValid)
+                return default;
+
+            var path = strings[resourcePath.pathIndex];
+            var subAssetName = resourcePath.subAssetNameIndex >= 0 ? strings[resourcePath.subAssetNameIndex] : null;
+            return new ResolvedResourcePath(path, subAssetName);
         }
 
-        internal bool TryReadResourcePath(StyleValueHandle handle, out string value)
+        internal bool TryReadResourcePath(StyleValueHandle handle, out ResolvedResourcePath value)
         {
-            return TryCheckAccess(strings, StyleValueType.ResourcePath, handle, out value);
+            if (TryCheckAccess(resourcePaths, StyleValueType.ResourcePath, handle, out var resourcePath))
+            {
+                var path = strings[resourcePath.pathIndex];
+                var subAssetName = resourcePath.subAssetNameIndex >= 0 ? strings[resourcePath.subAssetNameIndex] : null;
+                value = new ResolvedResourcePath(path, subAssetName);
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -814,6 +842,29 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        internal Ratio ReadRatio(StyleValueHandle handle)
+        {
+            return TryReadRatio(handle, out var ratio) ? ratio : default;
+        }
+
+        internal bool TryReadRatio(StyleValueHandle handle, out Ratio ratio)
+        {
+            if (TryReadEnum(handle, out StyleValueKeyword keyword) && keyword == StyleValueKeyword.Auto)
+            {
+                ratio = Ratio.Auto();
+                return true;
+            }
+
+            if (TryReadFloat(handle, out var value))
+            {
+                ratio = new Ratio(value);
+                return true;
+            }
+
+            ratio = default;
+            return false;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void WriteKeyword(ref StyleValueHandle handle, StyleValueKeyword value)
         {
@@ -933,15 +984,33 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void WriteResourcePath(ref StyleValueHandle handle, string resourcePath)
+        internal void WriteResourcePath(ref StyleValueHandle handle, ResolvedResourcePath resolvedResource)
         {
             if (handle.valueType == StyleValueType.ResourcePath)
             {
-                strings[handle.valueIndex] = resourcePath;
+                var resourcePathData = resourcePaths[handle.valueIndex];
+                strings[resourcePathData.pathIndex] = resolvedResource.path;
+                if (!resolvedResource.hasSubAssetName)
+                {
+                    resourcePathData.subAssetNameIndex = -1;
+                }
+                else
+                {
+                    if (resourcePathData.subAssetNameIndex >= 0)
+                        strings[resourcePathData.subAssetNameIndex] = resolvedResource.subAssetName;
+                    else
+                        resourcePathData.subAssetNameIndex = AddValue(resolvedResource.subAssetName);
+                }
+
+                resourcePaths[handle.valueIndex] = resourcePathData;
             }
             else
             {
-                var valueIndex = AddValue(resourcePath);
+                var valueIndex = AddValue(new ResourcePath
+                {
+                    pathIndex = AddValue(resolvedResource.path),
+                    subAssetNameIndex = resolvedResource.hasSubAssetName ? AddValue(resolvedResource.subAssetName) : -1
+                });
                 handle.valueType = StyleValueType.ResourcePath;
                 handle.valueIndex = valueIndex;
             }
@@ -1057,6 +1126,14 @@ namespace UnityEngine.UIElements
         internal void WriteTimeValue(ref StyleValueHandle handle, TimeValue value)
         {
             WriteDimension(ref handle, value.ToDimension());
+        }
+
+        internal void WriteRatio(ref StyleValueHandle handle, Ratio value)
+        {
+            if (value.IsAuto())
+                WriteKeyword(ref handle, StyleValueKeyword.Auto);
+            else
+                WriteFloat(ref handle, value.value);
         }
 
         private void MarkAsChanged()

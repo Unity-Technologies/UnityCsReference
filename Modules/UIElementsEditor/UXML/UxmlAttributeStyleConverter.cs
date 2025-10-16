@@ -82,3 +82,7 @@ internal class StyleEnumAttributeConverter<T> : UxmlAttributeConverter<StyleEnum
         return value.keyword != StyleKeyword.Undefined ? value.keyword.ToString().ToLower() : value.ToString().ToLower();
     }
 }
+
+internal class StyleMaterialDefinitionAttributeConverter : UxmlAttributeStyleConverter<StyleMaterialDefinition, MaterialDefinition, MaterialDefinitionAttributeConverter> {};
+
+internal class StyleRatioAttributeConverter : UxmlAttributeStyleConverter<StyleRatio, Ratio, RatioAttributeConverter> {};

@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class used for all text-based fields.
     /// </summary>
-    public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>, IDelayedField
+    public abstract partial class TextInputBaseField<TValueType> : BaseField<TValueType>, IDelayedField
     {
         internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
         internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
@@ -149,67 +149,6 @@ namespace UnityEngine.UIElements
                     e.keyboardType = keyboardType;
                 if (ShouldWriteAttributeValue(autoCorrection_UxmlAttributeFlags))
                     e.autoCorrection = autoCorrection;
-            }
-        }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for <see cref="TextInputFieldBase"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseFieldTraits<string, UxmlStringAttributeDescription>
-        {
-            UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
-            UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
-            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
-            UxmlStringAttributeDescription m_PlaceholderText = new UxmlStringAttributeDescription { name = "placeholder-text" };
-            UxmlBoolAttributeDescription m_HidePlaceholderOnFocus = new UxmlBoolAttributeDescription { name = "hide-placeholder-on-focus" };
-            UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
-            UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
-            UxmlEnumAttributeDescription<ScrollerVisibility> m_VerticalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility> { name = "vertical-scroller-visibility", defaultValue = ScrollerVisibility.Hidden };
-            UxmlBoolAttributeDescription m_SelectAllOnMouseUp = new UxmlBoolAttributeDescription { name = "select-all-on-mouse-up", defaultValue = true};
-            UxmlBoolAttributeDescription m_SelectAllOnFocus = new UxmlBoolAttributeDescription { name = "select-all-on-focus", defaultValue = true};
-            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click", defaultValue = true };
-            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "select-line-by-triple-click", defaultValue = true };
-            UxmlBoolAttributeDescription m_EmojiFallbackSupport = new UxmlBoolAttributeDescription { name = "emoji-fallback-support", defaultValue = true };
-            UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
-            UxmlEnumAttributeDescription<TouchScreenKeyboardType> m_KeyboardType = new UxmlEnumAttributeDescription<TouchScreenKeyboardType> { name = "keyboard-type" };
-            UxmlBoolAttributeDescription m_AutoCorrection = new UxmlBoolAttributeDescription { name = "auto-correction" };
-
-            /// <summary>
-            /// Initialize the traits for this field.
-            /// </summary>
-            /// <param name="ve">VisualElement to which to apply the attributes.</param>
-            /// <param name="bag">Bag of attributes where to get the attributes.</param>
-            /// <param name="cc">Creation context.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var field = ((TextInputBaseField<TValueType>)ve);
-
-                field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
-                field.password = m_Password.GetValueFromBag(bag, cc);
-                field.readOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
-                field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
-                field.textSelection.selectAllOnFocus = m_SelectAllOnFocus.GetValueFromBag(bag, cc);
-                field.textSelection.selectAllOnMouseUp = m_SelectAllOnMouseUp.GetValueFromBag(bag, cc);
-                field.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
-                field.tripleClickSelectsLine = m_SelectLineByTripleClick.GetValueFromBag(bag, cc);
-                field.emojiFallbackSupport = m_EmojiFallbackSupport.GetValueFromBag(bag, cc);
-
-                var verticalScrollerVisibility = ScrollerVisibility.Hidden;
-                m_VerticalScrollerVisibility.TryGetValueFromBag(bag, cc, ref verticalScrollerVisibility);
-                field.verticalScrollerVisibility = verticalScrollerVisibility;
-
-                field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
-                field.keyboardType = m_KeyboardType.GetValueFromBag(bag, cc);
-                field.autoCorrection = m_AutoCorrection.GetValueFromBag(bag, cc);
-
-                string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
-                field.maskChar = (string.IsNullOrEmpty(maskCharacter)) ? kMaskCharDefault : maskCharacter[0];
-                field.placeholderText = m_PlaceholderText.GetValueFromBag(bag, cc);
-                field.hidePlaceholderOnFocus = m_HidePlaceholderOnFocus.GetValueFromBag(bag, cc);
-
             }
         }
 
@@ -820,7 +759,7 @@ namespace UnityEngine.UIElements
 
         internal bool hasFocus
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
             get => textInputBase.textElement.hasFocus;
         }
 

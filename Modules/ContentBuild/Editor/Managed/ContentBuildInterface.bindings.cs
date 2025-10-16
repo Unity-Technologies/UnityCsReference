@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 namespace UnityEditor.Build.Content
 {
     [Flags]
-    [NativeType("Modules/ContentBuild/Editor/Shared/ContentDependencyCollector.h")]
+    [NativeType("Modules/ContentBuild/Editor/Public/ContentDependencyCollector.h")]
     public enum DependencyType
     {
         RecursiveOperation = 1 << 0,
@@ -22,10 +22,10 @@ namespace UnityEditor.Build.Content
         DefaultDependencies = RecursiveOperation | ValidReferences
     }
 
-    [NativeHeader("Modules/ContentBuild/Editor/Public/ContentBuildTypes.h")]
-    [NativeHeader("Modules/ContentBuild/Editor/Shared/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildTypes.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterface.bindings.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/SBPSupport/ContentBuildInterfaceProfile.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/BuildUtilities.h")]
-    [NativeHeader("Modules/ContentBuild/Editor/Public/ContentBuildInterfaceProfile.h")]
     [NativeHeader("Modules/ContentBuild/Editor/Public/TraceEventProfile.h")]
     [StaticAccessor("BuildPipeline", StaticAccessorType.DoubleColon)]
     public static partial class ContentBuildInterface
@@ -93,7 +93,6 @@ namespace UnityEditor.Build.Content
 
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
-        [Obsolete("GetPlayerObjectIdentifiersInSerializedFile will be removed in a future version.", false)]
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInSerializedFile(string filePath, BuildTarget target);
 
 
@@ -165,7 +164,6 @@ namespace UnityEditor.Build.Content
         [Obsolete("GetTypeForObject will be removed in a future version.", false)]
         public static extern Type GetTypeForObject(ObjectIdentifier objectID);
 
-        [Obsolete("GetTypesForObject will be removed in a future version.", false)]
         public static extern Type[] GetTypesForObject(ObjectIdentifier objectID);
 
         [Obsolete("GetTypeForObjects will be removed in a future version.", false)]
@@ -237,7 +235,6 @@ namespace UnityEditor.Build.Content
         [NativeThrows]
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
 
-        [Obsolete("CalculatePlayerSerializationHashForType will be removed in a future version.", false)]
         public static extern UnityEngine.Hash128 CalculatePlayerSerializationHashForType(Type type, TypeDB typeDB);
 
         // These APIs are used in the UCBP performance tests. Perhaps they should be exposed in the future

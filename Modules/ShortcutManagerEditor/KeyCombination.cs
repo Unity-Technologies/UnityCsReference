@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -109,6 +110,7 @@ namespace UnityEditor.ShortcutManagement
             return FromKeyboardInput(evt.keyCode, evt.modifiers);
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static KeyCombination FromKeyboardInput(KeyCode keyCode, EventModifiers modifiers)
         {
             return new KeyCombination(keyCode, ConvertEventModifiersToShortcutModifiers(modifiers, false));
@@ -329,6 +331,7 @@ namespace UnityEditor.ShortcutManagement
             return Enum.IsDefined(typeof(KeyCode), keyCode);
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static string SequenceToMenuString(IEnumerable<KeyCombination> keyCombinations)
         {
             if (!keyCombinations.Any())

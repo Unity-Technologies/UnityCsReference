@@ -204,7 +204,7 @@ namespace UnityEngine.LowLevelPhysics2D
             public Vector2 linearVelocity { readonly get => m_LinearVelocity; set { m_LinearVelocity = value; m_UseLinearVelocity = true; } }
 
             /// <summary>
-            /// The angular velocity of the body, in degrees/sec.
+            /// The angular velocity of the body, in degrees per second.
             /// <see cref="LowLevelPhysics2D.PhysicsBody.angularVelocity"/>.
             /// </summary>
             public float angularVelocity { readonly get => m_AngularVelocity; set { m_AngularVelocity = value; m_UseAngularVelocity = true; } }

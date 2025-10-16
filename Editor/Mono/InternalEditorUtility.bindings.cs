@@ -126,7 +126,6 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Shaders/ShaderImpl/FastPropertyName.h")]
     [NativeHeader("Runtime/Serialize/PersistentManager.h")]
     [NativeHeader("NativeKernel/Threads/ThreadChecks.h")]
-    [NativeHeader("NativeKernel/Utilities/Word.h")]
     [NativeHeader("Editor/Src/BuildPipeline/BuildPlayer.h")]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetPlatformSpecific.h")]
     [NativeHeader("Runtime/Utilities/Argv.h")]
@@ -153,14 +152,6 @@ namespace UnityEditorInternal
             [FreeFunction("IsBatchmode")]
             get;
         }
-
-        [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("PerformUnmarkedBumpMapTexturesFixingAfterDialog")]
-        public extern static void BumpMapSettingsFixingWindowReportResult(int result);
-
-        [StaticAccessor("BumpMapSettings::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("PerformUnmarkedBumpMapTexturesFixing")]
-        public extern static bool PerformUnmarkedBumpMapTexturesFixing();
 
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
         public extern static bool BumpMapTextureNeedsFixingInternal([NotNull] Material material, string propName, bool flaggedAsNormal);
@@ -273,14 +264,15 @@ namespace UnityEditorInternal
             set;
         }
 
+        [Obsolete("LoadAssemblyWrapper is no longer supported and will be removed.", error: false)]
         public static Assembly LoadAssemblyWrapper(string dllName, string dllLocation)
         {
-            return (Assembly)LoadAssemblyWrapperInternal(dllName, dllLocation);
+            return (Assembly)LoadAssemblyWrapperInternal(dllLocation);
         }
 
         [StaticAccessor("GetMonoManager()", StaticAccessorType.Dot)]
-        [NativeMethod("LoadAssembly")]
-        extern internal static object LoadAssemblyWrapperInternal(string dllName, string dllLocation);
+        [NativeMethod("LoadNonUnityAssembly")]
+        extern internal static object LoadAssemblyWrapperInternal(string dllLocation);
 
         public static void SaveToSerializedFileAndForget(Object[] obj, string path, bool allowTextSerialization)
         {
@@ -310,12 +302,12 @@ namespace UnityEditorInternal
 
         [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead")]
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
-            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
         public static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
-            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
-        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, bool changePosition, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);

@@ -2008,7 +2008,6 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Dimension:
                     return StyleValue.Type.Number;
                 case StyleValueType.AssetReference:
-                case StyleValueType.ResourcePath:
                 case StyleValueType.Enum:
                 case StyleValueType.Variable:
                 case StyleValueType.ScalableImage:
@@ -2021,6 +2020,7 @@ namespace UnityEditor.StyleSheets
 
                     return StyleValue.Type.Text;
                 }
+                case StyleValueType.ResourcePath:
                 case StyleValueType.String:
                     return StyleValue.Type.Text;
 

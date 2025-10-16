@@ -314,7 +314,7 @@ namespace UnityEditorInternal
             m_TreeView.selectionChangedCallback += OnTreeSelectionChanged;
         }
 
-        private int delayedPingObject;
+        private EntityId delayedPingObject;
 
         private void PingObjectDelayed()
         {
@@ -329,7 +329,7 @@ namespace UnityEditorInternal
                 var audioNode = node as AudioProfilerGroupTreeViewItem;
                 if (audioNode != null)
                 {
-                    EditorGUIUtility.PingObject(audioNode.info.info.assetInstanceId);
+                    EditorGUIUtility.PingObject(audioNode.info.info.assetEntityId);
                     delayedPingObject = audioNode.info.info.objectInstanceId;
                     EditorApplication.CallDelayed(PingObjectDelayed, 1.0f);
                 }
@@ -1194,7 +1194,7 @@ namespace UnityEditorInternal
                 var audioNode = node as AudioProfilerClipTreeViewItem;
                 if (audioNode != null)
                 {
-                    EditorGUIUtility.PingObject(audioNode.info.info.assetInstanceId);
+                    EditorGUIUtility.PingObject(audioNode.info.info.assetEntityId);
                 }
             }
         }

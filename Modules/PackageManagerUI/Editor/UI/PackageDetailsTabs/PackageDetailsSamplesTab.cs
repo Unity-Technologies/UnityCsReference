@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = application;
             m_IOProxy = iOProxy;
 
-            var root = m_ResourceLoader.GetTemplate("PackageDetailsSamplesTab.uxml");
+            var root = m_ResourceLoader.GetTemplate("DetailsTabs/PackageDetailsSamplesTab.uxml");
             m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
         }

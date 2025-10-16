@@ -57,7 +57,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             SetOutput(ConnectionDataOut, connectionData);
 
             EditorMultiplayerManager.activeMultiplayerRoleMask = multiplayerRole;
-            EditorApplication.EnterPlaymode();
+            EditorPlayModeGuard.EnterPlayModeSafely();
 
             // Entering play mode could take a few frames, so we wait until the state changes.
             while (EditorApplication.isPlaying != EditorApplication.isPlayingOrWillChangePlaymode)

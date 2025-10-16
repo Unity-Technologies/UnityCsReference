@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
@@ -40,8 +41,8 @@ namespace UnityEditor.Search.Providers
 
             SearchMonitor.sceneChanged += InvalidateScene;
             SearchMonitor.documentsInvalidated += Refresh;
-
             SearchMonitor.objectChanged += OnObjectChanged;
+            SearchMonitor.gameObjectChanged += OnGameObjectChanged;
 
             supportsSyncViewSearch = true;
 
@@ -170,20 +171,21 @@ namespace UnityEditor.Search.Providers
             Refresh();
         }
 
-        private void InvalidateObject(int instanceId)
+
+        private void InvalidateObject(EntityId entityId)
         {
-            if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
-                queryEngine.InvalidateObject(c.gameObject.GetInstanceID());
+            if (UnityEngine.Object.FindObjectFromInstanceID(entityId) is Component c)
+                queryEngine.InvalidateObject(c.gameObject.GetEntityId());
             else
-                queryEngine.InvalidateObject(instanceId);
+                queryEngine.InvalidateObject(entityId);
         }
 
-        private void InvalidateObjectAndRefs(int instanceId)
+        private void InvalidateObjectAndRefs(EntityId entityId)
         {
-            if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
-                queryEngine.InvalidateObjectAndRefs(c.gameObject.GetInstanceID());
+            if (UnityEngine.Object.FindObjectFromInstanceID(entityId) is Component c)
+                queryEngine.InvalidateObjectAndRefs(c.gameObject.GetEntityId());
             else
-                queryEngine.InvalidateObjectAndRefs(instanceId);
+                queryEngine.InvalidateObjectAndRefs(entityId);
         }
 
         private void OnObjectChanged(ref ObjectChangeEventStream stream)
@@ -211,38 +213,60 @@ namespace UnityEditor.Search.Providers
                     case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
                     {
                         stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
-                        InvalidateObjectAndRefs(e.instanceId);
+                        InvalidateObjectAndRefs(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectStructure:
                     {
                         stream.GetChangeGameObjectStructureEvent(i, out var e);
-                        InvalidateObjectAndRefs(e.instanceId);
+                        InvalidateObjectAndRefs(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectParent:
                     {
                         stream.GetChangeGameObjectParentEvent(i, out var e);
-                        InvalidateObjectAndRefs(e.instanceId);
+                        InvalidateObjectAndRefs(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
                     {
                         stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObject(e.entityId);
                     }
                     break;
                     case ObjectChangeKind.UpdatePrefabInstances:
                     {
                         stream.GetUpdatePrefabInstancesEvent(i, out var e);
-                        for (int idIndex = 0; idIndex < e.instanceIds.Length; ++idIndex)
-                            InvalidateObject(e.instanceIds[idIndex]);
+                        for (int idIndex = 0; idIndex < e.entityIds.Length; ++idIndex)
+                            InvalidateObject(e.entityIds[idIndex]);
                     }
                     break;
                 }
             }
         }
 
+        void OnGameObjectChanged(in NativeArray<GameObjectChangeTrackerEvent> events)
+        {
+            if (m_SceneQueryEngine == null)
+                return;
+
+            for (var i = 0; i < events.Length; ++i)
+            {
+                var e = events[i];
+                switch (e.EventType)
+                {
+                    case GameObjectChangeTrackerEventType.CreatedOrChanged:
+                    case GameObjectChangeTrackerEventType.ChangedParent:
+                    case GameObjectChangeTrackerEventType.ChangedScene:
+                    case GameObjectChangeTrackerEventType.Destroyed:
+                        InvalidateObject(e.InstanceId);
+                        InvalidateScene();
+                        break;
+
+                    // Other events are not relevant for us since they do not affect properties.
+                }
+            }
+        }
 
         public static IEnumerable<SearchAction> CreateActionHandlers(string providerId)
         {
@@ -331,7 +355,7 @@ namespace UnityEditor.Search.Providers
                 return null;
 
             var instanceId = go.GetHashCode();
-            var item = provider.CreateItem(context, instanceId.ToString(), ~instanceId, null, null, null, new GameObjectData(go));
+            var item = provider.CreateItem(context, instanceId.ToString(), instanceId.GetHashCode(), null, null, null, new GameObjectData(go));
             return SetItemDescriptionFormat(item, useFuzzySearch: false);
         }
 

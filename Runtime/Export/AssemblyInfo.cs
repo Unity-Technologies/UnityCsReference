@@ -29,6 +29,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS5.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreScarlett.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreXboxOne.Extensions")]
@@ -39,11 +40,14 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.LinuxStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.QNX.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Kepler.Extensions")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.ObjectManagement.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.TagManager.Tests.Editor")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ObjectNames.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.TreeViewExamples.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ObjectFactory.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.AssetPostProcessor.Tests.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.Apple.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.VisionOS.Extensions")]
@@ -65,7 +69,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
 [assembly: InternalsVisibleTo("Unity.PathTracing.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.ParticleSystem.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
 
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
@@ -76,12 +82,22 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.SpriteDeform.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SpriteShape.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.DrivenProperties.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.ColorPicker")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.TreeViewControl")]
 
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")]
+
+[assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.XR.InputProvider.Tests.Playmode")]
+
+[assembly: InternalsVisibleTo("Unity.Modules.Core.TextureMipLimit.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.TextureStreaming.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.TextureGenerator.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Streaming.Tests.Editor")]
 
 
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
@@ -158,6 +174,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime")]
+[assembly: InternalsVisibleTo("Unity.Modules.ParticleSystem.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.ParticleSystem.Rendering.Tests")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Base")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Bindings")]
@@ -166,12 +184,13 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.UXML")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.Subsystems.Tests")]
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
 [assembly: InternalsVisibleTo("UnityEngine.UI")]
 
-[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalBridge")]
+[assembly: InternalsVisibleTo("UnityEditor.GraphToolkitModule")] // com.unity.graphtoolsauthoringframework
 
 // Needed for Baselib CSharp binding access.
 [assembly: InternalsVisibleTo("Unity.Networking.Transport")]
@@ -221,11 +240,24 @@ using System.Runtime.CompilerServices;
 
 // Test Assemblies
 [assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.MemorySettings.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.PlayerConnection.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Pool.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Pool.Tests.Playmode")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Rendering.Meshes.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.UnsafeUtility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Modules.PlayableGraph.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.PlayableGraph.Tests")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.RealTimeGI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.RealTimeGI.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.Modules.GI.LightingDataAsset.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Internals")]
+[assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetBundle.AssetBundles.Tests.Runtime")]
+[assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
 

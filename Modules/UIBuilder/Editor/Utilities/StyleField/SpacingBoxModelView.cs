@@ -11,7 +11,7 @@ namespace Unity.UI.Builder
 {
     class SpacingBoxModelView : VisualElement
     {
-        static readonly string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/StyleSectionsBoxModel";
+        static readonly string k_UssPathNoExt = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleSectionsBoxModel";
         private static readonly string k_MouseOverClassName = "mouse-over";
         static readonly string k_BoxModelClassName = "unity-box-model";
         static readonly string k_ViewClassName = k_BoxModelClassName + "__view";
@@ -65,7 +65,7 @@ namespace Unity.UI.Builder
 
             AddToClassList(k_ViewClassName);
             AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
-            
+
             m_Container = new VisualElement();
             m_Container.AddToClassList(k_ContainerClassName);
             m_Container.AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
@@ -133,9 +133,9 @@ namespace Unity.UI.Builder
             m_MarginBox = new BoxModelElement<string, BoxModelStyleField>(BoxType.Margin, true, m_BorderBox,
                 m_TopTextFieldMarginContainer, m_BottomTextFieldMarginContainer,
                 m_LeftTextFieldMarginContainer, m_RightTextFieldMarginContainer);
-            
+
             // checkerboard background for margin
-            var checkerboardBackground = new CheckerboardBackground(); 
+            var checkerboardBackground = new CheckerboardBackground();
             checkerboardBackground.AddToClassList(k_CheckerboardClassName);
             m_MarginBox.AddBackground(checkerboardBackground);
 
@@ -155,7 +155,7 @@ namespace Unity.UI.Builder
             RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
             RegisterCallback<MouseOutEvent>(OnMouseOut);
             RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
-            
+
             // overlay events
             RegisterCallback<MouseEnterEvent>(OnMouseEnter);
             RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
@@ -176,7 +176,7 @@ namespace Unity.UI.Builder
                 container.AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
             }
         }
-        
+
         private void OnMouseOver(MouseOverEvent evt, BoxType boxType)
         {
             m_MarginBox.EnableInClassList(k_MouseOverClassName, boxType == BoxType.Margin);
@@ -209,7 +209,7 @@ namespace Unity.UI.Builder
             if (m_Inspector.selection.selection.Any())
                 m_Inspector.highlightOverlayPainter.AddOverlay(m_Inspector.selection.selection.First());
         }
-        
+
         private void OnMouseLeave(MouseLeaveEvent evt)
         {
             if (!m_IsActivelyDragging)

@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             sampleStatus.Add(sampleItem.importStatus);
 
-            itemSizeOrVersion.value = size;
+            itemSizeOrVersion.text = size;
             itemSizeOrVersion.tooltip = size;
 
             importButtonContainer.Add(sampleItem.importButton);
@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrEmpty(description))
             {
                 UIUtils.SetElementDisplay(sampleDescription, true);
-                sampleDescription.SetValueWithoutNotify(description);
+                sampleDescription.text = description;
             }
             else
             {

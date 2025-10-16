@@ -18,11 +18,14 @@ namespace UnityEditor.ShortcutManagement
         internal static readonly string k_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
         internal static readonly string k_MainMenu = L10n.Tr("Main Menu");
 
+        //internals are used in tests
         static readonly string k_ProfileNameEmpty = L10n.Tr("Profile name is empty");
-        static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile name is unsupported");
-        static readonly string k_ProfileExists = L10n.Tr("Profile already exists");
-        static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed");
-        static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile");
+        internal static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile name is unsupported");
+        internal static readonly string k_ProfileNameTooLong = L10n.Tr($"Profile name exceeds max length ({ShortcutProfileStore.k_MaxProfileIdSize}).");
+        internal static readonly string k_ProfileNameWithUnsupportedCharacters = L10n.Tr("Profile name has unsupported characters.");
+        internal static readonly string k_ProfileExists = L10n.Tr("Profile already exists");
+        internal static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed");
+        internal static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile");
 
         const int k_AllUnityCommandsIndex = 0;
         const int k_ConflictsIndex = 1;
@@ -266,7 +269,13 @@ namespace UnityEditor.ShortcutManagement
             switch (canCreateProfileResult)
             {
                 case CanCreateProfileResult.InvalidProfileId:
-                    return string.IsNullOrWhiteSpace(newProfileId) ? k_ProfileNameEmpty : k_ProfileNameUnsupported;
+                    if (string.IsNullOrWhiteSpace(newProfileId))
+                        return k_ProfileNameEmpty;
+                    if (!ShortcutProfileStore.ValidateLength(newProfileId))
+                        return k_ProfileNameTooLong;
+                    if (!ShortcutProfileStore.ValidateCharacters(newProfileId))
+                        return k_ProfileNameWithUnsupportedCharacters;
+                    return  k_ProfileNameUnsupported;
                 case CanCreateProfileResult.DuplicateProfileId:
                     return k_ProfileExists;
                 default:
@@ -295,7 +304,13 @@ namespace UnityEditor.ShortcutManagement
                 case CanRenameProfileResult.ProfileNotFound:
                     return k_ProfileNotFound;
                 case CanRenameProfileResult.InvalidProfileId:
-                    return string.IsNullOrWhiteSpace(newProfileId) ? k_ProfileNameEmpty : k_ProfileNameUnsupported;
+                    if (string.IsNullOrWhiteSpace(newProfileId))
+                        return k_ProfileNameEmpty;
+                    if (!ShortcutProfileStore.ValidateLength(newProfileId))
+                        return k_ProfileNameTooLong;
+                    if (!ShortcutProfileStore.ValidateCharacters(newProfileId))
+                        return k_ProfileNameWithUnsupportedCharacters;
+                    return  k_ProfileNameUnsupported;
                 case CanRenameProfileResult.DuplicateProfileId:
                     return k_ProfileExists;
                 default:
@@ -656,7 +671,7 @@ namespace UnityEditor.ShortcutManagement
             newBinding = CheckAndAdjustReservedModifierUse(newBinding);
             if (newBinding == null)
                 return;
-            
+
             var conflicts = FindConflictsIfRebound(selectedEntry, newBinding);
             if (conflicts.Count == 0)
             {
@@ -714,11 +729,11 @@ namespace UnityEditor.ShortcutManagement
                     var altModifiers = binding[i].modifiers & ~ctxReservedModifiers;
                     altBinding.Add(new KeyCombination(binding[i].keyCode, altModifiers));
                 }
-                
+
                 // Prompt user
                 var ctxModifiersStr = new StringBuilder();
                 KeyCombination.VisualizeModifiers(ctxReservedModifiers, ctxModifiersStr);
-                    
+
                 var title = L10n.Tr("Attempt to bind Reserved Modifier");
                 var altBindingStr = KeyCombination.SequenceToString(altBinding);
                 var message = string.Format(
@@ -734,7 +749,7 @@ namespace UnityEditor.ShortcutManagement
 
                 if (EditorUtility.DisplayDialog(title, message, okLabel, cancelLabel))
                     return altBinding;
-                
+
                 return null;
             }
             return binding;

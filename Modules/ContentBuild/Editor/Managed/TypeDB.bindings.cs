@@ -33,7 +33,7 @@ namespace UnityEditor.Build.Player
             AssemblyInfoManaged[] extractAssemblyTypeInfo = AssemblyHelper.ExtractAssemblyTypeInfoFromFiles(typeDbFilePathsFrom);
             if (extractAssemblyTypeInfo != null && extractAssemblyTypeInfo.Any())
             {
-                typeDb.AddAssemblyInfo(extractAssemblyTypeInfo, assemblyPath);
+                typeDb.AddAssemblyInfo(extractAssemblyTypeInfo);
                 return true;
             }
             return false;
@@ -76,7 +76,7 @@ namespace UnityEditor.Build.Player
         private static extern IntPtr Internal_Create();
 
         [NativeMethod(IsThreadSafe = true)]
-        internal extern void AddAssemblyInfo([UnityMarshalAs(NativeType.ScriptingObjectPtr)] AssemblyInfoManaged[] assemblyInfos, string assembliesPath);
+        internal extern void AddAssemblyInfo([UnityMarshalAs(NativeType.ScriptingObjectPtr)] AssemblyInfoManaged[] assemblyInfos);
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);

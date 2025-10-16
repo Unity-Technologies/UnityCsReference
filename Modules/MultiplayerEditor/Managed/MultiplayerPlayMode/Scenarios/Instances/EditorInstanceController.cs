@@ -2,14 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.UIElements;
+
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     class EditorInstanceController : PlayModeController
     {
-        private readonly EditorInstanceDescription m_Settings;
+        [SerializeReference] private EditorInstanceDescription m_Settings;
 
         internal EditorInstanceController(EditorInstanceDescription editorInstanceDescription)
         {
+            Assert.IsNotNull(editorInstanceDescription);
             m_Settings = editorInstanceDescription;
         }
 
@@ -37,6 +42,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 executionGraph.ConnectConstant(editorRunNode.StreamLogs, virtualEditorInstanceDescription.AdvancedConfiguration.StreamLogsToMainEditor);
                 executionGraph.ConnectConstant(editorRunNode.LogsColor, virtualEditorInstanceDescription.AdvancedConfiguration.LogsColor);
             }
+        }
+
+        protected internal override VisualElement CreateControllerUI()
+        {
+            if (m_Settings is VirtualEditorInstanceDescription)
+            {
+                return new CommonInstanceStatusElement(m_Settings);
+            }
+            if (m_Settings is EditorInstanceDescription editorInstanceDescription)
+            {
+                return new EditorInstanceStatusElement(editorInstanceDescription);
+            }
+            return new CommonInstanceStatusElement(m_Settings);
         }
     }
 }

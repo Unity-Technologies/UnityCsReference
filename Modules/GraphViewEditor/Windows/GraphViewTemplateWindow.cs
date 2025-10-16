@@ -428,6 +428,7 @@ namespace UnityEditor.Experimental.GraphView
             var id = 0;
             var lastSelectedTemplateFound = false;
             var fallBackTemplateAssetGuid = string.Empty;
+            var indexToSelect = 2;
             foreach (var group in templates)
             {
                 var groupId = id++;
@@ -437,13 +438,17 @@ namespace UnityEditor.Experimental.GraphView
                     if (id == 2)
                         fallBackTemplateAssetGuid = child.assetGuid;
                     if (child.assetGuid == m_LastSelectedTemplateGuid)
+                    {
                         lastSelectedTemplateFound = true;
+                        indexToSelect = id;
+                    }
                     children.Add(new TreeViewItemData<ITemplateDescriptor>(id++, child));
                 }
                 var section = new TreeViewItemData<ITemplateDescriptor>(groupId, new TemplateSection(group[0].category), children);
                 m_TemplatesTree.Add(section);
             }
             m_ListOfTemplates.SetRootItems(m_TemplatesTree);
+            m_ListOfTemplates.ScrollToItem(indexToSelect);
             if (!lastSelectedTemplateFound)
             {
                 m_LastSelectedTemplateGuid = fallBackTemplateAssetGuid;

@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal abstract class CollectionViewLayoutConfiguration
     {
         internal CollectionView m_View;
@@ -18,6 +20,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         public Action<VisualElement> destroyCell { get; set; }
     }
 
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal class MultiColumnLayoutConfiguration : CollectionViewLayoutConfiguration
     {
         Columns m_Columns;
@@ -248,6 +251,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         }
     }
 
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal class LayoutConfiguration : CollectionViewLayoutConfiguration
     {
         public LayoutConfiguration()

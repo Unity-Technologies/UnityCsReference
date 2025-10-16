@@ -24,7 +24,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private const float k_VerticalPosition = 0.333f;
 
         // These parameters control the smoothness of the progress bar.
-        private const int k_UpdateFrequency = 32;
         private const float k_LerpFactor = 0.1f;
 
         [InitializeOnLoadMethod]
@@ -37,14 +36,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
                     return;
 
-                var scenarioConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+                var scenarioConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
                 if (scenarioConfig == null)
                 {
                     return;
                 }
 
                 var scenario = scenarioConfig.Scenario;
-                if (scenario != null && StatusIsLaunching(scenario.Status))
+                if (scenario != null && StatusIsLaunching(scenario.StatusData))
                     OnScenarioStarted(scenarioConfig);
             }
         }
@@ -60,16 +59,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
         }
 
-        internal static void OnScenarioStarted(ScenarioConfig scenarioConfig)
+        internal static void OnScenarioStarted(OrchestratedScenario scenarioConfig)
         {
             var window = CreateInstance<LaunchingScenarioWindow>();
             window.SetupAndShow(scenarioConfig);
         }
 
-        private ScenarioConfig m_ScenarioConfig;
-        private ProgressBar m_PrepareProgressBar;
-        private ProgressBar m_DeployProgressBar;
-        private ProgressBar m_RunProgressBar;
+        private OrchestratedScenario m_ScenarioConfig;
+        private ProgressBar m_ProgressBar;
         private Label m_Message;
         private Label m_MainEditorMessage;
         private Label m_EditorInstanceMessage;
@@ -77,7 +74,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private Label m_RemoteInstanceMessage;
         private Button m_CancelButton;
 
-        private void SetupAndShow(ScenarioConfig scenarioConfig)
+        private void SetupAndShow(OrchestratedScenario scenarioConfig)
         {
             titleContent = new GUIContent(k_WindowTitle);
 
@@ -102,7 +99,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_ScenarioConfig.Scenario.StatusRefreshed -= OnScenarioStatusRefreshed;
         }
 
-        private void OnScenarioStatusRefreshed(ScenarioStatus status)
+        private void OnScenarioStatusRefreshed(ScenarioStatusData status)
         {
             if (!StatusIsLaunching(status))
             {
@@ -134,31 +131,29 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             var remoteInstanceCount = GetInstanceCount<RemoteInstanceDescription>(m_ScenarioConfig);
             m_RemoteInstanceMessage.text = remoteInstanceCount > 0 ? $"Deploying {remoteInstanceCount} remote instance(s)..." : string.Empty;
+
+            UpdateProgressBar(m_ProgressBar, status.OverallStatus.Progress);
         }
 
-        private static bool StatusIsLaunching(ScenarioStatus status)
+        private static bool StatusIsLaunching(ScenarioStatusData status)
         {
-            if (status.State is not ScenarioState.Running)
+            if (status.OverallStatus.State is not ExecutionState.Running)
                 return false;
 
             return status.CurrentStage switch
             {
                 ExecutionStage.Prepare or ExecutionStage.Deploy => true,
-                ExecutionStage.Run => status.StageState is not ExecutionState.Active and not ExecutionState.Completed,
+                ExecutionStage.Run => status.CurrentStageState is not ExecutionState.Active and not ExecutionState.Completed,
                 _ => false,
             };
         }
 
-        private void UpdateProgressBar(ProgressBar progressBar, ExecutionStage executionStage)
+        private void UpdateProgressBar(ProgressBar progressBar, float progress)
         {
-            if (m_ScenarioConfig == null || m_ScenarioConfig.Scenario == null ||
-                m_ScenarioConfig.Scenario.Status.StageProgress == null ||
-                m_ScenarioConfig.Scenario.Status.StageProgress.Length == 0)
+            if (m_ScenarioConfig == null || m_ScenarioConfig.Scenario == null)
             {
                 return;
             }
-
-            var progress = m_ScenarioConfig.Scenario.Status.StageProgress[(int)executionStage];
 
             if (progress == 0)
                 progressBar.AddToClassList("progress-bar-zero");
@@ -176,25 +171,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         void CreateGUI()
         {
-            m_PrepareProgressBar = new ProgressBar() { lowValue = 0, highValue = 1, };
-            m_PrepareProgressBar.schedule.Execute(() =>
-            {
-                UpdateProgressBar(m_PrepareProgressBar, ExecutionStage.Prepare);
-            }).Every(k_UpdateFrequency);
-
-            m_DeployProgressBar = new ProgressBar() { lowValue = 0, highValue = 1 };
-            m_DeployProgressBar.schedule.Execute(() =>
-            {
-                UpdateProgressBar(m_DeployProgressBar, ExecutionStage.Deploy);
-            }).Every(k_UpdateFrequency);
-            ;
-
-            m_RunProgressBar = new ProgressBar() { lowValue = 0, highValue = 1 };
-            m_RunProgressBar.schedule.Execute(() =>
-            {
-                UpdateProgressBar(m_RunProgressBar, ExecutionStage.Run);
-            }).Every(k_UpdateFrequency);
-            ;
+            m_ProgressBar = new ProgressBar() { lowValue = 0, highValue = 1, };
+            m_ScenarioConfig.Scenario.StatusRefreshed += OnScenarioStatusRefreshed;
 
             var LoadingIcon = new Image() { name = k_LoadingIconName, image = Icons.GetImage(Icons.ImageName.Loading) };
             UIUtils.Spin(LoadingIcon);
@@ -219,7 +197,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
             m_CancelButton.RegisterCallback<ClickEvent>(evt =>
             {
-                PlayModeManager.instance.Stop();
+                ScenarioManagerProvider.instance.Stop();
             });
 
             m_CancelButton.AddToClassList("cancel-button");
@@ -232,13 +210,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             var progressBarContainer = new VisualElement();
             progressBarContainer.AddToClassList("progress-bar-container");
-            m_PrepareProgressBar.AddToClassList("progress-bar");
-            m_DeployProgressBar.AddToClassList("progress-bar");
-            m_RunProgressBar.AddToClassList("progress-bar");
+            m_ProgressBar.AddToClassList("progress-bar");
 
-            progressBarContainer.Add(m_PrepareProgressBar);
-            progressBarContainer.Add(m_DeployProgressBar);
-            progressBarContainer.Add(m_RunProgressBar);
+            progressBarContainer.Add(m_ProgressBar);
 
             rootVisualElement.Add(progressBarContainer);
             rootVisualElement.Add(messageBar);
@@ -248,7 +222,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             rootVisualElement.styleSheets.Add(EditorGUIUtility.LoadRequired(k_Stylesheet) as StyleSheet);
         }
 
-        private static int GetInstanceCount<T>(ScenarioConfig scenarioConfig) where T : InstanceDescription
+        private static int GetInstanceCount<T>(OrchestratedScenario scenarioConfig) where T : InstanceDescription
         {
             var instanceCount = 0;
             var allInstances = scenarioConfig.GetAllInstances();

@@ -81,6 +81,13 @@ namespace UnityEditor.IMGUI.Controls
             m_Content = new GUIContent(m_Name);
         }
 
+        internal AdvancedDropdownItem(string name, string displayName)
+        {
+            m_Name = name;
+            m_Id = name.GetHashCode();
+            m_Content = new GUIContent(displayName);
+        }
+
         public override int GetHashCode()
         {
             return name.GetHashCode();

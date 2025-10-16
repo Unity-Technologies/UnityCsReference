@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.Search;
+using UnityEngine.Assemblies;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
 
@@ -166,7 +167,7 @@ namespace UnityEditor.UIElements
             else
             {
                 // We need special handling for the System.Object type as TypeCache.GetTypesDerivedFrom(object) misses some types, such as primitives.
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var assembly in CurrentAssemblies.GetLoadedAssemblies())
                 {
                     // Get all types in the assembly
                     Type[] types;

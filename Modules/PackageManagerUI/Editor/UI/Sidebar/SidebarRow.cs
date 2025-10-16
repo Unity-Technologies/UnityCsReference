@@ -9,7 +9,6 @@ namespace UnityEditor.PackageManager.UI.Internal;
 internal class SidebarRow : VisualElement
 {
     public const string k_SelectedClassName = "selected";
-    public const string k_IndentedClassName = "indented";
     public const string k_SidebarIconClassName = "sidebarIcon";
     public const string k_SidebarTitleClassName = "sidebarTitle";
 
@@ -17,7 +16,7 @@ internal class SidebarRow : VisualElement
     private Label m_RowTitle;
     private VisualElement m_RowIcon;
 
-    public SidebarRow(string pageId, string rowTitle, Icon icon = Icon.None, bool isIndented = false)
+    public SidebarRow(string pageId, string rowTitle, Icon icon = Icon.None)
     {
         tooltip = rowTitle;
         this.pageId = pageId;
@@ -28,8 +27,6 @@ internal class SidebarRow : VisualElement
         m_RowTitle = new Label { text = rowTitle };
         m_RowTitle.classList.Add(k_SidebarTitleClassName);
         Add(m_RowTitle);
-
-        EnableInClassList(k_IndentedClassName, isIndented);
     }
 
     public void SetSelected(bool select)

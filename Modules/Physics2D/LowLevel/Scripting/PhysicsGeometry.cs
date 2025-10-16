@@ -25,7 +25,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public CircleGeometry()
         {
-            this = defaultGeometry;
+            m_Center = Vector2.zero;
+            m_Radius = 0.5f;
         }
 
         /// <summary>
@@ -232,7 +233,9 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public CapsuleGeometry()
         {
-            this = defaultGeometry;
+            m_Center1 = Vector2.up * 0.5f;
+            m_Center2 = Vector2.down * 0.5f;
+            m_Radius = 0.5f;
         }
 
         /// <summary>
@@ -444,7 +447,25 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public PolygonGeometry()
         {
-            this = defaultGeometry;
+            vertices = new PhysicsShape.ShapeArray
+            {
+                vertex0 = new Vector2(-0.5f, -0.5f),
+                vertex1 = new Vector2(0.5f, -0.5f),
+                vertex2 = new Vector2(0.5f, 0.5f),
+                vertex3 = new Vector2(-0.5f, 0.5f)
+            };
+
+            normals = new PhysicsShape.ShapeArray
+            {
+                vertex0 = Vector2.down,
+                vertex1 = Vector2.right,
+                vertex2 = Vector2.right,
+                vertex3 = Vector2.left
+            };
+
+            m_Count = 4;
+            m_Centroid = Vector2.zero;
+            m_Radius = 0f;
         }
 
         /// <summary>
@@ -743,7 +764,8 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public SegmentGeometry()
         {
-            this = defaultGeometry;
+            m_Point1 = Vector2.right * 0.5f;
+            m_Point2 = Vector2.left * 0.5f;
         }
 
         /// <summary>
@@ -952,7 +974,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public ChainSegmentGeometry()
         {
-            this = defaultGeometry;
+            // Segment is direction left so contact is from above.
+            m_Segment = new SegmentGeometry();
+            m_Ghost1 = m_Segment.point1 * 2f;
+            m_Ghost2 = m_Segment.point2 * 2f;
             m_ChainId = default;
         }
 
@@ -1151,6 +1176,11 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Check if the geometry is valid or not.
         /// </summary>
         public readonly bool isValid => ChainGeometry_IsValid(this);
+
+        /// <summary>
+        /// Get the geometry vertices.
+        /// </summary>
+        public readonly unsafe ReadOnlySpan<Vector2> vertices => new(m_Points.ToPointer(), m_Count);
 
         /// <summary>
         /// Calculate the AABB of the geometry.

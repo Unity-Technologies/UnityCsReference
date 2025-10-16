@@ -12,7 +12,7 @@ namespace Unity.UI.Builder
 {
     class BorderBoxModelView : VisualElement
     {
-        static readonly string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/StyleSectionsBoxModel";
+        static readonly string k_UssPathNoExt = BuilderConstants.UIToolkitAuthoringControlsPath + "/StyleSectionsBoxModel";
         static readonly string k_BoxModelClassName = "unity-box-model";
         static readonly string k_ViewClassName = k_BoxModelClassName + "__view";
         static readonly string k_ContainerClassName = k_BoxModelClassName + "__view__container";
@@ -39,7 +39,7 @@ namespace Unity.UI.Builder
         private BoxModelElement<string, BoxModelStyleField> m_BorderWidthBox;
         private BoxModelElement<string, BoxModelStyleField> m_BorderRadiusBox;
         private VisualElement m_ContentBox;
-        
+
         // color field containers
         private VisualElement m_TopColorFieldContainer = new VisualElement();
         private VisualElement m_BottomColorFieldContainer = new VisualElement();
@@ -75,7 +75,7 @@ namespace Unity.UI.Builder
 
             AddToClassList(k_ViewClassName);
             AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
-            
+
             m_Container = new VisualElement();
             m_Container.AddToClassList(k_ContainerClassName);
             m_Container.AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
@@ -140,7 +140,7 @@ namespace Unity.UI.Builder
                     k_BoxModelClassName, k_ContainerContentClassName
                 }
             };
-            
+
             m_BorderWidthBox = new BoxModelElement<string, BoxModelStyleField>(BoxType.BorderWidth, true, m_ContentBox,
                 m_TopBorderWidthFieldContainer, m_BottomBorderWidthFieldContainer,
                 m_LeftBorderWidthFieldContainer, m_RightBorderWidthFieldContainer);
@@ -155,7 +155,7 @@ namespace Unity.UI.Builder
             m_BorderRadiusBox.AddToClassList(k_ContainerBorderRadiusClassName);
             m_BorderRadiusBox.AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
             m_BorderWidthBox.Add(m_BorderRadiusBox);
-            
+
             // visual elements used for border style
             var borderElement1 = new VisualElement() { classList = { k_BorderElementClassName, k_BorderElementVerticalClassName } };
             var borderElement2 = new VisualElement() { classList = { k_BorderElementClassName, k_BorderElementHorizontalClassName } };
@@ -165,9 +165,9 @@ namespace Unity.UI.Builder
             m_ColorBox = new BoxModelElement<Color, ColorField>(BoxType.BorderColor, true, m_BorderWidthBox,
                 m_TopColorFieldContainer, m_BottomColorFieldContainer,
                 m_LeftColorFieldContainer, m_RightColorFieldContainer);
-            
+
             // checkerboard background for color box
-            var checkerboardBackground = new CheckerboardBackground(); 
+            var checkerboardBackground = new CheckerboardBackground();
             checkerboardBackground.AddToClassList(k_CheckerboardClassName);
             m_ColorBox.AddBackground(checkerboardBackground);
 

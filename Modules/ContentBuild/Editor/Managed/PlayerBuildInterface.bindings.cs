@@ -76,6 +76,8 @@ namespace UnityEditor.Build.Player
         internal string[] m_Assemblies;
         public ReadOnlyCollection<string> assemblies { get { return Array.AsReadOnly(m_Assemblies); } }
 
+        internal bool success;
+
         [Ignore]
         internal TypeDB m_TypeDB;
         public TypeDB typeDB { get { return m_TypeDB; } }
@@ -89,11 +91,14 @@ namespace UnityEditor.Build.Player
         [FreeFunction(Name = "BuildPipeline::CompilePlayerScripts")]
         extern private static ScriptCompilationResult CompilePlayerScriptsNative(ScriptCompilationSettings input, string outputFolder, bool editorScripts);
 
+        //Exposed for Tests and SBP BuildPlayerScripts task.
+        //Advanced users could potentially use this, to be able to trigger a player compilation step in isolation from a full build.
         public static ScriptCompilationResult CompilePlayerScripts(ScriptCompilationSettings input, string outputFolder)
         {
             return CompilePlayerScriptsInternal(input, outputFolder, false);
         }
 
+        // Signature exposed for testing a "editor" compilation, see CompilePlayerScriptsOutputTests (note, it is confusing to use a method called "CompilePlayerScripts" to invoke CompileScriptsForEditorSync!)
         internal static ScriptCompilationResult CompilePlayerScriptsInternal(ScriptCompilationSettings input, string outputFolder, bool editorScripts)
         {
             input.m_ResultTypeDB = new TypeDB();

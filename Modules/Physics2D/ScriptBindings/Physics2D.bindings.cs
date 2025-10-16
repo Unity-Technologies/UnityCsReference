@@ -12,6 +12,7 @@ using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
+using PhysicsBuffer = UnityEngine.LowLevelPhysics2D.PhysicsLowLevelScripting2D.PhysicsBuffer;
 
 namespace UnityEngine
 {
@@ -114,6 +115,11 @@ namespace UnityEngine
             return LinecastList_Internal(this, start, end, contactFilter, results);
         }
 
+        public NativeArray<RaycastHit2D> Linecast(Vector2 start, Vector2 end, ContactFilter2D contactFilter, Allocator allocator = Allocator.Temp)
+        {
+            return LinecastNativeArray_Internal(this, start, end, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("Linecast_Binding")]
         extern private static RaycastHit2D Linecast_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter);
@@ -126,7 +132,11 @@ namespace UnityEngine
         [NativeMethod("LinecastList_Binding")]
         extern private static int LinecastList_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
-        #endregion
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("LinecastNativeArray_Binding")]
+        extern private static PhysicsBuffer LinecastNativeArray_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter, Allocator allocator);
+
+#endregion
 
         #region Ray Cast
 
@@ -157,6 +167,11 @@ namespace UnityEngine
             return RaycastList_Internal(this, origin, direction, distance, contactFilter, results);
         }
 
+        public NativeArray<RaycastHit2D> Raycast(Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator = Allocator.Temp)
+        {
+            return RaycastNativeArray_Internal(this, origin, direction, distance, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("Raycast_Binding")]
         extern private static RaycastHit2D Raycast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter);
@@ -168,6 +183,10 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("RaycastList_Binding")]
         extern private static int RaycastList_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("RaycastNativeArray_Binding")]
+        extern private static PhysicsBuffer RaycastNativeArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator);
 
         #endregion
 
@@ -200,6 +219,11 @@ namespace UnityEngine
             return CircleCastList_Internal(this, origin, radius, direction, distance, contactFilter, results);
         }
 
+        public NativeArray<RaycastHit2D> CircleCast(Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator = Allocator.Temp)
+        {
+            return CircleCastNativeArray_Internal(this, origin, radius, direction, distance, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("CircleCast_Binding")]
         extern private static RaycastHit2D CircleCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter);
@@ -211,6 +235,10 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("CircleCastList_Binding")]
         extern private static int CircleCastList_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("CircleCastNativeArray_Binding")]
+        extern private static PhysicsBuffer CircleCastNativeArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, float radius, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator);
 
         #endregion
 
@@ -243,6 +271,11 @@ namespace UnityEngine
             return BoxCastList_Internal(this, origin, size, angle, direction, distance, contactFilter, results);
         }
 
+        public NativeArray<RaycastHit2D> BoxCast(Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator = Allocator.Temp)
+        {
+            return BoxCastNativeArray_Internal(this, origin, size, angle, direction, distance, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("BoxCast_Binding")]
         extern private static RaycastHit2D BoxCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
@@ -254,6 +287,10 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("BoxCastList_Binding")]
         extern private static int BoxCastList_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("BoxCastNativeArray_Binding")]
+        extern private static PhysicsBuffer BoxCastNativeArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator);
 
         #endregion
 
@@ -286,6 +323,11 @@ namespace UnityEngine
             return CapsuleCastList_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
         }
 
+        public NativeArray<RaycastHit2D> CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator = Allocator.Temp)
+        {
+            return CapsuleCastNativeArray_Internal(this, origin, size, capsuleDirection, angle, direction, distance, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("CapsuleCast_Binding")]
         extern private static RaycastHit2D CapsuleCast_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter);
@@ -297,6 +339,10 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("CapsuleCastList_Binding")]
         extern private static int CapsuleCastList_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("CapsuleCastNativeArray_Binding")]
+        extern private static PhysicsBuffer CapsuleCastNativeArray_Internal(PhysicsScene2D physicsScene, Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator);
 
         #endregion
 
@@ -317,6 +363,11 @@ namespace UnityEngine
             return GetRayIntersectionList_Internal(this, ray.origin, ray.direction, distance, layerMask, results);
         }
 
+        public NativeArray<RaycastHit2D> GetRayIntersection(Ray ray, float distance, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers, Allocator allocator = Allocator.Temp)
+        {
+            return GetRayIntersectionNativeArray_Internal(this, ray.origin, ray.direction, distance, layerMask, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetRayIntersection_Binding")]
         extern private static RaycastHit2D GetRayIntersection_Internal(PhysicsScene2D physicsScene, Vector3 origin, Vector3 direction, float distance, int layerMask);
@@ -328,6 +379,10 @@ namespace UnityEngine
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetRayIntersectionList_Binding")]
         extern private static int GetRayIntersectionList_Internal(PhysicsScene2D physicsScene, Vector3 origin, Vector3 direction, float distance, int layerMask, [NotNull] List<RaycastHit2D> results);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("GetRayIntersectionNativeArray_Binding")]
+        extern private static PhysicsBuffer GetRayIntersectionNativeArray_Internal(PhysicsScene2D physicsScene, Vector3 origin, Vector3 direction, float distance, int layerMask, Allocator allocator);
 
         #endregion
 
@@ -635,7 +690,7 @@ namespace UnityEngine
         extern private static PhysicsScene2D GetPhysicsScene_Internal(Scene scene);
     }
 
-    #endregion
+#endregion
 
     [NativeHeader("Modules/Physics2D/PhysicsManager2D.h")]
     [NativeHeader("Physics2DScriptingClasses.h")]
@@ -980,6 +1035,11 @@ namespace UnityEngine
             return defaultPhysicsScene.Linecast(start, end, contactFilter, results);
         }
 
+        public static NativeArray<RaycastHit2D> Linecast(Vector2 start, Vector2 end, ContactFilter2D contactFilter, Allocator allocator = Allocator.Temp)
+        {
+            return defaultPhysicsScene.Linecast(start, end, contactFilter, allocator);
+        }
+
         // Returns all hits along the specified line.
         [ExcludeFromDocs]
         public static RaycastHit2D[] LinecastAll(Vector2 start, Vector2 end)
@@ -1012,7 +1072,7 @@ namespace UnityEngine
         [NativeMethod("LinecastAll_Binding")]
         extern private static RaycastHit2D[] LinecastAll_Internal(PhysicsScene2D physicsScene, Vector2 start, Vector2 end, ContactFilter2D contactFilter);
 
-        #endregion
+#endregion
 
         #region Ray Cast
 
@@ -1072,6 +1132,11 @@ namespace UnityEngine
         public static int Raycast(Vector2 origin, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
             return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, results);
+        }
+
+        public static NativeArray<RaycastHit2D> Raycast(Vector2 origin, Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            return defaultPhysicsScene.Raycast(origin, direction, distance, contactFilter, allocator);
         }
 
         // Returns all hits along the ray.
@@ -1167,6 +1232,11 @@ namespace UnityEngine
             return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, contactFilter, results);
         }
 
+        public static NativeArray<RaycastHit2D> CircleCast(Vector2 origin, float radius, Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, contactFilter, allocator);
+        }
+
         // Returns all hits when casting the circle.
         [ExcludeFromDocs]
         public static RaycastHit2D[] CircleCastAll(Vector2 origin, float radius, Vector2 direction)
@@ -1258,6 +1328,11 @@ namespace UnityEngine
         public static int BoxCast(Vector2 origin, Vector2 size, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
             return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, contactFilter, results);
+        }
+
+        public static NativeArray<RaycastHit2D> BoxCast(Vector2 origin, Vector2 size, float angle, Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, contactFilter, allocator);
         }
 
         // Returns all hits when casting the box.
@@ -1353,6 +1428,11 @@ namespace UnityEngine
             return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, contactFilter, results);
         }
 
+        public static NativeArray<RaycastHit2D> CapsuleCast(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, contactFilter, allocator);
+        }
+
         // Returns all hits when casting the capsule.
         [ExcludeFromDocs]
         public static RaycastHit2D[] CapsuleCastAll(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction)
@@ -1417,6 +1497,11 @@ namespace UnityEngine
         public static int GetRayIntersection(Ray ray, float distance, List<RaycastHit2D> results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return defaultPhysicsScene.GetRayIntersection(ray, distance, results, layerMask);
+        }
+
+        public static NativeArray<RaycastHit2D> GetRayIntersection(Ray ray, float distance, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers, Allocator allocator = Allocator.Temp)
+        {
+            return defaultPhysicsScene.GetRayIntersection(ray, distance, layerMask, allocator);
         }
 
         [ExcludeFromDocs]
@@ -2007,7 +2092,7 @@ namespace UnityEngine
 
         #endregion
 
-        #endregion
+#endregion
 
         #region Editor
 
@@ -3746,44 +3831,88 @@ namespace UnityEngine
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, RaycastHit2D[] results)
         {
-            return CastArray_Internal(direction, Mathf.Infinity, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, Mathf.Infinity, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance)
         {
-            return CastArray_Internal(direction, distance, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastList_Internal(direction, distance, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastList_Internal(direction, distance, checkIgnoreColliders, results);
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 direction, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            const bool checkIgnoreColliders = false;
+
+            return CastNativeArray_Internal(direction, distance, checkIgnoreColliders, allocator).ToNativeArray<RaycastHit2D>();
         }
 
         // Returns the hits from casting all the rigidbody collider(s) along a ray (filtered by the contact filter).
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results)
         {
-            return CastFilteredArray_Internal(direction, Mathf.Infinity, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredArray_Internal(direction, Mathf.Infinity, checkIgnoreColliders, contactFilter, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFilteredArray_Internal(direction, distance, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredArray_Internal(direction, distance, checkIgnoreColliders, contactFilter, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFilteredList_Internal(direction, distance, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredList_Internal(direction, distance, checkIgnoreColliders, contactFilter, results);
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredNativeArray_Internal(direction, distance, checkIgnoreColliders, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
         }
 
         public int Cast(Vector2 position, float angle, Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFrom_Internal(position, angle, direction, distance, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFrom_Internal(position, angle, direction, distance, checkIgnoreColliders, results);
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 position, float angle, Vector2 direction, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            const bool checkIgnoreColliders = false;
+
+            return CastFromNativeArray_Internal(position, angle, direction, distance, checkIgnoreColliders, allocator).ToNativeArray<RaycastHit2D>();
         }
 
         public int Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFromFiltered_Internal(position, angle, direction, distance, checkIgnoreColliders, contactFilter, results);
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            const bool checkIgnoreColliders = false;
+
+            return CastFromNativeArrayFiltered_Internal(position, angle, direction, distance, checkIgnoreColliders, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
         }
 
         public int Overlap(ContactFilter2D contactFilter, [Out] Collider2D[] results)
@@ -3821,22 +3950,34 @@ namespace UnityEngine
         extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState);
 
         [NativeMethod("CastArray_Binding")]
-        extern private int CastArray_Internal(Vector2 direction, float distance, [NotNull] RaycastHit2D[] results);
+        extern private int CastArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] RaycastHit2D[] results);
 
         [NativeMethod("CastList_Binding")]
-        extern private int CastList_Internal(Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
+        extern private int CastList_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastNativeArray_Binding")]
+        extern private PhysicsBuffer CastNativeArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, Allocator allocator);
 
         [NativeMethod("CastFilteredArray_Binding")]
-        extern private int CastFilteredArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
+        extern private int CastFilteredArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
         [NativeMethod("CastFilteredList_Binding")]
-        extern private int CastFilteredList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFilteredList_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFilteredNativeArray_Binding")]
+        extern private PhysicsBuffer CastFilteredNativeArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, Allocator allocator);
 
         [NativeMethod("CastFrom_Binding")]
-        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFromNativeArray_Binding")]
+        extern private PhysicsBuffer CastFromNativeArray_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool checkIgnoreColliders, Allocator allocator);
 
         [NativeMethod("CastFromFiltered_Binding")]
-        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFromNativeArrayFiltered_Binding")]
+        extern private PhysicsBuffer CastFromNativeArrayFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, Allocator allocator);
 
         [NativeMethod("OverlapArray_Binding")]
         extern private int OverlapArray_Internal(ContactFilter2D contactFilter, [NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Collider2D[] results);
@@ -4053,7 +4194,10 @@ namespace UnityEngine
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
             contactFilter.SetLayerMask(contactMask);
 
-            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         [ExcludeFromDocs]
@@ -4063,7 +4207,10 @@ namespace UnityEngine
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
             contactFilter.SetLayerMask(contactMask);
 
-            return CastArray_Internal(direction, distance, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("true")] bool ignoreSiblingColliders)
@@ -4072,41 +4219,85 @@ namespace UnityEngine
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
             contactFilter.SetLayerMask(contactMask);
 
-            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         // Returns the hits from casting the collider along a ray.
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results)
         {
-            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, float distance)
         {
-            return CastArray_Internal(direction, distance, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("true")] bool ignoreSiblingColliders)
         {
-            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
-            return CastList_Internal(direction, distance, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastList_Internal(direction, distance, ignoreSiblingColliders, checkIgnoreColliders, results);
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 direction, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true, Allocator allocator = Allocator.Temp)
+        {
+            const bool checkIgnoreColliders = false;
+
+            return CastNativeArray_Internal(direction, distance, ignoreSiblingColliders, checkIgnoreColliders, allocator).ToNativeArray<RaycastHit2D>();
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
-            return CastListFiltered_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastListFiltered_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true, Allocator allocator = Allocator.Temp)
+        {
+            const bool checkIgnoreColliders = false;
+
+            return CastNativeArrayFiltered_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, allocator).ToNativeArray<RaycastHit2D>();
         }
 
         public int Cast(Vector2 position, float angle, Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
             if (attachedRigidbody)
-                return CastFrom_Internal(position, angle, direction, distance, ignoreSiblingColliders, results);
+            {
+                const bool checkIgnoreColliders = false;
+
+                return CastFrom_Internal(position, angle, direction, distance, ignoreSiblingColliders, checkIgnoreColliders, results);
+            }
+
+            throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 position, float angle, Vector2 direction, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true, Allocator allocator = Allocator.Temp)
+        {
+            if (attachedRigidbody)
+            {
+                const bool checkIgnoreColliders = false;
+
+                return CastFromNativeArray_Internal(position, angle, direction, distance, ignoreSiblingColliders, checkIgnoreColliders, allocator).ToNativeArray<RaycastHit2D>();
+            }
 
             throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
@@ -4114,25 +4305,53 @@ namespace UnityEngine
         public int Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
             if (attachedRigidbody)
-                return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, ignoreSiblingColliders, results);
+            {
+                const bool checkIgnoreColliders = false;
+
+                return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
+            }
+
+            throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
+        }
+
+        public NativeArray<RaycastHit2D> Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true, Allocator allocator = Allocator.Temp)
+        {
+            if (attachedRigidbody)
+            {
+                const bool checkIgnoreColliders = false;
+
+                return CastFromNativeArrayFiltered_Internal(position, angle, direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, allocator).ToNativeArray<RaycastHit2D>();
+            }
 
             throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
 
         [NativeMethod("CastArray_Binding")]
-        extern private int CastArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] RaycastHit2D[] results);
+        extern private int CastArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] RaycastHit2D[] results);
 
         [NativeMethod("CastList_Binding")]
-        extern private int CastList_Internal(Vector2 direction, float distance, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastList_Internal(Vector2 direction, float distance, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastNativeArray_Binding")]
+        extern private PhysicsBuffer CastNativeArray_Internal(Vector2 direction, float distance, bool ignoreSiblingColliders, bool checkIgnoreColliders, Allocator allocator);
 
         [NativeMethod("CastListFiltered_Binding")]
-        extern private int CastListFiltered_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastListFiltered_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastNativeArrayFiltered_Binding")]
+        extern private PhysicsBuffer CastNativeArrayFiltered_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, Allocator allocator);
 
         [NativeMethod("CastFrom_Binding")]
-        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFromNativeArray_Binding")]
+        extern private PhysicsBuffer CastFromNativeArray_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool ignoreSiblingColliders, bool checkIgnoreColliders, Allocator allocator);
 
         [NativeMethod("CastFromFiltered_Binding")]
-        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("CastFromNativeArrayFiltered_Binding")]
+        extern private PhysicsBuffer CastFromNativeArrayFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, Allocator allocator);
 
         // Returns all hits along the ray (limited by the size of the array) excluding this collider.  This does not produce any garbage.
         [ExcludeFromDocs]
@@ -4189,8 +4408,16 @@ namespace UnityEngine
             return RaycastList_Internal(direction, distance, contactFilter, results);
         }
 
+        public NativeArray<RaycastHit2D> Raycast(Vector2 direction, ContactFilter2D contactFilter, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, Allocator allocator = Allocator.Temp)
+        {
+            return RaycastNativeArray_Internal(direction, distance, contactFilter, allocator).ToNativeArray<RaycastHit2D>();
+        }
+
         [NativeMethod("RaycastList_Binding")]
         extern private int RaycastList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+
+        [NativeMethod("RaycastNativeArray_Binding")]
+        extern private PhysicsBuffer RaycastNativeArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, Allocator allocator);
 
         // Get the shortest distance and the respective points between this collider and another.
         public ColliderDistance2D Distance(Collider2D collider)

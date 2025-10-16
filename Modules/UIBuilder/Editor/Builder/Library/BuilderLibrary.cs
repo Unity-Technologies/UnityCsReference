@@ -81,6 +81,7 @@ namespace Unity.UI.Builder
             m_DocumentElement = viewport.documentRootElement;
             m_Selection = selection;
             m_Dragger = dragger;
+            m_Dragger.RegisterPaneContent(this);
             m_TooltipPreview = tooltipPreview;
 
             viewDataKey = "unity-ui-builder-library";

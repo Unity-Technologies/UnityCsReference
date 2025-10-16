@@ -76,7 +76,7 @@ namespace UnityEngine.XR
         {
             [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             get;
-            
+
             [Obsolete("XRSettings.enabled{set;} is deprecated and should no longer be used. Instead, call Start() and Stop() on an XRDisplaySubystem instance.")]
             set;
         }
@@ -164,7 +164,7 @@ namespace UnityEngine.XR
         extern public static StereoRenderingMode stereoRenderingMode { get; }
     }
 
-    [Obsolete("This is obsolete, and should no longer be used.  Please use InputTrackingModeFlags.")]
+    [Obsolete("This is obsolete, and should no longer be used. Please use InputTrackingModeFlags.")]
     public enum TrackingSpaceType
     {
         Stationary,
@@ -172,6 +172,7 @@ namespace UnityEngine.XR
     }
 
     [NativeConditional("ENABLE_VR")]
+    [Obsolete("UnityEngine.VRModule is deprecated and will be removed in a future version. Please use the APIs in the UnityEngine.XRModule instead")]
     public static class XRDevice
     {
         [Obsolete("This is obsolete, and should no longer be used. Instead, find the active XRDisplaySubsystem and check that the running property is true (for details, see XRDevice.isPresent documentation).", true)]
@@ -223,6 +224,7 @@ namespace UnityEngine.XR
     }
 
     [NativeConditional("ENABLE_VR")]
+    [Obsolete("UnityEngine.VRModule is deprecated and will be removed in a future version. Please use the APIs in the UnityEngine.XRModule instead")]
     public static class XRStats
     {
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]

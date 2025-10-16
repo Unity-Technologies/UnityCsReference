@@ -670,6 +670,7 @@ namespace UnityEngine.Events
 
         private bool m_NeedsUpdate = true;
 
+        [Preserve]
         public int Count
         {
             get { return m_PersistentCalls.Count + m_RuntimeCalls.Count; }

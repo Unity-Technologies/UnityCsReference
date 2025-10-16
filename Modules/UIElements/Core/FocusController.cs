@@ -16,14 +16,13 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// The focus is used to designate an element that will receive keyboard and navigation events.
     ///
-    /// A Panel's current focused element can be retrieved using its FocusController's focusedElement property.
+    /// You can retrieve a panel's current focused element using its FocusController's <see cref="FocusController.focusedElement"/> property.
     /// </remarks>
     /// <example>
     /// <code source="../Tests/UIElementsExamples/Assets/Examples/FocusExample.cs"/>
     /// </example>
     /// <seealso cref="UIElements.KeyboardEventBase{T}"/>
     /// <seealso cref="UIElements.NavigationEventBase{T}"/>
-    /// <seealso cref="FocusController.focusedElement"/>
     public abstract class Focusable : CallbackEventHandler
     {
         internal static readonly BindingId focusableProperty = nameof(focusable);
@@ -39,20 +38,20 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Return the focus controller for this element.
+        /// Returns the focus controller for this element.
         /// </summary>
         public abstract FocusController focusController { get; }
 
         private bool m_Focusable;
 
         /// <summary>
-        /// If false, this prevents the element from being focused.
+        /// Whether an element can potentially receive focus.
         /// </summary>
         /// <remarks>
-        /// The element can only be focused if its canGrabFocus property is true.
+        /// If false, the element can't receive focus.
+        /// If true, the element receives focus only when its <see cref="Focusable.canGrabFocus"/> property is also true.
         /// </remarks>
         /// <seealso cref="Focusable.Focus"/>
-        /// <seealso cref="Focusable.canGrabFocus"/>
         [CreateProperty]
         public virtual bool focusable
         {
@@ -91,22 +90,25 @@ namespace UnityEngine.UIElements
         bool m_DelegatesFocus;
 
         /// <summary>
-        /// Whether the element should delegate the focus to its children.
+        /// Whether the element delegates the focus to its children.
         /// </summary>
         /// <remarks>
-        /// If the element delegates its focus, when it would become focused, one of its child or recursive child
+        /// If the element delegates its focus, when it becomes focused, one of its child or recursive child
         /// elements is selected to receive focus in its place.
+        /// 
+        ///\\ 
         /// The element that receives the focus cannot be chosen manually.
-        /// Instead, it is determined automatically using a set of internal rules.
+        /// Instead, it's determined automatically using a set of rules.
         ///
         /// The chosen element will be the first child or recursive child that
         ///
-        ///- can be focused (see <see cref="Focusable.canGrabFocus"/>,
+        ///- can be <see cref="Focusable.canGrabFocus">focused</see>,
         ///- does not delegate its own focus,
         ///- is not the child or recursive child of a content container or of another element that delegates focus, and
-        ///- is part of the focus ring navigation sequence (see <see cref="IFocusRing"/>).
+        ///- is part of the <see cref="IFocusRing">focus ring</see> navigation sequence.
+        /// 
+        /// For more information, refer to [[wiki:UIE-focus-order|Focus system in UI Toolkit]].
         /// </remarks>
-        /// <seealso cref="Focusable.canGrabFocus"/>
         /// <seealso cref="VisualElement.contentContainer"/>
         /// <seealso cref="IFocusRing"/>
         [CreateProperty]
@@ -151,35 +153,32 @@ namespace UnityEngine.UIElements
         } = true;
 
         /// <summary>
-        /// Return true if the element can be focused.
+        /// Whether the element can be focused.
         /// </summary>
         /// <remarks>
-        /// An element can be focused if it fulfills all the following conditions:
+        /// Returns true if the element meets all the following conditions:
         ///
-        ///- It's focusable. See <see cref="Focusable.focusable"/>.
-        ///- It's enabled. See <see cref="VisualElement.enabledInHierarchy"/>.
-        ///- It's visible. See <see cref="VisualElement.visible"/>.
-        ///- Its display style is not <see cref="DisplayStyle.None"/>.
-        ///- If it has a parent that delegates focus (see <see cref="Focusable.delegatesFocus"/>),
-        /// then that parent needs to also fulfill these conditions.
+        ///- It's <see cref="Focusable.focusable">focusable</see>.
+        ///- It's <see cref="VisualElement.enabledInHierarchy">enabled</see>.
+        ///- It's <see cref="VisualElement.visible">visible</see>.
+        ///- It's display style isn't <see cref="DisplayStyle.None"/>.
+        ///- It has a parent that <see cref="Focusable.delegatesFocus">delegates focus</see>, and the parent must also meet these conditions.
+        ///
+        /// For more information, refer to [[wiki:UIE-focus-order|Focus system in UI Toolkit]].
         /// </remarks>
-        /// <seealso cref="Focusable.focusable"/>
-        /// <seealso cref="VisualElement.enabledInHierarchy"/>
-        /// <seealso cref="VisualElement.visible"/>
         /// <seealso cref="IStyle.display"/>
-        /// <seealso cref="Focusable.delegatesFocus"/>
         /// <seealso cref="Focusable.Focus"/>
         [CreateProperty(ReadOnly = true)]
         public virtual bool canGrabFocus => focusable;
 
         /// <summary>
-        /// Attempt to give the focus to this element.
+        /// Attempts to give the focus to this element.
         /// </summary>
         /// <remarks>
-        /// The element may not become focused if:
+        /// The element might not become focused if:
         ///
-        ///- The element cannot be focused. See <see cref="Focusable.canGrabFocus"/>.
-        ///- The element delegates its focus. See <see cref="Focusable.delegatesFocus"/>.
+        ///- The element cannot be <see cref="Focusable.canGrabFocus">focused</see>.
+        ///- The element <see cref="Focusable.delegatesFocus">delegates its focus</see>.
         ///
         /// A Panel's current focused element can be retrieved using its FocusController's focusedElement property.
         ///
@@ -191,8 +190,6 @@ namespace UnityEngine.UIElements
         /// <example>
         /// <code source="../Tests/UIElementsExamples/Assets/Examples/FocusExample.cs"/>
         /// </example>
-        /// <seealso cref="Focusable.canGrabFocus"/>
-        /// <seealso cref="Focusable.delegatesFocus"/>
         /// <seealso cref="IFocusRing"/>
         /// <seealso cref="FocusController.focusedElement"/>
         public virtual void Focus()

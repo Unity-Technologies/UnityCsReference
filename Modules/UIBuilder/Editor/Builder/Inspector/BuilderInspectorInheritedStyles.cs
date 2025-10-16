@@ -6,7 +6,6 @@ using System;
 using UnityEngine.UIElements;
 using System.Text;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using System.Linq;
 
@@ -35,7 +34,6 @@ namespace Unity.UI.Builder
         TextField m_AddClassField;
         Button m_AddClassButton;
         Button m_CreateClassButton;
-        VisualTreeAsset m_ClassPillTemplate;
         StringBuilder m_TooltipBuilder = new();
 
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
@@ -59,9 +57,6 @@ namespace Unity.UI.Builder
 
             m_AddClassButton = m_Inspector.Q<Button>(addClassButtonName);
             m_CreateClassButton = m_Inspector.Q<Button>(createClassButtonName);
-
-            m_ClassPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
-                BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
 
             m_AddClassButton.clickable.clicked += AddStyleClass;
             m_CreateClassButton.clickable.clicked += ExtractLocalStylesToNewClass;
@@ -285,32 +280,31 @@ namespace Unity.UI.Builder
 
             foreach (var className in currentVisualElement.GetClasses())
             {
-                m_ClassPillTemplate.CloneTree(m_ClassListContainer.contentContainer);
-                var pill = m_ClassListContainer.contentContainer.ElementAt(m_ClassListContainer.childCount - 1);
-                var pillLabel = pill.Q<Label>("class-name-label");
-                var pillDeleteButton = pill.Q<Button>("delete-class-button");
-                pillDeleteButton.userData = className;
-                pill.userData = className;
-
                 var pillText = BuilderConstants.UssSelectorClassNameSymbol + className;
-                pillLabel.text = pillText;
-                pillLabel.AddToClassList(BuilderConstants.SelectorLabelClassName);
+                var pill = new BuilderClassPill()
+                {
+                    text = pillText,
+                    userData = className
+                };
+                m_ClassListContainer.contentContainer.Add(pill);
+
+                pill.SetDeleteButtonUserData(className);
+                pill.labelElement.AddToClassList(BuilderConstants.SelectorLabelClassName);
 
                 if (IsClassInUXMLDoc(className))
                 {
-                    pillDeleteButton.clickable.clickedWithEventInfo += OnStyleClassDelete;
+                    pill.onDeleteClickable.clickedWithEventInfo += OnStyleClassDelete;
                 }
                 else
                 {
                     // Don't show "x" button if the class can't actually be removed.
-                    pillDeleteButton.style.display = DisplayStyle.None;
+                    pill.canBeRemoved = false;
                 }
 
                 // See if the class is in document as its own selector.
                 var selector = BuilderSharedStyles.FindSelectorElement(documentRootElement, BuilderConstants.UssSelectorClassNameSymbol + className);
-                pill.SetProperty(BuilderConstants.InspectorClassPillLinkedSelectorElementVEPropertyName, selector);
-                var clickable = CreateClassPillClickableManipulator();
-                pill.AddManipulator(clickable);
+                pill.AddManipulator(CreateClassPillClickableManipulator());
+                pill.selectorElement = selector;
 
                 m_TooltipBuilder.Clear();
                 m_TooltipBuilder.Append(pillText);
@@ -340,10 +334,10 @@ namespace Unity.UI.Builder
 
         void OnClassPillDoubleClick(EventBase evt)
         {
-            var pill = evt.currentTarget as VisualElement;
-            var className = pill.userData as string;
+            var pill = evt.currentTarget as BuilderClassPill;
+            var className = pill?.userData as string;
             var selectorString = BuilderConstants.UssSelectorClassNameSymbol + className;
-            var selectorElement = pill.GetProperty(BuilderConstants.InspectorClassPillLinkedSelectorElementVEPropertyName) as VisualElement;
+            var selectorElement = pill?.selectorElement;
 
             if (selectorElement == null)
             {

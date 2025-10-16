@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -12,6 +13,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules("UnityEditor.PlayModeModule")]
     [EditorWindowTitle(title = k_InspectorWindowTitle, useTypeNameAsIconName = true)]
     internal class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
     {
@@ -526,8 +528,9 @@ namespace UnityEditor
 
         internal void SetObjectsLocked(List<Object> objs)
         {
-            m_LockTracker.isLocked = true;
+            m_LockTracker.isLocked = false; //temporary disable the "selection locked so OnSelectionChanged can do something
             m_Tracker.SetObjectsLockedByThisTracker(objs);
+            m_LockTracker.isLocked = true;
         }
 
         private void RestoreLockStateFromSerializedData()

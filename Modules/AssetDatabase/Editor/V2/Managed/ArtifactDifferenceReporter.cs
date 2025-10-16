@@ -89,23 +89,23 @@ namespace UnityEditor
 
         public static string kGlobal_artifactFormatVersion = "Global/artifactFormatVersion";
         public static string kGlobal_allImporterVersion = "Global/allImporterVersion";
-        public static string kImportParameter_ImporterType = "ImportParameter/ImporterType";
-        public static string kImporterRegister_ImporterVersion = "ImporterRegistry/ImporterVersion";
+        public static string kImporterRegistry_ImporterType = "ImporterRegistry/ImporterType";
+        public static string kImporterRegistry_ImporterVersion = "ImporterRegistry/ImporterVersion";
         public static string kImporterRegistry_PostProcessorVersionHash = "ImporterRegistry/PostProcessorVersionHash";
-        public static string kImportParameter_NameOfAsset = "ImportParameter/NameOfAsset";
+        public static string kSourceAsset_NameOfAsset = "SourceAsset/NameOfAsset";
         public static string kSourceAsset_GuidOfPathLocation = "SourceAsset/GuidOfPathLocation";
         public static string kSourceAsset_HashOfSourceAssetByGUID = "SourceAsset/HashOfSourceAssetByGUID";
         public static string kSourceAsset_MetaFileHash = "SourceAsset/MetaFileHash";
         public static string kArtifact_HashOfContent = "Artifact/HashOfContent";
         public static string kArtifact_HashOfGuidsOfChildren = "SourceAsset/HashOfGuidsOfChildren";
         public static string kArtifact_FileIdOfMainObject = "Artifact/Property";
-        public static string kImportParameter_Platform = "ImportParameter/Platform";
+        public static string kEnvironment_Platform = "Environment/Platform";
         public static string kEnvironment_TextureImportCompression = "Environment/TextureImportCompression";
         public static string kEnvironment_ColorSpace = "Environment/ColorSpace";
         public static string kEnvironment_GraphicsAPIMask = "Environment/GraphicsAPIMask";
         public static string kEnvironment_ScriptingRuntimeVersion = "Environment/ScriptingRuntimeVersion";
         public static string kEnvironment_CustomDependency = "Environment/CustomDependency";
-        public static string kImportParameter_PlatformGroup = "ImportParameter/BuildTargetPlatformGroup";
+        public static string kEnvironment_PlatformGroup = "Environment/BuildTargetPlatformGroup";
         public static string kIndeterministicImporter = "ImporterRegistry/IndeterministicImporter";
 
         internal IEnumerable<ArtifactInfoDifference> GetAllDifferences()
@@ -159,7 +159,7 @@ namespace UnityEditor
                 }
             }
 
-            if (m_AllDiffs.Count() == 0 && newInfo.artifactID != oldInfo.artifactID)
+            if (m_AllDiffs.Count() == 0 && newInfo.importResultID != oldInfo.importResultID)
             {
                 var indeterministicImporterDifference = new ArtifactInfoDifference(kIndeterministicImporter, DiffType.Modified, oldInfo, newInfo);
                 indeterministicImporterDifference.message = "the importer used is non-deterministic, as it has produced a different result even though all the dependencies are the same";
@@ -176,14 +176,14 @@ namespace UnityEditor
             yield return (kEnvironment_CustomDependency, EnvironmentCustomDependencyDifference);
             yield return (kEnvironment_TextureImportCompression, TextureCompressionModified);
             yield return (kEnvironment_ColorSpace, ColorSpaceModified);
-            yield return (kImportParameter_ImporterType, ImporterTypeModified);
-            yield return (kImporterRegister_ImporterVersion, ImporterVersionModified);
-            yield return (kImportParameter_NameOfAsset, NameOfAssetModified);
+            yield return (kImporterRegistry_ImporterType, ImporterTypeModified);
+            yield return (kImporterRegistry_ImporterVersion, ImporterVersionModified);
+            yield return (kSourceAsset_NameOfAsset, NameOfAssetModified);
             yield return (kSourceAsset_HashOfSourceAssetByGUID, HashOfSourceAssetModified);
             yield return (kSourceAsset_MetaFileHash, MetaFileHashModified);
             yield return (kArtifact_HashOfContent, ArtifactHashOfContentDifference);
             yield return (kArtifact_HashOfGuidsOfChildren, ArtifactHashOfGuidsOfChildrenContentDifference);
-            yield return (kImportParameter_Platform, PlatformDependencyModified);
+            yield return (kEnvironment_Platform, PlatformDependencyModified);
             yield return (kSourceAsset_GuidOfPathLocation, GuidOfPathLocationModified);
             yield return (kImporterRegistry_PostProcessorVersionHash, PostProcessorVersionHashModified);
             yield return (kEnvironment_GraphicsAPIMask, GraphicsAPIMaskModified);
@@ -191,7 +191,7 @@ namespace UnityEditor
             yield return (kGlobal_artifactFormatVersion, GlobalArtifactFormatVersionModified);
             yield return (kGlobal_allImporterVersion, GlobalAllImporterVersionModified);
             yield return (kArtifact_FileIdOfMainObject, ArtifactFileIdOfMainObjectModified);
-            yield return (kImportParameter_PlatformGroup, PlatformGroupModified);
+            yield return (kEnvironment_PlatformGroup, PlatformGroupModified);
         }
 
         private static void PlatformGroupModified(ref ArtifactInfoDifference diff, List<string> msgsList)
@@ -443,7 +443,7 @@ namespace UnityEditor
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var assetName = diff.oldDependencies[kImportParameter_NameOfAsset].value;
+                var assetName = diff.oldDependencies[kSourceAsset_NameOfAsset].value;
                 diff.message = $"a dependency on '{pathOfDependency}' was removed from '{assetName}'";
                 msgsList.Add(diff.message);
             }
@@ -478,20 +478,20 @@ namespace UnityEditor
             {
                 var oldImporterVersion = diff.oldDependencies[diff.key].value;
                 var newImporterVersion = diff.newDependencies[diff.key].value;
-                var importerName = diff.newDependencies[kImportParameter_ImporterType].value;
+                var importerName = diff.newDependencies[kImporterRegistry_ImporterType].value;
                 diff.message = $"the version of the importer '{importerName}' changed from '{oldImporterVersion}' to '{newImporterVersion}'";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Added)
             {
                 var newImporterVersion = diff.newDependencies[diff.key].value;
-                var importerName = diff.newDependencies[kImportParameter_ImporterType].value;
+                var importerName = diff.newDependencies[kImporterRegistry_ImporterType].value;
                 diff.message = $"a dependency on the importer '{importerName}' was added, with version '{newImporterVersion}'";
                 msgsList.Add(diff.message);
             }
             else if (diff.diffType == DiffType.Removed)
             {
-                var importerName = diff.oldDependencies[kImportParameter_ImporterType].value;
+                var importerName = diff.oldDependencies[kImporterRegistry_ImporterType].value;
                 diff.message = $"a dependency on the importer '{importerName}' was removed";
                 msgsList.Add(diff.message);
             }
@@ -695,13 +695,13 @@ namespace UnityEditor
 
         private static string GetAssetName(ArtifactInfo artifactInfo)
         {
-            var assetName = artifactInfo.dependencies[kImportParameter_NameOfAsset].value.ToString();
+            var assetName = artifactInfo.dependencies[kSourceAsset_NameOfAsset].value.ToString();
             return assetName;
         }
 
         private static string GetAssetName(IDictionary<string, ArtifactInfoDependency> dependencies)
         {
-            var assetName = dependencies[kImportParameter_NameOfAsset].value.ToString();
+            var assetName = dependencies[kSourceAsset_NameOfAsset].value.ToString();
             return assetName;
         }
     }

@@ -69,43 +69,11 @@ namespace UnityEditor
         {
             public static void TerrainShaderValidationGUI(Material material)
             {
-                if (material == null)
-                    return;
-
-                bool isShaderValid;
-                bool.TryParse(material.GetTag("TerrainCompatible", false), out isShaderValid);
-                RenderPipelineAsset renderPipeline = GraphicsSettings.currentRenderPipeline;
-
-                string shaderPath = "";
-                var terrainDefaultMaterial = GraphicsSettings.GetDefaultMaterial(DefaultMaterialType.Terrain);
-                if (terrainDefaultMaterial != null)
-                    shaderPath = terrainDefaultMaterial.shader.name;
-
-                string pipelineShaderTag = material.GetTag("RenderPipeline", false);
-                switch (renderPipeline?.GetType().Name)
+                string warningMessage;
+                string shaderPath;
+                if (!UnityEditor.MaterialEditor.TryValidateTerrainMaterial(material, out warningMessage, out shaderPath))
                 {
-                    case "HDRenderPipelineAsset":
-                        isShaderValid = pipelineShaderTag.Equals("HDRenderPipeline") && isShaderValid;
-                        break;
-                    case "UniversalRenderPipelineAsset":
-                        isShaderValid = pipelineShaderTag.Equals("UniversalPipeline") && isShaderValid;
-                        break;
-                    case null: // Default legacy render pipeline
-                        shaderPath = "a shader from Nature/Terrain";
-                        isShaderValid = pipelineShaderTag.Equals("") && isShaderValid;
-                        break;
-                    default: // Custom SRP doesn't require a warning
-                        return;
-                }
-
-                if (!isShaderValid)
-                {
-                    EditorGUILayout.HelpBox($"The provided Material's shader might be unsuitable for use with Terrain in the active render pipeline. We recommend you use {shaderPath} instead.\n\n" +
-                        $"If this isn't the case, add the \"TerrainCompatible\" = \"True\" tag in your shader's property block to suppress this warning.", MessageType.Warning, false);
-                }
-                else if (ShaderUtil.HasTangentChannel(material.shader))
-                {
-                    EditorGUILayout.HelpBox($"The selected Material's shader uses tangent geometry, which Terrain doesn't support. We recommend you use {shaderPath} instead.", MessageType.Warning, false);
+                    EditorGUILayout.HelpBox(warningMessage, MessageType.Warning);
                 }
             }
 
@@ -491,7 +459,7 @@ namespace UnityEditor
                 var mi = instanceProperty.GetGetMethod();
                 tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
             }
-            
+
             selectedCategory = GetCategory(toolName);
             lastTextureResolutionPerTile = 0;
             SetCurrentPaintToolInactive();
@@ -1331,14 +1299,14 @@ namespace UnityEditor
                 SceneManagement.EditorSceneManager.MarkSceneDirty(m_Terrain.gameObject.scene);
         }
 
-        private class DoCreateTerrainMaterial : ProjectWindowCallback.EndNameEditAction
+        private class DoCreateTerrainMaterial : ProjectWindowCallback.AssetCreationEndAction
         {
             public Terrain terrain;
-            public override void Action(int instanceId, string pathName, string resourceFile)
+            public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 if (terrain != null)
                 {
-                    var obj = EditorUtility.EntityIdToObject(instanceId) as Material;
+                    var obj = EditorUtility.EntityIdToObject(entityId) as Material;
                     AssetDatabase.CreateAsset(obj, AssetDatabase.GenerateUniqueAssetPath(pathName));
                     Undo.RecordObject(terrain, "Terrain property change");
                     terrain.materialTemplate = obj;
@@ -1347,7 +1315,7 @@ namespace UnityEditor
                 }
             }
 
-            public override void Cancelled(int instanceId, string pathName, string resourceFile)
+            public override void Cancelled(EntityId entityId, string pathName, string resourceFile)
             {
                 Selection.activeObject = terrain;
             }
@@ -1440,7 +1408,7 @@ namespace UnityEditor
                         var mat = new Material(materialTemplate);
                         var createTerrainMat = CreateInstance<DoCreateTerrainMaterial>();
                         createTerrainMat.terrain = m_Terrain;
-                        ProjectWindowUtil.StartNameEditingIfProjectWindowExists(mat.GetInstanceID(), createTerrainMat, defaultPath, AssetPreview.GetMiniThumbnail(mat), null);
+                        ProjectWindowUtil.StartNameEditingIfProjectWindowExists(mat.GetEntityId(), createTerrainMat, defaultPath, AssetPreview.GetMiniThumbnail(mat), null);
                     }
                 }
 

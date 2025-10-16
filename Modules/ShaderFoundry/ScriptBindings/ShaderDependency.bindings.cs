@@ -12,11 +12,12 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_DependencyNameStringHandle;   // string
         internal FoundryHandle m_ShaderNameStringHandle;       // string
+        internal FoundryHandle m_LocationHandle;
 
-        internal extern static ShaderDependencyInternal Invalid();
-        internal extern bool IsValid();
-        internal extern string GetDependencyName(ShaderContainer container);
-        internal extern string GetShaderName(ShaderContainer container);
+        [ThreadSafe] internal extern static ShaderDependencyInternal Invalid();
+        [ThreadSafe] internal extern bool IsValid();
+        [ThreadSafe] internal extern string GetDependencyName(ShaderContainer container);
+        [ThreadSafe] internal extern string GetShaderName(ShaderContainer container);
 
         // IInternalType
         ShaderDependencyInternal IInternalType<ShaderDependencyInternal>.ConstructInvalid() => Invalid();
@@ -40,12 +41,17 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
 
-        public ShaderDependency(ShaderContainer container, string dependencyName, string shaderName)
-            : this(container, container.AddString(dependencyName), container.AddString(shaderName))
+        internal ShaderDependency(ShaderContainer container, string dependencyName, string shaderName)
+            : this(container, dependencyName, shaderName, Location.Invalid)
         {
         }
 
-        internal ShaderDependency(ShaderContainer container, FoundryHandle dependencyName, FoundryHandle shaderName)
+        internal ShaderDependency(ShaderContainer container, string dependencyName, string shaderName, Location location)
+            : this(container, container.AddString(dependencyName), container.AddString(shaderName), location)
+        {
+        }
+
+        internal ShaderDependency(ShaderContainer container, FoundryHandle dependencyName, FoundryHandle shaderName, Location location)
         {
             if ((container == null) || (!dependencyName.IsValid) || (!shaderName.IsValid))
             {
@@ -55,6 +61,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 shaderDependency.m_DependencyNameStringHandle = dependencyName;
                 shaderDependency.m_ShaderNameStringHandle = shaderName;
+                shaderDependency.m_LocationHandle = location.handle;
                 handle = container.Add(shaderDependency);
                 this.container = handle.IsValid ? container : null;
             }
@@ -62,6 +69,7 @@ namespace UnityEditor.ShaderFoundry
 
         public string DependencyName => shaderDependency.GetDependencyName(container);
         public string ShaderName => shaderDependency.GetShaderName(container);
+        public Location Location => new Location(container, shaderDependency.m_LocationHandle);
 
         internal ShaderDependency(ShaderContainer container, FoundryHandle handle)
         {
@@ -72,7 +80,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static ShaderDependency Invalid => new ShaderDependency(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality.
         public override bool Equals(object obj) => obj is ShaderDependency other && this.Equals(other);
         public bool Equals(ShaderDependency other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -92,6 +100,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             string dependencyName;
             string shaderName;
+            public Location location;
 
             public ShaderContainer Container => container;
 
@@ -104,7 +113,7 @@ namespace UnityEditor.ShaderFoundry
 
             public ShaderDependency Build()
             {
-                return new ShaderDependency(container, dependencyName, shaderName);
+                return new ShaderDependency(container, dependencyName, shaderName, location);
             }
         }
     }

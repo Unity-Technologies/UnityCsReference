@@ -1025,7 +1025,7 @@ namespace UnityEditor
             info.maskType = ClipAnimationMaskType.None;
 
             SetBodyMaskDefaultValues(info);
-
+            info.transformMaskProperty.arraySize = 0;
             info.ClearEvents();
             info.ClearCurves();
         }
@@ -1120,7 +1120,6 @@ namespace UnityEditor
                 m_MaskInspector.canImport = false;
                 m_MaskInspector.showBody = clip.isHumanMotion;
                 m_MaskInspector.clipInfo = clipInfo;
-                m_MaskInspector.UpdateMask(clipInfo.maskType);
             }
         }
 

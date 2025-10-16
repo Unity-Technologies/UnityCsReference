@@ -14,6 +14,7 @@ using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
@@ -101,41 +102,53 @@ namespace Unity.UI.Builder
             return fullPath.Substring(projectPath.Length + 1); // "/"
         }
 
-        public static string GetResourcesPathForAsset(Object asset)
+        public static bool TryGetResourcesPathForAsset(Object asset, out ResolvedResourcePath resolvedResourcePath)
         {
+            resolvedResourcePath = default;
             var assetPath = AssetDatabase.GetAssetPath(asset);
-            return GetResourcesPathForAsset(assetPath);
+
+            if (TryGetResourcesPathForAsset(assetPath, out assetPath))
+            {
+                if (AssetDatabase.IsSubAsset(asset))
+                    resolvedResourcePath = new ResolvedResourcePath(assetPath, asset.name);
+                else
+                    resolvedResourcePath = new ResolvedResourcePath(assetPath, null);
+                return true;
+            }
+
+            return false;
         }
 
-        public static string GetResourcesPathForAsset(string assetPath)
+        public static bool TryGetResourcesPathForAsset(string path, out string assetPath)
         {
-            if (string.IsNullOrWhiteSpace(assetPath))
-                return null;
+            assetPath = null;
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
 
             // Start by trying to find a "Resources" folder in the middle of the path.
             var resourcesFolder = "/Resources/";
-            var lastResourcesFolderIndex = assetPath.LastIndexOf(resourcesFolder, StringComparison.Ordinal);
+            var lastResourcesFolderIndex = path.LastIndexOf(resourcesFolder, StringComparison.Ordinal);
             // Otherwise check if the "Resources" path is at the start.
             if (lastResourcesFolderIndex < 0)
             {
-                if (assetPath.StartsWith("Resources/"))
+                if (path.StartsWith("Resources/"))
                 {
                     lastResourcesFolderIndex = 0;
                     resourcesFolder = "Resources/";
                 }
-                else return null;
+                else return false;
             }
 
             var lastResourcesSubstring = lastResourcesFolderIndex + resourcesFolder.Length;
-            assetPath = assetPath.Substring(lastResourcesSubstring);
-            var lastExtDot = assetPath.LastIndexOf(".", StringComparison.Ordinal);
+            path = path.Substring(lastResourcesSubstring);
+            var lastExtDot = path.LastIndexOf(".", StringComparison.Ordinal);
 
             if (lastExtDot == -1)
-                return null;
+                return false;
 
-            assetPath = assetPath.Substring(0, lastExtDot);
-
-            return assetPath;
+            path = path.Substring(0, lastExtDot);
+            assetPath = path;
+            return true;
         }
 
         public static bool IsBuiltinPath(string assetPath)
@@ -183,7 +196,7 @@ namespace Unity.UI.Builder
         }
 
         public static bool AddStyleSheetToAsset(
-            BuilderDocument document, string ussPath)
+            BuilderDocument document, string ussPath, int index = -1)
         {
             var styleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(ussPath);
 
@@ -211,10 +224,16 @@ namespace Unity.UI.Builder
                 return false;
             }
 
+            // Check if the stylesheet is already in the document
+            if (document.IsStyleSheetInDocument(styleSheet))
+            {
+                return false;
+            }
+
             Undo.RegisterCompleteObjectUndo(
                 document.visualTreeAsset, "Add StyleSheet to UXML");
 
-            document.AddStyleSheetToDocument(styleSheet, ussPath);
+            document.AddStyleSheetToDocument(styleSheet, ussPath, index);
             return true;
         }
 
@@ -239,17 +258,32 @@ namespace Unity.UI.Builder
             }
         }
 
-        public static void ReorderStyleSheetsInAsset(
+        public static bool ReorderStyleSheetsInAsset(
             BuilderDocument document, VisualElement styleSheetsContainerElement)
         {
-            Undo.RegisterCompleteObjectUndo(
-                document.visualTreeAsset, "Reorder StyleSheets in UXML");
-
             var reorderedUSSList = new List<StyleSheet>();
             foreach (var ussElement in styleSheetsContainerElement.Children())
                 reorderedUSSList.Add(ussElement.GetStyleSheet());
 
             var openUXMLFile = document.activeOpenUXMLFile;
+
+            // Check if the order would actually change
+            bool orderChanged = false;
+            for (int i = 0; i < openUXMLFile.openUSSFiles.Count && i < reorderedUSSList.Count; i++)
+            {
+                if (openUXMLFile.openUSSFiles[i].styleSheet != reorderedUSSList[i])
+                {
+                    orderChanged = true;
+                    break;
+                }
+            }
+
+            if (!orderChanged)
+                return false;
+
+            Undo.RegisterCompleteObjectUndo(
+                document.visualTreeAsset, "Reorder StyleSheets in UXML");
+
             openUXMLFile.openUSSFiles.Sort((left, right) =>
             {
                 var leftOrder = reorderedUSSList.IndexOf(left.styleSheet);
@@ -267,6 +301,8 @@ namespace Unity.UI.Builder
                     return leftOrder.CompareTo(rightOrder);
                 });
             }
+
+            return true;
         }
 
         public static VisualElementAsset AddElementToAsset(
@@ -666,8 +702,6 @@ namespace Unity.UI.Builder
         {
             if ((changes & LiveReloadChanges.Hierarchy) != 0)
                 UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
-            if ((changes & LiveReloadChanges.Styles) != 0)
-                UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
         }
 
         // Check if VisualElement will support type as a child. Assume true by default, unless explicitly false.
@@ -720,8 +754,7 @@ namespace Unity.UI.Builder
                         Debug.LogError($"Could not find attribute with name {kvp.Key} in {type.DeclaringType.FullName}");
                         continue;
                     }
-                    propertyAttribute.SetSerializedValue(serializedObj, kvp.Value);
-                    propertyAttribute.SetSerializedValueAttributeFlags(serializedObj, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+                    propertyAttribute.SetSerializedValue(serializedObj, kvp.Value, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                 }
             }
             property.managedReferenceValue = serializedObj;
@@ -1099,42 +1132,9 @@ namespace Unity.UI.Builder
             UndoRecordDocument(context, BuilderConstants.ModifyUxmlObject);
         }
 
-        #pragma warning disable CS0618 // Type or member is obsolete
-        static UxmlTraits GetCurrentElementTraits(BuilderUxmlAttributesEditingContext context)
-        {
-            string uxmlTypeName = null;
-
-            if (context.element is TemplateContainer)
-            {
-                uxmlTypeName = BuilderConstants.BuilderInspectorTemplateInstance;
-            }
-            else
-            {
-                uxmlTypeName = context.elementAsset != null ? context.elementAsset.fullTypeName : context.element.GetType().ToString();
-            }
-
-            List<IUxmlFactory> factories = null;
-
-            // Workaround: TemplateContainer.UxmlTrais.Init() cannot be called multiple times. Otherwise, the source template is loaded again into the template container without clearing the previous content.
-            if (uxmlTypeName == TemplateAsset.UxmlInstanceTypeName || !VisualElementFactoryRegistry.TryGetValue(uxmlTypeName, out factories))
-            {
-                // We fallback on the VisualElement factory if we don't find any so
-                // we can update the modified attributes. This fixes the TemplateContainer
-                // factory not found.
-                VisualElementFactoryRegistry.TryGetValue(typeof(VisualElement).FullName,
-                    out factories);
-            }
-
-            if (factories == null)
-                return null;
-
-            return factories[0].GetTraits() as UxmlTraits;
-        }
-        #pragma warning restore CS0618 // Type or member is obsolete
-
         public static void CallDeserializeOnElement(BuilderUxmlAttributesEditingContext context, VisualElement element = null)
         {
-            if (context.usesUxmlTraits || context.uxmlSerializedData == null)
+            if (context.uxmlSerializedData == null)
                 return;
 
             element ??= context.element;
@@ -1142,41 +1142,6 @@ namespace Unity.UI.Builder
             // We need to clear bindings before calling Init to avoid corrupting the data source.
             BuilderBindingUtility.ClearUxmlBindings(element);
             context.uxmlSerializedData.Deserialize(element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
-        }
-
-        internal static void CallInitOnElement(BuilderUxmlAttributesEditingContext context)
-        {
-            if (!context.callInitOnValueChange)
-                return;
-
-            var traits = GetCurrentElementTraits(context);
-
-            if (traits == null)
-                return;
-
-            // We need to clear bindings before calling Init to avoid corrupting the data source.
-            BuilderBindingUtility.ClearUxmlBindings(context.element);
-
-            var creationContext = new CreationContext(null, null, context.visualTree, context.element);
-            traits.Init(context.element, context.elementAsset, creationContext);
-        }
-
-        internal static void CallInitOnTemplateChild(BuilderUxmlAttributesEditingContext context, VisualElement visualElement, VisualElementAsset vea,
-           List<CreationContext.AttributeOverrideRange> attributeOverrides)
-        {
-            if (!context.callInitOnValueChange)
-                return;
-
-            var traits = GetCurrentElementTraits(context);
-
-            if (traits == null)
-                return;
-
-            // We need to clear bindings before calling Init to avoid corrupting the data source.
-            BuilderBindingUtility.ClearUxmlBindings(context.element);
-
-            var creationContext = new CreationContext(null, attributeOverrides, visualElement.visualTreeAssetSource, null);
-            traits.Init(visualElement, vea, creationContext);
         }
 
         static void PostAttributeValueChange(BuilderUxmlAttributesEditingContext context, string attributeName, string value, UxmlAsset uxmlAsset = null)
@@ -1211,11 +1176,6 @@ namespace Unity.UI.Builder
                                 UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(context.visualTree), false);
                                 CallDeserializeOnElement(context, x);
                             }
-                            else
-                            {
-                                var attributeOverrides = GetAccumulatedAttributeOverrides(context.element);
-                                CallInitOnTemplateChild(context, x, templateVea, attributeOverrides);
-                            }
                         });
                     }
                 }
@@ -1224,9 +1184,6 @@ namespace Unity.UI.Builder
             {
                 uxmlAsset ??= context.elementAsset;
                 uxmlAsset.SetAttribute(attributeName, value);
-
-                // Call Init();
-                CallInitOnElement(context);
             }
         }
 
@@ -1237,6 +1194,103 @@ namespace Unity.UI.Builder
                 undoMessage += $" in {prop.m_SerializedObject.targetObject.name}";
 
             return undoMessage;
+        }
+
+        // Used to add the asset to the document root element without adding it to the visual tree asset.
+        public static bool TryAddAssetToRootElement(BuilderPaneWindow paneWindow, VisualElement newElement,
+            VisualTreeAsset visualTreeAsset, string relativePath, VisualElement destination = null, int index = -1)
+        {
+            if (newElement == null)
+                return false;
+
+            if (newElement is TemplateContainer)
+            {
+                if (!ValidateAsset(visualTreeAsset, relativePath))
+                    return false;
+            }
+
+            if (destination == null)
+                destination = paneWindow.document.primaryViewportWindow.documentRootElement;
+
+            if (index >= 0)
+                destination.Insert(index, newElement);
+            else
+                destination.Add(newElement);
+
+
+            return true;
+        }
+
+        // If the asset is a template, it will be added to the document root element and the visual tree asset.
+        public static VisualElement AddTemplateContainerToAsset(BuilderPaneWindow paneWindow, VisualTreeAsset visualTreeAsset, string relativePath, VisualElement destination = null, int index = -1)
+        {
+            var newElement = visualTreeAsset.CloneTree();
+
+            if (!TryAddAssetToRootElement(paneWindow, newElement, visualTreeAsset, relativePath, destination, index))
+                return null;
+
+            newElement.SetProperty(BuilderConstants.LibraryItemLinkedTemplateContainerPathVEPropertyName, relativePath);
+            Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeVisualElementAsset = (inVta, inParent, ve) =>
+            {
+                var vea = inVta.AddTemplateInstance(inParent, relativePath) as VisualElementAsset;
+                ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, visualTreeAsset);
+                return vea;
+            };
+
+            AddElementToAsset(paneWindow.document.visualTreeAsset, newElement, makeVisualElementAsset, index);
+
+            return newElement;
+        }
+
+        public static string ImportAssetFromOutsideProject(string fullAssetPath)
+        {
+            var endsWithUxml = fullAssetPath.EndsWith(BuilderConstants.UxmlExtension);
+            var endsWithUss = fullAssetPath.EndsWith(BuilderConstants.UssExtension);
+            if (!endsWithUxml && !endsWithUss)
+                return string.Empty;
+
+            var data = File.ReadAllText(fullAssetPath);
+
+            var fileName = Path.GetFileName(fullAssetPath);
+            var assetRelativePath = AssetDatabase.GenerateUniqueAssetPath($"Assets/{fileName}");
+            var uniqueFileName = Path.GetFileName(assetRelativePath);
+            var newCopiedFilePath = Application.dataPath + $"/{uniqueFileName}";
+
+            File.WriteAllText(newCopiedFilePath, data);
+            AssetDatabase.ImportAsset(assetRelativePath);
+            AssetDatabase.Refresh();
+            return assetRelativePath;
+        }
+
+        public static void GetListOfPathsInDragAndDrop(List<string> result)
+        {
+            result.Clear();
+
+            if (DragAndDrop.paths == null) return;
+
+            foreach (var path in DragAndDrop.paths)
+            {
+                var splitPath = path.Split('/');
+                result.Add(splitPath[splitPath.Length - 1]);
+            }
+        }
+
+        public static bool DraggingBothUxmlAndUSS()
+        {
+            List<string> listOfPaths = new List<string>();
+            GetListOfPathsInDragAndDrop(listOfPaths);
+            bool draggingUXML = false;
+            bool draggingUSS = false;
+
+            foreach (var path in listOfPaths)
+            {
+                if (path.EndsWith(BuilderConstants.UxmlExtension))
+                    draggingUXML = true;
+                else if (path.EndsWith(BuilderConstants.UssExtension))
+                    draggingUSS = true;
+            }
+
+            return draggingUSS && draggingUXML;
         }
     }
 }

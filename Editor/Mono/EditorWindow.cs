@@ -141,12 +141,13 @@ namespace UnityEditor
         }
 
         // TODO: These should be made public when UIElements is no longer experimental.
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal void DisableViewDataPersistence()
         {
             m_EnableViewDataPersistence = false;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
         internal void ClearPersistentViewData()
         {
             string editorPrefFileName = this.GetType().ToString();
@@ -405,6 +406,7 @@ namespace UnityEditor
         internal bool disableInputEvents
         {
             get { return m_DisableInputEvents; }
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
             set
             {
                 if (m_DisableInputEvents == value)
@@ -1406,6 +1408,9 @@ namespace UnityEditor
             int menuIndex = 1;
             foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
             {
+                if (win is MainToolbarWindow)
+                    continue;
+
                 var title = win.titleContent.text;
                 title = title.Replace("/", "\\");
                 Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => win.Focus(), null);

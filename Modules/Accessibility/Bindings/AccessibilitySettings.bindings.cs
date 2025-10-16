@@ -27,7 +27,7 @@ public static partial class AccessibilitySettings
     static extern bool IsClosedCaptioningEnabled();
 
     [RequiredByNativeCode]
-    static void Internal_OnFontScaleChanged(float newFontScale)
+    internal static void Internal_OnFontScaleChanged(float newFontScale)
     {
         AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
         {
@@ -37,7 +37,7 @@ public static partial class AccessibilitySettings
     }
 
     [RequiredByNativeCode]
-    static void Internal_OnBoldTextStatusChanged(bool enabled)
+    internal static void Internal_OnBoldTextStatusChanged(bool enabled)
     {
         AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
         {
@@ -47,7 +47,7 @@ public static partial class AccessibilitySettings
     }
 
     [RequiredByNativeCode]
-    static void Internal_OnClosedCaptioningStatusChanged(bool enabled)
+    internal static void Internal_OnClosedCaptioningStatusChanged(bool enabled)
     {
         AccessibilityManager.QueueNotification(new AccessibilityManager.NotificationContext
         {

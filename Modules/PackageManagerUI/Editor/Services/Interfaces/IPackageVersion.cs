@@ -89,11 +89,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         SemVersion? supportedVersion { get; }
 
-        IEnumerable<SemVersion> supportedVersions { get; }
+        IReadOnlyCollection<SemVersion> supportedVersions { get; }
 
-        IEnumerable<PackageSizeInfo> sizes { get; }
-
-        EntitlementsInfo entitlements { get; }
+        IReadOnlyCollection<PackageSizeInfo> sizes { get; }
 
         bool IsDifferentVersionThanRequested { get; }
 
@@ -101,9 +99,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string deprecationMessage { get; }
 
-        SignatureInfo signature { get; }
+        TrustAndSignature trustAndSignature { get; }
 
-        TrustLevel trustLevel { get; }
+        string signatureOrgName { get; }
+
 
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,6 +17,8 @@ namespace UnityEditor.Search
 
         static readonly GUIContent s_CreateContent = EditorGUIUtility.IconContent("Toolbar Plus More", "|Add new query block (Tab)");
         private Image m_Icon;
+
+        public static SVC<Color> searchBackgroundColor = new SVC<Color>("--unity-colors-button-background-hover", Color.red);
 
         public override string ToString() => null;
         internal override IBlockEditor OpenEditor(in Rect rect) => AddBlock(rect);
@@ -35,9 +38,11 @@ namespace UnityEditor.Search
         internal override void UpdateBackgroundColor(bool hovered = false)
         {
             if (hovered)
-                style.backgroundColor = QueryColors.backgroundHoverTint;
+                style.backgroundColor = searchBackgroundColor.value;
             else
+            {
                 style.backgroundColor = GetBackgroundColor();
+            }
         }
 
         internal override void CreateBlockElement(VisualElement container)

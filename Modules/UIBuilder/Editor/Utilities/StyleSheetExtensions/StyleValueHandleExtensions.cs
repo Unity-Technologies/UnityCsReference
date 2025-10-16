@@ -16,8 +16,7 @@ namespace Unity.UI.Builder
             {
                 case StyleValueType.ResourcePath:
                     var resourcePath = styleSheet.ReadResourcePath(valueHandle);
-                    var asset = Resources.Load<Object>(resourcePath);
-                    return asset;
+                    return resourcePath.LoadResource<Object>();
                 case StyleValueType.Keyword:
                     return null;
                 default:

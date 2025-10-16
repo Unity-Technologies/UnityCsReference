@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using UnityEngine.Bindings;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -21,6 +23,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The device type indicates whether there should be an KeyDownEvent observable before this navigation event.
         /// </remarks>
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal NavigationDeviceType deviceType { get; }
 
         /// <summary>
@@ -62,6 +65,7 @@ namespace UnityEngine.UIElements
     /// This can help avoid duplicated treatment of events when some controls react to keyboard input
     /// using KeyDownEvent while others react to navigation events coming from the same keyboard input.
     /// </summary>
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal enum NavigationDeviceType
     {
         /// <summary>
@@ -169,7 +173,12 @@ namespace UnityEngine.UIElements
         /// The device type indicates whether there should be an KeyDownEvent observable before this navigation event.
         /// </remarks>
         NavigationDeviceType INavigationEvent.deviceType => deviceType;
-        internal NavigationDeviceType deviceType { get; private set; }
+
+        internal NavigationDeviceType deviceType
+        {
+            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")] get;
+            private set;
+        }
 
         /// <summary>
         /// Constructor.
@@ -209,6 +218,7 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static T GetPooled(NavigationDeviceType deviceType, EventModifiers modifiers = EventModifiers.None)
         {
             T e = EventBase<T>.GetPooled();
@@ -346,6 +356,7 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static NavigationMoveEvent GetPooled(Direction direction, NavigationDeviceType deviceType, EventModifiers modifiers = EventModifiers.None)
         {
             NavigationMoveEvent e = GetPooled(deviceType, modifiers);

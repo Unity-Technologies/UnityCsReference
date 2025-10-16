@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Globalization;
 
@@ -11,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a ratio, used for Aspect Ratio style property.
     /// </summary>
+    [Serializable]
     readonly public partial struct Ratio : IEquatable<Ratio>
     {
         /// <summary>

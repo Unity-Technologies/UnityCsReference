@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class BackgroundField : BaseField<Background>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

@@ -171,7 +171,7 @@ namespace UnityEditor
                 bool locationPathExistedBeforeBuild = System.IO.Directory.Exists(options.locationPathName);
                 // Trigger build.
                 // Note: report will be null, if delayToAfterScriptReload = true
-                var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, options.assetBundleManifestPath, options.targetGroup, options.target, options.subtarget, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
+                var report = BuildPipeline.BuildPlayerFromUI(options, delayToAfterScriptReload);
 
                 if (report != null
                 )
@@ -184,7 +184,7 @@ namespace UnityEditor
                         report.summary.buildEndedAt.ToLocalTime(),
                         FriendlyFormatBuildDuration(report.summary.totalTime)
                         );
-                        
+
                     switch (report.summary.result)
                     {
                         case Build.Reporting.BuildResult.Unknown:
@@ -396,9 +396,10 @@ namespace UnityEditor
                 if (!Directory.Exists(check_dir))
                     Directory.CreateDirectory(check_dir);
 
-                // On OSX we've got replace/update dialog, for other platforms warn about deleting
-                // files in target folder.
-                if ((target == BuildTarget.iOS) && (Application.platform != RuntimePlatform.OSXEditor))
+                // All files are deleted in build path when building iOS/tvOS/visionOS project with replace option on WinEditor or MacEditor, we need to
+                // ask the user if they want to proceed by showing a warning dialog
+                bool isApplePlatform = target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.VisionOS;
+                if (isApplePlatform && !updateExistingBuild)
                     if (!FolderIsEmpty(path) && !UserWantsToDeleteFiles(path))
                         return false;
 

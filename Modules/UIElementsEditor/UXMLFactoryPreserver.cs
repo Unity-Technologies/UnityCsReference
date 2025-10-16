@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Compilation;
+using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -42,7 +43,7 @@ namespace UnityEditor.UIElements
                     {
                         var type = factory.GetType();
 
-                        if (s_PrecompiledUnityAssemblies.Contains(type.Assembly.Location))
+                        if (s_PrecompiledUnityAssemblies.Contains(type.Assembly.GetLoadedAssemblyPath()))
                             continue;
 
                         s_FactoryTypesUsedInAsset.Add(type);

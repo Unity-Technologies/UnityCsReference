@@ -71,7 +71,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        IReadOnlyList<Type> UxmlSupportedChildTypes
+        public IReadOnlyList<Type> uxmlSupportedChildTypes
         {
             get
             {
@@ -91,7 +91,7 @@ namespace UnityEditor.UIElements
             if (ReferenceEquals(m_UxmlSupportedChildTypes, s_DefaultSupportedChildren))
                 return true;
 
-            foreach (var allowed in UxmlSupportedChildTypes)
+            foreach (var allowed in uxmlSupportedChildTypes)
             {
                 if (allowed.IsAssignableFrom(type))
                     return true;

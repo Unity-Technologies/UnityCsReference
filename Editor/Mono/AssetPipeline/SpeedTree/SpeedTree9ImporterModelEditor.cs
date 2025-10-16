@@ -412,10 +412,10 @@ namespace UnityEditor.SpeedTree.Importer
                             }
 
                             // Descending order.
-                            lodsLeft.Sort(new Comparison<LODGUI.LODInfo>((i1, i2) => i2.LODLevel.CompareTo(i1.LODLevel)));
+                            lodsLeft.Sort(new Comparison<LODGUI.LODInfo>((i1, i2) => i2.LODIndex.CompareTo(i1.LODIndex)));
 
                             // Ascending order.
-                            lodsRight.Sort(new Comparison<LODGUI.LODInfo>((i1, i2) => i1.LODLevel.CompareTo(i2.LODLevel)));
+                            lodsRight.Sort(new Comparison<LODGUI.LODInfo>((i1, i2) => i1.LODIndex.CompareTo(i2.LODIndex)));
 
                             var lodButtonOrder = new List<LODGUI.LODInfo>();
                             lodButtonOrder.AddRange(lodsLeft);
@@ -425,8 +425,8 @@ namespace UnityEditor.SpeedTree.Importer
                             {
                                 if (lod.m_ButtonPosition.Contains(evt.mousePosition))
                                 {
-                                    m_SelectedLODSlider = lod.LODLevel;
-                                    m_SelectedLODRange = lod.LODLevel;
+                                    m_SelectedLODSlider = lod.LODIndex;
+                                    m_SelectedLODRange = lod.LODIndex;
                                     clickedButton = true;
                                     break;
                                 }
@@ -440,7 +440,7 @@ namespace UnityEditor.SpeedTree.Importer
                                     if (lod.m_RangePosition.Contains(evt.mousePosition))
                                     {
                                         m_SelectedLODSlider = -1;
-                                        m_SelectedLODRange = lod.LODLevel;
+                                        m_SelectedLODRange = lod.LODIndex;
                                         ExpandSelectedHeaderAndCloseRemaining(m_SelectedLODRange);
                                         break;
                                     }

@@ -39,6 +39,8 @@ namespace UnityEditor.EngineDiagnostics
         internal static extern bool GetEngineDiagnosticsEnabledDefaultBuildValue();
         [VisibleToOtherModules]
         internal static extern bool IsFeatureSupported(BuildTarget target);
+        [VisibleToOtherModules]
+        internal static extern void SetCustomEventUrl(string url);
 
         [RequiredByNativeCode]
         internal static void NotifyEngineDiagnosticsSettingsChanged(bool enabled) =>

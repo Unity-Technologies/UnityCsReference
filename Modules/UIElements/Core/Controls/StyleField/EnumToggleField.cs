@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a field for selecting an enum value.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class EnumToggleField<T> : BaseField<T> where T : struct, Enum, IConvertible
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
@@ -78,11 +78,7 @@ namespace UnityEngine.UIElements
                 {
                     kebabCase = k_SpecialEnumNamesCases.GetValueOrDefault(enumName, enumName.ToKebabCase());
                     button.name = kebabCase;
-                    if (useIcon)
-                    {
-                        button.iconImage = Background.FromTexture2D(new Texture2D(0, 0));
-                    }
-                    else
+                    if (!useIcon)
                     {
                         button.text = enumName;
                     }
@@ -114,6 +110,15 @@ namespace UnityEngine.UIElements
             if (index >= 0)
             {
                 m_ToggleButtonGroup.GetButton(index).text = text;
+            }
+        }
+
+        public void SetTooltipForEnumValue(T enumValue, string tooltipValue)
+        {
+            var index = Array.IndexOf(Enum.GetValues(typeof(T)), enumValue);
+            if (index >= 0)
+            {
+                m_ToggleButtonGroup.GetButton(index).tooltip = tooltipValue;
             }
         }
 

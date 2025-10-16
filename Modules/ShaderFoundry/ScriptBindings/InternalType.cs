@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -17,7 +18,7 @@ namespace UnityEditor.ShaderFoundry
         // We store all of the static data about an internal type here
         // since we can't require that IInternalType make static data available generically through the interface
         // (at least not until C#10 with static abstract interface members).
-        static DataTypeStatic.DataTypeInfo GetDataTypeInfo()
+        static DataTypeStatic.IDataTypeInfo GetDataTypeInfo()
         {
             var info = DataTypeStatic.GetInfoFromInternalType<T>();
             if (info.dataType == DataType.Unknown)
@@ -25,7 +26,8 @@ namespace UnityEditor.ShaderFoundry
             return info;
         }
 
-        private static DataTypeStatic.DataTypeInfo dataTypeInfo = GetDataTypeInfo();
+        [NoAutoStaticsCleanup]
+        private static DataTypeStatic.IDataTypeInfo dataTypeInfo = GetDataTypeInfo();
         public static DataType dataType => dataTypeInfo.dataType;
         public static Type publicType => dataTypeInfo.publicType;
         public static int internalTypeSizeInBytes => dataTypeInfo.internalTypeSizeInBytes;

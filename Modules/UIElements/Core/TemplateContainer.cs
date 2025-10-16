@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     [UxmlElement("Instance"), HideInInspector]
     [Icon("UIToolkit/Icons/TemplateContainer.png")]
-    public class TemplateContainer : BindableElement
+    public partial class TemplateContainer : BindableElement
     {
         internal static readonly BindingId templateIdProperty = nameof(templateId);
         internal static readonly BindingId templateSourceProperty = nameof(templateSource);
@@ -61,78 +61,6 @@ namespace UnityEngine.UIElements
                     e.templateSource = template;
                 if (ShouldWriteAttributeValue(templateId_UxmlAttributeFlags))
                     e.templateId = templateId;
-            }
-        }
-
-        /// <summary>
-        /// Instantiates and clones a <see cref="TemplateContainer"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits>
-        {
-            internal const string k_ElementName = "Instance";
-
-            public override string uxmlName => k_ElementName;
-
-            public override string uxmlQualifiedName => uxmlNamespace + "." + uxmlName;
-        }
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TemplateContainer"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BindableElement.UxmlTraits
-        {
-            internal const string k_TemplateAttributeName = "template";
-
-            UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = k_TemplateAttributeName, use = UxmlAttributeDescription.Use.Required };
-
-            /// <summary>
-            /// Returns an empty enumerable, as template instances do not have children.
-            /// </summary>
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            /// <summary>
-            /// Initialize <see cref="TemplateContainer"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                TemplateContainer templateContainer = ((TemplateContainer)ve);
-                templateContainer.templateId = m_Template.GetValueFromBag(bag, cc);
-                VisualTreeAsset vta = cc.visualTreeAsset?.ResolveTemplate(templateContainer.templateId);
-
-                if (vta == null)
-                    templateContainer.Add(new Label(string.Format("Unknown Template: '{0}'", templateContainer.templateId)));
-                else
-                {
-                    var bagOverrides = (bag as TemplateAsset)?.attributeOverrides;
-                    var contextOverrides = cc.attributeOverrides;
-
-                    if (bagOverrides != null)
-                    {
-                        if (contextOverrides == null)
-                            contextOverrides = new();
-                        // We want to add new overrides at the end of the list, as we
-                        // want parent instances to always override child instances.
-                        contextOverrides.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, bagOverrides));
-                    }
-
-                    // We keep track of VisualTreeAssets instantiated as Templates inside other VisualTreeAssets so that
-                    // users can find the reference and re-clone them.
-                    templateContainer.templateSource = vta;
-                    vta.CloneTree(ve, new CreationContext(cc.slotInsertionPoints, contextOverrides));
-                }
-
-                if (vta == null)
-                    Debug.LogErrorFormat("Could not resolve template with name '{0}'", templateContainer.templateId);
             }
         }
 

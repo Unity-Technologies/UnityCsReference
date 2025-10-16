@@ -47,6 +47,8 @@ namespace UnityEditor.Search
 
         public SearchContext context => m_Context;
         public ISearchView searchView => m_Context?.searchView;
+        public bool blocksSupportExclude { get; set; }
+
         public string searchText
         {
             get => m_SearchText ?? m_Context?.searchText;

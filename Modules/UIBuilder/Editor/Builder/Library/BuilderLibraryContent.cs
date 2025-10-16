@@ -234,7 +234,6 @@ namespace Unity.UI.Builder
 
             var customControlsCategory = CreateItem(BuilderConstants.LibraryCustomControlsSectionHeaderName, null, null, null, isHeader: true);
             s_ProjectAssetsScanner.ImportUxmlSerializedDataFromSource(customControlsCategory);
-            s_ProjectAssetsScanner.ImportFactoriesFromSource(customControlsCategory);
             if (customControlsCategory.hasChildren)
             {
                 projectContentTree.Add(customControlsCategory);

@@ -17,6 +17,7 @@ using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Rendering.Analytics;
 
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using UnityEngine.Pool;
 
 namespace UnityEditor
 {
@@ -30,7 +31,7 @@ namespace UnityEditor
         private int m_EnablingWaitCounter = 0;
         private int m_RepaintFrames = k_NeedToRepaintFrames;
         private int m_FrameEventsHash;
-        private bool m_ShowTabbedErrorBox;
+        private bool m_ShowErrorBox;
         private bool m_HasOpenedPlaymodeView;
         private Rect m_SearchRect;
         private string m_SearchString = String.Empty;
@@ -201,16 +202,22 @@ namespace UnityEditor
         private void DrawDisabledFrameDebugger()
         {
             GUI.enabled = true;
+
+            string message = FrameDebuggerStyles.EventDetails.k_DescriptionString;
+            MessageType messageType = MessageType.Info;
+
             if (!FrameDebuggerUtility.locallySupported)
             {
-                string warningMessage = (FrameDebuggerHelper.isOnLinuxOpenGL) ? FrameDebuggerStyles.EventDetails.k_WarningLinuxOpenGLMsg : FrameDebuggerStyles.EventDetails.k_WarningMultiThreadedMsg;
-                EditorGUILayout.HelpBox(warningMessage, MessageType.Warning, true);
+                message = (FrameDebuggerHelper.isOnLinuxOpenGL) ? FrameDebuggerStyles.EventDetails.k_WarningLinuxOpenGLMsg : FrameDebuggerStyles.EventDetails.k_WarningMultiThreadedMsg;
+                messageType = MessageType.Warning;
+            }
+            else if (m_ShowErrorBox)
+            {
+                message = FrameDebuggerStyles.EventDetails.k_PlaymodeViewsErrorString;
+                messageType = MessageType.Error;
             }
 
-            EditorGUILayout.HelpBox(FrameDebuggerStyles.EventDetails.k_DescriptionString, MessageType.Info, true);
-
-            if (m_ShowTabbedErrorBox)
-                EditorGUILayout.HelpBox(FrameDebuggerStyles.EventDetails.k_TabbedWithPlaymodeErrorString, MessageType.Error, true);
+            EditorGUILayout.HelpBox(message, messageType, true);
         }
 
         private void HandleEnablingFrameDebugger()
@@ -232,12 +239,51 @@ namespace UnityEditor
             }
         }
 
-        private bool CheckIfFDIsDockedWithGameWindow(DockArea da, PlayModeView gameWindow)
+        int GetAllAvailablePlayModeViews(ref List<PlayModeView> playModeViews)
         {
-            for (int i = 0; i < da.m_Panes.Count; i++)
-                if (gameWindow == da.m_Panes[i])
-                    return true;
-            return false;
+            if (playModeViews == null)
+                throw new ArgumentNullException(nameof(playModeViews));
+
+            var mainPlaymodeView = PlayModeView.GetMainPlayModeView();
+            if (mainPlaymodeView != null)
+                playModeViews.Add(mainPlaymodeView);
+
+            foreach (var playModeView in PlayModeView.GetAllPlayModeViewWindows())
+            {
+                if (playModeView != null && !playModeViews.Contains(playModeView))
+                    playModeViews.Add(playModeView);
+            }
+
+            return playModeViews.Count;
+        }
+
+        internal bool IsDebuggingAvailable(out PlayModeView playModeView)
+        {
+            playModeView = null;
+
+            // If we are debugging a remote player, we don't care about PlayMode views
+            if (!FrameDebugger.IsLocalEnabled() && m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor)
+                return true;
+
+            // If we are not connected to a remote player, we need at least one PlayMode view, not docked with us
+            using (ListPool<PlayModeView>.Get(out var availablePlaymodeViews))
+            {
+                if (GetAllAvailablePlayModeViews(ref availablePlaymodeViews) > 0)
+                {
+                    DockArea da = m_Parent as DockArea;
+                    foreach (var view in availablePlaymodeViews)
+                    {
+                        // valid if FD is not docked OR we found a view not docked with it
+                        if (da == null || !da.m_Panes.Contains(view))
+                        {
+                            playModeView = view;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return playModeView != null;
         }
 
         private bool OpenPlayModeView()
@@ -245,53 +291,15 @@ namespace UnityEditor
             if (m_HasOpenedPlaymodeView)
                 return true;
 
-            // When debugging remote players, we can ignore this check as it doesn't render to the Game Window.
-            if (!FrameDebugger.IsLocalEnabled() && m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor)
-                return true;
-
-            PlayModeView mainGameWindow = PlayModeView.GetMainPlayModeView();
-            List<PlayModeView> allGameWindows = PlayModeView.GetAllPlayModeViewWindows();
-            if (mainGameWindow || allGameWindows.Count > 0)
+            if (IsDebuggingAvailable(out var view))
             {
-                PlayModeView gameWindowToUse = mainGameWindow;
-
-                // The Frame Debugger and Game Window can not be docked together in
-                // the panes list (tabs) as both need to be shown in the Editor.
-                bool isFDInTheSamePaneAsGameWindow = false;
-                DockArea da = m_Parent as DockArea;
-                if (da)
-                    isFDInTheSamePaneAsGameWindow |= CheckIfFDIsDockedWithGameWindow(da, mainGameWindow);
-
-                // If it's docked, check if there are other game windows available to use
-                if (isFDInTheSamePaneAsGameWindow && allGameWindows.Count > 1)
-                {
-                    for (int i = 0; i < allGameWindows.Count; i++)
-                    {
-                        if (CheckIfFDIsDockedWithGameWindow(da, allGameWindows[i]))
-                            continue;
-
-                        isFDInTheSamePaneAsGameWindow = false;
-                        gameWindowToUse = allGameWindows[i];
-                        break;
-                    }
-                }
-
-                // When we can't enable the FD debugger, we display an error box informing the
-                // user to undock the Frame Debugger Window so it's not tabbed with the Game Window.
-                if (isFDInTheSamePaneAsGameWindow)
-                {
-                    m_ShowTabbedErrorBox = true;
-                    return false;
-                }
-                // Otherwise we show the Game Window
-                else
-                {
-                    gameWindowToUse.ShowTab();
-                    m_HasOpenedPlaymodeView = true;
-                    return true;
-                }
+                view.ShowTab();
+                m_HasOpenedPlaymodeView = true;
+                return true;
             }
 
+            // No valid views found, display the error box to the user
+            m_ShowErrorBox = true;
             return false;
         }
 
@@ -409,7 +417,7 @@ namespace UnityEditor
             if (enablingLocally && !FrameDebuggerUtility.locallySupported)
                 return;
 
-            m_ShowTabbedErrorBox = false;
+            m_ShowErrorBox = false;
             m_HasOpenedPlaymodeView = false;
             if (!OpenPlayModeView())
                 return;

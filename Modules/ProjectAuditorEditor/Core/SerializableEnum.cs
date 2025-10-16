@@ -1,0 +1,140 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+namespace Unity.ProjectAuditor.Editor.Core
+{
+    [Serializable]
+    public struct SerializableEnum<T> : IEquatable<T>, IEquatable<SerializableEnum<T>>, ISerializationCallbackReceiver
+            where T : struct, Enum
+    {
+        public SerializableEnum(T value) : this()
+        {
+            m_Value = value;
+        }
+
+        [SerializeField]
+        private string m_String;
+
+        private T m_Value;
+
+        public T Value
+        {
+            get { return m_Value; }
+            set { m_Value = value; }
+        }
+
+        public void OnBeforeSerialize()
+        {
+            m_String = m_Value.ToString();
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (Enum.TryParse(m_String, out T value))
+                m_Value = value;
+        }
+
+        public static implicit operator T(SerializableEnum<T> obj)
+        {
+            return obj.m_Value;
+        }
+
+        public static implicit operator SerializableEnum<T>(T value)
+        {
+            return new SerializableEnum<T>(value);
+        }
+
+        public bool Equals(T other)
+        {
+            return m_Value.Equals(other);
+        }
+
+        public bool Equals(SerializableEnum<T> other)
+        {
+            return m_Value.Equals(other.m_Value);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is SerializableEnum<T> other)
+                return Equals(other);
+
+            if (obj is T otherEnum)
+                return Equals(otherEnum);
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return m_Value.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return m_Value.ToString();
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(SerializableEnum<>), true)]
+    internal class SerializableEnumPropertyDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginChangeCheck();
+
+            var stringProp = property.FindPropertyRelative("_stringValue");
+            var enumType = fieldInfo.FieldType.GenericTypeArguments[0];
+
+            Enum enumValue = default;
+
+            try
+            {
+                enumValue = (Enum)Enum.Parse(enumType, stringProp.stringValue);
+            }
+            catch (ArgumentException) { }
+
+            if (enumType.IsDefined(typeof(FlagsAttribute), false))
+            {
+                enumValue = EditorGUI.EnumFlagsField(position, label, enumValue);
+            }
+            else
+            {
+                enumValue = EditorGUI.EnumPopup(position, label, enumValue);
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                stringProp.stringValue = enumValue.ToString();
+            }
+        }
+    }
+
+    internal static class SerializableEnumExtensions
+    {
+        public static T[] ToValuesArray<T>(this SerializableEnum<T>[] array)
+            where T : struct, Enum
+        {
+            return array.Select(v => v.Value).ToArray();
+        }
+
+        public static List<T> ToValuesList<T>(this SerializableEnum<T>[] array)
+            where T : struct, Enum
+        {
+            return array.Select(v => v.Value).ToList();
+        }
+
+        public static SerializableEnum<T>[] ToSerializableArray<T>(this IEnumerable<T> enumerable)
+            where T : struct, Enum
+        {
+            return enumerable.Select(v => new SerializableEnum<T>(v)).ToArray();
+        }
+    }
+}

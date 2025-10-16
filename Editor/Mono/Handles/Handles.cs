@@ -1452,20 +1452,26 @@ namespace UnityEditor
             return PlayModeView.GetMainPlayModeViewTargetSize();
         }
 
+        [Obsolete("Deprecated. Use DrawOutline(EntityId[], EntityId[], Color, Color, float) instead.")]
         public static void DrawOutline(int[] parentRenderers, int[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
+            => DrawOutline(parentRenderers.AsEntityIdArray(), childRenderers.AsEntityIdArray(), parentNodeColor, childNodeColor, fillOpacity);
+        public static void DrawOutline(EntityId[] parentRenderers, EntityId[] childRenderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
             if(Event.current.type != EventType.Repaint)
                 return;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
+        [Obsolete("Deprecated. Use DrawOutline(EntityId[], Color, float) instead.")]
         public static void DrawOutline(int[] renderers, Color color, float fillOpacity = 0) =>
+            DrawOutline(renderers.AsEntityIdArray(), null, color, color, fillOpacity);
+        public static void DrawOutline(EntityId[] renderers, Color color, float fillOpacity = 0) =>
             DrawOutline(renderers, null, color, color, fillOpacity);
 
         public static void DrawOutline(Renderer[] renderers, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
-            int[] parentRenderers, childRenderers;
+            EntityId[] parentRenderers, childRenderers;
             HandleUtility.FilterRendererIDs(renderers, out parentRenderers, out childRenderers);
             DrawOutline(parentRenderers, childRenderers, parentNodeColor, childNodeColor, fillOpacity);
         }
@@ -1475,54 +1481,54 @@ namespace UnityEditor
 
         public static void DrawOutline(GameObject[] objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
-            int[] parentRenderers, childRenderers;
-            HandleUtility.FilterInstanceIDs(objects, out parentRenderers, out childRenderers, out _);
+            EntityId[] parentRenderers, childRenderers;
+            HandleUtility.FilterEntityIds(objects, out parentRenderers, out childRenderers, out _);
             DrawOutline(parentRenderers, childRenderers, parentNodeColor, childNodeColor, fillOpacity);
         }
 
         public static void DrawOutline(GameObject[] objects, Color color, float fillOpacity = 0)
         {
             var index = 0;
-            var ids = new int[objects.Length];
+            var ids = new EntityId[objects.Length];
             foreach (var go in objects)
                 if (go.TryGetComponent(out Renderer renderer))
-                    ids[index++] = renderer.GetInstanceID();
+                    ids[index++] = renderer.GetEntityId();
             DrawOutline(ids, null, color, color, fillOpacity);
         }
 
         public static void DrawOutline(List<GameObject> objects, Color parentNodeColor, Color childNodeColor, float fillOpacity = 0)
         {
-            int[] parentRenderers, childRenderers;
-            HandleUtility.FilterInstanceIDs((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers, out _);
+            EntityId[] parentRenderers, childRenderers;
+            HandleUtility.FilterEntityIds((GameObject[])NoAllocHelpers.ExtractArrayFromList(objects), out parentRenderers, out childRenderers, out _);
             DrawOutline(parentRenderers, childRenderers, parentNodeColor, childNodeColor, fillOpacity);
         }
 
         public static void DrawOutline(List<GameObject> objects, Color color, float fillOpacity = 0)
         {
             var index = 0;
-            var ids = new int[objects.Count];
+            var ids = new EntityId[objects.Count];
             foreach (var go in objects)
             {
                 if (go.TryGetComponent(out Renderer renderer))
-                    ids[index++] = renderer.GetInstanceID();
+                    ids[index++] = renderer.GetEntityId();
             }
             DrawOutline(ids, null, color, color, fillOpacity);
         }
 
-        internal static void DrawOutlineOrWireframeInternal(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int[] parentRenderers, int[] childRenderers, OutlineDrawMode outlineMode)
+        internal static void DrawOutlineOrWireframeInternal(Color parentNodeColor, Color childNodeColor, float outlineAlpha, EntityId[] parentRenderers, EntityId[] childRenderers, OutlineDrawMode outlineMode)
         {
             // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
             var parentOutlineAlpha = parentNodeColor.a;
             var childOutlineAlpha = childNodeColor.a;
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), outlineMode, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
         }
 
         internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
         {
-            int[] parentRenderers, childRenderers;
-            HandleUtility.FilterInstanceIDs(Selection.gameObjects, out parentRenderers, out childRenderers, out _);
+            EntityId[] parentRenderers, childRenderers;
+            HandleUtility.FilterEntityIds(Selection.gameObjects, out parentRenderers, out childRenderers, out _);
 
             // RenderOutline will swap color.a and outlineAlpha so we reverse it here to preserve correct behavior wrt Color settings in Preferences
             var parentOutlineAlpha = parentNodeColor.a;
@@ -1530,7 +1536,7 @@ namespace UnityEditor
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
 
-            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), OutlineDrawMode.SelectionOutline, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, parentOutlineAlpha, childOutlineAlpha);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 

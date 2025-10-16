@@ -69,7 +69,15 @@ namespace UnityEditor.StyleSheets
         {
             var property = builder.BeginProperty(name);
             options.AddComment(property, comment);
-            builder.AddValue(value, StyleValueType.ResourcePath);
+            builder.AddResourcePath(new ResolvedResourcePath(value, null));
+            builder.EndProperty();
+        }
+
+        public void AddPropertyResource(string name, string value, string subAssetName, string comment = "")
+        {
+            var property = builder.BeginProperty(name);
+            options.AddComment(property, comment);
+            builder.AddResourcePath(new ResolvedResourcePath(value, subAssetName));
             builder.EndProperty();
         }
 
@@ -149,7 +157,7 @@ namespace UnityEditor.StyleSheets
                         helper.builder.AddValue(sheet.ReadKeyword(value));
                         break;
                     case StyleValueType.ResourcePath:
-                        helper.builder.AddValue(sheet.ReadResourcePath(value), StyleValueType.ResourcePath);
+                        helper.builder.AddResourcePath(sheet.ReadResourcePath(value));
                         break;
                     case StyleValueType.String:
                         helper.builder.AddValue(sheet.ReadString(value), StyleValueType.String);

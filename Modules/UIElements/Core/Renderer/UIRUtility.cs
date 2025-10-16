@@ -14,8 +14,7 @@ namespace UnityEngine.UIElements
     {
         static readonly ProfilerMarker k_ComputeTransformMatrixMarker = new("UIR.ComputeTransformMatrix");
 
-        public static readonly string k_DefaultShaderName = UIR.Shaders.k_Runtime;
-        public static readonly string k_DefaultWorldSpaceShaderName = UIR.Shaders.k_RuntimeWorld;
+        public static readonly string k_DefaultShaderName = UIR.Shaders.k_Default;
 
         // We provide our own epsilon to avoid issues such as case 1335430. Some native plugin
         // disable float-denormalization, which can lead to the wrong Mathf.Epsilon being used.

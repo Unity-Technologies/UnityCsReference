@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.LightTransport
 {
@@ -133,5 +134,8 @@ namespace UnityEngine.LightTransport
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern bool WindowSphericalHarmonicsL2Internal(RadeonRaysContext context, BufferID shIn, BufferID shOut, int probeCount);
+        
+        [NativeMethod(IsThreadSafe = true)]
+        internal static unsafe extern bool DeringSphericalHarmonicsL2Internal(SphericalHarmonicsL2* shIn, SphericalHarmonicsL2* shOut, int probeCount);
     }
 }

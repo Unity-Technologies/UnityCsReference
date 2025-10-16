@@ -13,12 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Link = link;
             m_Application = application;
             AddToClassList(k_LinkClass);
-
-            text = string.Empty;
-            AddToClassList("quickStartButton");
-            AddToClassList("rightAlign");
-            Add(new VisualElement { classList = { "quickStartIcon" } });
-            Add(new TextElement { text = L10n.Tr("QuickStart"), classList = { "quickStartText" } });
         }
     }
 }

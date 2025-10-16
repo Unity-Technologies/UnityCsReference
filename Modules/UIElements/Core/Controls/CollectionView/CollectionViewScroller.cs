@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.HierarchyV2
 {
@@ -108,6 +109,7 @@ namespace UnityEngine.UIElements.HierarchyV2
     /// <summary>
     /// A vertical or horizontal scrollbar.
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.HierarchyModule")]
     internal class CollectionViewScroller : VisualElement, INotifyValueChanged<double>
     {
         internal static readonly BindingId valueProperty = nameof(value);

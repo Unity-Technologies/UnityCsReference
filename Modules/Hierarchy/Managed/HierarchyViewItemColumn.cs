@@ -96,6 +96,12 @@ namespace Unity.Hierarchy
             if (node == HierarchyNode.Null)
                 throw new InvalidOperationException("Expected node to be valid");
 
+            // Patch: normally unnecessary, but since BindCell can be called whenever UI is repaint
+            // outside the regular update loop, it is possible the node no longer exists in the hierarchy
+            // even though it still exists in the view model.
+            if (!m_View.Source.Exists(node))
+                return;
+
             container.Bind(in node, m_View);
             OnBindItem?.Invoke(container.ViewItem);
         }
@@ -108,7 +114,10 @@ namespace Unity.Hierarchy
             if (element is not HierarchyViewItemContainer container)
                 throw new ArgumentException($"Expected {nameof(element)} to be a {nameof(HierarchyViewItemContainer)}");
 
-            OnUnbindItem?.Invoke(container.ViewItem);
+            // In the case the container was never bound, ViewItem will be null
+            if (container.ViewItem != null)
+                OnUnbindItem?.Invoke(container.ViewItem);
+
             container.Unbind();
         }
     }

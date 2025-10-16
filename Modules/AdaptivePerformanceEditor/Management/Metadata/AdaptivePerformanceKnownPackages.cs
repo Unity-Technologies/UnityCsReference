@@ -136,7 +136,12 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                                 BuildTargetGroup.Android,
                                 BuildTargetGroup.iOS,
                                 BuildTargetGroup.tvOS,
-                                BuildTargetGroup.VisionOS
+                                BuildTargetGroup.VisionOS,
+                                BuildTargetGroup.PS4,
+                                BuildTargetGroup.PS5,
+                                BuildTargetGroup.XboxOne,
+                                BuildTargetGroup.GameCoreXboxSeries,
+                                BuildTargetGroup.GameCoreXboxOne
                             },
                             priority = 5,
                         },

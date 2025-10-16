@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Packages Included");
 
-            var root = resourceLoader.GetTemplate("FeatureDependencies.uxml");
+            var root = resourceLoader.GetTemplate("DetailsTabs/FeatureDependencies.uxml");
             m_ContentContainer.Add(root);
 
             cache = new VisualElementCache(root);
@@ -172,14 +172,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
                 item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageName);
 
-            dependencyTitle.value = version?.displayName ?? selectedDependencyPackageName;
-            dependencyDesc.value =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
+            dependencyTitle.text = version?.displayName ?? selectedDependencyPackageName;
+            dependencyDesc.text =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
 
             if (!showElementsInDetailsView)
                 return;
 
             var installedPackageVersion = version.package?.versions.installed;
-            dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
+            dependencyVersion.text = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
             var featureDependencyState = GetFeatureDependencyState(version);
             versionState.ClearClassList();
@@ -205,15 +205,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        protected override void DerivedRefreshHeight(float detailHeight, float scrollViewHeight, float detailsHeaderHeight,
-            float tabViewHeaderContainerHeight, float customContainerHeight, float extensionContainerHeight)
-        {
-            var detailsContentHeight = detailHeight - fillerLeftContainer.layout.height;
-            var newFillerHeight = Mathf.Max(0, scrollViewHeight - detailsContentHeight);
-            if ((int)fillerLeftContainer.layout.height != (int)newFillerHeight)
-                fillerLeftContainer.style.height = newFillerHeight;
-        }
-
         private VisualElementCache cache { get; }
         private VisualElement dependencyList => cache.Get<VisualElement>("featureDependenciesList");
         private SelectableLabel dependencyTitle => cache.Get<SelectableLabel>("featureDependencyTitle");
@@ -221,7 +212,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label versionState => cache.Get<Label>("versionState");
         private SelectableLabel dependencyDesc => cache.Get<SelectableLabel>("featureDependencyDesc");
         private ExtendedHelpBox dependencyInfoBox => cache.Get<ExtendedHelpBox>("featureDependencyInfoBox");
-        private VisualElement fillerLeftContainer => cache.Get<VisualElement>("fillerLeftContainer");
-        private Button dependencyLink => cache.Get<Button>("featureDependencyLink");
+        private Button dependencyLink => cache.Get<Button>("featureDependencyButton");
     }
 }

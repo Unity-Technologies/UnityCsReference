@@ -405,8 +405,6 @@ namespace UnityEditor.Search
 
             if (m_ViewState.filterHandler != null)
                 items = items.Where(item => m_ViewState.filterHandler(item));
-
-            // TODO Table Performance: Adding here will sort items and do a lot of Group Manipulation. Can we make this faster? Sort only when the session is done?
             m_FilteredItems.AddItems(items);
             if (m_FilteredItems.TotalCount != countBefore)
                 RefreshContent(RefreshFlags.ItemsChanged);
@@ -414,6 +412,7 @@ namespace UnityEditor.Search
 
         private void OnQueryRequestFinished(SearchContext context)
         {
+            m_FilteredItems.SortAllGroups();
             UpdateSelectionFromIds();
             Utils.CallDelayed(() => RefreshContent(RefreshFlags.QueryCompleted));
         }

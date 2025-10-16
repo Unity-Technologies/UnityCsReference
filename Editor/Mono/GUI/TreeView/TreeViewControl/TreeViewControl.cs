@@ -228,6 +228,7 @@ namespace UnityEditor.IMGUI.Controls
         protected bool showBorder { get; set; }
         protected bool showingHorizontalScrollBar { get { return m_TreeView.showingHorizontalScrollBar; }}
         protected bool showingVerticalScrollBar { get { return m_TreeView.showingVerticalScrollBar; } }
+        internal bool sortByNameAfterSearch { get; set; } = true;
 
         protected float cellMargin
         {
@@ -447,12 +448,16 @@ namespace UnityEditor.IMGUI.Controls
             m_TreeView.OnEvent();
 
             if (showBorder)
-                rect = m_GUI.DoBorder(rect);
+                rect = m_GUI.GetRectWithinBorders(rect);
 
             if (m_MultiColumnHeader != null)
                 TreeViewWithMultiColumnHeader(rect);
             else
                 m_TreeView.OnGUI(rect, m_TreeViewKeyControlID);
+
+            // Draw border last so it is on top of everything else
+            if (showBorder)
+                m_GUI.DoBorder(rect);
 
             CommandEventHandling();
         }

@@ -286,7 +286,7 @@ namespace Unity.UI.Builder
                     action =>
                     {
                         Selection.activeObject = linkedInstancedVTA;
-                        EditorGUIUtility.PingObject(linkedInstancedVTA.GetInstanceID());
+                        EditorGUIUtility.PingObject(linkedInstancedVTA.GetEntityId());
                     });
             }
 

@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_LineHeight = 32;
 
         private int m_Height;
-        internal override Vector2 windowSize => new Vector2(k_Width, m_Height);
+        public override Vector2 windowSize => new Vector2(k_Width, m_Height);
 
         private class InProgressContainer : VisualElement
         {
@@ -150,14 +150,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        internal override void OnDropdownShown()
+        public override void OnDropdownShown()
         {
             // Since OnDropdownShown might be called multiple times, we want to make sure the events are not registered multiple times
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
         }
 
-        internal override void OnDropdownClosed()
+        public override void OnDropdownClosed()
         {
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
         }

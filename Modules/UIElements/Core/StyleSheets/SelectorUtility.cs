@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements
             var selectorSplit = complexSelectorStr.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             var fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelectorStr);
-            if (fullSpecificity == 0)
+            if (fullSpecificity == CSSSpec.InvalidSpecificityScore)
             {
                 error = $"Selector '{complexSelectorStr}' is invalid: failed to calculate selector specificity.";
                 return false;

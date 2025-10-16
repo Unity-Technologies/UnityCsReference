@@ -12,6 +12,14 @@ namespace UnityEngine.UIElements
 {
     partial class InlineStyleAccessPropertyBag : PropertyBag<InlineStyleAccess>, INamedProperties<InlineStyleAccess>
     {
+        static InlineStyleAccessPropertyBag()
+        {
+            ConverterGroups.RegisterGlobal((ref OverflowInternal v) => (Overflow)v);
+            ConverterGroups.RegisterGlobal((ref OverflowInternal v) => new StyleEnum<Overflow>((Overflow)v));
+            ConverterGroups.RegisterGlobal((ref Overflow v) => (OverflowInternal)v);
+            ConverterGroups.RegisterGlobal((ref StyleEnum<Overflow> v) => (OverflowInternal)v.value);
+        }
+
         readonly List<IProperty<InlineStyleAccess>> m_PropertiesList;
 
         readonly Dictionary<string, IProperty<InlineStyleAccess>> m_PropertiesHash;
@@ -61,6 +69,7 @@ namespace UnityEngine.UIElements
                 ConverterGroups.RegisterGlobal((ref Texture2D v) => new StyleBackground(v));
                 ConverterGroups.RegisterGlobal((ref Sprite v) => new StyleBackground(v));
                 ConverterGroups.RegisterGlobal((ref VectorImage v) => new StyleBackground(v));
+                ConverterGroups.RegisterGlobal((ref RenderTexture v) => new StyleBackground(Background.FromRenderTexture(v)));
                 ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.texture);
                 ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.sprite);
                 ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.renderTexture);

@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
     /// SA: [[Clickable]], [[Image]], [[ManipulatorActivationFilter]]
     /// </remarks>
     [Icon("UIToolkit/Icons/Button.png")]
-    public class Button : TextElement
+    public partial class Button : TextElement
     {
         internal static readonly BindingId iconImageProperty = nameof(iconImage);
 
@@ -50,11 +50,11 @@ namespace UnityEngine.UIElements
                 }, false);
             }
 
-            #pragma warning disable 649
+#pragma warning disable 649
             [ImageFieldValueDecorator("Icon Image")]
             [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
-            #pragma warning restore 649
+#pragma warning restore 649
 
             public override object CreateInstance() => new Button();
 
@@ -67,44 +67,6 @@ namespace UnityEngine.UIElements
                     var e = (Button)obj;
                     e.iconImageReference = iconImageReference;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Button"/> using data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> that is created from UXML.
-        /// </remarks>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Button, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Button"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the properties of a Button element that you can
-        /// use in a UXML asset.
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextElement.UxmlTraits
-        {
-            private readonly UxmlImageAttributeDescription m_IconImage = new() { name = "icon-image" };
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public UxmlTraits()
-            {
-                focusable.defaultValue = true;
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var button = (Button)ve;
-                button.iconImage = m_IconImage.GetValueFromBag(bag, cc);
             }
         }
 
@@ -253,6 +215,10 @@ namespace UnityEngine.UIElements
 
         // The element that will hold and render the icon within the button (sibling of text element).
         Image m_ImageElement;
+        internal Image imageElement => m_ImageElement;
+
+        bool m_IconImageIsInline;
+        internal bool iconImageIsInline => m_IconImageIsInline;
 
         // Holds the corresponding icon value of said type (Texture, Sprite, VectorImage).
         Background m_IconImage;
@@ -272,27 +238,21 @@ namespace UnityEngine.UIElements
                 if (value.IsEmpty())
                 {
                     m_IconImage = value;
-                    ResetButtonHierarchy();
+                    m_IconImageIsInline = false;
+
+                    // This will reset the hierarchy if no custom style is resolved
+                    ReadCustomProperties(customStyle);
+
                     NotifyPropertyChanged(iconImageProperty);
 
                     return;
                 }
 
-                if (m_ImageElement == null)
-                    UpdateButtonHierarchy();
-
-                // The image control will reset the other values to null
-                if (value.texture)
-                    m_ImageElement.image = value.texture;
-                else if (value.sprite)
-                    m_ImageElement.sprite = value.sprite;
-                else if (value.renderTexture)
-                    m_ImageElement.image = value.renderTexture;
-                else
-                    m_ImageElement.vectorImage = value.vectorImage;
-
                 m_IconImage = value;
-                EnableInClassList(iconOnlyUssClassName, string.IsNullOrEmpty(text));
+                m_IconImageIsInline = true;
+
+                UpdateImageElement(m_IconImage);
+
                 NotifyPropertyChanged(iconImageProperty);
             }
         }
@@ -362,6 +322,88 @@ namespace UnityEngine.UIElements
             tabIndex = 0;
 
             RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+        }
+
+        void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
+        {
+            ReadCustomProperties(evt.customStyle);
+        }
+
+        private void ReadCustomProperties(ICustomStyle customStyleProvider)
+        {
+            if (!m_IconImageIsInline)
+            {
+                if (customStyleProvider.TryGetValue(Image.s_ImageProperty, out var textureValue))
+                {
+                    SetCustomProperty(Background.FromTexture2D(textureValue));
+                }
+                else if (customStyleProvider.TryGetValue(Image.s_SpriteProperty, out var spriteValue))
+                {
+                    SetCustomProperty(Background.FromSprite(spriteValue));
+                }
+                else if (customStyleProvider.TryGetValue(Image.s_VectorImageProperty, out var vectorImageValue))
+                {
+                    SetCustomProperty(Background.FromVectorImage(vectorImageValue));
+                }
+                // If the value is not inline and none of the custom style properties are resolved, unset the value.
+                else
+                {
+                    ClearProperty();
+                }
+            }
+        }
+
+        void SetCustomProperty(Background value)
+        {
+            Debug.Assert(!m_IconImageIsInline, "Expected icon image to not be inline when using set custom property");
+            if (m_ImageElement != null)
+            {
+                if (value.texture && value.texture == m_ImageElement.source)
+                    return;
+                if (value.sprite && value.sprite == m_ImageElement.source)
+                    return;
+                if (value.renderTexture && value.renderTexture == m_ImageElement.source)
+                    return;
+                if (value.vectorImage && value.vectorImage == m_ImageElement.source)
+                    return;
+            }
+
+            UpdateImageElement(value);
+
+            IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+            NotifyPropertyChanged(iconImageProperty);
+        }
+
+        private void ClearProperty()
+        {
+            if (m_IconImageIsInline)
+                return;
+
+            UpdateImageElement(null);
+        }
+
+        void UpdateImageElement(Background value)
+        {
+            if (value == null)
+            {
+                ResetButtonHierarchy();
+                return;
+            }
+
+            if (m_ImageElement == null)
+                UpdateButtonHierarchy();
+
+            // The image control will reset the other values to null
+            if (value.texture)
+                m_ImageElement.image = value.texture;
+            else if (value.sprite)
+                m_ImageElement.sprite = value.sprite;
+            else if (value.renderTexture)
+                m_ImageElement.image = value.renderTexture;
+            else
+                m_ImageElement.vectorImage = value.vectorImage;
+            EnableInClassList(iconOnlyUssClassName, string.IsNullOrEmpty(text));
         }
 
         private void OnNavigationSubmit(NavigationSubmitEvent evt)

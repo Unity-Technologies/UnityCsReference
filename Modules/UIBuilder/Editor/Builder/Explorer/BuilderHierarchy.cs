@@ -77,8 +77,9 @@ namespace Unity.UI.Builder
         {
             var isVEA = element.GetVisualElementAsset() != null;
             var isVTA = element.GetVisualTreeAsset() != null;
+            var builderOpenedFromCtxMenu = Builder.s_NextSelectedIdFromDocumentCommand != -1;
 
-            return isVEA || isVTA;
+            return isVEA || isVTA || builderOpenedFromCtxMenu;
         }
 
         protected override void InitEllipsisMenu()

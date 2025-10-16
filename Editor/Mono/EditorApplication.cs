@@ -136,11 +136,15 @@ namespace UnityEditor
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
         public delegate void ProjectWindowItemCallback(string guid, Rect selectionRect);
+        [Obsolete("ProjectWindowItemInstanceCallback is obsolete. Use ProjectWindowItemByEntityIdCallback instead.")]
         public delegate void ProjectWindowItemInstanceCallback(int instanceID, Rect selectionRect);
+        public delegate void ProjectWindowItemByEntityIdCallback(EntityId entityId, Rect selectionRect);
 
         // Delegate for OnGUI events for every visible list item in the ProjectWindow.
         public static ProjectWindowItemCallback projectWindowItemOnGUI;
+        [Obsolete("projectWindowItemInstanceOnGUI is obsolete. Use projectWindowItemByEntityIdOnGUI instead.")]
         public static ProjectWindowItemInstanceCallback projectWindowItemInstanceOnGUI;
+        public static ProjectWindowItemByEntityIdCallback projectWindowItemByEntityIdOnGUI;
 
         // Can be used to ensure repaint of the ProjectWindow.
         public static void RepaintProjectWindow()
@@ -157,10 +161,14 @@ namespace UnityEditor
         }
 
         // Delegate to be called for every visible list item in the HierarchyWindow on every OnGUI event.
+        [Obsolete("HierarchyWindowItemCallback is obsolete. Use HierarchyWindowItemByEntityIdCallback instead.")]
         public delegate void HierarchyWindowItemCallback(int instanceID, Rect selectionRect);
+        public delegate void HierarchyWindowItemByEntityIdCallback(EntityId entityId, Rect selectionRect);
 
         // Delegate for OnGUI events for every visible list item in the HierarchyWindow.
+        [Obsolete("hierarchyWindowItemOnGUI is obsolete. Use hierarchyWindowItemByEntityIdOnGUI instead.")]
         public static HierarchyWindowItemCallback hierarchyWindowItemOnGUI;
+        public static HierarchyWindowItemByEntityIdCallback hierarchyWindowItemByEntityIdOnGUI;
 
         // Delegate for refreshing hierarchies.
         internal static CallbackFunction refreshHierarchy;
@@ -208,6 +216,7 @@ namespace UnityEditor
         public static CallbackFunction delayCall;
         private static DelegateWithPerformanceTracker<CallbackFunction> m_DelayCallEvent = new DelegateWithPerformanceTracker<CallbackFunction>($"{nameof(EditorApplication)}.{nameof(delayCall)}");
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static Action CallDelayed(CallbackFunction action, double delaySeconds = 0.0f)
         {
             var startTime = DateTime.UtcNow;
@@ -253,7 +262,7 @@ namespace UnityEditor
 
         internal static CallbackFunction assetBundleNameChanged;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
         internal static CallbackFunction fileMenuSaved;
 
         internal static event Action frameAndRenameNewGameObject;
@@ -569,7 +578,7 @@ namespace UnityEditor
             }
         }
 
-        [RequiredByNativeCode]
+        [VisibleToOtherModules("UnityEditor.PlayModeModule")]
         internal static void TogglePlaying()
         {
             isPlaying = !isPlaying;

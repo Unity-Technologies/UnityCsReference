@@ -226,7 +226,10 @@ namespace Unity.Hierarchy
             var isExpanded = viewModel.HasAllFlags(in m_Node, HierarchyNodeFlags.Expanded);
             m_Toggle.SetValueWithoutNotify(showToggle && isExpanded);
             Icon.EnableInClassList(k_HierarchyItemIconCut, viewModel.HasAllFlags(in m_Node, HierarchyNodeFlags.Cut));
-            m_Name.Text = m_Handler != null ? m_Handler.GetDisplayName(m_View, in m_Node) : m_View.Source.GetName(in m_Node);
+            if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
+            else
+                m_Name.Text = m_View.Source.GetName(in m_Node);
 
             // Setup handler-specific or user-defined styling
             m_View.InvokeBindViewItem(this);
@@ -305,7 +308,7 @@ namespace Unity.Hierarchy
             if (m_Node == HierarchyNode.Null)
                 return;
 
-            if (m_Handler != null && !m_Handler.CanSetName(m_View, in m_Node))
+            if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler && !editorHandler.CanSetName(m_View, in m_Node))
                 return;
 
             m_Name.BeginRename();
@@ -326,8 +329,8 @@ namespace Unity.Hierarchy
             if (m_Node == HierarchyNode.Null || string.IsNullOrEmpty(text))
                 return;
 
-            if (m_Handler != null)
-                m_Handler.Internal_OnSetName(m_View, in m_Node, text);
+            if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+                editorHandler.OnSetName(m_View, in m_Node, text);
             else
                 m_View.Source.SetName(in m_Node, text);
         }

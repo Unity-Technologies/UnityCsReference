@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/RectField.png")]
-    public class RectField : BaseCompositeField<Rect, FloatField, float>
+    public partial class RectField : BaseCompositeField<Rect, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -65,38 +65,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="RectField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<RectField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="RectField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<Rect, FloatField, float>.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-            UxmlFloatAttributeDescription m_WValue = new UxmlFloatAttributeDescription { name = "w" };
-            UxmlFloatAttributeDescription m_HValue = new UxmlFloatAttributeDescription { name = "h" };
-
-            /// <summary>
-            /// Initialize <see cref="RectField"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var r = (RectField)ve;
-                r.SetValueWithoutNotify(new Rect(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_WValue.GetValueFromBag(bag, cc), m_HValue.GetValueFromBag(bag, cc)));
-            }
-        }
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-rect-field";
@@ -134,7 +102,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/RectIntField.png")]
-    public class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
+    public partial class RectIntField : BaseCompositeField<RectInt, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -185,38 +153,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="RectIntField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<RectIntField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="RectIntField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<RectInt, IntegerField, int>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
-            UxmlIntAttributeDescription m_YValue = new UxmlIntAttributeDescription { name = "y" };
-            UxmlIntAttributeDescription m_WValue = new UxmlIntAttributeDescription { name = "w" };
-            UxmlIntAttributeDescription m_HValue = new UxmlIntAttributeDescription { name = "h" };
-
-            /// <summary>
-            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="RectIntField"/>.
-            /// </summary>
-            /// <param name="ve">The <see cref="VisualElement"/> to be initialized.</param>
-            /// <param name="bag">Bags of attributes where the values come from.</param>
-            /// <param name="cc">Creation Context, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var r = (RectIntField)ve;
-                r.SetValueWithoutNotify(new RectInt(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_WValue.GetValueFromBag(bag, cc), m_HValue.GetValueFromBag(bag, cc)));
-            }
-        }
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-rect-int-field";
@@ -254,7 +190,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/Vector2Field.png")]
-    public class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
+    public partial class Vector2Field : BaseCompositeField<Vector2, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -299,36 +235,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="Vector2Field"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Vector2Field, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector2Field"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<Vector2, FloatField, float>.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-
-            /// <summary>
-            /// Initialize <see cref="Vector2Field"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (Vector2Field)ve;
-                f.SetValueWithoutNotify(new Vector2(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc)));
-            }
-        }
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector2-field";
@@ -365,7 +271,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/Vector3Field.png")]
-    public class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
+    public partial class Vector3Field : BaseCompositeField<Vector3, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -413,37 +319,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="Vector3Field"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Vector3Field, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector3Field"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<Vector3, FloatField, float>.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-            UxmlFloatAttributeDescription m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
-
-            /// <summary>
-            /// Initialize <see cref="Vector3Field"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            /// <param name="cc">The creation context; unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (Vector3Field)ve;
-                f.SetValueWithoutNotify(new Vector3(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc)));
-            }
-        }
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector3-field";
@@ -481,7 +356,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/Vector4Field.png")]
-    public class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
+    public partial class Vector4Field : BaseCompositeField<Vector4, FloatField, float>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -532,37 +407,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="Vector4Field"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Vector4Field, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector4Field"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<Vector4, FloatField, float>.UxmlTraits
-        {
-            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-            UxmlFloatAttributeDescription m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
-            UxmlFloatAttributeDescription m_WValue = new UxmlFloatAttributeDescription { name = "w" };
-
-            /// <summary>
-            /// Initialize <see cref="Vector4Field"/> properties using values from the attribute bag.
-            /// </summary>
-            /// <param name="ve">The object to initialize.</param>
-            /// <param name="bag">The attribute bag.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (Vector4Field)ve;
-                f.SetValueWithoutNotify(new Vector4(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc), m_WValue.GetValueFromBag(bag, cc)));
-            }
-        }
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector4-field";
@@ -600,7 +444,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/Vector2IntField.png")]
-    public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
+    public partial class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -646,36 +490,6 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="Vector2IntField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Vector2IntField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector2IntField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
-            UxmlIntAttributeDescription m_YValue = new UxmlIntAttributeDescription { name = "y" };
-
-            /// <summary>
-            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="Vector2IntField"/>.
-            /// </summary>
-            /// <param name="ve"><see cref="VisualElement"/> to initialize.</param>
-            /// <param name="bag">Bag of attributes where to get them.</param>
-            /// <param name="cc">Creation Context, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (Vector2IntField)ve;
-                f.SetValueWithoutNotify(new Vector2Int(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc)));
-            }
-        }
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-vector2-int-field";
@@ -712,7 +526,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     [Icon("UIToolkit/Icons/Vector3IntField.png")]
-    public class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
+    public partial class Vector3IntField : BaseCompositeField<Vector3Int, IntegerField, int>
     {
         internal override FieldDescription[] DescribeFields()
         {
@@ -756,37 +570,6 @@ namespace UnityEngine.UIElements
                         uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="Vector3IntField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Vector3IntField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Vector3IntField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlTraits
-        {
-            UxmlIntAttributeDescription m_XValue = new UxmlIntAttributeDescription { name = "x" };
-            UxmlIntAttributeDescription m_YValue = new UxmlIntAttributeDescription { name = "y" };
-            UxmlIntAttributeDescription m_ZValue = new UxmlIntAttributeDescription { name = "z" };
-
-            /// <summary>
-            /// Initializes the <see cref="UxmlTraits"/> for the <see cref="Vector3IntField"/>.
-            /// </summary>
-            /// <param name="ve">VisualElement to initialize.</param>
-            /// <param name="bag">Bag of attributes where to get them.</param>
-            /// <param name="cc">Context Creation, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-
-                var f = (Vector3IntField)ve;
-                f.SetValueWithoutNotify(new Vector3Int(m_XValue.GetValueFromBag(bag, cc), m_YValue.GetValueFromBag(bag, cc), m_ZValue.GetValueFromBag(bag, cc)));
             }
         }
 

@@ -27,7 +27,7 @@ namespace UnityEditor
             SerializedProperty clipProperty = serializedObject.FindProperty("m_Animation");
 
             EditorGUILayout.PropertyField(clipProperty, true);
-            int newAnimID = clipProperty.objectReferenceInstanceIDValue;
+            int newAnimID = clipProperty.objectReferenceEntityIdValue;
 
             SerializedProperty arrProperty = serializedObject.FindProperty("m_Animations");
             int arrSize = arrProperty.arraySize;
@@ -40,7 +40,7 @@ namespace UnityEditor
             if (m_PrePreviewAnimationArraySize != -1)
             {
                 // Always resize if the last anim element is not the current animation
-                int lastAnimID = arrSize > 0 ? arrProperty.GetArrayElementAtIndex(arrSize - 1).objectReferenceInstanceIDValue : -1;
+                int lastAnimID = arrSize > 0 ? arrProperty.GetArrayElementAtIndex(arrSize - 1).objectReferenceEntityIdValue : -1;
                 if (lastAnimID != newAnimID)
                     arrProperty.arraySize = m_PrePreviewAnimationArraySize;
                 if (!ObjectSelector.isVisible)

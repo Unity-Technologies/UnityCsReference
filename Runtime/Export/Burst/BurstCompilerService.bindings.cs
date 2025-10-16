@@ -12,6 +12,7 @@ namespace Unity.Burst.LowLevel
     [NativeHeader("Runtime/Burst/Burst.h")]
     [NativeHeader("Runtime/Burst/BurstDelegateCache.h")]
     [StaticAccessor("BurstCompilerService::Get()", StaticAccessorType.Arrow)]
+    [VisibleToOtherModules]
     internal static partial class BurstCompilerService
     {
         [NativeMethod("Initialize")]

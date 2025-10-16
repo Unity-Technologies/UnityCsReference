@@ -47,7 +47,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         };
 
         private readonly InstanceDescription m_InstanceDescription;
-        private PlaymodeStatusElement.InstanceView m_ParentInstanceView;
         private PopupField<RunModeState> m_DropDown;
         private Image m_DropdownRunModeImage = null;
         private Button m_FreeRunButton;
@@ -63,22 +62,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 isVirtualInstance ? k_InstanceButtonCloneActivateText : k_InstanceButtonStartText;
             m_ButtonCallToActionStopText =
                 isVirtualInstance ? k_InstanceButtonCloneDeactivateText : k_InstanceButtonStopText;
-
-            var instance = GetInstanceForThisElement();
-            if (instance != null)
-                instance.AddInstanceExecutionEventListener(OnInstanceExecutionUpdate);
-        }
-
-        private void OnInstanceExecutionUpdate(Instance instance, Node node)
-        {
-            RefreshStatusUI();
         }
 
         internal void BindRunModeDropDownElement(
             VisualElement instanceContainer,
             VisualElement statusContainer,
             VisualElement freeRunButtonContainer,
-            PlaymodeStatusElement.InstanceView parentInstanceView)
+            CommonInstanceStatusElement parentInstanceView)
         {
             // Create and bind Running Mode Label
             var runLabel = new Label();
@@ -112,11 +102,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // Also keep a reference views for hide / show purposes
             m_FreeRunButton = instanceActionButton;
-            m_ParentInstanceView = parentInstanceView;
 
             // If the scenario config is not valid, disable the call to action button
-            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
-            var isValid = currentConfig != null && currentConfig.IsConfigurationValid(out string _);
+            var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
+            var isValid = currentConfig != null && currentConfig.IsValid(out string _);
             instanceActionButton.SetEnabled(isValid);
             instanceActionButton.tooltip = isValid ? "" : k_InstanceButtonToolTipText;
 
@@ -134,7 +123,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }).Every(1000);
 
             // Listen to play mode state changes, needed for Instance Call-to-Action buttons.
-            PlayModeManager.instance.StateChanged += (state) =>
+            ScenarioManagerProvider.instance.StateChanged += (state) =>
             {
                 UpdateButtonActiveState();
             };
@@ -142,6 +131,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void OnSetFreeRunningModeSelected(ChangeEvent<RunModeState> evt)
         {
+            // If a runtime instance is already available, update its mode.
+            var instance = GetInstanceForThisElement();
+            if (instance != null)
+                instance.RunModeState = evt.newValue;
+
             m_InstanceDescription.RunModeState = evt.newValue;
             UpdateUI();
         }
@@ -195,17 +189,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // Disable Dropdown if scenario is running
             bool enabledDropdown = ScenarioRunner.instance.ActiveScenario == null ||
-                                   ScenarioRunner.instance.ActiveScenario.Status.State != ScenarioState.Running;
+                                   ScenarioRunner.instance.ActiveScenario.StatusData.OverallStatus.State != ExecutionState.Running;
             m_DropDown.SetEnabled(enabledDropdown && !isInstanceRunning);
-
-            // Highlight the Instance row if it is Manual Contolled
-            if (isManualModeControlled)
-                m_ParentInstanceView.AddToClassList(k_HighlightedBackgroundClassName);
-            else
-                m_ParentInstanceView.RemoveFromClassList(k_HighlightedBackgroundClassName);
-
-            // Update Instance Status
-            RefreshStatusUI();
 
             // Update Running Mode Icon if it has not changed.
             if (m_DropdownRunModeImage != null)
@@ -248,7 +233,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private Instance GetInstanceForThisElement()
         {
-            var currentConfig = PlayModeManager.instance.ActivePlayModeConfig as ScenarioConfig;
+            var currentConfig = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
             if (currentConfig == null || currentConfig.Scenario == null)
                 return null;
 
@@ -314,33 +299,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private void RefreshPlayModeConfigsWindowIfShown()
         {
             // Grab the Play Mode Scenarios Config window if it's showing
-            var windows = Resources.FindObjectsOfTypeAll<PlayModeConfigurationsWindow>();
+            var windows = Resources.FindObjectsOfTypeAll<PlayModeScenariosWindow>();
             if (windows == null || windows.Length != 1)
                 return;
 
             // Ensure Scenario Configs are disabled if there are active Free Running
             // instances to prevent modifications while they are running.
-            PlayModeConfigurationsWindow PlayModeConfigurationsWindow = windows[0];
+            PlayModeScenariosWindow PlayModeConfigurationsWindow = windows[0];
             DetailView element = PlayModeConfigurationsWindow.rootVisualElement
                 .Query<DetailView>(DetailView.k_DetailedViewName);
 
             if (element != null)
                 element.UpdateView();
 
-        }
-
-        private void RefreshStatusUI()
-        {
-            var instance = GetInstanceForThisElement();
-            if (instance != null && instance.IsActive())
-            {
-                var nodeStatus = instance.GetCurrentNodeStatus();
-                var currentStage = instance.GetCurrentStage();
-                m_ParentInstanceView.RefreshStatusUI(currentStage, nodeStatus);
-                return;
-            }
-
-            m_ParentInstanceView.RefreshStatusUI(ExecutionStage.None, new List<NodeStatus>());
         }
     }
 }

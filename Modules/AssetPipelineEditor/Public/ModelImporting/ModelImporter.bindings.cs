@@ -219,8 +219,9 @@ namespace UnityEditor
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     public enum ModelImporterMaterialLocation
     {
-        [InspectorName("Use External Materials (Legacy)")]
+        [InspectorName("(OBSOLETE) Use External Materials (Legacy)")]
         [Tooltip("Use external materials if found in the project.")]
+        [Obsolete("External Material Location is no longer supported.", false)]
         External = 0,
         [InspectorName("Use Embedded Materials")]
         [Tooltip("Embed the material inside the imported asset.")]

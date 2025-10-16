@@ -13,7 +13,7 @@ namespace UnityEditor.Build.Content
 {
     [Serializable]
     [UsedByNativeCode]
-    [NativeHeader("Modules/ContentBuild/Editor/Public/BuildUsageTagSet.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/BuildUsage/BuildUsageTagSet.h")]
     public class BuildUsageTagSet : ISerializable, IDisposable
     {
         private IntPtr m_Ptr;

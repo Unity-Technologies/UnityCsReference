@@ -12,10 +12,10 @@ namespace Unity.UI.Builder
 {
     sealed class FoldoutTransitionField : FoldoutField
     {
-        const string k_UxmlPath = BuilderConstants.UtilitiesPath + "/FoldoutField/FoldoutTransitionField.uxml";
-        const string k_UssPath = BuilderConstants.UtilitiesPath + "/FoldoutField/FoldoutTransitionField.uss";
-        const string k_UssDarkSkinPath = BuilderConstants.UtilitiesPath + "/FoldoutField/FoldoutTransitionFieldDark.uss";
-        const string k_UssLightSkinPath = BuilderConstants.UtilitiesPath + "/FoldoutField/FoldoutTransitionFieldLight.uss";
+        const string k_UxmlPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionField.uxml";
+        const string k_UssPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionField.uss";
+        const string k_UssDarkSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionFieldDark.uss";
+        const string k_UssLightSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/FoldoutTransitionFieldLight.uss";
 
         const string k_BaseClass = "unity-foldout-transition-field";
         const string k_RemoveButtonClass = k_BaseClass + "__remove-transition-button";
@@ -92,6 +92,7 @@ namespace Unity.UI.Builder
             header.Add(RemoveTransitionButton);
 
             AddToClassList(k_BaseClass);
+            AddToClassList(k_BaseClass + "--builder");
 
             // Can't override this from uss :(
             this.Q<Toggle>().style.flexGrow = 1;

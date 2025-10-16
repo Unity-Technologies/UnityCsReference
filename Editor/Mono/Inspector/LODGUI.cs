@@ -32,12 +32,19 @@ namespace UnityEditor
             new Color(0.6980392f, 0.4549019f, 0.1098039f, 1.0f),
             new Color(0.6f,       0.3725490f, 0.0941176f, 1.0f),
             new Color(0.5098039f, 0.3176470f, 0.0784313f, 1.0f),
-            new Color(0.4117647f, 0.2549019f, 0.0627450f, 1.0f),
-            new Color(0.3215686f, 0.2f,       0.0470588f, 1.0f),
-            new Color(0.2509803f, 0.1529411f, 0.0392156f, 1.0f),
-            new Color(0.2f,       0.1254901f, 0.0313725f, 1.0f),
             new Color(0.1686274f, 0.1058823f, 0.0274509f, 1.0f),
         };
+
+        public static readonly Gradient kMeshLODColorGradient = new Gradient
+        {
+            colorKeys = new[]
+            {
+                new GradientColorKey(kMeshLODColors[4], 0.0f),
+                new GradientColorKey(kMeshLODColors[5], 1.0f),
+            }
+        };
+
+        public const int kMeshLODGradientStart = 4;
 
         public static readonly Color kCulledLODColor = new Color(.4f, 0f, 0f, 1f);
 
@@ -59,6 +66,20 @@ namespace UnityEditor
 
         public class GUIStyles
         {
+            public readonly int[] lodContributeGIValues = { -1, 0, 1, 2, 3, 4, 5, 6, 7 };
+            public readonly GUIContent[] lodContributeGIStrings =
+            {
+                EditorGUIUtility.TrTextContent("None"),
+                EditorGUIUtility.TrTextContent("LOD 0"),
+                EditorGUIUtility.TrTextContent("LOD 1"),
+                EditorGUIUtility.TrTextContent("LOD 2"),
+                EditorGUIUtility.TrTextContent("LOD 3"),
+                EditorGUIUtility.TrTextContent("LOD 4"),
+                EditorGUIUtility.TrTextContent("LOD 5"),
+                EditorGUIUtility.TrTextContent("LOD 6"),
+                EditorGUIUtility.TrTextContent("LOD 7"),
+            };
+
             public readonly GUIStyle m_LODSliderBG = "LODSliderBG";
             public readonly GUIStyle m_LODSliderRange = "LODSliderRange";
             public readonly GUIStyle m_LODSliderRangeSelected = "LODSliderRangeSelected";
@@ -79,6 +100,7 @@ namespace UnityEditor
             public readonly GUIContent m_IconRendererMinus                  = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove Renderer");
             public readonly GUIContent m_CameraIcon                         = EditorGUIUtility.IconContent<Camera>();
 
+            public readonly GUIContent m_LodContributeGITitle               = EditorGUIUtility.TrTextContent("Global Illumination LOD", "The level of detail that contributes to global illumination calculations.");
             public readonly GUIContent m_UploadToImporter                   = EditorGUIUtility.TrTextContent("Upload to Importer", "Upload the modified screen percentages to the model importer.");
             public readonly GUIContent m_UploadToImporterDisabled           = EditorGUIUtility.TrTextContent("Upload to Importer", "Number of LOD's in the scene instance differ from the number of LOD's in the imported model.");
             public readonly GUIContent m_RecalculateBounds                  = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Recalculate bounds to encapsulate all child renderers.");
@@ -144,6 +166,21 @@ namespace UnityEditor
             return new Rect(totalRect.x + (Mathf.Round(totalRect.width * (1.0f - percentage))) - 5, totalRect.y, 10, totalRect.height);
         }
 
+        public static Rect CalcLODCameraIconRect(Rect cameraRect)
+        {
+            return new Rect(cameraRect.center.x - 15, cameraRect.y - 25, 32, 32);
+        }
+
+        public static Rect CalcLODCameraLineRect(Rect cameraRect)
+        {
+            return new Rect(cameraRect.center.x - 1, cameraRect.y, 2, cameraRect.height);
+        }
+
+        public static Rect CalcLODCameraPctRect(Rect cameraIconRect, Rect cameraLineRect)
+        {
+            return new Rect(cameraIconRect.center.x - 5, cameraLineRect.yMax, 35, 20);
+        }
+
         public static Rect GetCulledBox(Rect totalRect, float previousLODPercentage)
         {
             var r = CalcLODRange(totalRect, previousLODPercentage, 0.0f);
@@ -158,14 +195,14 @@ namespace UnityEditor
             public Rect m_ButtonPosition;
             public Rect m_RangePosition;
 
-            public LODInfo(int lodLevel, string name, float screenPercentage)
+            public LODInfo(int lodIndex, string name, float screenPercentage)
             {
-                LODLevel = lodLevel;
+                LODIndex = lodIndex;
                 LODName = name;
                 RawScreenPercent = screenPercentage;
             }
 
-            public int LODLevel { get; private set; }
+            public int LODIndex { get; private set; }
             public string LODName { get; private set; }
             public float RawScreenPercent { get; set; }
 
@@ -203,13 +240,13 @@ namespace UnityEditor
         {
             // Find the lower detail lod... clamp value to stop overlapping slider
             var minimum = 0.0f;
-            var lowerLOD = lods.FirstOrDefault(x => x.LODLevel == lods[lod].LODLevel + 1);
+            var lowerLOD = lods.FirstOrDefault(x => x.LODIndex == lods[lod].LODIndex + 1);
             if (lowerLOD != null)
                 minimum = lowerLOD.RawScreenPercent;
 
             // Find the higher detail lod... clamp value to stop overlapping slider
             var maximum = 1.0f;
-            var higherLOD = lods.FirstOrDefault(x => x.LODLevel == lods[lod].LODLevel - 1);
+            var higherLOD = lods.FirstOrDefault(x => x.LODIndex == lods[lod].LODIndex - 1);
             if (higherLOD != null)
                 maximum = higherLOD.RawScreenPercent;
 
@@ -240,6 +277,35 @@ namespace UnityEditor
             return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
         }
 
+        public static void UpdateCameraFromLODSlider(Vector3 point, Camera sceneCamera, float distance)
+        {
+            // We need to do inverse of SceneView.cameraDistance:
+            // given the distance, need to figure out "size" to focus the scene view on.
+            float size;
+            if (sceneCamera.orthographic)
+            {
+                size = distance;
+                if (sceneCamera.aspect < 1.0)
+                    size *= sceneCamera.aspect;
+            }
+            else
+            {
+                var fov = sceneCamera.fieldOfView;
+
+                // adjust FOV if the viewport has a portrait aspect ratio
+                if (sceneCamera.aspect < 1.0f)
+                {
+                    var halfFovTan = Mathf.Tan(fov * Mathf.Deg2Rad * 0.5f) * sceneCamera.aspect;
+                    size = distance * Mathf.Sin(Mathf.Atan(halfFovTan));
+                }
+                else
+                {
+                    size = distance * Mathf.Sin(fov * Mathf.Deg2Rad * 0.5f);
+                }
+            }
+            SceneView.lastActiveSceneView.LookAtDirect(point, sceneCamera.transform.rotation, size);
+        }
+
         public static void DrawLODSlider(Rect area, IList<LODInfo> lods, int selectedLevel, bool[] enabledMeshLods = null)
         {
             Styles.m_LODSliderBG.Draw(area, GUIContent.none, false, false, false, false);
@@ -260,6 +326,15 @@ namespace UnityEditor
             DrawCulledRange(area, lods.Count > 0 ? lods[lods.Count - 1].RawScreenPercent : 1.0f);
         }
 
+        public static void DrawMeshLODSlider(Rect area, IList<LODInfo> lods, int startLOD, int lodCount)
+        {
+            Styles.m_LODSliderBG.Draw(area, GUIContent.none, false, false, false, false);
+            for (int i = 0; i < lods.Count; i++)
+            {
+                var lod = lods[i];
+                DrawMeshLODRange(lod, i == 0 ? 1.0f : lods[i - 1].RawScreenPercent, startLOD, lodCount, kMeshLODGradientStart);
+            }
+        }
 
         public static void DrawMixedValueLODSlider(Rect area)
         {
@@ -277,13 +352,28 @@ namespace UnityEditor
             GUI.Label(area, "---", centeredStyle);
         }
 
-        public static void DrawLODLabel(Camera camera, Vector3 position, float size, int LODLevel, Color[] colors, string LODText)
+        public static bool IsDrawingLabelInCurrentSceneView()
         {
+            if (Event.current.type != EventType.Repaint
+                || Camera.current == null
+                || SceneView.lastActiveSceneView != SceneView.currentDrawingSceneView)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static void DrawLODLabel(Camera camera, Vector3 position, float size, int lodLevel, int lodCount, Color[] colors, string lodText, int startGradient = 0, Gradient highLODGradient = null)
+        {
+            if (AnnotationUtility.showLODLabels == false)
+                return;
+
             if (Vector3.Dot(camera.transform.forward, (camera.transform.position - position).normalized) > 0)
                 return;
 
             // Draw cap around LOD to visualize it's size
-            Handles.color = LODLevel != -1 ? colors[Math.Min(LODLevel, colors.Length - 1)] : LODGUI.kCulledLODColor;
+            Handles.color = lodLevel != -1 ? CalculateColor(lodLevel, lodCount, colors, startGradient, highLODGradient) : LODGUI.kCulledLODColor;
 
             Handles.SelectionFrame(0, position, camera.transform.rotation, size / 2);
 
@@ -308,7 +398,7 @@ namespace UnityEditor
 
             Handles.BeginGUI();
             GUI.Label(rect, GUIContent.none, EditorStyles.notificationBackground);
-            EditorGUI.DoDropShadowLabel(rect, GUIContent.Temp(LODLevel >= 0 ? LODText + LODLevel : "Culled"), LODGUI.Styles.m_LODLevelNotifyText, 0.3f);
+            EditorGUI.DoDropShadowLabel(rect, GUIContent.Temp(lodLevel >= 0 ? lodText + lodLevel : "Culled"), LODGUI.Styles.m_LODLevelNotifyText, 0.3f);
             Handles.EndGUI();
         }
 
@@ -326,6 +416,11 @@ namespace UnityEditor
             EditorGUIUtility.AddCursorRect(currentLOD.m_ButtonPosition, MouseCursor.ResizeHorizontal);
         }
 
+        public static Color CalculateColor(int lodLevel, int lodCount, Color[] colors, int startGradient = 0, Gradient highLODGradient = null)
+        {
+            return (lodLevel >= startGradient && highLODGradient != null) ? highLODGradient.Evaluate((lodLevel - startGradient) / (float)(lodCount - startGradient)) : colors[lodLevel];
+        }
+
         private static void DrawLODRange(LODInfo currentLOD, float previousLODPercentage, bool isSelected, bool isMeshLodEnabled = false)
         {
             var tempColor = GUI.backgroundColor;
@@ -337,17 +432,38 @@ namespace UnityEditor
                 foreground.height -= kSelectedLODRangePadding * 2;
                 foreground.center += new Vector2(kSelectedLODRangePadding, kSelectedLODRangePadding);
                 Styles.m_LODSliderRangeSelected.Draw(currentLOD.m_RangePosition, GUIContent.none, false, false, false, false);
-                GUI.backgroundColor = kLODColors[currentLOD.LODLevel];
+                GUI.backgroundColor = kLODColors[currentLOD.LODIndex];
                 if (foreground.width > 0)
                     Styles.m_LODSliderRange.Draw(foreground, GUIContent.none, false, false, false, false);
                 Styles.m_LODSliderText.Draw(currentLOD.m_RangePosition, startPercentageString, false, false, false, false);
             }
             else
             {
-                GUI.backgroundColor = kLODColors[currentLOD.LODLevel];
+                GUI.backgroundColor = kLODColors[currentLOD.LODIndex];
                 GUI.backgroundColor *= 0.6f;
                 Styles.m_LODSliderRange.Draw(currentLOD.m_RangePosition, GUIContent.none, false, false, false, false);
                 Styles.m_LODSliderText.Draw(currentLOD.m_RangePosition, startPercentageString, false, false, false, false);
+            }
+            GUI.backgroundColor = tempColor;
+        }
+
+        private static void DrawMeshLODRange(LODInfo currentLOD, float previousLODPercentage, int startLOD, int lodCount, int startGradient)
+        {
+            var tempColor = GUI.backgroundColor;
+            var startPercentageString = string.Format("{0}\n{1:0}%", currentLOD.LODName, previousLODPercentage * 100);
+            int lodLevel = currentLOD.LODIndex + startLOD;
+
+            GUI.backgroundColor = CalculateColor(lodLevel, lodCount, kMeshLODColors, startGradient, kMeshLODColorGradient);
+
+            Styles.m_LODSliderRange.Draw(currentLOD.m_RangePosition, GUIContent.none, false, false, false, false);
+
+            if (Styles.m_LODSliderText.CalcSize(new GUIContent(startPercentageString)).x <= currentLOD.m_RangePosition.width)
+                Styles.m_LODSliderText.Draw(currentLOD.m_RangePosition, startPercentageString, false, false, false, false);
+            else
+            {
+                startPercentageString = string.Format("{0}\n{1:0}%", lodLevel, previousLODPercentage * 100);
+                if (Styles.m_LODSliderText.CalcSize(new GUIContent(startPercentageString)).x <= currentLOD.m_RangePosition.width)
+                    Styles.m_LODSliderText.Draw(currentLOD.m_RangePosition, startPercentageString, false, false, false, false);
             }
             GUI.backgroundColor = tempColor;
         }

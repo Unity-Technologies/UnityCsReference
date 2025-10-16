@@ -12,7 +12,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.Utils
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     internal static class Paths
     {
         internal static char[] invalidFilenameChars;
@@ -93,6 +93,7 @@ namespace UnityEditor.Utils
             throw new IOException("CreateTempDirectory failed");
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static string NormalizePath(this string path)
         {
             if (Path.DirectorySeparatorChar == '\\')

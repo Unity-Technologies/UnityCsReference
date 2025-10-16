@@ -34,9 +34,9 @@ namespace Unity.UI.Builder
             return foldoutField;
         }
 
-        const string k_UssPath = BuilderConstants.UtilitiesPath + "/Transitions/TransitionsListView.uss";
-        const string k_UssDarkSkinPath = BuilderConstants.UtilitiesPath + "/Transitions/TransitionsListViewDark.uss";
-        const string k_UssLightSkinPath = BuilderConstants.UtilitiesPath + "/Transitions/TransitionsListViewLight.uss";
+        const string k_UssPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/TransitionsListView.uss";
+        const string k_UssDarkSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/TransitionsListViewDark.uss";
+        const string k_UssLightSkinPath = BuilderConstants.UIToolkitAuthoringControlsPath + "/TransitionsListViewLight.uss";
 
         const string k_BaseClass = "unity-transition-list-view";
         const string k_ContentClass = k_BaseClass + "__content";

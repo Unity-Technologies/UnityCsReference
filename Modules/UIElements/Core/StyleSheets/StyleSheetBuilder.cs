@@ -39,6 +39,7 @@ namespace UnityEngine.UIElements.StyleSheets
         List<string> m_Strings = new List<string>();
         List<StyleRule> m_Rules = new List<StyleRule>();
         List<Object> m_Assets = new List<Object>();
+        List<ResourcePath> m_ResourcePaths = new List<ResourcePath>();
         List<ScalableImage> m_ScalableImages = new List<ScalableImage>();
         List<StyleComplexSelector> m_ComplexSelectors = new List<StyleComplexSelector>();
 
@@ -180,6 +181,19 @@ namespace UnityEngine.UIElements.StyleSheets
             RegisterValue(m_ScalableImages, StyleValueType.ScalableImage, value);
         }
 
+        public void AddResourcePath(ResolvedResourcePath resolvedResource)
+        {
+            var resourcePath = new ResourcePath(m_Strings.Count);
+            m_Strings.Add(resolvedResource.path);
+            if (resolvedResource.hasSubAssetName)
+            {
+                resourcePath.subAssetNameIndex = m_Strings.Count;
+                m_Strings.Add(resolvedResource.subAssetName);
+            }
+
+            RegisterValue(m_ResourcePaths, StyleValueType.ResourcePath, resourcePath);
+        }
+
         public void EndProperty()
         {
             Log("Ending property");
@@ -216,6 +230,7 @@ namespace UnityEngine.UIElements.StyleSheets
             writeTo.dimensions = m_Dimensions.ToArray();
             writeTo.colors = m_Colors.ToArray();
             writeTo.strings = m_Strings.ToArray();
+            writeTo.resourcePaths = m_ResourcePaths.ToArray();
             writeTo.assets = m_Assets.ToArray();
             writeTo.scalableImages = m_ScalableImages.ToArray();
 
@@ -224,6 +239,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 writeTo.FlattenImportedStyleSheetsRecursive();
 
             writeTo.SetRules(m_Rules.ToArray());
+            UIElementsUtility.MarkStyleSheetAsChanged(writeTo);
         }
 
         void RegisterVariable(string value)

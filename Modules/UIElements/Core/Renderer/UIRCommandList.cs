@@ -26,7 +26,7 @@ namespace UnityEngine.UIElements.UIR
         public int rangeCount;
 
         public int textureName;
-        public Texture texture;
+        public IntPtr texturePtr;
         public int gpuDataOffset;
         public Vector4 gpuData0;
         public Vector4 gpuData1;
@@ -37,10 +37,10 @@ namespace UnityEngine.UIElements.UIR
         static readonly MemoryLabel k_MemoryLabel = new (nameof(UIElements), $"Renderer.{nameof(CommandList)}");
 
         public VisualElement m_Owner; // Might be null if non-initialized or for the default command list.
+        public UIRenderer m_Renderer;
         readonly IntPtr m_VertexDecl;
         readonly IntPtr m_StencilState;
         public MaterialPropertyBlock constantProps = new();
-        public MaterialPropertyBlock batchProps = new();
         public GCHandle handle; // GCHandle for native-side interactions
         public Material m_Material;
         public CommandFlags flags;
@@ -62,18 +62,18 @@ namespace UnityEngine.UIElements.UIR
         public void Reset()
         {
             m_Owner = null;
+            m_Renderer = null;
             m_Material = null;
             m_Commands.Clear();
             m_DrawRanges.Clear();
-
             constantProps.Clear();
-            batchProps.Clear();
         }
 
         public void Init(VisualElement owner, Material material, CommandFlags commandFlags)
         {
             Debug.Assert(m_Owner == null);
             m_Owner = owner;
+            m_Renderer = (owner as UIDocumentRootElement)?.uiRenderer;
             m_Material = material;
             flags = commandFlags;
 
@@ -89,27 +89,44 @@ namespace UnityEngine.UIElements.UIR
             Utility.SetPropertyBlock(constantProps);
             Utility.SetStencilState(m_StencilState, 0);
 
-            for(int i = 0 ; i < m_Commands.Count ; ++i)
+            int textureCount = 0;
+            int* textureNames = stackalloc int[8];
+            IntPtr* texturePtrs = stackalloc IntPtr[8];
+
+            IntPtr shaderPropertySheetPtr = Utility.AllocateShaderPropertySheet();
+            try
             {
-                SerializedCommand cmd = m_Commands[i];
-                switch (cmd.type)
+                for (int i = 0; i < m_Commands.Count; ++i)
                 {
-                    case SerializedCommandType.SetTexture:
-                        batchProps.SetTexture(cmd.textureName, cmd.texture);
-                        m_GpuTextureData[cmd.gpuDataOffset + 0] = cmd.gpuData0;
-                        m_GpuTextureData[cmd.gpuDataOffset + 1] = cmd.gpuData1;
-                        batchProps.SetVectorArray(TextureSlotManager.textureTableId, m_GpuTextureData);
-                        break;
-                    case SerializedCommandType.ApplyBatchProps:
-                        Utility.SetPropertyBlock(batchProps);
-                        break;
-                    case SerializedCommandType.DrawRanges:
-                        vStream[0] = cmd.vertexBuffer;
-                        Utility.DrawRanges(cmd.indexBuffer, vStream, 1, new IntPtr(m_DrawRanges.GetSlice(cmd.firstRange, cmd.rangeCount).GetUnsafePtr()), cmd.rangeCount, m_VertexDecl);
-                        break;
-                    default:
-                        throw new NotImplementedException();
+                    // TODO: Use reference instead of copy (not currently possible with List<T>)
+                    SerializedCommand cmd = m_Commands[i];
+                    switch (cmd.type)
+                    {
+                        case SerializedCommandType.SetTexture:
+                            textureNames[textureCount] = cmd.textureName;
+                            texturePtrs[textureCount] = cmd.texturePtr;
+                            textureCount++;
+                            m_GpuTextureData[cmd.gpuDataOffset + 0] = cmd.gpuData0;
+                            m_GpuTextureData[cmd.gpuDataOffset + 1] = cmd.gpuData1;
+                            break;
+                        case SerializedCommandType.ApplyBatchProps:
+                            Utility.SetAllTextures(shaderPropertySheetPtr, new IntPtr(textureNames), new IntPtr(texturePtrs), textureCount);
+                            textureCount = 0;
+                            Utility.SetVectorArray(shaderPropertySheetPtr, TextureSlotManager.textureTableId, m_GpuTextureData);
+                            Utility.ApplyShaderPropertySheet(shaderPropertySheetPtr);
+                            break;
+                        case SerializedCommandType.DrawRanges:
+                            vStream[0] = cmd.vertexBuffer;
+                            Utility.DrawRanges(cmd.indexBuffer, vStream, 1, new IntPtr(m_DrawRanges.GetSlice(cmd.firstRange, cmd.rangeCount).GetUnsafePtr()), cmd.rangeCount, m_VertexDecl);
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
                 }
+            }
+            finally
+            {
+                Utility.ReleasePropertySheet(shaderPropertySheetPtr);
             }
         }
 
@@ -119,7 +136,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 type = SerializedCommandType.SetTexture,
                 textureName = name,
-                texture = texture,
+                texturePtr = UnityEngine.Object.MarshalledUnityObject.MarshalNotNull<Texture>(texture),
                 gpuDataOffset = gpuDataOffset,
                 gpuData0 = gpuData0,
                 gpuData1 = gpuData1,
@@ -160,7 +177,6 @@ namespace UnityEngine.UIElements.UIR
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         protected void Dispose(bool disposing)

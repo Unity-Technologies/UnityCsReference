@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditorInternal;
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEditor
@@ -32,8 +33,10 @@ namespace UnityEditor
             public static GUIContent EnableOutputSuspension = EditorGUIUtility.TrTextContent("Enable Output Suspension (editor only)", "When enabled automatically suspends audio output after detecting that the output has been silent for a long duration (editor only). Suspending the audio system disables a mechanism in the operating system that prevents the computer from going into sleep mode.");
 
             public static GUIContent DSPBufferSizeInfo = EditorGUIUtility.TrTextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system");
-            public static GUIContent EnhancedAudioFoundationInfo = EditorGUIUtility.TrTextContent("Enhanced will be used on Windows and MacOS. Other platforms will use Classic.");
+            public static GUIContent EnhancedAudioFoundationInfo = EditorGUIUtility.TrTextContent("Enhanced will be used on Windows, macOS, and iOS. Other platforms will use Classic.");
         }
+
+        private static bool m_ShowAudioFoundationUI = Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "-showAudioFoundationUI");
 
         private SerializedProperty m_Volume;
         private SerializedProperty m_RolloffScale;
@@ -72,6 +75,11 @@ namespace UnityEditor
             m_DisableAudio              = serializedObject.FindProperty("m_DisableAudio");
             m_VirtualizeEffects         = serializedObject.FindProperty("m_VirtualizeEffects");
             m_EnableOutputSuspension    = serializedObject.FindProperty("m_EnableOutputSuspension");
+
+            // If the audio foundation UI feature flag is set or this project's audio foundation is set to enhanced when we first start up,
+            // then we show the enhanced audio foundation UI for this entire Editor session.
+            if (m_AudioFoundation.intValue.Equals(1))
+                m_ShowAudioFoundationUI = true;
         }
 
         //This function assumes that index 0 is None...
@@ -104,14 +112,17 @@ namespace UnityEditor
                         m_ActualDSPBufferSize.intValue),
                     MessageType.Info);
 
-            EditorGUILayout.PropertyField(m_AudioFoundation, Styles.AudioFoundation);
-            if (m_AudioFoundation.intValue.Equals(1))
+            if (m_ShowAudioFoundationUI)
             {
-                EditorGUILayout.HelpBox(Styles.EnhancedAudioFoundationInfo.text, MessageType.Info);
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_OutputChannelLayout, Styles.OutputChannelLayout);
-                EditorGUILayout.PropertyField(m_OutputSamplingRate, Styles.OutputSamplingRate);
-                EditorGUI.indentLevel--;
+                EditorGUILayout.PropertyField(m_AudioFoundation, Styles.AudioFoundation);
+                if (m_AudioFoundation.intValue.Equals(1))
+                {
+                    EditorGUILayout.HelpBox(Styles.EnhancedAudioFoundationInfo.text, MessageType.Info);
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_OutputChannelLayout, Styles.OutputChannelLayout);
+                    EditorGUILayout.PropertyField(m_OutputSamplingRate, Styles.OutputSamplingRate);
+                    EditorGUI.indentLevel--;
+                }
             }
 
             EditorGUILayout.PropertyField(m_VirtualVoiceCount, Styles.VirtualVoiceCount);

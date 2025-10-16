@@ -67,6 +67,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorMonoConsole.h")]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal partial class LogEntry
     {
         public string message;
@@ -74,7 +75,7 @@ namespace UnityEditor
         public int line;
         public int column;
         public int mode;
-        public int instanceID;
+        public EntityId entityId;
         public int identifier;
         public int globalLineIndex;
         public int callstackTextStartUTF8;
@@ -104,6 +105,7 @@ namespace UnityEditor
     // All functions marked internal may not be called unless you call StartGettingEntries and EndGettingEntries
     [StaticAccessor("GetEditorMonoConsole()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Mono/LogEntries.bindings.h")]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal sealed class LogEntries
     {
         public static extern void RowGotDoubleClicked(int index);

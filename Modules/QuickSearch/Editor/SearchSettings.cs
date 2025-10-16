@@ -238,8 +238,13 @@ namespace UnityEditor.Search
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             hideTabs = ReadSetting(settings, nameof(hideTabs), false);
+
+            // Default if not a source build
             indexOnEditorStartup = ReadSetting(settings, nameof(indexOnEditorStartup), !Unsupported.IsSourceBuild(checkHumanControllingUs: false));
-            logIndexingPerformanceReport = ReadSetting(settings, nameof(logIndexingPerformanceReport), !Unsupported.IsSourceBuild(checkHumanControllingUs: false));
+
+            // Default is always false. If we want to log this data at all times, we should log it in the Log folder.
+            logIndexingPerformanceReport = ReadSetting(settings, nameof(logIndexingPerformanceReport), false);
+
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
             queryBuilder = ReadSetting(settings, nameof(queryBuilder), true);
@@ -1131,6 +1136,14 @@ namespace UnityEditor.Search
                             db.settings.options.extended = deepIndexing;
                             db.SaveSettingsOptions( startIndexing:true);
                         }
+
+                        var hasPackageIndexing = db.settings.IsPackagesIndexingEnabled();
+                        var packageIndexing = EditorGUILayout.Toggle("Packages indexing", hasPackageIndexing);
+                        if (hasPackageIndexing != packageIndexing)
+                        {
+                            db.settings.EnablePackagesIndexing(packageIndexing);
+                            db.SaveSettingsOptions(startIndexing: true);
+                        }
                     }
                     if (indexReady)
                         EditorGUILayout.HelpBox("Deep indexing will make indexation longer and increase size of index on disk.", MessageType.Warning);
@@ -1151,8 +1164,6 @@ namespace UnityEditor.Search
 
                     EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
                     ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.Height(200));
-                    if (EditorGUI.EndChangeCheck())
-                        Save();
 
                     if (Unsupported.IsSourceBuild(checkHumanControllingUs: false))
                     {
@@ -1176,6 +1187,9 @@ namespace UnityEditor.Search
                             minIndexVariations = 5;
                         }
                     }
+
+                    if (EditorGUI.EndChangeCheck())
+                        Save();
                 }
                 GUILayout.EndVertical();
             }

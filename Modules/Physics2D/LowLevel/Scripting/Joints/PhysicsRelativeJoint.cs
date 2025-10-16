@@ -11,9 +11,8 @@ using static UnityEngine.LowLevelPhysics2D.PhysicsLowLevelScripting2D;
 namespace UnityEngine.LowLevelPhysics2D
 {
     /// <summary>
-    /// A joint constraint used to control the relative velocity or transform between two bodies.
-    /// With a velocity of zero, this acts like top-down friction.
-    /// You may move local anchor A to change the target transform.
+    /// A joint constraint used to control the relative movement two bodies while still being responsive to collisions.
+    /// A spring controls the position and rotation and velocity control allows for simulated friction such as seen in top-down games.
     /// A typical usage is to control the movement of a dynamic body with respect to the ground.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]

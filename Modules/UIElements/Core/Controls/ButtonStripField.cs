@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
-    class ButtonStripField : BaseField<int>
+    partial class ButtonStripField : BaseField<int>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
@@ -21,11 +21,6 @@ namespace UnityEngine.UIElements
 
             public override object CreateInstance() => new ButtonStripField();
         }
-
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ButtonStripField, UxmlTraits> {}
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseField<int>.UxmlTraits {}
 
         public const string className = "unity-button-strip-field";
         const string k_ButtonClass = className + "__button";

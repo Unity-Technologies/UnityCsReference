@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
         IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version);
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
-        IPackage[] GetCustomizedDependencies(IPackageVersion version);
+        IPackage[] GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType);
         IEnumerable<Sample> GetSamples(IPackageVersion version);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
@@ -218,10 +218,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return installedFeatures.Where(f => f.dependencies?.Any(r => r.name == version.name) ?? false);
         }
 
-        public IPackage[] GetCustomizedDependencies(IPackageVersion version)
+        public IPackage[] GetCustomizedDependencies(IPackageVersion version, CustomizedDependencyType dependencyType)
         {
             return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
-                p?.versions.installed is { isDirectDependency: true } && p.versions.recommended?.isInstalled == false).ToArray() ?? Array.Empty<IPackage>();
+            {
+                var installed = p?.versions.installed;
+                var isCustomized = installed is { isDirectDependency: true } && p.versions.recommended?.isInstalled == false;
+                if (!isCustomized)
+                    return false;
+                var isResettable = !installed.HasTag(PackageTag.Custom) && installed.versionString == installed.versionInManifest;
+                return (isResettable && (dependencyType & CustomizedDependencyType.Resettable) != 0) ||
+                       (!isResettable && (dependencyType & CustomizedDependencyType.NonResettable) != 0);
+            }).ToArray() ?? Array.Empty<IPackage>();
         }
 
         public IEnumerable<Sample> GetSamples(IPackageVersion version)

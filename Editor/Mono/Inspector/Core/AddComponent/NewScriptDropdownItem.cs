@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 using Microsoft.CSharp;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor.AddComponent
 {
@@ -108,8 +109,7 @@ namespace UnityEditor.AddComponent
             return s_CSharpDOMProvider.IsValidIdentifier(className);
         }
 
-        private bool ClassExists(string className) => AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetType(className, false) != null);
-
+        private bool ClassExists(string className) => CurrentAssemblies.GetLoadedAssemblies().Any(a => a.GetType(className, false) != null);
         private bool ClassAlreadyExists()
         {
             if (m_ClassName == string.Empty)

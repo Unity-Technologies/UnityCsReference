@@ -37,7 +37,7 @@ namespace UnityEngine.UIElements
     /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
     [Icon("UIToolkit/Icons/TreeView.png")]
-    public class TreeView : BaseTreeView
+    public partial class TreeView : BaseTreeView
     {
         internal static readonly BindingId itemTemplateProperty = nameof(itemTemplate);
         internal static readonly BindingId makeItemProperty = nameof(makeItem);
@@ -72,38 +72,6 @@ namespace UnityEngine.UIElements
                 {
                     var e = (TreeView)obj;
                     e.itemTemplate = itemTemplate;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="TreeView"/> using data from a UXML file.
-        /// </summary>
-        /// <remarks>
-        /// This class is added to every <see cref="VisualElement"/> created from UXML.
-        /// </remarks>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<TreeView, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="TreeView"/>.
-        /// </summary>
-        /// <remarks>
-        /// This class defines the TreeView element properties that you can use in a UI document asset (UXML file).
-        /// </remarks>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BaseTreeView.UxmlTraits
-        {
-            UxmlAssetAttributeDescription<VisualTreeAsset> m_ItemTemplate = new UxmlAssetAttributeDescription<VisualTreeAsset> { name = "item-template" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var view = ve as TreeView;
-
-                if (m_ItemTemplate.TryGetValueFromBag(bag, cc, out var itemTemplate))
-                {
-                    view.itemTemplate = itemTemplate;
                 }
             }
         }

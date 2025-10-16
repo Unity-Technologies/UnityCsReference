@@ -27,13 +27,18 @@ namespace UnityEditor
 
         class Styles
         {
-            public static readonly GUIStyle kSettingsFramebox = new GUIStyle(EditorStyles.frameBox) { padding = new RectOffset(1, 1, 1, 0) };
+            public static readonly GUIStyle kSettingsFramebox = new GUIStyle(EditorStyles.frameBox) { padding = new RectOffset(0, 0, 0, 0) };
         }
 
         // These are to maintain UI selection.
         const string UniqueSettingsKey = "UnityEditor.U2D.Physics/";
         const string Physics2DSettingsTabKey = UniqueSettingsKey + "Physics2DSettingsTabSelected";
         const string PhysicsLowLevelSettingsKey = "PhysicsLowLevel2D";
+
+        // Tab styles.
+        static GUIStyle s_TabFirstStyle;
+        static GUIStyle s_TabMiddleStyle;
+        static GUIStyle s_TabLastStyle;
 
         SerializedProperty m_ReuseCollisionCallbacks;
         SerializedProperty m_AutoSyncTransforms;
@@ -87,9 +92,7 @@ namespace UnityEditor
         {
             General = 0,
             CollisionMatrix = 1,
-            LowLevel = 2,
-
-            TabCount = 3
+            LowLevel = 2
         }
 
         private Physics2DSettingsTab settingsTabSelected
@@ -98,76 +101,46 @@ namespace UnityEditor
             set { EditorPrefs.SetInt(Physics2DSettingsTabKey, (int)value); }
         }
 
-        static GUIStyle s_TabFirst;
-        static GUIStyle s_TabMiddle;
-        static GUIStyle s_TabLast;
-
-        static Rect GetTabSelection(Rect rect, Physics2DSettingsTab tabSelected, out GUIStyle tabStyle)
+        private void DrawTabSelector(Physics2DSettingsTab tab, GUIContent content)
         {
-            const int tabCount = (int)Physics2DSettingsTab.TabCount;
-            int tabIndex = (int)tabSelected;
+            // Select Style.
+            GUIStyle style = null;
+            if (tab == Physics2DSettingsTab.General)
+                style = s_TabFirstStyle;
+            else if (tab == Physics2DSettingsTab.CollisionMatrix)
+                style = s_TabMiddleStyle;
+            else if (tab == Physics2DSettingsTab.LowLevel)
+                style = s_TabLastStyle;
 
-            if (s_TabFirst == null)
-            {
-                s_TabFirst = "Tab first";
-                s_TabMiddle = "Tab middle";
-                s_TabLast = "Tab last";
-            }
-
-            tabStyle = s_TabMiddle;
-
-            if (tabIndex == 0)
-            {
-                tabStyle = s_TabFirst;
-            }
-            else if (tabIndex == tabCount-1)
-            {
-                tabStyle = s_TabLast;
-            }
-            else
-            {
-                tabStyle = s_TabMiddle;
-            }
-
-            var tabWidth = rect.width / tabCount;
-            var left = Mathf.RoundToInt(tabIndex * tabWidth);
-            var right = Mathf.RoundToInt((tabIndex + 1) * tabWidth);
-            return new Rect(rect.x + left, rect.y, right - left, EditorGUI.kTabButtonHeight);
-        }          
+            // Draw tab selector.
+            if (GUILayout.Toggle(settingsTabSelected == tab, content, style))
+                settingsTabSelected = tab;
+        }
 
         public override void OnInspectorGUI()
         {
-            var rect = EditorGUILayout.BeginVertical(Styles.kSettingsFramebox);
+            EditorGUILayout.BeginVertical(Styles.kSettingsFramebox);
 
-            // Select tabs.
-            EditorGUI.BeginChangeCheck();
-
-            GUIStyle buttonStyle = null;
-
+            // Initialize tab styles.
+            if (s_TabFirstStyle == null)
             {
-                // Draw General Settings Tab.
-                var buttonRect = GetTabSelection(rect, Physics2DSettingsTab.General, out buttonStyle);
-                if (GUI.Toggle(buttonRect, settingsTabSelected == Physics2DSettingsTab.General, Content.kGeneralLabel, buttonStyle))
-                    settingsTabSelected = Physics2DSettingsTab.General;
+                s_TabFirstStyle = "Tab first";
+                s_TabMiddleStyle = "Tab middle";
+                s_TabLastStyle = "Tab last";
             }
 
+            // Tab selectors.
             {
-                // Draw Collision Settings Tab.
-                var buttonRect = GetTabSelection(rect, Physics2DSettingsTab.CollisionMatrix, out buttonStyle);
-                if (GUI.Toggle(buttonRect, settingsTabSelected == Physics2DSettingsTab.CollisionMatrix, Content.kCollisionLabel, buttonStyle))
-                    settingsTabSelected = Physics2DSettingsTab.CollisionMatrix;
+                GUILayout.BeginHorizontal();
+
+                DrawTabSelector(Physics2DSettingsTab.General, Content.kGeneralLabel);
+                DrawTabSelector(Physics2DSettingsTab.CollisionMatrix, Content.kCollisionLabel);
+                DrawTabSelector(Physics2DSettingsTab.LowLevel, Content.kLowLevelLabel);
+
+                GUILayout.EndHorizontal();
             }
 
-            {
-                // Low Level Settings Tab.
-                var buttonRect = GetTabSelection(rect, Physics2DSettingsTab.LowLevel, out buttonStyle);
-                if (GUI.Toggle(buttonRect, settingsTabSelected == Physics2DSettingsTab.LowLevel, Content.kLowLevelLabel, buttonStyle))
-                    settingsTabSelected = Physics2DSettingsTab.LowLevel;
-            }
-
-            GUILayoutUtility.GetRect(10, EditorGUI.kTabButtonHeight);
-            EditorGUI.EndChangeCheck();
-
+            // Handle the selected tab.
             switch (settingsTabSelected)
             {
                 case Physics2DSettingsTab.General:

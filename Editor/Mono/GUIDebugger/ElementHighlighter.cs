@@ -67,12 +67,21 @@ namespace UnityEditor
                 m_ContentHighlighter.pickingMode = PickingMode.Ignore;
             }
 
-            m_PaddingHighlighter.layout = elementRect;
+            SetLayout(m_PaddingHighlighter, elementRect);
             rootElement.Add(m_PaddingHighlighter);
             if (style != null)
                 elementRect = style.padding.Remove(elementRect);
-            m_ContentHighlighter.layout = elementRect;
+            SetLayout(m_ContentHighlighter,  elementRect);
             rootElement.Add(m_ContentHighlighter);
+        }
+
+        void SetLayout(VisualElement ve, Rect layout)
+        {
+            ve.style.position = Position.Absolute;
+            ve.style.top = layout.yMin;
+            ve.style.left = layout.xMin;
+            ve.style.width = layout.width;
+            ve.style.height = layout.height;
         }
     }
 }

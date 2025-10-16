@@ -80,7 +80,7 @@ namespace UnityEditorInternal.VersionControl
             if (repaintAction != null)
             {
                 GUID lookupGUID = new GUID(guid);
-                var hash = AssetDatabaseExperimental.LookupArtifact(new ArtifactKey(lookupGUID));
+                var hash = AssetDatabaseExperimental.LookupArtifact(AssetDatabaseExperimental.CreateArtifactKey(lookupGUID));
                 if (!hash.isValid)
                 {
                     if (s_ProgressRepainters.IndexOf(repaintAction) == -1)
@@ -117,7 +117,7 @@ namespace UnityEditorInternal.VersionControl
             if (EditorUtility.isInSafeMode)
             {
                 GUID lookupGUID = new GUID(guid);
-                var hash = AssetDatabaseExperimental.LookupArtifact(new ArtifactKey(lookupGUID));
+                var hash = AssetDatabaseExperimental.LookupArtifact(AssetDatabaseExperimental.CreateArtifactKey(lookupGUID));
                 if (!hash.isValid)
                     GUI.Label(drawRect, s_NotImportedAssetTooltip);
             }

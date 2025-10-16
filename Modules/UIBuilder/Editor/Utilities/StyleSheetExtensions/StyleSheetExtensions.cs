@@ -33,6 +33,10 @@ namespace Unity.UI.Builder
 
             styleSheet.DeepOverwrite(newStyleSheet);
 
+            // The DeepOverwrite will mark the stylesheet dirty, so we need to
+            // restore the dirty flag since we are just making a fresh copy.
+            EditorUtility.ClearDirty(newStyleSheet);
+
             return newStyleSheet;
         }
 

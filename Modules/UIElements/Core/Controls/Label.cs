@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     /// Provides an Element displaying text. For more information, refer to [[wiki:UIE-uxml-element-Label|UXML element Label]].
     /// </summary>
     [Icon("UIToolkit/Icons/Label.png")]
-    public class Label : TextElement
+    public partial class Label : TextElement
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
@@ -19,22 +19,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Instantiates a <see cref="Label"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<Label, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="Label"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : TextElement.UxmlTraits {}
-
-        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-label";
-
 
         /// <summary>
         /// Constructs a Label with no initial text.

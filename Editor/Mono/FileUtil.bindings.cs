@@ -160,8 +160,26 @@ namespace UnityEditor
             FileUtil.CopyFileOrDirectory(src, dst);
         }
 
-        // transform path to absolute, resolving mount points
-        [FreeFunction("PathToAbsolutePathFromScript")]
-        extern internal static string PathToAbsolutePath(string path);
+        /// <summary>
+        /// Returns the absolute path and resolves physical location for the specified path if path points to Unity Virtual File System.
+        /// </summary>
+        /// <remarks>The method is equivalent to Path.GetFullPath(FileUtil.GetPhysicalPath(path)), but takes into account Unity and platform path separators.</remarks>
+        /// <param name="path">The file or directory for which to obtain absolute path information.</param>
+        /// <returns>The fully qualified location of path. Path separators are Unity path separators ('/')</returns>
+        /// <example>
+        /// public class MyImporter : ScriptedImporter
+        /// {
+        ///     public override void OnImportAsset(AssetImportContext ctx)
+        ///     {
+        ///         var data = File.ReadAllText(FileUtil.PathToAbsolutePath(ctx.assetPath));
+        ///         Object objectToUse = null;
+        ///         // ... do something with the data
+        ///         ctx.AddObjectToAsset("Main", objectToUse);
+        ///         ctx.SetMainObject(objectToUse);
+        ///     }
+        /// }
+        /// </example>
+        [FreeFunction("PathToPhysicalAbsolutePath", IsThreadSafe = true)]
+        internal static extern string PathToAbsolutePath(string path);
     }
 }

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
@@ -39,17 +38,6 @@ namespace UnityEditor.UIElements
             m_Cache.Clear();
             m_CurrentTypeName = fullTypeName;
 
-            static void CacheEnumerableTraits(IEnumerable<UxmlAttributeDescription> attributes, Dictionary<string, Type> cache)
-            {
-                foreach (var description in attributes)
-                {
-                    if (description != null && description is IUxmlAssetAttributeDescription assetAttributeDescription)
-                    {
-                        cache[description.name] = assetAttributeDescription.assetType;
-                    }
-                }
-            }
-
             static void CacheEnumerableSerialization(IEnumerable<UxmlSerializedAttributeDescription> attributes, Dictionary<string, Type> cache)
             {
                 foreach (var description in attributes)
@@ -61,38 +49,10 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            #pragma warning disable CS0618 // Type or member is obsolete
-            if (UxmlObjectFactoryRegistry.factories.TryGetValue(m_CurrentTypeName, out var uxmlObjectFactories))
+            var description = UxmlSerializedDataRegistry.GetDescription(m_CurrentTypeName);
+            if (description != null && UxmlCodeDependencies.instance.HasAnyAssetAttributes(description))
             {
-                foreach (var factory in uxmlObjectFactories)
-                {
-                    // If the factory has no known attributes, don't bother loading the full definitions
-                    if (!UxmlCodeDependencies.instance.HasAnyAssetAttributes(factory))
-                        continue;
-
-                    CacheEnumerableTraits(factory.uxmlAttributesDescription, m_Cache);
-                }
-            }
-            #pragma warning restore CS0618 // Type or member is obsolete
-            else if (VisualElementFactoryRegistry.factories.TryGetValue(m_CurrentTypeName, out var uxmlFactories))
-            {
-                foreach (var factory in uxmlFactories)
-                {
-                    // If the factory has no known attributes, don't bother loading the full definitions
-                    if (!UxmlCodeDependencies.instance.HasAnyAssetAttributes(factory))
-                        continue;
-
-                    CacheEnumerableTraits(factory.uxmlAttributesDescription, m_Cache);
-                }
-            }
-            // Uxml Serialization
-            else
-            {
-                var description = UxmlSerializedDataRegistry.GetDescription(m_CurrentTypeName);
-                if (description != null && UxmlCodeDependencies.instance.HasAnyAssetAttributes(description))
-                {
-                    CacheEnumerableSerialization(description.serializedAttributes, m_Cache);
-                }
+                CacheEnumerableSerialization(description.serializedAttributes, m_Cache);
             }
         }
     }

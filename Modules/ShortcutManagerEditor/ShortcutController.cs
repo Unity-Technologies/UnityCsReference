@@ -25,7 +25,7 @@ namespace UnityEditor.ShortcutManagement
     }
 
     [InitializeOnLoad]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     static class ShortcutIntegration
     {
         const string k_DeleteID = "Main Menu/Edit/Delete";
@@ -182,7 +182,7 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
     class ShortcutController : IAvailableShortcutsChangedNotifier
     {
         const string k_MigratedProfileId = "UserProfile";
@@ -225,6 +225,7 @@ namespace UnityEditor.ShortcutManagement
             ModeService.modeChanged += HandleModeChanged;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal void RebuildShortcuts()
         {
             profileManager.UpdateBaseProfile(m_Discovery.GetAllShortcuts());

@@ -7,12 +7,12 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "Unity.Modules.Core.TextureStreaming.Tests.Editor")]
     static class ThemeRegistry
     {
         internal static string k_DefaultStyleSheetPath
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "Unity.Modules.Core.TextureStreaming.Tests.Editor")]
             get => "StyleSheets/Generated/Default.tss.asset";
         }
 

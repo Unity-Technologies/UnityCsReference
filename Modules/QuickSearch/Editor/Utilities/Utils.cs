@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -29,7 +30,7 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ShaderVariant.Editor")]
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Shared")]
 
 namespace UnityEditor.Search
 {
@@ -52,6 +53,7 @@ namespace UnityEditor.Search
         internal static bool runningTests { get; set; }
         internal static bool fakeWorkerProcess { get; set; }
         private static readonly Regex s_RangeRx = new Regex(@"(-?[\d\.]+)\.\.(-?[\d\.]+)");
+        public static readonly char[] k_AdbInvalidCharacters = { '/', '?', '<', '>', '\\', ':', '*', '|', '"' };
 
         struct RootDescriptor
         {
@@ -131,7 +133,10 @@ namespace UnityEditor.Search
 
         internal static Hash128 GetSourceAssetFileHash(string guid)
         {
-            return AssetDatabase.GetSourceAssetFileHash(guid);
+            var assetHash = AssetDatabase.GetSourceAssetFileHash(guid);
+            var metaHash = AssetDatabase.GetSourceAssetMetaFileHash(guid);
+            HashUtilities.AppendHash(ref metaHash, ref assetHash);
+            return assetHash;
         }
 
         public static Texture2D GetAssetThumbnailFromPath(SearchContext ctx, string path)
@@ -226,7 +231,7 @@ namespace UnityEditor.Search
             return PrefabUtility.HasInvalidComponent(obj);
         }
 
-        public static int GetMainAssetInstanceID(string assetPath)
+        public static EntityId GetMainAssetEntityId(string assetPath)
         {
             return (int)AssetDatabase.GetMainAssetEntityId(assetPath);
         }
@@ -1255,12 +1260,19 @@ namespace UnityEditor.Search
             return text;
         }
 
-        public static string RemoveInvalidCharsFromPath(string path, char repl = '/')
+        public static string ReplaceInvalidCharsFromPath(string path, char repl = '/')
         {
-            var invalidChars = Path.GetInvalidPathChars();
-            foreach (var c in invalidChars)
+            foreach (var c in Path.GetInvalidPathChars())
                 path = path.Replace(c, repl);
             return path;
+        }
+
+        internal static string RemoveInvalidCharsFromFileName(string filename)
+        {
+            filename = string.Concat(filename.Split(k_AdbInvalidCharacters));
+            if (filename.Length > 0 && !char.IsLetterOrDigit(filename[0]))
+                filename = filename.Substring(1);
+            return filename;
         }
 
         public static Rect BeginHorizontal(GUIContent content, GUIStyle style, params GUILayoutOption[] options)

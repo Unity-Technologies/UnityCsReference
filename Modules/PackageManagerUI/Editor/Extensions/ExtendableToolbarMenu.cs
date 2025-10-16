@@ -23,10 +23,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private List<MenuDropdownItem> m_DropdownItems;
         public DropdownMenu menu { get; private set; }
 
-        private IResourceLoader m_ResourceLoader;
+        private IDropdownHandler m_DropdownHandler;
         private void ResolveDependencies()
         {
-            m_ResourceLoader = ServicesContainer.instance.Resolve<IResourceLoader>();
+            m_DropdownHandler = ServicesContainer.instance.Resolve<IDropdownHandler>();
         }
 
         public ExtendableToolbarMenu()
@@ -91,9 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ShowInputDropdown(InputDropdownArgs args)
         {
-            var position = EditorMenuExtensions.GUIToScreenRect(this, worldBound);
-            var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, args) { position = position };
-            DropdownContainer.ShowDropdown(dropdown);
+            m_DropdownHandler.ShowGenericInputDropdown(this, args);
         }
     }
 }

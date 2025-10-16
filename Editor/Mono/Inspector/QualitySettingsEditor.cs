@@ -490,6 +490,8 @@ namespace UnityEditor
 
                 m_ShouldAddNewLevel = false;
             }
+
+            SetQualitySettings(GetQualitySettings());
         }
 
         private Dictionary<string, int> GetDefaultQualityForPlatforms()
@@ -662,6 +664,7 @@ namespace UnityEditor
                 if (m_OriginalQualityLevelName != m_NewQualityLevelName)
                 {
                     BuildProfileModuleUtil.RenameQualityLevelInAllProfiles(m_OriginalQualityLevelName, m_NewQualityLevelName);
+                    QualitySettings.OnActiveQualityLevelRenamed(m_OriginalQualityLevelName, m_NewQualityLevelName);
                 }
             }
             ResetQualityLevelRenameTracking();

@@ -7,7 +7,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -67,7 +66,6 @@ namespace Unity.UI.Builder
             }
 
             m_FilterFunction = f;
-
             GetFirstAncestorOfType<FilterStyleField>().FilterFunctionTypeChanged(this);
             evt.StopPropagation();
         }
@@ -75,12 +73,18 @@ namespace Unity.UI.Builder
         public void SetFilterFunction(FilterFunction func)
         {
             m_FilterFunction = func;
-
             m_FilterFunctionTypeField.SetValueWithoutNotify(func.type);
 
+            foreach (var field in m_ParametersContainer.Children())
+            {
+                if (field is FloatField floatField)
+                    floatField.UnregisterValueChangedCallback(OnParameterValueChanged);
+                else if (field is ColorField colorField)
+                    colorField.UnregisterValueChangedCallback(OnParameterValueChanged);
+                else if (field is ObjectField objectField)
+                    objectField.UnregisterValueChangedCallback(OnCustomValueChanged);
+            }
             m_ParametersContainer.Clear();
-
-            m_FilterFunction = func;
 
             var def = func.GetDefinition();
 
@@ -89,21 +93,7 @@ namespace Unity.UI.Builder
                 var field = new ObjectField("Definition");
                 field.objectType = typeof(FilterFunctionDefinition);
                 field.value = def;
-                field.RegisterValueChangedCallback(evt =>
-                {
-                    var f = func;
-
-                    var newDef = evt.newValue as FilterFunctionDefinition;
-                    f.customDefinition = newDef;
-
-                    f.ClearParameters();
-                    for (int i = 0; i < newDef?.parameters.Length; ++i)
-                        f.AddParameter(newDef.parameters[i].defaultValue);
-
-                    m_FilterFunction = f;
-
-                    GetFirstAncestorOfType<FilterStyleField>().FilterFunctionTypeChanged(this);
-                });
+                field.RegisterValueChangedCallback(OnCustomValueChanged);
                 m_ParametersContainer.Add(field);
             }
 
@@ -114,7 +104,6 @@ namespace Unity.UI.Builder
                 var pVal = func.GetParameter(i);
                 if (pVal.type == FilterParameterType.Float)
                 {
-                    int paramIndex = i;
                     var field = new FloatField();
 
                     var label = pDef.name;
@@ -123,31 +112,55 @@ namespace Unity.UI.Builder
 
                     field.label = label;
                     field.value = pVal.floatValue;
-                    field.RegisterValueChangedCallback(evt =>
-                    {
-                        var f = func;
-                        f.SetParameter(paramIndex, new FilterParameter(evt.newValue));
-                        m_FilterFunction = f;
-                        GetFirstAncestorOfType<FilterStyleField>().FilterFunctionValueChanged(this, paramIndex);
-                    });
+                    field.userData = i;
+                    field.RegisterValueChangedCallback(OnParameterValueChanged);
                     m_ParametersContainer.Add(field);
                 }
                 else if (pVal.type == FilterParameterType.Color)
                 {
-                    int paramIndex = i;
                     var field = new ColorField();
+                    field.userData = i;
                     field.label = paramCount == 1 ? "Value" : $"Value {i + 1}";
                     field.value = pVal.colorValue;
-                    field.RegisterValueChangedCallback(evt =>
-                    {
-                        var f = func;
-                        f.SetParameter(paramIndex, new FilterParameter(evt.newValue));
-                        m_FilterFunction = f;
-                        GetFirstAncestorOfType<FilterStyleField>().FilterFunctionValueChanged(this, paramIndex);
-                    });
+                    field.RegisterValueChangedCallback(OnParameterValueChanged);
                     m_ParametersContainer.Add(field);
                 }
             }
+        }
+
+        void OnCustomValueChanged(ChangeEvent<UnityEngine.Object> evt)
+        {
+            var f = m_FilterFunction;
+            var newDef = evt.newValue as FilterFunctionDefinition;
+            f.customDefinition = newDef;
+
+            f.ClearParameters();
+            for (int i = 0; i < newDef?.parameters.Length; ++i)
+            {
+                // Default values aren't specifed for custom definitions, so we use the interpolation default value instead.
+                f.AddParameter(newDef.parameters[i].interpolationDefaultValue);
+            }
+
+            m_FilterFunction = f;
+            GetFirstAncestorOfType<FilterStyleField>().FilterFunctionTypeChanged(this);
+        }
+
+        void OnParameterValueChanged<T>(ChangeEvent<T> evt)
+        {
+            var field = (VisualElement) evt.target;
+            var paramIndex = (int)field.userData;
+
+            var f = m_FilterFunction;
+            if (evt.newValue is float floatValue)
+            {
+                f.SetParameter(paramIndex, new FilterParameter(floatValue));
+            }
+            else if (evt.newValue is Color colorValue)
+            {
+                f.SetParameter(paramIndex, new FilterParameter(colorValue));
+            }
+            m_FilterFunction = f;
+            GetFirstAncestorOfType<FilterStyleField>().FilterFunctionValueChanged(this, paramIndex);
         }
     }
 }

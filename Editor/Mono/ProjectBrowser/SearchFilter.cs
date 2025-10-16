@@ -7,6 +7,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
@@ -14,7 +15,8 @@ using UnityEngine.SceneManagement;
 namespace UnityEditor
 {
     [System.Serializable]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.ShaderFoundryModule")]
+    [DataContract]
     internal class SearchFilter
     {
         public enum SearchArea
@@ -37,41 +39,57 @@ namespace UnityEditor
 
         // Searching
         [SerializeField]
+        [DataMember]
         private string m_NameFilter = "";
         [SerializeField]
+        [DataMember]
         private string[] m_ClassNames = new string[0];
         [SerializeField]
+        [DataMember]
         private string[] m_AssetLabels = new string[0];
         [SerializeField]
+        [DataMember]
         private string[] m_AssetBundleNames = new string[0];
         [SerializeField]
+        [DataMember]
         private int[] m_ReferencingInstanceIDs = new int[0];
         [SerializeField]
+        [DataMember]
         private SceneHandle[] m_SceneHandles;
         [SerializeField]
+        [DataMember]
         private bool m_ShowAllHits = false;         // If true then just one filter must match to show an object, if false then all filters must match to show an object
         [SerializeField]
+        [DataMember]
         private bool m_SkipHidden = false;
         [SerializeField]
+        [DataMember]
         SearchArea m_SearchArea = SearchArea.InAssetsOnly;
         // Folder browsing
         [SerializeField]
+        [DataMember]
         private string[] m_Folders = new string[0];
         [SerializeField]
+        [DataMember]
         private string[] m_Globs = new string[0];
 
         [SerializeField]
+        [DataMember]
         private int[] m_ProductIds = new int[0];
 
         [SerializeField]
+        [DataMember]
         private bool m_AnyWithAssetOrigin = false;
 
         [SerializeField]
+        [DataMember]
         private string m_OriginalText = "";
         [SerializeField]
+        [DataMember]
         private ImportLogFlags m_ImportLogFlags;
 
         [SerializeField]
+        [DataMember]
         private bool m_FilterByTypeIntersection;
 
         // Interface

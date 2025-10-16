@@ -16,12 +16,15 @@ using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Console", useTypeNameAsIconName = true)]
+    [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal class ConsoleWindow : EditorWindow, IHasCustomMenu
     {
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal delegate void EntryDoubleClickedDelegate(LogEntry entry);
         private static bool s_StripLoggingCallstack;
         private static bool m_UseMonospaceFont;
@@ -217,6 +220,7 @@ namespace UnityEditor
         IConnectionState m_ConsoleAttachToPlayerState;
 
         [Flags]
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal enum Mode
         {
             None = 0,
@@ -268,6 +272,7 @@ namespace UnityEditor
 
         static readonly int k_HasSpaceForExtraButtonsCutoff = 420;
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public static void ShowConsoleWindow(bool immediate)
         {
             if (!ms_ConsoleWindow)
@@ -447,6 +452,14 @@ namespace UnityEditor
             return Constants.StatusLog;
         }
 
+        void ResetActiveEntry()
+        {
+            SetActiveEntry(null);
+            DestroyLatestRestoreEntry();
+            m_ListView.row = -1;
+            m_ListView.selectedItems = null;
+        }
+
         void SetActiveEntry(LogEntry entry)
         {
             if (entry != null)
@@ -531,6 +544,8 @@ namespace UnityEditor
             {
                 LogEntries.Clear();
                 GUIUtility.keyboardControl = 0;
+                //Reset active selection
+                ResetActiveEntry();
             }
 
             int currCount = LogEntries.GetCount();
@@ -553,6 +568,9 @@ namespace UnityEditor
             bool collapsedChanged = (wasCollapsed != HasFlag(ConsoleFlags.Collapse));
             if (collapsedChanged)
             {
+                //Reset selected elements
+                ResetActiveEntry();
+
                 // unselect if collapsed flag changed
                 m_ListView.row = -1;
 
@@ -588,7 +606,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 SetActiveEntry(null);
-                m_LastActiveEntryIndex = -1;
+                DestroyLatestRestoreEntry();
             }
 
             SetFlag(ConsoleFlags.LogLevelLog, setLogFlag);
@@ -638,8 +656,8 @@ namespace UnityEditor
                             DestroyLatestRestoreEntry();
                             LogEntry entry = new LogEntry();
                             LogEntries.GetEntryInternal(el.row, entry);
-                            if (entry.instanceID != 0 && e.clickCount != 2)
-                                EditorGUIUtility.PingObject(entry.instanceID);
+                            if (entry.entityId != 0 && e.clickCount != 2)
+                                EditorGUIUtility.PingObject(entry.entityId);
                             if (e.clickCount == 2)
                                 openSelectedItem = true;
                             m_SyncAutoScroll = false;
@@ -700,14 +718,14 @@ namespace UnityEditor
                             textRect.x += offset;
 
                             if (string.IsNullOrEmpty(m_SearchText))
-                                errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
+                                errorModeStyle.Draw(textRect, tempContent, id, entryIsSelected);
                             else if (text != null)
                             {
                                 //the whole text contains the searchtext, we have to know where it is
                                 int startIndex = text.IndexOf(m_SearchText, StringComparison.OrdinalIgnoreCase);
                                 if (startIndex == -1
                                 ) // the searchtext is not in the visible text, we don't show the selection
-                                    errorModeStyle.Draw(textRect, tempContent, id, m_ListView.row == el.row);
+                                    errorModeStyle.Draw(textRect, tempContent, id, entryIsSelected);
                                 else // the searchtext is visible, we show the selection
                                 {
                                     int endIndex = startIndex + m_SearchText.Length;
@@ -902,6 +920,10 @@ namespace UnityEditor
             var filteringText = EditorGUI.ToolbarSearchField(rect, searchText, false);
             if (m_SearchText != filteringText)
             {
+                //Reset console selection when entering filter mode
+                if(String.IsNullOrEmpty(m_SearchText))
+                    ResetActiveEntry();
+
                 SetFilter(filteringText);
             }
         }
@@ -1333,6 +1355,7 @@ namespace UnityEditor
             m_RestoreLatestSelection = false;
         }
 
+        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
 
         internal static event Action activeEntryChanged;
@@ -1350,7 +1373,7 @@ namespace UnityEditor
         [UsedImplicitly] // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
         internal void AddMessageWithDoubleClickCallback(string message, string file, int mode, int instanceID)
         {
-            var outputEntry = new LogEntry {message = message, file = file, mode = mode, instanceID = instanceID};
+            var outputEntry = new LogEntry {message = message, file = file, mode = mode, entityId = instanceID};
             LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
         }
 

@@ -201,7 +201,7 @@ namespace UnityEngine.UIElements
             return $"{valueStr}{unitStr}";
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal static Length ParseString(string str, Length defaultValue = default)
         {
             if (string.IsNullOrEmpty(str))

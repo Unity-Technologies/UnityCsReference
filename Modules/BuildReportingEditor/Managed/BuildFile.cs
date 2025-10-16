@@ -23,9 +23,18 @@ namespace UnityEditor.Build.Reporting
         [NativeName("totalSize")]
         public ulong size { get; }
 
+        internal BuildFileFlags flags { get; }
+
         public override string ToString()
         {
             return path;
         }
+    }
+
+    [Flags]
+    internal enum BuildFileFlags
+    {
+        None = 0,
+        IsFromCache = 1 << 0
     }
 }

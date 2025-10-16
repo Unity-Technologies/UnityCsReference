@@ -12,6 +12,7 @@ using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.AdaptivePerformance.Simulator.Editor;
 using UnityEngine.AdaptivePerformance;
+using UnityEngine.Assemblies;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
@@ -77,7 +78,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             Type ti = typeof(AdaptivePerformanceScaler);
             var scalerTree = EditorGUIUtility.LoadRequired("AdaptivePerformance/UXML/DeviceSimulator/ScalerControl.uxml") as VisualTreeAsset;
 
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly asm in CurrentAssemblies.GetLoadedAssemblies())
             {
                 foreach (Type t in asm.GetTypes())
                 {
@@ -701,7 +702,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             // once the system has been initialized.
             Type ti = typeof(AdaptivePerformanceScaler);
 
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly asm in CurrentAssemblies.GetLoadedAssemblies())
             {
                 foreach (Type t in asm.GetTypes())
                 {

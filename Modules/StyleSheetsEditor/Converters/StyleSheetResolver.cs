@@ -107,9 +107,10 @@ namespace UnityEditor.StyleSheets
                         return v.AsKeyword() == AsKeyword();
                     case StyleValueType.Enum:
                     case StyleValueType.Variable:
-                    case StyleValueType.ResourcePath:
                     case StyleValueType.String:
                         return v.AsString() == AsString();
+                    case StyleValueType.ResourcePath:
+                        return v.ToString() == ToString();
                 }
                 return true;
             }
@@ -943,10 +944,12 @@ namespace UnityEditor.StyleSheets
                     case StyleValueType.Dimension:
                         helper.builder.AddValue(value.AsDimension());
                         break;
+                    case StyleValueType.ResourcePath:
+                        helper.builder.AddResourcePath((ResolvedResourcePath)value.Obj);
+                        break;
                     case StyleValueType.Enum:
                     case StyleValueType.Variable:
                     case StyleValueType.String:
-                    case StyleValueType.ResourcePath:
                         helper.builder.AddValue(value.AsString(), value.ValueType);
                         break;
                     case StyleValueType.Function:

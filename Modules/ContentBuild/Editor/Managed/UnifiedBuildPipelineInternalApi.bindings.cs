@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 
-// Typically UnifiedBuildPipeline (UCBP) is accessed via existing Content Build Apis, e.g. BuildPipeline.BuildAssetBundles
-// This API exposes additional functionality, e.g. for testing purposes
+
+// Additional Build Functionality, exposed for testing and other internal usage
 
 [assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
 
@@ -23,7 +23,11 @@ namespace UnityEditor.Build.Content
         // allowCaching controls the importer cache, when false it forces the importer to run even if there is already a cached output
         public static extern string CalculateAssetBuildMetaDataAsJson(GUID asset, bool allowCaching);
 
-        public static extern string GetArtifactIDForMetaDataImport(GUID asset);
+        public static extern string GetImportResultIDForMetaDataImport(GUID asset);
+
+        public static extern bool MetaDataImportArtifactExists(GUID asset);
+
+        public static extern bool BuildInstructionImportArtifactExists(GUID asset);
 
         // Used for testing purposes. This will crash the editor so we can test handling importer crashes
         public static extern void CrashEditor();

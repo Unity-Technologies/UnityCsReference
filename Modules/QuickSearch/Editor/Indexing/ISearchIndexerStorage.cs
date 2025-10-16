@@ -43,7 +43,7 @@ namespace UnityEditor.Search
         void AddWord(string word, int score, int documentIndex);
         void AddProperty(string name, double value, int score, int documentIndex);
         void AddProperty(string name, string value, int score, int documentIndex, bool saveKeyword);
-        void MapProperty(string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys);
+        void MapProperty(int documentIndex, string name, string label, string help, string propertyType, string ownerTypeName, SearchPropositionGenerationOptions propositionGenerationOptions, bool removeNestedKeys);
         void Start(bool clear);
         void Finish(string[] removedDocuments);
 

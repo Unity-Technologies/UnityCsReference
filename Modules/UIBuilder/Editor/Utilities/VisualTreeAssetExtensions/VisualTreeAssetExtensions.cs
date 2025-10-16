@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -18,11 +17,15 @@ namespace Unity.UI.Builder
     {
         public static VisualTreeAsset DeepCopy(this VisualTreeAsset vta, bool syncSerializedData = true)
         {
-            var newTreeAsset = VisualTreeAssetUtilities.CreateInstance();
+            var newTreeAsset = VisualTreeAssetUtilities.CreateInstanceWithHideFlags();
 
             if (syncSerializedData)
                 UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta), true);
             vta.DeepOverwrite(newTreeAsset);
+
+            // The DeepOverwrite will mark the vta dirty, so we need to
+            // restore the dirty flag since we are just making a fresh copy.
+            EditorUtility.ClearDirty(newTreeAsset);
 
             return newTreeAsset;
         }

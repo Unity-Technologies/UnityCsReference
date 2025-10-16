@@ -24,9 +24,7 @@ namespace Unity.UI.Builder
 
         protected override VisualElement CreateDraggedElement()
         {
-            var classPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
-                BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
-            var pill = classPillTemplate.CloneTree();
+            var pill = new BuilderClassPill();
             pill.AddToClassList(s_DraggableStyleClassPillClassName);
             return pill;
         }
@@ -36,9 +34,9 @@ namespace Unity.UI.Builder
             pill.Q<Label>().text = m_ClassNameBeingDragged;
         }
 
-        protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
+        protected override bool PrepareDrag(VisualElement target, Vector2 mousePosition)
         {
-            m_ClassNameBeingDragged = target.GetProperty(BuilderConstants.ExplorerStyleClassPillClassNameVEPropertyName) as string;
+            m_ClassNameBeingDragged = (target as BuilderClassPill)?.selectorAsString;
 
             // if a ChildSubDocument is open, make sure that style class is part of active stylesheet, otherwise refuse drag
             if (!paneWindow.document.activeOpenUXMLFile.isChildSubDocument)
@@ -59,10 +57,28 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
+        public override void RegisterCallbacksOnTarget(VisualElement target)
+        {
+            target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.RegisterCallback<PointerUpEvent>(OnPointerUp);
+            target.RegisterCallback<KeyUpEvent>(OnEsc);
+        }
+
+        public override void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
+        {
+            var target = evt.elementTarget;
+
+            target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+            target.UnregisterCallback<KeyUpEvent>(OnEsc);
+        }
+
+        protected override bool PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
             if (BuilderSharedStyles.IsDocumentElement(destination))
-                return;
+                return false;
 
             var className = m_ClassNameBeingDragged.TrimStart('.');
 
@@ -77,6 +93,8 @@ namespace Unity.UI.Builder
             var stylesheets = ((Builder)paneWindow).styleSheets;
             selection.NotifyOfHierarchyChange(stylesheets, null, BuilderHierarchyChangeType.ClassList);
             selection.NotifyOfStylingChange(stylesheets, null, BuilderStylingChangeType.RefreshOnly);
+
+            return true;
         }
 
         protected override bool IsPickedElementValid(VisualElement element)

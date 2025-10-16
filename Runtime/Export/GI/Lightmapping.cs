@@ -592,7 +592,7 @@ namespace UnityEngine
                 point.indirectColor = indirectColor;
 
                 point.range         = l.range;
-                point.sphereRadius = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
+                point.sphereRadius = l.shadows == LightShadows.Soft ? l.shapeRadius : 0.0f;
                 point.falloff      = FalloffType.Legacy;
             }
 
@@ -613,7 +613,7 @@ namespace UnityEngine
                 spot.indirectColor = indirectColor;
 
                 spot.range         = l.range;
-                spot.sphereRadius  = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
+                spot.sphereRadius  = l.shadows == LightShadows.Soft ? l.shapeRadius : 0.0f;
                 spot.coneAngle      = l.spotAngle * Mathf.Deg2Rad;
                 spot.innerConeAngle = ExtractInnerCone(l);
                 spot.falloff        = FalloffType.Legacy;

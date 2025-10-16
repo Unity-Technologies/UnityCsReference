@@ -622,13 +622,18 @@ namespace UnityEditor.UIElements
             }
 
             var asset = cc.visualTreeAsset.GetAsset(value, typeof(T));
-            if (asset == null)
+
+            // This lets us handle assets that are "Missing (Type)" in the inspector.
+            if (asset?.GetInstanceID() == null)
             {
                 // When dealing with asset overriddes the asset may not be in the direct visualTreeAsset so we fallback to Asset Database. (UUM-91641)
                 var relativePath = AssetDatabase.GetAssetPath(cc.visualTreeAsset);
                 var result = URIHelpers.ValidateAssetURL(relativePath, value);
+
                 if (result.resolvedQueryAsset is T resolvedAsset)
                     asset = resolvedAsset;
+                else if (result.result == URIValidationResult.OK)
+                    asset = AssetDatabase.LoadAssetAtPath<T>(result.resolvedProjectRelativePath);
             }
 
             return asset;
@@ -1278,6 +1283,34 @@ namespace UnityEditor.UIElements
         }
     }
 
+    internal class MaterialDefinitionAttributeConverter : UxmlAttributeConverter<MaterialDefinition>
+    {
+        const string k_EmptyState = "none";
+
+        public override MaterialDefinition FromString(string value)
+        {
+            if (value.AsSpan().Trim().Equals(k_EmptyState, StringComparison.OrdinalIgnoreCase))
+            {
+                return new MaterialDefinition();
+            }
+
+            var assetPath = Path.GetFileNameWithoutExtension(value);
+            var response = URIHelpers.ValidateAssetURL(assetPath, value);
+            if (response.result == URIValidationResult.OK && response.resolvedQueryAsset != null)
+            {
+                return MaterialDefinition.FromObject(response.resolvedQueryAsset);
+            }
+
+            return new MaterialDefinition();
+        }
+
+        public override string ToString(MaterialDefinition value)
+        {
+            var material = value.material;
+            return material != null ? URIHelpers.MakeAssetUri(material) : k_EmptyState;
+        }
+    }
+
     internal class RotateAttributeConverter : UxmlAttributeConverter<Rotate>
     {
         public override Rotate FromString(string value)
@@ -1702,6 +1735,55 @@ namespace UnityEditor.UIElements
 
             // Return full three-component scale
             return $"{value.x.ToString()} {value.y.ToString()} {value.z.ToString(CultureInfo.InvariantCulture)}";
+        }
+    }
+
+    internal class RatioAttributeConverter : UxmlAttributeConverter<Ratio>
+    {
+        public override Ratio FromString(string value)
+        {
+            if (value.StartsWith("auto", StringComparison.OrdinalIgnoreCase))
+            {
+                return Ratio.Auto();
+            }
+
+            if (value.Contains("/") || value.Contains(":"))
+            {
+                var parts = value.Split('/', ':');
+                if (parts.Length == 2)
+                {
+                    if (double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double w) && double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double h))
+                    {
+                        if (h <= 0 || w <= 0 || double.IsNaN(h) || double.IsNaN(w))
+                        {
+                            return Ratio.Auto();
+                        }
+
+                        return new Ratio((float)(w / h));
+                    }
+                }
+            }
+
+            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double val))
+            {
+                if (val <= 0 || double.IsNaN(val))
+                {
+                    return Ratio.Auto();
+                }
+
+                return new Ratio((float)val);
+            }
+
+            return Ratio.Auto();
+        }
+
+        public override string ToString(Ratio value)
+        {
+            if (value.IsAuto())
+            {
+                return string.Empty;
+            }
+            return value.ToString();
         }
     }
 }

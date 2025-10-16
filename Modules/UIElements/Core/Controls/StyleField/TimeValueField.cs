@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Makes a text field for entering TimeValue.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class TimeValueField : TextValueField<TimeValue>
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);

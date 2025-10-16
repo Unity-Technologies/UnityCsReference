@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// A LayerMaskField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerMaskField|UXML element LayerMaskField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerMaskField.png")]
-    public class LayerMaskField : MaskField
+    public partial class LayerMaskField : MaskField
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : MaskField.UxmlSerializedData
@@ -63,30 +63,6 @@ namespace UnityEditor.UIElements
             }
         }
         internal LayerMask layerMask { get => value; set => this.value = value.value; }
-
-        /// <summary>
-        /// Instantiates a <see cref="LayerMaskField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<LayerMaskField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="LayerMaskField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
-        {
-            readonly UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                var layerMaskField = (LayerMaskField)ve;
-
-                // The mask is simply an int
-                layerMaskField.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
-                base.Init(ve, bag, cc);
-            }
-        }
 
         /// <summary>
         /// Unsupported.
