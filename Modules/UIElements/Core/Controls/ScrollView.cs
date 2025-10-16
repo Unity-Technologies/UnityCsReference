@@ -449,7 +449,7 @@ namespace UnityEngine.UIElements
         /// The current scrolling position.
         /// </summary>
         /// <remarks>
-        /// You can set this property to scroll the content to a specific position. For example, 
+        /// You can set this property to scroll the content to a specific position. For example,
         /// to scroll to the bottom of the ScrollView, set this property to the maximum value of the vertical scroller.
         /// Refer to the [[wiki:UIE-uxml-element-ScrollView|UXML element ScrollView]] user manual page for an example.
         /// </remarks>
@@ -470,7 +470,12 @@ namespace UnityEngine.UIElements
 
                     if (panel != null)
                     {
-                        UpdateScrollers(needsHorizontal, needsVertical);
+                        // We only want to refresh the high/low values if two conditions are true, 1) something changed them before a scrollOffset call and
+                        // 2) it has not exceeded the scrollable point. For any other use cases, the geometry change code path should refresh them accordingly.
+                        if (!Mathf.Approximately(m_ContentAndVerticalScrollContainer.layout.height - contentViewport.layout.height, 0))
+                        {
+                            UpdateScrollers(needsHorizontal, needsVertical);
+                        }
                         UpdateContentViewTransform();
                     }
 
@@ -1918,7 +1923,7 @@ namespace UnityEngine.UIElements
             var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
-            
+
             if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline)
             {
                 if (m_SingleLineHeightDirtyFlag || (parent is { isRootVisualContainer: true } && parent != m_AttachedRootVisualContainer))

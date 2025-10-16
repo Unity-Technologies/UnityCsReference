@@ -160,7 +160,7 @@ namespace UnityEditor.Search.Providers
 
         private bool IsActive(GameObject go)
         {
-            return go != null && go.activeInHierarchy;
+            return go.activeInHierarchy;
         }
 
         private bool GetScene(GameObject obj, QueryFilterOperator op, GUID sceneGuid)
@@ -354,8 +354,6 @@ namespace UnityEditor.Search.Providers
 
         SearchValue OnPropertyFilter(GameObject go, string propertyName)
         {
-            if (!go)
-                return SearchValue.invalid;
             if (string.IsNullOrEmpty(propertyName))
                 return SearchValue.invalid;
 

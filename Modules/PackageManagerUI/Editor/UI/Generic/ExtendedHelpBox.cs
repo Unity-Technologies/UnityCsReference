@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (m_ReadMoreButton == null)
                 {
                     // The `unity-theme-env-variables` class is needed as we want to use theme variable `--unity-font-size-small` to make the text small
-                    m_ReadMoreButton = new Button { text = L10n.Tr("Read more"), classList = { "link", "unity-theme-env-variables" } };
+                    m_ReadMoreButton = new Button { text = L10n.Tr("Learn More"), classList = { "link", "unity-theme-env-variables" } };
                     m_ReadMoreButton.clickable.clicked += OnReadMoreClicked;
                 }
 

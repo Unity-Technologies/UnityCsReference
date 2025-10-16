@@ -752,7 +752,7 @@ namespace UnityEditor.Search
                 IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false);
             if (settings.options.properties)
             {
-                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.RemoveInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
+                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.ReplaceInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
                 if (label != null && ownerPropertyType != null)
                     MapProperty(propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName);
             }

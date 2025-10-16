@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using Unity.PlayMode.Editor;
+using UnityEditor;
 using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
@@ -59,7 +61,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (!string.IsNullOrWhiteSpace(m_PlayerTagsData.version))
                 {
                     HasChangedVersion = true;
-                    MppmLog.Debug($"MPPM has been updated from version '{m_PlayerTagsData.version}' to '{currentVersion}'");
+                    ReimportOldScenarioAssets();
                 }
 
                 m_PlayerTagsData.version = currentVersion;
@@ -68,6 +70,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 // MTTB-566
                 UnityEditor.AssetDatabase.MakeEditable(m_Path);
                 File.WriteAllBytes(m_Path, Encoding.UTF8.GetBytes(json));
+            }
+        }
+
+        private void ReimportOldScenarioAssets()
+        {
+            try
+            {
+                var majorVersion = int.Parse(m_PlayerTagsData.version.Split('.')[0]);
+                if (majorVersion >= 6000)
+                    return;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            // In the case where there are old scenario assets (from before 6.3), those assets need to be reimported
+            // to update their type GUIDs in the asset database so they can be found using the AssetDatabase.FindAssets API.
+            // To prevent the overhead of scanning all assets in project, this will work only for assets under the default path,
+            // so users with assets outside of it will need to reimport them manually.
+            var guids = AssetDatabase.FindAssets(string.Empty, new[] { PlayModeConfigurationUtils.k_ConfigAssetsPath });
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!typeof(PlayModeConfiguration).IsAssignableFrom(AssetDatabase.GetMainAssetTypeAtPath(path)))
+                    continue;
+
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
             }
         }
 

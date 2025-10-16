@@ -250,6 +250,8 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
+                m_CommandListManager.ResetCommandListUIRenderer();
+
                 DeviceToFree free = new DeviceToFree
                 {
                     handle = Utility.InsertCPUFence(),
@@ -620,6 +622,7 @@ namespace UnityEngine.UIElements.UIR
             TextureSlotCountBits = 7 << TextureSlotCountBitOffset,
 
             IsSerializing = 1 << 9,
+            IsRenderingNestedTreeRT = 1 << 10
         }
 
         // Lookup table for texture slot counts after shift by TextureSlotCountBitOffset (index 0-7)
@@ -716,7 +719,9 @@ namespace UnityEngine.UIElements.UIR
 
                 if (st.activeCommandList == null)
                 {
-                    Debug.Assert(isFlat); // World-space rendering should not go through this code path.
+                    // World-space rendering should not go through this code path, unless it is rendering
+                    // a nested render tree in a RenderTexture.
+                    Debug.Assert(isFlat || (st.flags & EvaluationFlags.IsRenderingNestedTreeRT) == EvaluationFlags.IsRenderingNestedTreeRT);
 
                     bool setsKeyword = false;
 
@@ -835,6 +840,7 @@ namespace UnityEngine.UIElements.UIR
             float pixelsPerPoint,
             bool isSerializing,
             TextureSlotCount defaultTextureSlotCount,
+            bool isRenderingNestedTreeRT,
             ref Exception immediateException)
         {
             Utility.ProfileDrawChainBegin();
@@ -851,10 +857,11 @@ namespace UnityEngine.UIElements.UIR
             int disableCounter = 0;
 
             EvaluationFlags defaultTextureSlotCountFlags = TextureSlotCountToFlags(defaultTextureSlotCount);
-            
+            EvaluationFlags isRenderingNestedRTFlags = isRenderingNestedTreeRT ? EvaluationFlags.IsRenderingNestedTreeRT : EvaluationFlags.None;
+
             var st = new EvaluationState
             {
-                flags = EvaluationFlags.MustApplyBatchProps | EvaluationFlags.MustApplyStencil | defaultTextureSlotCountFlags,
+                flags = EvaluationFlags.MustApplyBatchProps | EvaluationFlags.MustApplyStencil | defaultTextureSlotCountFlags | isRenderingNestedRTFlags
             };
 
             if (isSerializing)

@@ -28,12 +28,15 @@ namespace Unity.Hierarchy
         public Label Label { get; } = new();
         TextField TextField { get; } = new();
 
+        bool m_PrewarmControl;
+
         public HierarchyViewItemName()
         {
             AddToClassList(k_StyleName);
 
             focusable = true;
             delegatesFocus = false;
+            m_PrewarmControl = false;
 
             Add(Label);
             Add(TextField);
@@ -43,7 +46,8 @@ namespace Unity.Hierarchy
             TextField.style.display = DisplayStyle.None;
 
             TextField.RegisterCallback<MouseUpEvent>(OnMouseUpEvent);
-            TextField.RegisterCallback<KeyDownEvent>(OnKeyDownEvent);
+            TextField.RegisterCallback<KeyDownEvent>(OnInterceptKeyDownEvent, TrickleDown.TrickleDown);
+            TextField.RegisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.NoTrickleDown);
             TextField.RegisterCallback<BlurEvent>(OnBlurEvent);
         }
 
@@ -54,6 +58,7 @@ namespace Unity.Hierarchy
 
             IsRenaming = true;
             delegatesFocus = true;
+            m_PrewarmControl = true;
 
             Label.style.display = DisplayStyle.None;
             TextField.style.display = DisplayStyle.Flex;
@@ -74,6 +79,8 @@ namespace Unity.Hierarchy
         {
             IsRenaming = false;
             delegatesFocus = false;
+            m_PrewarmControl = false;
+
             schedule.Execute(Focus);
 
             TextField.style.display = DisplayStyle.None;
@@ -93,6 +100,34 @@ namespace Unity.Hierarchy
 
             TextField.Q<TextElement>().Focus();
             evt.StopPropagation();
+        }
+
+        void OnInterceptKeyDownEvent(KeyDownEvent evt)
+        {
+            if (!m_PrewarmControl)
+                return;
+
+            if (evt.keyCode == KeyCode.None)
+            {
+                // The OS sends multiple keyboard-related events on every key press.
+                // First, it sends the physical key pressed in the form of a key code. Then, it sends
+                // whatever character should be printed out as a result of that key press. Since keyboard
+                // shortcuts are processed based on the key code, if we give focus to a text field immediately
+                // it will immediately receive a key down event with a character. In our case, this is bad
+                // for 2 reasons:
+                //   1. On mac, the default shortcut to rename is Enter/Return which will instantly validate the
+                //      rename and result in the text field immediately losing focus again.
+                //   2. To simplify the rename, the text field is created with all its contents selected, so any
+                //      key bound to the Rename command will replace the current name of the item.
+                //
+                // So we eat all characters that are received without a keycode when the control gains focus
+                // to avoid those situations.
+                evt.StopPropagation();
+            }
+            else
+            {
+                m_PrewarmControl = false;
+            }
         }
 
         void OnKeyDownEvent(KeyDownEvent evt)

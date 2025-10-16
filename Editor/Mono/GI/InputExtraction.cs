@@ -117,12 +117,17 @@ namespace UnityEngine.LightTransport
 
         public static bool ExtractFromScene(out BakeInput bakeInput)
         {
+            return ExtractFromScene(out bakeInput, false);
+        }
+
+        public static bool ExtractFromScene(out BakeInput bakeInput, bool probesOnly)
+        {
             const string outputFolderPath = "unused"; // We are not using disk IO.
             UnityEditor.LightBaking.BakeInput lightBakerBakeInput = new();
             LightmapRequests lightBakerLightmapRequests = new();
             LightProbeRequests lightBakerlightProbeRequests = new();
             UnityEditor.LightBaking.InputExtraction.SourceMap map = new();
-            bool result = UnityEditor.LightBaking.InputExtraction.ExtractFromScene(outputFolderPath, lightBakerBakeInput, lightBakerLightmapRequests, lightBakerlightProbeRequests, map);
+            bool result = UnityEditor.LightBaking.InputExtraction.ExtractFromScene(outputFolderPath, lightBakerBakeInput, lightBakerLightmapRequests, lightBakerlightProbeRequests, map, probesOnly);
             bakeInput = new BakeInput(lightBakerBakeInput)
             {
                 lightmapRequests = lightBakerLightmapRequests,

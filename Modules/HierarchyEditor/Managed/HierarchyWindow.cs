@@ -398,6 +398,11 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
+        void CreateGUI()
+        {
+            m_SearchField.queryBuilder.blocksSupportExclude = false;
+        }
+
         void OnHierarchyWindowMouseUp(PointerUpEvent evt)
         {
             if (!m_HierarchyView.ViewModel.HasAllFlags(HierarchyNodeFlags.Selected))
@@ -763,6 +768,12 @@ namespace Unity.Hierarchy.Editor
 
         void OnKeyDown(KeyDownEvent evt)
         {
+            if (EditorGUIUtility.HandleDefaultRenameEvent(evt.imguiEvent, this))
+            {
+                evt.StopPropagation();
+                return;
+            }
+
             if (evt.keyCode == KeyCode.Escape && CutBoard.hasCutboardData)
             {
                 CutBoard.Reset();

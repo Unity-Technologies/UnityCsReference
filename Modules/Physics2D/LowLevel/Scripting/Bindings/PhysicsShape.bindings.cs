@@ -57,6 +57,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetContactFilter", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilter PhysicsShape_GetContactFilter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetMoverData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetMoverData(PhysicsShape shape, PhysicsShape.MoverData moverData);
         [NativeMethod(Name = "PhysicsShape::GetMoverData", IsThreadSafe = true)] extern internal static PhysicsShape.MoverData PhysicsShape_GetMoverData(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::ApplyWind", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyWind(PhysicsShape shape, Vector2 force, float drag, float lift, bool wake);
         [NativeMethod(Name = "PhysicsShape::SetTriggerEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetTriggerEvents(PhysicsShape shape, bool enableContactEvents);
         [NativeMethod(Name = "PhysicsShape::GetTriggerEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetTriggerEvents(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactEvents(PhysicsShape shape, bool enableContactEvents);

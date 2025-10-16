@@ -690,11 +690,7 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         [HideInInspector]
-        private Shader m_RuntimeShader;
-
-        [SerializeField]
-        [HideInInspector]
-        private Shader m_RuntimeWorldShader;
+        private Shader m_DefaultShader;
 
         [SerializeField]
         [HideInInspector]
@@ -767,7 +763,7 @@ namespace UnityEngine.UIElements
             colliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
             pixelsPerUnit = 100.0f;
             themeUss = GetOrCreateDefaultTheme?.Invoke();
-            m_AtlasBlitShader = m_RuntimeShader = m_RuntimeWorldShader = null;
+            m_AtlasBlitShader = m_DefaultShader = null;
 
             SetPanelSettingsAssetDirty?.Invoke(this);
 
@@ -883,13 +879,9 @@ namespace UnityEngine.UIElements
             {
                 m_AtlasBlitShader = Shader.Find(UIR.Shaders.k_AtlasBlit);
             }
-            if (m_RuntimeShader == null)
+            if (m_DefaultShader == null)
             {
-                m_RuntimeShader = Shader.Find(UIR.Shaders.k_Runtime);
-            }
-            if (m_RuntimeWorldShader == null)
-            {
-                m_RuntimeWorldShader = Shader.Find(UIR.Shaders.k_RuntimeWorld);
+                m_DefaultShader = Shader.Find(UIR.Shaders.k_Default);
             }
             if (m_RuntimeGaussianBlurShader == null)
             {

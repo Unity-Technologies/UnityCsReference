@@ -1178,6 +1178,11 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool isValid => ChainGeometry_IsValid(this);
 
         /// <summary>
+        /// Get the geometry vertices.
+        /// </summary>
+        public readonly unsafe ReadOnlySpan<Vector2> vertices => new(m_Points.ToPointer(), m_Count);
+
+        /// <summary>
         /// Calculate the AABB of the geometry.
         /// </summary>
         /// <param name="transform">The transform used to specify where the geometry is positioned.</param>

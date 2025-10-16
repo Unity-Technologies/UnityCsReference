@@ -185,6 +185,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             private InstanceDescription m_Instance;
             internal VisualElement StatusIndicator;
+            internal VisualElement DriftIndicator;
             internal Label LogInfoText;
             internal Label LogWarningText;
             internal Label LogErrorText;
@@ -207,6 +208,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             internal const string k_StatusContainerName = "status-container";
             internal const string k_StatusIndicatorName = "status-indicator";
             internal const string k_StatusLabelName = "status-label";
+            internal const string k_DriftIcon = "DriftIcon";
             internal const string k_LogInfoIcon = "LogInfoIcon";
             internal const string k_LogWarningIcon = "LogWarningIcon";
             internal const string k_LogErrorIcon = "LogErrorIcon";
@@ -216,6 +218,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             internal const string k_ErrorClass = "error";
             internal const string k_IdleClass = "idle";
             internal const string k_LoadingClass = "loading";
+
+            internal const string k_DriftToolTip = "This instance might be drifting. This is " +
+                                                   "caused by running an instance for a long time while possible " +
+                                                   "changes were detected in the Main Editor. Consider " +
+                                                   "exiting and restarting the instance.";
 
             internal InstanceView(InstanceDescription instance)
             {
@@ -261,6 +268,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 StatusLabel = new Label() { name = k_StatusLabelName }; ;
                 StatusIndicator = new VisualElement() { name = k_StatusIndicatorName };
+                DriftIndicator = new VisualElement() { name = k_DriftIcon };
                 m_ConnectedLabel = new Label();
                 var logInfoIcon = new VisualElement() { name = k_LogInfoIcon };
                 logInfoIcon.AddToClassList("icon");
@@ -272,6 +280,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var logErrorIcon = new VisualElement() { name = k_LogErrorIcon };
                 logErrorIcon.AddToClassList("icon");
                 StatusIndicator.AddToClassList("icon");
+                DriftIndicator.AddToClassList("icon");
+                DriftIndicator.tooltip = k_DriftToolTip;
+                DriftIndicator.style.backgroundImage = Icons.GetImage(Icons.ImageName.Drift);
 
                 var freeRunButtonContainer = new VisualElement();
                 var statusContentContainer = new VisualElement();
@@ -285,6 +296,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 statusLabelContainer.style.flexDirection = FlexDirection.Row;
                 statusContainer.style.flexDirection = FlexDirection.Column;
                 statusContentContainer.Add(warnIcon);
+                statusLabelContainer.Add(DriftIndicator);
                 statusLabelContainer.Add(StatusIndicator);
                 statusLabelContainer.Add(StatusLabel);
                 statusLabelContainer.Add(m_ConnectedLabel);
@@ -519,6 +531,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 RemoveFromClassList(k_ErrorClass);
                 RemoveFromClassList(k_IdleClass);
 
+                DriftIndicator.visible = false;
                 StatusIndicator.tooltip = string.Empty;
                 m_ConnectedLabel.text = string.Empty;
                 StatusLabel.text = string.Empty;
@@ -855,6 +868,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 AssignStatusLabel(nodesStatus, currentStage);
                 AssignLogs(instanceExecutionState);
                 AssignIpAddress(instanceExecutionState);
+                AssignDriftStatus();
+            }
+
+            void AssignDriftStatus()
+            {
+                var currScenario = ScenarioRunner.instance.ActiveScenario;
+                if (currScenario == null)
+                    return;
+
+                var instance = currScenario.GetInstanceByName(m_Instance.Name);
+                if (instance == null)
+                    return;
+
+                DriftIndicator.visible = instance.Drifted;
             }
 
             internal string GetCurrentScenarioStageString(ExecutionStage stage)

@@ -8,7 +8,6 @@ using JetBrains.Annotations;
 using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -94,10 +93,10 @@ namespace Unity.UI.Builder
             var addButton = m_FilterListView.Q<Button>(BaseListView.footerAddButtonName);
             addButton.AddToClassList(k_AddMoreIconClassName);
         }
-
-        public void Refresh(VisualElement source)
+        public override void SetValueWithoutNotify(List<FilterFunction> newValue)
         {
-            m_FilterSource = source.computedStyle.filter;
+            base.SetValueWithoutNotify(newValue);
+            m_FilterSource = newValue ?? new List<FilterFunction>();
             m_FilterListView.itemsSource = m_FilterSource;
             m_FilterListView.RefreshItems();
         }
@@ -123,24 +122,35 @@ namespace Unity.UI.Builder
 
         internal void FilterFunctionTypeChanged(FilterFunctionListViewItem item)
         {
+            var currentIndex = item.index;
+            if (currentIndex >= 0 && currentIndex < m_FilterSource.Count)
+            {
+                m_FilterSource[currentIndex] = item.filterFunction;
+            }
+
             using (var pooled = FilterFunctionChangedEvent.GetPooled())
             {
                 pooled.elementTarget = this;
                 pooled.item = item;
                 pooled.filterFunction = item.filterFunction;
-                pooled.index = item.index;
+                pooled.index = currentIndex;
                 SendEvent(pooled);
             }
         }
 
         internal void FilterFunctionValueChanged(FilterFunctionListViewItem item, int paramIndex)
         {
+            var currentIndex = item.index;
+            if (currentIndex >= 0 && currentIndex < m_FilterSource.Count)
+            {
+                m_FilterSource[currentIndex] = item.filterFunction;
+            }
             using (var pooled = FilterFunctionValueChangedEvent.GetPooled())
             {
                 pooled.elementTarget = this;
                 pooled.item = item;
                 pooled.filterFunction = item.filterFunction;
-                pooled.index = item.index;
+                pooled.index = currentIndex;
                 pooled.paramIndex = paramIndex;
                 SendEvent(pooled);
             }

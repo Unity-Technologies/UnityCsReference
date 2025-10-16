@@ -660,7 +660,7 @@ namespace UnityEngine
         bool GeneratorInstance.ICapabilities.isFinite => throw new NotImplementedException();
         DiscreteTime? GeneratorInstance.ICapabilities.length => throw new NotImplementedException();
 
-        GeneratorInstance IAudioGenerator.CreateRuntime(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters parameters)
+        GeneratorInstance IAudioGenerator.CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters parameters)
         {
             throw new NotImplementedException();
         }

@@ -180,7 +180,7 @@ namespace UnityEngine.UIElements
             var style = m_TextElement.computedStyle;
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
             {
-                var effectiveFontsize = (int)((style.fontSize.value) * GetPixelsPerPoint());
+                var effectiveFontsize = (int)Math.Round((style.fontSize.value) * GetPixelsPerPoint(), MidpointRounding.AwayFromZero);
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
@@ -252,6 +252,8 @@ namespace UnityEngine.UIElements
             nativeSettings.screenHeight =  Mathf.RoundToInt(size.y * 64.0f * scale);
 
             var fa = TextUtilities.GetFontAsset(m_TextElement);
+            if (fa == null)
+                return false;
 
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);

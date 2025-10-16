@@ -222,6 +222,27 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        internal void NotifyDrift()
+        {
+            // If the scenario is deploying, it is in a state of flux
+            // and thus avoid drift notifications while in this state.
+            if (Status.State == ScenarioState.Running &&
+                (Status.CurrentStage != ExecutionStage.Run ||
+                 Status.StageState != ExecutionState.Active))
+                return;
+
+            // Only Perform Drift detection for active free running instances.
+            foreach (var instance in m_Instances)
+            {
+                if (!instance.IsFreeRunMode() || !instance.IsActive())
+                    continue;
+
+                var isVirtual = instance.GetInstanceDescription() is VirtualEditorInstanceDescription;
+                if (!isVirtual && instance.HasDeployedAndRun())
+                    instance.Drifted = true;
+            }
+        }
+
         internal async Task TerminateAllFreeRunningInstancesAsync()
         {
             // Go through and cancel all Free Running Instances

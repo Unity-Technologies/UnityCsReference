@@ -37,18 +37,30 @@ namespace UnityEditor.Toolbars
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             ModeService.modeChanged += OnModeChanged;
+            // Monitor for layout changes
+            WindowLayout.lastLoadedLayoutChanged += OnLayoutChanged;
 
             //Immediately after a domain reload, Modes might be initialized after the toolbar so we wait a frame to check it
             EditorApplication.delayCall += () =>
             {
                 CheckAvailability();
                 CheckImguiOverride();
-                if (MainToolbar.TryGetOverlay(k_ElementId, out var overlay) && overlay is MainToolbarOverlay mtOverlay)
-                {
-                    mtOverlay.afterContentRebuilt += OnElementRebuilt;
-                    OnElementRebuilt(mtOverlay.rootVisualElement.Q<OverlayToolbar>());
-                }
+                EnsureOverlaySubscription();
             };
+        }
+        
+        void OnLayoutChanged()
+        {
+            EditorApplication.delayCall += EnsureOverlaySubscription;
+        }
+        
+        void EnsureOverlaySubscription()
+        {
+            if (MainToolbar.TryGetOverlay(k_ElementId, out var overlay) && overlay is MainToolbarOverlay mtOverlay)
+            {
+                mtOverlay.afterContentRebuilt += OnElementRebuilt;
+                OnElementRebuilt(mtOverlay.rootVisualElement.Q<OverlayToolbar>());
+            }
         }
 
         void OnDisable()

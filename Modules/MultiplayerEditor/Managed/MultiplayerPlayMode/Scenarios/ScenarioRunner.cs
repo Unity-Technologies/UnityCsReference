@@ -101,6 +101,21 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return false;
         }
 
+        /// <summary>
+        /// Also track to asset changes (textures, meshes, prefabs) that occur in the Main Editor
+        /// to notify of Drift.
+        /// </summary>
+        class ScenarioDriftAssetsTracker : AssetPostprocessor
+        {
+            public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
+                string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                var scenario = instance.m_Scenario;
+                if (scenario != null)
+                    scenario.NotifyDrift();
+            }
+        }
+
         private async Task UntilScenarioIsNotRunning()
         {
             while (instance.m_Scenario.Status.State == ScenarioState.Running)

@@ -38,6 +38,8 @@ namespace Unity.Hierarchy.Editor
         const string k_GameObjectDisabledUssClass = "unity-disabled";
         const string k_GameObjectDefaultParentUssClass = "hierarchy-item__gameobject-default-parent";
 
+        static HashSet<string> k_SpecialTypes = new HashSet<string>(new [] { "prefab" });
+
         internal new static class BindingsMarshaller
         {
             public static IntPtr ConvertToUnmanaged(HierarchyGameObjectHandler handler) => handler.m_Ptr;
@@ -145,7 +147,9 @@ namespace Unity.Hierarchy.Editor
             var disabled = (gameObject.hideFlags & HideFlags.NotEditable) != 0 || !gameObject.activeInHierarchy;
             item.EnableInClassList(k_GameObjectDisabledUssClass, disabled);
 
-            var isDefaultParent = gameObject.GetEntityId() == gameObject.scene.defaultParent;
+            var scene = gameObject.scene;
+            var isActiveScene = EditorSceneManager.GetActiveScene().guid == scene.guid;
+            var isDefaultParent = isActiveScene && gameObject.GetEntityId() == scene.defaultParent;
             item.EnableInClassList(k_GameObjectDefaultParentUssClass, isDefaultParent);
 
             if (PrefabUtility.IsPartOfPrefabInstance(gameObject) || PrefabUtility.IsAddedGameObjectOverride(gameObject))
@@ -603,7 +607,7 @@ namespace Unity.Hierarchy.Editor
             var nonNativeFilters = new List<HierarchySearchFilter>(query.Filters.Length);
             foreach (var f in query.Filters)
             {
-                if (f.Name != "t")
+                if (f.Name != "t" || k_SpecialTypes.Contains(f.Value))
                     nonNativeFilters.Add(f);
             }
             CurrentFilter = new HierarchySearchQueryDescriptor(nonNativeFilters.ToArray());

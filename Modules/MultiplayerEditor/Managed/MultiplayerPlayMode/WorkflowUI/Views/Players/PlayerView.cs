@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor
@@ -74,9 +75,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             this.AddEventLifecycle(OnAttach, OnDetach);
 
-            styleSheets.Add(EditorGUIUtility.isProSkin
-                ? EditorGUIUtility.LoadRequired(s_DarkUssPath) as StyleSheet
-                : EditorGUIUtility.LoadRequired(s_LightUssPath) as StyleSheet);
+            // Load the appropriate theme stylesheet
+            var isDarkTheme = EditorGUIUtility.isProSkin;
+            var selectedPath = isDarkTheme ? s_DarkUssPath : s_LightUssPath;
+            var loadedStyleSheet = EditorGUIUtility.LoadRequired(selectedPath) as StyleSheet;
+            
+            if (loadedStyleSheet != null)
+            {
+                styleSheets.Add(loadedStyleSheet);
+            }
+            else
+            {
+                Debug.LogError($"Failed to load USS stylesheet at path: {selectedPath}");
+            }
             CurrentPlayer = player;
         }
 

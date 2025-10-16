@@ -10,6 +10,7 @@ namespace UnityEditor.Search
     {
         ISearchView searchView { get; }
         SearchContext context { get; }
+        internal bool blocksSupportExclude { get; }
         internal QueryBlock AddBlock(string text);
         internal QueryBlock AddBlock(QueryBlock block);
         internal QueryBlock AddProposition(in SearchProposition searchProposition);

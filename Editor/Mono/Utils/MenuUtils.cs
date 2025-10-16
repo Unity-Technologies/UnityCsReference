@@ -170,7 +170,7 @@ namespace UnityEditor
                     if (info.hasTitle && info.hasItemBelow)
                         continue;
 
-                    if (info.hasItemAbove && i < itemsCount)
+                    if (info.hasItemAbove && info.hasItemBelow)
                         continue;
 
                     items.RemoveAt(i);

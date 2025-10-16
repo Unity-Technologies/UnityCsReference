@@ -290,7 +290,6 @@ namespace Unity.Hierarchy
             m_MultiColumnListView.RegisterCallback<PointerUpEvent>(OnPointerUp);
             m_MultiColumnListView.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
             m_MultiColumnListView.RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
-            m_MultiColumnListView.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
             m_MultiColumnListView.Q(className: ScrollView.contentAndVerticalScrollUssClassName).RegisterCallback<ClickEvent>(OnListViewClick);
             m_MultiColumnListView.columns.Add(m_NameColumn);
             m_NameColumn.stretchable = true;
@@ -988,6 +987,11 @@ namespace Unity.Hierarchy
         internal void PingNode(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).PingNode({node})");
+            // Expand node parents
+            ExpandParents(in node);
+            m_HierarchyViewModel.Update();
+            UpdateListView();
+
             var index = m_HierarchyViewModel.IndexOf(in node);
             if (index < 0)
                 return;
@@ -1003,11 +1007,6 @@ namespace Unity.Hierarchy
 
             if (rowContainer.ClassListContains(k_HierarchyPingBase))
                 return;
-
-            // Expand node parents
-            ExpandParents(in node);
-            m_HierarchyViewModel.Update();
-            UpdateListView();
 
             // Begin ping animation
             // Note: Trigger start of anim next frame so the previous AnimatedValue resolved style is properly setup and Transition will occur.
@@ -1250,20 +1249,6 @@ namespace Unity.Hierarchy
 
             if (shouldStopPropagation)
                 evt.StopPropagation();
-        }
-
-        void OnNavigationSubmit(NavigationSubmitEvent evt)
-        {
-            if (m_IsRenamingItem)
-                return;
-
-            var item = GetHierarchyViewItemFromIndex(m_MultiColumnListView
-                .selectedIndex);
-            if (item == null)
-                return;
-
-            item.BeginRename();
-            evt.StopPropagation();
         }
 
         void OnNavigationCancel(NavigationCancelEvent evt)

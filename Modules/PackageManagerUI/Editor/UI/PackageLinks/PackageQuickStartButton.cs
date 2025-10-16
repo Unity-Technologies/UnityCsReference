@@ -16,7 +16,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             text = string.Empty;
             AddToClassList("quickStartButton");
-            AddToClassList("rightAlign");
             Add(new VisualElement { classList = { "quickStartIcon" } });
             Add(new TextElement { text = L10n.Tr("QuickStart"), classList = { "quickStartText" } });
         }

@@ -127,6 +127,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_TimeSinceStartingLaunch = DateTime.UtcNow;
 
+            // Sync EditorPrefs to ensure virtual players can read main editor's preferences
+            EditorPrefs.Sync();
 
             processId = VirtualProjectProcessRepository.Launch(m_ProcessSystemDelegates, Identifier, m_ProcessRepository, extraExternalArgs);
             if (!ProcessInterrupt.SubscribeToProcessExit(processId, (_, exitCode) => OnVirtualProjectExit(this, exitCode, m_StateRepository)))

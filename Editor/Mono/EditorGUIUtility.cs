@@ -1092,6 +1092,51 @@ namespace UnityEditor
             return evt.shift | evt.control | evt.alt | evt.command;
         }
 
+        // Gets the key code for the primary keyboard shortcut to trigger a "Rename" command for the current OS
+        internal static KeyCode GetDefaultRenameShortcutKeyCode()
+        {
+            switch (Application.platform)
+            {
+                case RuntimePlatform.OSXEditor:
+                    return KeyCode.Return; // Note: NumpadEnter is also valid, but this method's job is only to return a usable key code
+                case RuntimePlatform.WindowsEditor:
+                case RuntimePlatform.LinuxEditor:
+                    return KeyCode.F2;
+                default:
+                    return KeyCode.None;
+            }
+        }
+
+        // Utility to figure out if the user has pressed the default "Rename" shortcut for their OS
+        internal static bool IsDefaultRenameEvent(Event evt)
+        {
+            if (evt.type != EventType.KeyDown)
+                return false;
+
+            switch (Application.platform)
+            {
+                case RuntimePlatform.OSXEditor:
+                    return evt.keyCode is KeyCode.KeypadEnter or KeyCode.Return && !HasHolddownKeyModifiers(evt);
+                case RuntimePlatform.WindowsEditor:
+                case RuntimePlatform.LinuxEditor:
+                    return evt.keyCode is KeyCode.F2 && !HasHolddownKeyModifiers(evt);
+                default:
+                    return false;
+            }
+        }
+
+        // Utility to generate a Rename command if the user has pressed the default "Rename" shortcut for their OS
+        internal static bool HandleDefaultRenameEvent(Event evt, EditorWindow context)
+        {
+            if (!IsDefaultRenameEvent(evt))
+                return false;
+
+            var renameCommandEvent = CommandEvent(EventCommandNames.Rename);
+            context.SendEvent(renameCommandEvent);
+
+            return true;
+        }
+
         // Does a given class have per-object thumbnails?
         public static bool HasObjectThumbnail(Type objType)
         {
@@ -1232,6 +1277,9 @@ namespace UnityEditor
         // Ping an object in a window like clicking it in an inspector
         public static void PingObject(int targetInstanceID)
         {
+            if (IsBuiltinResource(AssetDatabase.GetAssetPath((EntityId)targetInstanceID)))
+                return;
+
             var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
             foreach (var win in windows)
             {
@@ -1867,6 +1915,12 @@ namespace UnityEditor
             LikeControls = 1,
             // Looks like inspector
             LikeInspector = 2
+        }
+
+        static bool IsBuiltinResource(string resPath)
+        {
+            return string.Equals(resPath, "Library/unity default resources", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(resPath, "Resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase);
         }
     }
 

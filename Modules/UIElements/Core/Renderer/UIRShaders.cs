@@ -9,9 +9,7 @@ namespace UnityEngine.UIElements.UIR
     static class Shaders
     {
         public static readonly string k_AtlasBlit = "Hidden/Internal-UIRAtlasBlitCopy";
-        public static readonly string k_Editor = "Hidden/UIElements/EditorUIE";
-        public static readonly string k_Runtime = "Hidden/Internal-UIRDefault";
-        public static readonly string k_RuntimeWorld = "Hidden/Internal-UIRDefaultWorld";
+        public static readonly string k_Default = "Hidden/Internal-UIRDefault";
         public static readonly string k_RuntimeGaussianBlur = "Hidden/UIR/GaussianBlur";
         public static readonly string k_RuntimeColorEffect = "Hidden/UIR/ColorEffect";
         public static readonly string k_ColorConversionBlit = "Hidden/Internal-UIE-ColorConversionBlit";
@@ -24,13 +22,9 @@ namespace UnityEngine.UIElements.UIR
         public static readonly string k_ForceRenderTypeText = "_UIE_RENDER_TYPE_TEXT";
         public static readonly string k_ForceRenderTypeSvgGradient = "_UIE_RENDER_TYPE_GRADIENT";
 
-        static Material s_RuntimeMaterial;
-        static Material s_RuntimeWorldMaterial;
-        static Material s_EditorMaterial;
+        static Material s_DefaultMaterial;
 
-        public static Material runtimeMaterial => GetOrCreateMaterial(ref s_RuntimeMaterial, k_Runtime);
-        public static Material runtimeWorldMaterial => GetOrCreateMaterial(ref s_RuntimeWorldMaterial, k_RuntimeWorld);
-        public static Material editorMaterial => GetOrCreateMaterial(ref s_EditorMaterial, k_Editor);
+        public static Material defaultMaterial => GetOrCreateMaterial(ref s_DefaultMaterial, k_Default);
 
         static Material GetOrCreateMaterial(ref Material material, string shaderName)
         {
@@ -62,13 +56,9 @@ namespace UnityEngine.UIElements.UIR
             if (s_RefCount < 1)
             {
                 s_RefCount = 0;
-                UIRUtility.Destroy(s_RuntimeMaterial);
-                UIRUtility.Destroy(s_RuntimeWorldMaterial);
-                UIRUtility.Destroy(s_EditorMaterial);
+                UIRUtility.Destroy(s_DefaultMaterial);
 
-                s_RuntimeMaterial = null;
-                s_RuntimeWorldMaterial = null;
-                s_EditorMaterial = null;
+                s_DefaultMaterial = null;
             }
         }
     }

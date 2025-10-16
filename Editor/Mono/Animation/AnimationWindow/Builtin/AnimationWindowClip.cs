@@ -144,11 +144,11 @@ namespace UnityEditor.AnimationWindowBuiltin
         private void FillPropertyGroup(AnimationClip animationClip, ref EditorCurveBinding?[] propertyGroup, EditorCurveBinding lastBinding, string propertyGroupName, ref List<AnimationWindowCurve> curvesCache)
         {
             var newBinding = lastBinding;
-            newBinding.isPhantom = true;
             if (!propertyGroup[0].HasValue)
             {
                 newBinding.propertyName = propertyGroupName + ".x";
                 AnimationWindowCurve curve = new AnimationWindowCurve(this, newBinding, GetValueType(newBinding));
+                curve.isPhantom = true;
                 curvesCache.Add(curve);
             }
 
@@ -156,6 +156,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             {
                 newBinding.propertyName = propertyGroupName + ".y";
                 AnimationWindowCurve curve = new AnimationWindowCurve(this, newBinding, GetValueType(newBinding));
+                curve.isPhantom = true;
                 curvesCache.Add(curve);
             }
 
@@ -163,6 +164,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             {
                 newBinding.propertyName = propertyGroupName + ".z";
                 AnimationWindowCurve curve = new AnimationWindowCurve(this, newBinding, GetValueType(newBinding));
+                curve.isPhantom = true;
                 curvesCache.Add(curve);
             }
         }

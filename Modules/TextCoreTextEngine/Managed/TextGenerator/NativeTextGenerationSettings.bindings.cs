@@ -72,6 +72,9 @@ namespace UnityEngine.TextCore
                 spriteID = -1,
                 spriteScale = 0,
                 spriteTint = false,
+                margin = 0,
+                marginDirection = MarginDirection.Both,
+                marginUnitType = RichTextTagParser.TagUnitType.Pixels,
                 linkID = -1
             };
         }
@@ -203,6 +206,9 @@ namespace UnityEngine.TextCore
         public bool spriteTint;
         public int spriteScale;
         public Color32 spriteColor;
+        public int margin;
+        public MarginDirection marginDirection;
+        public RichTextTagParser.TagUnitType marginUnitType;
 
         public override string ToString()
         {
@@ -232,6 +238,14 @@ namespace UnityEngine.TextCore
         Top,
         Middle,
         Bottom
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal enum MarginDirection
+    {
+        Both,
+        Left,
+        Right
     }
 
     /// <summary>

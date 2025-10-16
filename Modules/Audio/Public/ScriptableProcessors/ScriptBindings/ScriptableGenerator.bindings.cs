@@ -92,7 +92,7 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Ask this interface to instantiate a runtime <see cref="GeneratorInstance"/> instance.
+        /// Ask this interface to create a <see cref="GeneratorInstance"/>.
         /// </summary>
         /// <param name="context">
         /// The context associated with this <see cref="GeneratorInstance"/>
@@ -103,7 +103,7 @@ namespace UnityEngine.Audio
         /// <param name="creationParameters">
         /// Initialization parameters passed through.
         /// </param>
-        GeneratorInstance CreateRuntime(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters);
+        GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters);
     }
 
     /// <summary>
@@ -640,7 +640,7 @@ namespace UnityEngine.Audio
                 fixed (ControlHeader* pResources = &control)
                 {
                     var context = new ControlContext(pResources);
-                    runtimeHandle = definition.CreateRuntime(context, null,default);
+                    runtimeHandle = definition.CreateInstance(context, null,default);
 
                     if (context.Exists(runtimeHandle))
                     {

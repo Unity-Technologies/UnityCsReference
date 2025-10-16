@@ -642,7 +642,7 @@ namespace UnityEditor.Search.Providers
 
         static int ComputeSearchDocumentScore(in SearchContext context, in SearchDocument doc, int score)
         {
-            var docPath = doc.m_Name ?? (string.IsNullOrEmpty(doc.m_Source) ? null : Path.GetFileName(Utils.RemoveInvalidCharsFromPath(doc.m_Source, '_')));
+            var docPath = doc.m_Name ?? (string.IsNullOrEmpty(doc.m_Source) ? null : Path.GetFileName(Utils.ReplaceInvalidCharsFromPath(doc.m_Source, '_')));
             if (doc.m_Name != null)
                 score <<= 2;
             if (!string.IsNullOrEmpty(docPath))

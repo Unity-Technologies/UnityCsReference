@@ -1171,7 +1171,18 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The mover data for the shape mover.
         /// </summary>
         public readonly MoverData moverData { get => PhysicsShape_GetMoverData(this); set => PhysicsShape_SetMoverData(this, value); }
-        
+
+        /// <summary>
+        /// Apply a wind force against a shape with a specified drag and lift.
+        /// This only has an effect if the shape body is <see cref="UnityEngine.RigidbodyType2D.Dynamic"/>.
+        /// This only has an effect of shapes of type Circle, Capsule or Polygon.
+        /// </summary>
+        /// <param name="force">The force to be projected against the shape.</param>
+        /// <param name="drag">The drag to apply to the shape in the direction of the force.</param>
+        /// <param name="lift">The lift produced by the force.</param>
+        /// <param name="wake">Whether the shape body should be woken or not.</param>
+        public readonly void ApplyWind(Vector2 force, float drag, float lift, bool wake = true) => PhysicsShape_ApplyWind(this, force, drag, lift, wake);
+
         /// <summary>
         /// Controls whether this shape produces triggers events which can be retrieved after the simulation has completed.
         /// A contact event will produce a <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> to the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved.

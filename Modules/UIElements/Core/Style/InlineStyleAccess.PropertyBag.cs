@@ -61,6 +61,7 @@ namespace UnityEngine.UIElements
                 ConverterGroups.RegisterGlobal((ref Texture2D v) => new StyleBackground(v));
                 ConverterGroups.RegisterGlobal((ref Sprite v) => new StyleBackground(v));
                 ConverterGroups.RegisterGlobal((ref VectorImage v) => new StyleBackground(v));
+                ConverterGroups.RegisterGlobal((ref RenderTexture v) => new StyleBackground(Background.FromRenderTexture(v)));
                 ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.texture);
                 ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.sprite);
                 ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.renderTexture);

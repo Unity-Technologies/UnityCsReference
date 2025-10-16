@@ -3746,44 +3746,60 @@ namespace UnityEngine
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, RaycastHit2D[] results)
         {
-            return CastArray_Internal(direction, Mathf.Infinity, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, Mathf.Infinity, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance)
         {
-            return CastArray_Internal(direction, distance, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastList_Internal(direction, distance, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastList_Internal(direction, distance, checkIgnoreColliders, results);
         }
 
         // Returns the hits from casting all the rigidbody collider(s) along a ray (filtered by the contact filter).
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results)
         {
-            return CastFilteredArray_Internal(direction, Mathf.Infinity, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredArray_Internal(direction, Mathf.Infinity, checkIgnoreColliders, contactFilter, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFilteredArray_Internal(direction, distance, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredArray_Internal(direction, distance, checkIgnoreColliders, contactFilter, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFilteredList_Internal(direction, distance, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFilteredList_Internal(direction, distance, checkIgnoreColliders, contactFilter, results);
         }
 
         public int Cast(Vector2 position, float angle, Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFrom_Internal(position, angle, direction, distance, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFrom_Internal(position, angle, direction, distance, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity)
         {
-            return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastFromFiltered_Internal(position, angle, direction, distance, checkIgnoreColliders, contactFilter, results);
         }
 
         public int Overlap(ContactFilter2D contactFilter, [Out] Collider2D[] results)
@@ -3821,22 +3837,22 @@ namespace UnityEngine
         extern private int GetShapes_Internal(ref PhysicsShapeGroup2D.GroupState physicsShapeGroupState);
 
         [NativeMethod("CastArray_Binding")]
-        extern private int CastArray_Internal(Vector2 direction, float distance, [NotNull] RaycastHit2D[] results);
+        extern private int CastArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] RaycastHit2D[] results);
 
         [NativeMethod("CastList_Binding")]
-        extern private int CastList_Internal(Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
+        extern private int CastList_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("CastFilteredArray_Binding")]
-        extern private int CastFilteredArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
+        extern private int CastFilteredArray_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, [NotNull] RaycastHit2D[] results);
 
         [NativeMethod("CastFilteredList_Binding")]
-        extern private int CastFilteredList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFilteredList_Internal(Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("CastFrom_Binding")]
-        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("CastFromFiltered_Binding")]
-        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool checkIgnoreColliders, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("OverlapArray_Binding")]
         extern private int OverlapArray_Internal(ContactFilter2D contactFilter, [NotNull][UnityMarshalAs(NativeType.ScriptingObjectPtr)] Collider2D[] results);
@@ -4053,7 +4069,10 @@ namespace UnityEngine
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
             contactFilter.SetLayerMask(contactMask);
 
-            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         [ExcludeFromDocs]
@@ -4063,7 +4082,10 @@ namespace UnityEngine
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
             contactFilter.SetLayerMask(contactMask);
 
-            return CastArray_Internal(direction, distance, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("true")] bool ignoreSiblingColliders)
@@ -4072,41 +4094,59 @@ namespace UnityEngine
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
             contactFilter.SetLayerMask(contactMask);
 
-            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         // Returns the hits from casting the collider along a ray.
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results)
         {
-            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, Mathf.Infinity, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         [ExcludeFromDocs]
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, float distance)
         {
-            return CastArray_Internal(direction, distance, contactFilter, true, results);
+            const bool ignoreSiblingColliders = true;
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("true")] bool ignoreSiblingColliders)
         {
-            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
-            return CastList_Internal(direction, distance, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastList_Internal(direction, distance, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
-            return CastListFiltered_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
+            const bool checkIgnoreColliders = false;
+
+            return CastListFiltered_Internal(direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
         }
 
         public int Cast(Vector2 position, float angle, Vector2 direction, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
             if (attachedRigidbody)
-                return CastFrom_Internal(position, angle, direction, distance, ignoreSiblingColliders, results);
+            {
+                const bool checkIgnoreColliders = false;
+
+                return CastFrom_Internal(position, angle, direction, distance, ignoreSiblingColliders, checkIgnoreColliders, results);
+            }
 
             throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
@@ -4114,25 +4154,29 @@ namespace UnityEngine
         public int Cast(Vector2 position, float angle, Vector2 direction, ContactFilter2D contactFilter, List<RaycastHit2D> results, [DefaultValue("Mathf.Infinity")] float distance = Mathf.Infinity, [DefaultValue("true")] bool ignoreSiblingColliders = true)
         {
             if (attachedRigidbody)
-                return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, ignoreSiblingColliders, results);
+            {
+                const bool checkIgnoreColliders = false;
+
+                return CastFromFiltered_Internal(position, angle, direction, distance, contactFilter, ignoreSiblingColliders, checkIgnoreColliders, results);
+            }
 
             throw new InvalidOperationException("Cannot perform a Collider Cast from a specific position and angle if the Collider is not attached to a Rigidbody2D.");
         }
 
         [NativeMethod("CastArray_Binding")]
-        extern private int CastArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] RaycastHit2D[] results);
+        extern private int CastArray_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] RaycastHit2D[] results);
 
         [NativeMethod("CastList_Binding")]
-        extern private int CastList_Internal(Vector2 direction, float distance, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastList_Internal(Vector2 direction, float distance, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("CastListFiltered_Binding")]
-        extern private int CastListFiltered_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastListFiltered_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("CastFrom_Binding")]
-        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFrom_Internal(Vector2 position, float angle, Vector2 direction, float distance, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
 
         [NativeMethod("CastFromFiltered_Binding")]
-        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, [NotNull] List<RaycastHit2D> results);
+        extern private int CastFromFiltered_Internal(Vector2 position, float angle, Vector2 direction, float distance, ContactFilter2D contactFilter, bool ignoreSiblingColliders, bool checkIgnoreColliders, [NotNull] List<RaycastHit2D> results);
 
         // Returns all hits along the ray (limited by the size of the array) excluding this collider.  This does not produce any garbage.
         [ExcludeFromDocs]

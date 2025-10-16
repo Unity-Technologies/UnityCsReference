@@ -30,6 +30,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private bool m_HasCompleted;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] public string m_BuildTarget;
+        [SerializeField] private bool m_Drifted;
         [SerializeField] private RunModeState m_RunModeState;
         [SerializeField] public string m_MultiplayerRole;
         [SerializeReference] private PlayModeController m_PlayModeController;
@@ -44,6 +45,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal List<NodeStatus> GetCurrentNodeStatus() => m_CurrentStatus;
         internal ExecutionStage GetCurrentStage() => m_CurrentStage;
         internal bool HasDeployedAndRun() => m_HasDeployedAndRun;
+        internal bool Drifted
+        {
+            get => m_Drifted;
+            set => m_Drifted = value;
+        }
 
         internal RunModeState RunModeState
         {
@@ -350,6 +356,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_FreeRunCancelTokenSource.Cancel();
             m_FreeRunCancelTokenSource = null;
             m_HasCompleted = true;
+            m_Drifted = false;
         }
 
         internal bool HasStartedAsFreeRunning()

@@ -127,6 +127,10 @@ namespace UnityEngine.UIElements.UIR
                         break;
 
                     s_ImmediateOverheadMarker.Begin();
+
+                    if (owner.compositeOpacity < 0.001f)
+                        break;
+
                     Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
                     Camera oldCamera = Camera.current;
                     RenderTexture oldRT = RenderTexture.active;

@@ -122,24 +122,19 @@ namespace UnityEngine.UIElements.UIR
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
             ColorSpace activeColorSpace = QualitySettings.activeColorSpace;
+            m_DefaultMat = Shaders.defaultMaterial;
             if (panel.contextType == ContextType.Player)
             {
                 var runtimePanel = (BaseRuntimePanel)panel;
                 drawInCameras = runtimePanel.drawsInCameras;
-                if (drawInCameras)
-                    m_DefaultMat = Shaders.runtimeWorldMaterial;
-                else
-                {
-                    m_DefaultMat = Shaders.runtimeMaterial;
-                    if (activeColorSpace == ColorSpace.Linear)
-                        forceGammaRendering = panel.panelRenderer.forceGammaRendering;
-                }
+
+                if (!drawInCameras && activeColorSpace == ColorSpace.Linear)
+                    forceGammaRendering = panel.panelRenderer.forceGammaRendering;
             }
             else // Editor
             {
                 if (activeColorSpace == ColorSpace.Linear)
                     forceGammaRendering = true;
-                m_DefaultMat = Shaders.editorMaterial;
             }
             isFlat = panel.isFlat;
             device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering);
@@ -331,6 +326,7 @@ namespace UnityEngine.UIElements.UIR
                 panel.scaledPixelsPerPoint,
                 true,
                 textureSlotCount,
+                false,
                 ref immediateException);
             m_BlockDirtyRegistration = false;
 
@@ -417,6 +413,7 @@ namespace UnityEngine.UIElements.UIR
                 panel.scaledPixelsPerPoint,
                 false,
                 textureSlotCount,
+                (nestedTreeRT != null),
                 ref immediateException);
             m_BlockDirtyRegistration = false;
 

@@ -490,6 +490,8 @@ namespace UnityEditor
 
                 m_ShouldAddNewLevel = false;
             }
+
+            SetQualitySettings(GetQualitySettings());
         }
 
         private Dictionary<string, int> GetDefaultQualityForPlatforms()

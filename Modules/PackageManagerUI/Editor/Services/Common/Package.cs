@@ -57,15 +57,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary.isInstalled && primary.HasTag(PackageTag.Deprecated))
                     return PackageState.Error;
 
-                if (primary.isInstalled && primary.trustLevel == TrustLevel.Untrusted)
+                switch (primary.trustAndSignature)
                 {
-                    switch (primary.signature?.status)
-                    {
-                        case SignatureStatus.Invalid:
-                            return PackageState.Error;
-                        case SignatureStatus.Unsigned:
-                            return PackageState.Warning;
-                    }
+                    case TrustAndSignature.UntrustedInvalidSignature:
+                        return PackageState.Error;
+                    case TrustAndSignature.UntrustedNoSignature:
+                        return PackageState.Warning;
                 }
 
                 if (numErrors > 0 && numWarnings == numErrors || isDeprecated)

@@ -32,11 +32,13 @@ namespace UnityEditorInternal
 
         private System.Type m_ValueType;
 
+        private bool m_IsPhantom;
+
         public EditorCurveBinding binding { get { return m_Binding;  } }
         public bool isPPtrCurve { get { return m_Binding.isPPtrCurve; } }
         public bool isDiscreteCurve { get { return m_Binding.isDiscreteCurve; } }
         public bool isSerializeReferenceCurve { get {return m_Binding.isSerializeReferenceCurve;}}
-        public bool isPhantom { get { return m_Binding.isPhantom; } }
+        public bool isPhantom { get { return m_IsPhantom; } set { m_IsPhantom = value; } }
         public InheritanceState inheritanceState { get; set; }
         public string propertyName { get { return m_Binding.propertyName; } }
         public string path { get { return m_Binding.path; } }

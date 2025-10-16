@@ -44,6 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshSourcePath(version);
             RefreshOverviewFoldout(version);
             RefreshTechnicalName(version);
+            RefreshSignature(version);
             RefreshMinimumUnityVersion(version);
         }
 
@@ -72,6 +73,54 @@ namespace UnityEditor.PackageManager.UI.Internal
             var technicalName = version?.package?.name ?? string.Empty;
             detailTechnicalName.text = technicalName;
             copyIcon.SetTextToCopy(technicalName);
+        }
+
+        private void RefreshSignature(IPackageVersion version)
+        {
+            var signatureText = string.Empty;
+            var icon = Icon.None;
+            var iconTooltip = string.Empty;
+
+            switch (version?.trustAndSignature)
+            {
+                case TrustAndSignature.FullTrustUnitySignature:
+                case TrustAndSignature.FullTrustValidSignature:
+                    // The org name for a unity signed package is not always set, so we always hardcode it here to make the value consistent
+                    var orgName = version.trustAndSignature == TrustAndSignature.FullTrustUnitySignature ? L10n.Tr("Unity Technologies") : version.signatureOrgName;
+                    if (!string.IsNullOrEmpty(orgName))
+                    {
+                        signatureText = string.Format(L10n.Tr("Signed for {0}"), orgName);
+                        icon = Icon.Verified;
+                        iconTooltip = L10n.Tr("Unity has verified the identity of this publisher.");
+                    }
+                    break;
+                case TrustAndSignature.LimitedTrust:
+                    signatureText = string.Format(L10n.Tr("Signed for {0}"), version.signatureOrgName);
+                    icon = Icon.Info;
+                    iconTooltip = PackageSignatureHelpBox.k_LimitedTrustMessage;
+                    break;
+                case TrustAndSignature.UntrustedNoSignature:
+                    signatureText = L10n.Tr("Missing");
+                    icon = Icon.Warning;
+                    iconTooltip = PackageSignatureHelpBox.k_UnsignedMessage;
+                    break;
+                case TrustAndSignature.UntrustedInvalidSignature:
+                    signatureText = L10n.Tr("Invalid");
+                    icon = Icon.Error;
+                    iconTooltip = PackageSignatureHelpBox.k_InvalidSignatureMessage;
+                    break;
+            }
+
+            detailSignature.text = signatureText;
+
+            signatureStateIcon.ClearClassList();
+            signatureStateIcon.AddToClassList(icon.ClassName());
+            signatureStateIcon.tooltip = iconTooltip;
+
+            var showSignature = !string.IsNullOrEmpty(signatureText);
+            UIUtils.SetElementDisplay(detailSignatureTitle, showSignature);
+            UIUtils.SetElementDisplay(signatureStateIcon, showSignature);
+            UIUtils.SetElementDisplay(detailSignature, showSignature);
         }
 
         private void RefreshMinimumUnityVersion(IPackageVersion version)
@@ -128,6 +177,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement detailSourcePathContainer => m_Cache.Get<VisualElement>("detailSourcePathContainer");
         private SelectableLabel detailSourcePath => m_Cache.Get<SelectableLabel>("detailSourcePath");
         private SelectableLabel detailTechnicalName => m_Cache.Get<SelectableLabel>("detailTechnicalName");
+        private Label detailSignatureTitle => m_Cache.Get<Label>("detailSignatureTitle");
+        private VisualElement signatureStateIcon => m_Cache.Get<VisualElement>("signatureStateIcon");
+        private SelectableLabel detailSignature => m_Cache.Get<SelectableLabel>("detailSignature");
         private Label detailMinimumUnityVersionTitle => m_Cache.Get<Label>("detailMinimumUnityVersionTitle");
         private SelectableLabel detailMinimumUnityVersion => m_Cache.Get<SelectableLabel>("detailMinimumUnityVersion");
         private CopyIconButton copyIcon => m_Cache.Get<CopyIconButton>("copyIcon");

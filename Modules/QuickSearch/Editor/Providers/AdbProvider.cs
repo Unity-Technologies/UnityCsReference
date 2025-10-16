@@ -127,7 +127,7 @@ namespace UnityEditor.Search.Providers
                 {
                     var obj = UnityEngine.Object.FindObjectFromInstanceID(id);
                     var filename = Path.GetFileNameWithoutExtension(path);
-                    path = Utils.RemoveInvalidCharsFromPath($"{filename}/", ' ');
+                    path = Utils.ReplaceInvalidCharsFromPath($"{filename}/", ' ');
                     flags |= SearchDocumentFlags.Nested;
                 }
                 // If this ever changes and we no longer use the AssetProvider to create items, please update the test SearchEngineTests.ProjectSearch_AlwaysReturnsPaths

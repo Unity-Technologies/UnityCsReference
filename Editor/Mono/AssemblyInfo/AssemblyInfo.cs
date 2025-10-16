@@ -226,6 +226,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.BuildProfileEditor.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.Server.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.AssetDatabase.AssetPostProcessor.Tests.Editor")]
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]

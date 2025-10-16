@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -40,7 +41,7 @@ namespace Unity.UI.Builder
             if (currentVisualElement.HasRunningAnimation(StylePropertyId.Filter))
                 currentVisualElement.CancelAnimation(StylePropertyId.Filter);
 
-            filterStyleField.Refresh(currentVisualElement);
+            filterStyleField.SetValueWithoutNotify(currentVisualElement.computedStyle.filter);
 
             var prop = GetLastStyleProperty(currentRule, FilterConstants.Filter);
             m_Inspector.UpdateFieldStatus(filterStyleField, prop);
@@ -154,7 +155,7 @@ namespace Unity.UI.Builder
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            var filter = currentVisualElement.computedStyle.filter;
+            var filter = filterStyleField.value;
 
             var styleProperty = GetOrCreateStylePropertyByStyleName(FilterConstants.Filter);
             styleProperty.SetFilter(styleSheet, filter);

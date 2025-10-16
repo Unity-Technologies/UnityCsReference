@@ -27,7 +27,6 @@ namespace UnityEditor.Search
     {
         private static readonly string[] k_Dots = { ".", "..", "..." };
         internal static readonly char[] KeywordsValueDelimiters = new[] { ':', '=', '<', '>', '!', '|' };
-        private static readonly char[] k_AdbInvalidCharacters = {'/', '?', '<', '>', '\\', ':', '*', '|', '"' };
 
         /// <summary>
         /// Separators used to split an entry into indexable tokens.
@@ -149,7 +148,7 @@ namespace UnityEditor.Search
 
         public static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators, int minTokenLength)
         {
-            path = Utils.RemoveInvalidCharsFromPath(path, '_');
+            path = Utils.ReplaceInvalidCharsFromPath(path, '_');
             var name = Path.GetFileNameWithoutExtension(path);
             var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
             var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
@@ -1377,14 +1376,6 @@ namespace UnityEditor.Search
             return query;
         }
 
-        internal static string RemoveInvalidChars(string filename)
-        {
-            filename = string.Concat(filename.Split(Paths.invalidFilenameChars));
-            if (filename.Length > 0 && !char.IsLetterOrDigit(filename[0]))
-                filename = filename.Substring(1);
-            return filename;
-        }
-
         internal static bool ValidateAssetPath(ref string path, string requiredExtensionWithDot, out string errorMessage)
         {
             if (!Paths.IsValidAssetPath(path, requiredExtensionWithDot, out errorMessage))
@@ -1396,7 +1387,7 @@ namespace UnityEditor.Search
             var fileName = Path.GetFileName(path);
 
             // On Mac Path.GetInvalidFileNameChars() doesn't include <,> but these characters are invalid for ADB.
-            if (fileName.IndexOfAny(k_AdbInvalidCharacters) >= 0)
+            if (fileName.IndexOfAny(Utils.k_AdbInvalidCharacters) >= 0)
             {
                 errorMessage = $"Filename has invalid characters.";
                 return false;

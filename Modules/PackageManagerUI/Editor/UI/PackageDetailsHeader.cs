@@ -58,7 +58,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Git, L10n.Tr("Git")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Local, L10n.Tr("Local")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Tarball, L10n.Tr("Tarball")));
-            versionContainer.Add(new PackageAssetStoreTagLabel());
             versionContainer.Add(new PackageDeprecatedTagLabel());
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("Disabled")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Custom, L10n.Tr("Custom")));
@@ -68,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void CreateHelpBoxes()
         {
-            helpBoxContainer.Add(new PackageSignatureHelpBox());
+            helpBoxContainer.Add(new PackageSignatureHelpBox(m_Application));
             helpBoxContainer.Add(new NonCompliantPackageHelpBox());
             helpBoxContainer.Add(new DeprecatedVersionHelpBox());
             helpBoxContainer.Add(new DeprecatedPackageHelpBox());
@@ -86,7 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             detailTitle.text = m_Version.displayName;
             detailsLinks.Refresh(m_Version);
             versionInfoIcon.Refresh(m_Package);
-            
+
             RefreshDependency();
             RefreshFeatureSetElements();
             RefreshTags();
@@ -245,45 +244,60 @@ namespace UnityEditor.PackageManager.UI.Internal
                 : string.Format(L10n.Tr("{0} · {1}"), versionString, releaseDateString);
         }
 
-        private bool TryShowAuthorLink()
+        private void AddRegistryAndAuthorLabel(string registryName, bool registryVerified, string authorName, PackageLink authorLink)
         {
-            authorContainer.Clear();
-            var authorLink = m_PackageLinkFactory.CreateAuthorLink(m_Version);
-            if (authorLink is not { isVisible: true })
-                return false;
-            authorContainer.Add(new PackageLinkButton(m_Application, authorLink));
-            return true;
+            VisualElement registryElement = null;
+            VisualElement authorElement = null;
+            if (!string.IsNullOrEmpty(registryName))
+            {
+                var registryLabel = new Label(registryName) { classList = { "registryLabel" } };
+                if (registryVerified)
+                    registryLabel.AddToClassList("verified");
+                registryElement = registryLabel;
+            }
+
+            if (authorLink is { isVisible: true })
+                authorElement = new PackageLinkButton(m_Application, authorLink);
+            else if (!string.IsNullOrEmpty(authorName))
+                authorElement = new Label(authorName) { classList = { "authorLabel" } };
+
+            registryAndAuthorContainer.Clear();
+            if (registryElement == null && authorElement == null)
+            {
+                registryAndAuthorContainer.Add(new Label(L10n.Tr("Author unknown")){ classList = { "authorLabel" } });
+                return;
+            }
+
+            if (registryElement != null)
+            {
+                registryAndAuthorContainer.Add(new Label(L10n.Tr("From")));
+                registryAndAuthorContainer.Add(registryElement);
+            }
+
+            if (authorElement != null)
+            {
+                registryAndAuthorContainer.Add(new Label(registryElement == null ? L10n.Tr("By") : L10n.Tr("by")));
+                registryAndAuthorContainer.Add(authorElement);
+            }
         }
 
         private void RefreshRegistryAndAuthor()
         {
-            var showRegistryAndAuthorLabel = !TryShowAuthorLink();
-            UIUtils.SetElementDisplay(registryAndAuthorLabel, showRegistryAndAuthorLabel);
-            if (!showRegistryAndAuthorLabel)
-                return;
+            var isFromUnity = m_Version.availableRegistry == RegistryType.UnityRegistry && !m_Version.HasTag(PackageTag.InstalledFromPath);
+            var isFromAssetStore = m_Version.package.product != null && !m_Version.HasTag(PackageTag.InstalledFromPath);
 
-            var isByUnity = m_Version.availableRegistry == RegistryType.UnityRegistry && !m_Version.HasTag(PackageTag.InstalledFromPath);
-            var author = isByUnity ? L10n.Tr("Unity Technologies Inc.") : m_Version?.author?.name;
-            registryAndAuthorLabel.tooltip = string.Empty;
-
-            if (m_Version is { availableRegistry: RegistryType.UnityRegistry or RegistryType.MyRegistries })
+            if (isFromAssetStore)
+                AddRegistryAndAuthorLabel(L10n.Tr("Asset Store"), true, null, m_PackageLinkFactory.CreateAssetStoreAuthorLink(m_Version));
+            else if (isFromUnity)
+                AddRegistryAndAuthorLabel(L10n.Tr("Unity Registry"), true, L10n.Tr("Unity Technologies"), null);
+            else
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
                 // Null check for the package info is needed here because sometimes the PackageDetails would be refreshed mid-package generation (due to selection change),
                 // and sometimes an installed package would exist in the PackageDatabase, but the corresponding installed package info has been removed mid-generation.
                 // This won't cause any UI issues as the UI will be refreshed again after all packages are generated (and some packages removed).
-                var registryName = isByUnity ? L10n.Tr("Unity Registry") : packageInfo?.registry?.name ?? string.Empty;
-                if (isByUnity)
-                    registryAndAuthorLabel.tooltip = packageInfo?.registry?.url ?? string.Empty;
-                if (!string.IsNullOrEmpty(registryName))
-                {
-                    registryAndAuthorLabel.text = string.IsNullOrEmpty(author)
-                        ? string.Format(L10n.Tr("From <b>{0}</b>"), registryName)
-                        : string.Format(L10n.Tr("From <b>{0}</b> by {1}"), registryName, author);
-                    return;
-                }
+                AddRegistryAndAuthorLabel(packageInfo?.registry?.name ?? string.Empty, false, m_Version?.author?.name ?? string.Empty, null);
             }
-            registryAndAuthorLabel.text = string.IsNullOrEmpty(author) ? L10n.Tr("Author unknown") : string.Format(L10n.Tr("By {0}"), author);
         }
 
         private VisualElementCache cache { get; }
@@ -292,14 +306,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label detailEntitlement => cache.Get<Label>("detailEntitlement");
         private SelectableLabel detailVersion => cache.Get<SelectableLabel>("detailVersion");
         private VersionInfoIcon versionInfoIcon => cache.Get<VersionInfoIcon>("versionInfoIcon");
-        private VisualElement authorContainer => cache.Get<VisualElement>("detailAuthorContainer");
 
         private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
 
         private VisualElement versionContainer => cache.Get<VisualElement>("versionContainer");
         private VisualElement helpBoxContainer => cache.Get<VisualElement>("helpBoxContainer");
 
-        private Label registryAndAuthorLabel => cache.Get<Label>("registryAndAuthorLabel");
+        private VisualElement registryAndAuthorContainer => cache.Get<VisualElement>("registryAndAuthorContainer");
         private VisualElement quickStartContainer => cache.Get<VisualElement>("quickStartContainer");
         private VisualElement usedInFeatureSetMessageContainer => cache.Get<VisualElement>("usedInFeatureSetMessageContainer");
         private VisualElement dependencyContainer => cache.Get<VisualElement>("dependencyContainer");

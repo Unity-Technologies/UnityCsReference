@@ -68,12 +68,14 @@ namespace UnityEngine.UIElements
             }
 
             var pixelAlignedItemHeight = resolvedItemHeight;
+            var viewportHeight = m_ScrollView.contentViewport.layout.height;
+            var previousScrollOffset = m_ScrollView.scrollOffset;
             m_ForcedScroll = true;
 
             if (index == -1)
             {
                 // Scroll to last item
-                var actualCount = (int)(lastHeight / pixelAlignedItemHeight);
+                var actualCount = (int)(viewportHeight / pixelAlignedItemHeight);
                 if (itemsCount < actualCount)
                     m_ScrollView.scrollOffset = new Vector2(0, 0);
                 else
@@ -85,15 +87,21 @@ namespace UnityEngine.UIElements
             }
             else // index > first
             {
-                var actualCount = (int)(lastHeight / pixelAlignedItemHeight);
+                var actualCount = (int)(viewportHeight / pixelAlignedItemHeight);
                 if (index < firstVisibleIndex + actualCount)
                     return;
 
                 var d = index - actualCount + 1; // +1 ensures targeted element is fully visible
-                var visibleOffset = pixelAlignedItemHeight - (lastHeight - actualCount * pixelAlignedItemHeight);
+                var visibleOffset = pixelAlignedItemHeight - (viewportHeight - actualCount * pixelAlignedItemHeight);
                 var yScrollOffset = pixelAlignedItemHeight * d + visibleOffset;
 
                 m_ScrollView.scrollOffset = new Vector2(m_ScrollView.scrollOffset.x, yScrollOffset);
+            }
+
+            // Due to the nature of the scheduler, in the events that an offset was changed while the first scheduler was running, we need to process any pending changes.
+            if (previousScrollOffset == m_ScrollView.scrollOffset)
+            {
+                OnScrollUpdate();
             }
         }
 

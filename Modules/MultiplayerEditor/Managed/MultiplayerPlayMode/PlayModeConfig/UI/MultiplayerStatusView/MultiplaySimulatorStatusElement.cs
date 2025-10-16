@@ -142,8 +142,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 name = "simulated-foldout",
                 value = false
             };
+
+            var ipContainer = new VisualElement();
+            ipContainer.style.marginTop = 5;
+
             var ipLabel = new Label { text = k_IPLabelText };
-            contentContainer.Add(ipLabel);
+            ipContainer.Add(ipLabel);
+            contentContainer.Add(ipContainer);
 
             m_SimulationFoldout.RegisterValueChangedCallback(evt =>
             {

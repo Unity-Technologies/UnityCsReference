@@ -889,6 +889,18 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly void ApplyAngularImpulse(float impulse, bool wake = true) => PhysicsBody_ApplyAngularImpulse(this, impulse, wake);
 
         /// <summary>
+        /// Clear any user forces that have been applied to this body.
+        /// Forces on a body are automatically cleared when a simulation step completes, however under some circumstances it may be desirable to clear the forces explicitly.
+        /// </summary>
+        public readonly void ClearForces() => PhysicsBody_ClearForces(this);
+
+        /// <summary>
+        /// Wake any bodies that are touching this body via their shapes.
+        /// This also works for Static bodies.
+        /// </summary>
+        public readonly void WakeTouching() => PhysicsBody_WakeTouching(this);
+
+        /// <summary>
         /// Enable/disable contact events on all shapes attached to the body.
         /// See <see cref="LowLevelPhysics2D.PhysicsShape.contactEvents"/>.
         /// </summary>

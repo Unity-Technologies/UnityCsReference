@@ -64,10 +64,9 @@ namespace UnityEngine.UIElements.UIR
             internal IntPtr BufferPointer { get { return buffer; } }
         }
 
-        unsafe public static void SetVectorArray<T>(MaterialPropertyBlock props, int name, NativeSlice<T> vector4s) where T : struct
+        unsafe public static void SetVectorArray(IntPtr shaderPropertySheet, int nameID, Vector4[] vector4s)
         {
-            int vector4Count = (vector4s.Length * vector4s.Stride) / (sizeof(float) * 4);
-            SetVectorArray(props, name, new IntPtr(vector4s.GetUnsafePtr()), vector4Count);
+            SetVectorArray(shaderPropertySheet, nameID, vector4s, vector4s.Length);
         }
 
         public static event Action<bool> GraphicsResourcesRecreate;
@@ -102,11 +101,17 @@ namespace UnityEngine.UIElements.UIR
         [ThreadSafe] extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
         [ThreadSafe] extern static void FreeBuffer(IntPtr buffer);
         [ThreadSafe] extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
-        [ThreadSafe] extern static void SetVectorArray(MaterialPropertyBlock props, int name, IntPtr vector4s, int count);
+        [ThreadSafe] extern static void SetVectorArray(IntPtr shaderPropertySheet, int name, Vector4[] values, int count);
         [ThreadSafe] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
-
         [ThreadSafe] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
+
+
+        [ThreadSafe] public extern static IntPtr AllocateShaderPropertySheet();
+        [ThreadSafe] public extern static void SetAllTextures(IntPtr shaderPropertySheet, IntPtr textureNames, IntPtr texturePtrs, int count);
         [ThreadSafe] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
+        [ThreadSafe] public extern static void ApplyShaderPropertySheet(IntPtr shaderPropertySheet);
+        [ThreadSafe] public extern static void ReleasePropertySheet(IntPtr shaderPropertySheet);
+
         [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);
         [ThreadSafe] public extern static void DisableScissor();
         [ThreadSafe] public extern static bool IsScissorEnabled();

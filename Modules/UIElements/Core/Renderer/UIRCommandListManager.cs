@@ -106,7 +106,7 @@ namespace UnityEngine.UIElements.UIR
             for (int i = 0; i < m_CurrentFrameCommandLists.Count; ++i)
             {
                 var cmdList = m_CurrentFrameCommandLists[i];
-                var renderer = (cmdList.m_Owner as UIDocumentRootElement).uiRenderer;
+                var renderer = cmdList.m_Renderer;
                 if (renderer != null)
                 {
                     renderer.commandLists = m_CommandListsArray;
@@ -132,6 +132,36 @@ namespace UnityEngine.UIElements.UIR
             Dispose(true);
         }
 
+        public void ResetCommandListUIRenderer()
+        {
+            // This method is called from UIRenderDevice.Dispose() to ensure that all UIRenderer
+            // instances have been properly reset before we dispose of the CommandListManager.
+            // Since the UIRenderer can be reused by another CommandListManager instance, we must
+            // reset the DrawCallData associated with the current CommandListManager instance.
+            if (m_CommandListsArray != null)
+            {
+                UIRenderer lastRenderer = null;
+                for (int i = 0; i < m_CommandListsArray.Length; ++i)
+                {
+                    List<CommandList> commandLists = m_CommandListsArray[i];
+                    for (int j = 0; j < commandLists.Count; ++j)
+                    {
+                        UIRenderer renderer = commandLists[j].m_Renderer;
+                        // A UIRenderer might contain multiple command lists (e.g. 1 per material). We make this check
+                        // to avoid reseting the same UIRenderer many times.
+                        if (lastRenderer != renderer)
+                        {
+                            if (renderer != null)
+                            {
+                                renderer.ResetDrawCallData();
+                            }
+                            lastRenderer = renderer;
+                        }
+                    }
+                }
+            }
+        }
+
         protected void Dispose(bool disposing)
         {
             if (disposed)
@@ -147,10 +177,6 @@ namespace UnityEngine.UIElements.UIR
                     List<CommandList> commandLists = m_CommandListsArray[i];
                     for (int j = 0; j < commandLists.Count; ++j)
                     {
-                        if (commandLists[j].m_Renderer != null)
-                        {
-                            commandLists[j].m_Renderer.ResetDrawCallData();
-                        }
                         commandLists[j].Dispose();
                     }
                     commandLists.Clear();

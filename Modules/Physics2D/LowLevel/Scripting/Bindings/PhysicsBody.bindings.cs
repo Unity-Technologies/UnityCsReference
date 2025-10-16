@@ -77,6 +77,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulse(PhysicsBody body, Vector2 impulse, Vector2 point, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyLinearImpulseToCenter", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyLinearImpulseToCenter(PhysicsBody body, Vector2 impulse, bool wake);
         [NativeMethod(Name = "PhysicsBody::ApplyAngularImpulse", IsThreadSafe = true)] extern internal static void PhysicsBody_ApplyAngularImpulse(PhysicsBody body, float impulse, bool wake);
+        [NativeMethod(Name = "PhysicsBody::ClearForces", IsThreadSafe = true)] extern internal static void PhysicsBody_ClearForces(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::WakeTouching", IsThreadSafe = true)] extern internal static void PhysicsBody_WakeTouching(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetContactEvents(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::SetHitEvents", IsThreadSafe = true)] extern internal static void PhysicsBody_SetHitEvents(PhysicsBody body, bool flag);
         [NativeMethod(Name = "PhysicsBody::GetShapeCount", IsThreadSafe = true)] extern internal static int PhysicsBody_GetShapeCount(PhysicsBody body);

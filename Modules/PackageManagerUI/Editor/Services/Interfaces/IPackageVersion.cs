@@ -93,17 +93,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IEnumerable<PackageSizeInfo> sizes { get; }
 
-        EntitlementsInfo entitlements { get; }
-
         bool IsDifferentVersionThanRequested { get; }
 
         bool IsRequestedButOverriddenVersion { get; }
 
         string deprecationMessage { get; }
 
-        SignatureInfo signature { get; }
+        TrustAndSignature trustAndSignature { get; }
 
-        TrustLevel trustLevel { get; }
+        string signatureOrgName { get; }
+
 
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 

@@ -225,7 +225,7 @@ namespace UnityEngine.Audio
         /// <remarks>
         /// This can generally be used to render the output of a <see cref="IAudioGenerator"/>, potentially from within another <see cref="GeneratorInstance"/>.
         /// </remarks>
-        /// <seealso cref="IAudioGenerator.CreateRuntime"/>
+        /// <seealso cref="IAudioGenerator.CreateInstance"/>
         /// <param name="controlState">The initial state available from the control thread.</param>
         /// <param name="realtimeState">The initial state available from the control thread.</param>
         /// <param name="nestedFormat">
@@ -233,7 +233,7 @@ namespace UnityEngine.Audio
         /// </param>
         /// <param name="creationParameters">
         /// Additional parameters and initialization state for the processor.
-        /// This is generally received from <see cref="IAudioGenerator.CreateRuntime"/>
+        /// This is generally received from <see cref="IAudioGenerator.CreateInstance"/>
         /// </param>
         /// <returns>
         /// A <see cref="GeneratorInstance"/> you own and control, that must later be destroyed with <see cref="ControlContext.Destroy(GeneratorInstance)"/>.

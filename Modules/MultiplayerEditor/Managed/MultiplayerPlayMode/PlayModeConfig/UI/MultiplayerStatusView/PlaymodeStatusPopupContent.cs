@@ -92,7 +92,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var state = instance.GetInstanceExecutionState();
 
                 view.SetStatus(state);
-                view.RefreshRunMode();
+                view.RefreshFreeRunUI();
             }
         }
 
@@ -100,6 +100,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             internal readonly InstanceDescription m_InstanceDescription;
             readonly VisualElement m_StatusIndicator;
+            readonly VisualElement m_DriftIndicator;
             readonly Image m_RunModeIndicator;
             const string k_InstanceViewClass = "instance-view";
             const string k_InstanceIconName = "instance-icon";
@@ -108,7 +109,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             const string k_StatusContainerName = "status-container";
             const string k_StatusIndicatorName = "status-indicator";
             const string k_RunModeIndicatorName = "runmode-indicator";
-
+            const string k_DriftIconName = "drift-icon";
+            internal const string k_DriftToolTip = "This instance might be drifting. This is " +
+                                                   "caused by running an instance for a long time while possible " +
+                                                   "changes were detected in the Main Editor. Consider " +
+                                                   "exiting and restarting the instance.";
             const string k_ActiveClass = "active";
             const string k_ErrorClass = "error";
             const string k_LoadingClass = "loading";
@@ -131,10 +136,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var statusContainer = new VisualElement() { name = k_StatusContainerName };
                 m_StatusIndicator = new VisualElement() { name = k_StatusIndicatorName };
                 m_StatusIndicator.AddToClassList("icon");
+                m_DriftIndicator = new VisualElement() { name = k_DriftIconName };
+                m_DriftIndicator.AddToClassList("icon");
+                m_DriftIndicator.tooltip = k_DriftToolTip;
+                m_DriftIndicator.style.backgroundImage = Icons.GetImage(Icons.ImageName.Drift);
                 m_RunModeIndicator = new Image() { name = k_RunModeIndicatorName };
                 m_RunModeIndicator.AddToClassList("icon");
                 m_RunModeIndicator.style.paddingRight = 2;
 
+                statusContainer.Add(m_DriftIndicator);
                 statusContainer.Add(m_RunModeIndicator);
                 statusContainer.Add(m_StatusIndicator);
 
@@ -211,7 +221,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
             }
 
-            internal void RefreshRunMode()
+            internal void RefreshFreeRunUI()
             {
                 // Grab the running mode and update the visual icon if it's changed.
                 var currRunMode = m_InstanceDescription.RunModeState;
@@ -221,6 +231,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 var toolTipText = GetRunModeToolTip(currRunMode, m_InstanceDescription);
                 if (!m_RunModeIndicator.tooltip.Equals(toolTipText))
                     m_RunModeIndicator.tooltip = toolTipText;
+
+                // Refresh the coherence drift UI for free run instances
+                var instance = ScenarioRunner.instance.ActiveScenario?.GetInstanceByName(m_InstanceDescription.Name);
+                if (instance != null)
+                    m_DriftIndicator.visible = instance.Drifted;
             }
 
             private string GetRunModeToolTip(RunModeState runMode, InstanceDescription instanceDescription)

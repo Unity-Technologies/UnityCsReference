@@ -228,13 +228,6 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/VisualElement.png")]
     public partial class VisualElement : Focusable, ITransform
     {
-
-
-        internal static class Testing
-        {
-            public static void SetDefaultMaterial(VisualElement ve, Material material) => ve.defaultMaterial = material;
-        }
-
         /// <summary>
         /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>.
         /// </summary>
@@ -2979,37 +2972,6 @@ namespace UnityEngine.UIElements
             else if (eventType == MouseOutEvent.TypeId() && capturingElement == null)
             {
                 elementPanel.cursorManager.ResetCursor();
-            }
-        }
-
-        static Material s_runtimeMaterial;
-        Material getRuntimeMaterial()
-        {
-            if (s_runtimeMaterial != null)
-                return s_runtimeMaterial;
-
-            Shader shader = Shader.Find(UIRUtility.k_DefaultShaderName);
-            Debug.Assert(shader != null, "Failed to load UIElements default shader");
-            if (shader != null)
-            {
-                shader.hideFlags |= HideFlags.DontSaveInEditor;
-                Material mat = new Material(shader);
-                mat.hideFlags |= HideFlags.DontSaveInEditor;
-                return s_runtimeMaterial = mat;
-            }
-            return null;
-        }
-
-        Material m_defaultMaterial;
-        internal Material defaultMaterial
-        {
-            get { return m_defaultMaterial; }
-            private set
-            {
-                if (m_defaultMaterial == value)
-                    return;
-                m_defaultMaterial = value;
-                IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
             }
         }
     }

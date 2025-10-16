@@ -10,9 +10,7 @@ using UnityEngine;
 namespace Unity.Multiplayer.PlayMode.Editor
 {
     /// <summary>
-    /// Helper class to load Icons that will get assigned via code
-    /// Use Icons via USS if possible and only assign via code if
-    /// there is no good way to assign via USS.
+    /// Helper class to load Icons that will get assigned via code.
     ///
     /// Code parts taken from MPPM Images.cs
     /// </summary>
@@ -28,7 +26,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             Warning,
             UnityLogo,
             Idle,
-            Help
+            Help,
+            Drift,
         }
 
         /// <summary>
@@ -40,7 +39,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             { ImageName.Warning, "console.warnicon" },
             { ImageName.UnityLogo, "UnityLogo" },
-            { ImageName.Help, "_Help" }
+            { ImageName.Help, "_Help" },
+            { ImageName.Drift, "console.warnicon.inactive.sml" }
         };
 
 

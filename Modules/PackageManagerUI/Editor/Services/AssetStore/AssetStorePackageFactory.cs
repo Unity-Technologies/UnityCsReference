@@ -229,16 +229,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId);
                 var productInfo = m_AssetStoreCache.GetProductInfo(productId);
                 var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
+                // Asset store products that are potentially UPM packages are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
+                var packageName = productInfo?.packageName ?? m_UpmCache.GetPackageData(productId)?.name;
+                if (!string.IsNullOrEmpty(packageName))
+                    continue;
+
                 if (purchaseInfo == null && productInfo == null && importedPackage == null)
                 {
                     packagesToRemove.Add(productId.ToString());
                     continue;
                 }
-
-                // Asset store products that are potentially UPM packages are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
-                var packageName = productInfo?.packageName ?? m_UpmCache.GetPackageData(productId)?.name;
-                if (!string.IsNullOrEmpty(packageName))
-                    continue;
 
                 var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
                 var productInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductInfo);

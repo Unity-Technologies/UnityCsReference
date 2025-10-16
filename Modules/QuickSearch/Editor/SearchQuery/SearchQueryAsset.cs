@@ -290,7 +290,7 @@ namespace UnityEditor.Search
 
         public static string GetQueryName(string query)
         {
-            return SearchUtils.RemoveInvalidChars(Utils.Simplify(query).Replace(":", "_").Replace(" ", "_"));
+            return Utils.RemoveInvalidCharsFromFileName(Utils.Simplify(query).Replace(":", "_").Replace(" ", "_"));
         }
 
         public static bool SaveQuery(SearchViewState viewState, string path, out SearchQueryAsset query)

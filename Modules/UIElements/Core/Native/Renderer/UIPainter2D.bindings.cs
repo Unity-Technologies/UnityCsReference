@@ -33,6 +33,9 @@ namespace UnityEngine.UIElements
         public static extern void SetFillGradient(IntPtr handle, FillGradient gradient);
         public static extern bool HasFillGradient(IntPtr handle);
 
+        public static extern void SetStrokeFillGradient(IntPtr handle, FillGradient gradient);
+        public static extern bool HasStrokeFillGradient(IntPtr handle);
+
         public static extern void SetHasFillTexture(IntPtr handle, bool hasFillTexture);
         public static extern bool HasFillTexture(IntPtr handle);
 

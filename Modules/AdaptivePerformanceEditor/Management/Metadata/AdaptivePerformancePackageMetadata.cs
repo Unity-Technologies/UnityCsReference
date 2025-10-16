@@ -9,7 +9,6 @@ using UnityEngine;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine.AdaptivePerformance;
-using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.AdaptivePerformance.Editor.Metadata
@@ -98,7 +97,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
         /// <summary>
         /// Information about the deprecation state of the package.
         ///
-        /// The flag is set to identify deprecated packages. 
+        /// The flag is set to identify deprecated packages.
         /// </summary>
         string isDeprecated { get { return "false"; } }
 
@@ -125,6 +124,9 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
         const string k_CachedMDStoreKey = "Adaptive Performance Metadata Store";
 
         static float k_TimeOutDelta = 30f;
+        static bool s_KnowPackageInitialized = false;
+        static bool s_EnableLogging = false;
+
 
         [Serializable]
         struct KnownPackageInfo
@@ -291,7 +293,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                 foreach(var loaderMetadata in packageMetadata.loaderMetadata)
                 {
                     if (loaderMetadata.supportedBuildTargets.Contains(buildTargetGroup))
-                    { 
+                    {
                         loadersForBuildTarget.Add(new LoaderBuildTargetQueryResult
                         {
                             packageName = packageMetadata.packageName,
@@ -564,25 +566,28 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
 
         internal static void InitKnownPluginPackages()
         {
-            foreach (var knownPackage in AdaptivePerformanceKnownPackages.Packages)
+            if (!s_KnowPackageInitialized)
             {
-                InternalAddPluginPackage(knownPackage);
+                foreach (var knownPackage in AdaptivePerformanceKnownPackages.Packages)
+                {
+                    InternalAddPluginPackage(knownPackage);
+                }
+
+                s_EnableLogging = true;
+                s_KnowPackageInitialized = true;
             }
         }
 
         static AdaptivePerformancePackageMetadataStore()
         {
-            InitKnownPluginPackages();
-
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
-
             if (IsEditorInPlayMode())
                 return;
-
-            AssemblyReloadEvents.afterAssemblyReload += AssemblyReloadEvents_afterAssemblyReload;
+            // Only rebuild package cache if a package is newly registered.
+            PackageManager.Events.registeredPackages += RebuildPackageCache;
         }
 
-        static void AssemblyReloadEvents_afterAssemblyReload()
+        static void RebuildPackageCache(PackageRegistrationEventArgs args)
         {
             LoadCachedMDStoreInformation();
 
@@ -592,7 +597,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                 {
                     s_SearchRequest = Client.SearchAll(true);
                 }
-
                 RebuildInstalledCache();
                 StartAllQueues();
             }
@@ -1045,6 +1049,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
 
                 case InstallationState.Log:
                     const string header = "Adaptive Performance Provider Management";
+                    if (!s_EnableLogging) break;
                     switch (req.logLevel)
                     {
                         case LogLevel.Info:
@@ -1052,7 +1057,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                             break;
 
                         case LogLevel.Warning:
-                            //Debug.LogWarning($"{header} Warning: {req.logMessage}");
+                            Debug.LogWarning($"{header} Warning: {req.logMessage}");
                             break;
 
                         case LogLevel.Error:

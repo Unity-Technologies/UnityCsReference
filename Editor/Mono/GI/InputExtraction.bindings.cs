@@ -68,7 +68,7 @@ namespace UnityEditor.LightBaking
             }
         }
 
-        public static extern bool ExtractFromScene(string outputFolderPath, BakeInput input, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, SourceMap map);
+        public static extern bool ExtractFromScene(string outputFolderPath, BakeInput input, LightmapRequests lightmapRequests, LightProbeRequests lightProbeRequests, SourceMap map, bool probesOnly = false);
 
         [NativeMethod(IsThreadSafe = true)]
         public static extern int[] ComputeOcclusionLightIndicesFromBakeInput(BakeInput bakeInput, UnityEngine.Vector3[] probePositions, uint maxLightsPerProbe);

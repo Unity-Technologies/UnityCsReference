@@ -481,6 +481,7 @@ namespace UnityEditor.Search
         public QuerySceneFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
             : base(source, id, value, attr)
         {
+            this.value = UnityEditor.Search.SearchUtils.UnescapeLiteralString(value);
             icon = Utils.LoadIcon("Filter Icon");
             alwaysDrawLabel = false;
         }
