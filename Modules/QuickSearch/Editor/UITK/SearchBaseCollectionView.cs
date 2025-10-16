@@ -158,6 +158,11 @@ namespace UnityEditor.Search
                 m_ListView.RefreshItems();
         }
 
+        void IResultView.UpdateView()
+        {
+            UpdateView();
+        }
+
         private bool ShouldRefreshView()
         {
             if (((IList)m_ListView.activeItems).Count < m_ViewModel.results.Count)

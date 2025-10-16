@@ -685,6 +685,7 @@ namespace UnityEditor.Build.Profile
             profile.SerializePlayerSettings();
         }
 
+
         static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget, string sharedSetting = null)
         {
             if (!string.IsNullOrEmpty(sharedSetting))

@@ -18,6 +18,7 @@ namespace UnityEditor.Search
         void OnItemSourceChanged(ISearchList itemSource);
         void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
         void Focus();
+        void UpdateView();
 
         internal int ComputeVisibleItemCapacity(float size, float height);
     }

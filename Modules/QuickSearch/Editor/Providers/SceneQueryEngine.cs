@@ -153,7 +153,7 @@ namespace UnityEditor.Search.Providers
 
         private bool IsActive(GameObject go)
         {
-            return go != null && go.activeInHierarchy;
+            return go.activeInHierarchy;
         }
 
         static bool OnPrefabFilter(GameObject go, QueryFilterOperator op, PrefabFilter value)
@@ -294,8 +294,6 @@ namespace UnityEditor.Search.Providers
 
         SearchValue OnPropertyFilter(GameObject go, string propertyName)
         {
-            if (!go)
-                return SearchValue.invalid;
             if (string.IsNullOrEmpty(propertyName))
                 return SearchValue.invalid;
 

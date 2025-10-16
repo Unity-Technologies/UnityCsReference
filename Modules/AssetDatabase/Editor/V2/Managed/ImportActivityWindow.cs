@@ -59,9 +59,8 @@ namespace UnityEditor
             }
             else
             {
-                window.InitWithDimensions(window.position, selectedObjectGuid, openViaRightClick);
-
                 window.minSize = CalculateWindowMinSize(Screen.currentResolution);
+                window.InitWithDimensions(window.position, selectedObjectGuid, openViaRightClick);
             }
         }
 

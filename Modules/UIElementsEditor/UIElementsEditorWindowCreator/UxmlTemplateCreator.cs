@@ -35,7 +35,7 @@ namespace UnityEditor.UIElements
             return filePath;
         }
 
-        [MenuItem("Assets/Create/UI Toolkit/UI Document", false, 610, false)]
+        [MenuItem("Assets/Create/UI Toolkit/UI Document (UXML)", false, 602, false)]
         private static void CreateUXMLAsset()
         {
             var folder = GetCurrentFolder();

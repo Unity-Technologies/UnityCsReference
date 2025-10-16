@@ -614,6 +614,8 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             GUILayout.Space(5);
+
+            EditorGUI.indentLevel -= 1;
         }
 
         void ShowRealtimeLMGUI(Terrain terrain)

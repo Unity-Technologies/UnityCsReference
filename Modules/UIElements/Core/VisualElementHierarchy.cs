@@ -1059,7 +1059,7 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal VisualElement GetRootVisualContainer()
+        internal VisualElement GetRootVisualContainer(bool stopAtNearestRoot = false)
         {
             VisualElement topMostRootContainer = null;
             var hierarchyParent = this;
@@ -1068,6 +1068,8 @@ namespace UnityEngine.UIElements
                 if (hierarchyParent.isRootVisualContainer)
                 {
                     topMostRootContainer = hierarchyParent;
+                    if (stopAtNearestRoot)
+                        return topMostRootContainer;
                 }
 
                 hierarchyParent = hierarchyParent.hierarchy.parent;

@@ -307,6 +307,7 @@ namespace UnityEditor.Overlays
         public static void GenerateMenu(IGenericMenu menu, string pathPrefix, EditorWindow window)
         {
             var presets = GetAllPresets(window.GetType());
+            var overlayTargetType = "Overlay";
             foreach (var preset in presets)
             {
                 menu.AddItem(pathPrefix + preset.name, false, () =>
@@ -356,7 +357,8 @@ namespace UnityEditor.Overlays
                     {
                         EditorUtility.DisplayDialog(
                             L10n.Tr("Load Overlay Preset From Disk"),
-                            string.Format(L10n.Tr("Trying to load an overlay preset with the name {0}. This preset targets the window type {0} which isn't valid for this window."), preset.targetWindowType),
+                            string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This preset targets the window type {1}, which isn't valid for {2} window."), 
+                                overlayTargetType.ToLower(), preset.targetWindowType, window.GetType()),
                             L10n.Tr("OK"));
                         failed = true;
                     }

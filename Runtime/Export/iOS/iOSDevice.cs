@@ -98,6 +98,10 @@ namespace UnityEngine.iOS
         iPhone16Pro     = 85,
         iPhone16ProMax  = 86,
         iPhone16e       = 87,
+        iPhone17        = 88,
+        iPhoneAir       = 89,
+        iPhone17Pro     = 90,
+        iPhone17ProMax  = 91,
 
         iPhoneUnknown       = 10001,
         iPadUnknown         = 10002,

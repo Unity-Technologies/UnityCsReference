@@ -5,6 +5,7 @@
 using UnityEngine;
 using System;
 using System.Linq;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -26,7 +27,15 @@ namespace UnityEditor
             if (columns() == null)
                 throw new ArgumentException("Columns are not allowed to be null", "columns");
 
-            m_LightTable = new SerializedPropertyTable(title.Replace(" ", string.Empty), new SerializedPropertyDataStore.GatherDelegate(objects), () => {
+            string serializationUID = title.Replace(" ", string.Empty);
+
+            // Include render pipeline name in serialization ID, since different render pipelines may have different settings.
+            string rpName = GraphicsSettings.currentRenderPipeline?.pipelineTypeFullName;
+            if (string.IsNullOrEmpty(rpName))
+                rpName = "BuiltinRP";
+            serializationUID += $"_{rpName.Replace(" ", string.Empty)}";
+
+            m_LightTable = new SerializedPropertyTable(serializationUID, new SerializedPropertyDataStore.GatherDelegate(objects), () => {
                 return columns().Select(item => item.internalColumn).ToArray();
             }, showFilterGUI);
             m_Title = EditorGUIUtility.TrTextContent(title);

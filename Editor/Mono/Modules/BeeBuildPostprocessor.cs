@@ -783,6 +783,7 @@ namespace UnityEditor.Modules
             {
                 args.report.AddAppendix(strippingInfo);
                 var linkerToEditorData = AssemblyStripper.ReadLinkerToEditorData(EditorBuildOutputPathFor(args).ToString());
+
                 AssemblyStripper.UpdateBuildReport(linkerToEditorData, strippingInfo);
             }
         }

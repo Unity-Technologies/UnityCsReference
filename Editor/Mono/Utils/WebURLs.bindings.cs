@@ -13,8 +13,6 @@ namespace UnityEditorInternal
         public static extern string unity { get; }
         [NativeProperty("kURLUnityConnect", true, TargetType.Field)]
         public static extern string unityConnect { get; }
-        [NativeProperty("kURLUnityForum", true, TargetType.Field)]
-        public static extern string unityForum { get; }
         [NativeProperty("kURLUnityDiscussions", true, TargetType.Field)]
         public static extern string unityDiscussions { get; }
         [NativeProperty("kURLUnityFeedback", true, TargetType.Field)]

@@ -1785,6 +1785,9 @@
     <Compile Include="..\..\Editor\Mono\IIconPlatformProperties.cs">
       <Link>Editor\Mono\IIconPlatformProperties.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\IInsightsPlatformProperties.cs">
+      <Link>Editor\Mono\IInsightsPlatformProperties.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\IPlatformProperties.cs">
       <Link>Editor\Mono\IPlatformProperties.cs</Link>
     </Compile>
@@ -2609,6 +2612,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\DefaultTextureImportSettingsExtension.cs">
       <Link>Editor\Mono\Modules\DefaultTextureImportSettingsExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\IPreStrippingModuleAdder.cs">
+      <Link>Editor\Mono\Modules\IPreStrippingModuleAdder.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\ModuleManager.cs">
       <Link>Editor\Mono\Modules\ModuleManager.cs</Link>

@@ -120,31 +120,28 @@ namespace UnityEngine.UIElements.UIR
                     Matrix4x4 oldProjection = Utility.GetUnityProjectionMatrix();
                     Camera oldCamera = Camera.current;
                     RenderTexture oldRT = RenderTexture.active;
-                    bool hasScissor = drawParams.scissor.Count > 1; // We always expect the "unbound" scissor rectangle to exists
-                    if (hasScissor)
-                        Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
-                    using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClip))
+                    GL.modelview = owner.worldTransform;
+
+                    PushScissor(drawParams, owner.worldClip, pixelsPerPoint);
+
+                    s_ImmediateOverheadMarker.End();
+                    try
                     {
-                        s_ImmediateOverheadMarker.End();
-                        try
-                        {
-                            callback();
-                        }
-                        catch (Exception e)
-                        {
-                            immediateException = e;
-                        }
-                        s_ImmediateOverheadMarker.Begin();
+                        callback();
                     }
+                    catch (Exception e)
+                    {
+                        immediateException = e;
+                    }
+                    s_ImmediateOverheadMarker.Begin();
+
+                    PopScissor(drawParams, pixelsPerPoint);
 
                     Camera.SetupCurrent(oldCamera);
                     RenderTexture.active = oldRT;
                     GL.modelview = drawParams.view.Peek();
                     GL.LoadProjectionMatrix(oldProjection);
-
-                    if (hasScissor)
-                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(drawParams.scissor.Peek(), pixelsPerPoint));
 
                     s_ImmediateOverheadMarker.End();
                     break;
@@ -180,18 +177,12 @@ namespace UnityEngine.UIElements.UIR
                 }
                 case CommandType.PushScissor:
                 {
-                    Rect elemRect = CombineScissorRects(owner.worldClip, drawParams.scissor.Peek());
-                    drawParams.scissor.Push(elemRect);
-                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
+                    PushScissor(drawParams, owner.worldClip, pixelsPerPoint);
                     break;
                 }
                 case CommandType.PopScissor:
                 {
-                    drawParams.scissor.Pop();
-                    Rect prevRect = drawParams.scissor.Peek();
-                    if (prevRect.x == DrawParams.k_UnlimitedRect.x)
-                        Utility.DisableScissor();
-                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
+                    PopScissor(drawParams, pixelsPerPoint);
                     break;
                 }
                 case CommandType.PushRenderTexture:
@@ -281,6 +272,24 @@ namespace UnityEngine.UIElements.UIR
             return new Vector4(
                 Mathf.Min(minClipSpace.x, maxClipSpace.x), Mathf.Min(minClipSpace.y, maxClipSpace.y),
                 Mathf.Max(minClipSpace.x, maxClipSpace.x), Mathf.Max(minClipSpace.y, maxClipSpace.y));
+        }
+
+        public static void PushScissor(DrawParams drawParams, Rect scissor, float pixelsPerPoint)
+        {
+            // TODO: Offset the clipping rect by the offset within the RT and the post-effect margin
+            Rect elemRect = CombineScissorRects(scissor, drawParams.scissor.Peek());
+            drawParams.scissor.Push(elemRect);
+            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
+        }
+
+        public static void PopScissor(DrawParams drawParams, float pixelsPerPoint)
+        {
+            drawParams.scissor.Pop();
+            Rect prevRect = drawParams.scissor.Peek();
+            if (prevRect.x == DrawParams.k_UnlimitedRect.x)
+                Utility.DisableScissor();
+            else
+                Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
         }
 
         static Rect CombineScissorRects(Rect r0, Rect r1)

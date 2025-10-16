@@ -389,6 +389,11 @@ namespace UnityEditor.Search
             m_GridView.RefreshItems();
         }
 
+        void IResultView.UpdateView()
+        {
+            UpdateView();
+        }
+
         void IResultView.AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
         {
             // Nothing to do

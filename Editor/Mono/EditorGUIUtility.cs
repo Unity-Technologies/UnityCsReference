@@ -1229,6 +1229,9 @@ namespace UnityEditor
         // Ping an object in a window like clicking it in an inspector
         public static void PingObject(int targetInstanceID)
         {
+            if (IsBuiltinResource(AssetDatabase.GetAssetPath(targetInstanceID)))
+                return;
+
             foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
             {
                 shw.FrameObject(targetInstanceID, true);
@@ -1865,6 +1868,12 @@ namespace UnityEditor
             LikeControls = 1,
             // Looks like inspector
             LikeInspector = 2
+        }
+
+        static bool IsBuiltinResource(string resPath)
+        {
+            return string.Equals(resPath, "Library/unity default resources", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(resPath, "Resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase);
         }
     }
 
