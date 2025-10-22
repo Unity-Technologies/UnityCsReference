@@ -43,6 +43,9 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]
+
+[assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
+
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Playmode")]
 
 

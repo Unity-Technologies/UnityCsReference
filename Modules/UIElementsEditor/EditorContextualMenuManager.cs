@@ -71,8 +71,7 @@ namespace UnityEditor.UIElements
         protected internal override void DoDisplayMenu(DropdownMenu menu, EventBase triggerEvent)
         {
             // Force repaint on the panel because they won't get another chance when the menu is up
-            if (triggerEvent.elementTarget.elementPanel is EditorPanel editorPanel &&
-                editorPanel.ownerObject is GUIView view)
+            if (menu.repaintPanelBeforeDisplay && triggerEvent.elementTarget?.elementPanel?.ownerObject is GUIView view)
             {
                 view.RepaintImmediately();
             }

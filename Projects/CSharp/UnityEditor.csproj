@@ -1254,12 +1254,6 @@
     <Compile Include="..\..\Editor\Mono\GI\UnityComputeBake.cs">
       <Link>Editor\Mono\GI\UnityComputeBake.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GI\WintermuteDeviceContext.bindings.cs">
-      <Link>Editor\Mono\GI\WintermuteDeviceContext.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GI\WintermuteLightBaker.bindings.cs">
-      <Link>Editor\Mono\GI\WintermuteLightBaker.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GI\World.bindings.cs">
       <Link>Editor\Mono\GI\World.bindings.cs</Link>
     </Compile>
@@ -6417,6 +6411,9 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerRoles\SerializedDictionary.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerRoles\SerializedDictionary.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\AssemblyInfo.cs">
+      <Link>Modules\PackageManagerUI\Editor\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Extensions\BaseDropdownItem.cs">
       <Link>Modules\PackageManagerUI\Editor\Extensions\BaseDropdownItem.cs</Link>
     </Compile>
@@ -8331,9 +8328,6 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\CaptureFileModel.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\CaptureFileModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\CaptureFileModelBuilder.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\CaptureFileModelBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\CaptureFileTreeItemViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\CaptureFileTreeItemViewController.cs</Link>
     </Compile>
@@ -8342,6 +8336,12 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\FileSystemWatcherUnity.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\FileSystemWatcherUnity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\IconUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\IconUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\PlatformsHelper.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\PlatformsHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Captures\ScreenshotsManager.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Captures\ScreenshotsManager.cs</Link>
@@ -9299,6 +9299,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\ScriptBindings\LMDBIndexStorage.bindings.cs">
       <Link>Modules\QuickSearch\ScriptBindings\LMDBIndexStorage.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\ScriptBindings\SearchCancellationToken.bindings.cs">
+      <Link>Modules\QuickSearch\ScriptBindings\SearchCancellationToken.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SafeMode\SafeModeToolbarWindow.cs">
       <Link>Modules\SafeMode\SafeModeToolbarWindow.cs</Link>

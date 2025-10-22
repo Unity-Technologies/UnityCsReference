@@ -185,6 +185,9 @@ namespace UnityEditor
                 return defaultValue;
             }
 
+            if (string.IsNullOrEmpty(jsonString))
+                return defaultValue;
+            
             try
             {
                 return JsonUtility.FromJson<T>(jsonString);

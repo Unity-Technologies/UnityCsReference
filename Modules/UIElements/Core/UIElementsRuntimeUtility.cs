@@ -18,8 +18,6 @@ namespace UnityEngine.UIElements
         public static event Action<BaseRuntimePanel> onCreatePanel;
         public static event Action<BaseRuntimePanel> onWillDestroyPanel;
 
-        internal static Func<bool> IsEditingPrefab = null;
-
         static UIElementsRuntimeUtility()
         {
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;

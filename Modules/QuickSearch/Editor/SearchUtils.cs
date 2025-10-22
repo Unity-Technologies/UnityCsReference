@@ -1892,6 +1892,23 @@ namespace UnityEditor.Search
             label = ObjectNames.NicifyVariableName(label);
             return label;
         }
+        
+        internal static string BuildUnionTypeQuery(Type[] types)
+        {
+            var query = types.Length > 1 ? "(" : string.Empty;
+            for (int i = 0; i < types.Length; ++i)
+            {
+                query += $"t:{types[i].Name.ToLowerInvariant()}";
+                if (i + 1 < types.Length)
+                    query += " or ";
+            }
+
+            if (types.Length > 1)
+            {
+                query += ")";
+            }
+            return query;
+        }
     }
 }
 

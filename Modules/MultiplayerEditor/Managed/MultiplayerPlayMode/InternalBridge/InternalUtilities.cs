@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.Build.Profile;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.Multiplayer.Internal;
 using System;
 using Application = UnityEngine.Application;
 
@@ -14,6 +15,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     internal class InternalUtilities
     {
+        public static string GetMultiplayerRoleDisplayText(MultiplayerRoleFlags role)
+        {
+            return role switch
+            {
+                MultiplayerRoleFlags.Client => "Client",
+                MultiplayerRoleFlags.Server => "Server",
+                MultiplayerRoleFlags.ClientAndServer => "Client And Server",
+                _ => "Unknown"
+            };
+        }
         public static bool IsDomainReloadRequested() => InternalEditorUtility.IsScriptReloadRequested();
 
         // This is the only internal API we should access from the BuildProfile module

@@ -310,12 +310,12 @@ namespace UnityEditorInternal
 
         [Obsolete("HierarchyWindowDragByID(int, ...) is obsolete. Use HierarchyWindowDragByID(EntityId, ...) instead")]
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
-            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
         public static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
-            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
-        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, bool changePosition, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);

@@ -191,12 +191,15 @@ namespace UnityEditor.Search.Providers
             return new SearchProposition(label: label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
         }
 
-        // TODO: This should not be an example. Documentation examples should be in the SearchExamples project.
-        #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
+            return Search(context.searchQuery, context, provider, subset);
+        }
+
+        internal IEnumerable<T> Search(string queryStr, SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
+        {
             const bool useFastYielding = true;
-            var query = m_QueryEngine.ParseQuery(context.searchQuery, useFastYielding);
+            var query = m_QueryEngine.ParseQuery(queryStr, useFastYielding);
             if (!query.valid)
             {
                 if (reportError)
@@ -210,8 +213,6 @@ namespace UnityEditor.Search.Providers
             IEnumerable<T> validObjects = FilterValidObjectsOnPull(subset ?? m_Objects, useFastYielding);
             return query.Apply(validObjects, false);
         }
-
-        #endregion
 
         public virtual bool GetId(T obj, QueryFilterOperator op, int instanceId)
         {

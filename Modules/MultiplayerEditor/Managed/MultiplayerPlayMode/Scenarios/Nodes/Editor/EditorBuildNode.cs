@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEditor.Build.Profile;
+using UnityEditor.Multiplayer.Internal;
 using System.Collections.Generic;
 using Unity.Profiling;
 
@@ -93,6 +94,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var buildPath = GetInput(BuildPath);
             var buildProfile = GetInput(Profile);
 
+            // Save the original product name to restore it later
+            var originalProductName = PlayerSettings.productName;
 
             // Save the currently active build target, it's sub-target and the multiplayer role in case of they would be modified by the build.
             var previousProfile = InternalUtilities.BuildProfileState.FromActiveSettings();
@@ -101,6 +104,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             BuildReport report;
             try
             {
+                // Modify product name to include multiplayer role for window title
+                var role = MultiplayerRolesSettings.instance.GetMultiplayerRoleForBuildProfile(buildProfile);
+                var roleText = InternalUtilities.GetMultiplayerRoleDisplayText(role);
+                PlayerSettings.productName = $"{originalProductName} ({roleText})";
+
                 // Build the player with the specified build profile.
                 report = BuildPipeline.BuildPlayer(
                     new BuildPlayerWithProfileOptions
@@ -118,6 +126,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             catch (Exception e)
             {
+                // Restore original product name and build profile state
+                PlayerSettings.productName = originalProductName;
                 InternalUtilities.BuildProfileState.Restore(previousProfile);
                 Debug.LogException(e);
                 throw;
@@ -131,7 +141,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             SetOutput(BuildHash, ComputeBuildHash(outputPath));
             SetOutput(BuildReport, report);
 
-            // Restore the active build target, it's sub-target and the multiplayer role to the state they were prior to the build.
+            // Restore the product name and the active build target, it's sub-target and the multiplayer role to the state they were prior to the build.
+            PlayerSettings.productName = originalProductName;
             InternalUtilities.BuildProfileState.Restore(previousProfile);
         }
 

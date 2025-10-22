@@ -48,6 +48,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Controls whether this shape produces trigger events which can be retrieved after the simulation has completed.
+        /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
         /// This applies to triggers and non-triggers alike.
         /// </summary>
 	    public bool triggerEvents { readonly get => m_TriggerEvents; set => m_TriggerEvents = value; }
@@ -55,6 +56,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Controls whether this shape produces contact events which can be retrieved after the simulation has completed.
         /// This only applies to kinematic and dynamic bodies.
+        /// A contact event is produced if either shapes involved have theit contactEvents enabled.
         /// Changing this at run-time may lead to lost begin/end events.
         /// </summary>
         public bool contactEvents { readonly get => m_ContactEvents; set => m_ContactEvents = value; }

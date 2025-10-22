@@ -203,9 +203,6 @@ namespace UnityEngine
         public static Vector2Int operator/(in Vector2Int a, int b) => new Vector2Int(a.m_X / b, a.m_Y / b);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector2Int operator/(in Vector2Int a, in Vector2Int b) => new Vector2Int(a.m_X / b.m_X, a.m_Y / b.m_Y);
-
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool operator==(in Vector2Int lhs, in Vector2Int rhs) => lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

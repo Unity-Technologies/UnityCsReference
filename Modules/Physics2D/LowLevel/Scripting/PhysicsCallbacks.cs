@@ -42,11 +42,11 @@ namespace UnityEngine.LowLevelPhysics2D
             /// An event is only produced if one of the <see cref="LowLevelPhysics2D.PhysicsShape"/> have <see cref="LowLevelPhysics2D.PhysicsShape.contactFilterCallbacks"/> set to true.
             /// This is called for both triggers and non-triggers but only with Dynamic bodies.
             ///
-            /// This callback occurs during the simulation and must be thread-safe as it can be called from any thread therefore extreme care must be taken.
-            ///	Do not perform any write-operations during this callback for any <see cref="LowLevelPhysics2D.PhysicsWorld"/>, <see cref="LowLevelPhysics2D.PhysicsBody"/>, <see cref="LowLevelPhysics2D.PhysicsShape"/> or <see cref="LowLevelPhysics2D.PhysicsJoint"/>.
-            ///	A write operation would include setting any property or creating objects.
-            ///	Any attempt to perform a write operation may result in a crash, deadlock or hard to detect corruption.
-            ///	In most cases, performing a read operation is safe and should be limited to simple state read operations such as reading velocities etc.
+            /// This callback occurs during the simulation and must be thread-safe as it can be called from any thread, therefore extreme care must be taken.
+            /// During this time, the simulation state is undefined so you should not perform any read or write operations during this callback for any <see cref="LowLevelPhysics2D.PhysicsWorld"/>, <see cref="LowLevelPhysics2D.PhysicsBody"/>, <see cref="LowLevelPhysics2D.PhysicsShape"/> or <see cref="LowLevelPhysics2D.PhysicsJoint"/>.
+            ///	An exception to this is reading <see cref="UnityEngine.LowLevelPhysics2D.PhysicsUserData"/> from any object which is a completely safe read operation therefore any required information should be encoded there.
+            ///	
+            ///	Any attempt to perform any other read or write operation may result in a crash, deadlock or hard to detect corruption.
             /// </summary>
             /// <param name="contactFilterEvent">The event that occurred.</param>
             /// <returns>Return false if you do not want a contact to be created during this simulation step. Returning true allows the contact to be created.</returns>
@@ -68,9 +68,10 @@ namespace UnityEngine.LowLevelPhysics2D
             /// This is only called for Awake Dynamic bodies.
             /// This is not called for triggers.
             ///
-            /// This callback occurs during the simulation and must be thread-safe as it can be called from any thread therefore extreme care must be taken.
-            ///	Do not perform any write-operations during this callback for any <see cref="LowLevelPhysics2D.PhysicsWorld"/>, <see cref="LowLevelPhysics2D.PhysicsBody"/>, <see cref="LowLevelPhysics2D.PhysicsShape"/> or <see cref="LowLevelPhysics2D.PhysicsJoint"/>.
-            ///	A write operation would include setting any property or creating objects.
+            /// This callback occurs during the simulation and must be thread-safe as it can be called from any thread, therefore extreme care must be taken.
+            /// During this time, the simulation state is undefined so you should not perform any read or write operations during this callback for any <see cref="LowLevelPhysics2D.PhysicsWorld"/>, <see cref="LowLevelPhysics2D.PhysicsBody"/>, <see cref="LowLevelPhysics2D.PhysicsShape"/> or <see cref="LowLevelPhysics2D.PhysicsJoint"/>.
+            ///	An exception to this is reading <see cref="UnityEngine.LowLevelPhysics2D.PhysicsUserData"/> from any object which is a completely safe read operation therefore any required information should be encoded there.
+            ///	
             ///	Any attempt to perform a write operation may result in a crash, deadlock or hard to detect corruption.
             ///	In most cases, performing a read operation is safe and should be limited to simple state read operations such as reading velocities etc.
             /// </summary>
@@ -156,12 +157,20 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.IBodyUpdateCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly IBodyUpdateCallback bodyTarget => Object.FindObjectFromInstanceID(m_BodyTarget) as IBodyUpdateCallback;
+                public readonly IBodyUpdateCallback bodyTarget
+                {
+                    get
+                    {
+                        if (m_BodyUpdateEvent.body.isValid)
+                            return m_BodyUpdateEvent.body.callbackTarget as IBodyUpdateCallback;
+
+                        return null;
+                    }
+                }
 
                 #region Internal
 
                 readonly PhysicsEvents.BodyUpdateEvent m_BodyUpdateEvent;
-                readonly EntityId m_BodyTarget;
 
                 #endregion
             }
@@ -206,19 +215,35 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.TriggerBeginEvent.triggerShape"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly ITriggerCallback triggerShapeTarget => Object.FindObjectFromInstanceID(m_TriggerShapeTarget) as ITriggerCallback;
+                public readonly ITriggerCallback triggerShapeTarget
+                {
+                    get
+                    {
+                        if (m_BeginEvent.triggerShape.isValid)
+                            return m_BeginEvent.triggerShape.callbackTarget as ITriggerCallback;
+
+                        return null;
+                    }
+                }
 
                 /// <summary>
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.TriggerBeginEvent.visitorShape"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly ITriggerCallback visitorShapeTarget => Object.FindObjectFromInstanceID(m_VisitorShapeTarget) as ITriggerCallback;
+                public readonly ITriggerCallback visitorShapeTarget
+                {
+                    get
+                    {
+                        if (m_BeginEvent.visitorShape.isValid)
+                            return m_BeginEvent.visitorShape.callbackTarget as ITriggerCallback;
+
+                        return null;
+                    }
+                }
 
                 #region Internal
 
                 readonly PhysicsEvents.TriggerBeginEvent m_BeginEvent;
-                readonly EntityId m_TriggerShapeTarget;
-                readonly EntityId m_VisitorShapeTarget;
 
                 #endregion
             }
@@ -238,19 +263,35 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.TriggerEndEvent.triggerShape"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly ITriggerCallback triggerShapeTarget => Object.FindObjectFromInstanceID(m_TriggerShapeTarget) as ITriggerCallback;
+                public readonly ITriggerCallback triggerShapeTarget
+                {
+                    get
+                    {
+                        if (m_EndEvent.triggerShape.isValid)
+                            return m_EndEvent.triggerShape.callbackTarget as ITriggerCallback;
+
+                        return null;
+                    }
+                }
 
                 /// <summary>
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.TriggerEndEvent.visitorShape"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly ITriggerCallback visitorShapeTarget => Object.FindObjectFromInstanceID(m_VisitorShapeTarget) as ITriggerCallback;
+                public readonly ITriggerCallback visitorShapeTarget
+                {
+                    get
+                    {
+                        if (m_EndEvent.visitorShape.isValid)
+                            return m_EndEvent.visitorShape.callbackTarget as ITriggerCallback;
+
+                        return null;
+                    }
+                }
 
                 #region Internal
 
                 readonly PhysicsEvents.TriggerEndEvent m_EndEvent;
-                readonly EntityId m_TriggerShapeTarget;
-                readonly EntityId m_VisitorShapeTarget;
 
                 #endregion
             }
@@ -302,19 +343,35 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.ContactBeginEvent.shapeA"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly IContactCallback shapeTargetA => Object.FindObjectFromInstanceID(m_ShapeTargetA) as IContactCallback;
+                public readonly IContactCallback shapeTargetA
+                {
+                    get
+                    {
+                        if (m_BeginEvent.shapeA.isValid)
+                            return m_BeginEvent.shapeA.callbackTarget as IContactCallback;
+
+                        return null;
+                    }
+                }
 
                 /// <summary>
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.ContactBeginEvent.shapeB"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly IContactCallback shapeTargetB => Object.FindObjectFromInstanceID(m_ShapeTargetB) as IContactCallback;
+                public readonly IContactCallback shapeTargetB
+                {
+                    get
+                    {
+                        if (m_BeginEvent.shapeB.isValid)
+                            return m_BeginEvent.shapeB.callbackTarget as IContactCallback;
+
+                        return null;
+                    }
+                }
 
                 #region Internal
 
                 readonly PhysicsEvents.ContactBeginEvent m_BeginEvent;
-                readonly EntityId m_ShapeTargetA;
-                readonly EntityId m_ShapeTargetB;
 
                 #endregion
             }
@@ -334,19 +391,35 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.ContactEndEvent.shapeA"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly IContactCallback shapeTargetA => Object.FindObjectFromInstanceID(m_ShapeTargetA) as IContactCallback;
+                public readonly IContactCallback shapeTargetA
+                {
+                    get
+                    {
+                        if (m_EndEvent.shapeA.isValid)
+                            return m_EndEvent.shapeA.callbackTarget as IContactCallback;
+
+                        return null;
+                    }
+                }
 
                 /// <summary>
                 /// The callback target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.ContactEndEvent.shapeB"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly IContactCallback shapeTargetB => Object.FindObjectFromInstanceID(m_ShapeTargetB) as IContactCallback;
+                public readonly IContactCallback shapeTargetB
+                {
+                    get
+                    {
+                        if (m_EndEvent.shapeB.isValid)
+                            return m_EndEvent.shapeB.callbackTarget as IContactCallback;
+
+                        return null;
+                    }
+                }
 
                 #region Internal
 
                 readonly PhysicsEvents.ContactEndEvent m_EndEvent;
-                readonly EntityId m_ShapeTargetA;
-                readonly EntityId m_ShapeTargetB;
 
                 #endregion
             }
@@ -398,12 +471,20 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// The <see cref="LowLevelPhysics2D.PhysicsShape"/> target (<see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>) associated with <see cref="LowLevelPhysics2D.PhysicsEvents.JointThresholdEvent.joint"/>.
                 /// This returns any implemented <see cref="LowLevelPhysics2D.PhysicsCallbacks.IJointThresholdCallback"/> or NULL if not implemented or no target.
                 /// </summary>
-                public readonly IJointThresholdCallback jointTarget => Object.FindObjectFromInstanceID(m_JointTarget) as IJointThresholdCallback;
+                public readonly IJointThresholdCallback jointTarget
+                {
+                    get
+                    {
+                        if (m_JointThresholdEvent.joint.isValid)
+                            return m_JointThresholdEvent.joint.callbackTarget as IJointThresholdCallback;
+
+                        return null;
+                    }
+                }
 
                 #region Internal
 
                 readonly PhysicsEvents.JointThresholdEvent m_JointThresholdEvent;
-                readonly EntityId m_JointTarget;
 
                 #endregion
             }

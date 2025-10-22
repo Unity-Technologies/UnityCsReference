@@ -503,7 +503,7 @@ namespace UnityEditor
                         {
                             EditorUserSettings.SetConfigValue(m_LightmappingDeviceIndexKey, bakingDeviceAndPlatform.ToString());
                             DeviceAndPlatform selectedDeviceAndPlatform = devicesAndPlatforms[bakingDeviceAndPlatform];
-                            EditorApplication.CloseAndRelaunch(new string[] { "-OpenCL-PlatformAndDeviceIndices", selectedDeviceAndPlatform.platformId.ToString(), selectedDeviceAndPlatform.deviceId.ToString() });
+                            EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
                         }
                     }
                 }

@@ -884,7 +884,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="definition">The shape definition to use.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created shapes. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, Span<CircleGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<CircleGeometry>(geometry), PhysicsShape.ShapeType.Circle, definition, allocator).ToNativeArray<PhysicsShape>();
+        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, ReadOnlySpan<CircleGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<CircleGeometry>(geometry), PhysicsShape.ShapeType.Circle, definition, allocator).ToNativeArray<PhysicsShape>();
 
         /// <summary>
         /// Create a Polygon shape, using its default definition, attached to the specified body.
@@ -914,7 +914,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="definition">The shape definition to use.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created shapes. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, Span<PolygonGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<PolygonGeometry>(geometry), PhysicsShape.ShapeType.Polygon, definition, allocator).ToNativeArray<PhysicsShape>();
+        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, ReadOnlySpan<PolygonGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<PolygonGeometry>(geometry), PhysicsShape.ShapeType.Polygon, definition, allocator).ToNativeArray<PhysicsShape>();
 
         /// <summary>
         /// Create a Capsule shape, using its default definition, attached to the specified body.
@@ -944,7 +944,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="definition">The shape definition to use.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created shapes. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, Span<CapsuleGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<CapsuleGeometry>(geometry), PhysicsShape.ShapeType.Capsule, definition, allocator).ToNativeArray<PhysicsShape>();
+        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, ReadOnlySpan<CapsuleGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<CapsuleGeometry>(geometry), PhysicsShape.ShapeType.Capsule, definition, allocator).ToNativeArray<PhysicsShape>();
 
         /// <summary>
         /// Create a Segment shape, using its default definition, attached to the specified body.
@@ -974,7 +974,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="definition">The shape definition to use.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created shapes. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, Span<SegmentGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<SegmentGeometry>(geometry), PhysicsShape.ShapeType.Segment, definition, allocator).ToNativeArray<PhysicsShape>();
+        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, ReadOnlySpan<SegmentGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<SegmentGeometry>(geometry), PhysicsShape.ShapeType.Segment, definition, allocator).ToNativeArray<PhysicsShape>();
 
         /// <summary>
         /// Create a Chain Segment shape attached to the specified body.
@@ -1004,7 +1004,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="definition">The shape definition to use.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created shapes. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, Span<ChainSegmentGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<ChainSegmentGeometry>(geometry), PhysicsShape.ShapeType.ChainSegment, definition, allocator).ToNativeArray<PhysicsShape>();
+        public unsafe static NativeArray<PhysicsShape> CreateShapeBatch(PhysicsBody body, ReadOnlySpan<ChainSegmentGeometry> geometry, PhysicsShapeDefinition definition, Allocator allocator = Allocator.Temp) => PhysicsShape_CreateShapeBatch(body, PhysicsBuffer.FromSpan<ChainSegmentGeometry>(geometry), PhysicsShape.ShapeType.ChainSegment, definition, allocator).ToNativeArray<PhysicsShape>();
 
         /// <summary>
         /// Destroy the shape, destroying all <see cref="LowLevelPhysics2D.PhysicsShape.Contact"/> the shape is involved in.
@@ -1185,13 +1185,15 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Controls whether this shape produces triggers events which can be retrieved after the simulation has completed.
-        /// A contact event will produce a <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> to the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved.
+        /// A trigger event is only produced if both shapes involved have their triggerEvents enabled.
+        /// A trigger event will produce a <see cref="LowLevelPhysics2D.PhysicsCallbacks.ITriggerCallback"/> to the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved.
         /// </summary>
         public readonly bool triggerEvents { get => PhysicsShape_GetTriggerEvents(this); set => PhysicsShape_SetTriggerEvents(this, value); }
 
         /// <summary>
         /// Controls whether this shape produces contact events which can be retrieved after the simulation has completed.
         /// Any contact events can be used to call the assigned <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/>.
+        /// A contact event is produced if either shapes involved have theit contactEvents enabled.
         /// A contact event will produce a <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/> to the <see cref="LowLevelPhysics2D.PhysicsShape.callbackTarget"/> for both shapes involved.
         /// </summary>
         public readonly bool contactEvents { get => PhysicsShape_GetContactEvents(this); set => PhysicsShape_SetContactEvents(this, value); }
@@ -1250,6 +1252,22 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="input">The cast shape input used to check for intersection.</param>
         /// <returns>The results of the intersection test.</returns>
         public readonly PhysicsQuery.CastResult CastShape(PhysicsQuery.CastShapeInput input) => PhysicsShape_CastShape(this, input);
+
+        /// <summary>
+        /// Check the intersection between this shape and another shape.
+        /// </summary>
+        /// <param name="otherShape">The other shape used to check intersection against.</param>
+        /// <returns>The contact manifold fully detailing the intersection.</returns>
+        public readonly PhysicsShape.ContactManifold Intersect(PhysicsShape otherShape) => PhysicsQuery.ShapeAndShape(this, body.transform, otherShape, otherShape.body.transform);
+
+        /// <summary>
+        /// Check the intersection between this shape and another shape.
+        /// </summary>
+        /// <param name="transform">The transform used to specify where this shape is positioned.</param>
+        /// <param name="otherShape">The other shape used to check intersection against.</param>
+        /// <param name="otherTransform">The transform used to specify where the other shape is positioned.</param>
+        /// <returns>The contact manifold fully detailing the intersection.</returns>
+        public readonly PhysicsShape.ContactManifold Intersect(PhysicsTransform transform, PhysicsShape otherShape, PhysicsTransform otherTransform) => PhysicsQuery.ShapeAndShape(this, transform, otherShape, otherTransform);
 
         /// <summary>
         /// Get/Set the Circle associated with this shape.
@@ -1365,7 +1383,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool isOwned => PhysicsShape_IsOwned(this);
 
         /// <summary>
-        /// Get/Set the <see cref="UnityEngine.MonoBehaviour"/> that callbacks for this shape will be sent to.
+        /// Get/Set the <see cref="System.Object"/> that callbacks for this shape will be sent to.
         /// 
         /// This includes the following events:
         /// 
@@ -1376,7 +1394,7 @@ namespace UnityEngine.LowLevelPhysics2D
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.ContactBeginEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/>.
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.ContactEndEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/>.
         /// </summary>
-        public readonly MonoBehaviour callbackTarget { get => PhysicsShape_GetCallbackTarget(this); set => PhysicsShape_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsShape_GetCallbackTarget(this); set => PhysicsShape_SetCallbackTarget(this, value); }
 
         /// <summary>
         /// Get/Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose.

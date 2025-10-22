@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ExportWindowContent : ModalContent
     {
-        private const int k_FixedWindowWidth = 300;
+        private const int k_FixedWindowWidth = 360;
         private const int k_ExportWindowHeight = 180;
         private const int k_SignInWindowHeight = 100;
         private OrganizationInfo[] m_OrganizationInfos;

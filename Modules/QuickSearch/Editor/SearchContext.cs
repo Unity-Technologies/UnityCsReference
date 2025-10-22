@@ -305,7 +305,7 @@ namespace UnityEditor.Search
         /// <summary>
         /// Indicates that the search results should be filter for this type.
         /// </summary>
-        internal Type filterType { get; set; }
+        internal Type filterType { get; set; } // TODO: We should remove this member and assumed that if we are in Picker mode the initial query performs the filtering.
 
         /// <summary>
         /// An instance of MultiProviderAsyncSearchSession holding all the async search sessions associated with this search context.

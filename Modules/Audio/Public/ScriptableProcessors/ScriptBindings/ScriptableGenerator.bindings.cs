@@ -126,7 +126,7 @@ namespace UnityEngine.Audio
     /// <example>
     /// <code source="../../../../../Tests/EditModeAndPlayModeTests/Audio/Assets/DocCodeExamples/SAP_HowToUseGenerator.cs"/>
     /// </example>
-    public unsafe partial struct GeneratorInstance
+    public unsafe partial struct GeneratorInstance : IEquatable<GeneratorInstance>
     {
         /// <summary>
         /// Describes the runtime behaviour of the <see cref="GeneratorInstance"/>.
@@ -270,13 +270,13 @@ namespace UnityEngine.Audio
         /// <remarks>
         /// This primarily contains the amount of frames actually written into the passed-in <see cref="ChannelBuffer"/>.
         /// </remarks>
-        /// <seealso cref="GeneratorInstance.Process"/>
+        /// <seealso cref="RealtimeContext.Process"/>
         public ref struct Result
         {
             internal int m_ProcessedFrames;
 
             /// <summary>
-            /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="GeneratorInstance.Process"/>.
+            /// Number of frames processed by the <see cref="GeneratorInstance"/> in <see cref="RealtimeContext.Process"/>.
             /// </summary>
             public int processedFrames => m_ProcessedFrames;
 
@@ -290,7 +290,7 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Additional arguments passed to the <see cref="GeneratorInstance.Process"/> method.
+        /// Additional arguments passed to the <see cref="RealtimeContext.Process"/> method.
         /// </summary>
         public ref struct Arguments
         {
@@ -375,7 +375,7 @@ namespace UnityEngine.Audio
             /// <returns>
             /// A <see cref="Result"/> struct indicating amongst other things how many frames were actually written into <paramref name="buffer"/>.
             /// </returns>
-            /// <seealso cref="GeneratorInstance.Process"/>
+            /// <seealso cref="RealtimeContext.Process"/>
             public Result Process(in RealtimeContext context, ProcessorInstance.Pipe pipe, ChannelBuffer buffer, Arguments args);
         }
 
@@ -390,84 +390,64 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Manually process this particular <see cref="GeneratorInstance"/>.
-        /// </summary>
-        /// <remarks>
-        /// In most use cases, you would not call this directly, but rather have the audio system call it for you.
-        /// If you are yourself nesting a <see cref="GeneratorInstance"/> inside another <see cref="ProcessorInstance"/>, you would call this.
-        /// </remarks>
-        /// <param name="context">
-        /// The <see cref="RealtimeContext"/> associated with this call. You either get this from your own callback,
-        /// or from <see cref="ControlContext.Manual.BeginMix"/>.
-        /// </param>
-        /// <param name="args">
-        /// Additional arguments passed along, which can be default-initialized.</param>
-        /// <param name="buffer">
-        /// The buffer the <see cref="GeneratorInstance"/> will put its processing result into.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Result"/> struct indicating amongst other things how many frames were actually written into <paramref name="buffer"/>.
-        /// </returns>
-        /// <seealso cref="IRealtime.Process"/>
-        public Result Process(in RealtimeContext context, ChannelBuffer buffer, Arguments args)
-        {
-            ScriptableProcessorBindings.ValidateCanProcess(m_ProcessorInstance.Handle, context);
-
-            fixed (float* writeBuffer = buffer.Buffer)
-            {
-                fixed (RealtimeContext* pContext = &context)
-                {
-                    var processArguments = new IGeneratorProcessorExtensions.ProcessArguments
-                    {
-                        AudioBuffer = writeBuffer,
-                        Context = pContext,
-                        FrameCount = buffer.frameCount
-                    };
-
-                    m_ProcessorInstance.Header->InvokeProcessor(ProcessorFunction.Process, &processArguments);
-
-                    return processArguments.Result;
-                }
-            }
-
-        }
-
-        /// <summary>
-        /// Manually configure this <see cref="GeneratorInstance"/> with the given <paramref name="format"/>.
-        /// </summary>
-        /// <remarks>
-        /// Nested <see cref="GeneratorInstance"/>s must be manually configured,
-        /// and this call is only valid on nested <see cref="ProcessorInstance"/>s.
-        /// </remarks>
-        /// <seealso cref="ControlContext.AllocateGenerator"/>
-        public void Configure(ControlContext context, in AudioFormat format)
-        {
-            ScriptableProcessorBindings.PerformRecursiveConfigure(
-                m_ProcessorInstance.Handle,
-                context.Header,
-                format.audioConfiguration
-            );
-        }
-
-        /// <summary>
-        /// Manually update this <see cref="GeneratorInstance"/>.
-        /// </summary>
-        /// <remarks>
-        /// This is only valid on nested <see cref="ProcessorInstance"/>s.
-        /// You must always update any nested <see cref="ProcessorInstance"/>s you have created.
-        /// </remarks>
-        /// <seealso cref="ControlContext.AllocateGenerator"/>
-        /// <seealso cref="GeneratorInstance.Configure"/>
-        public void Update(ControlContext context)
-        {
-            ScriptableProcessorBindings.PerformRecursiveUpdate(m_ProcessorInstance.Handle, context.Header);
-        }
-
-        /// <summary>
         /// Convert this <see cref="GeneratorInstance"/> to its more general <see cref="ProcessorInstance"/> representation.
         /// </summary>
         /// <see cref="ProcessorInstance"/>s are unowned and can safely handed out to other users.
         public static implicit operator ProcessorInstance(in GeneratorInstance generatorInstance) => generatorInstance.m_ProcessorInstance;
+
+        /// <summary>
+        /// Checks if this instance equals another.
+        /// </summary>
+        /// <param name="other">The other instance for comparing.</param>
+        /// <returns>True if the given instance is equal to this, otherwise, false.</returns>
+        public bool Equals(GeneratorInstance other)
+        {
+            return m_ProcessorInstance.Equals(other.m_ProcessorInstance);
+        }
+
+        /// <summary>
+        /// Checks if this instance equals a given object.
+        /// </summary>
+        /// <param name="obj">The object for comparing.</param>
+        /// <returns>True if the given object is equal to this instance, otherwise, false.</returns>
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            return obj is GeneratorInstance instance && Equals(instance);
+        }
+
+        /// <summary>
+        /// Checks if two instances are equal.
+        /// </summary>
+        /// <param name="a">The first instance for comparing.</param>
+        /// <param name="b">The second instance for comparing.</param>
+        /// <returns>True if the two given instances are equal, otherwise, false.</returns>
+        public static bool operator ==(GeneratorInstance a, GeneratorInstance b)
+        {
+            return a.Equals(b);
+        }
+
+        /// <summary>
+        /// Checks if two instances are not equal.
+        /// </summary>
+        /// <param name="a">The first instance for comparing.</param>
+        /// <param name="b">The second instance for comparing.</param>
+        /// <returns>True if the two given instances are not equal, otherwise, false.</returns>
+        public static bool operator !=(GeneratorInstance a, GeneratorInstance b)
+        {
+            return !a.Equals(b);
+        }
+
+        /// <summary>
+        /// Retrieves a hash code based on this instance.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return m_ProcessorInstance.GetHashCode();
+        }
 
         internal GeneratorInstance(GeneratorHeader* header)
             => m_ProcessorInstance = new ProcessorInstance(header->Processor.DualThreadHandle, &header->Processor);

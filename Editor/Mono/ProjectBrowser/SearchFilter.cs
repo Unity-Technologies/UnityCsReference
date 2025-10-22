@@ -92,6 +92,8 @@ namespace UnityEditor
         public bool anyWithAssetOrigin { get { return m_AnyWithAssetOrigin; } set { m_AnyWithAssetOrigin = value; }}
         public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
         public ImportLogFlags importLogFlags { get => m_ImportLogFlags; set => m_ImportLogFlags = value; }
+        // Note: by default ADB search assumes all type searching uses a boolean implicit OR: t:Texture t:AudioClip => t:Texture OR t:AudioClip
+        // This switch make the ADB search use an explicit AND instead: t:Texture t:AudioClip => t:Texture AND t:AudioClip
         internal bool filterByTypeIntersection { get => m_FilterByTypeIntersection; set => m_FilterByTypeIntersection = value; }
 
         public void ClearSearch()

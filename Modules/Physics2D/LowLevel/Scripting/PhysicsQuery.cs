@@ -15,6 +15,16 @@ namespace UnityEngine.LowLevelPhysics2D
     public readonly struct PhysicsQuery
     {
         /// <summary>
+        /// Check the intersection between two <see cref="UnityEngine.LowLevelPhysics2D.PhysicsShape"/>.
+        /// </summary>
+        /// <param name="shapeA">The first shape to use.</param>
+        /// <param name="transformA">The transform used to specify where the first geometry is positioned.</param>
+        /// <param name="shapeB">The second shape to use.</param>
+        /// <param name="transformB">The transform used to specify where the first geometry is positioned.</param>
+        /// <returns>The contact manifold fully detailing the intersection.</returns>
+        public static PhysicsShape.ContactManifold ShapeAndShape(PhysicsShape shapeA, PhysicsTransform transformA, PhysicsShape shapeB, PhysicsTransform transformB) => PhysicsQuery_ShapeAndShape(shapeA, transformA, shapeB, transformB);
+
+        /// <summary>
         /// Check the intersection between Circle and Circle geometries.
         /// </summary>
         /// <param name="geometryA">The first geometry to use.</param>

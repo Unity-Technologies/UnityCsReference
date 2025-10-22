@@ -21,7 +21,7 @@ namespace UnityEngine.Audio
     /// that share the same input/output resources as the host audio system.
     /// Create instances of these using <see cref="ControlContext.AllocateRootOutput"/>.
     /// </remarks>
-    public unsafe partial struct RootOutputInstance
+    public unsafe partial struct RootOutputInstance : IEquatable<RootOutputInstance>
     {
         /// <summary>
         /// The control interface an implementation of a <see cref="RootOutputInstance"/> must implement on a struct to be fully formed.
@@ -117,6 +117,60 @@ namespace UnityEngine.Audio
         /// </summary>
         /// <see cref="ProcessorInstance"/>s are unowned and can safely handed out to other users.
         public static implicit operator ProcessorInstance(in RootOutputInstance root) => root.m_ProcessorInstance;
+
+        /// <summary>
+        /// Checks if this instance equals another.
+        /// </summary>
+        /// <param name="other">The other instance for comparing.</param>
+        /// <returns>True if the given instance is equal to this, otherwise, false.</returns>
+        public bool Equals(RootOutputInstance other)
+        {
+            return m_ProcessorInstance.Equals(other.m_ProcessorInstance);
+        }
+
+        /// <summary>
+        /// Checks if this instance equals a given object.
+        /// </summary>
+        /// <param name="obj">The object for comparing.</param>
+        /// <returns>True if the given object is equal to this instance, otherwise, false.</returns>
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            return obj is RootOutputInstance instance && Equals(instance);
+        }
+
+        /// <summary>
+        /// Checks if two instances are equal.
+        /// </summary>
+        /// <param name="a">The first instance for comparing.</param>
+        /// <param name="b">The second instance for comparing.</param>
+        /// <returns>True if the two given instances are equal, otherwise, false.</returns>
+        public static bool operator ==(RootOutputInstance a, RootOutputInstance b)
+        {
+            return a.Equals(b);
+        }
+
+        /// <summary>
+        /// Checks if two instances are not equal.
+        /// </summary>
+        /// <param name="a">The first instance for comparing.</param>
+        /// <param name="b">The second instance for comparing.</param>
+        /// <returns>True if the two given instances are not equal, otherwise, false.</returns>
+        public static bool operator !=(RootOutputInstance a, RootOutputInstance b)
+        {
+            return !a.Equals(b);
+        }
+
+        /// <summary>
+        /// Retrieves a hash code based on this instance.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return m_ProcessorInstance.GetHashCode();
+        }
 
         internal RootOutputInstance(ProcessorHeader* header)
             => m_ProcessorInstance = new ProcessorInstance(header->DualThreadHandle, header);

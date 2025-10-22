@@ -219,7 +219,7 @@ namespace UnityEngine.LightTransport
                 {
                     var shInputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref sh);
                     var shOutputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref output);
-                    bool result = WintermuteContext.DeringSphericalHarmonicsL2Internal(shInputPtr, shOutputPtr, 1);
+                    bool result = RadeonRaysContext.DeringSphericalHarmonicsL2Internal(shInputPtr, shOutputPtr, 1);
                     Debug.Assert(result);
                 }
                 Output[probeIdx] = output;
@@ -424,7 +424,7 @@ namespace UnityEngine.LightTransport
                         SphericalHarmonicsL2 output = new SphericalHarmonicsL2();
                         var shInputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref sh);
                         var shOutputPtr = (SphericalHarmonicsL2*)UnsafeUtility.AddressOf(ref output);
-                        bool result = WintermuteContext.DeringSphericalHarmonicsL2Internal(shInputPtr, shOutputPtr, 1);
+                        bool result = RadeonRaysContext.DeringSphericalHarmonicsL2Internal(shInputPtr, shOutputPtr, 1);
                         Debug.Assert(result);
                         shOutput[probeIdx] = output;
                     }
@@ -436,128 +436,7 @@ namespace UnityEngine.LightTransport
             {
             }
         }
-        internal class WintermuteProbePostProcessor : IProbePostProcessor
-        {
-            public bool Initialize(IDeviceContext context)
-            {
-                return true;
-            }
-
-            public bool ConvolveRadianceToIrradiance(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> radianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
-            {
-                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext wmContext)
-                    return false;
-
-                NativeArray<byte> radianceInNativeArray = wmContext.GetNativeArray(radianceIn.Id);
-                NativeArray<byte> irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
-                var job = new ConvolveJob
-                {
-                    Radiances = radianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1),
-                    Irradiances = irradianceOutNativeArray.Reinterpret<SphericalHarmonicsL2>(1)
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                return true;
-            }
-
-            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
-            {
-                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext wmContext)
-                    return false;
-
-                NativeArray<byte> irradianceInNativeArray = wmContext.GetNativeArray(irradianceIn.Id);
-                NativeArray<byte> irradianceOutNativeArray = wmContext.GetNativeArray(irradianceOut.Id);
-                var job = new UnityfyJob
-                {
-                    IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1),
-                    IrradianceOut = irradianceOutNativeArray.Reinterpret<SphericalHarmonicsL2>(1)
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                return true;
-            }
-
-            public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> a, BufferSlice<SphericalHarmonicsL2> b, BufferSlice<SphericalHarmonicsL2> sum, int probeCount)
-            {
-                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext wmContext)
-                    return false;
-
-                NativeArray<byte> A = wmContext.GetNativeArray(a.Id);
-                NativeArray<byte> B = wmContext.GetNativeArray(b.Id);
-                NativeArray<byte> Sum = wmContext.GetNativeArray(sum.Id);
-                var job = new AddSHJob
-                {
-                    A = A.Reinterpret<SphericalHarmonicsL2>(1),
-                    B = B.Reinterpret<SphericalHarmonicsL2>(1),
-                    Sum = Sum.Reinterpret<SphericalHarmonicsL2>(1)
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                return true;
-            }
-
-            public bool ScaleSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount, float scale)
-            {
-                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext wmContext)
-                    return false;
-
-                NativeArray<byte> input = wmContext.GetNativeArray(shIn.Id);
-                NativeArray<byte> output = wmContext.GetNativeArray(shOut.Id);
-                var job = new ScaleSHJob
-                {
-                    Input = input.Reinterpret<SphericalHarmonicsL2>(1),
-                    Scale = scale,
-                    Scaled = output.Reinterpret<SphericalHarmonicsL2>(1)
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                return true;
-            }
-
-            public bool WindowSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
-            {
-                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext wmContext)
-                    return false;
-
-                NativeArray<byte> A = wmContext.GetNativeArray(shIn.Id);
-                NativeArray<byte> B = wmContext.GetNativeArray(shOut.Id);
-                var job = new WindowSHJob
-                {
-                    Input = A.Reinterpret<SphericalHarmonicsL2>(1),
-                    Windowed = B.Reinterpret<SphericalHarmonicsL2>(1)
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                return true;
-            }
-
-            public bool DeringSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> shIn, BufferSlice<SphericalHarmonicsL2> shOut, int probeCount)
-            {
-                Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
-                if (context is not WintermuteContext wmContext)
-                    return false;
-
-                NativeArray<byte> A = wmContext.GetNativeArray(shIn.Id);
-                NativeArray<byte> B = wmContext.GetNativeArray(shOut.Id);
-                var job = new DeringSHJob
-                {
-                    Input = A.Reinterpret<SphericalHarmonicsL2>(1),
-                    Output = B.Reinterpret<SphericalHarmonicsL2>(1)
-                };
-                JobHandle jobHandle = job.Schedule(probeCount, 64);
-                jobHandle.Complete();
-                return true;
-            }
-
-            public void Dispose()
-            {
-            }
-        }
+        
         public class RadeonRaysProbePostProcessor : IProbePostProcessor
         {
             private const int sizeofSphericalHarmonicsL2 = 27 * sizeof(float);

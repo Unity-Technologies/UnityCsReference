@@ -93,8 +93,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsShape_SetOwner(PhysicsShape shape, Object ownerObject);
         [NativeMethod(Name = "PhysicsShape::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsShape_GetOwner(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsOwned(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsShape_GetCallbackTarget(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
 

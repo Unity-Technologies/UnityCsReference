@@ -711,6 +711,9 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableRootOutput.bindings.deprecated.cs">
       <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\Deprecated\ScriptableRootOutput.bindings.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\RealtimeContext.cs">
+      <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\RealtimeContext.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ScriptableGenerator.bindings.cs">
       <Link>Modules\Audio\Public\ScriptableProcessors\ScriptBindings\ScriptableGenerator.bindings.cs</Link>
     </Compile>

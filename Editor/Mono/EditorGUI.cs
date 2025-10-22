@@ -4125,11 +4125,6 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null, true);
                         GUIUtility.keyboardControl = controlID;
@@ -4139,11 +4134,6 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(controlID))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         evt.Use();
@@ -4541,6 +4531,14 @@ namespace UnityEditor
             position = PrefixLabel(position, id, label);
             position = GetObjectFieldThumbnailRect(position, objType);
             return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects);
+        }
+
+        internal static Object ObjectField(Rect position, GUIContent label, Object obj, Type objType, Type additionalType, bool allowSceneObjects)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
+            position = GetObjectFieldThumbnailRect(position, objType);
+            return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects, additionalType);
         }
 
         internal static void GetRectsForMiniThumbnailField(Rect position, out Rect thumbRect, out Rect labelRect)

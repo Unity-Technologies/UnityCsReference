@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements.Inspector
         const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/Inspector/UIDocumentInspector.uss";
         const string k_InspectorVisualTreeAssetPath = "UIPackageResources/UXML/Inspector/UIDocumentInspector.uxml";
         private const string k_StyleClassWithParentHidden = "unity-ui-document-inspector--with-parent--hidden";
-        private const string k_StyleClassPanelMissing = "unity-ui-document-inspector--panel-missing--hidden";
+        private const string k_StyleClassPanelMissingHidden = "unity-ui-document-inspector--panel-missing--hidden";
 
         internal const string k_EditorElementsError = "The VisualTreeAsset contains editor-only elements that cannot be used at runtime.\nPlease remove the following elements:";
 
@@ -30,6 +30,7 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_PanelSettingsField;
         private ObjectField m_ParentField;
         private ObjectField m_SourceAssetField;
+        private FloatField m_SortingOrderField;
 
         private EnumField m_PositionEnumField;
 
@@ -61,6 +62,8 @@ namespace UnityEditor.UIElements.Inspector
             m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("source-asset-field");
             m_SourceAssetField.objectType = typeof(VisualTreeAsset);
 
+            m_SortingOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sort-order-field");
+
             m_PositionEnumField = m_RootVisualElement.MandatoryQ<EnumField>("position-field");
 
             m_WorldSpaceDimensionsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("world-space-dimensions");
@@ -90,28 +93,32 @@ namespace UnityEditor.UIElements.Inspector
         private void UpdateValues()
         {
             UIDocument uiDocument = (UIDocument)target;
-            bool isNotDrivenByParent = uiDocument.parentUI == null;
 
-            m_DrivenByParentWarning.EnableInClassList(k_StyleClassWithParentHidden, isNotDrivenByParent);
-            m_ParentField.EnableInClassList(k_StyleClassWithParentHidden, isNotDrivenByParent);
+            bool isNestedDocument = uiDocument.parentUI != null;
 
-            bool displayPanelMissing = !(isNotDrivenByParent && uiDocument.panelSettings == null);
-            m_MissingPanelSettings.EnableInClassList(k_StyleClassPanelMissing, displayPanelMissing);
+            bool hideDrivenByParentWarning = !isNestedDocument;
+            m_DrivenByParentWarning.EnableInClassList(k_StyleClassWithParentHidden, hideDrivenByParentWarning);
+            m_ParentField.EnableInClassList(k_StyleClassWithParentHidden, hideDrivenByParentWarning);
 
-            m_PanelSettingsField.SetEnabled(isNotDrivenByParent);
+            bool hidePanelMissingWarning = uiDocument.panelSettings != null || isNestedDocument;
+            m_MissingPanelSettings.EnableInClassList(k_StyleClassPanelMissingHidden, hidePanelMissingWarning);
+
+            m_PanelSettingsField.SetEnabled(!isNestedDocument);
 
             if (uiDocument.visualTreeAsset?.hasEditorElements == true)
             {
                 m_EditorElementsWarning.text = GenerateEditorElementsErrorMessage(k_MaxElementsInEditorElementsErrorMessage);
-                m_EditorElementsWarning.EnableInClassList(k_StyleClassPanelMissing, false);
+                m_EditorElementsWarning.EnableInClassList(k_StyleClassPanelMissingHidden, false);
             }
             else
             {
-                m_EditorElementsWarning.EnableInClassList(k_StyleClassPanelMissing, true);
+                m_EditorElementsWarning.EnableInClassList(k_StyleClassPanelMissingHidden, true);
             }
 
-            bool isRootDocument = uiDocument.parentUI == null;
-            m_PositionEnumField.style.display = isRootDocument ? DisplayStyle.None : DisplayStyle.Flex;
+            bool isWorldSpace = uiDocument.panelSettings?.renderMode == PanelRenderMode.WorldSpace;
+            m_SortingOrderField.style.display = !isWorldSpace || isNestedDocument ? DisplayStyle.Flex : DisplayStyle.None;
+
+            m_PositionEnumField.style.display = isNestedDocument ? DisplayStyle.Flex : DisplayStyle.None;
 
             m_WorldSpaceDimensionsFoldout.style.display = uiDocument.isTransformControlledByGameObject ? DisplayStyle.Flex : DisplayStyle.None;
 

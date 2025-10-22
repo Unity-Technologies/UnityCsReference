@@ -106,12 +106,29 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly int[] s_ResolvedLightStyleSheetIds = new int[(int)StyleSheetType.Count];
 
         [SerializeField]
+        private bool m_ModalStylesheetPreloaded = false;
+
+        [SerializeField]
         private int[] m_SerializedResolvedDarkStyleSheetIds;
 
         [SerializeField]
         private int[] m_SerializedResolvedLightStyleSheetIds;
 
         private static int[] resolvedStyleSheetIds => EditorGUIUtility.isProSkin ? s_ResolvedDarkStyleSheetIds : s_ResolvedLightStyleSheetIds;
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            if (!m_ModalStylesheetPreloaded)
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    _ = customDisplayDialogStyleSheet;
+                    _ = exportWindowStyleSheet;
+                    m_ModalStylesheetPreloaded = true;
+                };
+            }
+        }
 
         public void OnBeforeSerialize()
         {

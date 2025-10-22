@@ -93,6 +93,10 @@ namespace UnityEditor
             foreach (var def in MainToolbar.GetAllElementDefinitions())
             {
                 var path = Path.GetDirectoryName(def.attr.path);
+                // UUM-116278: On Windows leaving the '\\' will result in a new empty menu later in
+                // the menu creation as dropdown.AddItem uses '/' as a submenu separator.
+                path = path.Replace(Path.DirectorySeparatorChar, '/');
+
                 while (!string.IsNullOrEmpty(path))
                 {
                     uniquePaths.Add(path);

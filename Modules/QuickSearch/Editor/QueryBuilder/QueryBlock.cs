@@ -42,14 +42,14 @@ namespace UnityEditor.Search
         public string value { get; set; }
         [Obsolete]
         protected internal Rect valueRect { get; set; }
-        public string op { get; protected set; }
+        public string op { get; protected internal set; }
         internal bool explicitQuotes { get; set; }
         bool IBlockSource.formatNames => formatNames;
         internal virtual bool formatNames => true;
         internal virtual bool wantsEvents => false;
         internal virtual bool canExclude => source.blocksSupportExclude;
         internal virtual bool canDisable => true;
-        internal virtual bool canOpenEditorOnValueClicked => false;
+        internal virtual bool canOpenEditorOnValueClicked => true;
         internal virtual bool draggable => true;
         internal bool hideMenu { get; set; }
         internal bool disabled { get; set; }
@@ -67,6 +67,8 @@ namespace UnityEditor.Search
             }
         }
         internal string editorTitle { get; set; }
+        internal bool noSpaceAfterBlock { get; set; }
+        internal bool noSpaceBeforeBlock { get; set; }
 
         internal Rect drawRect => worldBound;
 
@@ -151,6 +153,11 @@ namespace UnityEditor.Search
 
         private bool OpenEditor(Event evt, in Rect rect)
         {
+            if (!canOpenEditorOnValueClicked)
+            {
+                return false;
+            }
+
             if (editor == null)
             {
                 if (OpenEditorAndUpdateStyles(rect))

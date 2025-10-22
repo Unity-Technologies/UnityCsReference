@@ -28,8 +28,7 @@ namespace UnityEngine.Accessibility
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
     ///- <see cref="RuntimePlatform.OSXPlayer"/>
     ///- <see cref="RuntimePlatform.WindowsPlayer"/>
-    /// </para>
-    /// <para>
+    ///
     /// **Note**: These APIs might result in slight behavior differences across platforms. However, they are consistent
     /// with the behavior of native user interfaces on each platform and conform to user expectations. Their behavior
     /// might not be identical to native user interfaces, but it is a close replica. APIs that behave differently across

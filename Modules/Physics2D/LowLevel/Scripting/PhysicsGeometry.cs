@@ -1158,7 +1158,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         /// <param name="vertices">The vertices that will creat the ChainSegment shapes.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown if the number of vertices is less than 4.</exception>
-        public unsafe ChainGeometry(Span<Vector2> vertices)
+        public unsafe ChainGeometry(ReadOnlySpan<Vector2> vertices)
         {
             // Validate.
             if (vertices.Length < 4)

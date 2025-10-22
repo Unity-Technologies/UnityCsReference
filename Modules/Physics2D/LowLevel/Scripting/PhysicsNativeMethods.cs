@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using UnityEngine.Assertions;
 using UnityEngine.Jobs;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -65,8 +64,10 @@ namespace UnityEngine.LowLevelPhysics2D
             var worldIndex = world.m_Index1 - 1;
             var transformAccessArray = s_WorldTransformAccessArrays[worldIndex];
 
-            Assert.IsTrue(transformAccessArray.isCreated, $"Cannot access world transform access array for world {world}");
-            return transformAccessArray;
+            if (transformAccessArray.isCreated)
+                return transformAccessArray;
+
+            throw new InvalidOperationException($"Cannot access world transform access array for world {world}");
         }
 
         /// <undoc/>

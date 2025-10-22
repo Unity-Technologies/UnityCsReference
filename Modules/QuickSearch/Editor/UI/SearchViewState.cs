@@ -128,6 +128,8 @@ namespace UnityEditor.Search
 
         public Action<SearchItem, bool> selectHandler { get => m_SelectHandler?.handler; set => m_SelectHandler = new SearchFunctor<Action<SearchItem, bool>>(value); }
         public Action<SearchItem> trackingHandler { get => m_TrackingHandler?.handler; set => m_TrackingHandler = new SearchFunctor<Action<SearchItem>>(value); }
+
+        // TODO: We should remove this member and assumed that if we are in Picker mode the initial query will perform the filtering.
         internal Func<SearchItem, bool> filterHandler { get => m_FilterHandler?.handler; set => m_FilterHandler = new SearchFunctor<Func<SearchItem, bool>>(value); }
         public Action<SearchContext, string, string> groupChanged { get => m_GroupChanged?.handler; set => m_GroupChanged = new SearchFunctor<Action<SearchContext, string, string>>(value); }
 
@@ -208,7 +210,7 @@ namespace UnityEditor.Search
         {
             if (filterType == null && !string.IsNullOrEmpty(typeName))
             {
-                filterType = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => t.Name == typeName);
+                filterType = SearchUtils.FindType<UnityEngine.Object>(typeName);
                 if (filterType is null)
                     throw new ArgumentNullException(nameof(filterType));
             }
@@ -235,6 +237,47 @@ namespace UnityEditor.Search
             return new SearchViewState(context, selectObjectHandler, trackingObjectHandler, typeName, filterType)
             {
                 title = title
+            }.SetSearchViewFlags(flags | SearchViewFlags.ObjectPicker);
+        }
+
+        internal static SearchViewState CreatePickerState(string title, SearchContext context,
+            Action<UnityEngine.Object, bool> selectObjectHandler,
+            Action<UnityEngine.Object> trackingObjectHandler,
+            Type[] filterTypes, SearchViewFlags flags = SearchViewFlags.None)
+        {
+            if (filterTypes.Length == 1)
+            {
+                // Fast path where all the handlers are created to rapidly handle single type filtering:
+                return new SearchViewState(context, selectObjectHandler, trackingObjectHandler, filterTypes[0].Name, filterTypes[0])
+                {
+                    title = title
+                }.SetSearchViewFlags(flags | SearchViewFlags.ObjectPicker);
+            }
+
+            // Supports arbitrary number of types. Assuming types are handle in an "OR" fashion.
+            bool FilterHandler(SearchItem item)
+            {
+                var i = item ?? SearchItem.clear;
+                if (item == SearchItem.clear)
+                    return true;
+
+                foreach (var type in filterTypes)
+                {
+                    if (IsObjectMatchingType(item, type))
+                        return true;
+                }
+
+                return false;
+            }
+
+            void SelectHandler(SearchItem item, bool canceled) => selectObjectHandler?.Invoke(Utils.ToObject(item, filterTypes), canceled);
+            void TrackingHandler(SearchItem item) => trackingObjectHandler?.Invoke(Utils.ToObject(item, filterTypes));
+
+            return new SearchViewState(context, SelectHandler)
+            {
+                title = title,
+                trackingHandler = TrackingHandler,
+                filterHandler = FilterHandler
             }.SetSearchViewFlags(flags | SearchViewFlags.ObjectPicker);
         }
 

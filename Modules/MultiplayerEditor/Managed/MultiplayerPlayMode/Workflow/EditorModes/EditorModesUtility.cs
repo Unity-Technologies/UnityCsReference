@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -221,7 +222,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (hasPlayer)
             {
                 var tag = player.Tags.Count <= 0 ? string.Empty : $" [{string.Join('|', player.Tags)}]";
-                CurrentWindow.title = $"{player.Name}{tag}";
+                var roleText = InternalUtilities.GetMultiplayerRoleDisplayText((MultiplayerRoleFlags)player.MultiplayerRole);
+                CurrentWindow.title = $"{player.Name} ({roleText}){tag}";
             }
             else
             {

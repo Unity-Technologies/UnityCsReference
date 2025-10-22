@@ -34,8 +34,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsChain::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsChain_SetOwner(PhysicsChain chain, Object ownerObject);
         [NativeMethod(Name = "PhysicsChain::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsChain_GetOwner(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsChain_IsOwned(PhysicsChain chain);
-        [NativeMethod(Name = "PhysicsChain::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsChain_SetCallbackTarget(PhysicsChain chain, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsChain::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsChain_GetCallbackTarget(PhysicsChain chain);
+        [NativeMethod(Name = "PhysicsChain::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsChain_SetCallbackTarget(PhysicsChain chain, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsChain::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsChain_GetCallbackTarget(PhysicsChain chain);
         [NativeMethod(Name = "PhysicsChain::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsChain_SetUserData(PhysicsChain chain, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsChain::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsChain_GetUserData(PhysicsChain chain);
     }

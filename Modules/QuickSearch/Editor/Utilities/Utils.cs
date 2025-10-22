@@ -687,6 +687,27 @@ namespace UnityEditor.Search
             return item.provider.toObject?.Invoke(item, filterType);
         }
 
+        internal static UnityEngine.Object ToObject(SearchItem item, Type[] filterTypes)
+        {
+            if (item == null || item.provider == null)
+                return null;
+
+            var obj = item.provider.toObject?.Invoke(item, typeof(UnityEngine.Object));
+            if (!obj)
+                return null;
+
+            var type= obj.GetType();
+            foreach (var filterType in filterTypes)
+            {
+                if (filterType.IsAssignableFrom(type))
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
         internal static bool IsFocusedWindowTypeName(string focusWindowName)
         {
             return EditorWindow.focusedWindow != null && EditorWindow.focusedWindow.GetType().ToString().EndsWith("." + focusWindowName);

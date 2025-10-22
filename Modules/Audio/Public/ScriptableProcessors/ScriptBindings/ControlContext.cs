@@ -161,42 +161,8 @@ namespace UnityEngine.Audio
             }
         }
 
-        /// <summary>
-        /// Settings controlling how a <see cref="ProcessorInstance"/> is updated over the course of its lifetime.
-        /// </summary>
-        /// <seealso cref="ProcessorInstance.CreationParameters"/>
-        /// <seealso cref="ProcessorInstance.IControl{TRealtime}.Update"/>
-        /// <seealso cref="ProcessorInstance.IRealtime.Update"/>
-        public enum ProcessorUpdateSetting
-        {
-            /// <summary>
-            /// The default update setting for a <see cref="ProcessorInstance"/>.
-            /// </summary>
-            /// <remarks>
-            /// This is equivalent to <see cref="UpdateIfDataIsAvailable"/>.
-            /// A default-inititalized value of <see cref="ProcessorUpdateSetting"/> will correspond to this as well.
-            /// </remarks>
-            Default = 0,
-
-            /// <summary>
-            /// Never invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> on this processor nor <see cref="ProcessorInstance.IRealtime.Update"/>.
-            /// </summary>
-            NeverUpdate = 1,
-
-            /// <summary>
-            /// Invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> or <see cref="ProcessorInstance.IRealtime.Update"/>
-            /// only if data has been sent or returned from <see cref="ProcessorInstance.Pipe.SendData"/> since the last update.
-            /// </summary>
-            UpdateIfDataIsAvailable = 2,
-            /// <summary>
-            /// Always invoke <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> or <see cref="ProcessorInstance.IRealtime.Update"/>
-            /// on this <see cref="ProcessorInstance"/> on every update.
-            /// </summary>
-            UpdateAlways = 3,
-        }
-
         ControlHeader* m_Header;
-        Unity.Audio.Handle m_Handle;
+        internal Unity.Audio.Handle m_Handle;
 
         internal readonly ControlHeader *Header => m_Header;
 
@@ -362,6 +328,7 @@ namespace UnityEngine.Audio
             where T : unmanaged
         {
             m_Handle.CheckValidOrThrow();
+            processorInstance.Handle.CheckValidOrThrow();
 
             fixed (T* pT = &message)
             {
@@ -380,6 +347,8 @@ namespace UnityEngine.Audio
             where T : class
         {
             m_Handle.CheckValidOrThrow();
+            processorInstance.Handle.CheckValidOrThrow();
+
             object prior = null;
             GCHandle target;
 
@@ -411,57 +380,6 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Send a piece of data to make it available to the processor in the next <see cref="ProcessorInstance.IRealtime.Update"/>.
-        /// </summary>
-        /// <param name="processorInstance">The <see cref="ProcessorInstance"/> to send data to.</param>
-        /// <param name="data">A piece of data that will be copied over and transmitted in a batch.</param>
-        public unsafe void SendData<T>(ProcessorInstance processorInstance, in T data)
-            where T : unmanaged
-        {
-            m_Handle.CheckValidOrThrow();
-            processorInstance.Handle.CheckValidOrThrow();
-
-            if (!processorInstance.Header->IsSameControl(Header))
-                throw new ArgumentException($"{nameof(ProcessorInstance)} belongs to a different {nameof(ControlContext)}");
-
-            fixed (T* pData = &data)
-            {
-                var ret = ScriptableProcessorBindings.AddDataToProcessorHandle(
-                    m_Header,
-                    processorInstance.Handle,
-                    pData,
-                    sizeof (T),
-                    UnsafeUtility.AlignOf<T>(),
-                    BurstRuntime.GetHashCode64<T>()
-                );
-
-                // An exception will be thrown if the handle is invalid or disposed (just above).
-                // It should never fail otherwise, currently.
-                Debug.Assert(ret, "Failed to send data from control context, this is an internal error");
-            }
-        }
-
-        /// <summary>
-        /// Access an enumerator to the currently available data on the <see cref="ProcessorInstance"/>.
-        /// </summary>
-        /// <remarks>
-        /// Data here has been communicated back and accumulated from the <see cref="ProcessorInstance"/> itself through
-        /// <see cref="ProcessorInstance.Pipe.SendData"/> together with a <see cref="RealtimeContext"/> or a <see cref="ProcessorInstance.UpdatedDataContext"/>.
-        /// </remarks>
-        /// <param name="processorInstance">The processor to query data for.</param>
-        /// <returns>A temporary collection of available data.</returns>
-        /// <seealso cref="ProcessorInstance.AvailableData"/>
-        public ProcessorInstance.AvailableData GetAvailableData(ProcessorInstance processorInstance)
-        {
-            m_Handle.CheckValidOrThrow();
-            processorInstance.Handle.CheckValidOrThrow();
-
-            var dataElement = ScriptableProcessorBindings.GetAvailableDataForControl(m_Header, processorInstance.Handle);
-
-            return new ProcessorInstance.AvailableData(dataElement);
-        }
-
-        /// <summary>
         /// Destroy a <see cref="GeneratorInstance"/> previously allocated with <see cref="ControlContext.AllocateGenerator"/>.
         /// </summary>
         public void Destroy(GeneratorInstance generatorInstance) => DestroyProcessor(generatorInstance.m_ProcessorInstance);
@@ -469,7 +387,7 @@ namespace UnityEngine.Audio
         /// <summary>
         /// Destroy a <see cref="RootOutputInstance"/> previously allocated with <see cref="ControlContext.AllocateRootOutput"/>.
         /// </summary>
-        public void Destroy(RootOutputInstance root) => DestroyProcessor(root.m_ProcessorInstance);
+        public void Destroy(RootOutputInstance rootOutputInstance) => DestroyProcessor(rootOutputInstance.m_ProcessorInstance);
 
         /// <summary>
         /// Get the declared configuration <paramref name="generatorInstance"/> runs in.
@@ -482,6 +400,37 @@ namespace UnityEngine.Audio
             generatorInstance.m_ProcessorInstance.Handle.CheckValidOrThrow();
 
             return ((GeneratorInstance.GeneratorHeader*)generatorInstance.m_ProcessorInstance.Header)->Configuration;
+        }
+
+        /// <summary>
+        /// Manually configure this <see cref="GeneratorInstance"/> with the given <paramref name="format"/>.
+        /// </summary>
+        /// <remarks>
+        /// Nested <see cref="GeneratorInstance"/>s must be manually configured,
+        /// and this call is only valid on nested <see cref="ProcessorInstance"/>s.
+        /// </remarks>
+        /// <seealso cref="ControlContext.AllocateGenerator"/>
+        public void Configure(GeneratorInstance generatorInstance, in AudioFormat format)
+        {
+            ScriptableProcessorBindings.PerformRecursiveConfigure(
+                generatorInstance.m_ProcessorInstance.Handle,
+                Header,
+                format.audioConfiguration
+            );
+        }
+
+        /// <summary>
+        /// Manually update this <see cref="GeneratorInstance"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is only valid on nested <see cref="ProcessorInstance"/>s.
+        /// You must always update any nested <see cref="ProcessorInstance"/>s you have created.
+        /// </remarks>
+        /// <seealso cref="ControlContext.AllocateGenerator"/>
+        /// <seealso cref="ControlContext.Configure"/>
+        public void Update(GeneratorInstance generatorInstance)
+        {
+            ScriptableProcessorBindings.PerformRecursiveUpdate(generatorInstance.m_ProcessorInstance.Handle, Header);
         }
 
         /// <summary>

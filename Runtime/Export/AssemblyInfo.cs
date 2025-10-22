@@ -70,6 +70,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
 [assembly: InternalsVisibleTo("Unity.PathTracing.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
 
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
@@ -80,8 +81,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.SpriteDeform.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SpriteShape.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.DrivenProperties.Tests.Editor")]
-[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
-[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.ColorPicker")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.TreeViewControl")]
@@ -90,6 +91,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.UI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
 
 
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]

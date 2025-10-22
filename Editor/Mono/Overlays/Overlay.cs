@@ -740,6 +740,9 @@ namespace UnityEditor.Overlays
 
             var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
+            
+            if (m_ModalPopup != null)
+                ApplyPopupSize();
         }
 
         void ApplySize(VisualElement element, bool resizableLayout, bool sizeOverridden)
@@ -845,7 +848,7 @@ namespace UnityEditor.Overlays
             }
 
             m_ModalPopup = OverlayPopup.CreateUnderOverlay(this);
-            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
+            ApplyPopupSize();
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>
             {
@@ -874,6 +877,11 @@ namespace UnityEditor.Overlays
         public void RefreshPopup()
         {
             m_ModalPopup?.Refresh();
+        }
+
+        void ApplyPopupSize()
+        {
+            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
         }
 
         void ClosePopup()

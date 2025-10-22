@@ -417,7 +417,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <undoc/>
         [RequiredByNativeCode]
-        static bool SendContactFilterCallback(Object callbackTarget, ContactFilterEvent contactFilterEvent)
+        static bool SendContactFilterCallback(System.Object callbackTarget, ContactFilterEvent contactFilterEvent)
         {
             if (callbackTarget is PhysicsCallbacks.IContactFilterCallback target)
                 return target.OnContactFilter2D(contactFilterEvent);
@@ -427,7 +427,7 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <undoc/>
         [RequiredByNativeCode]
-        static bool SendPreSolveCallback(Object callbackTarget, PreSolveEvent preSolveEvent)
+        static bool SendPreSolveCallback(System.Object callbackTarget, PreSolveEvent preSolveEvent)
         {
             if (callbackTarget is PhysicsCallbacks.IPreSolveCallback target)
                 return target.OnPreSolve2D(preSolveEvent);

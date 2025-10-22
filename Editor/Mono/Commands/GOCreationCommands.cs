@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 
@@ -27,6 +28,14 @@ namespace UnityEditor
             get => (PlacementMode)s_PlacementModePref.value;
             set => s_PlacementModePref.value = (int)value;
         }
+
+        static SavedBool s_PlacementPrefabSerializedPositionOnHierarchyPref = new SavedBool("Create3DObject.PlacementModePrefabSerializedPositionOnHierarchy", false);
+        internal static bool s_PlacementUsePrefabSerializedPositionOnHierarchyDrop
+        {
+            get => s_PlacementPrefabSerializedPositionOnHierarchyPref.value;
+            set => s_PlacementPrefabSerializedPositionOnHierarchyPref.value = value;
+        }
+        internal static bool s_PlacementChangePosition => !s_PlacementPrefabSerializedPositionOnHierarchyPref.value;
 
         // This is here because we can't pass Scenes around with the MenuCommand context. SceneHierarchy toggles this
         // flag when add object context menu items are invoked from a context click on Scene headers. If you make use of
@@ -249,7 +258,12 @@ namespace UnityEditor
                     }
                 }
 
-                SceneHierarchyWindow.lastInteractedHierarchyWindow?.SetExpanded(go.GetInstanceID(), true);
+                using var _ = ListPool<IHierarchyWindow>.Get(out var windows);
+                IHierarchyWindow.GetAllHierarchyWindows(windows);
+                foreach (var window in windows)
+                {
+                    window.SetExpanded(go.GetEntityId(), true);
+                }
 
                 // Ensure empty parent after reparenting jumps into rename mode if needed UUM-15042
                 if (HierarchyPreferences.RenameNewObjects)

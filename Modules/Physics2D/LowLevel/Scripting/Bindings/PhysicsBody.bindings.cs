@@ -91,8 +91,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsBody_SetOwner(PhysicsBody body, Object ownerObject);
         [NativeMethod(Name = "PhysicsBody::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsBody_GetOwner(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsBody_IsOwned(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsBody_SetCallbackTarget(PhysicsBody body, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsBody::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsBody_GetCallbackTarget(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsBody_SetCallbackTarget(PhysicsBody body, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsBody::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsBody_GetCallbackTarget(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsBody_SetUserData(PhysicsBody body, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsBody::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsBody_GetUserData(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetTransformObject", IsThreadSafe = true)] extern internal static void PhysicsBody_SetTransformObject(PhysicsBody body, Transform transform);

@@ -10,7 +10,17 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     class ReadyOnlyEditor : AssetModificationProcessor
     {
-        static bool IsReadOnly => VirtualProjectsEditor.IsClone;
+        static bool? s_IsReadOnly;
+        static bool IsReadOnly
+        {
+            get
+            {
+                if (!s_IsReadOnly.HasValue)
+                    s_IsReadOnly = VirtualProjectsEditor.IsClone;
+
+                return s_IsReadOnly.Value;
+            }
+        }
 
         static bool CanOpenForEdit(string[] paths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions)
         {
@@ -50,8 +60,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return !IsReadOnly;
         }
 
-        // TODO: Re-enable when the migration is complete
-        // [CommandHandler("Commands/No Add Component")]
+        [CommandHandler("Commands/No Add Component")]
         static void NoAddComponent(CommandExecuteContext context)
         {
             /*** This disables the 'Add Component' Button in the Inspector view ***/

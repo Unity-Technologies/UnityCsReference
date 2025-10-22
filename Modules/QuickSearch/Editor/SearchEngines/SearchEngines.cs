@@ -219,6 +219,10 @@ namespace UnityEditor.Search
             }
 
             context.options &= ~SearchFlags.Packages;
+
+            // Note: For ADB : and = are equivalent.
+            // For Asset Provider ":" means StartsWith (ADB doesn't support this scheme) and "=" means equal.
+            // Since the query is passed to both ADB and Asset, converts all : to = to behave like the Legacy search.
             var processedQuery = ConvertContainsToEqual(query);
             if (project.searchFilter != null)
             {

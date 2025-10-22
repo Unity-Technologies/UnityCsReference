@@ -115,8 +115,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.ComponentUtility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
-[assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Common")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
@@ -234,6 +236,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.GI.Prefabs.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.PackageManagerUI.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 

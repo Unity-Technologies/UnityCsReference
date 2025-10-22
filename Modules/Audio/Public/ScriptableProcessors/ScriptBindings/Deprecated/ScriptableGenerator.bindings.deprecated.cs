@@ -19,6 +19,27 @@ namespace UnityEngine.Audio
         public interface IProcessor
         {
         }
+
+        /// <undoc/>
+        [Obsolete("GeneratorInstance.Configure has been deprecated. Use ControlContext.Configure instead.", true)]
+        public void Configure(ControlContext context, in AudioFormat format)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <undoc/>
+        [Obsolete("GeneratorInstance.Update has been deprecated. Use ControlContext.Update instead.", true)]
+        public void Update(ControlContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <undoc/>
+        [Obsolete("GeneratorInstance.Process has been deprecated. Use RealtimeContext.Process instead.", true)]
+        public Result Process(RealtimeContext context, ChannelBuffer buffer, Arguments args)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /// <undoc/>

@@ -41,6 +41,7 @@ namespace Unity.Profiling.Editor.UI
 
         // State
         readonly CaptureDataService m_CaptureDataService;
+        readonly ProfilerWindow m_ProfilerWindow;
         bool m_IsLoaded;
 
         // View
@@ -52,11 +53,13 @@ namespace Unity.Profiling.Editor.UI
         TextElement m_ChangeFPSFieldInputArea;
         Label m_WarningMessage;
 
-        public CaptureFileTreeItemViewController(CaptureFileModel model, CaptureDataService CaptureDataService, ScreenshotsManager screenshotsManager) :
+        public CaptureFileTreeItemViewController(CaptureFileModel model, CaptureDataService captureDataService, ScreenshotsManager screenshotsManager, ProfilerWindow profilerWindow) :
             base(model, screenshotsManager)
         {
-            m_CaptureDataService = CaptureDataService;
+            m_CaptureDataService = captureDataService;
             m_StrLenMaxFPS = ProfilerUserSettings.k_MaximumTargetFramesPerSecond.ToString().Length;
+            m_ProfilerWindow = profilerWindow;
+            m_CaptureDataService.LoadedCapturesChanged += RefreshLoadedState;
         }
 
         public bool IsLoaded
@@ -76,7 +79,10 @@ namespace Unity.Profiling.Editor.UI
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 m_WarningMessage?.RemoveFromHierarchy();
+                m_CaptureDataService.LoadedCapturesChanged -= RefreshLoadedState;
+            }
 
             base.Dispose(disposing);
         }
@@ -121,7 +127,7 @@ namespace Unity.Profiling.Editor.UI
 
             Debug.Assert(Model != null);
 
-            m_Container.AddManipulator(new ContextualMenuManipulator(binder => PopulateOpenCaptureOptionMenu(binder)));
+            m_Container.AddManipulator(new ContextualMenuManipulator(PopulateOpenCaptureOptionMenu));
             m_Container.RegisterCallback<MouseUpEvent>(evt =>
             {
                 if ((MouseButton)evt.button == MouseButton.LeftMouse)
@@ -131,8 +137,8 @@ namespace Unity.Profiling.Editor.UI
                 }
             });
 
-            m_Name.AddManipulator(new Clickable(() => RenameCapture()));
-            m_FPSTarget.AddManipulator(new Clickable(() => EditCaptureFPS()));
+            m_Name.AddManipulator(new Clickable(RenameCapture));
+            m_FPSTarget.AddManipulator(new Clickable(EditCaptureFPS));
 
             m_RenameField.isDelayed = true;
             m_RenameField.SetValueWithoutNotify(Model.Name);
@@ -201,7 +207,6 @@ namespace Unity.Profiling.Editor.UI
                 ResetFPSChangeState();
             });
 
-            m_CaptureDataService.LoadedCapturesChanged += RefreshLoadedState;
             RefreshLoadedState();
         }
 
@@ -209,6 +214,9 @@ namespace Unity.Profiling.Editor.UI
         {
             View.RemoveFromClassList("profiler-capture-file__state__in-view");
             UIUtility.SetElementDisplay(m_OpenCaptureTag, false);
+
+            // don't go via setter else we'll recurse
+            m_IsLoaded = m_ProfilerWindow.CaptureFileIsOpen(Model.FullPath);
 
             if (IsLoaded)
                 View.AddToClassList("profiler-capture-file__state__in-view");

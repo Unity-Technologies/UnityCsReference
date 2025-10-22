@@ -850,14 +850,6 @@ namespace UnityEditor.LightBaking
                 var rrWorld = world as RadeonRaysWorld;
                 rrWorld.SetIntegrationContext(integrationContext);
             }
-            else if (context is WintermuteContext wintermuteContext)
-            {
-                IntegrationContext integrationContext = new();
-                result = PopulateWorldWintermute(bakeInput, lightmapRequests, lightProbeRequests, progress, wintermuteContext, integrationContext);
-                Debug.Assert(world is WintermuteWorld);
-                var wmWorld = world as WintermuteWorld;
-                wmWorld.SetIntegrationContext(integrationContext);
-            }
             return result;
         }
 
