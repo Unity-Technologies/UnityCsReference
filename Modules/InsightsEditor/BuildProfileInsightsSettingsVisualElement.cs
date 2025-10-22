@@ -28,7 +28,6 @@ namespace UnityEditor.InsightsEditor
         const string k_HideElementClassName = "display-none";
         const string k_InsightsProjectSettingsHeaderNodeName = "insights-project-settings-header";
         const string k_InsightsSectionLabelNodeName = "insights-analytics-label";
-        const string k_InsightsNoCloudLabelNodeName = "insights-analytics-no-cloud-projectsettings-label";
         const string k_InsightsNoCloudInfoLabelTextNodeName = "insights-analytics-no-cloud-text";
 
         VisualElement m_Root;
@@ -140,9 +139,6 @@ namespace UnityEditor.InsightsEditor
 
             var sectionLabel = root.Q<Label>(k_InsightsSectionLabelNodeName);
             sectionLabel.text = TrText.k_BuildProfileSectionLabel;
-
-            var noCloudInfoLabel = root.Q<Label>(k_InsightsNoCloudLabelNodeName);
-            noCloudInfoLabel.text = TrText.k_DataReportingLevelDropdownLabel;
 
             var noCloudInfoLabelText = root.Q<Label>(k_InsightsNoCloudInfoLabelTextNodeName);
             noCloudInfoLabelText.text = TrText.k_BuildProfileNoCloudLabel;

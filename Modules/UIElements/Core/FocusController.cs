@@ -695,30 +695,16 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (!(newFocusedElement is VisualElement newFocusedVe) || !newFocusedElement.canGrabFocus || newFocusedVe.panel == null)
-            {
-                if (oldFocusedElement is VisualElement oldFocusedVe)
-                {
-                    m_LastPendingFocusedElement = null;
-                    m_PendingFocusCount++; // ReleaseFocus will always trigger DoFocusChange
-
-                    using (new EventDispatcherGate(oldFocusedVe.panel.dispatcher))
-                    {
-                        AboutToReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
-                        ReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
-                    }
-                }
-            }
-            else if (newFocusedElement != oldFocusedElement)
+            if (newFocusedElement is VisualElement newFocusedVe && newFocusedElement.canGrabFocus && newFocusedVe.panel is { } newPanel)
             {
                 // Retarget event.relatedTarget so it is in the same tree as event.target.
-                var retargetedNewFocusedElement = (newFocusedElement as VisualElement)?.RetargetElement(oldFocusedElement as VisualElement) ?? newFocusedElement;
-                var retargetedOldFocusedElement = (oldFocusedElement as VisualElement)?.RetargetElement(newFocusedElement as VisualElement) ?? oldFocusedElement;
+                var retargetedNewFocusedElement = newFocusedVe?.RetargetElement(oldFocusedElement as VisualElement) ?? newFocusedElement;
+                var retargetedOldFocusedElement = (oldFocusedElement as VisualElement)?.RetargetElement(newFocusedVe) ?? oldFocusedElement;
 
                 m_LastPendingFocusedElement = newFocusedElement;
                 m_PendingFocusCount++; // GrabFocus will always trigger DoFocusChange, but ReleaseFocus won't
 
-                using (new EventDispatcherGate(newFocusedVe.panel.dispatcher))
+                using (new EventDispatcherGate(newPanel.dispatcher))
                 {
                     if (oldFocusedElement != null)
                     {
@@ -734,6 +720,23 @@ namespace UnityEngine.UIElements
                     }
 
                     GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, bIsFocusDelegated, dispatchMode);
+                }
+            }
+            else if (oldFocusedElement is VisualElement oldFocusedVe)
+            {
+                var oldPanel = oldFocusedVe.elementPanel;
+                if (oldPanel != null)
+                {
+                    m_LastPendingFocusedElement = null;
+                    m_PendingFocusCount++; // ReleaseFocus will always trigger DoFocusChange
+
+                    using var _ = new EventDispatcherGate(oldPanel.dispatcher);
+                    AboutToReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
+                    ReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
+                }
+                else
+                {
+                    ProcessPendingFocusChange(null);
                 }
             }
         }

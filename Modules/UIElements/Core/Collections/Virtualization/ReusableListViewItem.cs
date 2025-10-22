@@ -110,5 +110,11 @@ namespace UnityEngine.UIElements
                 m_DragHandle.EnableInClassList(UIElementsUtility.hiddenClassName, isDragGhost);
             }
         }
+
+        protected override void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            base.OnGeometryChanged(evt);
+            m_ItemContainer?.UpdateWorldTransform();
+        }
     }
 }

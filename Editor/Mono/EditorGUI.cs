@@ -4103,11 +4103,6 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null, true);
                         GUIUtility.keyboardControl = controlID;
@@ -4117,11 +4112,6 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(controlID))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         evt.Use();

@@ -7,6 +7,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Analytics
 {
+    [Preserve]
     [RequiredByNativeCode]
     public enum AnalyticsSessionState
     {
@@ -16,6 +17,7 @@ namespace UnityEngine.Analytics
         kSessionResumed = 3
     }
 
+    [Preserve]
     [RequiredByNativeCode]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
@@ -24,6 +26,7 @@ namespace UnityEngine.Analytics
         public delegate void SessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged);
         public static event SessionStateChanged sessionStateChanged;
 
+        [Preserve]
         [RequiredByNativeCode]
         internal static void CallSessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged)
         {
@@ -102,6 +105,7 @@ namespace UnityEngine.Analytics
         public delegate void IdentityTokenChanged(string token);
         public static event IdentityTokenChanged identityTokenChanged;
 
+        [Preserve]
         [RequiredByNativeCode]
         internal static void CallIdentityTokenChanged(string token)
         {

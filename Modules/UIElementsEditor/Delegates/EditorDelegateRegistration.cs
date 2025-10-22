@@ -57,7 +57,7 @@ namespace UnityEditor.UIElements
                     UIElementsRuntimeUtility.OnExitingPlayMode();
             };
 
-            UIElementsRuntimeUtility.IsEditingPrefab = () => PrefabStageUtility.GetCurrentPrefabStage() != null;
+            UIDocument.IsEditingPrefab = () => PrefabStageUtility.GetCurrentPrefabStage() != null;
         }
 
         private static GenericOSMenu CreateGenericOSMenu()

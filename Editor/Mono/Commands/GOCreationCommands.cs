@@ -26,6 +26,14 @@ namespace UnityEditor
             set => s_PlacementModePref.value = (int)value;
         }
 
+        static SavedBool s_PlacementPrefabSerializedPositionOnHierarchyPref = new SavedBool("Create3DObject.PlacementModePrefabSerializedPositionOnHierarchy", false);
+        internal static bool s_PlacementUsePrefabSerializedPositionOnHierarchyDrop
+        {
+            get => s_PlacementPrefabSerializedPositionOnHierarchyPref.value;
+            set => s_PlacementPrefabSerializedPositionOnHierarchyPref.value = value;
+        }
+        internal static bool s_PlacementChangePosition => !s_PlacementPrefabSerializedPositionOnHierarchyPref.value;
+
         // This is here because we can't pass Scenes around with the MenuCommand context. SceneHierarchy toggles this
         // flag when add object context menu items are invoked from a context click on Scene headers. If you make use of
         // this, be sure to return it's value to 'false' as soon as your operation is out of scope.

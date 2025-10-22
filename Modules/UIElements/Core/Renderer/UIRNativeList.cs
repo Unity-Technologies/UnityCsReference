@@ -18,6 +18,12 @@ namespace UnityEngine.UIElements.UIR
             m_NativeArray = new NativeArray<T>(initialCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
         }
 
+        public NativeList(int initialCapacity, Allocator allocator)
+        {
+            Debug.Assert(initialCapacity > 0);
+            m_NativeArray = new NativeArray<T>(initialCapacity, allocator, NativeArrayOptions.UninitializedMemory);
+        }
+
         void Expand(int newLength)
         {
             var newArray = new NativeArray<T>(newLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);

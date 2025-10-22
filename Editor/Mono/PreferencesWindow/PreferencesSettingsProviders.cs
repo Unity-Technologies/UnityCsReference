@@ -142,6 +142,7 @@ By default, Windows will combine these under a single taskbar item.");
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("World Origin");
             public static readonly GUIContent createObjectsAtRaycastToScenePivot = EditorGUIUtility.TrTextContent("Scene Intersection");
             public static readonly GUIContent createObjectsAtScenePivot = EditorGUIUtility.TrTextContent("Scene Pivot");
+            public static readonly GUIContent createObjectsAtPrefabPosition = EditorGUIUtility.TrTextContent("Use prefab asset position when dropping on the Hierarchy window", "If enabled, prefabs dropped on the Hierarchy window are placed in the scene at the position serialized in the prefab's root transform. If disabled, prefabs are placed based on the 3D Placement Mode");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
             public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
             public static readonly GUIContent ignoreAlwaysRefreshWhenNotFocused = EditorGUIUtility.TrTextContent("Refresh the Scene view only when the Editor is in focus.", "If enabled, ignore the \"Always Refresh\" flag on the Scene view when the Editor is not the foregrounded application.");
@@ -216,6 +217,7 @@ By default, Windows will combine these under a single taskbar item.");
         private bool m_AllowAlphaNumericHierarchy = false;
         private PrefabStage.Mode m_DefaultPrefabModeFromHierarchy = PrefabStage.Mode.InContext;
         private GOCreationCommands.PlacementMode m_CreatePlacementMode = GOCreationCommands.PlacementMode.SceneIntersection;
+        private bool m_PlacementUsePrefabSerializedPositionOnHierarchyDrop = true;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
         private bool m_EnableExtendedDynamicHints
@@ -916,7 +918,7 @@ By default, Windows will combine these under a single taskbar item.");
             GUILayout.Label("General", EditorStyles.boldLabel);
 
             var oldLabelWidth = EditorGUIUtility.labelWidth;
-            var toggleLabelWidth = EditorStyles.label.CalcSize(SceneViewProperties.ignoreAlwaysRefreshWhenNotFocused).x;
+            var toggleLabelWidth = EditorStyles.label.CalcSize(SceneViewProperties.createObjectsAtPrefabPosition).x;
             EditorGUIUtility.labelWidth = toggleLabelWidth;
 
             GUIContent PlacementModeToGUIContent(GOCreationCommands.PlacementMode mode)
@@ -949,6 +951,8 @@ By default, Windows will combine these under a single taskbar item.");
                 menu.ShowAsContext();
             }
             EditorGUILayout.EndHorizontal();
+
+            m_PlacementUsePrefabSerializedPositionOnHierarchyDrop = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtPrefabPosition, m_PlacementUsePrefabSerializedPositionOnHierarchyDrop);
 
             m_EnableConstrainProportionsScalingForNewObjects = EditorGUILayout.Toggle(SceneViewProperties.enableConstrainProportionsScalingForNewObjects, m_EnableConstrainProportionsScalingForNewObjects);
             AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
@@ -1263,6 +1267,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
             GOCreationCommands.s_PlacementMode = m_CreatePlacementMode;
+            GOCreationCommands.s_PlacementUsePrefabSerializedPositionOnHierarchyDrop = m_PlacementUsePrefabSerializedPositionOnHierarchyDrop;
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -1355,6 +1360,7 @@ By default, Windows will combine these under a single taskbar item.");
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
 
             m_CreatePlacementMode = GOCreationCommands.s_PlacementMode;
+            m_PlacementUsePrefabSerializedPositionOnHierarchyDrop = GOCreationCommands.s_PlacementUsePrefabSerializedPositionOnHierarchyDrop;
             var create3DObjectsAtOrigin = EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false);
             if (create3DObjectsAtOrigin && !EditorPrefs.HasKey("Create3DObject.PlacementMode"))
             {

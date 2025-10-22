@@ -540,7 +540,7 @@ namespace UnityEngine
         }
 
         internal static Dictionary<int, RenderInstancedDataLayout> s_RenderInstancedDataLayouts = new Dictionary<int, RenderInstancedDataLayout>();
-        private static RenderInstancedDataLayout GetCachedRenderInstancedDataLayout(Type type)
+        internal static RenderInstancedDataLayout GetCachedRenderInstancedDataLayout(Type type)
         {
             int typeHashCode = type.GetHashCode();
             RenderInstancedDataLayout layout;

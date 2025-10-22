@@ -197,37 +197,8 @@ namespace UnityEditor
 
         private static GUIStyle s_LargeSplitLeftStyle;
         private static GUIStyle s_LargeSplitRightStyle;
-        public static bool LargeSplitButtonWithDropdownList(GUIContent content, string[] buttonNames, GenericMenu.MenuFunction2 callback)
-        {
-            // Load required styles
-            if (s_LargeSplitLeftStyle == null)
-                s_LargeSplitLeftStyle = new GUIStyle(EditorStyles.miniButtonLeft) { fixedHeight = kLargeButtonHeight };
-
-            if (s_LargeSplitRightStyle == null)
-                s_LargeSplitRightStyle = new GUIStyle(EditorStyles.miniButtonRight) { fixedHeight = kLargeButtonHeight };
-
-            if (s_IconDropDown == null)
-                s_IconDropDown = EditorGUIUtility.IconContent("icon dropdown");
-
-            EditorGUILayout.BeginHorizontal();
-
-            // Main button
-            bool clicked = GUILayout.Button(content, s_LargeSplitLeftStyle);
-
-            // Dropdown
-            const int dropdownAreaWidth = 18;
-            if (GUILayout.Button(s_IconDropDown, s_LargeSplitRightStyle, GUILayout.Width(dropdownAreaWidth)))
-            {
-                var menu = new GenericMenu();
-                for (int i = 0; i != buttonNames.Length; i++)
-                    menu.AddItem(new GUIContent(buttonNames[i]), false, callback, i);
-
-                menu.DropDown(GUILayoutUtility.current.topLevel.GetLast());
-            }
-
-            EditorGUILayout.EndHorizontal();
-            return clicked;
-        }
+        public static bool LargeSplitButtonWithDropdownList(GUIContent content, string[] buttonNames, GenericMenu.MenuFunction2 callback) =>
+            LargeSplitButtonWithDropdownList(content, buttonNames, callback, false);
 
         public static bool LargeSplitButtonWithDropdownList(GUIContent content, string[] buttonNames, GenericMenu.MenuFunction2 callback, bool disableMainButton)
         {
@@ -241,8 +212,9 @@ namespace UnityEditor
             if (s_IconDropDown == null)
                 s_IconDropDown = EditorGUIUtility.IconContent("icon dropdown");
 
-            EditorGUILayout.BeginHorizontal();
+            s_IconDropDown.tooltip = !string.IsNullOrEmpty(content.tooltip) ? content.tooltip : string.Empty;
 
+            EditorGUILayout.BeginHorizontal();
             // Main button
             bool clicked;
             using (new EditorGUI.DisabledScope(disableMainButton))

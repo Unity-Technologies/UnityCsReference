@@ -186,6 +186,7 @@ namespace UnityEngine.UIElements
 
         internal static Func<bool> IsEditorPlaying;
         internal static Func<bool> IsEditorPlayingOrWillChangePlaymode;
+        internal static Func<bool> IsEditingPrefab;
 
         internal static int EnabledDocumentCount = 0;
 
@@ -577,7 +578,7 @@ namespace UnityEngine.UIElements
                     && Application.isPlaying
                     // UUM-108898: don't add components that get saved while in edit prefab mode and
                     // play mode at the same time, otherwise it won't get removed correctly when leaving play mode.
-                    && UIElementsRuntimeUtility.IsEditingPrefab?.Invoke() != true
+                    && IsEditingPrefab?.Invoke() != true
                     )
                 {
                     UpdateWorldSpaceCollider(panelSettings.colliderUpdateMode);
@@ -617,8 +618,6 @@ namespace UnityEngine.UIElements
             BaseRuntimePanel rtp = (BaseRuntimePanel)m_RootVisualElement.panel;
             if (rtp == null)
                 return;
-
-            Debug.Assert(rtp.drawsInCameras);
 
             var bb = SanitizeRendererBounds(rootVisualElement.localBounds3D);
             var toGameObject = TransformToGameObjectMatrix();

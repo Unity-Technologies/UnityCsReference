@@ -254,7 +254,7 @@ namespace UnityEngine.UIElements
             s_ActiveInstances++;
 
             // UUM-108797: components should be left alone during prefab editing.
-            if (UIElementsRuntimeUtility.IsEditingPrefab?.Invoke() == true)
+            if (UIDocument.IsEditingPrefab?.Invoke() == true)
                 return;
 
             if (current != null)

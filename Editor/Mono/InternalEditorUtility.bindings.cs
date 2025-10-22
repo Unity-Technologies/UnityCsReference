@@ -293,10 +293,10 @@ namespace UnityEditorInternal
         extern public static DragAndDropVisualMode HierarchyWindowDrag([Unmarshalled] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
-            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, GOCreationCommands.s_PlacementChangePosition, parentForDraggedObjects, perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
-        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, bool changePosition, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);

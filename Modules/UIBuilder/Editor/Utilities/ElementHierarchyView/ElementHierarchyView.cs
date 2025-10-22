@@ -27,15 +27,25 @@ namespace Unity.UI.Builder
 
     internal class ElementHierarchyView : VisualElement
     {
+        readonly UnityEngine.Pool.ObjectPool<BuilderClassPill> m_ClassPillsPool = new (
+            () =>
+            {
+                var pill = new BuilderClassPill();
+                pill.AddToClassList(k_TreeItemPillClass);
+                m_ClassDragger.RegisterCallbacksOnTarget(pill);
+                return pill;
+            },
+            null,
+            null,
+            pill => pill.RegisterCallback<DetachFromPanelEvent>(m_ClassDragger.UnregisterCallbacksFromTarget)
+        );
+
         public const string k_PillName = "unity-builder-tree-class-pill";
         const string k_TreeItemPillClass = "unity-debugger-tree-item-pill";
 
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
         public BuilderExplorer.BuilderElementInfoVisibilityState elementInfoVisibilityState { get; set; }
-
-        VisualTreeAsset m_ClassPillTemplate;
-
         public IList<TreeViewItem> treeRootItems => m_TreeRootItems;
 
         public IEnumerable<TreeViewItemData<VisualElement>> treeItems
@@ -67,7 +77,7 @@ namespace Unity.UI.Builder
         BuilderPaneWindow m_PaneWindow;
         VisualElement m_DocumentRootElement;
         BuilderSelection m_Selection;
-        BuilderClassDragger m_ClassDragger;
+        static BuilderClassDragger m_ClassDragger;
         BuilderExplorerDragger m_ExplorerDragger;
         BuilderElementContextMenu m_ContextMenuManipulator;
         bool m_AllowMouseUpRenaming;
@@ -141,9 +151,6 @@ namespace Unity.UI.Builder
             m_ExplorerDragger.builderHierarchyRoot = m_Container;
             m_ExplorerDragger.onEndDrag += OnExplorerEndDrag;
             Add(m_Container);
-
-            m_ClassPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
-                BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
 
             // Create TreeView.
             m_TreeRootItems = new List<TreeViewItem>();
@@ -219,6 +226,12 @@ namespace Unity.UI.Builder
         {
             var explorerItem = element as BuilderExplorerItem;
 
+            var pill = element.Q<BuilderClassPill>();
+            if (pill is { isDragged: false })
+            {
+                m_ClassPillsPool.Release(pill);
+            }
+
             foreach (var label in explorerItem.elidableLabels)
             {
                 m_LabelsToResize.Remove(label);
@@ -278,9 +291,22 @@ namespace Unity.UI.Builder
         {
             var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
             var explorerItem = element as BuilderExplorerItem;
+            var draggedPill = explorerItem.Query<BuilderClassPill>().Where(pill => pill.isDragged).First();
+            var labelCont = explorerItem.Q<VisualElement>(className: BuilderConstants.ExplorerItemLabelContClassName);
+
+            if (draggedPill != null)
+            {
+                draggedPill.style.display = DisplayStyle.None;
+            }
+
+            if (labelCont == null)
+            {
+                labelCont = new VisualElement();
+                labelCont.AddToClassList(BuilderConstants.ExplorerItemLabelContClassName);
+                explorerItem.Add(labelCont);
+            }
 
             explorerItem.SetReorderingZonesEnabled(true);
-            explorerItem.Clear();
 
             // Pre-emptive cleanup.
             var row = explorerItem.parent.parent;
@@ -304,23 +330,47 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            // Create main label container.
-            var labelCont = new VisualElement();
-            labelCont.AddToClassList(BuilderConstants.ExplorerItemLabelContClassName);
-            explorerItem.Add(labelCont);
+            // Removes the content from the selector label container in the events that we do not Clear() because of a pill being dragged.
+            void RemoveSelectorLabelContainerContent(VisualElement elementContainer)
+            {
+                if (elementContainer == null)
+                    return;
+
+                foreach (var child in elementContainer.Children().ToList())
+                {
+                    if (child is BuilderClassPill pill && pill == draggedPill)
+                    {
+                        continue;
+                    }
+                    elementContainer.Remove(child);
+                }
+            }
 
             if (BuilderSharedStyles.IsStyleSheetElement(documentElement))
             {
+                // Since the first item is still a recyclable item, we need to make sure that the selector label container's content is properly cleared
+                // in the events that a pill drag was performed. For instance, when dragging a pill at the top and scrolling down to trigger a rebind of new items,
+                // should require a clean-up since we are hiding the dragged pilled in the first recycled item (which will become a new item since it's being recycled).
+                RemoveSelectorLabelContainerContent(labelCont.Q<VisualElement>(className: BuilderConstants.ExplorerItemSelectorLabelContClassName));
+
                 var owningUxmlPath = documentElement.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string;
                 var isPartOfParentDocument = !string.IsNullOrEmpty(owningUxmlPath);
-
                 var styleSheetAsset = documentElement.GetStyleSheet();
                 var styleSheetAssetName = BuilderAssetUtilities.GetStyleSheetAssetName(styleSheetAsset, hasUnsavedChanges && !isPartOfParentDocument);
-                var ssLabel = new Label(styleSheetAssetName);
-                ssLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-                ssLabel.AddToClassList("unity-debugger-tree-item-type");
+                var ssLabel = labelCont.Q<Label>("style-sheet-asset-name");
+                if (ssLabel == null)
+                {
+                    ssLabel = new Label { name = "style-sheet-asset-name" };
+                    ssLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
+                    ssLabel.AddToClassList("unity-debugger-tree-item-type");
+                    labelCont.Add(ssLabel);
+                }
+                else
+                {
+                    ssLabel.style.display = DisplayStyle.Flex;
+                }
+                ssLabel.text = styleSheetAssetName;
                 row.AddToClassList(BuilderConstants.ExplorerHeaderRowClassName);
-                labelCont.Add(ssLabel);
 
                 // Register right-click events for context menu actions.
                 m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
@@ -338,15 +388,29 @@ namespace Unity.UI.Builder
                 if (isPartOfParentDocument)
                     row.AddToClassList(BuilderConstants.ExplorerItemHiddenClassName);
 
+                var ownerUxmlLabel = labelCont.Q<Label>("style-sheet-uxml-name");
                 // Show name of UXML file that USS file 'belongs' to.
                 if (!string.IsNullOrEmpty(owningUxmlPath))
                 {
                     var pathStr = Path.GetFileName(owningUxmlPath);
-                    var label = new Label(BuilderConstants.TripleSpace + pathStr);
-                    label.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-                    label.AddToClassList(BuilderConstants.ElementTypeClassName);
-                    label.AddToClassList("unity-builder-explorer-tree-item-template-path"); // Just make it look a bit shaded.
-                    labelCont.Add(label);
+                    if (ownerUxmlLabel == null)
+                    {
+                        ownerUxmlLabel = new Label(BuilderConstants.TripleSpace + pathStr) { name = "style-sheet-uxml-name" };
+                        ownerUxmlLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
+                        ownerUxmlLabel.AddToClassList(BuilderConstants.ElementTypeClassName);
+                        ownerUxmlLabel.AddToClassList("unity-builder-explorer-tree-item-template-path"); // Just make it look a bit shaded.
+                        labelCont.Add(ownerUxmlLabel);
+                    }
+                    else
+                    {
+                        ownerUxmlLabel.style.display = DisplayStyle.Flex;
+                    }
+                    ownerUxmlLabel.text = BuilderConstants.TripleSpace + pathStr;
+                }
+                else if (ownerUxmlLabel != null)
+                {
+                    ownerUxmlLabel.style.display = DisplayStyle.None;
+                    ownerUxmlLabel.text = string.Empty;
                 }
 
                 return;
@@ -354,11 +418,29 @@ namespace Unity.UI.Builder
             else if (BuilderSharedStyles.IsSelectorElement(documentElement))
             {
                 var selectorParts = BuilderSharedStyles.GetSelectorParts(documentElement);
+                var styleSheetLabel = labelCont.Q<Label>("style-sheet-asset-name");
+                if (styleSheetLabel != null)
+                {
+                    styleSheetLabel.style.display = DisplayStyle.None;
+                    styleSheetLabel.text = string.Empty;
+                }
 
-                var selectorLabelCont = new VisualElement();
-                selectorLabelCont.AddToClassList(BuilderConstants.ExplorerItemSelectorLabelContClassName);
+                var ownerUxmlLabel = labelCont.Q<Label>("style-sheet-uxml-name");
+                if (ownerUxmlLabel != null)
+                {
+                    ownerUxmlLabel.style.display = DisplayStyle.None;
+                    ownerUxmlLabel.text = string.Empty;
+                }
 
-                labelCont.Add(selectorLabelCont);
+                var selectorLabelCont = labelCont.Q<VisualElement>(className: BuilderConstants.ExplorerItemSelectorLabelContClassName);
+                if (selectorLabelCont == null)
+                {
+                    selectorLabelCont = new VisualElement();
+                    selectorLabelCont.AddToClassList(BuilderConstants.ExplorerItemSelectorLabelContClassName);
+                    labelCont.Add(selectorLabelCont);
+                }
+                selectorLabelCont.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+                RemoveSelectorLabelContainerContent(selectorLabelCont);
 
                 // Register right-click events for context menu actions.
                 m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
@@ -369,22 +451,20 @@ namespace Unity.UI.Builder
                 foreach (var partStr in selectorParts)
                 {
                     Label label;
-                    VisualElement pill = null;
+                    BuilderClassPill pill = null;
 
                     if (partStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol))
                     {
-                        m_ClassPillTemplate.CloneTree(selectorLabelCont);
-                        pill = selectorLabelCont.contentContainer.ElementAt(selectorLabelCont.childCount - 1);
-                        label = pill.Q<Label>("class-name-label");
+                        pill = m_ClassPillsPool.Get();
                         pill.name = k_PillName;
-                        pill.AddToClassList(k_TreeItemPillClass);
-                        pill.SetProperty(BuilderConstants.ExplorerStyleClassPillClassNameVEPropertyName, partStr);
-                        pill.userData = documentElement;
+                        pill.text = partStr;
+                        pill.selectorAsString = partStr;
+                        pill.style.display = DisplayStyle.Flex;
+                        pill.tooltip = string.Empty;
 
-                        label.text = partStr;
+                        label = pill.labelElement;
+                        selectorLabelCont.contentContainer.Add(pill);
 
-                        // We want class dragger first because it has priority on the pill label when drag starts.
-                        m_ClassDragger.RegisterCallbacksOnTarget(pill);
                         m_ExplorerDragger.RegisterCallbacksOnTarget(pill);
                     }
                     else if (partStr.StartsWith(BuilderConstants.UssSelectorNameSymbol))
@@ -420,6 +500,8 @@ namespace Unity.UI.Builder
                         .FullSelectorText);
 
                     label.AddToClassList(BuilderConstants.SelectorLabelClassName);
+                    // Store the document element to use it when updating the tooltip, if applicable.
+                    label.userData = documentElement;
 
                     if (shouldElideText)
                     {
@@ -427,6 +509,7 @@ namespace Unity.UI.Builder
 
                         if (selectorParts.Count == 1)
                         {
+                            label.RemoveFromClassList(BuilderConstants.SelectorLabelMultiplePartsClassName);
                             m_LabelsToResize.Add(label);
                         }
                         else
@@ -437,16 +520,28 @@ namespace Unity.UI.Builder
 
                         label.RegisterCallback<GeometryChangedEvent>(e =>
                         {
-                            if (selectorParts.Count == 1)
+                            // Should not elide, therefore we early out.
+                            if (elementInfoVisibilityState.HasFlag(BuilderExplorer.BuilderElementInfoVisibilityState.FullSelectorText))
+                            {
+                                return;
+                            }
+
+                            if (BuilderSharedStyles.GetSelectorParts(label.userData as VisualElement).Count == 1)
                             {
                                 UpdateResizableLabelWidthInSelector(label);
                             }
+                            else
+                            {
+                                label.style.maxWidth = BuilderConstants.ClassNameInPillMinWidth;
+                            }
 
-                            var fullSelectorText = BuilderSharedStyles.GetSelectorString(documentElement);
-                            UpdateTooltips(label, pill, explorerItem, fullSelectorText, partStr);
+                            UpdateTooltips(label, pill);
                         });
                     }
                 }
+
+                // Since we are no longer clearing, we need to remove the old instance of the rename field. Otherwise, rename will rename the last bound record instead of the latest
+                labelCont.Q<TextField>(BuilderConstants.ExplorerItemRenameTextfieldName)?.RemoveFromHierarchy();
 
                 // Textfield to rename element in hierarchy.
                 var renameField = explorerItem.CreateRenamingTextField(documentElement, null, m_Selection);
@@ -461,6 +556,11 @@ namespace Unity.UI.Builder
 
                 return;
             }
+
+            // If we are not dealing with StyleSheets, we clear the container.
+            explorerItem.Clear();
+            explorerItem.Add(labelCont);
+            labelCont.Clear();
 
             if (BuilderSharedStyles.IsDocumentElement(documentElement))
             {
@@ -605,13 +705,13 @@ namespace Unity.UI.Builder
             m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
         }
 
-        private void UpdateTooltips(Label label, VisualElement pill, BuilderExplorerItem explorerItem,
-            string fullSelectorText, string selectorPart)
+        void UpdateTooltips(Label label, BuilderClassPill pill)
         {
-            var tooltipElement = pill ?? label;
-            var row = explorerItem.GetFirstAncestorWithClass(BaseTreeView.itemUssClassName);
+            VisualElement tooltipElement = pill == null ? label : pill;
+            var row = tooltipElement.GetFirstAncestorWithClass(BaseTreeView.itemUssClassName);
+            var fullSelectorText = BuilderSharedStyles.GetSelectorString(label.userData as VisualElement);
 
-            tooltipElement.tooltip = label.isElided ? selectorPart : string.Empty;
+            tooltipElement.tooltip = label.isElided ? label.text : string.Empty;
 
             if (label.isElided)
             {
@@ -619,6 +719,7 @@ namespace Unity.UI.Builder
             }
             else
             {
+                var explorerItem = tooltipElement.GetFirstOfType<BuilderExplorerItem>();
                 row.tooltip = explorerItem.elidableLabels.Any(x => x.isElided) ? fullSelectorText : string.Empty;
             }
         }
