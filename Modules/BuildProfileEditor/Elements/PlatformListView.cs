@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Handlers;
 using UnityEngine;
@@ -132,10 +133,7 @@ namespace UnityEditor.Build.Profile.Elements
                 else
                     editableBuildProfileLabel.SetActiveIndicator(false);
 
-                if (!BuildProfileContext.IsClassicPlatformProfile(profile))
-                {
-                    editableBuildProfileLabel.tooltip = AssetDatabase.GetAssetPath(profile);
-                }
+                element.RegisterCallback<PointerEnterEvent, BuildProfile>(PointerEntersBuildProfileElement, profile);
             };
             m_BuildProfilesListView.selectionChanged += m_Parent.OnCustomProfileSelected;
             m_BuildProfilesListView.unbindItem = UnbindItem;
@@ -146,6 +144,17 @@ namespace UnityEditor.Build.Profile.Elements
             {
                 m_PlatformListView.RegisterCallback<GeometryChangedEvent>(SelectLastEnabledPlatformOnGeometryChange);
             }
+        }
+
+        private static void PointerEntersBuildProfileElement(PointerEnterEvent evt, BuildProfile profile)
+        {
+            if (evt.currentTarget is not BuildProfileListEditableLabel buildProfileLabel)
+                return;
+
+            var tooltipMessage = BuildProfileContext.IsClassicPlatformProfile(profile)
+                ? string.Empty
+                : AssetDatabase.GetAssetPath(profile);
+            buildProfileLabel.tooltip = tooltipMessage;
         }
 
         internal void ClearPlatformSelection() => m_PlatformListView.ClearSelection();

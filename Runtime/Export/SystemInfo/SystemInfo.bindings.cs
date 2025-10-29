@@ -426,6 +426,11 @@ namespace UnityEngine
             get { return SupportsVariableRateShading(); }
         }
 
+        public static int maxTiledPixelStorageSize
+        {
+            get { return MaxTiledPixelStorageSize(); }
+        }
+
         // The enums are only marked as obsolete in the editor.
         /// <summary>
         /// Determine if enum value is obsolete.
@@ -1067,6 +1072,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetRenderTextureSupportedMSAASampleCount")]
         extern public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc);
 
+        [FreeFunction("ScriptingGraphicsCaps::GetTiledRenderTargetStorageSize")]
+        extern public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount);
+
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
 
@@ -1096,5 +1104,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsVariableRateShading")]
         static extern bool SupportsVariableRateShading();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxTiledPixelStorageSize")]
+        static extern int MaxTiledPixelStorageSize();
     }
 }
