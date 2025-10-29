@@ -132,6 +132,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             messagingService.Receive<StopMessage>(_ => m_PlaymodeMessageQueue.AddEvent(PlayModeMessageTypes.Stop));
             messagingService.Receive<OpenPlayerWindowMessage>(_ =>
             {
+                EditorModesUtility.CloseCurrentWindow();
                 EditorModesUtility.SwitchLayoutToMode(EditorApplication.isPlaying);
             });
 

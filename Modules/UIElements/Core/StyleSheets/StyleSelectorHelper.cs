@@ -334,8 +334,11 @@ namespace UnityEngine.UIElements.StyleSheets
                 for (var i = context.styleSheetCount - 1; i >= 0; --i)
                 {
                     var styleSheet = context.GetStyleSheetAt(i);
+
                     if (!processedStyleSheets.Add(styleSheet))
                         continue;
+
+                    styleSheet.RebuildIfNecessary();
 
                     // If the sheet is added on the element consider it as :root
                     if (i > parentSheetIndex)

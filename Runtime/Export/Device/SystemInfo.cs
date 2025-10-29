@@ -77,6 +77,8 @@ namespace UnityEngine.Device
 
         public static bool supportsVariableRateShading => ShimManager.systemInfoShim.supportsVariableRateShading;
 
+        public static int maxTiledPixelStorageSize => ShimManager.systemInfoShim.maxTiledPixelStorageSize;
+
         public static bool hasTiledGPU => ShimManager.systemInfoShim.hasTiledGPU;
 
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.systemInfoShim.hasHiddenSurfaceRemovalOnGPU;
@@ -277,6 +279,11 @@ namespace UnityEngine.Device
         public static bool SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat format)
         {
             return ShimManager.systemInfoShim.SupportsRandomWriteOnRenderTextureFormat(format);
+        }
+
+        public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount)
+        {
+            return ShimManager.systemInfoShim.GetTiledRenderTargetStorageSize(format, sampleCount);
         }
 
     }

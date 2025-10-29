@@ -632,14 +632,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     if (info.TryGetValue(k_ManifestFieldAuthor, out var value))
                     {
-                        var authorInfo = value as Dictionary<string, object>;
-                        packageState.info.author = new PackageAuthor
-                        {
-                            enabled = true,
-                            name = authorInfo.TryGetValue(k_ManifestFieldName, out var name) ? name as string : string.Empty,
-                            url = authorInfo.TryGetValue(k_ManifestFieldUrl, out var url) ? url as string : string.Empty,
-                            email = authorInfo.TryGetValue(k_ManifestFieldEmail, out var email) ? email as string : string.Empty
-                        };
+                        if (value is Dictionary<string, object> authorInfo)
+                            packageState.info.author = new PackageAuthor
+                            {
+                                enabled = true,
+                                name = authorInfo.TryGetValue(k_ManifestFieldName, out var name) ? name as string : string.Empty,
+                                url = authorInfo.TryGetValue(k_ManifestFieldUrl, out var url) ? url as string : string.Empty,
+                                email = authorInfo.TryGetValue(k_ManifestFieldEmail, out var email) ? email as string : string.Empty
+                            };
+                        else
+                            packageState.info.author = new PackageAuthor
+                            {
+                                enabled = true,
+                                name = value as string ?? string.Empty,
+                                url = string.Empty,
+                                email = string.Empty
+                            };
                     }
                     else
                     {

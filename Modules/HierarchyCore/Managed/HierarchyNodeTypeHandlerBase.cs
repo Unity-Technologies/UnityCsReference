@@ -181,6 +181,14 @@ namespace Unity.Hierarchy
         {
         }
 
+        /// <summary>
+        /// Called after the HierarchyViewModel finishes being updated.
+        /// </summary>
+        /// <param name="viewModel">The hierarchy view model.</param>
+        protected virtual void ViewModelPostUpdate(HierarchyViewModel viewModel)
+        {
+        }
+
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyNodeTypeHandlerBase FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(handlePtr).Target : null;
@@ -269,6 +277,9 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static void InvokeSearchEnd(IntPtr handlePtr) => FromIntPtr(handlePtr).SearchEnd();
+
+        [RequiredByNativeCode]
+        static void InvokeViewModelPostUpdate(IntPtr handlePtr, IntPtr viewModelPtr) => FromIntPtr(handlePtr).ViewModelPostUpdate(HierarchyViewModel.FromIntPtr(viewModelPtr));
         #endregion
 
         #region Obsolete public APIs to remove in 2024

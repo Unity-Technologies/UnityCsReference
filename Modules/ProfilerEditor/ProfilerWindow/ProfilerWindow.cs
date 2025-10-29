@@ -116,6 +116,10 @@ namespace UnityEditor
         const int k_NoModuleSelected = -1;
         const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
+        const string k_FrameSelectionRangeStartKey = "ProfilerWindow.FrameSelectionRangeStart";
+        const string k_FrameSelectionRangeEndKey = "ProfilerWindow.FrameSelectionRangeEnd";
+        const string k_BottlenecksChartIsSelected = "ProfilerWindow.BottlenecksChartIsSelected";
+        const int k_NoFrameSelectionSession = -99;
 
         static readonly Vector2 k_MinimumWindowSize = new Vector2(900f, 216f);
         // the minimum width required to draw all the buttons on the toolbar. This is used to truncate the active connection name.
@@ -284,7 +288,26 @@ namespace UnityEditor
         // At the time of writing, this is only used by the Highlights module to support range
         // selection. Over time, users of selectedFrameIndex can be migrated to support a
         // range selection before updating the public API.
-        internal Range? SelectedFrameRange { get; set; }
+        private Range? m_SelectedFrameRange;
+
+        internal Range? SelectedFrameRange
+        {
+            get
+            {
+                if (m_SelectedFrameRange == null && ProfilerHasAnyFrames())
+                {
+                    // SessionState doesn't appear to have a "HasKey", so try getting with an invalid default.
+                    var rangeStart = SessionState.GetInt(k_FrameSelectionRangeStartKey, k_NoFrameSelectionSession);
+                    var rangeEnd = SessionState.GetInt(k_FrameSelectionRangeEndKey, k_NoFrameSelectionSession);
+
+                    if (rangeStart != k_NoFrameSelectionSession)
+                        m_SelectedFrameRange = new Range(rangeStart, rangeEnd);
+                }
+
+                return m_SelectedFrameRange;
+            }
+            set => m_SelectedFrameRange = value;
+        }
 
         // these properties act as a redirect to ProfilerDriver for now.
         // Once the Profiler Window isn't so tightly coupled to the ProfilerDriver singleton anymore, they will relate just the data stream displayed in this instance.
@@ -434,7 +457,15 @@ namespace UnityEditor
             if (moduleIndexToSelect != k_NoModuleSelected)
                 SelectModuleAtIndex(moduleIndexToSelect);
             else
-                SelectFirstActiveModule();
+            {
+                // If we were looking at the highlights/bottlenecks view and had a domain reload, refocus it
+                if (SessionState.GetBool(k_BottlenecksChartIsSelected, false) && ProfilerHasAnyFrames())
+                {
+                    ((BottlenecksChartViewController.IResponder)this).ChartViewSelectedFrameRange(SelectedFrameRange);
+                }
+                else
+                    SelectFirstActiveModule();
+            }
         }
 
         void OnDisable()
@@ -814,6 +845,13 @@ namespace UnityEditor
                 EditorPrefs.SetFloat(k_CapturesSplitViewFixedPaneSizePreferenceKey, m_CapturesListSplitView.fixedPane.resolvedStyle.width);
 
             SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, m_SelectedModuleIndex);
+
+            // Don't go via accessor, since we save view on shutdown - at which point ProfilerDriver is
+            // no longer around, and the accessor makes use of that with ProfilerHasAnyFrames.
+            SessionState.SetInt(k_FrameSelectionRangeStartKey, m_SelectedFrameRange == null ? k_NoFrameSelectionSession : m_SelectedFrameRange.Value.Start.Value);
+            SessionState.SetInt(k_FrameSelectionRangeEndKey, m_SelectedFrameRange == null ? k_NoFrameSelectionSession : m_SelectedFrameRange.Value.End.Value);
+
+            SessionState.SetBool(k_BottlenecksChartIsSelected, IsBottleneckViewVisible());
         }
 
         void Awake()
@@ -1491,7 +1529,7 @@ namespace UnityEditor
             float maxWidth, minWidth;
             EditorStyles.toolbarLabel.CalcMinMaxWidth(frameCountLabel, out minWidth, out maxWidth);
             if (minWidth > m_FrameCountLabelMinWidth)
-                // to avoid increasing the size in too fine graned intervals, add a 10 pixel buffer.
+                // to avoid increasing the size in too fine-grained intervals, add a 10 pixel buffer.
                 m_FrameCountLabelMinWidth = minWidth + 10;
             GUILayout.Label(frameCountLabel, EditorStyles.toolbarLabel, GUILayout.MinWidth(m_FrameCountLabelMinWidth));
         }

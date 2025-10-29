@@ -107,8 +107,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
             if (instance != null && instance.IsActive())
             {
-                var nodeStatus = instance.GetCurrentNodeStatus();
-                var currentStage = instance.GetCurrentStage();
                 if (initialiseFleetNode is InitialiseFleetNode fleetNode)
                 {
                     SetFieldValues(fleetNode);
@@ -120,14 +118,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
 
                 SetAllocationButtonEnabled(projectId, environmentId, authToken, fleetIDValue, instance, fleetNode: initialiseFleetNode);
-                m_ParentInstanceView.RefreshStatusUI(currentStage, nodeStatus);
                 return;
             }
 
             StopMetricsPolling();
             SetAllocationButtonEnabled(projectId, environmentId, authToken, fleetIDValue, instance, fleetNode: initialiseFleetNode);
             m_AllocateToggle.SetEnabled(!EditorApplication.isPlaying && !instance.IsActive());
-            m_ParentInstanceView.RefreshStatusUI(ExecutionStage.None, new List<NodeStatus>());
         }
 
         internal void BindSimulatedFoldOutElement(VisualElement contentContainer, VisualElement statusContainer,

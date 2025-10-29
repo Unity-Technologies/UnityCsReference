@@ -373,6 +373,8 @@ namespace UnityEngine.UIElements.UIR
             bool shouldResetRT = false;
             RenderTexture oldRT = null;
 
+            float pixelsPerPoint = panel.scaledPixelsPerPoint;
+
             Rect scissor;
             if (renderTree == m_RootRenderTree)
             {
@@ -388,6 +390,9 @@ namespace UnityEngine.UIElements.UIR
                 Camera.SetupCurrent(null);
                 RenderTexture.active = nestedTreeRT;
                 shouldResetRT = true;
+
+                // Filters are rendered in an unscaled render target, so we force the pixelsPerPoint to 1.
+                pixelsPerPoint = 1.0f;
 
                 var viewport = UIRUtility.CastToRect(nestedTreeViewport);
 
@@ -410,7 +415,7 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 scissor,
-                panel.scaledPixelsPerPoint,
+                pixelsPerPoint,
                 false,
                 textureSlotCount,
                 (nestedTreeRT != null),

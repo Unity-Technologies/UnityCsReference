@@ -754,6 +754,19 @@ namespace UnityEditor
         [RequiredByNativeCode]
         [AutoStaticsCleanupOnCodeReload]
         private static List<BakeDelegate> s_BakeDelegates = new() { };
+
+        [RequiredByNativeCode]
+        internal static bool HasAdditionalBakedData()
+        {
+            var apvMethod = Type.GetType("UnityEngine.Rendering.AdaptiveProbeVolumes, Unity.RenderPipelines.Core.Editor")?
+                .GetMethod("CurrentSceneHasBakedData", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+            if (apvMethod == null)
+                return false;
+
+            // Return true if we have baked lighting data that the native side doesn't know about, such as APV.
+            return (bool)apvMethod.Invoke(null, null);
+        }
     }
 }
 

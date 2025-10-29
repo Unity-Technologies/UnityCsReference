@@ -116,34 +116,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         buildProfile = buildProfile,
                         locationPathName = InternalUtilities.AddBuildExtension(buildPath, buildProfile),
                     });
-
+                
                 if (report == null)
                     throw new Exception("BuildPipeline.BuildPlayer failed to generate a build report. The build artifact is likely corrupted.");
                 if (report.summary.result != BuildResult.Succeeded)
                 {
                     throw new Exception(report.SummarizeErrors());
                 }
+
+                // If the build is successful, set the node outputs
+                var outputPath = Path.GetDirectoryName(report.summary.outputPath);
+                var executablePath = ExtractExecutablePath(report);
+                SetOutput(OutputPath, outputPath);
+                SetOutput(ExecutablePath, executablePath);
+                SetOutput(RelativeExecutablePath, Path.GetRelativePath(outputPath, executablePath));
+                SetOutput(BuildHash, ComputeBuildHash(outputPath));
+                SetOutput(BuildReport, report);
             }
             catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+            finally
             {
                 // Restore original product name and build profile state
                 PlayerSettings.productName = originalProductName;
                 InternalUtilities.BuildProfileState.Restore(previousProfile);
-                Debug.LogException(e);
-                throw;
             }
-
-            var outputPath = Path.GetDirectoryName(report.summary.outputPath);
-            var executablePath = ExtractExecutablePath(report);
-            SetOutput(OutputPath, outputPath);
-            SetOutput(ExecutablePath, executablePath);
-            SetOutput(RelativeExecutablePath, Path.GetRelativePath(outputPath, executablePath));
-            SetOutput(BuildHash, ComputeBuildHash(outputPath));
-            SetOutput(BuildReport, report);
-
-            // Restore the product name and the active build target, it's sub-target and the multiplayer role to the state they were prior to the build.
-            PlayerSettings.productName = originalProductName;
-            InternalUtilities.BuildProfileState.Restore(previousProfile);
         }
 
         private static readonly ProfilerMarker s_ComputeBuildHash = new("EditorBuildNode.ComputeBuildHash");

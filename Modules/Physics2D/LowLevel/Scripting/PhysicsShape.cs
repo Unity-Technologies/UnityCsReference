@@ -206,6 +206,11 @@ namespace UnityEngine.LowLevelPhysics2D
             public readonly int pointCount => m_PointCount;
 
             /// <summary>
+            /// The number of manifold points available that are speculative, in the range [0, 2].
+            /// </summary>
+            public readonly int speculativePointCount => m_Points.speculativePointCount;
+
+            /// <summary>
             /// Contains all the detail related to the geometry and dynamics of the contact.
             /// You may use the <see cref="ManifoldPoint.totalNormalImpulse"/> to determine if there was an interaction during the time step.
             /// </summary>
@@ -264,6 +269,11 @@ namespace UnityEngine.LowLevelPhysics2D
                 /// Did this contact point exist the previous step?
                 /// </summary>
                 public readonly bool persisted => m_Persisted;
+
+                /// <summary>
+                /// Is the contact point speculative i.e. not currently interacting?
+                /// </summary>
+                public readonly bool speculative => totalNormalImpulse > 0.0f;
 
                 #region Internal
 
@@ -327,6 +337,11 @@ namespace UnityEngine.LowLevelPhysics2D
                         throw new IndexOutOfRangeException($"{index} must be in the range [0, 1]");
                     }
                 }
+
+                /// <summary>
+                /// The number of manifold points available that are speculative, in the range [0, 2].
+                /// </summary>
+                public readonly int speculativePointCount => (m_ContactInfo0.speculative ? 1 : 0) + (m_ContactInfo1.speculative ? 1 : 0);
 
                 #region Internal
 
@@ -1173,13 +1188,15 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly MoverData moverData { get => PhysicsShape_GetMoverData(this); set => PhysicsShape_SetMoverData(this, value); }
 
         /// <summary>
-        /// Apply a wind force against a shape with a specified drag and lift.
+        /// Apply a wind force to the shape body using the density of air
+        /// This considers the projected area of the shape in the wind direction.
+        /// This also considers the relative velocity of the shape.
         /// This only has an effect if the shape body is <see cref="UnityEngine.RigidbodyType2D.Dynamic"/>.
         /// This only has an effect of shapes of type Circle, Capsule or Polygon.
         /// </summary>
-        /// <param name="force">The force to be projected against the shape.</param>
-        /// <param name="drag">The drag to apply to the shape in the direction of the force.</param>
-        /// <param name="lift">The lift produced by the force.</param>
+        /// <param name="force">The wind velocity in world-space.</param>
+        /// <param name="drag">The drag coefficient which is a force that opposes the relative velocity.</param>
+        /// <param name="lift">The lift coefficient which is a force that is perpendicular to the relative velocity.</param>
         /// <param name="wake">Whether the shape body should be woken or not.</param>
         public readonly void ApplyWind(Vector2 force, float drag, float lift, bool wake = true) => PhysicsShape_ApplyWind(this, force, drag, lift, wake);
 

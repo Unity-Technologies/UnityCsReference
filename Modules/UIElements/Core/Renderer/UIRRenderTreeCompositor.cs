@@ -289,14 +289,7 @@ namespace UnityEngine.UIElements.UIR
                     writeMargins = GetWriteMargins(parentOp.effect, parentOp.filter);
                     var inflated = UIRUtility.InflateByMargins(UIRUtility.InflateByMargins(r, readMargins), writeMargins);
                     rectInt = UIRUtility.CastToRectInt(inflated);
-                }
-                else
-                {
-                    rectInt = UIRUtility.CastToRectInt(r);
-                }
 
-                if (op.parent?.type == DrawOperationType.Effect)
-                {
                     var sourceBounds = r;
                     sourceBounds = UIRUtility.InflateByMargins(sourceBounds, writeMargins);
 
@@ -305,6 +298,10 @@ namespace UnityEngine.UIElements.UIR
                     // Store the texel offsets in "pixels" since we do not know the texture size yet.
                     // They will be converted to UVs once rendered.
                     op.parent.drawSourceTexOffsets = new Vector4(readMargins.left, readMargins.top, readMargins.right, readMargins.bottom);
+                }
+                else
+                {
+                    rectInt = UIRUtility.CastToRectInt(r);
                 }
 
                 op.bounds = rectInt;

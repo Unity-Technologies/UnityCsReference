@@ -13,7 +13,7 @@ namespace UnityEngine.LowLevelPhysics2D
     ///
     ///- <see cref="LowLevelPhysics2D.PhysicsWorldDefinition"/>
     ///- <see cref="LowLevelPhysics2D.PhysicsBodyDefinition"/>
-    ///- <see cref="LowLevelPhysics2D.PhysicsShape"/>
+    ///- <see cref="LowLevelPhysics2D.PhysicsShapeDefinition"/>
     ///- <see cref="LowLevelPhysics2D.PhysicsChainDefinition"/>
     ///
     /// </summary>

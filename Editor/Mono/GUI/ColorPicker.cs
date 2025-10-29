@@ -958,7 +958,7 @@ namespace UnityEditor
             {
                 GUILayout.Space(-(EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing)); // pull up to reuse space
                 var presetsRect = GUILayoutUtility.GetRect(0, Mathf.Clamp(m_ColorLibraryEditor.contentHeight, 20f, 250f));
-                m_ColorLibraryEditor.OnGUI(presetsRect, instance.GetGUIColor(color));
+                m_ColorLibraryEditor.OnGUI(presetsRect, color);
             }
         }
 

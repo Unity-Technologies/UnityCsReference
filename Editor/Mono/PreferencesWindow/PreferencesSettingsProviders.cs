@@ -939,36 +939,10 @@ By default, Windows will combine these under a single taskbar item.");
             var toggleLabelWidth = EditorStyles.label.CalcSize(SceneViewProperties.createObjectsAtPrefabPosition).x;
             EditorGUIUtility.labelWidth = toggleLabelWidth;
 
-            GUIContent PlacementModeToGUIContent(GOCreationCommands.PlacementMode mode)
-            {
-                if (mode == GOCreationCommands.PlacementMode.SceneIntersection)
-                    return SceneViewProperties.createObjectsAtRaycastToScenePivot;
-                else if(mode == GOCreationCommands.PlacementMode.WorldOrigin)
-                    return SceneViewProperties.createObjectsAtWorldOrigin;
-                else if(mode == GOCreationCommands.PlacementMode.ScenePivot)
-                    return SceneViewProperties.createObjectsAtScenePivot;
-
-                return GUIContent.none;
-            }
-            void AddItem(GenericMenu menu, GOCreationCommands.PlacementMode mode)
-            {
-                menu.AddItem(PlacementModeToGUIContent(mode), m_CreatePlacementMode == mode, mode =>
-                {
-                    m_CreatePlacementMode = (GOCreationCommands.PlacementMode)mode;
-                    WritePreferences();
-                }, mode);
-            }
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(SceneViewProperties.placementMode);
-            if (EditorGUILayout.DropdownButton(PlacementModeToGUIContent(m_CreatePlacementMode), FocusType.Keyboard))
-            {
-                var menu = new GenericMenu();
-                AddItem(menu, GOCreationCommands.PlacementMode.SceneIntersection);
-                AddItem(menu, GOCreationCommands.PlacementMode.WorldOrigin);
-                AddItem(menu, GOCreationCommands.PlacementMode.ScenePivot);
-                menu.ShowAsContext();
-            }
-            EditorGUILayout.EndHorizontal();
+            var previousPlacementMode = m_CreatePlacementMode;
+            var newPlacementMode = (GOCreationCommands.PlacementMode) EditorGUILayout.EnumPopup(new GUIContent(SceneViewProperties.placementMode), previousPlacementMode);
+            if (newPlacementMode != previousPlacementMode)
+                m_CreatePlacementMode = newPlacementMode;
 
             m_PlacementUsePrefabSerializedPositionOnHierarchyDrop = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtPrefabPosition, m_PlacementUsePrefabSerializedPositionOnHierarchyDrop);
 

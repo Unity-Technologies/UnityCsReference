@@ -62,6 +62,9 @@ namespace Unity.Hierarchy.Editor
             HierarchyLogging.Log("HierarchyGlobalSelectionHandler.SyncGlobalSelectionFromViewModel()");
             var viewModelSelection = FillEntityIdBufferFromViewModel();
 
+            if (Selection.GetEntityIdsUnsafe().SequenceEqual(viewModelSelection))
+                return;
+
             m_SkipNextGlobalSelectionEvent = true;
             Selection.SetEntityIdsUnsafe(viewModelSelection);
         }
@@ -124,6 +127,12 @@ namespace Unity.Hierarchy.Editor
             if (m_EntityIdBuffer.Length < count)
                 m_EntityIdBuffer = new EntityId[count];
             return m_EntityIdBuffer.AsSpan(0, count);
+        }
+
+        internal static class TestHelper
+        {
+            public static bool IsSkipNextGlobalSelectionEvent(HierarchyGlobalSelectionHandler handler) =>
+                handler.m_SkipNextGlobalSelectionEvent;
         }
     }
 }
