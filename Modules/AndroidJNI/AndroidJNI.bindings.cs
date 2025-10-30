@@ -464,6 +464,9 @@ namespace UnityEngine
         // Returns the number of global references to delete in queue.
         [ThreadSafe]
         internal static extern uint GetQueueGlobalRefsCount();
+        // Force delete all global references in queue.
+        [ThreadSafe]
+        internal static extern void CleanQueueGlobalRefs();
         // Creates a new global weak reference to the object referred to by the <tt>obj</tt> argument.
         [ThreadSafe]
         public static extern IntPtr NewWeakGlobalRef(IntPtr obj);

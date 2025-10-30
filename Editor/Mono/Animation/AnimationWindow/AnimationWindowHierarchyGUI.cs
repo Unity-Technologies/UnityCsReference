@@ -283,13 +283,13 @@ namespace UnityEditorInternal
                         nodePrefix = string.IsNullOrEmpty(gameObjectName) ? "" : gameObjectName + " : ";
                     }
 
-                    Styles.content = new GUIContent(nodePrefix + node.displayName + warningText, GetIconForItem(node), tooltipText);
+                    Styles.content = new GUIContent(nodePrefix + node.displayName + warningText, GetEffectiveIcon(node, selected, focused), tooltipText);
 
                     textColor = EditorStyles.label.normal.textColor;
                 }
                 else
                 {
-                    Styles.content = new GUIContent(node.displayName + warningText, GetIconForItem(node), tooltipText);
+                    Styles.content = new GUIContent(node.displayName + warningText, GetEffectiveIcon(node, selected, focused), tooltipText);
 
                     textColor = EditorStyles.label.normal.textColor;
 

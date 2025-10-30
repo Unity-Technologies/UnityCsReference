@@ -86,6 +86,9 @@ namespace UnityEditor
                     Debug.LogError(string.Format("Error loading file {0}. Error: {1}", filePath, e));
                     return defaultValue;
                 }
+                
+                if (string.IsNullOrEmpty(jsonString))
+                    return defaultValue;
 
                 try
                 {

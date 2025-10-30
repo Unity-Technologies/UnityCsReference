@@ -594,7 +594,7 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
             startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Length - 1));
@@ -626,7 +626,7 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Count : instanceCount;
             startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Count - 1));
@@ -655,7 +655,7 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
             startInstance = Math.Clamp(startInstance, 0, Math.Max(0, instanceData.Length - 1));
@@ -684,7 +684,7 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = Graphics.GetCachedRenderInstancedDataLayout(typeof(T));
 
             if (instanceData.Length > Graphics.kMaxDrawMeshInstanceCount)
                 throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));

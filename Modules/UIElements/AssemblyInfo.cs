@@ -43,6 +43,7 @@ using System.Runtime.CompilerServices;
 // Reducing this list means to improve the API design of this module.
 
 [assembly: InternalsVisibleTo("UnityEngine.UI")] // com.unity.ugui
+[assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")] // com.unity.shadergraph
 
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
 [assembly: InternalsVisibleTo("UnityEditor.EditorToolbarModule")]

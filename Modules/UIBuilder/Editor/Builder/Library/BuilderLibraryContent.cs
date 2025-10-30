@@ -344,8 +344,8 @@ namespace Unity.UI.Builder
                         colorKeys = new[]
                         {
                             new GradientColorKey(Color.red, 0),
-                            new GradientColorKey(Color.blue, 10),
-                            new GradientColorKey(Color.green, 20)
+                            new GradientColorKey(Color.blue, .33f),
+                            new GradientColorKey(Color.green, .66f)
                         }
                     }
                 })

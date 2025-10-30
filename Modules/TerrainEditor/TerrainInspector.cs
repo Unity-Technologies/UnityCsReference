@@ -1054,12 +1054,7 @@ namespace UnityEditor
 
             ActivateTerrainRenderFlags();
 
-            m_Lighting = new RendererLightingSettings(serializedObject);
-            m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
-            m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
-            m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
-            m_Lighting.showPreviewLightmap = new SavedBool($"{target.GetType()}.ShowPreviewLightmapSettings", false);
-            m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
+            ActivateRendererLightingSettings();
 
             m_TerrainToolContext = new TerrainToolShortcutContext(this);
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_TerrainToolContext);
@@ -1147,6 +1142,16 @@ namespace UnityEditor
                 // When switching tool reactivate all renderflags
                 m_Terrain.editorRenderFlags = TerrainRenderFlags.All;
             }
+        }
+
+        private void ActivateRendererLightingSettings()
+        {
+            m_Lighting = new RendererLightingSettings(serializedObject);
+            m_Lighting.showLightingSettings = new SavedBool($"{target.GetType()}.ShowLightingSettings", true);
+            m_Lighting.showLightmapSettings = new SavedBool($"{target.GetType()}.ShowLightmapSettings", true);
+            m_Lighting.showBakedLightmap = new SavedBool($"{target.GetType()}.ShowBakedLightmapSettings", false);
+            m_Lighting.showPreviewLightmap = new SavedBool($"{target.GetType()}.ShowPreviewLightmapSettings", false);
+            m_Lighting.showRealtimeLightmap = new SavedBool($"{target.GetType()}.ShowRealtimeLightmapSettings", false);
         }
 
         // this is a bunch of tracking to ensure we don't mess up the tool mode callbacks
@@ -2110,6 +2115,10 @@ namespace UnityEditor
 
         public void RenderLightingFields()
         {
+            if (m_Lighting == null)
+            {
+                ActivateRendererLightingSettings();
+            }
             m_Lighting.RenderTerrainSettings();
         }
 

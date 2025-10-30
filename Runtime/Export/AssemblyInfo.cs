@@ -29,6 +29,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS5.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreScarlett.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreXboxOne.Extensions")]

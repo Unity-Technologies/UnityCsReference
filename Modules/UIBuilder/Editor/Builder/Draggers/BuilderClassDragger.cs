@@ -24,9 +24,7 @@ namespace Unity.UI.Builder
 
         protected override VisualElement CreateDraggedElement()
         {
-            var classPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
-                BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
-            var pill = classPillTemplate.CloneTree();
+            var pill = new BuilderClassPill();
             pill.AddToClassList(s_DraggableStyleClassPillClassName);
             return pill;
         }
@@ -38,7 +36,7 @@ namespace Unity.UI.Builder
 
         protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
         {
-            m_ClassNameBeingDragged = target.GetProperty(BuilderConstants.ExplorerStyleClassPillClassNameVEPropertyName) as string;
+            m_ClassNameBeingDragged = (target as BuilderClassPill)?.selectorAsString;
 
             // if a ChildSubDocument is open, make sure that style class is part of active stylesheet, otherwise refuse drag
             if (!paneWindow.document.activeOpenUXMLFile.isChildSubDocument)
@@ -57,6 +55,24 @@ namespace Unity.UI.Builder
             }
 
             return false;
+        }
+
+        public override void RegisterCallbacksOnTarget(VisualElement target)
+        {
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<KeyUpEvent>(OnEsc);
+        }
+
+        public override void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
+        {
+            var target = evt.elementTarget;
+
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<KeyUpEvent>(OnEsc);
         }
 
         protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)

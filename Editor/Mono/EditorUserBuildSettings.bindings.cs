@@ -1016,12 +1016,22 @@ namespace UnityEditor
             set;
         }
 
-        // Enable shader debugging using NVN Graphics Debugger
+        //  Enable NVN aftermath (legacy, use switchNVNAftermathlevel instead).
+        [Obsolete("switchNVNAftermath is deprecated, use switchNVNAftermathLevel instead.")]
         public static extern bool switchNVNAftermath
         {
             [NativeMethod("GetNVNAftermath")]
             get;
             [NativeMethod("SetNVNAftermath")]
+            set;
+        }
+
+        //  Enable NVN aftermath.
+        public static extern int switchNVNAftermathLevel
+        {
+            [NativeMethod("GetNVNAftermathLevel")]
+            get;
+            [NativeMethod("SetNVNAftermathLevel")]
             set;
         }
 

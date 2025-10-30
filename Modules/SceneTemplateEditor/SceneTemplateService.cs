@@ -427,27 +427,7 @@ namespace UnityEditor.SceneTemplate
                 }
 
                 SceneTemplateUtils.DeleteAsset(s_CurrentInMemorySceneState.rootFolder);
-                if (s_CurrentInMemorySceneState.hasSubScene)
-                {
-                    EditorApplication.delayCall += () =>
-                    {
-                        var success = EditorSceneManager.ReloadScene(scene);
-                        if (!success)
-                        {
-                            Debug.LogError($"Failed to reload scene {scene.path}");
-                        }
-                        ClearInMemorySceneState();
-                    };
-                }
-                else
-                {
-                    var success = EditorSceneManager.ReloadScene(scene);
-                    if (!success)
-                    {
-                        Debug.LogError($"Failed to reload scene {scene.path}");
-                    }
-                    ClearInMemorySceneState();
-                }
+                ClearInMemorySceneState();
             }
         }
 

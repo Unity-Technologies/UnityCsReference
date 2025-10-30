@@ -8424,6 +8424,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Draggers\BuilderViewportDragger.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Draggers\BuilderViewportDragger.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderClassPill.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderClassPill.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Explorer\BuilderExplorer.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Explorer\BuilderExplorer.cs</Link>
     </Compile>

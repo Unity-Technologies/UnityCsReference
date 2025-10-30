@@ -1577,6 +1577,10 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern void ReinitialiseShaderCompiler(string platformSDKEnvVar, string EnvVarValue);
 
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern void ReinitialiseShaderCompilerFromJson(string jsonConfiguration);   // reinitialise the shader compiler with a json string that configures
+
         // Strip Engine code
         public static extern bool stripEngineCode { get; set; }
 

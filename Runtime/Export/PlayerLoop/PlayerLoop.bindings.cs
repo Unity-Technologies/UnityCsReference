@@ -116,6 +116,8 @@ namespace UnityEngine.PlayerLoop
         public struct ARCoreUpdate {}
         [RequiredByNativeCode]
         public struct PerformanceAnalyticsUpdate {}
+        [RequiredByNativeCode]
+        public struct TilemapRendererEarlyUpdate {}
     }
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.Experimental.PlayerLoop")]

@@ -50,6 +50,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS5.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
 [assembly: InternalsVisibleTo("Unity.Automation.Players.WebGL")]
 [assembly: InternalsVisibleTo("Unity.WebGL.Extensions")]
@@ -70,7 +71,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Analytics")]
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEditor.Lumin")]
-[assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.EditorTestsRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner.Tests")]
@@ -163,6 +163,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Modules.Physics.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Tests")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch2.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
 

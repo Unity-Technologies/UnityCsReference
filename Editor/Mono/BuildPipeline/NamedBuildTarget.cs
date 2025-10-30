@@ -52,7 +52,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
         public static readonly NamedBuildTarget VisionOS = new NamedBuildTarget("VisionOS");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");
-        public static readonly NamedBuildTarget  NintendoSwitch2 = new NamedBuildTarget("Nintendo Switch 2");
+        public static readonly NamedBuildTarget  NintendoSwitch2 = new NamedBuildTarget("Nintendo Switch 2");    // needs to match 2nd value in BuildTargetGroupNames.h
         [System.Obsolete("Stadia has been removed in 2023.1")]
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
         public static readonly NamedBuildTarget LinuxHeadlessSimulation = new NamedBuildTarget("LinuxHeadlessSimulation");

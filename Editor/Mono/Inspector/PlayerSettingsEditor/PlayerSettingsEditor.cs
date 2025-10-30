@@ -2326,6 +2326,7 @@ namespace UnityEditor
                 foreach (GraphicsDeviceType api in gfxAPIs)
                 {
                     if (api == GraphicsDeviceType.Switch ||
+                        api == GraphicsDeviceType.Switch2 ||
                         api == GraphicsDeviceType.PlayStation5 ||
                         api == GraphicsDeviceType.PlayStation5NGGC ||
                         api == GraphicsDeviceType.Direct3D11 ||
@@ -2640,7 +2641,7 @@ namespace UnityEditor
                             if (oldUseHDRDisplay != m_UseHDRDisplay.boolValue)
                                 requestRepaint = true;
 
-                            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.iOS)
+                            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Switch2)
                             {
                                 using (new EditorGUI.DisabledScope(!m_UseHDRDisplay.boolValue))
                                 {

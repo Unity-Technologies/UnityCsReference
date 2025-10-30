@@ -217,6 +217,14 @@ namespace UnityEngine.UIElements
             m_ForceUpdateDisplay = false;
         }
 
+        /// <summary>
+        /// Clears the input field value, reverting to the default state. Placeholder text will be shown if it is set.
+        /// </summary>
+        public void ClearValue()
+        {
+            text = string.Empty;
+            UpdateValueFromText();
+        }
 
         [EventInterest(typeof(BlurEvent), typeof(FocusEvent))]
         protected override void HandleEventBubbleUp(EventBase evt)

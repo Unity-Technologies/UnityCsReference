@@ -19,7 +19,7 @@ namespace Unity.UI.Builder
         };
 
         static readonly string s_DraggerPreviewClassName = "unity-builder-dragger-preview";
-        static readonly string s_DraggedPreviewClassName = "unity-builder-dragger-preview--dragged";
+        internal static readonly string s_DraggedPreviewClassName = "unity-builder-dragger-preview--dragged";
 
         static readonly string s_TreeItemHoverHoverClassName = "unity-builder-explorer__item--dragger-hover";
         public static readonly string s_TreeItemHoverWithDragBetweenElementsSupportClassName = "unity-builder-explorer__between-element-item--dragger-hover";
@@ -181,7 +181,7 @@ namespace Unity.UI.Builder
             selection.ForceVisualAssetUpdateWithoutSave(target, BuilderHierarchyChangeType.InlineStyle);
         }
 
-        public void RegisterCallbacksOnTarget(VisualElement target)
+        public virtual void RegisterCallbacksOnTarget(VisualElement target)
         {
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
@@ -191,7 +191,7 @@ namespace Unity.UI.Builder
             target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
 
-        void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
+        public virtual void UnregisterCallbacksFromTarget(DetachFromPanelEvent evt)
         {
             var target = evt.elementTarget;
 
@@ -431,7 +431,7 @@ namespace Unity.UI.Builder
             m_PlacementIndicator?.Deactivate();
         }
 
-        void OnMouseDown(MouseDownEvent evt)
+        protected void OnMouseDown(MouseDownEvent evt)
         {
             if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this && s_CurrentlyActiveBuilderDragger.exclusive)
                 return;
@@ -461,7 +461,7 @@ namespace Unity.UI.Builder
                 target.CaptureMouse();
         }
 
-        void OnMouseMove(MouseMoveEvent evt)
+        protected void OnMouseMove(MouseMoveEvent evt)
         {
             var target = evt.currentTarget as VisualElement;
 
@@ -474,6 +474,9 @@ namespace Unity.UI.Builder
                     Mathf.Abs(m_Start.y - evt.mousePosition.y) > s_DistanceToActivation)
                 {
                     var startSuccess = StartDrag(target, evt.mousePosition);
+
+                    if (target is BuilderClassPill pill)
+                        pill.isDragged = startSuccess;
 
                     if (startSuccess)
                     {
@@ -543,7 +546,7 @@ namespace Unity.UI.Builder
             m_Selection.Select(null, documentElement);
         }
 
-        void OnMouseUp(MouseUpEvent evt)
+        protected void OnMouseUp(MouseUpEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse)
             {
@@ -601,6 +604,9 @@ namespace Unity.UI.Builder
 
             m_Active = false;
 
+            if (target is BuilderClassPill pill)
+                pill.isDragged = false;
+
             evt.StopPropagation();
 
             EndDragInner();
@@ -638,7 +644,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        void OnEsc(KeyUpEvent evt)
+        protected void OnEsc(KeyUpEvent evt)
         {
             if (evt.keyCode != KeyCode.Escape)
                 return;

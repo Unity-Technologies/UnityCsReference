@@ -99,11 +99,11 @@ namespace UnityEngine.UIElements
                 return ve.computedStyle.unityFontDefinition.fontAsset as FontAsset;
 
             var textSettings = GetTextSettingsFrom(ve);
-            if (ve.computedStyle.unityFontDefinition.font != null)
+            if (!Equals(ve.computedStyle.unityFontDefinition.font, null))
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
-            else if (ve.computedStyle.unityFont != null)
+            else if (!Equals(ve.computedStyle.unityFont, null))
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
-            else if (textSettings != null)
+            else if (!Equals(textSettings, null))
                 return textSettings.defaultFontAsset;
             return null;
         }

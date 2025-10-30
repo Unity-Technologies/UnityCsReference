@@ -409,7 +409,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.KeyDown:
-                    if (evt.keyCode == KeyCode.Delete)
+                    if (evt.keyCode == KeyCode.Delete || evt.keyCode == KeyCode.Backspace)
                     {
                         if (m_SelectedSwatch != null)
                         {

@@ -37,6 +37,7 @@ namespace UnityEditor.Overlays
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         const string k_PanelLayout = "overlay-layout--freesize";
         internal const string k_DraggerName = "unity-overlay-collapse__dragger";
+        internal const string k_BoxBackground = "overlay-box-background";
 
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_ActiveLayout = Layout.Panel;
@@ -642,6 +643,9 @@ namespace UnityEditor.Overlays
 
             var position = canvas.ClampToOverlayWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
+            
+            if (m_ModalPopup != null)
+                ApplyPopupSize();
         }
 
         void ApplySize(VisualElement element, bool resizableLayout, bool sizeOverridden)
@@ -747,7 +751,7 @@ namespace UnityEditor.Overlays
             }
 
             m_ModalPopup = OverlayPopup.CreateUnderOverlay(this);
-            ApplySize(m_ModalPopup.Q(className: "overlay-box-background"), true, sizeOverridden);
+            ApplyPopupSize();
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>
             {
@@ -769,6 +773,11 @@ namespace UnityEditor.Overlays
         public void RefreshPopup()
         {
             m_ModalPopup?.Refresh();
+        }
+
+        void ApplyPopupSize()
+        {
+            ApplySize(m_ModalPopup.Q(className: k_BoxBackground), true, sizeOverridden);
         }
 
         void ClosePopup()

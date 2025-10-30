@@ -142,6 +142,7 @@ namespace UnityEditor.Networking.PlayerConnection
                     "WSAPlayerX64" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
                     "WSAPlayerARM" => EditorGUIUtility.IconContent("BuildSettings.Metro.Small"),
                     "Switch" => EditorGUIUtility.IconContent("BuildSettings.Switch.Small"),
+                    "Switch2" => EditorGUIUtility.IconContent("BuildSettings.Switch2.Small"),
                     "EmbeddedLinuxArm64" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
                     "EmbeddedLinuxArm32" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
                     "EmbeddedLinuxX64" => EditorGUIUtility.IconContent("BuildSettings.EmbeddedLinux.Small"),
