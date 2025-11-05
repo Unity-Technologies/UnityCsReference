@@ -240,7 +240,7 @@ namespace UnityEngine
             if (terrain.terrainData == null)
                 throw new ArgumentException("Invalid terrainData.");
 
-            UpdateGIMaterialsForTerrain(terrain.GetInstanceID(), new Rect(0, 0, 1, 1));
+            UpdateGIMaterialsForTerrain(terrain.GetEntityId(), new Rect(0, 0, 1, 1));
         }
 
         public static void UpdateGIMaterials(this Terrain terrain, int x, int y, int width, int height)
@@ -250,7 +250,7 @@ namespace UnityEngine
 
             float alphamapWidth = terrain.terrainData.alphamapWidth;
             float alphamapHeight = terrain.terrainData.alphamapHeight;
-            UpdateGIMaterialsForTerrain(terrain.GetInstanceID(), new Rect(x / alphamapWidth, y / alphamapHeight, width / alphamapWidth, height / alphamapHeight));
+            UpdateGIMaterialsForTerrain(terrain.GetEntityId(), new Rect(x / alphamapWidth, y / alphamapHeight, width / alphamapWidth, height / alphamapHeight));
         }
 
         [FreeFunction]

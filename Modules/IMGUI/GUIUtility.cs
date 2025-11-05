@@ -226,9 +226,9 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static void DestroyGUI(int instanceID)
+        internal static void DestroyGUI(EntityId instanceID)
         {
-            GUILayoutUtility.RemoveSelectedIdList(instanceID, false);
+            GUILayoutUtility.RemoveSelectedIdListLayout(instanceID);
         }
 
         [RequiredByNativeCode]
@@ -258,7 +258,7 @@ namespace UnityEngine
                             break;
                     }
                 }
-                GUILayoutUtility.SelectIDList(s_OriginalID, false);
+                GUILayoutUtility.SelectIDListLayout(s_OriginalID);
                 GUIContent.ClearStaticCache();
             }
             finally

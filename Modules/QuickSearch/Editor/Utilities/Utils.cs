@@ -253,7 +253,7 @@ namespace UnityEditor.Search
 
         internal static Texture2D GetAssetPreview(SearchContext ctx, UnityEngine.Object obj, FetchPreviewOptions previewOptions)
         {
-            var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx));
+            var preview = AssetPreview.GetAssetPreview(obj.GetEntityId(), GetClientId(ctx));
             if (preview == null || previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var largePreview = AssetPreview.GetMiniThumbnail(obj);
@@ -355,7 +355,7 @@ namespace UnityEditor.Search
                 if (v == null)
                     sb.AppendLine($"{PrintTabs(level)}{name}: nil");
                 else if (v is UnityEngine.Object ueo)
-                    sb.AppendLine($"{PrintTabs(level)}{name}: ({ueo.GetInstanceID()}) {ueo.name} [{ueo.GetType()}]");
+                    sb.AppendLine($"{PrintTabs(level)}{name}: ({ueo.GetEntityId()}) {ueo.name} [{ueo.GetType()}]");
                 else if (v is string s)
                     sb.AppendLine($"{PrintTabs(level)}{name}: {s}");
                 else if (vt.IsPrimitive)
@@ -687,6 +687,27 @@ namespace UnityEditor.Search
             return item.provider.toObject?.Invoke(item, filterType);
         }
 
+        internal static UnityEngine.Object ToObject(SearchItem item, Type[] filterTypes)
+        {
+            if (item == null || item.provider == null)
+                return null;
+
+            var obj = item.provider.toObject?.Invoke(item, typeof(UnityEngine.Object));
+            if (!obj)
+                return null;
+
+            var type= obj.GetType();
+            foreach (var filterType in filterTypes)
+            {
+                if (filterType.IsAssignableFrom(type))
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
         internal static bool IsFocusedWindowTypeName(string focusWindowName)
         {
             return EditorWindow.focusedWindow != null && EditorWindow.focusedWindow.GetType().ToString().EndsWith("." + focusWindowName);
@@ -755,17 +776,17 @@ namespace UnityEditor.Search
             var clientId = GetClientId(ctx);
             if (!options.HasAny(FetchPreviewOptions.Large))
             {
-                var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId);
+                var preview = AssetPreview.GetAssetPreview(obj.GetEntityId(), clientId);
                 if (preview)
                     return preview;
 
-                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID(), clientId))
+                if (AssetPreview.IsLoadingAssetPreview(obj.GetEntityId(), clientId))
                     return null;
             }
 
             var assetPath = SearchUtils.GetHierarchyAssetPath(obj, true);
             if (string.IsNullOrEmpty(assetPath))
-                return AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId) ?? defaultThumbnail;
+                return AssetPreview.GetAssetPreview(obj.GetEntityId(), clientId) ?? defaultThumbnail;
             return GetAssetPreviewFromPath(ctx, assetPath, previewSize, options);
         }
 

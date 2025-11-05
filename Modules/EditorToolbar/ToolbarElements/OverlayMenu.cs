@@ -64,15 +64,16 @@ namespace UnityEditor.Overlays
     [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     sealed class OverlayMenu : Overlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
-
         const string k_DisplayName = "Overlay Menu";
         internal const string k_Id = "Overlays/OverlayMenu"; // Used by tests
         const string k_UssName = "overlay-menu";
-
+        
+        const string k_UnityGroupName = "Unity";
+        
         public class OverlayMenuData : ScriptableSingleton<OverlayMenuData>
         {
             [SerializeField]
-            List<string> m_FoldoutStatesData = new();
+            List<string> m_FoldoutStatesData = new() { k_UnityGroupName };
 
             public bool IsFoldoutExpanded(string groupName)
             {
@@ -119,10 +120,10 @@ namespace UnityEditor.Overlays
             public int CompareTo(OverlayGroupData other)
             {
                 // Sort the unity group at the top
-                if (name == "Unity")
+                if (name == k_UnityGroupName)
                     return -1;
 
-                if (other.name == "Unity")
+                if (other.name == k_UnityGroupName)
                     return 1;
 
                 return name.CompareTo(other.name);
@@ -477,7 +478,7 @@ namespace UnityEditor.Overlays
             }
 
             if (overlay.menuGroup == OverlayAttribute.unityGroup)
-                return "Unity";
+                return k_UnityGroupName;
 
             return overlay.menuGroup;
         }

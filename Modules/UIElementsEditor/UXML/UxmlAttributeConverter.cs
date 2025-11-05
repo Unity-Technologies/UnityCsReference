@@ -439,6 +439,11 @@ namespace UnityEditor.UIElements
         public override Hash128 FromString(string value) => Hash128.Parse(value);
     }
 
+    internal class GUIDAttributeConverter : UxmlAttributeConverter<GUID>
+    {
+        public override GUID FromString(string value) => new GUID(value);
+    }
+
     internal class TypeAttributeConverter : UxmlAttributeConverter<Type>
     {
         public override Type FromString(string value) => UxmlUtility.ParseType(value);
@@ -624,7 +629,7 @@ namespace UnityEditor.UIElements
             var asset = cc.visualTreeAsset.GetAsset(value, typeof(T));
 
             // This lets us handle assets that are "Missing (Type)" in the inspector.
-            if (asset?.GetInstanceID() == null)
+            if (asset?.GetEntityId() == null)
             {
                 // When dealing with asset overriddes the asset may not be in the direct visualTreeAsset so we fallback to Asset Database. (UUM-91641)
                 var relativePath = AssetDatabase.GetAssetPath(cc.visualTreeAsset);

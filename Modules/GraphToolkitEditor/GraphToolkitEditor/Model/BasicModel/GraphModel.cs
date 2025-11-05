@@ -284,11 +284,11 @@ namespace Unity.GraphToolkit.Editor
         public virtual bool IsStateMachineGraph => false;
 
         /// <summary>
-        /// Whether the node bypass feature is enabled or not.
+        /// Whether the delete and reconnect feature is enabled or not.
         /// </summary>
-        /// <remarks>The node bypass feature allows to replace a node that is connected to an upstream
+        /// <remarks>The delete and reconnect feature allows to replace a node that is connected to an upstream
         /// and downstream node by a wire connecting directly the upstream and downstream nodes.</remarks>
-        public virtual bool AllowNodeBypass => false;
+        public virtual bool AllowDeleteAndReconnect => false;
 
         /// <summary>
         /// Whether it is allowed to create <see cref="VariableDeclarationModelBase"/>s that have an <see cref="VariableScope.Exposed"/> scope.

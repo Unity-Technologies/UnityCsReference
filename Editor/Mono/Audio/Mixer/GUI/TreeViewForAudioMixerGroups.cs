@@ -271,7 +271,7 @@ namespace UnityEditor
             private TreeViewItem<EntityId> BuildSubTree(AudioMixerController controller)
             {
                 AudioMixerGroupController masterGroup = controller.masterGroup;
-                var masterItem = new MixerTreeViewItem(masterGroup.GetInstanceID(), 0, m_RootItem, masterGroup.name, masterGroup);
+                var masterItem = new MixerTreeViewItem(masterGroup.GetEntityId(), 0, m_RootItem, masterGroup.name, masterGroup);
                 AddChildrenRecursive(masterGroup, masterItem);
                 return masterItem;
             }
@@ -281,7 +281,7 @@ namespace UnityEditor
                 item.children = new List<TreeViewItem<EntityId>>(group.children.Length);
                 for (int i = 0; i < group.children.Length; ++i)
                 {
-                    item.children.Add(new MixerTreeViewItem(group.children[i].GetInstanceID(), item.depth + 1, item, group.children[i].name, group.children[i]));
+                    item.children.Add(new MixerTreeViewItem(group.children[i].GetEntityId(), item.depth + 1, item, group.children[i].name, group.children[i]));
                     AddChildrenRecursive(group.children[i], item.children[i]);
                 }
             }

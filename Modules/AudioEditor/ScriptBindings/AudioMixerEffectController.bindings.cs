@@ -21,7 +21,7 @@ namespace UnityEditor.Audio
     [NativeHeader("Modules/AudioEditor/ScriptBindings/AudioMixerEffectController.bindings.h")]
     internal class AudioMixerEffectController : Object
     {
-        int m_LastCachedGroupDisplayNameID;
+        EntityId m_LastCachedGroupDisplayNameID;
         string m_DisplayName;
 
         public AudioMixerEffectController(string name)
@@ -47,11 +47,11 @@ namespace UnityEditor.Audio
         public string GetDisplayString(Dictionary<AudioMixerEffectController, AudioMixerGroupController> effectMap)
         {
             AudioMixerGroupController group = effectMap[this];
-            if (group.GetInstanceID() != m_LastCachedGroupDisplayNameID || m_DisplayName == null)
+            if (group.GetEntityId() != m_LastCachedGroupDisplayNameID || m_DisplayName == null)
             {
                 // Cache display name to prevent string allocs every event
                 m_DisplayName = group.GetDisplayString() + AudioMixerController.s_GroupEffectDisplaySeperator + effectName;
-                m_LastCachedGroupDisplayNameID = group.GetInstanceID();
+                m_LastCachedGroupDisplayNameID = group.GetEntityId();
             }
             return m_DisplayName;
         }

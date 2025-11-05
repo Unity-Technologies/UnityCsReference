@@ -410,7 +410,7 @@ namespace UnityEditor.IMGUI.Controls
                 List<UnityEngine.Object> objs = new List<UnityEngine.Object>(DragAndDrop.objectReferences); // TODO, what about when dragging non objects...
 
                 bool draggedItemsFromOwnTreeView = true;
-                if (objs.Count > 0 && objs[0] != null && TreeViewUtility<int>.FindItemInList(objs[0].GetInstanceID(), instanceIDTreeView.data.GetRows()) == null)
+                if (objs.Count > 0 && objs[0] != null && TreeViewUtility<int>.FindItemInList(objs[0].GetEntityId(), instanceIDTreeView.data.GetRows()) == null)
                     draggedItemsFromOwnTreeView = false;
 
                 int[] newSelection = new int[objs.Count];
@@ -419,7 +419,7 @@ namespace UnityEditor.IMGUI.Controls
                     if (objs[i] == null)
                         continue;
 
-                    newSelection[i] = (objs[i].GetInstanceID());
+                    newSelection[i] = (objs[i].GetEntityId());
                 }
 
                 instanceIDTreeView.NotifyListenersThatDragEnded(newSelection, draggedItemsFromOwnTreeView);

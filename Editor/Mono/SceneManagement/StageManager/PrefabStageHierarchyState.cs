@@ -63,21 +63,21 @@ namespace UnityEditor
         static void RestoreExandedStateFromFileIDs(SceneHierarchyWindow hierarchy, PrefabStage prefabStage, List<UInt64> expandedGameObjectFileIDs, UInt64 lastClickedFileID)
         {
             var searchRoot = prefabStage.prefabContentsRoot;
-            var fileIDToInstanceIDMapper = new FileIDToInstanceIDMapper(searchRoot.transform, expandedGameObjectFileIDs, lastClickedFileID);
-            hierarchy.sceneHierarchy.treeViewState.lastClickedID = fileIDToInstanceIDMapper.instanceID;
-            hierarchy.sceneHierarchy.treeViewState.expandedIDs = fileIDToInstanceIDMapper.instanceIDs;
+            var fileIDToEntityIdMapper = new FileIDToEntityIdMapper(searchRoot.transform, expandedGameObjectFileIDs, lastClickedFileID);
+            hierarchy.sceneHierarchy.treeViewState.lastClickedID = fileIDToEntityIdMapper.entityId;
+            hierarchy.sceneHierarchy.treeViewState.expandedIDs = fileIDToEntityIdMapper.entityIds;
             hierarchy.sceneHierarchy.treeViewState.expandedIDs.Sort(); // required to be sorted (see TreeViewState)
         }
 
-        class FileIDToInstanceIDMapper
+        class FileIDToEntityIdMapper
         {
             readonly List<UInt64> m_FileIDs;
             readonly UInt64 m_FileID = 0;
 
-            public List<EntityId> instanceIDs = new List<EntityId>();
-            public int instanceID = 0;
+            public List<EntityId> entityIds = new List<EntityId>();
+            public int entityId = 0;
 
-            public FileIDToInstanceIDMapper(Transform searchRoot, List<UInt64> fileIDs, UInt64 fileID)
+            public FileIDToEntityIdMapper(Transform searchRoot, List<UInt64> fileIDs, UInt64 fileID)
             {
                 m_FileIDs = fileIDs;
                 m_FileID = fileID;
@@ -90,9 +90,9 @@ namespace UnityEditor
             {
                 UInt64 fileID = Unsupported.GetOrGenerateFileIDHint(transform.gameObject);
                 if (m_FileIDs.Contains(fileID))
-                    instanceIDs.Add(transform.gameObject.GetInstanceID());
+                    entityIds.Add(transform.gameObject.GetEntityId());
                 if (fileID == m_FileID)
-                    instanceID = transform.gameObject.GetInstanceID();
+                    entityId = transform.gameObject.GetEntityId();
             }
         }
 

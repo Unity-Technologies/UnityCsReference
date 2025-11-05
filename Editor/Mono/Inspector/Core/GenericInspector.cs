@@ -195,8 +195,8 @@ namespace UnityEditor
 
             foreach (var t in editor.targets)
             {
-                var instanceID = t.GetInstanceID();
-                if (PrefabUtility.IsInstanceIDPartOfNonAssetPrefabInstance(instanceID))
+                var entityId = t.GetEntityId();
+                if (PrefabUtility.IsInstanceIDPartOfNonAssetPrefabInstance(entityId))
                     return true;
             }
 

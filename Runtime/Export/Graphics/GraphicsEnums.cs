@@ -1598,7 +1598,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = type;
             m_NameID = -1; // FastPropertyName kInvalidIndex
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_BufferPointer = IntPtr.Zero;
             m_MipLevel = 0;
             m_CubeFace = CubemapFace.Unknown;
@@ -1609,7 +1609,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = type;
             m_NameID = -1; // FastPropertyName kInvalidIndex
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_BufferPointer = IntPtr.Zero;
             m_MipLevel = mipLevel;
             m_CubeFace = cubeFace;
@@ -1620,7 +1620,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = BuiltinRenderTextureType.PropertyName;
             m_NameID = Shader.PropertyToID(name);
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_BufferPointer = IntPtr.Zero;
             m_MipLevel = 0;
             m_CubeFace = CubemapFace.Unknown;
@@ -1631,7 +1631,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = BuiltinRenderTextureType.PropertyName;
             m_NameID = Shader.PropertyToID(name);
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_BufferPointer = IntPtr.Zero;
             m_MipLevel = mipLevel;
             m_CubeFace = cubeFace;
@@ -1642,7 +1642,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = BuiltinRenderTextureType.PropertyName;
             m_NameID = nameID;
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_BufferPointer = IntPtr.Zero;
             m_MipLevel = 0;
             m_CubeFace = CubemapFace.Unknown;
@@ -1653,7 +1653,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = BuiltinRenderTextureType.PropertyName;
             m_NameID = nameID;
-            m_InstanceID = 0;
+            m_EntityId = EntityId.None;
             m_BufferPointer = IntPtr.Zero;
             m_MipLevel = mipLevel;
             m_CubeFace = cubeFace;
@@ -1664,7 +1664,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = renderTargetIdentifier.m_Type;
             m_NameID = renderTargetIdentifier.m_NameID;
-            m_InstanceID = renderTargetIdentifier.m_InstanceID;
+            m_EntityId = renderTargetIdentifier.m_EntityId;
             m_BufferPointer = renderTargetIdentifier.m_BufferPointer;
             m_MipLevel = mipLevel;
             m_CubeFace = cubeFace;
@@ -1687,7 +1687,7 @@ namespace UnityEngine.Rendering
             }
             m_BufferPointer = IntPtr.Zero;
             m_NameID = -1; // FastPropertyName kInvalidIndex
-            m_InstanceID = tex ? tex.GetInstanceID() : 0;
+            m_EntityId = tex ? tex.GetEntityId() : EntityId.None;
             m_MipLevel = 0;
             m_CubeFace = CubemapFace.Unknown;
             m_DepthSlice = 0;
@@ -1709,7 +1709,7 @@ namespace UnityEngine.Rendering
             }
             m_BufferPointer = IntPtr.Zero;
             m_NameID = -1; // FastPropertyName kInvalidIndex
-            m_InstanceID = tex ? tex.GetInstanceID() : 0;
+            m_EntityId = tex ? tex.GetEntityId() : EntityId.None;
             m_MipLevel = mipLevel;
             m_CubeFace = cubeFace;
             m_DepthSlice = depthSlice;
@@ -1719,7 +1719,7 @@ namespace UnityEngine.Rendering
         {
             m_Type = BuiltinRenderTextureType.BufferPtr;
             m_NameID = -1;
-            m_InstanceID = buf.m_RenderTextureInstanceID;
+            m_EntityId = buf.m_RenderTextureInstanceID;
             m_BufferPointer = buf.m_BufferPtr;
             m_MipLevel = mipLevel;
             m_CubeFace = cubeFace;
@@ -1754,19 +1754,19 @@ namespace UnityEngine.Rendering
 
         public override string ToString()
         {
-            return string.Format("Type {0} NameID {1} InstanceID {2} BufferPointer {3} MipLevel {4} CubeFace {5} DepthSlice {6}", m_Type, m_NameID, m_InstanceID, m_BufferPointer, m_MipLevel, m_CubeFace, m_DepthSlice);
+            return string.Format("Type {0} NameID {1} InstanceID {2} BufferPointer {3} MipLevel {4} CubeFace {5} DepthSlice {6}", m_Type, m_NameID, m_EntityId, m_BufferPointer, m_MipLevel, m_CubeFace, m_DepthSlice);
         }
 
         public override int GetHashCode()
         {
-            return (m_Type.GetHashCode() * 23 + m_NameID.GetHashCode()) * 23 + m_InstanceID.GetHashCode();
+            return (m_Type.GetHashCode() * 23 + m_NameID.GetHashCode()) * 23 + m_EntityId.GetHashCode();
         }
 
         public bool Equals(RenderTargetIdentifier rhs)
         {
             return m_Type == rhs.m_Type &&
                 m_NameID == rhs.m_NameID &&
-                m_InstanceID == rhs.m_InstanceID &&
+                m_EntityId == rhs.m_EntityId &&
                 m_BufferPointer == rhs.m_BufferPointer &&
                 m_MipLevel == rhs.m_MipLevel &&
                 m_CubeFace == rhs.m_CubeFace &&
@@ -1795,7 +1795,7 @@ namespace UnityEngine.Rendering
         #pragma warning disable 0414
         private BuiltinRenderTextureType m_Type;
         private int m_NameID;
-        private int m_InstanceID;
+        private EntityId m_EntityId;
         private IntPtr m_BufferPointer;
         private int m_MipLevel;
         private CubemapFace m_CubeFace;

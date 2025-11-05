@@ -444,7 +444,7 @@ namespace UnityEditor
         {
             if (prefabAsset == null)
                 throw new ArgumentNullException(nameof(prefabAsset));
-            return GetVariantParentGUID(prefabAsset.GetInstanceID());
+            return GetVariantParentGUID(prefabAsset.GetEntityId());
         }
 
         [FreeFunction]

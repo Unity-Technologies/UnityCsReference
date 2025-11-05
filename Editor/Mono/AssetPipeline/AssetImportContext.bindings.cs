@@ -74,7 +74,7 @@ namespace UnityEditor.AssetImporters
         {
             if (guid.Empty())
             {
-                throw new ArgumentNullException("guid", "Cannot add dependency on empty GUID.");
+                throw new ArgumentNullException("guid", "Cannot add source dependency on empty GUID.");
             }
 
             DependsOnSourceAssetInternalGUID(guid);
@@ -135,7 +135,7 @@ namespace UnityEditor.AssetImporters
         {
             if (guid.Empty())
             {
-                throw new ArgumentNullException("guid", "Cannot add dependency on empty GUID.");
+                throw new ArgumentNullException("guid", "Cannot add artifact dependency on empty GUID.");
             }
 
             DependsOnArtifactInternalGUID(guid);

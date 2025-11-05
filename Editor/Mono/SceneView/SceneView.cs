@@ -11,28 +11,30 @@ using System.Linq.Expressions;
 using System.Reflection;
 using UnityEditor.Actions;
 using UnityEditor.AnimatedValues;
-using UnityEditor.SceneManagement;
-using UnityEditor.ShortcutManagement;
-using UnityEditorInternal;
-using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Profiling;
+using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
+using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
-using Component = UnityEngine.Component;
 using static UnityEditor.SceneViewMotion;
+using Component = UnityEngine.Component;
+using Object = UnityEngine.Object;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
+    [NativeHeader("Editor/Src/SceneView/SceneViewBindings.h")]
     public partial class SceneView : SearchableEditorWindow, IHasCustomMenu, ISupportsOverlays
     {
         [Serializable]
@@ -2599,7 +2601,7 @@ namespace UnityEditor
                 Tools.InvalidateHandlePosition(); // Some cases that should invalidate the cached position are not handled correctly yet so we refresh it once per frame
             }
 
-            sceneViewGrids.UpdateGridColor();
+            sceneViewGrids.OnGUI();
 
             Color origColor = GUI.color;
             var origLabelWidth = EditorGUIUtility.labelWidth;
@@ -3675,44 +3677,8 @@ namespace UnityEditor
             return allHandled;
         }
 
-        internal static bool CanDoDrag(ICollection<EntityId> entityIds)
-        {
-            if (entityIds.Count < 2) return true;
-
-            int gameObjectCount = 0;
-            int assetCount = 0;
-            int materialCount = 0;
-
-            // Only allow dragging multiple GameObjects, or multiple non-GameObjects, but not mixed sets.
-            // For example when dragging GameObjects and Materials would sometimes apply material to
-            // already existing scene object, and other times to the object being spawned. It depends
-            // on the order in which the user selects those assets. We decided it was not an intuitive
-            // behavior and it should just not be allowed.
-            // Also we don't want multiple materials be dropped into scene because there is no case
-            // where we can handle it in a way that benefit the user. For example multiple skybox
-            // materials doesn't make sense and dropping multiple materials onto geometry will only
-            // drop the first material on the hovered material entry.
-            foreach (var entityId in entityIds)
-            {
-                var obj = InternalEditorUtility.GetObjectFromEntityId(entityId);
-                if (obj is GameObject)
-                {
-                    gameObjectCount++;
-                }
-                else
-                {
-                    assetCount++;
-                    if (obj is Material)
-                    {
-                        materialCount++;
-                    }
-                }
-
-                if (gameObjectCount > 0 && assetCount > 0 || materialCount > 1) return false;
-            }
-
-            return true;
-        }
+        [FreeFunction("SceneViewBindings::CanDoDrag")]
+        internal static extern bool CanDoDrag(ReadOnlySpan<EntityId> entityIds);
 
         internal void HandleDragging(Event evt)
         {
@@ -4347,6 +4313,10 @@ namespace UnityEditor
             HandleUtility.ignoreRaySnapObjects = null;
             Tools.vertexDragging = false;
             Tools.handleOffset = Vector3.zero;
+            
+            var gridSettings = GridSettings.instance;
+            gridSettings.rotation = Quaternion.identity;
+            gridSettings.position = Vector3.zero;
         }
 
         public static CameraMode AddCameraMode(string name, string section)
@@ -4408,7 +4378,7 @@ namespace UnityEditor
 
         internal void ResetGridPivot()
         {
-            sceneViewGrids.SetAllGridsPivot(Vector3.zero);
+            sceneViewGrids.SetAllGridsOffsetAlongAxis(Vector3.zero);
         }
 
         void CopyLastActiveSceneViewSettings()

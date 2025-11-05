@@ -7,6 +7,7 @@ using UnityEditor.Build.Player;
 using UnityEngine.Bindings;
 
 using System.Runtime.CompilerServices;
+using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor")]
 [assembly: InternalsVisibleTo("Unity.ScriptableBuildPipeline.Editor.Tests")]
 
@@ -161,12 +162,10 @@ namespace UnityEditor.Build.Content
 
         public static extern void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
-        [Obsolete("GetTypeForObject will be removed in a future version.", false)]
         public static extern Type GetTypeForObject(ObjectIdentifier objectID);
 
         public static extern Type[] GetTypesForObject(ObjectIdentifier objectID);
 
-        [Obsolete("GetTypeForObjects will be removed in a future version.", false)]
         public static extern Type[] GetTypeForObjects(ObjectIdentifier[] objectIDs);
 
         internal static extern bool IsBuildInProgress();

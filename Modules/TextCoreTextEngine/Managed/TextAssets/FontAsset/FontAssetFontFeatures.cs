@@ -143,6 +143,7 @@ namespace UnityEngine.TextCore.Text
         {
             k_UpdateGlyphAdjustmentRecordsMarker.Begin();
 
+            LoadFontFace();
             GlyphPairAdjustmentRecord[] records = FontEngine.GetPairAdjustmentRecords(m_GlyphIndexListNewlyAdded);
 
             if (records != null)

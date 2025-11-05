@@ -40,7 +40,7 @@ namespace UnityEditor
                 return;
 
             m_SwitchesInEffect = switchesInEffect;
-            Debug.RemoveLogEntriesByIdentifier(GetInstanceID());
+            Debug.RemoveLogEntriesByIdentifier(GetEntityId());
 
             if (m_SwitchesInEffect.Length > 0)
             {
@@ -57,7 +57,7 @@ namespace UnityEditor
                                 return report;
                             }));
 
-                Debug.LogSticky(GetInstanceID(), LogType.Warning, LogOption.NoStacktrace, message);
+                Debug.LogSticky(GetEntityId(), LogType.Warning, LogOption.NoStacktrace, message);
             }
         }
     }

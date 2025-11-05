@@ -117,6 +117,10 @@ namespace UnityEditor
             public (VisualElement container, Label header, Label content) editorRevision;
             public (VisualElement container, Label header, Label content) timeStamp;
             public (VisualElement container, Label header, Label content) duration;
+            public (VisualElement container, Label header, Label content) importResultID;
+            public (VisualElement container, Label header, Label content) dependenciesID;
+            public (VisualElement container, Label header, Label content) staticDependenciesID;
+            public (VisualElement container, Label header, Label content) importResultOutputID;
             public (IMGUIContainer container, ArtifactBrowserTreeViewNested<ArtifactDifferenceReporter.ArtifactInfoDifference> treeView, Label header) reasonsForImport;
 
             public (VisualElement container, Label header, Label content) producedArtifacts;
@@ -587,19 +591,28 @@ namespace UnityEditor
         private VisualElement CreateHeaderAndContentLabelContainer(Rect windowPosition, string headerText, string contentText, out Label headerLabel, out Label contentLabel)
         {
             var availableSpace = 620;
-            var headerLength = availableSpace * 0.2f;
+            var headerLength = availableSpace * 0.25f; // Increased from 0.2f to 0.25f for more header space
             var contentLength = availableSpace - headerLength;
             headerLabel = CreateListLabel(headerText, TextAnchor.MiddleLeft, 0, FontStyle.Normal);
             headerLabel.style.flexBasis = new StyleLength(headerLength);
             headerLabel.style.minHeight = 20;
             headerLabel.style.maxHeight = 20;
 
-            contentLabel = CreateListLabel(contentText, TextAnchor.MiddleLeft, 0, FontStyle.Normal);
-            contentLabel.style.paddingLeft = 0;
+            // Create a selectable label for the content
+            contentLabel = new Label(contentText);
+            contentLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            contentLabel.style.paddingLeft = 8; // Added padding to shift values to the right
+            contentLabel.style.paddingTop = 4;
+            contentLabel.style.paddingBottom = 2;
             contentLabel.style.flexBasis = new StyleLength(contentLength);
             contentLabel.style.flexGrow = new StyleFloat(1);
             contentLabel.style.minHeight = 20;
             contentLabel.style.maxHeight = 20;
+            contentLabel.style.backgroundColor = new Color(0, 0, 0, 0); // Transparent background
+            contentLabel.style.unityFontStyleAndWeight = FontStyle.Normal;
+            
+            // Make the label selectable by enabling text selection
+            contentLabel.selection.isSelectable = true;
 
             var assetPathSubContainer = new VisualElement();
             assetPathSubContainer.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
@@ -610,6 +623,7 @@ namespace UnityEditor
 
             return assetPathSubContainer;
         }
+
 
         private void CreateSelectedItemContainersWithSplitView(Rect windowPosition)
         {
@@ -693,6 +707,10 @@ namespace UnityEditor
             m_ItemContainers.editorRevision.container = CreateHeaderAndContentLabelContainer(windowPosition, "Editor Revision", "", out m_ItemContainers.editorRevision.header, out m_ItemContainers.editorRevision.content);
             m_ItemContainers.timeStamp.container = CreateHeaderAndContentLabelContainer(windowPosition, "Timestamp", "", out m_ItemContainers.timeStamp.header, out m_ItemContainers.timeStamp.content);
             m_ItemContainers.duration.container = CreateHeaderAndContentLabelContainer(windowPosition, "Duration", "", out m_ItemContainers.duration.header, out m_ItemContainers.duration.content);
+            m_ItemContainers.staticDependenciesID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Static Dependencies ID", "", out m_ItemContainers.staticDependenciesID.header, out m_ItemContainers.staticDependenciesID.content);
+            m_ItemContainers.dependenciesID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Dependencies ID", "", out m_ItemContainers.dependenciesID.header, out m_ItemContainers.dependenciesID.content);            
+            m_ItemContainers.importResultOutputID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Import Result Output ID", "", out m_ItemContainers.importResultOutputID.header, out m_ItemContainers.importResultOutputID.content);
+            m_ItemContainers.importResultID.container = CreateHeaderAndContentLabelContainer(windowPosition, "Import Result ID", "", out m_ItemContainers.importResultID.header, out m_ItemContainers.importResultID.content);
 
             // Reason for import section
             var reasonsForImportColumns = CreateColumns(new Column("Reason", 790));
@@ -729,9 +747,11 @@ namespace UnityEditor
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.path.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.editorRevision.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.timeStamp.container);
-            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.duration.container);
-
-            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.reasonsForImport.header);
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.duration.container);                        
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.staticDependenciesID.container);
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.dependenciesID.container);
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.importResultOutputID.container);
+            m_ItemContainers.SelectedItemView.Add(m_ItemContainers.importResultID.container);
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.reasonsForImport.container);
 
             m_ItemContainers.SelectedItemView.Add(m_ItemContainers.producedArtifacts.container);
@@ -958,7 +978,7 @@ namespace UnityEditor
         private void CreateAssetPathWithObjectField(Rect windowPosition)
         {
             var availableSpace = 620;
-            var headerLength = availableSpace * 0.2f;
+            var headerLength = availableSpace * 0.25f; // Changed from 0.2f to 0.25f to match other fields
             var contentLength = availableSpace - headerLength;
             m_ItemContainers.assetWithObjectField.header = CreateListLabel("Asset", TextAnchor.MiddleLeft, 0, FontStyle.Normal);
             m_ItemContainers.assetWithObjectField.header.style.flexBasis = new StyleLength(headerLength);
@@ -970,6 +990,7 @@ namespace UnityEditor
             m_ItemContainers.assetWithObjectField.content.style.maxWidth = 350;
             m_ItemContainers.assetWithObjectField.content.style.maxHeight = 20;
             m_ItemContainers.assetWithObjectField.content.style.minHeight = 20;
+            m_ItemContainers.assetWithObjectField.content.style.paddingLeft = 8; // Added padding to align with other field values
             m_ItemContainers.assetWithObjectField.container = new VisualElement();
             m_ItemContainers.assetWithObjectField.container.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
             m_ItemContainers.assetWithObjectField.container.style.minHeight = 20;
@@ -991,6 +1012,9 @@ namespace UnityEditor
             }
 
             var rect = m_ItemContainers.assetWithObjectField.content.rect;
+            // Adjust rect to align with other field values by removing the extra padding that ObjectField adds
+            rect.x += 8; // Move ObjectField to the right to align with other field values
+            rect.width -= 8; // Compensate width for the x adjustment
 
             using (new EditorGUI.DisabledScope(true))
             {
@@ -2080,6 +2104,20 @@ namespace UnityEditor
             }
 
             m_ItemContainers.duration.content.text = importDuration;
+            
+            // Populate the new ID fields with custom tooltips
+            m_ItemContainers.importResultID.content.text = artifactInfo.importResultID;
+            m_ItemContainers.importResultID.content.tooltip = "A unique identifier for an import result. This ID is generated as a hash of both the import's dependencies (inputs) and its resulting output. Unity's asset database uses it internally to track a specific import result.";
+            
+            m_ItemContainers.dependenciesID.content.text = artifactInfo.dependenciesID.ToString();
+            m_ItemContainers.dependenciesID.content.tooltip = "ID is a hash of all dependencies that affect this asset's import (input). This includes both static and dynamic dependencies.";
+            
+            m_ItemContainers.staticDependenciesID.content.text = artifactInfo.staticDependenciesID.ToString();
+            m_ItemContainers.staticDependenciesID.content.tooltip = "ID is a hash of static dependencies only. Static dependencies include importer settings, importer version, and other factors that are determined before import time. Dynamic dependencies are discovered during the import.";
+            
+            m_ItemContainers.importResultOutputID.content.text = artifactInfo.importResultOutputID.ToString();
+            m_ItemContainers.importResultOutputID.content.tooltip = "ID is a hash of the output of an import. This includes both meta data of the import result and the actual import artifacts generated during the import.";
+            
             var producedFiles = artifactInfo.producedFiles;
             string headerText;
             string contentText;

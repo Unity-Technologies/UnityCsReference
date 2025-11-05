@@ -35,9 +35,14 @@ namespace UnityEditor
 
         private static readonly Color kFadedOutAssetsColor = new Color(1, 1, 1, 0.5f);
 
-        public static Color GetAssetItemColor(int instanceID)
+        static bool IsAssetImported(EntityId assetId)
         {
-            return (EditorUtility.isInSafeMode && !InternalEditorUtility.AssetReference.IsAssetImported(instanceID)) || AssetClipboardUtility.HasCutAsset(instanceID) ? GUI.color * kFadedOutAssetsColor : GUI.color;
+            return assetId.IsValid();
+        }
+
+        public static Color GetAssetItemColor(EntityId assetId)
+        {
+            return (EditorUtility.isInSafeMode && !IsAssetImported(assetId)) || AssetClipboardUtility.HasCutAsset(assetId) ? GUI.color * kFadedOutAssetsColor : GUI.color;
         }
 
         private static readonly EntityId[] k_EmptySelection = new EntityId[0];
@@ -2900,25 +2905,25 @@ namespace UnityEditor
             }
         }
 
-        public void FrameObject(EntityId instanceID, bool ping)
+        public void FrameObject(EntityId entityId, bool ping)
         {
             m_LockTracker.StopPingIcon();
 
-            bool canFrame = CanFrameAsset(instanceID);
+            bool canFrame = CanFrameAsset(entityId);
             if (!canFrame)
             {
                 // Check if we can frame the main asset from the same asset path instead.
                 // This ensures that Components or child GameObject of Prefabs or hidden sub assets will
                 // still be located and pinged in the Project Browser (case 1262196).
-                var path = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                var path = AssetDatabase.GetAssetPath(entityId);
                 if (!string.IsNullOrEmpty(path))
                 {
                     var mainObject = AssetDatabase.LoadMainAssetAtPath(path);
                     if (mainObject != null)
                     {
-                        canFrame = CanFrameAsset(mainObject.GetInstanceID());
+                        canFrame = CanFrameAsset(mainObject.GetEntityId());
                         if (canFrame)
-                            instanceID = mainObject.GetInstanceID();
+                            entityId = mainObject.GetEntityId();
                     }
                 }
             }
@@ -2930,15 +2935,15 @@ namespace UnityEditor
 
                 // If the item is visible then we can ping it however if it requires revealing then we can not and should indicate why(locked project view).
                 if (canFrame &&
-                    ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(instanceID))
-                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(instanceID) == -1)))
+                    ((m_ViewMode == ViewMode.TwoColumns && m_ListArea != null && !m_ListArea.IsShowing(entityId))
+                    || (m_ViewMode == ViewMode.OneColumn && m_AssetTree != null && m_AssetTree.data.GetRow(entityId) == -1)))
                 {
                     Repaint();
                     m_LockTracker.PingIcon();
                 }
             }
 
-            FrameObjectPrivate(instanceID, frame, ping);
+            FrameObjectPrivate(entityId, frame, ping);
             if (s_LastInteractedProjectBrowser == this)
             {
                 m_GrabKeyboardFocusForListArea = true;
@@ -3115,14 +3120,14 @@ namespace UnityEditor
             return property;
         }
 
-        internal void ShowObjectsInList(int[] instanceIDs)
+        internal void ShowObjectsInList(EntityId[] entityIds)
         {
             if (!Initialized())
                 Init();
 
             if (m_ViewMode == ViewMode.TwoColumns)
             {
-                m_ListArea.ShowObjectsInList(instanceIDs);
+                m_ListArea.ShowObjectsInList(entityIds);
                 m_FolderTree.SetSelection(k_EmptySelection, false); // Remove selection from folder tree since we show custom list (press F to focus)
             }
             else if (m_ViewMode == ViewMode.OneColumn)
@@ -3139,9 +3144,9 @@ namespace UnityEditor
             // Only one ProjectBrowser can have focus at a time so if we find one just return that one
             if (s_LastInteractedProjectBrowser != null)
             {
-                int[] instanceIDs = Selection.entityIds.ToIntArray();
+                EntityId[] entityIds = Selection.entityIds;
 
-                s_LastInteractedProjectBrowser.ShowObjectsInList(instanceIDs);
+                s_LastInteractedProjectBrowser.ShowObjectsInList(entityIds);
             }
         }
 

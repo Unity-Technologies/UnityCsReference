@@ -26,7 +26,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             foreach (var file in files)
             {
-                using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, ChunkSize, FileOptions.SequentialScan);
+                // On Windows, ensure we safely account for long file paths
+                var filePath = Application.platform == RuntimePlatform.WindowsEditor ? $@"\\?\{file}" : file;
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, ChunkSize, FileOptions.SequentialScan);
 
                 int bytesRead;
                 while ((bytesRead = stream.Read(chunk, 0, ChunkSize)) > 0)

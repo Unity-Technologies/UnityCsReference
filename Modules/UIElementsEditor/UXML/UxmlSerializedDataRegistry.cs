@@ -216,6 +216,7 @@ namespace UnityEditor.UIElements
             FontField.UxmlSerializedData.Register();
             GradientField.UxmlSerializedData.Register();
             GroupBox.UxmlSerializedData.Register();
+            GUIDField.UxmlSerializedData.Register();
             Hash128Field.UxmlSerializedData.Register();
             HelpBox.UxmlSerializedData.Register();
             InspectorElement.UxmlSerializedData.Register();
@@ -255,7 +256,6 @@ namespace UnityEditor.UIElements
             TemplateContainer.UxmlSerializedData.Register();
             TextElement.UxmlSerializedData.Register();
             TextField.UxmlSerializedData.Register();
-            TextShadowField.UxmlSerializedData.Register();
             TimeValueField.UxmlSerializedData.Register();
             Toggle.UxmlSerializedData.Register();
             ToggleButtonGroup.UxmlSerializedData.Register();

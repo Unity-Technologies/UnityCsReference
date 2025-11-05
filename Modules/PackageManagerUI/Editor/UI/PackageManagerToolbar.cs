@@ -345,7 +345,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Install package by name...");
+            dropdownItem.text = L10n.Tr("Install package by technical name...");
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
@@ -353,7 +353,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Create package");
+            dropdownItem.text = L10n.Tr("Create package...");
             dropdownItem.userData = "CreatePackage";
             dropdownItem.insertSeparatorBefore = true;
             dropdownItem.action = () =>

@@ -15,6 +15,7 @@ using UnityEngine.Scripting;
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using StackValidationResult = UnityEngine.Rendering.VirtualTexturing.EditorHelpers.StackValidationResult;
 using System.IO;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor
 {
@@ -235,12 +236,14 @@ namespace UnityEditor
 
             public void OnEnable()
             {
-                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(SessionState.GetInt("PreviewReflectionProbe", 0)) as ReflectionProbe;
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
+                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(EntityId.From(SessionState.GetInt("PreviewReflectionProbe", 0))) as ReflectionProbe;
             }
 
             public void OnDisable()
             {
-                SessionState.SetInt("PreviewReflectionProbe", m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetInstanceID() : 0);
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
+                SessionState.SetInt("PreviewReflectionProbe", (int)(m_SelectedReflectionProbe ? m_SelectedReflectionProbe.GetEntityId() : EntityId.None).GetRawData());
             }
 
             public override void OnGUI(Rect rc)
@@ -3142,7 +3145,7 @@ namespace UnityEditor
             {
                 if (type != EventType.DragPerform)
                 {
-                    ClearDragMaterialRendering(); 
+                    ClearDragMaterialRendering();
                     s_previousDraggedUponTerrain = terrain;
                     s_previousTerrainMaterialTemplate = terrain.materialTemplate;
 

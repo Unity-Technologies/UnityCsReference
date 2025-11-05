@@ -384,8 +384,8 @@ namespace UnityEditor
                 foreach (var type in requiredTypes)
                 {
                     var asset = AssetDatabase.LoadAssetAtPath(s, type);
-                    if (asset != null && asset.GetInstanceID() != 0)
-                        return asset.GetInstanceID();
+                    if (asset != null && asset.GetEntityId() != 0)
+                        return asset.GetEntityId();
                 }
                 return 0;
             }, m_LegacySearchSessionOptions);
@@ -514,7 +514,7 @@ namespace UnityEditor
             m_SkipHiddenPackages = true;
             m_AllowedIDs = allowedEntityIds;
             m_ObjectBeingEdited = objectBeingEdited;
-            SetSelectedInstanceID(obj?.GetInstanceID() ?? 0);
+            SetSelectedInstanceID(obj?.GetEntityId() ?? 0);
             m_SelectionCancelled = false;
             m_PreventSetSelectionOnClose = false;
             m_ShowNoneItem = showNoneItem;
@@ -575,7 +575,7 @@ namespace UnityEditor
 
                 Action<UnityObject> onSelectionChanged = selectedObj =>
                 {
-                    SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetInstanceID());
+                    SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetEntityId());
                     NotifySelectionChanged(false);
                 };
                 Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
@@ -596,7 +596,7 @@ namespace UnityEditor
                     }
                     else if (!m_PreventSetSelectionOnClose) // prevent re-set selection if it has been set programmatically before closing
                     {
-                        SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetInstanceID());
+                        SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetEntityId());
                         NotifySelectionChanged(false);
                     }
 

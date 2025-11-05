@@ -301,6 +301,22 @@ namespace UnityEditor.Profiling
                 return ret[ret.Length-1];
             }
         }
+
+        internal T? GetProfilingSessionMetaDataLatest<T>(ProfilingSessionMetaDataEntry entry) where T : unmanaged
+        {
+            var metaDataCount = GetSessionMetaDataCount(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry);
+            if (metaDataCount <= 0)
+                return null;
+
+            using (var ret = GetSessionMetaData<T>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry, metaDataCount -1))
+            {
+                if (ret.Length > 0)
+                    return ret[ret.Length-1];
+            }
+
+            return null;
+        }
+
         internal string GetProfilingSessionMetaDataString(ProfilingSessionMetaDataEntry entry)
         {
             using (var ret = GetSessionMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry))
@@ -311,6 +327,28 @@ namespace UnityEditor.Profiling
                     return System.Text.Encoding.UTF8.GetString((byte*)ret.GetUnsafePtr(), ret.Length);
                 }
             }
+        }
+
+        internal string GetProfilingSessionMetaDataStringLatest(ProfilingSessionMetaDataEntry entry)
+        {
+            // NB: If an empty string ("") was written as metadata, it will be added to
+            // the metadata count, but the length of the returned NativeArray will be zero.
+            var metaDataCount = GetSessionMetaDataCount(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry);
+            if (metaDataCount <= 0)
+                return null;
+
+            using (var ret = GetSessionMetaData<byte>(ProfilerDriver.profilerInternalSessionMetaDataGuid, (int)entry, metaDataCount -1))
+            {
+                if (ret.Length > 0)
+                {
+                    unsafe
+                    {
+                        return System.Text.Encoding.UTF8.GetString((byte*)ret.GetUnsafePtr(), ret.Length);
+                    }
+                }
+            }
+
+            return null;
         }
 
         [StructLayout(LayoutKind.Sequential)]

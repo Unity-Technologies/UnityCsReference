@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using UnityEditor.Experimental;
 using UnityEngine.Assertions;
 using static UnityEditor.AssetsTreeViewDataSource;
-using static UnityEditorInternal.InternalEditorUtility;
 
 namespace UnityEditor
 {
@@ -92,7 +91,7 @@ namespace UnityEditor
         override protected void RenameEnded()
         {
             string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
-            int instanceID = GetRenameOverlay().userData;
+            EntityId entityId = GetRenameOverlay().userData;
             bool isCreating = GetCreateAssetUtility().IsCreatingNewAsset();
             bool userAccepted = GetRenameOverlay().userAcceptedRename;
 
@@ -106,7 +105,7 @@ namespace UnityEditor
                 else
                 {
                     // Rename an existing asset
-                    ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                    ObjectNames.SetNameSmartWithEntityId(entityId, name);
                 }
             }
             else if (isCreating)
@@ -188,27 +187,7 @@ namespace UnityEditor
 
         private void OnIconOverlayGUI(TreeViewItem<EntityId> item, Rect overlayRect)
         {
-            if (!AssetReference.IsAssetImported(item.id))
-            {
-                var assetTreeItem = item as IAssetTreeViewItem;
-                if (assetTreeItem == null)
-                    return;
-
-                OnIconOverlayGUI_ForNonImportAsset(assetTreeItem.Guid, overlayRect, false, m_TreeViewRepaintAction);
-            }
-            else
-                OnIconOverlayGUI(item.id, overlayRect, false, m_TreeViewRepaintAction);
-        }
-
-        internal static void OnIconOverlayGUI_ForNonImportAsset(string guid, Rect overlayRect, bool addPadding, Action repaintAction = null)
-        {
-            if (addPadding)
-            {
-                overlayRect.x -= k_IconOverlayPadding;
-                overlayRect.width += k_IconOverlayPadding * 2;
-            }
-
-            ProjectHooks.OnProjectWindowItem(guid, overlayRect, repaintAction);
+            OnIconOverlayGUI(item.id, overlayRect, false, m_TreeViewRepaintAction);
         }
 
         internal static void OnIconOverlayGUI(int instanceID, Rect overlayRect, bool addPadding, Action repaintAction = null)

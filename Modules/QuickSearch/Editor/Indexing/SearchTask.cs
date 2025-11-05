@@ -5,8 +5,9 @@
 //#define DEBUG_PROGRESS
 // #define DEBUG_SEARCHTASK_DISPOSE
 using System;
+using System.Collections.Generic;
 using System.Threading;
-using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Search
 {
@@ -23,17 +24,22 @@ namespace UnityEditor.Search
 
         private const int k_BlockingProgress = -2;
 
+        static readonly TimeSpan k_MaxThreadJoinWaitTime = TimeSpan.FromSeconds(5);
+
         public readonly string name;
         public readonly string title;
         internal int progressId = Progress.InvalidProgressId;
         private volatile float lastProgress = -1f;
-        private EventWaitHandle cancelEvent;
+        private CancellationTokenSource m_CancelEvent;
         private readonly ResolveHandler resolver;
         private readonly System.Diagnostics.Stopwatch sw;
         private string status = null;
         private volatile bool disposed = false;
         private readonly ITaskReporter reporter;
         int m_ProgressThrottleCounter;
+        List<Thread> m_Threads = new();
+
+        internal IReadOnlyList<Thread> threads => m_Threads;
 
         public int total { get; set; }
         public bool throttleProgressReport { get; set; } = false;
@@ -44,6 +50,8 @@ namespace UnityEditor.Search
         public bool async => resolver != null;
         public long elapsedTime => sw.ElapsedMilliseconds;
 
+        public CancellationToken cancellationToken => m_CancelEvent?.Token ?? CancellationToken.None;
+
         private SearchTask(string name, string title, ITaskReporter reporter)
         {
             this.name = name;
@@ -51,7 +59,18 @@ namespace UnityEditor.Search
             this.reporter = reporter;
             sw = new System.Diagnostics.Stopwatch();
             sw.Start();
+
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
         }
+
+        private void OnBeforeAssemblyReload()
+        {
+            CancelImmediate();
+        }
+
+        public SearchTask(string name)
+            : this(name, string.Empty, null)
+        { }
 
         /// <summary>
         /// Create blocking task
@@ -72,12 +91,18 @@ namespace UnityEditor.Search
             this.total = total;
             this.resolver = resolver;
             progressId = StartReport(title);
-            cancelEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
+            m_CancelEvent = new CancellationTokenSource();
 
             if (IsProgressRunning(progressId))
             {
                 LogProgress("RegisterCallback");
-                Progress.RegisterCancelCallback(progressId, () => cancelEvent != null && cancelEvent.Set());
+                Progress.RegisterCancelCallback(progressId, () =>
+                {
+                    if (m_CancelEvent == null)
+                        return false;
+                    m_CancelEvent.Cancel();
+                    return true;
+                });
             }
         }
 
@@ -99,19 +124,19 @@ namespace UnityEditor.Search
             if (disposed)
                 return;
 
-            cancelEvent?.Dispose();
-            cancelEvent = null;
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            var allStopped = CancelImmediate();
+
+            if (!allStopped)
+                Debug.LogWarning($"SearchTask '{name}' had active threads when disposed ({(disposing ? "From Dispose" : "From Finalizer")}).");
+
+            m_CancelEvent?.Dispose();
+            m_CancelEvent = null;
 
             if (disposing)
                 Resolve();
 
-            LogProgress("Exists");
-            if (Progress.Exists(progressId))
-            {
-                LogProgress("Remove");
-                Progress.Remove(progressId);
-            }
-            progressId = Progress.InvalidProgressId;
+            ClearReport();
             disposed = true;
         }
 
@@ -123,15 +148,31 @@ namespace UnityEditor.Search
 
         ~SearchTask() => Dispose(false);
 
-        public bool RunThread(Action routine, Action finalize = null)
+        public bool RunThread(Action routine)
         {
-            var t = new Thread(() =>
+            return RunThread(routine, null);
+        }
+
+        public bool RunThread(Action routine, Action finalize)
+        {
+            var t = new Thread((currentThreadObject) =>
             {
+                var currentThread = (Thread)currentThreadObject;
                 try
                 {
+                    if (Canceled())
+                    {
+                        return;
+                    }
+
                     routine();
-                    if (finalize != null)
-                        Dispatcher.Enqueue(finalize);
+
+                    if (Canceled())
+                    {
+                        return;
+                    }
+
+                    DispatchWaitForThread(currentThread, finalize);
                 }
                 catch (ThreadAbortException)
                 {
@@ -139,13 +180,14 @@ namespace UnityEditor.Search
                 }
                 catch (Exception ex)
                 {
-                    Dispatcher.Enqueue(() => Resolve(ex));
+                    DispatchWaitForThread(currentThread, () => Resolve(ex));
                 }
             })
             {
                 Name = name
             };
-            t.Start();
+            t.Start(t);
+            m_Threads.Add(t);
             return t.ThreadState == ThreadState.Running;
         }
 
@@ -198,12 +240,12 @@ namespace UnityEditor.Search
 
             if (progressId == k_BlockingProgress)
             {
-                if (cancelEvent == null)
+                if (m_CancelEvent == null)
                     EditorUtility.DisplayProgressBar(title, status, current / (float)total);
                 else
                 {
                     if (EditorUtility.DisplayCancelableProgressBar(title, status, current / (float)total))
-                        cancelEvent.Set();
+                        m_CancelEvent.Cancel();
                 }
             }
             else
@@ -245,7 +287,15 @@ namespace UnityEditor.Search
 
         public void Cancel()
         {
-            cancelEvent?.Set();
+            m_CancelEvent?.Cancel();
+        }
+
+        public bool CancelImmediate()
+        {
+            Cancel();
+            var allStopped = WaitForAllThreads();
+            m_Threads.Clear();
+            return allStopped;
         }
 
         public bool Canceled()
@@ -253,17 +303,22 @@ namespace UnityEditor.Search
             if (!IsValid())
                 return true;
 
-            if (cancelEvent == null)
+            if (m_CancelEvent == null)
                 return false;
 
-            if (!cancelEvent.WaitOne(0))
+            if (!m_CancelEvent.IsCancellationRequested)
                 return false;
+
+            // TODO: SearchTasks should not be run concurrently, even if they can run threads. So this should be good enough for now, i.e. there shouldn't be a race condition to enqueue.
+            // However, we will need to revisit the whole class to prevent potential future issues.
+            if (!canceled && resolver != null)
+                Dispatcher.Enqueue(() =>
+                {
+                    WaitForAllThreads();
+                    resolver.Invoke(this, null);
+                });
 
             canceled = true;
-            ClearReport();
-
-            if (resolver != null)
-                Dispatcher.Enqueue(() => resolver.Invoke(this, null));
             return true;
         }
 
@@ -288,11 +343,11 @@ namespace UnityEditor.Search
         {
             Console.WriteLine($"Search task exception: {err}");
 
-            if (!IsValid())
-                return;
-
             error = err;
             canceled = true;
+
+            if (!IsValid())
+                return;
 
             if (err != null)
             {
@@ -405,6 +460,42 @@ namespace UnityEditor.Search
             var status = Progress.GetStatus(progressId);
             LogProgress("GetStatus", status);
             return status == Progress.Status.Running;
+        }
+
+        static void DispatchWaitForThread(Thread t, Action actionToRunAfterThread)
+        {
+            if (t == null)
+                throw new ArgumentNullException(nameof(t));
+            if (actionToRunAfterThread == null)
+                return;
+            Dispatcher.Enqueue(() =>
+            {
+                var stopped = t.Join(k_MaxThreadJoinWaitTime);
+                if (!stopped)
+                {
+                    Debug.LogWarning($"SearchTask '{t.Name}' thread did not stop within {k_MaxThreadJoinWaitTime.TotalSeconds} seconds.");
+                }
+                actionToRunAfterThread.Invoke();
+            });
+        }
+
+        bool WaitForAllThreads()
+        {
+            var allStopped = true;
+            foreach (var thread in m_Threads)
+            {
+                if (thread.IsAlive)
+                {
+                    var stopped = thread.Join(k_MaxThreadJoinWaitTime);
+                    allStopped &= stopped;
+                    if (!stopped)
+                    {
+                        Debug.LogWarning($"SearchTask '{name}' thread did not stop within {k_MaxThreadJoinWaitTime.TotalSeconds} seconds.");
+                    }
+                }
+            }
+
+            return allStopped;
         }
     }
 }

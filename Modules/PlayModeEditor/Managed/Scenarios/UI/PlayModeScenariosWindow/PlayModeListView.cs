@@ -27,8 +27,8 @@ namespace Unity.PlayMode.Editor
         {
             name = "playmode-list-view";
 
-            PlayModeScenarioUtils.ConfigurationAddedOrRemoved -= RefreshList;
-            PlayModeScenarioUtils.ConfigurationAddedOrRemoved += RefreshList;
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             m_ListView = new ListView { fixedItemHeight = 16, selectionType = SelectionType.Single };
             m_ListView.selectionChanged += OnItemSelected;
@@ -63,6 +63,17 @@ namespace Unity.PlayMode.Editor
             Add(m_ListView);
             RefreshList();
             styleSheets.Add(EditorGUIUtility.LoadRequired(k_Stylesheet) as StyleSheet);
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            PlayModeScenarioUtils.AssetsChanged -= RefreshList;
+            PlayModeScenarioUtils.AssetsChanged += RefreshList;
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            PlayModeScenarioUtils.AssetsChanged -= RefreshList;
         }
 
         internal bool TrySelect(PlayModeScenario scenario)

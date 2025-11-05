@@ -69,13 +69,9 @@ namespace UnityEditorInternal
                 if (EditorSnapSettings.gridSnapActive)
                 {
                     var normal = Vector3.Cross(slideDir1, slideDir2);
-
-                    if (Snapping.IsCardinalDirection(normal))
-                    {
-                        var worldSpace = Handles.matrix.MultiplyPoint(handlePos);
-                        worldSpace = Snapping.Snap(worldSpace, GridSettings.size, (SnapAxis) ~new SnapAxisFilter(normal));
-                        handlePos = Handles.inverseMatrix.MultiplyPoint(worldSpace);
-                    }
+                    var worldSpace = Handles.matrix.MultiplyPoint(handlePos);
+                    worldSpace = Handles.SnapToGrid(worldSpace, normal, true);
+                    handlePos = Handles.inverseMatrix.MultiplyPoint(worldSpace);
                 }
             }
 

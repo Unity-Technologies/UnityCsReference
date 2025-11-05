@@ -227,9 +227,9 @@ namespace UnityEditorInternal
 
         DopeSheetEditorRectangleTool m_RectangleTool;
 
-        internal int assetPreviewManagerID
+        internal EntityId assetPreviewManagerID
         {
-            get { return m_Owner != null ? m_Owner.GetInstanceID() : 0; }
+            get { return m_Owner != null ? m_Owner.GetEntityId() : EntityId.None; }
         }
 
         public bool spritePreviewLoading { get { return m_SpritePreviewLoading; } }
@@ -461,7 +461,7 @@ namespace UnityEditorInternal
                 Texture2D texture = null;
 
                 if (keyframe.isPPtrCurve && dopeline.tallMode)
-                    texture = keyframe.value == null ? null : AssetPreview.GetAssetPreview(((Object)keyframe.value).GetInstanceID(), assetPreviewManagerID);
+                    texture = keyframe.value == null ? null : AssetPreview.GetAssetPreview(((Object)keyframe.value).GetEntityId(), assetPreviewManagerID);
 
                 if (texture != null)
                 {
@@ -506,7 +506,7 @@ namespace UnityEditorInternal
                     Rect rect = GetDragAndDropRect(dopeline, time);
 
                     if (dopeline.isPptrDopeline && dopeline.tallMode)
-                        texture = AssetPreview.GetAssetPreview(obj.GetInstanceID(), assetPreviewManagerID);
+                        texture = AssetPreview.GetAssetPreview(obj.GetEntityId(), assetPreviewManagerID);
 
                     if (texture != null)
                     {

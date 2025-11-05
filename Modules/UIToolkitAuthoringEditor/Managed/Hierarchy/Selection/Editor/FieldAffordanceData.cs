@@ -15,6 +15,10 @@ namespace Unity.UIToolkit.Editor
     internal enum FieldAffordanceSourceInfoType
     {
         /// <summary>
+        /// Indicates that the value of the underlying property is default.
+        /// </summary>
+        Default,
+        /// <summary>
         /// Indicates that the value of the underlying VisualElement property is set as inline in its source UXML file.
         /// </summary>
         Inline,
@@ -33,10 +37,6 @@ namespace Unity.UIToolkit.Editor
         /// (ancestors).
         /// </summary>
         Inherited,
-        /// <summary>
-        /// Indicates that the value of the underlying property is default.
-        /// </summary>
-        Default,
         /// <summary>
         /// Indicates that the value of the underlying VisualElement property is resolved from a Binding
         /// </summary>

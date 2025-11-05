@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 
@@ -257,7 +258,12 @@ namespace UnityEditor
                     }
                 }
 
-                SceneHierarchyWindow.lastInteractedHierarchyWindow?.SetExpanded(go.GetInstanceID(), true);
+                using var _ = ListPool<IHierarchyWindow>.Get(out var windows);
+                IHierarchyWindow.GetAllHierarchyWindows(windows);
+                foreach (var window in windows)
+                {
+                    window.SetExpanded(go.GetEntityId(), true);
+                }
 
                 // Ensure empty parent after reparenting jumps into rename mode if needed UUM-15042
                 if (HierarchyPreferences.RenameNewObjects)

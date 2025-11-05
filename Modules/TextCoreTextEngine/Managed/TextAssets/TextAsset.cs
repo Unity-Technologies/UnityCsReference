@@ -27,16 +27,19 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// Instance ID of the TMP Asset
         /// </summary>
-        public int instanceID
+        public EntityId entityId
         {
             get
             {
-                if (m_InstanceID == 0)
-                    m_InstanceID = GetInstanceID();
+                if (m_EntityId == EntityId.None)
+                    m_EntityId = GetEntityId();
 
-                return m_InstanceID;
+                return m_EntityId;
             }
         }
+
+        [System.Obsolete("Use entityId instead.")]
+        public int instanceID => entityId;
 
         /// <summary>
         /// HashCode based on the name of the asset.
@@ -89,7 +92,7 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         internal string m_Version;
 
-        internal int m_InstanceID;
+        internal EntityId m_EntityId;
 
         internal int m_HashCode;
 
@@ -111,13 +114,13 @@ namespace UnityEngine.TextCore.Text
 
         internal virtual void OnDestroy()
         {
-            kTextAssetByInstanceId.Remove(instanceID);
-            
+            kTextAssetByInstanceId.Remove(entityId);
+
         }
 
         internal virtual void OnEnable()
         {
-            kTextAssetByInstanceId.TryAdd(instanceID, new WeakReference<TextAsset>(this));
+            kTextAssetByInstanceId.TryAdd(entityId, new WeakReference<TextAsset>(this));
         }
     }
 }

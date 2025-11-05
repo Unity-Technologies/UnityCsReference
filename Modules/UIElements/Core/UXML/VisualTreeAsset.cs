@@ -146,7 +146,7 @@ namespace UnityEngine.UIElements
             [SerializeField] string m_Path;
             [SerializeField] string m_TypeFullName;
             [SerializeField] LazyLoadReference<Object> m_AssetReference;
-            [SerializeField] int m_InstanceID;
+            [SerializeField] EntityId m_EntityId;
 
             Type m_CachedType;
             public Type type => m_CachedType ??= Type.GetType(m_TypeFullName);
@@ -158,10 +158,10 @@ namespace UnityEngine.UIElements
                 {
                     if (m_AssetReference.isSet)
                     {
-                        return m_AssetReference.asset == null && m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : m_AssetReference.asset;
+                        return m_AssetReference.asset == null && m_EntityId != EntityId.None ? CreateMissingReferenceObject(m_EntityId) : m_AssetReference.asset;
                     }
 
-                    return m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : null;
+                    return m_EntityId != EntityId.None ? CreateMissingReferenceObject(m_EntityId) : null;
                 }
             }
 
@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements
                 m_TypeFullName = type.AssemblyQualifiedName;
                 m_CachedType = type;
                 m_AssetReference = asset;
-                m_InstanceID = asset is Object ? asset.GetInstanceID() : 0;
+                m_EntityId = asset is Object ? asset.GetEntityId() : EntityId.None;
             }
         }
 

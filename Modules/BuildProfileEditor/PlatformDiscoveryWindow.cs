@@ -31,6 +31,8 @@ namespace UnityEditor.Build.Profile
         // There are checks at a lower level too.
         const int k_MaxBuildProfileNameLength = 200;
 
+        Action m_OnCloseContinuation = null;
+
         BuildProfileCard[] m_Cards;
         BuildProfileCard m_SelectedCard;
         Image m_SelectedCardImage;
@@ -72,10 +74,16 @@ namespace UnityEditor.Build.Profile
             ShowWindowAndSelectPlatform();
         }
 
-        public static void ShowWindowAndSelectPlatform(GUID? platformGuid = null)
+        public static void ShowWindow(Action onCloseContinuation)
+        {
+            ShowWindowAndSelectPlatform(null, onCloseContinuation);
+        }
+
+        public static void ShowWindowAndSelectPlatform(GUID? platformGuid = null, Action onCloseContinuation = null)
         {
             var window = GetWindow<PlatformDiscoveryWindow>(true, TrText.platformDiscoveryTitle, true);
             window.minSize = new Vector2(900, 500);
+            window.m_OnCloseContinuation = onCloseContinuation;
 
             if (platformGuid != null)
                 window.SelectPlatform(platformGuid.Value);
@@ -162,6 +170,7 @@ namespace UnityEditor.Build.Profile
 
         public void OnDisable()
         {
+            m_OnCloseContinuation?.Invoke();
             BuildProfileContext.packageServiceInfoProvider.OnPackageInfoUpdated -= OnPackageInfoUpdated;
             EditorAnalytics.SendAnalytic(m_CloseEvent);
         }

@@ -177,6 +177,10 @@ namespace UnityEngine.UIElements
         {
             InitTextLib();
             var fa = TextUtilities.GetFontAsset(m_TextElement);
+
+            if (fa == null)
+                return;
+
             var style = m_TextElement.computedStyle;
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
             {

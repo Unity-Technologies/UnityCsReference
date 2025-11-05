@@ -43,7 +43,7 @@ namespace UnityEditor.AdaptivePerformance.Editor.Analytics
             public string eventType;
 
             /// <summary>
-            /// The <see cref="GUID"/> of the build.
+            /// The <see cref="UnityEngine.GUID"/> of the build.
             /// </summary>
             public string buildGuid;
 

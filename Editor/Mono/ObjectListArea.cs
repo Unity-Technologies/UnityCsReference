@@ -8,9 +8,6 @@ using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
-using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
-using Object = UnityEngine.Object;
-using RenameOverlay = UnityEditor.RenameOverlay<int>;
 
 namespace UnityEditor
 {
@@ -164,22 +161,22 @@ namespace UnityEditor
             m_Groups.Add(m_LocalAssets);
         }
 
-        public void ShowObjectsInList(int[] instanceIDs)
+        public void ShowObjectsInList(EntityId[] entityIds)
         {
             // Clear search, etc.
             Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
 
             // Set list manually
-            m_LocalAssets.ShowObjectsInList(instanceIDs);
+            m_LocalAssets.ShowObjectsInList(entityIds);
         }
 
-        internal void ShowObjectsInList(int[] instanceIDs, string[] rootPaths)
+        internal void ShowObjectsInList(EntityId[] entityIds, string[] rootPaths)
         {
             // Clear search, etc.
             Init(m_TotalRect, HierarchyType.Assets, new SearchFilter(), false);
 
             // Set list manually
-            m_LocalAssets.ShowObjectsInList(instanceIDs, rootPaths);
+            m_LocalAssets.ShowObjectsInList(entityIds, rootPaths);
         }
 
         // This method is being used by the EditorTests/Searching tests
@@ -215,12 +212,12 @@ namespace UnityEditor
             SetupData(true);
         }
 
-        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId)
+        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, EntityId> assetToEntityId)
         {
-            InitForSearch(rect, hierarchyType, searchFilter, checkThumbnails, assetToInstanceId, SearchService.SearchSessionOptions.Default);
+            InitForSearch(rect, hierarchyType, searchFilter, checkThumbnails, assetToEntityId, SearchService.SearchSessionOptions.Default);
         }
 
-        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
+        internal void InitForSearch(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, Func<string, EntityId> assetToEntityIdId, SearchService.SearchSessionOptions searchSessionOptions)
         {
             var searchQuery = searchFilter.originalText;
             if (string.IsNullOrEmpty(searchQuery))
@@ -242,7 +239,7 @@ namespace UnityEditor
                     {
                         requiredTypeNames = searchFilter.classNames,
                         requiredTypes = searchFilter.classNames.Select(name =>
-                            TypeCache.GetTypesDerivedFrom<Object>()
+                            TypeCache.GetTypesDerivedFrom<UnityEngine.Object>()
                                 .FirstOrDefault(t => name == t.FullName || name == t.Name)),
                         searchFilter = searchFilter
                     };
@@ -254,9 +251,9 @@ namespace UnityEditor
                     if (newResults == null || !searchFilter.IsSearching())
                         return;
                     allResults.AddRange(newResults);
-                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToInstanceId, searchSessionOptions);
+                    InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, allResults, assetToEntityIdId, searchSessionOptions);
                 });
-                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToInstanceId, searchSessionOptions);
+                InitListAreaWithItems(rect, hierarchyType, searchFilter, checkThumbnails, results, assetToEntityIdId, searchSessionOptions);
                 if (results != null)
                     allResults.AddRange(results);
                 m_SearchSessionHandler.EndSearch();
@@ -269,15 +266,15 @@ namespace UnityEditor
             }
         }
 
-        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, int> assetToInstanceId, SearchService.SearchSessionOptions searchSessionOptions)
+        void InitListAreaWithItems(Rect rect, HierarchyType hierarchyType, SearchFilter searchFilter, bool checkThumbnails, IEnumerable<string> items, Func<string, EntityId> assetToEntityId, SearchService.SearchSessionOptions searchSessionOptions)
         {
             // When items is null, we fallback to default implementation. Current default search engine returns null.
             Init(rect, hierarchyType, items == null ? searchFilter : new SearchFilter(), checkThumbnails, searchSessionOptions);
             if (items != null && hierarchyType == HierarchyType.Assets)
             {
                 // We only support assets under "Assets" and "Packages"
-                var instanceIdSet = new HashSet<int>();
-                var uniqueInstanceIds = new List<int>();
+                var entityIdSet = new HashSet<EntityId>();
+                var uniqueEntityIds = new List<EntityId>();
                 var rootPaths = new List<string>();
                 var itemsTaken = 0;
                 foreach (var path in items)
@@ -302,13 +299,13 @@ namespace UnityEditor
                     if (reformattedPath == rootPath)
                         continue;
 
-                    var instanceId = assetToInstanceId(reformattedPath);
-                    if (instanceId == 0)
+                    var entityId = assetToEntityId(reformattedPath);
+                    if (entityId == EntityId.None)
                         continue;
 
-                    if (instanceIdSet.Add(instanceId))
+                    if (entityIdSet.Add(entityId))
                     {
-                        uniqueInstanceIds.Add(instanceId);
+                        uniqueEntityIds.Add(entityId);
                         rootPaths.Add(rootPath);
                         ++itemsTaken;
                     }
@@ -316,7 +313,7 @@ namespace UnityEditor
                     if (itemsTaken >= FilteredHierarchy.maxSearchAddCount)
                         break;
                 }
-                ShowObjectsInList(uniqueInstanceIds.ToArray(), rootPaths.ToArray());
+                ShowObjectsInList(uniqueEntityIds.ToArray(), rootPaths.ToArray());
             }
         }
 
@@ -382,11 +379,11 @@ namespace UnityEditor
             // For key navigation: Auto set selection to first element if selection is not shown currently when tabbing
             if (evt.keyCode == KeyCode.Tab && evt.type == EventType.KeyDown && !hasKeyboardFocus && !IsShowingAny(GetSelection()))
             {
-                AssetReference firstAssetReference;
-                if (m_LocalAssets.AssetReferenceAtIndex(0, out firstAssetReference))
+                EntityId assetIdToSelect;
+                if (m_LocalAssets.AssetIdAtIndex(0, out assetIdToSelect))
                 {
-                    m_LocalAssets.GetNewSelection(ref firstAssetReference, false, false);
-                    Selection.activeEntityId = firstAssetReference.entityId;
+                    m_LocalAssets.GetNewSelection(assetIdToSelect, false, false);
+                    Selection.activeEntityId = assetIdToSelect;
                 }
             }
 
@@ -566,7 +563,7 @@ namespace UnityEditor
                 {
                     if (GetRenameOverlay().userAcceptedRename)
                     {
-                        ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                        ObjectNames.SetNameSmartWithEntityId(instanceID, name);
                     }
                 }
 
@@ -627,19 +624,9 @@ namespace UnityEditor
 
         public void SelectAll()
         {
-            List<EntityId> instanceIDs;
-            List<string> guids;
-            m_LocalAssets.GetAssetReferences(out instanceIDs, out guids);
-            if (instanceIDs.Count != 0)
-            {
-                var selectedInstanceIDs = InternalEditorUtility.TryGetInstanceIds(instanceIDs, guids, 0, instanceIDs.Count - 1);
-                if (selectedInstanceIDs == null)
-                {
-                    Debug.Log("Cannot select all because some assets being selected are in progress of being imported");
-                    return;
-                }
-            }
-            SetSelection(instanceIDs.ToArray(), false);
+            List<EntityId> assetIds;
+            m_LocalAssets.GetAssetIds(out assetIds);
+            SetSelection(assetIds.ToArray(), false);
         }
 
         public void SetSelection(EntityId[] selectedInstanceIDs, bool doubleClicked)
@@ -895,8 +882,8 @@ namespace UnityEditor
         void SetSelectedAssetByIdx(int selectedIdx)
         {
             // instanceID can be 0 if 'None' item is at index
-            AssetReference assetReference;
-            if (m_LocalAssets.AssetReferenceAtIndex(selectedIdx, out assetReference))
+            EntityId assetEntityId;
+            if (m_LocalAssets.AssetIdAtIndex(selectedIdx, out assetEntityId))
             {
                 Rect r = m_LocalAssets.m_Grid.CalcRect(selectedIdx, 0f);
                 ScrollToPosition(AdjustRectForFraming(r));
@@ -904,12 +891,12 @@ namespace UnityEditor
 
                 EntityId[] newSelection;
                 if (IsLocalAssetsCurrentlySelected())
-                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, true).ToArray(); // Handle multi selection
+                    newSelection = m_LocalAssets.GetNewSelection(assetEntityId, false, true).ToArray(); // Handle multi selection
                 else
-                    newSelection = m_LocalAssets.GetNewSelection(ref assetReference, false, false).ToArray();
+                    newSelection = m_LocalAssets.GetNewSelection(assetEntityId, false, false).ToArray();
 
                 SetSelection(newSelection, false);
-                m_State.m_LastClickedInstanceID = assetReference.entityId;
+                m_State.m_LastClickedInstanceID = assetEntityId;
             }
         }
 
@@ -1308,7 +1295,7 @@ namespace UnityEditor
 
         internal int GetAssetPreviewManagerID()
         {
-            return m_Owner.GetInstanceID();
+            return m_Owner.GetEntityId();
         }
 
         // Pings only local assets
@@ -1346,7 +1333,7 @@ namespace UnityEditor
                 m_pingIndex = index;
 
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
-                var assetReference = new AssetReference() { entityId = instanceID };
+                var entityId = instanceID;
                 var textClipping = m_LocalAssets.ListMode ? TextClipping.Overflow : TextClipping.Ellipsis;
                 GUIContent cont = new GUIContent(name);
                 string label = cont.text;

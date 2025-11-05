@@ -53,5 +53,15 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override RotateField CreateValueField()
+        {
+            return new RotateField();
+        }
+
+        protected override StyleRotate CreateStyleValue(Rotate v)
+        {
+            return v;
+        }
     }
 }

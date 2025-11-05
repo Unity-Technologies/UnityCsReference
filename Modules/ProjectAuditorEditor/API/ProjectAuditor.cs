@@ -239,7 +239,7 @@ namespace Unity.ProjectAuditor.Editor
         /// It's possible to extend Project Auditor's analysis capabilities without modifying the package, by adding new custom Modules and Analyzers to your project code.
         /// Custom analyzers may wish to report entirely new issue categories. This method is how those new categories are declared for use.
         /// </remarks>
-        /// <param name="report">A custom category name.</param>
+        /// <param name="name">A custom category name.</param>
         /// <returns>A value representing the custom category.</returns>
         internal static IssueCategory GetOrRegisterCategory(string name)
         {

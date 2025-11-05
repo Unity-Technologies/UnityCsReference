@@ -14,12 +14,7 @@ internal struct VectorField
 
     internal unsafe byte* GetDataPtr()
     {
-        var handle = GCHandle.Alloc(this, GCHandleType.Pinned);
-        unsafe
-        {
-            byte* ptr = (byte*)handle.AddrOfPinnedObject().ToPointer();
-            return ptr;
-        }
+        return UnsafeHelper.AsBytePointer(ref this) + Location;
     }
 }
 

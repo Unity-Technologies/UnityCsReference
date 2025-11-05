@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Modules/ClusterRenderer/ClusterNetwork.h")]
-    [Obsolete("This type is deprecated and will be removed in Unity 7.", false)]
+    [Obsolete("This type is deprecated and will be removed in a future release.", false)]
     public class ClusterNetwork
     {
         public static extern bool isMasterOfCluster { get; }

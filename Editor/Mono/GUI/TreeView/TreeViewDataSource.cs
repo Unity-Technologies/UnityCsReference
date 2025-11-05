@@ -364,23 +364,14 @@ internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TI
             for (int i = 0; i < visibleRows.Count; ++i)
                 allIDs.Add(visibleRows[i].id);
 
+            var selectedIDs = selectState.selectedIDs;
+            var lastClickedID = selectState.lastClickedID;
+            var keepMultiSelection = selectState.keepMultiSelection;
+            bool useShiftAsActionKey = selectState.useShiftAsActionKey;
             bool allowMultiselection = CanBeMultiSelected(clickedItem);
 
-            // todo: add support for other types of TIdentifier, Importantly 'InstanceID'
-            if (clickedItem.id is int clickedIntID && selectState.lastClickedID is int lastClickedIntID)
-                return  InternalEditorUtility.GetNewSelection(
-                    clickedIntID, allIDs as List<int>,
-                    selectState.selectedIDs as List<int>,
-                    lastClickedIntID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection
-                ) as List<TIdentifier>;
-            if (clickedItem.id is EntityId clickedInstanceID && selectState.lastClickedID is EntityId lastClickedInstanceID)
-                return InternalEditorUtility.GetNewSelection(
-                    clickedInstanceID, allIDs as List<EntityId>,
-                    selectState.selectedIDs as List<EntityId>,
-                    lastClickedInstanceID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection
-                ) as List<TIdentifier>;
-
-            throw new System.NotImplementedException("InternalEditorUtility.GetNewSelection not implemented for type " + clickedItem.id.GetType());
+            var newSelection = InternalEditorUtility.HandleMultiSelectionWithCurrentModifiers(clickedItem.id, allIDs, selectedIDs, lastClickedID, keepMultiSelection, allowMultiselection, useShiftAsActionKey);
+            return newSelection;
         }
 
         virtual public void OnExpandedStateChanged()

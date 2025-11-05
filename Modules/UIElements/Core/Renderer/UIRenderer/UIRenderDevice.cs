@@ -649,6 +649,7 @@ namespace UnityEngine.UIElements.UIR
             public CommandList activeCommandList;
             public MaterialPropertyBlock constantProps; // Must be applied on material change only
             public MaterialPropertyBlock batchProps;
+            public MaterialPropertyBlock userProps;
             public Material material;
             public int stencilRef;
             public Page curPage;
@@ -659,11 +660,12 @@ namespace UnityEngine.UIElements.UIR
         // Before leaving an iteration over a command, the state that is altered by a draw command must be applied.
         // This must ONLY be called after stash/kick of the previous ranges has been performed.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, EvaluationFlags defaultTextureSlotCountFlags, bool kickRanges, Texture gradientSettings, Texture shaderInfo, ref EvaluationState st)
+        void ApplyDrawCommandState(RenderChainCommand cmd, int textureSlot, Material newMat, bool newMatDiffers, MaterialPropertyBlock userProps, EvaluationFlags defaultTextureSlotCountFlags, bool kickRanges, Texture gradientSettings, Texture shaderInfo, ref EvaluationState st)
         {
             if (newMatDiffers)
             {
                 st.material = newMat;
+                st.userProps = userProps;
                 st.flags |= EvaluationFlags.MustApplyMaterial;
 
                 st.flags &= ~EvaluationFlags.TextureSlotCountBits;
@@ -808,7 +810,15 @@ namespace UnityEngine.UIElements.UIR
                     st.material.SetPass(0); // No multipass support, should it be even considered?
                     Utility.SetPropertyBlock(st.constantProps);
 
+                    if (st.userProps != null)
+                        Utility.SetPropertyBlock(st.userProps);
+
                     st.flags |= EvaluationFlags.MustApplyBatchProps | EvaluationFlags.MustApplyStencil;
+                }
+                else
+                {
+                    if (st.userProps != null)
+                        st.activeCommandList.ApplyUserProps(st.userProps);
                 }
             }
 
@@ -885,6 +895,8 @@ namespace UnityEngine.UIElements.UIR
 
             m_TextureSlotManager.Reset();
             m_TextureSlotManager.StartNewBatch((int)defaultTextureSlotCount);
+
+            MaterialPropertyBlock userProps = null;
 
             while (head != null)
             {
@@ -989,6 +1001,15 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
+                    // Skip matching Pop/Push default material commands
+                    if (head.type == CommandType.PopDefaultMaterial
+                        && head.next?.type == CommandType.PushDefaultMaterial
+                        && defaultMat == head.next?.material)
+                    {
+                        head = head.next.next;
+                        continue;
+                    }
+
                     stashRange = true;
                     kickRanges = true;
                 }
@@ -1037,7 +1058,7 @@ namespace UnityEngine.UIElements.UIR
                     m_DrawStats.totalIndices += (uint)head.indexCount;
 
                     if (mustApplyCmdState)
-                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
+                        ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
                     head = head.next;
                     continue;
                 }
@@ -1070,19 +1091,22 @@ namespace UnityEngine.UIElements.UIR
                             {
                                 int index = drawParams.defaultMaterial.Count - 1;
                                 defaultMat = drawParams.defaultMaterial[index];
+                                userProps = drawParams.props[index];
                                 drawParams.defaultMaterial.RemoveAt(index);
                             }
                             if (head.type == CommandType.PushDefaultMaterial)
                             {
                                 drawParams.defaultMaterial.Add(defaultMat);
+                                drawParams.props.Add(head.userProps);
                                 defaultMat = head.material;
+                                userProps = head.userProps;
                             }
                         }
                     }
                 } // If kick ranges
 
                 if (head.type == CommandType.Draw && mustApplyCmdState)
-                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
+                    ApplyDrawCommandState(head, textureSlot, newMat, newMatDiffers, userProps, defaultTextureSlotCountFlags, kickRanges, gradientSettings, shaderInfo, ref st);
 
                 head = head.next;
             } // While there are commands to execute

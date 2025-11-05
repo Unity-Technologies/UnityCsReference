@@ -203,7 +203,7 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.ShaderFoundryModule")]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         internal static extern bool unlockBlockShaders { get; set; }
-        
+
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static bool cachingShaderPreprocessor { get { return true; } set {} }
 
@@ -300,8 +300,13 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableUpload { get; set; }
 
+        [Obsolete("Using Unity ID to authenticate the Editor connection to Unity Accelerator is no longer supported.", false)]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern bool cacheServerEnableAuth { get; set; }
+        public static bool cacheServerEnableAuth
+        {
+            get { return false; }
+            set {}
+        }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool cacheServerEnableTls { get; set; }

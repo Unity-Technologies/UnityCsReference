@@ -604,7 +604,7 @@ namespace UnityEditor
         {
             if (o == null)
                 return;
-            instanceID = o.GetInstanceID();
+            entityId = o.GetEntityId();
             if (!ObjectIdentifier.TryGetObjectIdentifier(o, out var id))
                 return;
             guid = id.guid.ToString();
@@ -626,15 +626,15 @@ namespace UnityEditor
                 if (o != null)
                     return o;
             }
-            return EditorUtility.EntityIdToObject(instanceID);
+            return EditorUtility.EntityIdToObject(entityId);
         }
 
         // guid/localId/type are for asset references; these are used if present
         public string guid = "";
         public long localId = 0;
         public FileType type = FileType.NonAssetType;
-        // instanceIDs are for in-scene references, not stable across sessions but fine for local copy/paste
-        public int instanceID = 0;
+        // entityIds are for in-scene references, not stable across sessions but fine for local copy/paste
+        public EntityId entityId = EntityId.None;
     }
 
     [Serializable]

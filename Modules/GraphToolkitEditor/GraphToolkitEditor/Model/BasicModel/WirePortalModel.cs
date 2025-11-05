@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -117,6 +119,8 @@ namespace Unity.GraphToolkit.Editor
         protected WirePortalModel()
         {
             m_Capabilities.Add(Editor.Capabilities.Renamable);
+            m_Capabilities.Remove(Editor.Capabilities.Collapsible);
+            m_Capabilities.Remove(Editor.Capabilities.Colorable);
         }
 
         /// <inheritdoc />
@@ -221,5 +225,23 @@ namespace Unity.GraphToolkit.Editor
             m_DeclarationModelHashGuid = m_DeclarationModelGuid;
 #pragma warning restore CS0612
         }
+
+        /// <inheritdoc />
+        public override IReadOnlyList<ContextualMenuItem> ContextualMenuItems
+        {
+            get
+            {
+                var nodeMenuItems = base.ContextualMenuItems;
+                var menuItems = new List<ContextualMenuItem>(nodeMenuItems);
+                menuItems.AddRange(k_ContextualMenuItems);
+                return menuItems;
+            }
+        }
+
+        static readonly List<ContextualMenuItem> k_ContextualMenuItems = new() {
+            ContextualMenuHelpers.createOppositePortalItem,
+            ContextualMenuHelpers.revertToWireItem,
+            ContextualMenuHelpers.revertAllToWiresItem,
+        };
     }
 }

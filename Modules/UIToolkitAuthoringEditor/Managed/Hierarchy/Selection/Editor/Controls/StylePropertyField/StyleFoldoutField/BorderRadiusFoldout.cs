@@ -123,28 +123,28 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
-        public BorderRadiusFoldout() : this("Border Radius") { }
+        public BorderRadiusFoldout() : this("Radius") { }
 
         public BorderRadiusFoldout(string text)
             : base(text)
         {
             var topLeftRow = new OverrideRow() { name = k_TopLeftFieldName };
-            topLeftField = new StyleLengthField("Top-Left") { name = k_TopLeftFieldName };
+            topLeftField = new StyleLengthField("Top-Left") { name = k_TopLeftFieldName, classList = { TextField.alignedFieldUssClassName }};
             topLeftRow.Add(topLeftField);
             Add(topLeftRow);
 
             var topRightRow = new OverrideRow() { name = k_TopRightFieldName };
-            topRightField = new StyleLengthField("Top-Right") { name = k_TopRightFieldName };
+            topRightField = new StyleLengthField("Top-Right") { name = k_TopRightFieldName, classList = { TextField.alignedFieldUssClassName }};
             topRightRow.Add(topRightField);
             Add(topRightRow);
 
             var bottomRightRight = new OverrideRow() { name = k_BottomRightFieldName };
-            bottomRightField = new StyleLengthField("Bottom-Right") { name = k_BottomRightFieldName };
+            bottomRightField = new StyleLengthField("Bottom-Right") { name = k_BottomRightFieldName, classList = { TextField.alignedFieldUssClassName }};
             bottomRightRight.Add(bottomRightField);
             Add(bottomRightRight);
 
             var bottomLeftRow = new OverrideRow() { name = k_BottomLeftFieldName };
-            bottomLeftField = new StyleLengthField("Bottom-Left") { name = k_BottomLeftFieldName };
+            bottomLeftField = new StyleLengthField("Bottom-Left") { name = k_BottomLeftFieldName, classList = { TextField.alignedFieldUssClassName }};
             bottomLeftRow.Add(bottomLeftField);
             Add(bottomLeftRow);
 
@@ -173,6 +173,11 @@ namespace Unity.UIToolkit.Editor
             headerInputField.RegisterValueChangedCallback(OnHeaderValueChange);
 
             UpdateFromChildFields();
+        }
+
+        protected override TextField CreateHeaderInputElement()
+        {
+            return new TextField();
         }
 
         public override void UpdateFromChildFields()

@@ -117,6 +117,8 @@ namespace UnityEditor
                 Tools.pivotRotation = PivotRotation.Global;
             else if (activePivotRotationType == typeof(LocalPivotRotation))
                 Tools.pivotRotation = PivotRotation.Local;
+            else if (activePivotRotationType == typeof(GridPivotRotation))
+                Tools.pivotRotation = PivotRotation.Grid;
             else
             {
                 Tools.pivotRotation = PivotRotation.Custom;
@@ -322,7 +324,7 @@ namespace UnityEditor
         
         internal static bool IsBuiltInPivotMode(CustomPivotMode pivotMode)
         {
-            return (pivotMode is CenterPivotMode || pivotMode is PivotPointPivotMode);
+            return IsBuiltInPivotMode(pivotMode.GetType());
         }
         
         internal static bool IsBuiltInPivotMode(Type pivotModeType)
@@ -332,12 +334,14 @@ namespace UnityEditor
         
         internal static bool IsBuiltInPivotRotation(CustomPivotRotation pivotRotation)
         {
-            return (pivotRotation is GlobalPivotRotation || pivotRotation is LocalPivotRotation);
+            return IsBuiltInPivotRotation(pivotRotation.GetType());
         }
         
         internal static bool IsBuiltInPivotRotation(Type pivotRotationType)
         {
-            return (pivotRotationType == typeof(GlobalPivotRotation) || pivotRotationType == typeof(LocalPivotRotation));
+            return (pivotRotationType == typeof(GlobalPivotRotation) ||
+                    pivotRotationType == typeof(LocalPivotRotation) || 
+                    pivotRotationType == typeof(GridPivotRotation));
         }
         
         internal static bool IsBuiltInPivotSetting(Type pivotSettingType)

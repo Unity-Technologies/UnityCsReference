@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundRepeat startValue, BackgroundRepeat endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, List<FilterFunction> startValue, List<FilterFunction> endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, MaterialDefinition startValue, MaterialDefinition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
 
         void CancelAllAnimations();
         void CancelAllAnimations(VisualElement owner);
@@ -1556,6 +1557,156 @@ namespace UnityEngine.UIElements
             }
         }
 
+        class ValuesMaterialDefinition : Values<MaterialDefinition>
+        {
+            protected override MaterialDefinition Copy(MaterialDefinition value)
+            {
+                return new MaterialDefinition(value);
+            }
+
+            public override Func<MaterialDefinition, MaterialDefinition, bool> SameFunc { get; } = IsSame;
+
+            private static bool IsSame(MaterialDefinition a, MaterialDefinition b)
+            {
+                if (a.material != b.material)
+                    return false;
+
+                var aValues = a.propertyValues;
+                var bValues = b.propertyValues;
+                if (aValues?.Count != bValues?.Count)
+                    return false;
+
+                for (int i = 0; i < aValues?.Count; ++i)
+                {
+                    if (aValues[i] != bValues[i])
+                        return false;
+                }
+
+                return true;
+            }
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref MaterialDefinition a, ref MaterialDefinition b)
+            {
+                // This isn't really a unit conversion, but we need to validate that the material properties matches.
+                // If the number of properties are different, we will do automatic padding similar
+                // to filter functions.
+
+                if ((a.material == null && b.material != null) || (b.material == null && a.material != null))
+                    // We allow animating to/from a null material, this will insert default properties for the animation
+                    return true;
+
+                if (a.material != b.material)
+                    return false;
+
+                var aValues = a.propertyValues;
+                var bValues = b.propertyValues;
+
+                int minCount = Math.Min(aValues?.Count ?? 0, bValues?.Count ?? 0);
+                for (int i = 0; i < minCount; ++i)
+                {
+                    if (aValues[i].type != bValues[i].type || aValues[i].name != bValues[i].name)
+                        return false;
+                }
+
+                return true;
+            }
+
+            protected sealed override void UpdateComputedStyle()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                        running.properties[i], running.style[i].currentValue);
+                }
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+                running.elements[i].computedStyle.ApplyPropertyAnimation(running.elements[i],
+                    running.properties[i], running.style[i].currentValue);
+            }
+
+            private static MaterialPropertyValue LerpPropertyValues(MaterialPropertyValue a, MaterialPropertyValue b, float t)
+            {
+                if (a.type != b.type)
+                    return a;
+
+                switch (a.type)
+                {
+                    case MaterialPropertyValueType.Float:
+                    case MaterialPropertyValueType.Vector:
+                    case MaterialPropertyValueType.Color:
+                        return new MaterialPropertyValue()
+                        {
+                            type = a.type,
+                            name = a.name,
+                            packedValue = Vector4.Lerp(a.packedValue, b.packedValue, t),
+                        };
+                    case MaterialPropertyValueType.Texture:
+                        return t < 0.5f ? a : b; // No interpolation for textures
+                    default:
+                        return a;
+                }
+            }
+
+            private static MaterialPropertyValue GetValueOrDefault(List<MaterialPropertyValue> srcList, List<MaterialPropertyValue> refList, int index)
+            {
+                if (index < srcList?.Count)
+                    return srcList[index];
+
+                var v = refList[index];
+                return new MaterialPropertyValue() { type = v.type, name = v.name };
+            }
+
+            private static void Lerp(MaterialDefinition a, MaterialDefinition b, ref MaterialDefinition result, float t)
+            {
+                if (t > 0.999f)
+                {
+                    // We take a shortcut for the final value to avoid the automatic
+                    // material definition padding and use the actual end value instead.
+                    result = new MaterialDefinition(b);
+                    return;
+                }
+
+                var aValues = a.propertyValues;
+                var bValues = b.propertyValues;
+
+                int maxCount = Math.Max(aValues?.Count ?? 0, bValues?.Count ?? 0);
+
+                if (result.material == null)
+                {
+                    // When transitioning from an emtpy source, we sanitize the result beforehand
+                    result.material = a.material ?? b.material;
+                    result.propertyValues = new List<MaterialPropertyValue>(maxCount);
+                }
+
+                while (result.propertyValues.Count < maxCount)
+                    result.propertyValues.Add(new MaterialPropertyValue());
+
+                for (int i = 0; i < maxCount; ++i)
+                {
+                    // If the a anb b lists are of different size, we need to pad with default values.
+                    var va = GetValueOrDefault(aValues, bValues, i);
+                    var vb = GetValueOrDefault(bValues, aValues, i);
+
+                    result.propertyValues[i] = LerpPropertyValues(va, vb, t);
+                }
+            }
+
+            protected sealed override void UpdateValues()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    ref var timing = ref running.timing[i];
+                    ref var style = ref running.style[i];
+
+                    Lerp(style.startValue, style.endValue, ref style.currentValue, timing.easedProgress);
+                }
+            }
+        }
+
         private ValuesFloat m_Floats;
         private ValuesInt m_Ints;
         private ValuesLength m_Lengths;
@@ -1574,6 +1725,7 @@ namespace UnityEngine.UIElements
         private ValuesBackgroundRepeat m_BackgroundRepeat;
         private ValuesBackgroundSize m_BackgroundSize;
         private ValuesListFilterFunction m_FilterFunctions;
+        private ValuesMaterialDefinition m_MaterialDefinition;
 
         // All the value lists with ongoing animations. Add and remove Values objects when animations come in/out.
         private readonly List<Values> m_AllValues = new List<Values>();
@@ -1688,6 +1840,11 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, List<FilterFunction> startValue, List<FilterFunction> endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_FilterFunctions));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, MaterialDefinition startValue, MaterialDefinition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_MaterialDefinition));
         }
 
         public void CancelAllAnimations()
@@ -1853,6 +2010,11 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, List<FilterFunction> startValue, List<FilterFunction> endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, MaterialDefinition startValue, MaterialDefinition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return false;
         }

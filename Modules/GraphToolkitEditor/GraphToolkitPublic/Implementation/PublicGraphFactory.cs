@@ -413,7 +413,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             });
 
             ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
-                graphObject.GetInstanceID(),
+                graphObject.GetEntityId(),
                 endAction,
                 $"{template.NewAssetName}.{template.GraphFileExtension}",
                 AssetPreview.GetMiniThumbnail(graphObject),

@@ -92,6 +92,16 @@ namespace Unity.UIToolkit.Editor
             return valueField.Validate(previousValue, newValue);
         }
 
+        protected override LengthField CreateValueField()
+        {
+            return new LengthField();
+        }
+
+        protected override StyleLength CreateStyleValue(Length v)
+        {
+            return v;
+        }
+
         private static void PropagateEvents(PropertyChangedEvent evt, StyleLengthField field)
         {
             if (evt.property == LengthField.showUnitAsDropdownProperty)

@@ -43,13 +43,6 @@ namespace UnityEditor
 
         public extern bool maximized {[FreeFunction(k_ScriptingPrefix + "IsWindowMaximized", HasExplicitThis = true)] get; }
 
-        public void SetAlpha(float alpha)
-        {
-            // UUM-113705
-            // This functionality has been removed but ProBuilder package is referencing the internal API.
-            // Therefore this shell API is being added back in until ProBuilder can be updated to remove the reference.
-        }
-
         // Used by invisible "under the mouse" window of the eye dropper.
         [FreeFunction(k_ScriptingPrefix + "SetInvisible", HasExplicitThis = true)]
         public extern void SetInvisible();

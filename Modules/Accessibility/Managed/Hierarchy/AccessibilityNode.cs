@@ -41,8 +41,7 @@ namespace UnityEngine.Accessibility
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
     ///- <see cref="RuntimePlatform.OSXPlayer"/>
     ///- <see cref="RuntimePlatform.WindowsPlayer"/>
-    /// </para>
-    /// <para>
+    ///\\
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
@@ -125,8 +124,7 @@ namespace UnityEngine.Accessibility
         /// **Notes**
         ///
         ///- On macOS, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>.
-        ///- On Windows, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>
-        /// whose <see cref="AccessibilityNode.value"/> contains a number.
+        ///- On Windows, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/> whose <see cref="AccessibilityNode.value"/> contains a number.
         /// </para>
         /// </remarks>
         public event Action incremented;
@@ -151,8 +149,7 @@ namespace UnityEngine.Accessibility
         /// **Notes**
         ///
         ///- On macOS, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>.
-        ///- On Windows, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/>
-        /// whose <see cref="AccessibilityNode.value"/> contains a number.
+        ///- On Windows, this event is only triggered for nodes with the role <see cref="AccessibilityRole.Slider"/> whose <see cref="AccessibilityNode.value"/> contains a number.
         /// </para>
         /// </remarks>
         public event Action decremented;
@@ -328,28 +325,28 @@ namespace UnityEngine.Accessibility
         /// text.
         /// </para>
         /// <para>
-        /// **Notes**
+        /// **Notes**:
         ///
-        ///- On macOS, this property has **no** effect on nodes with the following roles:
+        /// On macOS, this property has **no** effect on nodes with the following roles:
         ///
-        ///  - <see cref="AccessibilityRole.Toggle"/>
-        ///  - <see cref="AccessibilityRole.TabButton"/>
+        ///- <see cref="AccessibilityRole.Toggle"/>
+        ///- <see cref="AccessibilityRole.TabButton"/>
         ///
-        ///- On Windows, this property has effect only on nodes with the following roles:
+        /// On Windows, this property has effect only on nodes with the following roles:
         ///
-        ///  - <see cref="AccessibilityRole.Button"/>
-        ///  - <see cref="AccessibilityRole.Image"/>
-        ///  - <see cref="AccessibilityRole.SearchField"/>
-        ///  - <see cref="AccessibilityRole.Slider"/>
-        ///  - <see cref="AccessibilityRole.TextField"/>
-        ///  - <see cref="AccessibilityRole.Dropdown"/>
-        ///  - <see cref="AccessibilityRole.ScrollView"/>
+        ///- <see cref="AccessibilityRole.Button"/>
+        ///- <see cref="AccessibilityRole.Image"/>
+        ///- <see cref="AccessibilityRole.SearchField"/>
+        ///- <see cref="AccessibilityRole.Slider"/>
+        ///- <see cref="AccessibilityRole.TextField"/>
+        ///- <see cref="AccessibilityRole.Dropdown"/>
+        ///- <see cref="AccessibilityRole.ScrollView"/>
         ///
-        ///- On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have a value containing a
-        /// number between 0 and 100 to accurately communicate the scroll percentage to the screen reader. For scroll
-        /// views that support both vertical and horizontal scrolling, the value must contain two numbers, with the
-        /// vertical scroll percentage listed first. For example, a value of `50, 75` indicates that the scroll view
-        /// represented by the node is scrolled 50% vertically and 75% horizontally.
+        /// On Windows, nodes with the role <see cref="AccessibilityRole.ScrollView"/> must have 
+        /// a value containing a number between 0 and 100 to accurately communicate the scroll percentage 
+        /// to the screen reader. For scroll views that support both vertical and horizontal scrolling, the value
+        /// must contain two numbers, with the vertical scroll percentage listed first.
+        /// For example, a value of `50, 75` indicates that the scroll view represented by the node is scrolled 50% vertically and 75% horizontally.
         /// </para>
         /// </remarks>
         public string value
@@ -407,8 +404,7 @@ namespace UnityEngine.Accessibility
         ///
         ///- <see cref="AccessibilityRole.StaticText"/>
         ///- <see cref="AccessibilityRole.Header"/>
-        /// </para>
-        /// <para>
+        ///
         /// **Platform support**: On Android, this property is only supported starting with Android 8.0 (API level 26).
         /// </para>
         /// </remarks>

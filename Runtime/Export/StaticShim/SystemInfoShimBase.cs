@@ -78,6 +78,8 @@ namespace UnityEngine
 
         public virtual bool supportsVariableRateShading => UnityEngine.SystemInfo.supportsVariableRateShading;
 
+        public virtual int maxTiledPixelStorageSize => UnityEngine.SystemInfo.maxTiledPixelStorageSize;
+
         public virtual bool hasTiledGPU => UnityEngine.SystemInfo.hasTiledGPU;
 
         public virtual bool hasHiddenSurfaceRemovalOnGPU => UnityEngine.SystemInfo.hasHiddenSurfaceRemovalOnGPU;
@@ -272,6 +274,11 @@ namespace UnityEngine
         public virtual int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
         {
             return UnityEngine.SystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
+        }
+
+        public virtual int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount)
+        {
+            return UnityEngine.SystemInfo.GetTiledRenderTargetStorageSize(format, sampleCount);
         }
     }
 }

@@ -9,6 +9,7 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEngine.Analytics
 {
+    [Preserve]
     [RequiredByNativeCode]
     [NativeHeader("Modules/UnityAnalytics/Public/UnityAnalytics.h")]
     [NativeHeader("Modules/UnityAnalyticsCommon/Public/UnityAnalyticsCommon.h")]

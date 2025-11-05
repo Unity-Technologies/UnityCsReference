@@ -12,6 +12,7 @@ namespace Unity.GraphToolkit.Editor
     /// <summary>
     /// The base class for models having <see cref="IGroupItemModel"/> items.
     /// </summary>
+    [Serializable]
     [UnityRestricted]
     internal abstract class GroupModelBase : GraphElementModel, IGroupItemModel, IGraphElementContainer, IRenamable, IHasTitle
     {

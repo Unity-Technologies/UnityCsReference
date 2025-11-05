@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Elements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile.Handlers

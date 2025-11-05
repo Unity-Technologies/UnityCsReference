@@ -72,7 +72,7 @@ namespace UnityEditor
         {
             var component = command.context as Component;
             if (component)
-                SearchForReferencesToInstanceID(component.GetInstanceID());
+                SearchForReferencesToInstanceID(component.GetEntityId());
         }
 
         [MenuItem("CONTEXT/Component/Properties...", priority = 99999)]

@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -13,6 +14,16 @@ namespace UnityEditor.Search.Providers
     static class AdbProvider
     {
         public const string type = "adb";
+        public const string filterId = "adb:";
+
+        // Used with context.searchWords.Contains so the + is necessary.
+        public const string implicitToggle = "+implicit";
+        public const string explicitToggle = "+explicit";
+        // Used with HasToggle: + must not be there.
+        public const string showAllHitsToggle = "showallhits";
+        public const string typeIntersectionToggle = "typeintersection";
+        public const string typeUnionToggle = "typeunion";
+
         public const string resourcesItemTag = "Resources";
         internal const string k_DefaultResources = "library/unity default resources";
         internal const string k_EditorResources = "library/unity editor resources";
@@ -23,31 +34,228 @@ namespace UnityEditor.Search.Providers
              k_BuiltinExtraResources
         };
 
+        static QueryEngine<UnityEngine.Object> m_AdbExplicitQueryEngine;
+        static QueryEngine<UnityEngine.Object> m_AdbImplicitQueryEngine;
         static ObjectQueryEngine<UnityEngine.Object> m_ResourcesQueryEngine;
 
-        public static SearchFilter CreateSearchFilter(SearchContext context)
+        static readonly string[] k_Operators = [":", "="];
+
+        internal static QueryEngine<UnityEngine.Object> adbExplicitQueryEngine
         {
+            get
+            {
+                if (m_AdbExplicitQueryEngine == null)
+                    InitQueryEngine();
+                return m_AdbExplicitQueryEngine;
+            }
+        }
+
+        internal static QueryEngine<UnityEngine.Object> adbImplicitQueryEngine
+        {
+            get
+            {
+                if (m_AdbImplicitQueryEngine == null)
+                    InitImplicitQueryEngine();
+                return m_AdbImplicitQueryEngine;
+            }
+        }
+
+        internal static ObjectQueryEngine<UnityEngine.Object> resourcesQueryEngine
+        {
+            get
+            {
+                return m_ResourcesQueryEngine ??= new ObjectQueryEngine() { reportError = false };
+            }
+        }
+
+        internal static bool ValidateAdbExplicitQuery(string query)
+        {
+            var parsedQuery = adbExplicitQueryEngine.ParseQuery(query);
+            return parsedQuery.valid;
+        }
+
+        internal static bool ValidateAdbImplicitQuery(string query)
+        {
+            var parsedQuery = adbImplicitQueryEngine.ParseQuery(query);
+            return parsedQuery.valid;
+        }
+
+        internal static bool IsExplicitQuery(SearchContext context)
+        {
+            return (context.searchQuery.StartsWith(filterId) || context.providers.Count() == 1 || context.searchWords.Contains(explicitToggle)) && !context.searchWords.Contains(implicitToggle);
+        }
+
+        internal static string ConvertProjectQueryToAdb(string query, ref bool filterByTypeIntersection)
+        {
+            var parsedQuery = UnityEditor.Search.Providers.AdbProvider.adbExplicitQueryEngine.ParseQuery(query);
+            return ConvertProjectQueryToAdb(parsedQuery, ref filterByTypeIntersection);
+        }
+
+        internal static string ConvertProjectQueryToAdb(ParsedQuery<UnityEngine.Object> query, ref bool filterByTypeIntersection)
+        {
+            if (!query.valid)
+                return null;
+
+            var rootNode = query.evaluationGraph.root;
+            var queryStr = new StringBuilder();
+            var conversionSuccess = ConvertProjectQueryToAdb(rootNode, queryStr, ref filterByTypeIntersection);
+            return conversionSuccess ? queryStr.ToString() : null;
+        }
+
+        internal static bool ConvertProjectQueryToAdb(IQueryNode node, StringBuilder query, ref bool filterByTypeIntersection)
+        {
+            bool IsTypeNode(IQueryNode node)
+            {
+                if (node is FilterNode filter)
+                    return filter.filterId == "t";
+                return false;
+            }
+
+            bool IsValidAndChildNode(IQueryNode node)
+            {
+                if (node.leaf)
+                    return node.type == QueryNodeType.Search || node.type == QueryNodeType.Filter;
+                return true;
+            }
+
+            bool IsValidOrChildNode(IQueryNode node)
+            {
+                if (node.leaf)
+                {
+                    return IsTypeNode(node);
+                }
+
+                return true;
+            }
+
+            if (node == null)
+                return false;
+
+            if (node.leaf)
+            {
+                switch (node.type)
+                {
+                    case QueryNodeType.Filter:
+                    case QueryNodeType.Search:
+                        if (query.Length > 0)
+                        {
+                            query.Append(" ");
+                        }
+                        query.Append(node.token.text);
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            else
+            {
+                switch (node.type)
+                {
+                    case QueryNodeType.And:
+                        if (node.children.Count == 2 &&
+                            IsValidAndChildNode(node.children[0]) &&
+                            IsValidAndChildNode(node.children[1]))
+                        {
+                            break;
+                        }
+
+                        return false;
+                    case QueryNodeType.Or:
+                        if (node.children.Count == 2 && IsValidOrChildNode(node.children[0]) && IsValidOrChildNode(node.children[1]))
+                        {
+                            //We have a valid OR between types. Query needs to be processed with implicit or.
+                            filterByTypeIntersection = false;
+                            break;
+                        }
+                        return false;
+                    case QueryNodeType.Where:
+                        break;
+                    default:
+                        return false;
+                }
+            }
+
+            if (!node.leaf && node.children.Count > 0)
+            {
+                foreach (var c in node.children)
+                {
+                    if (!ConvertProjectQueryToAdb(c, query, ref filterByTypeIntersection))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        static IEnumerable<string> GetWords(UnityEngine.Object obj)
+        {
+            yield return obj.name;
+        }
+
+        internal static void InitQueryEngine()
+        {
+            var options = new QueryValidationOptions() { validateFilters = true };
+            m_AdbExplicitQueryEngine = new QueryEngine<UnityEngine.Object>(options);
+            // Type
+            m_AdbExplicitQueryEngine.AddFilter("t", k_Operators);
+            // Label
+            m_AdbExplicitQueryEngine.AddFilter("l", k_Operators);
+            // Area
+            m_AdbExplicitQueryEngine.AddFilter("a", k_Operators);
+            // Bundle
+            m_AdbExplicitQueryEngine.AddFilter("b", k_Operators);
+            // Import log
+            m_AdbExplicitQueryEngine.AddFilter("i", k_Operators);
+            // reference to instanceID
+            m_AdbExplicitQueryEngine.AddFilter("ref", k_Operators);
+            // Glob search
+            m_AdbExplicitQueryEngine.AddFilter("glob", k_Operators);
+            m_AdbExplicitQueryEngine.SetSearchDataCallback(GetWords);
+        }
+
+        internal static void InitImplicitQueryEngine()
+        {
+            var options = new QueryValidationOptions() { validateFilters = true };
+            m_AdbImplicitQueryEngine = new QueryEngine<UnityEngine.Object>(options);
+            m_AdbImplicitQueryEngine.AddFilter("t", k_Operators);
+            m_AdbImplicitQueryEngine.AddFilter("l", k_Operators);
+            m_AdbImplicitQueryEngine.SetSearchDataCallback(GetWords);
+        }
+
+        internal static SearchFilter CreateSearchFilter(string searchQuery, SearchContext context)
+        {
+            if (context.userData is SearchFilter legacySearchFilter)
+            {
+                return legacySearchFilter;
+            }
+
             var flags = context.options;
-            var searchQuery = context.searchQuery;
             var filterType = context.filterType;
             var searchFilter = new SearchFilter
             {
-                searchArea = GetSearchArea(flags),
-                showAllHits = flags.HasAny(SearchFlags.WantsMore),
+                searchArea = SearchFilter.SearchArea.AllAssets,
                 originalText = searchQuery
             };
             if (!string.IsNullOrEmpty(searchQuery))
                 SearchUtility.ParseSearchString(searchQuery, searchFilter);
+
+            if (!flags.HasAny(SearchFlags.Packages))
+            {
+                // Reject all packages result:
+                if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets)
+                {
+                    searchFilter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
+                }
+                else if (searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
+                {
+                    // Query wants only package result but the switch to show Packages result is off: no results to be found
+                    return null;
+                }
+            }
+
             if (filterType != null && searchFilter.classNames.Length == 0)
                 searchFilter.classNames = new [] { filterType.Name };
 
-            if (searchFilter.referencingInstanceIDs.Length > 0 && context.filterId != $"{type}:")
-            {
-                // ADB Find Refs will load all assets. Only allow it if the ADBProvider is used explicitly.
-                searchFilter.referencingInstanceIDs = new int[0];
-            }
-
-            searchFilter.filterByTypeIntersection = true;
             return searchFilter;
         }
 
@@ -60,7 +268,7 @@ namespace UnityEditor.Search.Providers
 
         static IEnumerable<int> EnumerateInstanceIDs(SearchFilter searchFilter)
         {
-            if (searchFilter.GetState() == SearchFilter.State.EmptySearchFilter)
+            if (searchFilter == null || searchFilter.GetState() == SearchFilter.State.EmptySearchFilter)
                 yield break;
 
             var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
@@ -68,27 +276,6 @@ namespace UnityEditor.Search.Providers
             {
                 yield return rIt.Current.entityId;
             }
-        }
-
-        public static IEnumerable<int> EnumerateInstanceIDs(SearchContext context)
-        {
-            if (context.filterType == null && context.empty)
-                return Enumerable.Empty<int>();
-            
-            if (context.userData is SearchFilter legacySearchFilter)
-            {
-                legacySearchFilter.filterByTypeIntersection = true;
-                return EnumerateInstanceIDs(legacySearchFilter);
-            }
-
-            var searchFilter = CreateSearchFilter(context);
-            return EnumerateInstanceIDs(searchFilter);
-        }
-
-        public static IEnumerable<string> EnumeratePaths(SearchContext context)
-        {
-            foreach (var id in EnumerateInstanceIDs(context))
-                yield return AssetDatabase.GetAssetPath((EntityId)id);
         }
 
         static Dictionary<string, UnityEngine.Object[]> s_BundleResourceObjects = new Dictionary<string, UnityEngine.Object[]>();
@@ -107,16 +294,44 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(context.searchQuery) && context.filterType == null)
                 yield break;
 
-            if (m_ResourcesQueryEngine == null)
+            ParsedQuery<UnityEngine.Object> parsedQuery;
+            if (IsExplicitQuery(context))
             {
-                m_ResourcesQueryEngine = new ObjectQueryEngine()
-                {
-                    reportError = false
-                };
+                // This is an explicit query on the provider, used the full query engine
+                parsedQuery = adbExplicitQueryEngine.ParseQuery(context.searchQuery);
+            }
+            else
+            {
+                // This is an implicit query that hits the ADBProvider because useExplicitProvider is true. Only support subset that is compatible with asset provider.
+                parsedQuery = adbImplicitQueryEngine.ParseQuery(context.searchQuery);
             }
 
+            if (parsedQuery == null)
+                yield break;
+
+            if (!parsedQuery.valid)
+            {
+                context.AddSearchQueryErrors(parsedQuery.errors.Select(e => new SearchQueryError(e, context, provider)));
+                yield break;
+            }
+
+            // Convert OR with type, get rid of toggles.
+            var filterByTypeIntersection = true;
+            var searchQuery = ConvertProjectQueryToAdb(parsedQuery, ref filterByTypeIntersection);
+            if (searchQuery == null)
+                yield break;
+
             // Search asset database
-            foreach (var id in EnumerateInstanceIDs(context))
+            var searchFilter = CreateSearchFilter(searchQuery, context);
+            if (searchFilter == null)
+                yield break;
+
+            // Note: by default ADB search assumes all type searching uses a boolean implicit OR: t:Texture t:AudioClip => t:Texture OR t:AudioClip
+            // This switch make the ADB search use an explicit AND instead: t:Texture t:AudioClip => t:Texture AND t:AudioClip
+            searchFilter.filterByTypeIntersection = (filterByTypeIntersection || parsedQuery.HasToggle(typeIntersectionToggle)) && !parsedQuery.HasToggle(typeUnionToggle);
+            searchFilter.showAllHits = searchFilter.showAllHits || parsedQuery.HasToggle(showAllHitsToggle);
+
+            foreach (var id in EnumerateInstanceIDs(searchFilter))
             {
                 var path = AssetDatabase.GetAssetPath((EntityId)id);
                 if (string.IsNullOrEmpty(path))
@@ -135,27 +350,35 @@ namespace UnityEditor.Search.Providers
                 yield return item;
             }
 
-            // Search builtin resources
-            var resources = GetAllResourcesAtPath(k_DefaultResources)
-                .Concat(GetAllResourcesAtPath(k_BuiltinExtraResources));
+            // Builtin extra are always searched (similar to Legacy picker)
+            var resources = GetAllResourcesAtPath(k_BuiltinExtraResources);
+            // Add editorResources and defaultResources if needed.
             if (context.wantsMore)
-                resources = resources.Concat(GetAllResourcesAtPath(k_EditorResources));
+                resources = resources.Concat(GetAllResourcesAtPath(k_EditorResources)).Concat(GetAllResourcesAtPath(k_DefaultResources));
 
             if (context.filterType != null)
                 resources = resources.Where(r => context.filterType.IsAssignableFrom(r.GetType()));
 
-            if (!string.IsNullOrEmpty(context.searchQuery))
-                resources = m_ResourcesQueryEngine.Search(context, provider, resources);
+            if (!string.IsNullOrEmpty(searchQuery))
+                resources = resourcesQueryEngine.Search(searchQuery, context, provider, resources);
             else if (context.filterType == null)
                 yield break;
 
             foreach (var obj in resources)
             {
                 if (!obj)
+                {
+                    yield return null;
                     continue;
+                }
+
                 var gid = GlobalObjectId.GetGlobalObjectIdSlow(obj);
                 if (gid.identifierType == 0)
+                {
+                    yield return null;
                     continue;
+                }
+
                 // If this ever changes and we no longer use the AssetProvider to create items, please update the test SearchEngineTests.ProjectSearch_AlwaysReturnsPaths
                 yield return AssetProvider.CreateItem(resourcesItemTag, context, provider, gid.ToString(), null, 1998, SearchDocumentFlags.Resources);
             }
@@ -194,6 +417,7 @@ namespace UnityEditor.Search.Providers
         {
             return new SearchProvider(type, "Asset Database")
             {
+                filterId = filterId,
                 type = "asset",
                 active = false,
                 priority = 2500,

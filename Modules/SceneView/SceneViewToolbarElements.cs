@@ -346,63 +346,92 @@ namespace UnityEditor.Toolbars
         }
     }
 
-    [EditorToolbarElement("SceneView/Grids", typeof(SceneView))]
-    sealed class SceneViewGridSettingsElement : EditorToolbarDropdownToggle, IAccessContainerWindow
+    [EditorToolbarElement("SceneView/Separator", typeof(SceneView))]
+    sealed class GridSettingsSeparator : VisualElement
+    {
+        public GridSettingsSeparator()
+        {
+            name = "GridSettingsSeparator";
+            SceneViewToolbarStyles.AddStyleSheets(this);
+        }
+    }
+    
+    [EditorToolbarElement("SceneView/GridVisibility", typeof(SceneView))]
+    sealed class GridVisibilityElement : VisualElement, IAccessContainerWindow
     {
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
-
-        public SceneViewGridSettingsElement()
+        
+        EditorToolbarToggle m_GridVisToggle;
+        SnapSizeField m_GridSizeField;
+        GridSettingsElement m_GridSettingsDropdown;
+        
+        public GridVisibilityElement()
         {
-            name = "SceneviewGrids";
-            tooltip = L10n.Tr("Toggle the visibility of the grid");
-
-            this.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
+            name = "GridSettingsStrip";
+            
+            m_GridVisToggle = new EditorToolbarToggle();
+            m_GridVisToggle.name = "GridVisibility";
+            m_GridVisToggle.tooltip = L10n.Tr("Toggle the visibility of the grid");
+            m_GridVisToggle.RegisterValueChangedCallback((evt) =>
             {
                 sceneView.sceneViewGrids.showGrid = evt.newValue;
             });
+            Add(m_GridVisToggle);
+
+            var gridSettings = GridSettings.instance;
+            m_GridSizeField = new SnapSizeField("GridSnapSize", gridSettings.gridSize.x, gridSettings.linked);
+            m_GridSizeField.tooltip = L10n.Tr("Grid size");
+            m_GridSizeField.valueChanged += ((value) =>
+            {
+                var newSize = Vector3.one * value;
+                if (newSize != GridSettings.instance.gridSize)
+                {
+                    GridSettings.instance.gridSize = newSize;
+                }
+            });
+            Add(m_GridSizeField);
+
+            m_GridSettingsDropdown = new GridSettingsElement(sceneView);
+            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap settings");
+            Add(m_GridSettingsDropdown);
+            
+            EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
+            
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarStyles.AddStyleSheets(this);
         }
-
-        void OnDropdownClicked()
-        {
-            if (!(containerWindow is SceneView view))
-                return;
-
-            var w = PopupWindowBase.Show<GridSettingsWindow>(this, new Vector2(300, 88));
-
-            if(w != null)
-                w.Init(view);
-        }
-
+        
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            value = sceneView.sceneViewGrids.showGrid;
             sceneView.gridVisibilityChanged += SceneViewOngridVisibilityChanged;
-            sceneView.sceneViewGrids.gridRenderAxisChanged += OnSceneViewOngridRenderAxisChanged;
-            OnSceneViewOngridRenderAxisChanged(sceneView.sceneViewGrids.gridAxis);
-            dropdownClicked += OnDropdownClicked;
+            GridSettings.instance.sizeChanged += OnGridSizeChanged;
+            
+            m_GridVisToggle.SetValueWithoutNotify(sceneView.sceneViewGrids.showGrid);
         }
-
+        
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             sceneView.gridVisibilityChanged -= SceneViewOngridVisibilityChanged;
-            sceneView.sceneViewGrids.gridRenderAxisChanged -= OnSceneViewOngridRenderAxisChanged;
-            dropdownClicked -= OnDropdownClicked;
         }
 
-        void OnSceneViewOngridRenderAxisChanged(SceneViewGrid.GridRenderAxis axis)
+        void OnGridSizeChanged(Vector3 size)
         {
-            EnableInClassList("unity-sceneview-grid-axis--x", axis == SceneViewGrid.GridRenderAxis.X);
-            EnableInClassList("unity-sceneview-grid-axis--y", axis == SceneViewGrid.GridRenderAxis.Y);
-            EnableInClassList("unity-sceneview-grid-axis--z", axis == SceneViewGrid.GridRenderAxis.Z);
+            m_GridSizeField.SetValueWithoutNotify(size.x, GridSettings.instance.linked);
+        }
+        
+        void OnDropdownClicked()
+        {
+            var w = PopupWindowBase.Show<GridVisualSettingsWindow>(this, new Vector2(300, 70));
+
+            if (w != null)
+                w.Init(sceneView);
         }
 
         void SceneViewOngridVisibilityChanged(bool visibility)
         {
-            value = visibility;
+            m_GridVisToggle.SetValueWithoutNotify(visibility);
         }
     }
 

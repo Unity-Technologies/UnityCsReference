@@ -67,7 +67,7 @@ namespace UnityEditor
 
             var drawCapFunction = isConnectedAnchor ? (Handles.CapFunction)ConnectedAnchorHandleCap : (Handles.CapFunction)AnchorHandleCap;
 
-            int id = target.GetInstanceID() + (isConnectedAnchor ? 1 : 0);
+            int id = target.GetEntityId() + (isConnectedAnchor ? 1 : 0);
 
             EditorGUI.BeginChangeCheck();
             position = Handles.Slider2D(id, position, Vector3.back, Vector3.right, Vector3.up, 0, drawCapFunction, Vector2.zero);

@@ -112,6 +112,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     tooltipText = "Scenario has failed. See console for details.";
                     iconImage = Icons.GetImage(Icons.ImageName.Error);
                     break;
+                case ExecutionState.Invalid:
+                    AddToClassList(ussClassIdle);
+                    labelText = "Idle";
+                    iconImage = Icons.GetImage(Icons.ImageName.Idle);
+                    break;
                 default: // Includes Idle, Aborted, and Completed states.
                     AddToClassList(ussClassIdle);
                     iconImage = Icons.GetImage(Icons.ImageName.Idle);

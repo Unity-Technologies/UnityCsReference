@@ -284,7 +284,7 @@ namespace UnityEngine.TextCore.Text
             HashSet<int> searchedSpriteAssets = new HashSet<int>();
 
             // Get instance ID of sprite asset and add to list.
-            int id = spriteAsset.GetInstanceID();
+            int id = spriteAsset.GetEntityId();
             searchedSpriteAssets.Add(id);
 
             // Search potential fallback sprite assets if includeFallbacks is true.
@@ -314,7 +314,7 @@ namespace UnityEngine.TextCore.Text
                 SpriteAsset temp = spriteAssets[i];
                 if (temp == null) continue;
 
-                int id = temp.GetInstanceID();
+                int id = temp.GetEntityId();
 
                 // Skip sprite asset if it has already been searched.
                 if (searchedSpriteAssets.Add(id) == false)

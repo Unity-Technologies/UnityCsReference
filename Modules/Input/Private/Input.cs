@@ -151,5 +151,12 @@ namespace UnityEngineInternal.Input
             NativeShouldRunUpdateCallback callback = onShouldRunUpdate;
             retval = callback != null ? callback(updateType) : true;
         }
+
+        internal static void DoSendMouseEvents(bool leftButtonPressed, bool wasPressedThisFrame, float posX, float posY)
+        {
+            SendMouseEvents.SetMouse(leftButtonPressed, wasPressedThisFrame, posX, posY);
+            if (useImplicitMouseEventScriptCallbacks)
+                SendMouseEvents.DoSendMouseEvents(1);
+        }
     }
 }

@@ -1830,9 +1830,9 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static void CallWindowDelegate(WindowFunction func, int id, int instanceID, GUISkin _skin, int forceRect, float width, float height, GUIStyle style)
+        internal static void CallWindowDelegate(WindowFunction func, int id, EntityId entityId, GUISkin _skin, int forceRect, float width, float height, GUIStyle style)
         {
-            GUILayoutUtility.SelectIDList(id, true);
+            GUILayoutUtility.SelectIDListWindow(id);
             GUISkin temp = skin;
             if (Event.current.type == EventType.Layout)
             {

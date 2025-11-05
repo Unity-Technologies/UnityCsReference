@@ -50,13 +50,13 @@ namespace UnityEditor.TextCore.Text
         private static TextEditorResourceManager s_Instance;
 
         private readonly List<Object> m_ObjectUpdateQueue = new List<Object>();
-        private HashSet<int> m_ObjectUpdateQueueLookup = new HashSet<int>();
+        private HashSet<EntityId> m_ObjectUpdateQueueLookup = new HashSet<EntityId>();
 
         private readonly List<Object> m_ObjectReImportQueue = new List<Object>();
-        private HashSet<int> m_ObjectReImportQueueLookup = new HashSet<int>();
+        private HashSet<EntityId> m_ObjectReImportQueueLookup = new HashSet<EntityId>();
 
         private readonly List<FontAsset> m_FontAssetDefinitionRefreshQueue = new List<FontAsset>();
-        private HashSet<int> m_FontAssetDefinitionRefreshQueueLookup = new HashSet<int>();
+        private HashSet<EntityId> m_FontAssetDefinitionRefreshQueueLookup = new HashSet<EntityId>();
 
         /// <summary>
         /// Get a singleton instance of the manager.
@@ -120,7 +120,7 @@ namespace UnityEditor.TextCore.Text
 
         private void InternalRegisterResourceForReimport(Object obj)
         {
-            int id = obj.GetInstanceID();
+            EntityId id = obj.GetEntityId();
 
             if (m_ObjectReImportQueueLookup.Contains(id))
                 return;
@@ -144,7 +144,7 @@ namespace UnityEditor.TextCore.Text
 
         private void InternalRegisterResourceForUpdate(Object obj)
         {
-            int id = obj.GetInstanceID();
+            EntityId id = obj.GetEntityId();
 
             if (m_ObjectUpdateQueueLookup.Contains(id))
                 return;
@@ -164,7 +164,7 @@ namespace UnityEditor.TextCore.Text
 
         private void InternalRegisterFontAssetForDefinitionRefresh(FontAsset fontAsset)
         {
-            int id = fontAsset.GetInstanceID();
+            EntityId id = fontAsset.GetEntityId();
 
             if (m_FontAssetDefinitionRefreshQueueLookup.Contains(id))
                 return;

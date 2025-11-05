@@ -204,7 +204,7 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool isOwned => PhysicsChain_IsOwned(this);
 
         /// <summary>
-        /// Get/Set the <see cref="UnityEngine.MonoBehaviour"/> that callbacks for the shapes owned by this chain will be sent to.
+        /// Get/Set the <see cref="System.Object"/> that callbacks for the shapes owned by this chain will be sent to.
         /// 
         /// This includes the following events:
         /// 
@@ -215,7 +215,7 @@ namespace UnityEngine.LowLevelPhysics2D
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.ContactBeginEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/>.
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.ContactEndEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IContactCallback"/>.
         /// </summary>
-        public readonly MonoBehaviour callbackTarget { get => PhysicsChain_GetCallbackTarget(this); set => PhysicsChain_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsChain_GetCallbackTarget(this); set => PhysicsChain_SetCallbackTarget(this, value); }
 
         /// <summary>
         /// Get/Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose.

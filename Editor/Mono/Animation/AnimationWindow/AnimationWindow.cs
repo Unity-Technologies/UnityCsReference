@@ -40,7 +40,7 @@ namespace UnityEditor
         [SerializeField]
         EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
-        [SerializeField] private int m_LastSelectedObjectID;
+        [SerializeField] private EntityId m_LastSelectedObjectID;
 
         GUIStyle m_LockButtonStyle;
         GUIContent m_DefaultTitleContent;
@@ -339,7 +339,7 @@ namespace UnityEditor
                             }
                         }
 
-                        m_LastSelectedObjectID = activeObject != null ? activeObject.GetInstanceID() : 0;
+                        m_LastSelectedObjectID = activeObject != null ? activeObject.GetEntityId() : EntityId.None;
                         selectionChanged = true;
                         break;
                     }
@@ -364,7 +364,7 @@ namespace UnityEditor
                         }
                     }
 
-                    m_LastSelectedObjectID = activeObject != null ? activeObject.GetInstanceID() : 0;
+                    m_LastSelectedObjectID = activeObject != null ? activeObject.GetEntityId() : EntityId.None;
                 }
             }
 
@@ -398,9 +398,9 @@ namespace UnityEditor
         }
 
         [OnOpenAsset]
-        static bool OnOpenAsset(int instanceID, int line)
+        static bool OnOpenAsset(EntityId entityId, int line)
         {
-            var clip = EditorUtility.EntityIdToObject(instanceID) as AnimationClip;
+            var clip = EditorUtility.EntityIdToObject(entityId) as AnimationClip;
             if (clip)
             {
                 EditorWindow.GetWindow<AnimationWindow>();
@@ -434,7 +434,7 @@ namespace UnityEditor
 
             newSelection.controller = controlInterface != null ? controlInterface : newSelection.controller;
             m_AnimEditor.selection = newSelection;
-            m_LastSelectedObjectID = animationClip != null ? animationClip.GetInstanceID() : 0;
+            m_LastSelectedObjectID = animationClip != null ? animationClip.GetEntityId() : EntityId.None;
 
             state.linkedWithSequencer = true;
 

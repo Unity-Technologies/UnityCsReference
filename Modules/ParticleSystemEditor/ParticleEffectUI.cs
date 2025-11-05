@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Overlays;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -365,9 +366,11 @@ namespace UnityEditor
                 return;
 
             // Store simulation state of current effect as Vector3 (rootInstanceID, PlayState, playBackTime) in Session cache
-            int rootInstanceId = particleSystem.GetInstanceID();
-            Vector3 state = new Vector3(rootInstanceId, (int)GetCurrentPlayState(), ParticleSystemEditorUtils.playbackTime);
-            SessionState.SetVector3(k_SimulationStateId + rootInstanceId, state);
+            EntityId rootEntityId = particleSystem.GetEntityId();
+            Vector3 state = new Vector3(0, (int)GetCurrentPlayState(), ParticleSystemEditorUtils.playbackTime);
+            SessionState.SetVector3(k_SimulationStateId + rootEntityId, state);
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Update SessionState.SetInt to SessionState.SetULong when EntityId size changes");
+            SessionState.SetInt(k_SimulationStateId + rootEntityId + "instanceID", (int)rootEntityId.GetRawData());
         }
 
         void TryRestorePlayState(ParticleSystem particleSystem)
@@ -375,8 +378,9 @@ namespace UnityEditor
             if (particleSystem == null)
                 return;
 
-            Vector3 simulationState = SessionState.GetVector3(k_SimulationStateId + particleSystem.GetInstanceID(), Vector3.zero);
-            if (particleSystem.GetInstanceID() == (int)simulationState.x)
+            Vector3 simulationState = SessionState.GetVector3(k_SimulationStateId + particleSystem.GetEntityId(), Vector3.zero);
+            EntityId simulationStateInstanceID = EntityId.From(SessionState.GetInt(k_SimulationStateId + particleSystem.GetEntityId() + "instanceID", 0));
+            if (particleSystem.GetEntityId() == simulationStateInstanceID)
             {
                 float lastPlayBackTime = simulationState.z;
                 if (lastPlayBackTime > 0f)

@@ -212,9 +212,9 @@ namespace UnityEditor.AssetImporters
             var loadedIds = new List<int>(targets.Length);
             for (int i = 0; i < targets.Length; ++i)
             {
-                int instanceID = targets[i].GetInstanceID();
-                loadedIds.Add(instanceID);
-                var extraData = CreateOrReloadInspectorCopy(instanceID, this);
+                int entityId = targets[i].GetEntityId();
+                loadedIds.Add(entityId);
+                var extraData = CreateOrReloadInspectorCopy(entityId, this);
                 if (m_ExtraDataTargets != null)
                 {
                     // we got the data from another instance
@@ -225,7 +225,7 @@ namespace UnityEditor.AssetImporters
                         m_ExtraDataTargets[i] = ScriptableObject.CreateInstance(extraDataType);
                         m_ExtraDataTargets[i].hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
                         InitializeExtraDataInstance(m_ExtraDataTargets[i], i);
-                        SaveUserData(instanceID, m_ExtraDataTargets[i]);
+                        SaveUserData(entityId, m_ExtraDataTargets[i]);
                     }
                 }
 
@@ -234,8 +234,8 @@ namespace UnityEditor.AssetImporters
                 // We are selecting all Editor instances already enabled and ourselves.
                 // This is because when coming back from an assembly reload,
                 // the Editors already exist but get removed from the cache in their OnDisable, so we don't count them until its their turn to be Enabled back.
-                var allEditors = editors.Where(e => e == this || (e.m_OnEnableCalled && e.targets.Contains(targets[i]))).Select(e => e.GetInstanceID()).ToArray();
-                var instances = GetInspectorCopyCount(instanceID);
+                var allEditors = editors.Where(e => e == this || (e.m_OnEnableCalled && e.targets.Contains(targets[i]))).Select(e => e.GetEntityId()).ToArray();
+                var instances = GetInspectorCopyCount(entityId);
                 if (allEditors.Length != instances)
                 {
                     if (!CanEditorSurviveAssemblyReload())
@@ -250,7 +250,7 @@ namespace UnityEditor.AssetImporters
                     }
 
                     // Fix the cache count so it does not fail anymore.
-                    FixCacheCount(instanceID, allEditors);
+                    FixCacheCount(entityId, allEditors);
                 }
             }
             m_TargetsInstanceID = loadedIds;
@@ -263,7 +263,7 @@ namespace UnityEditor.AssetImporters
                 var importer = targets[i] as AssetImporter;
                 if (importer != null && importer.assetPath == arg1)
                 {
-                    FixSavedAssetbundleSettings(importer.GetInstanceID(), new PropertyModification[]
+                    FixSavedAssetbundleSettings(importer.GetEntityId(), new PropertyModification[]
                     {
                         new PropertyModification()
                         {

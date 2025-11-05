@@ -595,7 +595,7 @@ namespace UnityEngine.TextCore
 
             var sprite = spriteAsset.spriteCharacterTable[spriteIndex];
 
-            spriteAssetValue = new TagValue(spriteAsset.instanceID, TagUnitType.Unknown, ValueID.AssetID);
+            spriteAssetValue = new TagValue(spriteAsset.entityId, TagUnitType.Unknown, ValueID.AssetID);
             glyphMetricsValue = new TagValue(sprite.glyph.metrics, ValueID.GlyphMetrics);
             scaleValue = new TagValue(sprite.scale, TagUnitType.Unknown, ValueID.Scale);
             // Sprites are assigned in the E000 Private Area + sprite Index

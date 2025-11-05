@@ -750,7 +750,7 @@ namespace UnityEditor
 
     internal class AssetSelectionPopupMenu
     {
-        static public void Show(Rect buttonRect, string[] classNames, int initialSelectedInstanceID)
+        static public void Show(Rect buttonRect, string[] classNames, EntityId initialSelectedEntityId)
         {
             var menu = new GenericMenu();
 
@@ -761,7 +761,7 @@ namespace UnityEditor
                 foreach (var obj in objs)
                 {
                     var assetName = new GUIContent(obj.name);
-                    bool selected = obj.GetInstanceID() == initialSelectedInstanceID;
+                    bool selected = obj.GetEntityId() == initialSelectedEntityId;
                     menu.AddItem(assetName, selected, SelectCallback, obj);
                 }
             }

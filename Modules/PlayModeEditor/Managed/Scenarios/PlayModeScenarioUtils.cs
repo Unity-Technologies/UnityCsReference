@@ -19,7 +19,7 @@ namespace Unity.PlayMode.Editor
         /// <summary>
         /// Will get invoked when a ScenarioConfig is added or removed.
         /// </summary>
-        internal static event Action ConfigurationAddedOrRemoved;
+        internal static event Action AssetsChanged;
 
         private static List<PlayModeScenario> s_AllConfigs;
 
@@ -40,7 +40,7 @@ namespace Unity.PlayMode.Editor
                     return -1;
                 if (y == ScenarioManagerProvider.instance.DefaultScenarioInstance)
                     return 1;
-                return string.Compare(x.name, y.name, StringComparison.Ordinal);
+                return EditorUtility.NaturalCompare(x.name, y.name);
             }
         }
 
@@ -163,26 +163,10 @@ namespace Unity.PlayMode.Editor
             public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
                 string[] movedAssets, string[] movedFromAssetPaths)
             {
-                var needsUpdate = false;
-
-                foreach (var changedAsset in importedAssets)
-                {
-                    if (IsPlayModeConfigAsset(changedAsset))
-                    {
-                        needsUpdate = true;
-                        break;
-                    }
-                }
-
-                // If something got deleted we have to refresh, because we cannot check
-                // if the deleted asset was a ScenarioConfig.
-                if (deletedAssets.Length > 0)
-                    needsUpdate = true;
-
-                if (needsUpdate)
+                if (importedAssets.Length > 0 || deletedAssets.Length > 0)
                 {
                     ClearCache();
-                    ConfigurationAddedOrRemoved?.Invoke();
+                    AssetsChanged?.Invoke();
                 }
             }
         }

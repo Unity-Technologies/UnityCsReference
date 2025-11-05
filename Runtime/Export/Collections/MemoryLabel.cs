@@ -14,7 +14,10 @@ namespace Unity.Collections;
 [StructLayout(LayoutKind.Sequential, Size = 16)]
 public readonly struct MemoryLabel
 {
-    [NativeDisableUnsafePtrRestriction] internal readonly IntPtr pointer;
+    [VisibleToOtherModules("UnityEngine.TilemapModule")]
+    [NativeDisableUnsafePtrRestriction]
+    internal readonly IntPtr pointer;
+    [VisibleToOtherModules("UnityEngine.TilemapModule")]
     internal readonly Allocator allocator;
 
     public MemoryLabel(string areaName, string objectName, Allocator allocator = Allocator.Persistent)

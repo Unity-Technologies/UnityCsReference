@@ -380,8 +380,9 @@ namespace Unity.ProjectAuditor.Editor
         /// Load a Report from a JSON file at the specified path.
         /// </summary>
         /// <param name="path">File path of the report to load</param>
+        /// <param name="errorMessage">Error message if load fails</param>
         /// <returns>A loaded Report object</returns>
-        public static Report Load(string path, out string errorMessaage)
+        public static Report Load(string path, out string errorMessage)
         {
             string whole_file = File.ReadAllText(path);
 
@@ -391,18 +392,18 @@ namespace Unity.ProjectAuditor.Editor
 
             if (!header.Equals(k_SaveFileHeader))
             {
-                errorMessaage = "Invalid file format";
+                errorMessage = "Invalid file format";
                 return null;
             }
 
             string version = sr.ReadLine();
             if (!version.Equals(k_CurrentVersion))
             {
-                errorMessaage = $"Report file version is {version}, but this version of Project Auditor requires file version {k_CurrentVersion}";
+                errorMessage = $"Report file version is {version}, but this version of Project Auditor requires file version {k_CurrentVersion}";
                 return null;
             }
 
-            errorMessaage = "";
+            errorMessage = "";
             return JsonUtility.FromJson<Report>(sr.ReadToEnd());
         }
 

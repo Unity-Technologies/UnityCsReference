@@ -13,8 +13,8 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor
 {
     internal abstract class StylePropertyField<TStyleValue, TValueField, TValue> : BaseField<TStyleValue>, IValueField<TStyleValue>, IAffordanceField
-        where TStyleValue : IStyleValue<TValue>, new()
-        where TValueField : BaseField<TValue>, new()
+        where TStyleValue : IStyleValue<TValue>
+        where TValueField : BaseField<TValue>
     {
         public static readonly BindingId persistentValidationProperty = nameof(persistentValidation);
         public static readonly BindingId validationProperty = nameof(validation);
@@ -180,7 +180,7 @@ namespace Unity.UIToolkit.Editor
         /// </summary>
         /// <param name="label">The text to use as a label.</param>
         protected StylePropertyField(string label)
-            : this(label, new TValueField()) { }
+            : this(label, null) { }
 
         /// <summary>
         /// Initializes and returns an instance of StylePropertyField.
@@ -192,7 +192,9 @@ namespace Unity.UIToolkit.Editor
             : base(label, visualInput)
         {
             // Do not allow null visualInput
-            visualInput ??= new TValueField { pickingMode = PickingMode.Ignore, focusable = true };
+            visualInput ??= CreateValueField();
+            visualInput.pickingMode = PickingMode.Ignore;
+            visualInput.focusable = true;
 
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
@@ -206,13 +208,16 @@ namespace Unity.UIToolkit.Editor
             m_ValueField.RegisterValueChangedCallback(evt =>
             {
                 if (Validate(evt.previousValue, evt.newValue))
-                    value = new TStyleValue { value = evt.newValue };
+                    value = CreateStyleValue(evt.newValue);
             });
 
             AddLabelDragger();
 
             this.containsAffordance = containsAffordance;
         }
+
+        protected abstract TValueField CreateValueField();
+        protected abstract TStyleValue CreateStyleValue(TValue v);
 
         public override void SetValueWithoutNotify(TStyleValue newValue)
         {

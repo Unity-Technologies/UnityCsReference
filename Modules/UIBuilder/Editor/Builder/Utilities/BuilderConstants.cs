@@ -453,6 +453,7 @@ namespace Unity.UI.Builder
                 {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-right-width", PixelOrInitialValue},
                 {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-bottom-width", PixelOrInitialValue},
                 {$"DimensionStyleField{FieldTooltipDictionarySeparator}border-left-width", PixelOrInitialValue},
+                {$"DimensionStyleField{FieldTooltipDictionarySeparator}font-size", PixelOrInitialValue},
                 {$"DimensionStyleField{FieldTooltipDictionarySeparator}-unity-text-outline-width", PixelOrInitialValue},
                 {$"DimensionStyleField{FieldTooltipDictionarySeparator}letter-spacing", PixelOrInitialValue},
                 {$"DimensionStyleField{FieldTooltipDictionarySeparator}word-spacing", PixelOrInitialValue},
@@ -627,9 +628,6 @@ namespace Unity.UI.Builder
         //
         // Toolbar
         //
-
-        // Themes
-        public static readonly string ToolbarBuiltInDefaultRuntimeThemeName = "Built-in Default Runtime Theme";
 
         // Toolbar Messages
         public static readonly string ToolbarLoadUxmlDialogTitle = "Load UXML File";

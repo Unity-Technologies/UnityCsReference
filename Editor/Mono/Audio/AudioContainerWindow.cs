@@ -768,7 +768,7 @@ sealed class AudioContainerWindow : EditorWindow
 
         element.SetEnabled(true);
         audioClipField.RegisterCallback<DragPerformEvent>(OnListDragPerform);
-        audioClipField.AssetElementInstanceID = listElement.GetInstanceID();
+        audioClipField.AssetElementEntityId = listElement.GetEntityId();
 
         var serializedObject = new SerializedObject(listElement);
 
@@ -1026,7 +1026,7 @@ sealed class AudioContainerWindow : EditorWindow
             {
                 var field = clipFields[j];
 
-                if (field.AssetElementInstanceID == playables[i].settings.element.GetInstanceID())
+                if (field.AssetElementEntityId == playables[i].settings.element.GetEntityId())
                 {
                     field.Progress = playable.GetClipPositionSec() / playable.GetClip().length;
                     clipFields.RemoveAt(j);

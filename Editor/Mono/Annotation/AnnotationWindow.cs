@@ -122,7 +122,7 @@ namespace UnityEditor
 
             bool add = true;
             foreach (MonoScript m in m_MonoScriptIconsChanged)
-                if (m.GetInstanceID() == monoScript.GetInstanceID())
+                if (m.GetEntityId() == monoScript.GetEntityId())
                     add = false;
 
             if (add)
@@ -137,7 +137,7 @@ namespace UnityEditor
 
         float GetTopSectionHeight()
         {
-            const int numberOfGeneralControls = 6;
+            const int numberOfGeneralControls = 7;
 
             int numberOfLightProbeVisualizationControls = 0;
             if (!UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem)

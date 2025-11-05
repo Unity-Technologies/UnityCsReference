@@ -5,7 +5,6 @@
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Profiling;
-using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -16,7 +15,7 @@ namespace UnityEditor
         SerializedPropertyDataStore.GatherDelegate  m_GatherDelegate;
         HeaderDelegate                              m_HeaderDelegate;
         bool                                        m_Initialized;
-        TreeViewState                               m_TreeViewState;
+        TreeViewState<EntityId>                     m_TreeViewState;
         MultiColumnHeaderState                      m_MultiColumnHeaderState;
         SerializedPropertyTreeView                  m_TreeView;
         SerializedPropertyDataStore                 m_DataStore;
@@ -40,7 +39,7 @@ namespace UnityEditor
                 return;
 
             if (m_TreeViewState == null)
-                m_TreeViewState = new TreeViewState();
+                m_TreeViewState = new TreeViewState<EntityId>();
 
 
             if (m_MultiColumnHeaderState == null)
@@ -91,14 +90,14 @@ namespace UnityEditor
 
         public void OnSelectionChange()
         {
-            OnSelectionChange(Selection.entityIds.ToIntArray());
+            OnSelectionChange(Selection.entityIds);
         }
 
-        public void OnSelectionChange(int[] instanceIDs)
+        public void OnSelectionChange(EntityId[] entityIds)
         {
             if (m_TreeView != null)
             {
-                m_TreeView.SetSelection(instanceIDs);
+                m_TreeView.SetSelection(entityIds);
             }
         }
 

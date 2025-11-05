@@ -14,6 +14,12 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class NodeOption : INodeOption
     {
+        internal static readonly string k_OptionIdPrefix = "__option_";
+
+        /// <summary>
+        /// The id of the node option.
+        /// </summary>
+        public string Id { get; }
         /// <summary>
         /// The <see cref="Editor.PortModel"/> owned by the node option.
         /// </summary>
@@ -32,19 +38,21 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeOption"/> class.
         /// </summary>
+        /// <param name="id">The id of the node option.</param>
         /// <param name="portModel">The port model of the node option.</param>
         /// <param name="showInInspectorOnly">Whether the node option is only shown in the inspector. By default, it is shown in both the node and in the inspector.</param>
         /// <param name="order">The order in which the option will be displayed among the other options.</param>
-        public NodeOption(PortModel portModel, bool showInInspectorOnly, int order)
+        public NodeOption(string id, PortModel portModel, bool showInInspectorOnly, int order)
         {
             PortModel = portModel;
             IsInInspectorOnly = showInInspectorOnly;
             Order = order;
+            Id = id;
         }
 
         Type INodeOption.DataType => PortModel.PortDataType;
 
-        string INodeOption.Name => PortModel.PortId;
+        string INodeOption.Name => Id;
 
         string INodeOption.DisplayName => PortModel.Title;
 

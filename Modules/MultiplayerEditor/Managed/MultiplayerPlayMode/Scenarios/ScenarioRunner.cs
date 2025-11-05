@@ -108,9 +108,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
                 string[] movedAssets, string[] movedFromAssetPaths)
             {
+                if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
+                    return;
+
                 var scenario = instance.m_Scenario;
-                if (scenario != null)
-                    scenario.NotifyDrift();
+                if (scenario == null)
+                    return;
+
+                scenario.NotifyDrift();
             }
         }
 
@@ -167,8 +172,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public static void StopScenario()
         {
-            AssetMonitor.Reset();
-
             if (instance.m_Scenario != null)
             {
                 instance.m_CancellationTokenSource?.Cancel();

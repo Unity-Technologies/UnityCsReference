@@ -335,8 +335,12 @@ namespace UnityEngine.UIElements
                     RegisterCallbackOnce<FocusEvent>(_ =>
                     {
                         // Don't react after event was disposed and we didn't get focus for any reason.
-                        if (evt.timestamp == evtTimestamp)
-                            elementPanel?.contextualMenuManager?.DisplayMenu(evt, this);
+                        if (evt.timestamp != evtTimestamp)
+                            return;
+
+                        // Repaint the panel now because they won't get another chance when the menu is up
+                        var menu = new DropdownMenu { repaintPanelBeforeDisplay = true };
+                        elementPanel?.contextualMenuManager?.DisplayMenu(evt, this, menu);
                     });
                 }
                 else

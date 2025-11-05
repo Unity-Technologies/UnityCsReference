@@ -78,7 +78,7 @@ namespace UnityEditor.Search
             List<int> matches = new List<int>();
             foreach (var t in templates)
             {
-                var id = t.sceneTemplate?.GetInstanceID().ToString() ?? t.name;
+                var id = t.sceneTemplate?.GetEntityId().ToString() ?? t.name;
                 var description = t.description?.Replace("\n", " ");
                 if (string.IsNullOrEmpty(context.searchQuery) || FuzzySearch.FuzzyMatch(context.searchQuery, $"{t.name} {description}", ref score, matches))
                     yield return provider.CreateItem(context, id, ~(int)score, t.name, description, t.thumbnail, t);

@@ -20,7 +20,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         public void Close() => m_BackingObject.Close();
-        public int GetInstanceID() => m_BackingObject.GetInstanceID();
+        public int GetEntityId() => m_BackingObject.GetEntityId();
 
         public static void SetMppmCanCloseCallback(Func<bool> mppmCanCloseCallback)
         {

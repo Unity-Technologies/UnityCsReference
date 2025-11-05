@@ -244,7 +244,8 @@ namespace Unity.ProjectAuditor.Editor
                 }
             }
 
-            InitPlatformParams();
+            if (Event.current.type == EventType.Repaint)
+                InitPlatformParams();
         }
 
         /// <summary>

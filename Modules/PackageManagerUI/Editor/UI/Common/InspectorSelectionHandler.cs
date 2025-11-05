@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -18,8 +19,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class InspectorSelectionHandler : BaseService<IInspectorSelectionHandler>, IInspectorSelectionHandler, ISerializationCallbackReceiver
     {
+        [FormerlySerializedAs("m_SerializedPackageSelectionInstanceIds")]
         [SerializeField]
-        private int[] m_SerializedPackageSelectionInstanceIds = Array.Empty<int>();
+        private EntityId[] m_SerializedPackageSelectionEntityIds = Array.Empty<EntityId>();
 
         private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new();
 
@@ -35,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            m_SerializedPackageSelectionInstanceIds = m_PackageSelectionObjects.Select(kp => kp.Value.GetInstanceID()).ToArray();
+            m_SerializedPackageSelectionEntityIds = m_PackageSelectionObjects.Select(kp => kp.Value.GetEntityId()).ToArray();
         }
 
         public void OnAfterDeserialize() {}
@@ -124,7 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void InitializeSelectionObjects()
         {
-            foreach (var id in m_SerializedPackageSelectionInstanceIds)
+            foreach (var id in m_SerializedPackageSelectionEntityIds)
             {
                 var packageSelectionObject = UnityEngine.Object.FindObjectFromInstanceID(id) as PackageSelectionObject;
                 if (packageSelectionObject != null)

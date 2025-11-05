@@ -48,7 +48,7 @@ namespace Unity.Properties.Internal
 
         internal static void CreatePropertyBagProvider()
         {
-            s_PropertyBagProvider = new ReflectedPropertyBagProvider();
+            s_PropertyBagProvider ??= new ReflectedPropertyBagProvider();
         }
 
         /// <summary>

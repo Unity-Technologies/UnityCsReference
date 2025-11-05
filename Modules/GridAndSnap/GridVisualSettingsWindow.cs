@@ -2,13 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Snap
 {
-    sealed class GridSettingsWindow : OverlayPopupWindow
+    sealed class GridVisualSettingsWindow : OverlayPopupWindow
     {
         readonly SceneViewGrid.GridRenderAxis[] m_Axes =
         {
@@ -17,7 +18,8 @@ namespace UnityEditor.Snap
             SceneViewGrid.GridRenderAxis.Z,
         };
 
-        const string k_GridSettingsWindowUxmlPath = "UXML/GridAndSnap/GridSettings.uxml";
+        const string k_GridVisualSettingsWindowUxmlPath = "UXML/GridAndSnap/GridVisualSettings.uxml";
+
         SceneView m_SceneView;
         ButtonStripField m_GridPlane;
         Slider m_GridOpacity;
@@ -26,9 +28,11 @@ namespace UnityEditor.Snap
         {
             base.OnEnable();
 
-            var mainTemplate = EditorGUIUtility.Load(k_GridSettingsWindowUxmlPath) as VisualTreeAsset;
+            var mainTemplate = EditorGUIUtility.Load(k_GridVisualSettingsWindowUxmlPath) as VisualTreeAsset;
             mainTemplate.CloneTree(rootVisualElement);
-
+            
+            SceneViewToolbarStyles.AddStyleSheets(rootVisualElement);
+            
             rootVisualElement.Q<TextElement>("PaneTitle").text = L10n.Tr("Grid Visual");
             rootVisualElement.Q<Button>("PaneOption").clicked += PaneOptionMenu;
 
@@ -46,30 +50,12 @@ namespace UnityEditor.Snap
 
             m_GridOpacity = rootVisualElement.Q<Slider>("Opacity");
             m_GridOpacity.label = L10n.Tr("Opacity");
-
+            
             m_GridOpacity.RegisterValueChangedCallback(evt =>
             {
                 m_SceneView.sceneViewGrids.gridOpacity = evt.newValue;
                 SceneView.RepaintAll();
             });
-
-            var toHandle = rootVisualElement.Q<Button>("ToHandle");
-            toHandle.text = L10n.Tr("To Handle");
-            toHandle.clicked += () =>
-            {
-                foreach (var view in SceneView.sceneViews)
-                    ((SceneView)view).sceneViewGrids.SetAllGridsPivot(Snapping.Snap(Tools.handlePosition, GridSettings.size));
-                SceneView.RepaintAll();
-            };
-
-            var toOrigin = rootVisualElement.Q<Button>("ToOrigin");
-            toOrigin.text = L10n.Tr("To Origin");
-            toOrigin.clicked += () =>
-            {
-                foreach (var view in SceneView.sceneViews)
-                    ((SceneView)view).sceneViewGrids.ResetPivot(SceneViewGrid.GridRenderAxis.All);
-                SceneView.RepaintAll();
-            };
         }
 
         void PaneOptionMenu()
@@ -84,6 +70,7 @@ namespace UnityEditor.Snap
             m_SceneView.sceneViewGrids.gridAxis = SceneViewGrid.defaultRenderAxis;
             m_SceneView.sceneViewGrids.gridOpacity = SceneViewGrid.defaultGridOpacity;
             Init(m_SceneView);
+            m_SceneView.Repaint();
         }
 
         public void Init(SceneView sceneView)

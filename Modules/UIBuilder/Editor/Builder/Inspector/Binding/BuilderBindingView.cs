@@ -30,7 +30,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        struct BindingType
+        internal struct BindingType
         {
             public Type type;
             public string uxmlFullName;
@@ -41,6 +41,9 @@ namespace Unity.UI.Builder
 
         private static readonly BindingType[] k_UxmlBindingTypes;
         private static readonly List<string> k_UxmlBindingTypeDisplayNames = new();
+
+        // Used in tests.
+        internal static BindingType[] allBindingTypes => k_UxmlBindingTypes;
 
         static BuilderBindingView()
         {
@@ -251,6 +254,11 @@ namespace Unity.UI.Builder
                         uxmlFullName = description.uxmlFullName,
                         displayName = "Default"
                     });
+                }
+                // Skip this type, as it requires context to work and should be used by users.
+                else if (t.FullName == "Unity.UIToolkit.Editor.StylePropertyBinding")
+                {
+                    continue;
                 }
                 else
                 {

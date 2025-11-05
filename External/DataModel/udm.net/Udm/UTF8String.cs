@@ -13,12 +13,14 @@ internal struct UTF8StringField
 
     internal unsafe Span<byte> AsSpan()
     {
-            return default;
+        byte* dataPtr = UnsafeHelper.AsBytePointer(ref this) + Location;
+        return new Span<byte>(dataPtr, (int)Size);
     }
 
     internal readonly unsafe ReadOnlySpan<byte> AsReadOnlySpan()
     {
-        return default;
+        byte* dataPtr = UnsafeHelper.AsBytePointerFromReadOnly(in this)+ Location;
+        return new ReadOnlySpan<byte>(dataPtr, (int)Size);
     }
 }
 
@@ -82,6 +84,11 @@ internal unsafe struct UTF8String
     {
         ThrowIfInvalid();
         var span = value.AsSpan();
+        var dataPtr = (byte*)UnsafeHelper.AsPointer(ref MemoryMarshal.GetReference(span));
+        fixed (UTF8String* stringAccessorPtr = &this)
+        {
+            UdmInterop.Instance.udm_utf8string_assign(stringAccessorPtr, dataPtr, (ulong)span.Length);
+        }
     }
 
     internal void SetBytes(byte[] value)

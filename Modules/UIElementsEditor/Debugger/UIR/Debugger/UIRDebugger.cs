@@ -133,7 +133,7 @@ namespace UnityEditor.UIElements.Debugger
             var it = UIElementsUtility.GetPanelsIterator();
             while (it.MoveNext())
             {
-                HostView view = guiViews.FirstOrDefault(v => v.GetInstanceID() == it.Current.Key) as HostView;
+                HostView view = guiViews.FirstOrDefault(v => v.GetEntityId() == it.Current.Key) as HostView;
 
                 // Skip this window
                 if (view != null && view.actualView == this)

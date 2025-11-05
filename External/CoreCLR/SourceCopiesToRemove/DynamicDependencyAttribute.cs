@@ -19,6 +19,7 @@ namespace System.Diagnostics.CodeAnalysis
     [AttributeUsage(
         AttributeTargets.Constructor | AttributeTargets.Field | AttributeTargets.Method,
         AllowMultiple = true, Inherited = false)]
+    [UnityEngine.Bindings.VisibleToOtherModules]
     internal
     sealed class DynamicDependencyAttribute : Attribute
     {

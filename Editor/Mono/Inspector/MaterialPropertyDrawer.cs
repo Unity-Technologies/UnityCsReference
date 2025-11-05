@@ -75,7 +75,7 @@ namespace UnityEditor
         {
             if (shader == null)
                 return string.Empty;
-            return shader.GetInstanceID() + "_" + name;
+            return shader.GetEntityId() + "_" + name;
         }
 
         [RequiredByNativeCode]
@@ -83,7 +83,7 @@ namespace UnityEditor
         {
             if (shader == null)
                 return;
-            string keyStart = shader.GetInstanceID() + "_";
+            string keyStart = shader.GetEntityId() + "_";
             var toDelete = new List<string>();
             foreach (string key in s_PropertyHandlers.Keys)
             {

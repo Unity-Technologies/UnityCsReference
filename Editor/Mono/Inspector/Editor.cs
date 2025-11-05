@@ -315,7 +315,7 @@ namespace UnityEditor
     internal interface IToolModeOwner
     {
         bool areToolModesAvailable { get; }
-        int GetInstanceID();
+        EntityId GetEntityId();
         Bounds GetWorldBoundsOfTargets();
         bool ModeSurvivesSelectionChange(int toolMode);
     }

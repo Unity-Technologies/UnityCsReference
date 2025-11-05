@@ -89,7 +89,10 @@ namespace UnityEditor
         RenderingLayerMask = 26,
 
         // EntityId property
-        EntityId = 27
+        EntityId = 27,
+
+        // GUID value
+        GUID = 28
     }
 
     // This enum exposes extra detail, because SerializedPropertyType classifies all numeric types as Integer or Float
@@ -185,7 +188,7 @@ namespace UnityEditor
                 var exposedId = exposedName.stringValue;
                 if (String.IsNullOrEmpty(exposedId))
                 {
-                    exposedId = UnityEditor.GUID.Generate().ToString();
+                    exposedId = UnityEngine.GUID.Generate().ToString();
                     exposedName.stringValue = exposedId;
                 }
                 var propertyName = new PropertyName(exposedId);
@@ -363,6 +366,7 @@ namespace UnityEditor
                     case SerializedPropertyType.BoundsInt: return boundsIntValue;
                     case SerializedPropertyType.ManagedReference: return managedReferenceValue;
                     case SerializedPropertyType.Hash128: return hash128Value;
+                    case SerializedPropertyType.GUID: return guidValue;
                     case SerializedPropertyType.EntityId: return entityIdValue;
 
                     default:
@@ -450,6 +454,7 @@ namespace UnityEditor
                         case SerializedPropertyType.BoundsInt: boundsIntValue = (BoundsInt)value; break;
                         case SerializedPropertyType.ManagedReference: managedReferenceValue = value; break;
                         case SerializedPropertyType.Hash128: hash128Value = (Hash128)value; break;
+                        case SerializedPropertyType.GUID: guidValue = (GUID)value; break;
                         case SerializedPropertyType.EntityId: entityIdValue = (EntityId)value; break;
 
                         default: // FixedBufferSize is read-only
@@ -1789,11 +1794,32 @@ namespace UnityEditor
             }
         }
 
+        // Value of a GUID property.
+        public GUID guidValue
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return (GUID)GetGUIDValueInternal();
+            }
+            set
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                SetGUIDValueInternal(value);
+            }
+        }
+
         [FreeFunction(Name = "SerializedPropertyBindings::GetHash128ValueInternal", HasExplicitThis = true)]
         private extern Hash128 GetHash128ValueInternal();
 
         [FreeFunction(Name = "SerializedPropertyBindings::SetHash128ValueInternal", HasExplicitThis = true)]
         private extern void SetHash128ValueInternal(Hash128 value);
+
+        [FreeFunction(Name = "SerializedPropertyBindings::GetGUIDValueInternal", HasExplicitThis = true)]
+        private extern GUID GetGUIDValueInternal();
+
+        [FreeFunction(Name = "SerializedPropertyBindings::SetGUIDValueInternal", HasExplicitThis = true)]
+        private extern void SetGUIDValueInternal(GUID value);
 
         public EntityId entityIdValue
         {

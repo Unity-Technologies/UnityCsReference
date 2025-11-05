@@ -405,6 +405,8 @@ namespace UnityEditor.Search
 
                 case SerializedPropertyType.Hash128:
                     return new SearchValue(sp.hash128Value.ToString());
+                case SerializedPropertyType.GUID:
+                    return new SearchValue(sp.guidValue.ToString());
                 case SerializedPropertyType.EntityId:
                     return new SearchValue(sp.entityIdValue.ToString());
             }

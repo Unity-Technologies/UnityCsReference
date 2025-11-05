@@ -156,6 +156,10 @@ namespace UnityEditor
                         propertyValue = $"{property.hash128Value}";
                         break;
 
+                    case SerializedPropertyType.GUID:
+                        propertyValue = $"{property.guidValue}";
+                        break;
+
                     case SerializedPropertyType.EntityId:
                         propertyValue = $"{property.entityIdValue}";
                         break;

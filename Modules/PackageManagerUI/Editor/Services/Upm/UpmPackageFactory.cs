@@ -142,10 +142,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GeneratePackagesAndTriggerChangeEvent(new[] { packageInfo.name });
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
+        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource)
         {
             var packageNames = updatedInfos.Select(i => i.oldInfo?.name ?? i.newInfo?.name).ToArray();
-            GeneratePackagesAndTriggerChangeEvent(packageNames);
+            GeneratePackagesAndTriggerChangeEvent(packageNames, changedSource);
         }
 
         private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)
@@ -160,7 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(allPackageNames);
         }
 
-        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames)
+        public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<string> packageNames, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             if (packageNames?.Any() != true)
                 return;
@@ -205,7 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (updatedPackages.Any() || packagesToRemove.Any())
-                m_PackageDatabase.UpdatePackages(toAddOrUpdate: updatedPackages, toRemove: packagesToRemove);
+                m_PackageDatabase.UpdatePackages(toAddOrUpdate: updatedPackages, toRemove: packagesToRemove, changedSource);
         }
     }
 
@@ -398,7 +398,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId));
         }
 
-        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
+        private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             var productIds = new List<long>();
             foreach (var (oldInfo, newInfo) in updatedInfos)

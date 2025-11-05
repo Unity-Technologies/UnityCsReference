@@ -35,7 +35,7 @@ namespace UnityEngine.TextCore.Text
 
         internal static void RegisterFontAssetForFontFeatureUpdate(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.instanceID;
+            int instanceID = fontAsset.entityId;
 
             if (k_FontAssets_FontFeaturesUpdateQueueLookup.Add(instanceID))
                 k_FontAssets_FontFeaturesUpdateQueue.Add(fontAsset);
@@ -43,7 +43,7 @@ namespace UnityEngine.TextCore.Text
 
         internal static void RegisterFontAssetForKerningUpdate(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.instanceID;
+            int instanceID = fontAsset.entityId;
 
             if (k_FontAssets_KerningUpdateQueueLookup.Add(instanceID))
                 k_FontAssets_KerningUpdateQueue.Add(fontAsset);
@@ -88,9 +88,9 @@ namespace UnityEngine.TextCore.Text
         /// <param name="texture">The texture on which to call Apply().</param>
         internal static void RegisterAtlasTextureForApply(Texture2D texture)
         {
-            int instanceID = texture.GetInstanceID();
+            int entityId = texture.GetEntityId();
 
-            if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(instanceID))
+            if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(entityId))
                 k_FontAssets_AtlasTexturesUpdateQueue.Add(texture);
         }
 

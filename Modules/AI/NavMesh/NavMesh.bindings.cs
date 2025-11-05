@@ -92,7 +92,7 @@ namespace UnityEngine.AI
             get => NavMesh.InternalGetOwner(id);
             set
             {
-                var ownerID = value != null ? value.GetInstanceID() : 0;
+                var ownerID = value != null ? value.GetEntityId() : EntityId.None;
                 if (!NavMesh.InternalSetOwner(id, ownerID))
                     Debug.LogError("Cannot set 'owner' on an invalid NavMeshDataInstance");
             }
@@ -366,7 +366,7 @@ namespace UnityEngine.AI
 
         public static void SetLinkOwner(NavMeshLinkInstance handle, Object owner)
         {
-            var ownerID = owner != null ? owner.GetInstanceID() : 0;
+            var ownerID = owner != null ? owner.GetEntityId() : EntityId.None;
             if (!InternalSetLinkOwner(handle.id, ownerID))
                 Debug.LogError("Cannot set 'owner' on an invalid NavMeshLinkInstance");
         }

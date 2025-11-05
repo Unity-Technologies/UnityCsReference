@@ -363,7 +363,7 @@ namespace UnityEngine.UIElements
 
             s_ContainerStack.Push(container);
             GUIUtility.s_SkinMode = (int)container.contextType;
-            GUIUtility.s_OriginalID = container.elementPanel.ownerObject.GetInstanceID();
+            GUIUtility.s_OriginalID = container.elementPanel.ownerObject.GetEntityId();
 
             if (Event.current == null)
             {
@@ -392,7 +392,7 @@ namespace UnityEngine.UIElements
                 GUILayoutUtility.LayoutFromContainer(layoutSize.width, layoutSize.height);
             }
             // restore cache
-            GUILayoutUtility.SelectIDList(GUIUtility.s_OriginalID, false);
+            GUILayoutUtility.SelectIDListLayout(GUIUtility.s_OriginalID);
             GUIContent.ClearStaticCache();
 
             if (s_ContainerStack.Count > 0)

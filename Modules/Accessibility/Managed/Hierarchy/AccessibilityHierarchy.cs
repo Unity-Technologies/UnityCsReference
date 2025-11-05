@@ -53,16 +53,14 @@ namespace UnityEngine.Accessibility
     ///- <see cref="AccessibilityHierarchy.MoveNode"/>
     ///- <see cref="AccessibilityHierarchy.RemoveNode"/>
     ///- Modifications to node <see cref="AccessibilityNode.frame"/> values.
-    /// </para>
-    /// <para>
+    /// 
     /// These APIs are currently supported on the following platforms:
     ///
     ///- <see cref="RuntimePlatform.Android"/> - starting with Android 8.0 (API level 26)
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
     ///- <see cref="RuntimePlatform.OSXPlayer"/>
     ///- <see cref="RuntimePlatform.WindowsPlayer"/>
-    /// </para>
-    /// <para>
+    /// 
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]

@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.UIElements.Experimental.Debugger;
 using UnityEditor.UIElements.Experimental.UILayoutDebugger;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
 {
@@ -22,8 +24,11 @@ namespace UnityEditor.UIElements
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
         const string k_EnableAdvancedText = "UIToolkit.EnableAdvancedText";
 
-        [SerializeField]
-        private bool m_EnableAdvancedText = false;
+        [SerializeField] bool m_EnableAdvancedText = false;
+        [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultRuntimeTheme;
+        [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultEditorTheme;
+        [SerializeField] CanvasTheme m_DefaultRuntimeCanvasTheme;
+        [SerializeField] CanvasTheme m_DefaultEditorCanvasTheme;
 
         internal static bool enableAdvancedText
         {
@@ -43,6 +48,75 @@ namespace UnityEditor.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Action<bool> onEnableAdvancedTextChanged;
 
+        /// <summary>
+        /// Invoked when any theme setting changes (runtime/editor theme or canvas theme).
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static Action onThemeChanged;
+
+        /// The default runtime theme for the project (version controlled).
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static ThemeStyleSheet defaultRuntimeTheme
+        {
+            get => instance.m_DefaultRuntimeTheme.asset;
+            set
+            {
+                if (instance.m_DefaultRuntimeTheme.asset != value)
+                {
+                    instance.m_DefaultRuntimeTheme = value;
+                    instance.Save();
+                    onThemeChanged?.Invoke();
+                }
+            }
+        }
+
+        /// The default editor theme for the project (version controlled).
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static ThemeStyleSheet defaultEditorTheme
+        {
+            get => instance.m_DefaultEditorTheme.asset;
+            set
+            {
+                if (instance.m_DefaultEditorTheme.asset != value)
+                {
+                    instance.m_DefaultEditorTheme = value;
+                    instance.Save();
+                    onThemeChanged?.Invoke();
+                }
+            }
+        }
+
+        /// The default runtime canvas theme type for the project (version controlled).
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static CanvasTheme defaultRuntimeCanvasTheme
+        {
+            get => instance.m_DefaultRuntimeCanvasTheme;
+            set
+            {
+                if (instance.m_DefaultRuntimeCanvasTheme != value)
+                {
+                    instance.m_DefaultRuntimeCanvasTheme = value;
+                    instance.Save();
+                    onThemeChanged?.Invoke();
+                }
+            }
+        }
+
+        /// The default editor canvas theme type for the project.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static CanvasTheme defaultEditorCanvasTheme
+        {
+            get => instance.m_DefaultEditorCanvasTheme;
+            set
+            {
+                if (instance.m_DefaultEditorCanvasTheme != value)
+                {
+                    instance.m_DefaultEditorCanvasTheme = value;
+                    instance.Save();
+                    onThemeChanged?.Invoke();
+                }
+            }
+        }
 
         [SerializeField]
         private bool m_EnableLowLevelDebugger = false;
@@ -157,6 +231,10 @@ namespace UnityEditor.UIElements
         internal void Reset()
         {
             enableAdvancedText = false;
+            defaultRuntimeTheme = null;
+            defaultEditorTheme = null;
+            defaultRuntimeCanvasTheme = CanvasTheme.ProjectSettings;
+            defaultEditorCanvasTheme = CanvasTheme.ProjectSettings;
         }
 
 

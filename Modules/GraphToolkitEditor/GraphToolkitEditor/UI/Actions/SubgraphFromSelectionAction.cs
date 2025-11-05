@@ -38,8 +38,11 @@ namespace Unity.GraphToolkit.Editor
 
             var selection = view.GetSelection();
 
-            if (selection.Any(e => e is IPlaceholder || e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder || e is ContextNodeModel || e is BlockNodeModel)
+            if (selection.Any(e => e is IPlaceholder || e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder)
                 || !selection.Any(e => e is AbstractNodeModel || e is PlacematModel || e is StickyNoteModel))
+                return InvalidData;
+
+            if (!selection.Any(e => e is not BlockNodeModel))
                 return InvalidData;
 
             var transferredModels = new HashSet<GraphElementModel>();

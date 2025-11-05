@@ -47,5 +47,15 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override FloatField CreateValueField()
+        {
+            return new FloatField();
+        }
+
+        protected override StyleFloat CreateStyleValue(float v)
+        {
+            return v;
+        }
     }
 }

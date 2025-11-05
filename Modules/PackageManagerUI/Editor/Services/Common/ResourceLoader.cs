@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         StyleSheet selectionWindowStyleSheet { get; }
         StyleSheet customDisplayDialogStyleSheet { get; }
         StyleSheet exportWindowStyleSheet { get; }
+        StyleSheet activeTrustWindowStyleSheet { get; }
         VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true);
     }
 
@@ -74,6 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             internal static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
             internal static readonly string customDisplayDialog = "StyleSheets/PackageManager/CustomDisplayDialog.uss";
             internal static readonly string exportWindowStyleSheet = "StyleSheets/PackageManager/ExportWindow.uss";
+            internal static readonly string activeTrustWindowStyleSheet = "StyleSheets/PackageManager/ActiveTrustWindow.uss";
 
             internal static readonly string selectionWindowCommon = "StyleSheets/PackageManager/SelectionWindow.uss";
             internal static string selectionWindowVariables => EditorGUIUtility.isProSkin ?
@@ -91,6 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SelectionWindow,
             CustomDisplayDialog,
             ExportWindow,
+            ActiveTrustWindow,
 
             Count
         }
@@ -111,7 +114,25 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private int[] m_SerializedResolvedLightStyleSheetIds;
 
+        [SerializeField]
+        private bool m_ModalStylesheetPreloaded = false;
+
         private static int[] resolvedStyleSheetIds => EditorGUIUtility.isProSkin ? s_ResolvedDarkStyleSheetIds : s_ResolvedLightStyleSheetIds;
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            if (!m_ModalStylesheetPreloaded)
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    _ = customDisplayDialogStyleSheet;
+                    _ = exportWindowStyleSheet;
+                    _ = activeTrustWindowStyleSheet;
+                    m_ModalStylesheetPreloaded = true;
+                };
+            }
+        }
 
         public void OnBeforeSerialize()
         {
@@ -203,6 +224,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             StyleSheetPath.packageManagerVariables,
             StyleSheetPath.exportWindowStyleSheet);
 
+        public StyleSheet activeTrustWindowStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.ActiveTrustWindow)
+            ?? ResolveStyleSheets(StyleSheetType.ActiveTrustWindow,
+                StyleSheetPath.packageManagerVariables,
+                StyleSheetPath.activeTrustWindowStyleSheet);
+
         public StyleSheet selectionWindowStyleSheet
         {
             get
@@ -237,8 +264,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             resolver.AddStyleSheets(styleSheets);
             resolver.ResolveTo(styleSheet);
 
-            styleSheet.name = styleSheetType.ToString() + lightOrDarkTheme;
-            resolvedStyleSheetIds[(int)styleSheetType] = styleSheet.GetInstanceID();
+            styleSheet.name = styleSheetType + lightOrDarkTheme;
+            resolvedStyleSheetIds[(int)styleSheetType] = styleSheet.GetEntityId();
 
             return styleSheet;
         }

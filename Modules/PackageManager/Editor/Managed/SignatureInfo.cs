@@ -25,6 +25,10 @@ namespace UnityEditor.PackageManager
         private string m_Reason;
 
         [SerializeField]
+        [NativeName("isLegacy")]
+        private bool m_IsLegacy;
+
+        [SerializeField]
         [NativeName("errorCode")]
         private string m_ErrorCode;
 
@@ -34,15 +38,17 @@ namespace UnityEditor.PackageManager
 
         public SignatureStatus status => m_Status;
         public string reason => m_Reason;
+        public bool isLegacy => m_IsLegacy;
         public string errorCode => m_ErrorCode;
         public Attestation attestation => m_Attestation;
 
-        internal SignatureInfo() : this(SignatureStatus.Unchecked, "", null, "") {}
+        internal SignatureInfo() : this(SignatureStatus.Unchecked, "", false, null, "") {}
 
-        internal SignatureInfo(SignatureStatus status, string reason, Attestation attestation, string errorCode)
+        internal SignatureInfo(SignatureStatus status, string reason, bool isLegacy, Attestation attestation, string errorCode)
         {
             m_Status = status;
             m_Reason = reason;
+            m_IsLegacy = isLegacy;
             m_Attestation = attestation;
             m_ErrorCode = errorCode;
         }

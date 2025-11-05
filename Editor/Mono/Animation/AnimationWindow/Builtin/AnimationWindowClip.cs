@@ -15,7 +15,7 @@ namespace UnityEditor.AnimationWindowBuiltin
         GameObject m_RootGameObject;
 
         public string name => m_Clip.name;
-        public int id => m_Clip.GetInstanceID();
+        public EntityId id => m_Clip.GetEntityId();
         public bool isValid => m_Clip != null;
         public bool isReadOnly => m_Clip.hideFlags == HideFlags.NotEditable;
 
@@ -87,7 +87,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                 {
                     AnimationWindowCurve curve = new AnimationWindowCurve(
                         this,
-                        RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(curveBinding, m_Clip),
+                        curveBinding,
                         GetValueType(curveBinding));
                     curves.Add(curve);
 

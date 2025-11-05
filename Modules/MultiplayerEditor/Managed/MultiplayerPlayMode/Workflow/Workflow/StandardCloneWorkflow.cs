@@ -77,7 +77,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (hasPlayer)
                 {
                     var tag = player.Tags.Count <= 0 ? string.Empty : $" [{string.Join('|', player.Tags)}]";
-                    editorTitleUpdater.title = $"{player.Name}{tag}";
+                    var roleText = InternalUtilities.GetMultiplayerRoleDisplayText((MultiplayerRoleFlags)player.MultiplayerRole);
+                    editorTitleUpdater.title = $"{player.Name} ({roleText}){tag}";
                 }
                 else
                 {

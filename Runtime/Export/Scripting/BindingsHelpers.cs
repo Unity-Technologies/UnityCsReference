@@ -26,7 +26,7 @@ namespace UnityEngine.Bindings
             // If the instance ID is zero then this is a fake null object and there is no native
             // object that owns this handle.  It was created in UnityEngineMarshalling.h and
             // needs to be freed here
-            if (target.GetInstanceID() == 0)
+            if (target.GetEntityId() == EntityId.None)
                 gcHandle.Free();
             return target;
         }
@@ -35,7 +35,7 @@ namespace UnityEngine.Bindings
         public static GCHandle FromIntPtrUnsafe(IntPtr gcHandle)
         {
             // Use a unsafe memory cast to avoid the overhead of checking the
-            // IntPtr value for validity in the current domain. The Mono class 
+            // IntPtr value for validity in the current domain. The Mono class
             // library does this which introduces meaningful overhead. We assume
             // the GC handle we hold is valid for the current domain. There
             // is no such validity check when constructing and retrieving GC
@@ -61,7 +61,7 @@ namespace UnityEngine.Bindings
         {
             if (obj is UnityEngine.Object unityObj)
                 UnityEngine.Object.MarshalledUnityObject.TryThrowEditorNullExceptionObject(unityObj, null);
-            throw new NullReferenceException(); 
+            throw new NullReferenceException();
         }
     }
 }

@@ -484,7 +484,11 @@ namespace Unity.Hierarchy.Editor
         {
             var editor = new HierarchyViewCellValueEditor<GameObject, LayerField, int>(
                     getModelValue: ed => ed.Model.layer,
-                    setModelValue: (ed, value) => SceneModeUtility.SetLayer(ed.Model, value, ed.Model.name),
+                    setModelValue: (ed, value) =>
+                    {
+                        if (!SceneModeUtility.SetLayer(ed.Model, value, ed.Model.name))
+                            ed.Element.SetValueWithoutNotify(ed.Model.layer);
+                    },
                     isDefaultValue: (ed, value) => value == 0);
             return editor;
         }
@@ -538,7 +542,11 @@ namespace Unity.Hierarchy.Editor
         {
             var editor = new CellValueEditorGOBool(
                     getModelValue: ed => ed.Model && ed.Model.isStatic,
-                    setModelValue: (ed, value) => SceneModeUtility.SetStaticFlags(ed.Model, int.MaxValue, value),
+                    setModelValue: (ed, value) =>
+                    {
+                        if (!SceneModeUtility.SetStaticFlags(ed.Model, int.MaxValue, value))
+                            ed.Element.SetValueWithoutNotify(ed.Model.isStatic);
+                    },
                     isDefaultValue: (ed, value) => value == false);
             return editor;
         }

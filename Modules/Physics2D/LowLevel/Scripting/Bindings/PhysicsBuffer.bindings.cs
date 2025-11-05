@@ -79,6 +79,25 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <undoc/>
             public readonly unsafe ReadOnlySpan<T> ToReadOnlySpan<T>() where T : struct => new ReadOnlySpan<T>(m_Buffer.ToPointer(), m_Size);
 
+            /// <undoc/>
+            public unsafe readonly T AsEngineObject<T>(int index) where T : class
+            {
+                if (index < 0 || index >= size)
+                    throw new ArgumentOutOfRangeException("Index argument is invalid.", nameof(index));
+
+                var entityId = UnsafeUtility.ArrayElementAsRef<EntityId>(m_Buffer.ToPointer(), index);
+                return Resources.EntityIdIsValid(entityId) ? Resources.EntityIdToObject(entityId) as T : null;
+            }
+
+            /// <undoc/>
+            public unsafe readonly T As<T>(int index) where T : struct
+            {
+                if (index < 0 || index >= size)
+                    throw new ArgumentOutOfRangeException("Index argument is invalid.", nameof(index));
+
+                return UnsafeUtility.ArrayElementAsRef<T>(m_Buffer.ToPointer(), index);
+            }
+
             /// <summary>
             /// This should NOT be called if a NativeArray or Span are currently active and being accessed otherwise bad things will happen.
             /// Typically, the NativeArray should be disposed of but in other cases, this can be used.

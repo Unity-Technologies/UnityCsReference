@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading;
 using UnityEditor.Experimental;
 using UnityEditor.Profiling;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -289,7 +290,7 @@ namespace UnityEditor.Search
         public long indexSize { get; private set; }
 
         [NonSerialized] private int m_ProductionLimit = 99;
-        [NonSerialized] private int m_InstanceID = 0;
+        [NonSerialized] private EntityId m_EntityId = EntityId.None;
         [NonSerialized] private Task m_CurrentResolveTask;
         [NonSerialized] private Task m_CurrentUpdateTask;
         [NonSerialized] private int m_UpdateTasks = 0;
@@ -648,7 +649,7 @@ namespace UnityEditor.Search
         {
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
-            m_InstanceID = GetInstanceID();
+            m_EntityId = GetEntityId();
 
             Log("OnEnable");
 
@@ -729,7 +730,7 @@ namespace UnityEditor.Search
             if (index != null && index.IsReady()) status += "I";
             if (loaded) status += "L";
             if (updating) status += "~";
-            Debug.LogFormat(logType, LogOption.None, this, $"({m_InstanceID}, {status}) <b>{settings.name}</b>.<b>{callName}</b> {string.Join(", ", args)}" +
+            Debug.LogFormat(logType, LogOption.None, this, $"({m_EntityId}, {status}) <b>{settings.name}</b>.<b>{callName}</b> {string.Join(", ", args)}" +
                 $" {index?.documentCount ?? 0} documents, {index?.indexCount ?? 0} elements");
         }
 
@@ -742,38 +743,34 @@ namespace UnityEditor.Search
         {
             LoadingState = LoadState.Loading;
             loaded = false;
+            var deletedAssets = new HashSet<string>();
             var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", OnIncrementalLoadFinished, this);
             loadTask.RunThread(() =>
             {
                 loadTask.Report($"Loading {indexPath}...", -1);
-                IncrementLoadBytes(loadTask, $"Failed to load {indexPath}.");
-            });
+
+                foreach (var d in index.GetDocuments())
+                {
+                    if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
+                        deletedAssets.Add(d.source);
+                }
+            }, finalize: () => IncrementLoadBytes(loadTask, deletedAssets));
         }
 
-        private void IncrementLoadBytes(Task loadTask, string loadFailedMessage)
+        private void IncrementLoadBytes(Task loadTask, HashSet<string> deletedAssets)
         {
-            var deletedAssets = new HashSet<string>();
-            foreach (var d in index.GetDocuments())
+            if (!this)
             {
-                if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
-                    deletedAssets.Add(d.source);
+                loadTask.Resolve(null, completed: true);
+                return;
             }
 
-            Dispatcher.Enqueue(() =>
-            {
-                if (!this)
-                {
-                    loadTask.Resolve(null, completed: true);
-                    return;
-                }
+            loadTask.Report("Checking for changes...", -1);
+            var diff = SearchMonitor.GetDiff(index.timestamp, deletedAssets, path => KeepChangesetPredicate(path, index));
+            if (!diff.empty)
+                IncrementalUpdate(diff);
 
-                loadTask.Report($"Checking for changes...", -1);
-                var diff = SearchMonitor.GetDiff(index.timestamp, deletedAssets, path => KeepChangesetPredicate(path, index));
-                if (!diff.empty)
-                    IncrementalUpdate(diff);
-
-                loadTask.Resolve(new TaskData(null, index, diff.empty));
-            });
+            loadTask.Resolve(new TaskData(null, index, diff.empty));
         }
 
         internal ArtifactKey GetAssetArtifactKey(string assetPath)
@@ -855,9 +852,8 @@ namespace UnityEditor.Search
             Console.WriteLine($"Cannot find search index artifact for {assetPath} ({a.guid}{artifactIndexSuffix})\n\t- {string.Join("\n\t- ", paths)}");
         }
 
-        private Task ResolveArtifacts(string taskName, string title, Task.ResolveHandler finished, Action<IndexArtifact[], Task> onArtifactsResolved)
+        private Task ResolveArtifacts(Task resolveTask, Action<IndexArtifact[], Task> onArtifactsResolved)
         {
-            var resolveTask = new Task(taskName, title, finished, 1, this);
             List<string> paths = null;
             resolveTask.RunThread(() =>
             {
@@ -883,21 +879,22 @@ namespace UnityEditor.Search
             ResolveArtifacts(CreateArtifacts(paths), null, resolveTask, onArtifactsResolved);
         }
 
-        private bool ResolveArtifacts(IndexArtifact[] artifacts, IList<IndexArtifact> partialSet, Task task, Action<IndexArtifact[], Task> onArtifactsResolved)
+        private void ResolveArtifacts(IndexArtifact[] artifacts, IList<IndexArtifact> partialSet, Task task, Action<IndexArtifact[], Task> onArtifactsResolved)
         {
             try
             {
                 partialSet = partialSet ?? artifacts;
 
                 if (!this || task.Canceled())
-                    return false;
+                    return;
 
                 int completed = artifacts.Length - partialSet.Count;
                 if (ResolveArtifactPaths(partialSet, out var remainingArtifacts, task, ref completed))
                 {
                     if (task.Canceled())
-                        return false;
-                    return task.RunThread(() => onArtifactsResolved(artifacts, task));
+                        return;
+                    onArtifactsResolved(artifacts, task);
+                    return;
                 }
 
                 // Resume later with remaining artifacts
@@ -908,8 +905,6 @@ namespace UnityEditor.Search
             {
                 task.Resolve(err);
             }
-
-            return false;
         }
 
         private static double GetArtifactResolutionCheckDelay(int artifactCount)
@@ -939,16 +934,15 @@ namespace UnityEditor.Search
                     if (a != null && a.valid && !string.IsNullOrEmpty(a.path))
                         artifactPaths[i] = a.path;
                 }
+
+                if (task.Canceled())
+                    return;
                 lmdbStorage.Clear();
                 lmdbStorage.MergeArtifacts(Array.Empty<string>(), artifactPaths, 0, task);
+                if (task.Canceled())
+                    return;
                 lmdbStorage.Finish(Array.Empty<string>());
             }
-
-            if (task.Canceled())
-                return;
-
-            task.Report($"Saving index...", -1f);
-            Dispatcher.Enqueue(() => task.Resolve(new TaskData(null, index), completed: true));
         }
 
         internal void Build()
@@ -962,11 +956,17 @@ namespace UnityEditor.Search
             LoadingState = LoadState.Loading;
             m_CurrentResolveTask?.Cancel();
             m_CurrentResolveTask?.Dispose();
-            m_CurrentResolveTask = ResolveArtifacts("Build", $"Building {name.ToLowerInvariant()} search index", OnBuildFinished, (artifacts, task) => CombineBuildArtifacts(artifacts, task));
+            m_CurrentResolveTask = new Task("Build", $"Building {name.ToLowerInvariant()} search index", OnBuildFinished, 1, this);
+            ResolveArtifacts(m_CurrentResolveTask, (artifacts, task) =>
+            {
+                task.RunThread(routine: () => CombineBuildArtifacts(artifacts, task),
+                    finalize: () => task.Resolve(new TaskData(null, index), completed: true));
+            });
         }
 
         private void OnBuildFinished(Task task, TaskData data)
         {
+            m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = null;
             if (!this || task.canceled || task.error != null)
             {
@@ -1135,7 +1135,7 @@ namespace UnityEditor.Search
             return 0;
         }
 
-        private void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
+        internal void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
         {
             var updates = CreateArtifacts(changeset.updated);
             var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
@@ -1147,16 +1147,17 @@ namespace UnityEditor.Search
             {
                 ResolveIncrementalUpdate(task);
             }, updates.Length, this);
-            ResolveArtifacts(updates, null, m_CurrentUpdateTask, (artifacts, task) => MergeArtifacts(artifacts, task, changeset));
+            ResolveArtifacts(updates, null, m_CurrentUpdateTask, (artifacts, task) =>
+            {
+                task.RunThread(routine: () => MergeArtifacts(artifacts, task, changeset),
+                    finalize: () => task.Resolve(new TaskData(null, index), completed: true));
+            });
         }
 
         private void MergeArtifacts(IndexArtifact[] artifacts, Task task, AssetIndexChangeSet changeset)
         {
-            if (task.canceled || task.error != null)
-            {
-                ResolveIncrementalUpdate(task);
+            if (task.Canceled() || task.error != null)
                 return;
-            }
 
             var baseScore = settings.baseScore;
             task.Report("Merging changes to index...");
@@ -1173,11 +1174,14 @@ namespace UnityEditor.Search
                     if (a != null && a.valid && !string.IsNullOrEmpty(a.path))
                         artifactPaths[i] = a.path;
                 }
+
+                if (task.Canceled())
+                    return;
                 lmdbStorage.MergeArtifacts(changeset.removed, artifactPaths, baseScore, task);
+                if (task.Canceled())
+                    return;
                 lmdbStorage.Finish(Array.Empty<string>());
             }
-
-            Dispatcher.Enqueue(() => task.Resolve(new TaskData(null, index), completed: true));
         }
 
         private void ResolveIncrementalUpdate(Task task)

@@ -33,6 +33,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override bool AllowSubgraphCreation => Graph?.GetType().GetCustomAttribute<GraphAttribute>()?.Options.HasFlag(GraphOptions.SupportsSubgraphs) ?? false;
 
+        public override bool AllowDeleteAndReconnect => true;
+
         public override void OnEnable()
         {
             var graphObject = GraphObject as GraphObjectImp;

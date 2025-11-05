@@ -132,7 +132,12 @@ namespace UnityEditor.Search
         public extern bool TryGetTypeStructuralVersion(string sourceDocumentPath, out Hash128 typeStructuralVersion);
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern void RemoveDocuments(string[] documentsToRemove);
+        public extern void RemoveDocuments(string[] documentsToRemove, SearchCancellationToken cancellationToken);
+
+        void ISearchIndexerStorage.RemoveDocuments(string[] documentsToRemove)
+        {
+            RemoveDocuments(documentsToRemove, SearchCancellationToken.None);
+        }
 
         public void AddWord(string word, int score, int documentIndex)
         {
@@ -161,7 +166,7 @@ namespace UnityEditor.Search
         public void Finish(string[] removedDocuments)
         {
             if (removedDocuments?.Length > 0)
-                RemoveDocuments(removedDocuments);
+                RemoveDocuments(removedDocuments, SearchCancellationToken.None);
             Timestamp = DateTime.UtcNow.ToBinary();
             Version = DefaultVersion;
             Sync();
@@ -182,7 +187,8 @@ namespace UnityEditor.Search
                     otherStorageArray[i] = IntPtr.Zero;
             }
             var progressId = (task?.async ?? false) ? task.progressId : Progress.InvalidProgressId;
-            Internal_Merge(m_Ptr, Array.Empty<string>(), otherStorageArray.AsSpan(0, indexes.Count), baseScore, progressId);
+            using var cancellationToken = task != null ? new SearchCancellationToken(task.cancellationToken) : SearchCancellationToken.None;
+            Internal_Merge(m_Ptr, Array.Empty<string>(), otherStorageArray.AsSpan(0, indexes.Count), baseScore, progressId, cancellationToken);
         }
 
         public void Merge(string[] removedDocuments, SearchIndexer other, int baseScore, Action<int, SearchIndexer, int> documentIndexing, SearchTask<TaskData> task)
@@ -201,7 +207,8 @@ namespace UnityEditor.Search
                 }
             }
             var progressId = (task?.async ?? false) ? task.progressId : Progress.InvalidProgressId;
-            Internal_Merge(m_Ptr, removedDocuments, otherStorageArray.AsSpan(0, 1), baseScore, progressId);
+            using var cancellationToken = task != null ? new SearchCancellationToken(task.cancellationToken) : SearchCancellationToken.None;
+            Internal_Merge(m_Ptr, removedDocuments, otherStorageArray.AsSpan(0, 1), baseScore, progressId, cancellationToken);
         }
 
         public void Merge(string[] removedDocuments, ReadOnlySpan<SearchIndexer> others, int baseScore, Action<int, SearchIndexer, int> documentIndexing, SearchTask<TaskData> task)
@@ -227,19 +234,22 @@ namespace UnityEditor.Search
             }
 
             var progressId = (task?.async ?? false) ? task.progressId : Progress.InvalidProgressId;
-            Internal_Merge(m_Ptr, removedDocuments, otherStorageArray.AsSpan(0, others.Length), baseScore, progressId);
+            using var cancellationToken = task != null ? new SearchCancellationToken(task.cancellationToken) : SearchCancellationToken.None;
+            Internal_Merge(m_Ptr, removedDocuments, otherStorageArray.AsSpan(0, others.Length), baseScore, progressId, cancellationToken);
         }
 
         public void MergeArtifacts(string[] removedDocuments, string[] artifactPaths, int baseScore, SearchTask<TaskData> task)
         {
             var progressId = (task?.async ?? false) ? task.progressId : Progress.InvalidProgressId;
-            Internal_MergeArtifacts(m_Ptr, removedDocuments, artifactPaths, baseScore, progressId);
+            using var cancellationToken = task != null ? new SearchCancellationToken(task.cancellationToken) : SearchCancellationToken.None;
+            Internal_MergeArtifacts(m_Ptr, removedDocuments, artifactPaths, baseScore, progressId, cancellationToken);
         }
 
         public void MergeArtifactsBatch(string[] removedDocuments, string[] artifactPaths, int baseScore, long batchSize, SearchTask<TaskData> task)
         {
             var progressId = (task?.async ?? false) ? task.progressId : Progress.InvalidProgressId;
-            Internal_MergeArtifactsBatch(m_Ptr, removedDocuments, artifactPaths, baseScore, progressId, batchSize);
+            using var cancellationToken = task != null ? new SearchCancellationToken(task.cancellationToken) : SearchCancellationToken.None;
+            Internal_MergeArtifactsBatch(m_Ptr, removedDocuments, artifactPaths, baseScore, progressId, batchSize, cancellationToken);
         }
 
         public void Write(Stream stream)
@@ -419,13 +429,13 @@ namespace UnityEditor.Search
         extern void Internal_AddPropertyString(string name, string value, int score, int documentIndex, bool saveKeyword);
 
         [FreeFunction("LMDBIndexStorageBindings::Merge", IsThreadSafe = true)]
-        static extern void Internal_Merge(IntPtr currentStorage, string[] documentsToRemove, ReadOnlySpan<IntPtr> otherStoragePointers, int baseScore, int progressId);
+        static extern void Internal_Merge(IntPtr currentStorage, string[] documentsToRemove, ReadOnlySpan<IntPtr> otherStoragePointers, int baseScore, int progressId, SearchCancellationToken cancellationToken);
 
         [FreeFunction("LMDBIndexStorageBindings::MergeArtifacts", IsThreadSafe = true)]
-        static extern void Internal_MergeArtifacts(IntPtr currentStorage, string[] documentsToRemove, string[] artifactPaths, int baseScore, int progressId);
+        static extern void Internal_MergeArtifacts(IntPtr currentStorage, string[] documentsToRemove, string[] artifactPaths, int baseScore, int progressId, SearchCancellationToken cancellationToken);
 
         [FreeFunction("LMDBIndexStorageBindings::MergeArtifactsBatch", IsThreadSafe = true)]
-        static extern void Internal_MergeArtifactsBatch(IntPtr currentStorage, string[] documentsToRemove, string[] artifactPaths, int baseScore, int progressId, long batchSize);
+        static extern void Internal_MergeArtifactsBatch(IntPtr currentStorage, string[] documentsToRemove, string[] artifactPaths, int baseScore, int progressId, long batchSize, SearchCancellationToken cancellationToken);
 
         [NativeMethod(IsThreadSafe = true)]
         extern SearchResult[] SearchPropertyDouble(string name, double value, SearchIndexOperator op);

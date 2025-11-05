@@ -84,7 +84,8 @@ namespace Unity.Hierarchy
         readonly List<int> m_SelectedIndices = new(); // Used as a temporary buffer for converting indices to nodes
         bool m_SelectedIndicesChangedFromPointerDown;
         int m_LastMouseUpSelectionIndex;
-        internal bool m_IsRenamingItem;
+        internal bool m_IsRenamingItem => m_RenamingItem != null;
+        HierarchyViewItem m_RenamingItem;
         internal int m_RenameDelayMs;
 
         /// <summary>
@@ -320,7 +321,7 @@ namespace Unity.Hierarchy
             this.Add(m_StyleContainer);
 
             m_LastMouseUpSelectionIndex = -1;
-            m_IsRenamingItem = false;
+            SetRenamingItem(null);
             m_RenameDelayMs = k_RenamingDelayMs;
         }
 
@@ -363,7 +364,7 @@ namespace Unity.Hierarchy
             Reset();
 
             // Reset UX update state
-            m_IsRenamingItem = false;
+            SetRenamingItem(null);
             m_LastMouseUpSelectionIndex = -1;
             m_SelectedIndicesChangedFromPointerDown = false;
             m_SelectedIndices.Clear();
@@ -961,6 +962,13 @@ namespace Unity.Hierarchy
             if (hierarchyView == null)
                 return;
 
+            if (m_IsRenamingItem)
+            {
+                var itemName = m_RenamingItem.Q<HierarchyViewItemName>();
+                itemName?.CancelRename();
+                SetRenamingItem(null);
+            }
+
             evt.StopImmediatePropagation();
 
             var localposition = hierarchyView.ChangeCoordinatesTo(m_ListViewContentContainer, evt.localMousePosition);
@@ -1096,6 +1104,11 @@ namespace Unity.Hierarchy
 
             // Note: Its fine to pass null, root or invalid nodes to SetFlagsRecursive, no need to check for that.
             m_HierarchyViewModel.SetFlagsRecursive(parents.Span, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
+        }
+
+        internal void SetRenamingItem(HierarchyViewItem item)
+        {
+            m_RenamingItem = item;
         }
 
         void BindHandlers()

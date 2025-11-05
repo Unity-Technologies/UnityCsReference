@@ -103,7 +103,7 @@ namespace UnityEngine.U2D
         extern internal static void Register(SpriteAtlas spriteAtlas);
 
         [FreeFunction("SpriteAtlasManager::CreateSpriteAtlas", ThrowsException = true)]
-        extern public static void CreateSpriteAtlas(string name, SpriteAtlasRuntimeConfig config, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AtlasPage[] pages);
+        extern public static SpriteAtlas CreateSpriteAtlas(string name, SpriteAtlasRuntimeConfig config, [UnityMarshalAs(NativeType.ScriptingObjectPtr)] AtlasPage[] pages);
     }
 
     [NativeHeader("Runtime/Graphics/SpriteFrame.h")]

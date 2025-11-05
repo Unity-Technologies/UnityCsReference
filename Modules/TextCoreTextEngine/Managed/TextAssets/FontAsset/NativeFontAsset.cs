@@ -34,7 +34,7 @@ namespace UnityEngine.TextCore.Text
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
 
-            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode);
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, entityId, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2, m_AtlasRenderMode);
         }
 
 
@@ -100,13 +100,13 @@ namespace UnityEngine.TextCore.Text
         private bool HasRecursionInternal(FontAsset fontAsset)
         {
             // Check if the node has already been visited
-            if (visitedFontAssets.Contains(fontAsset.instanceID))
+            if (visitedFontAssets.Contains(fontAsset.entityId))
             {
                 return true;
             }
 
             // Mark the node as visited
-            visitedFontAssets.Add(fontAsset.instanceID);
+            visitedFontAssets.Add(fontAsset.entityId);
 
             if (fontAsset.fallbackFontAssetTable != null)
             {
@@ -142,7 +142,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Remove the node from the visited set when backtracking
-            visitedFontAssets.Remove(fontAsset.instanceID);
+            visitedFontAssets.Remove(fontAsset.entityId);
 
             return false;
         }

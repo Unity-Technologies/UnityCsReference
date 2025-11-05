@@ -33,8 +33,6 @@ namespace Unity.UI.Builder
         const string k_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/FilterStyleField.uxml";
         const string k_UssPathNoExt = BuilderConstants.UtilitiesPath + "/StyleField/FilterStyleField";
 
-        const string k_FilterFunctionContainerName = "filter-function-container";
-
         private ListView m_FilterListView;
         private List<FilterFunction> m_FilterSource;
 

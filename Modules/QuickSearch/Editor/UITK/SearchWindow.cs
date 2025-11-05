@@ -443,7 +443,7 @@ namespace UnityEditor.Search
             {
                 m_CustomPanelContainer.config = queryViewState.customPanelConfig;
             }
-            
+
             if (!query.IsTemporaryQuery())
                 activeQuery = query;
             SearchQueryAsset.AddToRecentSearch(query);
@@ -527,7 +527,7 @@ namespace UnityEditor.Search
                 SearchSettings.SortActionsPriority();
 
                 m_SearchMonitorView = SearchMonitor.GetView();
-                m_SearchView = new SearchView(m_ViewState, GetInstanceID());
+                m_SearchView = new SearchView(m_ViewState, GetEntityId());
 
                 UpdateWindowTitle();
 

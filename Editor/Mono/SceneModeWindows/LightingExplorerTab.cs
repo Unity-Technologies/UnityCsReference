@@ -53,10 +53,10 @@ namespace UnityEditor
                 m_LightTable.OnInspectorUpdate();
         }
 
-        internal void OnSelectionChange(int[] instanceIDs)
+        internal void OnSelectionChange(EntityId[] entityIds)
         {
             if (m_LightTable != null)
-                m_LightTable.OnSelectionChange(instanceIDs);
+                m_LightTable.OnSelectionChange(entityIds);
         }
 
         internal void OnSelectionChange()

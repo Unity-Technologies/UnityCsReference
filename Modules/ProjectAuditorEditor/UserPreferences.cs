@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 using Unity.ProjectAuditor.Editor.Utils;
 
@@ -70,32 +69,68 @@ namespace Unity.ProjectAuditor.Editor
         static BuildTarget[] s_SupportedBuildTargets;
         static GUIContent[] s_PlatformContents;
 
+        public abstract class Pref<T> where T : unmanaged
+        {
+            public Pref(string name, T value = default)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            public static implicit operator T(Pref<T> pref) => pref.Value;
+
+            public virtual void Set(T value)
+            {
+                Value = value;
+            }
+
+            protected string Name { get; }
+            protected T Value { get; set; }
+        }
+
+        public class BoolPref : Pref<bool>
+        {
+            public BoolPref(string name, bool value = default) : base(name, value)
+            {
+                Value = EditorPrefs.GetBool(MakeKey(name), value);
+            }
+
+            public override void Set(bool value)
+            {
+                if (value != Value)
+                    EditorPrefs.SetBool(MakeKey(Name), value);
+                base.Set(value);
+            }
+        }
+
+        public class EnumPref<T> : Pref<T> where T : unmanaged
+        {
+            public EnumPref(string name, T value = default) : base(name, value)
+            {
+                Value = (T)(object)EditorPrefs.GetInt(MakeKey(name), (int)(object)value);
+            }
+
+            public override void Set(T value)
+            {
+                if ((int)(object)value != (int)(object)Value)
+                    EditorPrefs.SetInt(MakeKey(Name), (int)(object)value); base.Set(value);
+            }
+        }
+
         /// <summary>
         /// If enabled, ProjectAuditor will re-run the BuildReport analysis every time the project is built.
         /// </summary>
-        public static bool AnalyzeAfterBuild
-        {
-            get => EditorPrefs.GetBool(MakeKey(nameof(AnalyzeAfterBuild)), k_AnalyzeAfterBuildDefault);
-            set => EditorPrefs.SetBool(MakeKey(nameof(AnalyzeAfterBuild)), value);
-        }
+        public static BoolPref AnalyzeAfterBuild = new BoolPref(nameof(AnalyzeAfterBuild), k_AnalyzeAfterBuildDefault);
 
         /// <summary>
         /// If enabled, ProjectAuditor will use Roslyn Analyzer DLLs that are present in the project
         /// </summary>
-        public static bool UseRoslynAnalyzers
-        {
-            get => EditorPrefs.GetBool(MakeKey(nameof(UseRoslynAnalyzers)), k_UseRoslynAnalyzersDefault);
-            set => EditorPrefs.SetBool(MakeKey(nameof(UseRoslynAnalyzers)), value);
-        }
+        public static BoolPref UseRoslynAnalyzers = new BoolPref(nameof(UseRoslynAnalyzers), k_UseRoslynAnalyzersDefault);
 
         /// <summary>
         /// If enabled, any issue reported by ProjectAuditor will cause the build to fail.
         /// </summary>
-        public static bool FailBuildOnIssues
-        {
-            get => EditorPrefs.GetBool(MakeKey(nameof(FailBuildOnIssues)), k_FailBuildOnIssuesDefault);
-            set => EditorPrefs.SetBool(MakeKey(nameof(FailBuildOnIssues)), value);
-        }
+        public static BoolPref FailBuildOnIssues = new BoolPref(nameof(FailBuildOnIssues), k_FailBuildOnIssuesDefault);
 
         private static bool m_AnalyzePackageForIssues = false;
         private static bool m_AnalyzePackageIsCached = false;
@@ -134,48 +169,28 @@ namespace Unity.ProjectAuditor.Editor
             return m_AnalyzePackageForIssues;
         }
 
-        public static bool PrettifyJsonOutput
-        {
-            get => EditorPrefs.GetBool(MakeKey(nameof(PrettifyJsonOutput)), k_PrettifyJSONOutputDefault);
-            set => EditorPrefs.SetBool(MakeKey(nameof(PrettifyJsonOutput)), value);
-        }
+        /// <summary>
+        /// If enabled, JSON is saved with whitespace and newlines, for easier reading.
+        /// </summary>
+        public static BoolPref PrettifyJsonOutput = new BoolPref(nameof(PrettifyJsonOutput), k_PrettifyJSONOutputDefault);
 
-        public static bool LogTimingsInfo
-        {
-            get => EditorPrefs.GetBool(MakeKey(nameof(LogTimingsInfo)), k_LogTimingsInfoDefault);
-            set => EditorPrefs.SetBool(MakeKey(nameof(LogTimingsInfo)), value);
-        }
+        public static BoolPref LogTimingsInfo = new BoolPref(nameof(LogTimingsInfo), k_LogTimingsInfoDefault);
+
         static readonly ProjectAreaFlags k_ProjectAreasToAnalyzeDefault = ProjectAreaFlags.All;
         static readonly BuildTarget k_AnalysisTargetPlatformDefault = BuildTarget.NoTarget;
         // stephenm TODO: Still think it'd be great to default this to EditorPlayMode or the proposed "hybrid" option
-        static readonly CompilationMode k_CompilationModeDefault = CompilationMode.Player;
+        static readonly CompilationMode k_CompilationModeDefault = Editor.CompilationMode.Player;
 
         // stephenm TODO: Not a big fan of the ProjectAreaFlags enum, which is an abstraction of the Tabs, which each
         // contain references to one or more Modules, which reference Analyzers, which report issues in IssueCategories...
         // I think it would be simpler here to just have a list of Modules with checkboxes. But that probably won't
         // play nicely with the current tab navigation and incremental report handling, so it's not worth doing unless
         // we definitely want to go this way with analysis configuration...
-        public static ProjectAreaFlags ProjectAreasToAnalyze
-        {
-            get => (ProjectAreaFlags)EditorPrefs.GetInt(
-                MakeKey(nameof(ProjectAreasToAnalyze)), (int)k_ProjectAreasToAnalyzeDefault);
-            set => EditorPrefs.SetInt(MakeKey(nameof(ProjectAreasToAnalyze)), (int)value);
-        }
+        public static EnumPref<ProjectAreaFlags> ProjectAreasToAnalyze = new EnumPref<ProjectAreaFlags>(nameof(ProjectAreasToAnalyze), k_ProjectAreasToAnalyzeDefault);
 
-        public static BuildTarget AnalysisTargetPlatform
-        {
-            get => (BuildTarget)EditorPrefs.GetInt(
-                MakeKey(nameof(AnalysisTargetPlatform)), (int)k_AnalysisTargetPlatformDefault);
-            set => EditorPrefs.SetInt(MakeKey(nameof(AnalysisTargetPlatform)), (int)value);
-        }
+        public static EnumPref<BuildTarget> AnalysisTargetPlatform = new EnumPref<BuildTarget>(nameof(AnalysisTargetPlatform), k_AnalysisTargetPlatformDefault);
 
-        public static CompilationMode CompilationMode
-        {
-            get => (CompilationMode)EditorPrefs.GetInt(
-                MakeKey(nameof(CompilationMode)), (int)k_CompilationModeDefault);
-            set => EditorPrefs.SetInt(MakeKey(nameof(CompilationMode)), (int)value);
-        }
-
+        public static EnumPref<CompilationMode> CompilationMode = new EnumPref<CompilationMode>(nameof(CompilationMode), k_CompilationModeDefault);
 
         static UserPreferences()
         {
@@ -227,7 +242,7 @@ namespace Unity.ProjectAuditor.Editor
             EditorGUILayout.LabelField("Analysis", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            ProjectAreasToAnalyze = (ProjectAreaFlags)EditorGUILayout.EnumFlagsField(ProjectAreaSelection, ProjectAreasToAnalyze, GUILayout.ExpandWidth(true));
+            ProjectAreasToAnalyze.Set((ProjectAreaFlags)EditorGUILayout.EnumFlagsField(ProjectAreaSelection, ProjectAreasToAnalyze, GUILayout.ExpandWidth(true)));
 
             var selectedTarget = Array.IndexOf(s_SupportedBuildTargets, AnalysisTargetPlatform);
 
@@ -239,13 +254,13 @@ namespace Unity.ProjectAuditor.Editor
             }
 
             selectedTarget = EditorGUILayout.Popup(PlatformSelection, selectedTarget, s_PlatformContents);
-            AnalysisTargetPlatform = s_SupportedBuildTargets[selectedTarget];
+            AnalysisTargetPlatform.Set(s_SupportedBuildTargets[selectedTarget]);
 
-            CompilationMode = (CompilationMode)EditorGUILayout.EnumPopup(CompilationModeSelection, CompilationMode);
+            CompilationMode.Set((CompilationMode)EditorGUILayout.EnumPopup(CompilationModeSelection, CompilationMode));
 
             GUILayout.Space(10f);
-            UseRoslynAnalyzers = EditorGUILayout.Toggle(k_UseRoslynAnalyzersLabel, UseRoslynAnalyzers);
-            LogTimingsInfo = EditorGUILayout.Toggle(k_LogTimingsInfoLabel, LogTimingsInfo);
+            UseRoslynAnalyzers.Set(EditorGUILayout.Toggle(k_UseRoslynAnalyzersLabel, UseRoslynAnalyzers));
+            LogTimingsInfo.Set(EditorGUILayout.Toggle(k_LogTimingsInfoLabel, LogTimingsInfo));
 
             GUILayout.Space(10f);
 
@@ -257,13 +272,13 @@ namespace Unity.ProjectAuditor.Editor
             EditorGUILayout.LabelField("Build", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            AnalyzeAfterBuild = EditorGUILayout.Toggle(AfterBuildLabelContent, AnalyzeAfterBuild);
+            AnalyzeAfterBuild.Set(EditorGUILayout.Toggle(AfterBuildLabelContent, AnalyzeAfterBuild));
             using (new EditorGUI.DisabledScope(!AnalyzeAfterBuild))
             {
                 EditorGUI.indentLevel++;
                 if (!AnalyzeAfterBuild)
-                    FailBuildOnIssues = false;
-                FailBuildOnIssues = EditorGUILayout.Toggle(FailBuildLabelContent, FailBuildOnIssues);
+                    FailBuildOnIssues.Set(false);
+                FailBuildOnIssues.Set(EditorGUILayout.Toggle(FailBuildLabelContent, FailBuildOnIssues));
                 EditorGUI.indentLevel--;
             }
 
@@ -273,7 +288,7 @@ namespace Unity.ProjectAuditor.Editor
             EditorGUILayout.LabelField("Report", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            PrettifyJsonOutput = EditorGUILayout.Toggle(k_PrettifyJSONOutputLabel, PrettifyJsonOutput);
+            PrettifyJsonOutput.Set(EditorGUILayout.Toggle(k_PrettifyJSONOutputLabel, PrettifyJsonOutput));
 
             EditorGUI.indentLevel--;
             GUILayout.Space(10f);

@@ -48,7 +48,7 @@ namespace UnityEditor
 
             bool IShortcutContext.active
             {
-                get { return !(TerrainInspector.s_activeTerrainInspector != 0 && TerrainInspector.s_activeTerrainInspector != terrainEditor.GetInstanceID()); }
+                get { return !(TerrainInspector.s_activeTerrainInspector != EntityId.None && TerrainInspector.s_activeTerrainInspector != terrainEditor.GetEntityId()); }
             }
 
             public void SelectPaintTool<T>() where T : TerrainPaintTool<T>
@@ -403,7 +403,7 @@ namespace UnityEditor
         // The instance ID of the active inspector.
         // It's defined as the last inspector that had one of its terrain tools selected.
         // If a terrain inspector is the only one when created, it also becomes active.
-        static internal int s_activeTerrainInspector = 0;
+        static internal EntityId s_activeTerrainInspector = EntityId.None;
         static internal TerrainInspector s_activeTerrainInspectorInstance = null;
 
         List<ReflectionProbeBlendInfo> m_BlendInfoList = new List<ReflectionProbeBlendInfo>();
@@ -995,7 +995,7 @@ namespace UnityEditor
                         if (editor == this)
                         {
                             // Acquire active inspector ownership if there is no other inspector active.
-                            s_activeTerrainInspector = GetInstanceID();
+                            s_activeTerrainInspector = GetEntityId();
                             s_activeTerrainInspectorInstance = this;
                             fullScreenMode = false;
 
@@ -1007,7 +1007,7 @@ namespace UnityEditor
             // we want to set the active terrain inspector anyways for Overlays
             if (fullScreenMode)
             {
-                s_activeTerrainInspector = GetInstanceID();
+                s_activeTerrainInspector = GetEntityId();
                 s_activeTerrainInspectorInstance = this;
             }
 
@@ -1053,8 +1053,8 @@ namespace UnityEditor
             // Return active inspector ownership.
             if (s_activeTerrainInspectorInstance == this)
                 s_activeTerrainInspectorInstance = null;
-            if (s_activeTerrainInspector == GetInstanceID())
-                s_activeTerrainInspector = 0;
+            if (s_activeTerrainInspector == GetEntityId())
+                s_activeTerrainInspector = EntityId.None;
 
             if (s_LastActiveTerrain == this)
                 s_LastActiveTerrain = null;
@@ -1071,7 +1071,7 @@ namespace UnityEditor
             set
             {
                 m_SelectedCategory = value;
-                s_activeTerrainInspector = GetInstanceID();
+                s_activeTerrainInspector = GetEntityId();
                 ActivateTerrainRenderFlags();
             }
         }
@@ -1662,7 +1662,7 @@ namespace UnityEditor
         internal static event Action BrushStrengthChanged;
         public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength, int textureResolutionPerTile)
         {
-            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
+            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this);
 
             GUILayout.Space(spacing);
             bool repaint = false;
@@ -2157,7 +2157,7 @@ namespace UnityEditor
                 GUILayout.EndVertical();
             }
 
-            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
+            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this);
 
             int tool = (int)selectedCategory;
             // Show the master tool selector
@@ -2493,7 +2493,7 @@ namespace UnityEditor
             RaycastHit raycastHit = new RaycastHit();
 
             // If this is not the active terrain inspector, we shouldn't be affecting the SceneGUI
-            if (s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this)
+            if (s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this)
                 return;
 
             if (selectedCategory == TerrainTool.Paint       ||

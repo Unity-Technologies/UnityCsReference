@@ -853,15 +853,15 @@ namespace UnityEditor.Build.Profile
         }
 
         [RequiredByNativeCode]
-        static bool HasActiveProfileWithPlayerSettings(out EntityId instanceID)
+        static bool HasActiveProfileWithPlayerSettings(out EntityId entityId)
         {
             if (activeProfile?.playerSettings != null)
             {
-                instanceID = activeProfile.GetInstanceID();
+                entityId = activeProfile.GetEntityId();
                 return true;
             }
 
-            instanceID = EntityId.None;
+            entityId = EntityId.None;
             return false;
         }
 

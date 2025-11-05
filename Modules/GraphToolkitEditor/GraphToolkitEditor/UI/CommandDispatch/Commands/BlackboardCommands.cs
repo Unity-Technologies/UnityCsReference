@@ -132,8 +132,11 @@ namespace Unity.GraphToolkit.Editor
     /// Command to expand or collapse a variable in the blackboard.
     /// </summary>
     [UnityRestricted]
-    internal class ExpandVariableDeclarationCommand : ICommand
+    internal class ExpandVariableDeclarationCommand : ModelCommand<VariableDeclarationModelBase>
     {
+        const string k_UndoStringSingular = "Expand Blackboard Variable";
+        const string k_UndoStringPlural = "Expand Blackboard Variables";
+
         /// <summary>
         /// The variable to expand or collapse.
         /// </summary>
@@ -147,6 +150,7 @@ namespace Unity.GraphToolkit.Editor
         /// Initializes a new instance of the <see cref="ExpandVariableDeclarationCommand"/> class.
         /// </summary>
         public ExpandVariableDeclarationCommand(VariableDeclarationModelBase variableDeclarationModel, bool expand)
+            : base(k_UndoStringSingular, k_UndoStringPlural, new[] { variableDeclarationModel })
         {
             VariableDeclarationModel = variableDeclarationModel;
             Expand = expand;
@@ -155,13 +159,21 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Default command handler.
         /// </summary>
+        /// <param name="undoState">The undo state.</param>
         /// <param name="blackboardViewState">The blackboard state.</param>
         /// <param name="command">The command.</param>
         [UsedImplicitly]
-        public static void DefaultCommandHandler(BlackboardViewStateComponent blackboardViewState, ExpandVariableDeclarationCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, BlackboardViewStateComponent blackboardViewState, ExpandVariableDeclarationCommand command)
         {
-            using var bbUpdater = blackboardViewState.UpdateScope;
-            bbUpdater.SetVariableDeclarationModelExpanded(command.VariableDeclarationModel, command.Expand);
+            using (var undoStateUpdater = undoState.UpdateScope)
+            {
+                undoStateUpdater.SaveState(blackboardViewState);
+            }
+
+            using (var bbUpdater = blackboardViewState.UpdateScope)
+            {
+                bbUpdater.SetVariableDeclarationModelExpanded(command.VariableDeclarationModel, command.Expand);
+            }
         }
     }
 
@@ -169,12 +181,16 @@ namespace Unity.GraphToolkit.Editor
     /// Command to expand or collapse a variable group in the blackboard.
     /// </summary>
     [UnityRestricted]
-    internal class ExpandVariableGroupCommand : ICommand
+    internal class ExpandVariableGroupCommand : ModelCommand<GroupModelBase>
     {
-        /// <summary>
-        /// The variable group to expand or collapse.
-        /// </summary>
-        public GroupModelBase GroupModel;
+        const string k_UndoStringSingular = "Expand Blackboard Variable Group";
+        const string k_UndoStringPlural = "Expand Blackboard Variable Groups";
+
+
+        ///// <summary>
+        ///// The variable group to expand or collapse.
+        ///// </summary>
+        //public GroupModelBase GroupModel;
         /// <summary>
         /// True if the variable group should be expanded, false if it should be collapsed.
         /// </summary>
@@ -184,21 +200,29 @@ namespace Unity.GraphToolkit.Editor
         /// Initializes a new instance of the <see cref="ExpandVariableGroupCommand"/> class.
         /// </summary>
         public ExpandVariableGroupCommand(GroupModelBase groupModel, bool expand)
+            : base(k_UndoStringSingular, k_UndoStringPlural, new[] { groupModel })
         {
-            GroupModel = groupModel;
+            //GroupModel = groupModel;
             Expand = expand;
         }
 
         /// <summary>
         /// Default command handler.
         /// </summary>
+        /// <param name="undoState">The undo state.</param>
         /// <param name="blackboardViewState">The blackboard state.</param>
         /// <param name="command">The command.</param>
         [UsedImplicitly]
-        public static void DefaultCommandHandler(BlackboardViewStateComponent blackboardViewState, ExpandVariableGroupCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, BlackboardViewStateComponent blackboardViewState, ExpandVariableGroupCommand command)
         {
-            using var bbUpdater = blackboardViewState.UpdateScope;
-            bbUpdater.SetGroupModelExpanded(command.GroupModel, command.Expand);
+            using (var undoStateUpdater = undoState.UpdateScope)
+            {
+                undoStateUpdater.SaveState(blackboardViewState);
+            }
+            using (var bbUpdater = blackboardViewState.UpdateScope)
+            {
+                bbUpdater.SetGroupModelExpanded(command.Models, command.Expand);
+            }
         }
     }
 

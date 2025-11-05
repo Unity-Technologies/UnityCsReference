@@ -1524,7 +1524,7 @@ namespace UnityEditor
             UpdateCamera(desiredPercentage, group);
             SceneView.lastActiveSceneView.ClearSearchFilter();
             SceneView.lastActiveSceneView.SetSceneViewFilteringForLODGroups(true);
-            HierarchyIterator.FilterSingleSceneObject(group.gameObject.GetInstanceID(), false);
+            HierarchyIterator.FilterSingleSceneObject(group.gameObject.GetEntityId(), false);
             SceneView.RepaintAll();
         }
 

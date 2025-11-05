@@ -113,7 +113,8 @@ namespace Unity.UIToolkit.Editor
 
             m_PaddingBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.Padding, true, m_ContentBox,
                 m_TopTextFieldPaddingContainer, m_BottomTextFieldPaddingContainer,
-                m_LeftTextFieldPaddingContainer, m_RightTextFieldPaddingContainer);
+                m_LeftTextFieldPaddingContainer, m_RightTextFieldPaddingContainer,
+                () => new BoxModelEditableLabel());
             m_PaddingBox.tooltip = BoxType.Padding.ToString();
             m_PaddingBox.AddToClassList(BoxModelClassName);
             m_PaddingBox.AddToClassList(ContainerPaddingClassName);
@@ -135,7 +136,8 @@ namespace Unity.UIToolkit.Editor
 
             m_MarginBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.Margin, true, m_BorderBox,
                 m_TopTextFieldMarginContainer, m_BottomTextFieldMarginContainer,
-                m_LeftTextFieldMarginContainer, m_RightTextFieldMarginContainer);
+                m_LeftTextFieldMarginContainer, m_RightTextFieldMarginContainer,
+                () => new BoxModelEditableLabel());
 
             m_MarginBox.tooltip = BoxType.Margin.ToString();
             m_MarginBox.AddToClassList(BoxModelClassName);
@@ -201,16 +203,6 @@ namespace Unity.UIToolkit.Editor
 
             public override object CreateInstance() => new SpacingBoxModelField();
         }
-
-        const string PaddingTopFieldName = "paddingTop";
-        const string PaddingRightFieldName = "paddingRight";
-        const string PaddingBottomFieldName = "paddingBottom";
-        const string PaddingLeftFieldName = "paddingLeft";
-
-        const string MarginTopFieldName = "marginTop";
-        const string MarginRightFieldName = "marginRight";
-        const string MarginBottomFieldName = "marginBottom";
-        const string MarginLeftFieldName = "marginLeft";
 
         private SpacingBoxModel m_SpacingField;
 

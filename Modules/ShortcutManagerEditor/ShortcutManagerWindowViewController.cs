@@ -19,10 +19,10 @@ namespace UnityEditor.ShortcutManagement
         internal static readonly string k_MainMenu = L10n.Tr("Main Menu");
 
         //internals are used in tests
-        static readonly string k_ProfileNameEmpty = L10n.Tr("Profile name is empty");
-        internal static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile name is unsupported");
-        internal static readonly string k_ProfileNameTooLong = L10n.Tr($"Profile name exceeds max length ({ShortcutProfileStore.k_MaxProfileIdSize}).");
-        internal static readonly string k_ProfileNameWithUnsupportedCharacters = L10n.Tr("Profile name has unsupported characters.");
+        static readonly string k_ProfileNameEmpty = L10n.Tr("Profile Name is empty");
+        internal static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile Name is unsupported");
+        internal static readonly string k_ProfileNameTooLong = L10n.Tr($"Profile Name exceeds maximum length ({ShortcutProfileStore.k_MaxProfileIdSize})");
+        internal static readonly string k_ProfileNameWithUnsupportedCharacters = L10n.Tr("Profile Name has unsupported characters");
         internal static readonly string k_ProfileExists = L10n.Tr("Profile already exists");
         internal static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed");
         internal static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile");

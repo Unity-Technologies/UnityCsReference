@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            packageNameField.textEdition.placeholder = L10n.Tr("Name");
+            packageNameField.textEdition.placeholder = L10n.Tr("Technical name ") + "(com.org.package)";
             packageVersionField.textEdition.placeholder = L10n.Tr("Version (optional)");
 
             submitButton.clickable.clicked += SubmitClicked;

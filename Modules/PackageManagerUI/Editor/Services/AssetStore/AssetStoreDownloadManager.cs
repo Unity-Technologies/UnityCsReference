@@ -111,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_DownloadDelegateHandler = ScriptableObject.CreateInstance<DownloadDelegateHandler>();
                     m_DownloadDelegateHandler.hideFlags = HideFlags.DontSave;
                 }
-                m_DownloadDelegateHandlerInstanceId = m_DownloadDelegateHandler.GetInstanceID();
+                m_DownloadDelegateHandlerInstanceId = m_DownloadDelegateHandler.GetEntityId();
                 return m_DownloadDelegateHandler;
             }
         }

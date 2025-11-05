@@ -28,7 +28,6 @@ namespace UnityEditor.InsightsEditor
         internal const string k_DataReportingLevelDropdownName = "DataReportingDropdown";
         const string k_HideElementClassName = "display-none";
         const string k_InsightsProjectSettingsHeaderNodeName = "insights-project-settings-header";
-        const string k_InsightsNoCloudLabelNodeName = "insights-analytics-no-cloud-projectsettings-label";
         const string k_InsightsNoCloudInfoLabelTextNodeName = "insights-analytics-no-cloud-text";
 
         VisualElement m_Root;
@@ -142,9 +141,6 @@ namespace UnityEditor.InsightsEditor
             projectSettingsHeader?.RemoveFromHierarchy();
             var projectSettingsInfoBox = root.Q<VisualElement>(InsightsEditorUtils.k_ProjectSettingsInfoBoxNodeName);
             projectSettingsInfoBox?.RemoveFromHierarchy();
-
-            var noCloudInfoLabel = root.Q<Label>(k_InsightsNoCloudLabelNodeName);
-            noCloudInfoLabel.text = TrText.k_DataReportingLevelDropdownLabel;
 
             var noCloudInfoLabelText = root.Q<Label>(k_InsightsNoCloudInfoLabelTextNodeName);
             noCloudInfoLabelText.text = TrText.k_BuildProfileNoCloudLabel;

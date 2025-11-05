@@ -73,9 +73,9 @@ namespace Unity.Profiling.Editor.UI
             m_BlocksGraphView.MarkDirtyRepaint();
         }
 
-        public void SaveBottleneckInfo(string filename)
+        public bool SaveHighlightsInfo(string filename)
         {
-            m_Model.ToFile(filename, ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1);
+            return m_Model.ToFile(filename, ProfilerDriver.lastFrameIndex - ProfilerDriver.firstFrameIndex + 1);
         }
 
         protected override VisualElement LoadView()

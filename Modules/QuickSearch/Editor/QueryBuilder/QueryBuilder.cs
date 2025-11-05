@@ -223,16 +223,30 @@ namespace UnityEditor.Search
 
         private static void BuildQuery(StringBuilder query, IEnumerable<QueryBlock> blocks)
         {
-            foreach (var c in blocks)
+            using var itBlock = blocks.GetEnumerator();
+            var currentBlock = itBlock.MoveNext() ? itBlock.Current : null;
+            var currentBlockStr = currentBlock?.ToString();
+            while (currentBlock != null)
             {
-                var s = c.ToString();
-                if (string.IsNullOrEmpty(s))
-                    continue;
-                if (query.Length > 0)
+                var nextBlock = itBlock.MoveNext() ? itBlock.Current : null;
+                var nextBlockStr = nextBlock?.ToString();
+                if (!string.IsNullOrEmpty(currentBlockStr))
+                {
+                    if (currentBlock.excluded)
+                        query.Append('-');
+                    query.Append(currentBlockStr);
+                }
+
+                if (query.Length > 0 &&
+                    query[^1] != ' ' &&
+                    !currentBlock.noSpaceAfterBlock &&
+                    nextBlock != null &&
+                    !nextBlock.noSpaceBeforeBlock &&
+                    !string.IsNullOrEmpty(nextBlockStr))
                     query.Append(' ');
-                if (c.excluded)
-                    query.Append('-');
-                query.Append(s);
+
+                currentBlock = nextBlock;
+                currentBlockStr = nextBlockStr;
             }
         }
 
@@ -338,7 +352,19 @@ namespace UnityEditor.Search
         private void ParseNode(in IQueryNode node, List<QueryBlock> blocks, bool exclude = false)
         {
             if (!node.leaf)
+            {
+                if (node.type == QueryNodeType.Group)
+                {
+                    blocks.Add(QueryGroupBlock.CreateOpenGroupBlock(this));
+                }
+
                 ParseNode(node.children[0], blocks, node.type == QueryNodeType.Not);
+
+                if (node.type == QueryNodeType.Group)
+                {
+                    blocks.Add(QueryGroupBlock.CreateCloseGroupBlock(this));
+                }
+            }
 
             var newBlock = CreateBlock(node);
             if (newBlock != null)

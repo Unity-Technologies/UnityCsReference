@@ -286,7 +286,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc/>
         public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta, CopyPasteData copyPasteData)
         {
-            if (!copyPasteData.Nodes.All(t => t is BlockNodeModel))
+            if (!copyPasteData.Nodes.Any(t => t is BlockNodeModel))
                 return false;
 
             GraphView.Dispatch(new InsertBlocksInContextCommand(ContextNodeModel,

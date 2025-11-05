@@ -24,7 +24,7 @@ namespace Unity.GraphToolkit.Editor
     /// <see cref="CreateGraph{T}"/> to generate an asset file, and <see cref="LoadGraph{T}"/> to retrieve an existing one.
     /// <br/>
     /// <br/>
-    /// Use <see cref="SaveGraphIfDirty"/> to persist graph data changes, and <see cref="LoadGraphForImporter{T}"/> to load a clean instance during import.
+    /// Use <see cref="SaveGraph"/> to persist graph data changes, and <see cref="LoadGraphForImporter{T}"/> to load a clean instance during import.
     /// </remarks>
     public static partial class GraphDatabase
     {
@@ -128,7 +128,7 @@ namespace Unity.GraphToolkit.Editor
         /// It prevents data loss by ensuring the asset on disk reflects the in-memory graph state.
         /// This method is similar to <see cref="UnityEditor.AssetDatabase.SaveAssetIfDirty(UnityEngine.Object)"/> and only performs a save if the graph is marked dirty.
         /// </remarks>
-        public static void SaveGraphIfDirty(Graph graph)
+        public static void SaveGraph(Graph graph)
         {
             graph.CheckImplementation();
             graph?.m_Implementation.GraphObject?.Save();

@@ -11,7 +11,7 @@ namespace Unity.PlayMode.Editor
     /// <summary>
     /// This class is responsible for creating the play mode buttons in the toolbar.
     /// </summary>
-    class PlayModeButtonsExtension : AssetPostprocessor
+    class PlayModeButtonsExtension
     {
         static VisualElement[] m_OriginalButtons;
         static PlayModeButtonsView m_PlayModeButtons;
@@ -29,12 +29,8 @@ namespace Unity.PlayMode.Editor
             UnityEditor.Toolbars.PlayModeButtons.onPlayModeButtonsCreated += CreatePlayModeButtons;
             ScenarioManagerProvider.instance.ConfigAssetChanged -= RefreshPlayModeConfigUI;
             ScenarioManagerProvider.instance.ConfigAssetChanged += RefreshPlayModeConfigUI;
-        }
-
-        static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
-            string[] movedFromAssetPaths, bool didDomainReload)
-        {
-            RefreshPlayModeConfigUI();
+            PlayModeScenarioUtils.AssetsChanged -= RefreshPlayModeConfigUI;
+            PlayModeScenarioUtils.AssetsChanged += RefreshPlayModeConfigUI;
         }
 
         /// <summary>

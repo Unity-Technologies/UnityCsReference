@@ -33,7 +33,7 @@ namespace UnityEditor
             public static GUIContent EnableOutputSuspension = EditorGUIUtility.TrTextContent("Enable Output Suspension (editor only)", "When enabled automatically suspends audio output after detecting that the output has been silent for a long duration (editor only). Suspending the audio system disables a mechanism in the operating system that prevents the computer from going into sleep mode.");
 
             public static GUIContent DSPBufferSizeInfo = EditorGUIUtility.TrTextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system");
-            public static GUIContent EnhancedAudioFoundationInfo = EditorGUIUtility.TrTextContent("Enhanced will be used on Windows, macOS, and iOS. Other platforms will use Classic.");
+            public static GUIContent EnhancedAudioFoundationInfo = EditorGUIUtility.TrTextContent("Enhanced will be used on Windows, macOS, iOS and Android. Other platforms will use Classic.");
         }
 
         private static bool m_ShowAudioFoundationUI = Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "-showAudioFoundationUI");

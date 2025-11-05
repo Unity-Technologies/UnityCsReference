@@ -267,7 +267,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                     })
                     .WithLocation(assemblyInfo.AsmDefPath))
                     .ToArray();
-                if (issues.Any())
+                if (issues.Length > 0)
                     analysisParams.OnIncomingIssues(issues);
             }
 

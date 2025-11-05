@@ -163,7 +163,7 @@ namespace UnityEditor
             }
         }
 
-        // This whole mess is here because we have no access to DynamicArrays in the Core module
+        // This whole mess is here because we have no access to Vectors in the Core module
         // and the NativeArray safety doesn't allow array resizing when running a single thread job
         private struct ContactArrayWrapper
         {

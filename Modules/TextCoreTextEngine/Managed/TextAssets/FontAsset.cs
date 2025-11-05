@@ -1519,7 +1519,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// HashSet of font asset instance ID used in the process of searching for through fallback font assets for a given character or characters.
         /// </summary>
-        private static HashSet<int> k_SearchedFontAssetLookup;
+        private static HashSet<EntityId> k_SearchedFontAssetLookup;
 
         /// <summary>
         /// Function to check if a certain character exists in the font asset.
@@ -1576,12 +1576,12 @@ namespace UnityEngine.TextCore.Text
             {
                 // Initialize or clear font asset lookup
                 if (k_SearchedFontAssetLookup == null)
-                    k_SearchedFontAssetLookup = new HashSet<int>();
+                    k_SearchedFontAssetLookup = new HashSet<EntityId>();
                 else
                     k_SearchedFontAssetLookup.Clear();
 
                 // Add current font asset to lookup
-                k_SearchedFontAssetLookup.Add(GetInstanceID());
+                k_SearchedFontAssetLookup.Add(GetEntityId());
 
                 // Check font asset fallbacks
                 if (fallbackFontAssetTable != null && fallbackFontAssetTable.Count > 0)
@@ -1589,7 +1589,7 @@ namespace UnityEngine.TextCore.Text
                     for (int i = 0; i < fallbackFontAssetTable.Count && fallbackFontAssetTable[i] != null; i++)
                     {
                         FontAsset fallback = fallbackFontAssetTable[i];
-                        int fallbackID = fallback.GetInstanceID();
+                        EntityId fallbackID = fallback.GetEntityId();
 
                         // Search fallback if not already contained in lookup
                         if (k_SearchedFontAssetLookup.Add(fallbackID))
@@ -1658,7 +1658,7 @@ namespace UnityEngine.TextCore.Text
                 for (int i = 0; i < fallbackFontAssetTable.Count && fallbackFontAssetTable[i] != null; i++)
                 {
                     FontAsset fallback = fallbackFontAssetTable[i];
-                    int fallbackID = fallback.GetInstanceID();
+                    int fallbackID = fallback.GetEntityId();
 
                     // Search fallback if it has not already been searched
                     if (k_SearchedFontAssetLookup.Add(fallbackID))
@@ -1743,12 +1743,12 @@ namespace UnityEngine.TextCore.Text
                 {
                     // Initialize or clear font asset lookup
                     if (k_SearchedFontAssetLookup == null)
-                        k_SearchedFontAssetLookup = new HashSet<int>();
+                        k_SearchedFontAssetLookup = new HashSet<EntityId>();
                     else
                         k_SearchedFontAssetLookup.Clear();
 
                     // Add current font asset to lookup
-                    k_SearchedFontAssetLookup.Add(GetInstanceID());
+                    k_SearchedFontAssetLookup.Add(GetEntityId());
 
                     // Check font asset fallbacks
                     if (fallbackFontAssetTable != null && fallbackFontAssetTable.Count > 0)
@@ -1756,7 +1756,7 @@ namespace UnityEngine.TextCore.Text
                         for (int j = 0; j < fallbackFontAssetTable.Count && fallbackFontAssetTable[j] != null; j++)
                         {
                             FontAsset fallback = fallbackFontAssetTable[j];
-                            int fallbackID = fallback.GetInstanceID();
+                            int fallbackID = fallback.GetEntityId();
 
                             // Search fallback if it has not already been searched
                             if (k_SearchedFontAssetLookup.Add(fallbackID))

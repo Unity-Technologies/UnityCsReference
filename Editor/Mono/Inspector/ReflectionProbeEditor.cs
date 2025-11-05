@@ -88,10 +88,12 @@ namespace UnityEditor
             public static GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel);
 
             public static GUIContent bakeButtonText = EditorGUIUtility.TrTextContent("Bake");
+            public static GUIContent bakeButtonTextDisabled = EditorGUIUtility.TrTextContent("Bake", "You need to save the scene before bake");
             public static string[] bakeCustomOptionText = { "Bake as new Cubemap..." };
             public static string[] bakeButtonsText = { "Bake All Reflection Probes" };
 
             public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
+            public static GUIContent bakeCustomButtonTextDisabled = EditorGUIUtility.TrTextContent("Bake", "You need to save the scene before bake");
             public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings", "These settings determine this Probe's priority, blending, intensity, and zone of effect and works in conjunction with the cubemap of this probe when it is rendered.");
             public static GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background Color", "Camera clears the screen to this color before rendering.");
             public static GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags", "Specify how to fill empty areas of the cubemap.");
@@ -330,33 +332,34 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            switch (reflectionProbeMode)
-            {
-                case ReflectionProbeMode.Custom:
-                    if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeCustomButtonText, Styles.bakeCustomOptionText, OnBakeCustomButton))
-                    {
-                        BakeCustomReflectionProbe(reflectionProbeTarget, true);
-                        GUIUtility.ExitGUI();
-                    }
-                    break;
-
-                case ReflectionProbeMode.Baked:
-                    using (new EditorGUI.DisabledScope(!reflectionProbeTarget.enabled))
-                    {
-                        // Bake button in non-continous mode
-                        if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeButtonText, Styles.bakeButtonsText, OnBakeButton))
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(reflectionProbeTarget?.gameObject?.scene.path))) // We cannot bake a probe that is in a scene that has never been saved
+                switch (reflectionProbeMode)
+                {
+                    case ReflectionProbeMode.Custom:
+                        if (EditorGUI.LargeSplitButtonWithDropdownList(GUI.enabled ? Styles.bakeCustomButtonText : Styles.bakeCustomButtonTextDisabled, Styles.bakeCustomOptionText, OnBakeCustomButton, !GUI.enabled))
                         {
-                            Lightmapping.BakeReflectionProbeSnapshot(reflectionProbeTarget);
+                            BakeCustomReflectionProbe(reflectionProbeTarget, true);
                             GUIUtility.ExitGUI();
                         }
-                    }
+                        break;
 
-                    break;
+                    case ReflectionProbeMode.Baked:
+                        using (new EditorGUI.DisabledScope(!reflectionProbeTarget.enabled))
+                        {
+                            // Bake button in non-continous mode
+                            if (EditorGUI.LargeSplitButtonWithDropdownList(GUI.enabled ? Styles.bakeButtonText : Styles.bakeButtonTextDisabled, Styles.bakeButtonsText, OnBakeButton, !GUI.enabled))
+                            {
+                                Lightmapping.BakeReflectionProbeSnapshot(reflectionProbeTarget);
+                                GUIUtility.ExitGUI();
+                            }
+                        }
 
-                case ReflectionProbeMode.Realtime:
-                    // Not showing bake button in realtime
-                    break;
-            }
+                        break;
+
+                    case ReflectionProbeMode.Realtime:
+                        // Not showing bake button in realtime
+                        break;
+                }
 
             GUILayout.EndHorizontal();
         }

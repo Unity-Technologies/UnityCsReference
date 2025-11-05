@@ -309,6 +309,13 @@ namespace Unity.GraphToolkit.Editor
         /// <returns>The port connected to the other side of the wire.</returns>
         public PortModel GetOtherPort(WireSide otherSide) => GetPort(otherSide.GetOtherSide());
 
+        /// <summary>
+        /// Gets the port of a wire on the other side from a given port.
+        /// </summary>
+        /// <param name="portModel">The port that should be on one side of the wire.</param>
+        /// <returns>The port of a wire on the other side from a given port.</returns>
+        public PortModel GetOtherPort(PortModel portModel) => portModel == FromPort ? ToPort : FromPort;
+
         /// <inheritdoc />
         public override string ToString()
         {

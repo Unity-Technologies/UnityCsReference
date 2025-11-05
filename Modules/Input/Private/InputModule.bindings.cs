@@ -70,5 +70,12 @@ namespace UnityEngineInternal.Input
         internal static extern bool normalizeScrollWheelDelta { get; set; }
 
         internal static extern float GetScrollWheelDeltaPerTick();
+
+        /// <summary>
+        /// This returns wheather the BuildSettings property UseMouseEvents is set to true or false.
+        /// If true the MouseEvents script will be called to fire MonoBehavior events for certain mouse events.
+        /// If false, the backend logic and firing those MonoBehavior events will be stopped, which will reduce the performance overhead
+        /// </summary>
+        internal static extern bool useImplicitMouseEventScriptCallbacks { get; }
     }
 }

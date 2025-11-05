@@ -48,5 +48,15 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override ColorField CreateValueField()
+        {
+            return new ColorField();
+        }
+
+        protected override StyleColor CreateStyleValue(Color v)
+        {
+            return v;
+        }
     }
 }

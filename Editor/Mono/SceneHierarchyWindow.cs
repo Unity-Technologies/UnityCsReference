@@ -11,9 +11,10 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
-    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, IFramableContainer
+    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, IFramableContainer, IHierarchyWindow
     {
-        public static SceneHierarchyWindow lastInteractedHierarchyWindow { get { return s_LastInteractedHierarchy; } }
+        public static SceneHierarchyWindow lastInteractedHierarchyWindow => s_LastInteractedHierarchy;
+        IHierarchyWindow IHierarchyWindow.LastInteractedHierarchyWindow => s_LastInteractedHierarchy;
         static SceneHierarchyWindow s_LastInteractedHierarchy;
         public static List<SceneHierarchyWindow> GetAllSceneHierarchyWindows() { return s_SceneHierarchyWindows; }
         static List<SceneHierarchyWindow> s_SceneHierarchyWindows = new List<SceneHierarchyWindow>();
@@ -283,10 +284,12 @@ namespace UnityEditor
             m_SceneHierarchy.SetExpandedRecursive(id, expand);
         }
 
-        internal void SetExpanded(int id, bool expand)
+        internal void SetExpanded(EntityId id, bool expand)
         {
             m_SceneHierarchy.ExpandTreeViewItem(id, expand);
         }
+
+        void IHierarchyWindow.SetExpanded(EntityId entityId, bool expanded) => SetExpanded(entityId, expanded);
 
         public void FrameObject(EntityId instanceID, bool ping)
         {
@@ -380,7 +383,7 @@ namespace UnityEditor
 
             if (go != null)
             {
-                sceneHierarchy.treeView?.Frame(go.GetInstanceID(), true, false);
+                sceneHierarchy.treeView?.Frame(go.GetEntityId(), true, false);
             }
 
             if (HierarchyPreferences.RenameNewObjects)

@@ -242,18 +242,18 @@ namespace UnityEditor.Search
         [SerializeField] private SearchFunctor<Func<SearchItem, ulong>> m_Serialized_toKey;
 
         /// <summary> Returns an item hashed key (usually the contained object instance id).</summary>
-        internal Func<SearchItem, int> toInstanceId
+        internal Func<SearchItem, EntityId> toEntityId
         {
-            get => m_Serialized_toInstanceId?.handler;
+            get => m_Serialized_toEntityId?.handler;
             set
             {
-                if (m_Serialized_toInstanceId == null)
-                    m_Serialized_toInstanceId = new SearchFunctor<Func<SearchItem, int>>(value);
+                if (m_Serialized_toEntityId == null)
+                    m_Serialized_toEntityId = new SearchFunctor<Func<SearchItem, EntityId>>(value);
                 else
-                    m_Serialized_toInstanceId.handler = value;
+                    m_Serialized_toEntityId.handler = value;
             }
         }
-        [SerializeField] private SearchFunctor<Func<SearchItem, int>> m_Serialized_toInstanceId;
+        [SerializeField] private SearchFunctor<Func<SearchItem, EntityId>> m_Serialized_toEntityId;
 
         /// <summary>
         /// Called when the QuickSearchWindow is opened. Allow the Provider to perform some caching.
@@ -394,7 +394,7 @@ namespace UnityEditor.Search
             toObject = templateProvider.toObject;
             toKey = templateProvider.toKey;
             toType = templateProvider.toType;
-            toInstanceId = templateProvider.toInstanceId;
+            toEntityId = templateProvider.toEntityId;
             actions = templateProvider.actions;
         }
 
@@ -598,7 +598,7 @@ namespace UnityEditor.Search
             toObject ??= m_Serialized_toObject.handler;
             toKey ??= m_Serialized_toKey.handler;
             toType ??= m_Serialized_toType.handler;
-            toInstanceId ??= m_Serialized_toInstanceId.handler;
+            toEntityId ??= m_Serialized_toEntityId.handler;
             onEnable ??= m_Serialized_onEnable.handler;
             onDisable ??= m_Serialized_onDisable.handler;
         }

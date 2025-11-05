@@ -90,11 +90,11 @@ namespace UnityEditor
                 {
                     if (i == (m_TableTabs.Length - 1)) // last tab containing materials
                     {
-                        int[] selectedIds = UnityEngine.Object.FindObjectsByType<MeshRenderer>(UnityEngine.FindObjectsSortMode.InstanceID).Where((MeshRenderer mr) => {
+                        EntityId[] selectedIds = UnityEngine.Object.FindObjectsByType<MeshRenderer>(UnityEngine.FindObjectsSortMode.InstanceID).Where((MeshRenderer mr) => {
                             return Selection.entityIds.Contains(mr.gameObject.GetEntityId());
                         }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                                 return m != null && (m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0;
-                            }).Select(m => m.GetInstanceID()).Union(Selection.entityIds.ToIntArray()).Distinct().ToArray();
+                            }).Select(m => m.GetEntityId()).Union(Selection.entityIds).Distinct().ToArray();
 
                         m_TableTabs[i].OnSelectionChange(selectedIds);
                     }

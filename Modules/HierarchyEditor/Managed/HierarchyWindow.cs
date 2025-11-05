@@ -19,6 +19,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.HierarchyV2;
 using static UnityEditor.SearchableEditorWindow;
+using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace Unity.Hierarchy.Editor
 {
@@ -66,6 +67,8 @@ namespace Unity.Hierarchy.Editor
         static readonly string s_HierarchyToolbarGoToSearchButtonName = "HierarchyGotoSearchButton";
         static readonly string s_JumpButton = "SearchJump Icon";
         static readonly string s_JumpButtonTooltip = L10n.Tr("Open query in Search Window");
+        static readonly List<HierarchyWindow> s_HierarchyWindows = [];
+        static HierarchyWindow s_LastInteractedHierarchy;
 
         const string k_HierarchyStatusBarStyleName = "hierarchy__status-bar";
         internal static readonly string s_StatusSingleNode = L10n.Tr("Path: {0}");
@@ -220,6 +223,9 @@ namespace Unity.Hierarchy.Editor
 
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).OnEnable()");
 
+            s_LastInteractedHierarchy = this;
+            s_HierarchyWindows.Add(this);
+
             m_CommandSubscriberHelper = new CommandSubscriberHelper(rootVisualElement);
             m_CommandSubscriberHelper.ValidateCommand += OnValidateCommand;
             m_CommandSubscriberHelper.ExecuteCommand += OnExecuteCommand;
@@ -341,6 +347,16 @@ namespace Unity.Hierarchy.Editor
             EditorApplication.frameAndRenameNewGameObject -= OnRequestFrameAndRenameNewGameObjectOrEntity;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
+            s_HierarchyWindows.Remove(this);
+
+            // Set another existing hierarchy as last interacted if available
+            if (s_LastInteractedHierarchy == this)
+            {
+                s_LastInteractedHierarchy = null;
+                if (s_HierarchyWindows.Count > 0)
+                    s_LastInteractedHierarchy = s_HierarchyWindows[0];
+            }
+
             PrefabStage.prefabStageReloading -= OnPrefabStageReloading;
             PrefabStage.prefabStageReloaded -= OnPrefabStageReloaded;
             StageNavigationManager.instance.stageChanged -= OnStageChanged;
@@ -401,9 +417,12 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
+        void OnFocus() => s_LastInteractedHierarchy = this;
+
         void CreateGUI()
         {
-            m_SearchField.queryBuilder.blocksSupportExclude = false;
+            if (HierarchyPreferences.UseQueryBuilder && m_SearchField?.queryBuilder != null)
+                m_SearchField.queryBuilder.blocksSupportExclude = false;
         }
 
         void OnHierarchyWindowMouseUp(PointerUpEvent evt)
@@ -566,7 +585,8 @@ namespace Unity.Hierarchy.Editor
                 m_HierarchyView.ViewModel.Update();
 
                 m_HierarchyView.FrameNode(in node);
-                m_HierarchyView.BeginRename(in node);
+                if (this == s_LastInteractedHierarchy)
+                    m_HierarchyView.BeginRename(in node);
             }
         }
 
@@ -647,6 +667,11 @@ namespace Unity.Hierarchy.Editor
         {
             switch (evt.commandName)
             {
+                case EventCommandNames.Find:
+                    m_SearchField.textField.Focus();
+                    evt.StopPropagation();
+                    break;
+
                 case EventCommandNames.SelectPrefabRoot:
                 {
                     Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>()?.SelectPrefabRoot(m_HierarchyView);
@@ -750,6 +775,7 @@ namespace Unity.Hierarchy.Editor
         {
             switch (evt.commandName)
             {
+                case EventCommandNames.Find:
                 case EventCommandNames.SelectPrefabRoot:
                 case EventCommandNames.FrameSelected:
                 case EventCommandNames.FrameSelectedWithLock:
@@ -984,6 +1010,49 @@ namespace Unity.Hierarchy.Editor
                 query += word;
             }
             return query;
+        }
+
+        IHierarchyWindow IHierarchyWindow.LastInteractedHierarchyWindow => s_LastInteractedHierarchy;
+
+        void IHierarchyWindow.GetSelectedScenes(List<Scene> selectedScenes)
+        {
+            if (selectedScenes == null)
+                return;
+
+            selectedScenes.Clear();
+
+            var sceneHandler = m_Hierarchy.GetNodeTypeHandler<HierarchySceneHandler>();
+            if (sceneHandler == null)
+                return;
+            var sceneNodeType = sceneHandler.GetNodeType();
+
+            var count = m_HierarchyView.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+            if (count == 0)
+                return;
+
+            using var rentedNodes = new RentSpanUnmanaged<HierarchyNode>(count);
+            m_HierarchyView.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, rentedNodes.Span);
+
+            foreach (ref var node in rentedNodes)
+            {
+                if (m_Hierarchy.GetNodeType(in node) != sceneNodeType)
+                    continue;
+
+                selectedScenes.Add(sceneHandler.GetScene(in node));
+            }
+        }
+
+        void IHierarchyWindow.SetExpanded(EntityId entityId, bool expanded)
+        {
+            if (IsLocked)
+                return;
+
+            m_HierarchyView.Update();
+            var node = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>().GetOrCreateNode(entityId);
+            if (expanded)
+                m_HierarchyView.SetFlags(node, HierarchyNodeFlags.Expanded);
+            else
+                m_HierarchyView.ClearFlags(node, HierarchyNodeFlags.Expanded);
         }
 
         void LoadStyleSheet(VisualElement element, string path)

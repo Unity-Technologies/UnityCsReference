@@ -41,6 +41,8 @@ namespace Unity.GraphToolkit.Editor
         [SerializeReference]
         GraphModel m_CopyPasteLocalSubgraphModelReference;
 
+        bool m_UpdateWasCalled;
+
         /// <summary>
         /// The default subtitle when the subgraph is a local graph.
         /// </summary>
@@ -216,6 +218,7 @@ namespace Unity.GraphToolkit.Editor
 
             GraphModel.CurrentGraphChangeDescription.AddChangedModels(elementsToUpdate, ChangeHint.Data);
 
+            m_UpdateWasCalled = true;
             return elementsToUpdate;
         }
 
@@ -286,13 +289,11 @@ namespace Unity.GraphToolkit.Editor
 
         void AddPort(VariableDeclarationModelBase variableDeclaration, string portId, bool isInput, PortType portType, NodeDefinitionScope scope)
         {
-            if (variableDeclaration.ShowOnInspectorOnly)
-                return;
-
             PortModel portModel;
             if (isInput)
             {
-                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId,
+                var options = variableDeclaration.ShowOnInspectorOnly ? PortModelOptions.Hidden : PortModelOptions.Default;
+                portModel = scope.AddInputPort(variableDeclaration.Title, variableDeclaration.DataType, portType, portId, options: options,
                     initializationCallback: c =>
                     {
                         if (variableDeclaration.InitializationModel != null)
@@ -431,5 +432,17 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.unpackToLocalSubgraphItem,
             ContextualMenuHelpers.findAssetInProjectItem,
         };
+
+        public class TestAccess
+        {
+            public readonly SubgraphNodeModel m_SubgraphNodeModel;
+
+            public TestAccess(SubgraphNodeModel subgraphNodeModel)
+            {
+                m_SubgraphNodeModel = subgraphNodeModel;
+            }
+
+            public bool UpdateWasCalled => m_SubgraphNodeModel.m_UpdateWasCalled;
+        }
     }
 }

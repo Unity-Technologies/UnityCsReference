@@ -2375,6 +2375,18 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly void DrawGeometry(CircleGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCircleGeometry(this, geometry, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
+        /// Draw the specified span of Circle Geometry.
+        /// This is only used in the Unity Editor or in a Development Player.
+        /// See <see cref="LowLevelPhysics2D.CircleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// </summary>
+        /// <param name="geometry">The geometry to draw.</param>
+        /// <param name="transform">The transform to use on the specified geometry.</param>
+        /// <param name="color">The color to draw with. Here, the color alpha is used only for the interior fill color but will never be completely opaque.</param>
+        /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
+        /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
+        public readonly void DrawGeometry(ReadOnlySpan<CircleGeometry> geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCircleGeometrySpan(this, geometry, transform, color, lifetime, drawFillOptions);
+
+        /// <summary>
         /// Draw the specified Capsule geometry.
         /// This is only used in the Unity Editor or in a Development Player.
         /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
@@ -2385,6 +2397,18 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
         public readonly void DrawGeometry(CapsuleGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCapsuleGeometry(this, geometry, transform, color, lifetime, drawFillOptions);
+
+        /// <summary>
+        /// Draw the specified span of Capsule geometry.
+        /// This is only used in the Unity Editor or in a Development Player.
+        /// See <see cref="LowLevelPhysics2D.CapsuleGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// </summary>
+        /// <param name="geometry">The geometry to draw.</param>
+        /// <param name="transform">The transform to use on the specified geometry.</param>
+        /// <param name="color">The color to draw with. Here, the color alpha is used only for the interior fill color but will never be completely opaque.</param>
+        /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
+        /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
+        public readonly void DrawGeometry(ReadOnlySpan<CapsuleGeometry> geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawCapsuleGeometrySpan(this, geometry, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
         /// Draw the specified Polygon geometry.
@@ -2399,6 +2423,18 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly void DrawGeometry(PolygonGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawPolygonGeometry(this, geometry, transform, color, lifetime, drawFillOptions);
 
         /// <summary>
+        /// Draw the specified span of Polygon geometry.
+        /// This is only used in the Unity Editor or in a Development Player.
+        /// See <see cref="LowLevelPhysics2D.PolygonGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// </summary>
+        /// <param name="geometry">The geometry to draw.</param>
+        /// <param name="transform">The transform to use on the specified geometry.</param>
+        /// <param name="color">The color to draw with. Here, the color alpha is used only for the interior fill color but will never be completely opaque.</param>
+        /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
+        /// <param name="drawFillOptions">Controls what aspects of the primitive is drawn.</param>
+        public readonly void DrawGeometry(ReadOnlySpan<PolygonGeometry> geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f, DrawFillOptions drawFillOptions = DrawFillOptions.All) => PhysicsWorld_DrawPolygonGeometrySpan(this, geometry, transform, color, lifetime, drawFillOptions);
+
+        /// <summary>
         /// Draw the specified Segment geometry.
         /// This is only used in the Unity Editor or in a Development Player.
         /// See <see cref="LowLevelPhysics2D.SegmentGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
@@ -2408,6 +2444,17 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
         public readonly void DrawGeometry(SegmentGeometry geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawSegmentGeometry(this, geometry, transform, color, lifetime);
+
+        /// <summary>
+        /// Draw the specified span Segment geometry.
+        /// This is only used in the Unity Editor or in a Development Player.
+        /// See <see cref="LowLevelPhysics2D.SegmentGeometry"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.drawResults"/>.
+        /// </summary>
+        /// <param name="geometry">The geometry to draw.</param>
+        /// <param name="transform">The transform to use on the specified geometry.</param>
+        /// <param name="color">The color to draw with.</param>
+        /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
+        public readonly void DrawGeometry(ReadOnlySpan<SegmentGeometry> geometry, PhysicsTransform transform, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawSegmentGeometrySpan(this, geometry, transform, color, lifetime);
 
         /// <summary>
         /// Draw a Box.

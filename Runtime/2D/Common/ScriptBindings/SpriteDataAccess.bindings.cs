@@ -263,6 +263,11 @@ namespace UnityEngine.U2D
             SetBoneTransforms(spriteRenderer, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
+        internal static bool IsGPUSkinningEnabled()
+        {
+            return IsGPUSkinningEnabled(null);
+        }
+
         extern public static void DeactivateDeformableBuffer([NotNull] this SpriteRenderer renderer);
 
         extern internal static void SetLocalAABB([NotNull] this SpriteRenderer renderer, Bounds aabb);
@@ -281,7 +286,7 @@ namespace UnityEngine.U2D
 
         extern internal unsafe static void SetupMaterialProperties([NotNull] SpriteRenderer spriteRenderer);
 
-        extern internal static bool IsGPUSkinningEnabled();
+        extern internal static bool IsGPUSkinningEnabled(SpriteRenderer spriteRenderer);
 
         extern internal static bool IsSRPBatchingEnabled([NotNull] this SpriteRenderer spriteRenderer);
     }

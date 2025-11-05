@@ -18,7 +18,7 @@ namespace UnityEditor
         public static Texture2D GetAssetPreview(Object asset)
         {
             if (asset != null)
-                return GetAssetPreview(asset.GetInstanceID());
+                return GetAssetPreview(asset.GetEntityId());
             return null;
         }
 

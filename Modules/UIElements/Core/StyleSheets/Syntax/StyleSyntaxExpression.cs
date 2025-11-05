@@ -53,6 +53,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Url, // <url>
         Time, // <time>
         FilterFunction, // <filter-function>
+        Prop, // <prop>
         Angle, //<angle>
         CustomIdent, // <custom-ident>
         Ratio, // <ratio>

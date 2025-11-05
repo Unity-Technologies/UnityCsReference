@@ -24,6 +24,8 @@ using System.Runtime.CompilerServices;
 // Unity users
 [assembly: InternalsVisibleTo("Unity.Motion.Editor")]
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.ShaderGraph2.Editor")]
+[assembly: InternalsVisibleTo("Unity.ShaderGraph2.Tests")]
 
 // Test Samples
 [assembly: InternalsVisibleTo("Unity.GraphToolkit.Samples.BlackboardSample")]

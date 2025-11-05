@@ -317,7 +317,8 @@ namespace UnityEngine
             return s_DefaultLogger.logEnabled;
         }
 
-        internal static extern void LogSticky(int identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+        internal static extern void LogSticky(EntityId identifier, LogType logType, LogOption logOptions, string message, Object context = null);
+
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         internal static extern void RemoveLogEntriesByIdentifier(int identifier);
 

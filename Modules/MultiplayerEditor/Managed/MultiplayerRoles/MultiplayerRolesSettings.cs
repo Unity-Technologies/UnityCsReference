@@ -37,7 +37,7 @@ namespace UnityEditor.Multiplayer.Internal
         private SerializedDictionary<BuildProfile, MultiplayerRoleData> m_MultiplayerRoleForBuildProfile = new(new InstanceIdComparer<BuildProfile>());
         private class InstanceIdComparer<T> : Comparer<T> where T : UnityEngine.Object
         {
-            public override int Compare(T x, T y) => x.GetInstanceID().CompareTo(y.GetInstanceID());
+            public override int Compare(T x, T y) => x.GetEntityId().CompareTo(y.GetEntityId());
         }
 
         internal void SaveIfDirty()

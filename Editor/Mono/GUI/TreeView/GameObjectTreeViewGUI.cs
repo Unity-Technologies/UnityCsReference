@@ -66,7 +66,7 @@ namespace UnityEditor
         // Cache Asset instances for native VCS implementations which have different API.
         private Dictionary<int, Asset[]> m_HierarchyPrefabToAssetIDMap;
 
-        internal event Action<bool, int, string, string> renameEnded;
+        internal event Action<bool, EntityId, string, string> renameEnded;
 
         GameObjectTreeViewDataSource dataSource
         {

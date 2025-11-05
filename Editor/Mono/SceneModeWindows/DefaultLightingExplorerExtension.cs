@@ -341,7 +341,7 @@ namespace UnityEditor
                     }
                 }, null, null, new int[] { 2 }),     // 4: Mode
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Color, Styles.Color, "m_Color", 70), // 5: Color
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Range, "m_Range", 60, (r, prop, dep) => 
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Range, "m_Range", 60, (r, prop, dep) =>
                 {
                     var lightType = prop.serializedObject.FindProperty("m_Type");
                     if (lightType != null)
@@ -448,7 +448,7 @@ namespace UnityEditor
                 {
                     if (GUI.Button(r, Styles.SelectObjectsButton, "label"))
                     {
-                        SearchableEditorWindow.SearchForReferencesToInstanceID(prop.serializedObject.targetObject.GetInstanceID());
+                        SearchableEditorWindow.SearchForReferencesToInstanceID(prop.serializedObject.targetObject.GetEntityId());
                     }
                 }),     // 0: Icon
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 1: Name

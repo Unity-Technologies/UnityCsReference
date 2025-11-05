@@ -82,7 +82,7 @@ namespace UnityEngine.LowLevelPhysics2D
         bool isOwned { get; }
 
         /// <undoc/>
-        MonoBehaviour callbackTarget { get; set; }
+        System.Object callbackTarget { get; set; }
 
         /// <undoc/>
         PhysicsUserData userData { get; set; }
@@ -257,12 +257,12 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool isOwned => PhysicsJoint_IsOwned(this);
 
         /// <summary>
-        /// Get/Set the <see cref="UnityEngine.MonoBehaviour"/> object that event callbacks for this joint will be sent to.
+        /// Get/Set the <see cref="System.Object"/> object that event callbacks for this joint will be sent to.
         /// This includes the following events:
         /// 
         ///- A <see cref="LowLevelPhysics2D.PhysicsEvents.JointThresholdEvent"/> with call <see cref="LowLevelPhysics2D.PhysicsCallbacks.IJointThresholdCallback"/>.
         /// </summary>
-        public readonly MonoBehaviour callbackTarget { get => PhysicsJoint_GetCallbackTarget(this); set => PhysicsJoint_SetCallbackTarget(this, value); }
+        public readonly System.Object callbackTarget { get => PhysicsJoint_GetCallbackTarget(this); set => PhysicsJoint_SetCallbackTarget(this, value); }
 
         /// <summary>
         /// Get/Set <see cref="LowLevelPhysics2D.PhysicsUserData"/> that can be used for any purpose.

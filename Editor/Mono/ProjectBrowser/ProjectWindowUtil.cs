@@ -208,7 +208,7 @@ namespace UnityEditor
                 ProjectWindowUtil.ShowCreatedAsset(o);
 
                 // Call the completion callback
-                onComplete?.Invoke(o.GetInstanceID());
+                onComplete?.Invoke(o.GetEntityId());
             }
         }
 
@@ -494,7 +494,7 @@ namespace UnityEditor
             if (createdVariants.Count > 0)
             {
                 Selection.objects = createdVariants.ToArray();
-                FrameObjectInProjectWindow(createdVariants.Last().GetInstanceID());
+                FrameObjectInProjectWindow(createdVariants.Last().GetEntityId());
             }
 
             return createdVariants.ToArray();
@@ -554,7 +554,7 @@ namespace UnityEditor
             // Show it
             Selection.activeObject = o;
             if (o)
-                FrameObjectInProjectWindow(o.GetInstanceID());
+                FrameObjectInProjectWindow(o.GetEntityId());
         }
 
         [RequiredByNativeCode]
@@ -791,32 +791,32 @@ namespace UnityEditor
             return instanceID >= k_FavoritesStartInstanceID && instanceID != ProjectBrowser.kPackagesFolderInstanceId;
         }
 
-        internal static void StartDrag(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
+        internal static void StartDrag(EntityId draggedEntityId, List<EntityId> selectedInstanceIDs)
         {
-            if (draggedInstanceID == ProjectBrowser.kPackagesFolderInstanceId)
+            if (draggedEntityId == ProjectBrowser.kPackagesFolderInstanceId)
                 return;
 
             DragAndDrop.PrepareStartDrag();
 
             string title = "";
-            if (IsFavoritesItem(draggedInstanceID))
+            if (IsFavoritesItem(draggedEntityId))
             {
-                DragAndDrop.SetGenericData(k_DraggingFavoriteGenericData, draggedInstanceID);
+                DragAndDrop.SetGenericData(k_DraggingFavoriteGenericData, draggedEntityId);
             }
             else
             {
                 // Normal assets dragging
-                bool isFolder = IsFolder(draggedInstanceID);
-                DragAndDrop.objectReferences = GetDragAndDropObjects(draggedInstanceID, selectedInstanceIDs);
+                bool isFolder = IsFolder(draggedEntityId);
+                DragAndDrop.objectReferences = GetDragAndDropObjects(draggedEntityId, selectedInstanceIDs);
                 DragAndDrop.SetGenericData(k_IsFolderGenericData, isFolder ? "isFolder" : "");
-                string[] paths = GetDragAndDropPaths(draggedInstanceID, selectedInstanceIDs);
+                string[] paths = GetDragAndDropPaths(draggedEntityId, selectedInstanceIDs);
                 if (paths.Length > 0)
                     DragAndDrop.paths = paths;
 
                 if (DragAndDrop.objectReferences.Length > 1)
                     title = "<Multiple>";
                 else
-                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedInstanceID));
+                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedEntityId));
             }
 
             DragAndDrop.StartDrag(title);

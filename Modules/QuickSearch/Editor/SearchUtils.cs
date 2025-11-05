@@ -207,7 +207,7 @@ namespace UnityEditor.Search
         {
             var fileIdHint = Utils.GetFileIDHint(obj);
             if (fileIdHint == 0)
-                fileIdHint = (ulong)obj.GetInstanceID();
+                fileIdHint = (ulong)obj.GetEntityId().GetRawData();
             return fileIdHint * 1181783497276652981UL + assetHash;
         }
 
@@ -1943,6 +1943,23 @@ namespace UnityEditor.Search
                 tokens[tokenCount++] = start < source.Length ? source.Substring(start) : "";
             }
             return tokenCount;
+        }
+        
+        internal static string BuildUnionTypeQuery(Type[] types)
+        {
+            var query = types.Length > 1 ? "(" : string.Empty;
+            for (int i = 0; i < types.Length; ++i)
+            {
+                query += $"t:{types[i].Name.ToLowerInvariant()}";
+                if (i + 1 < types.Length)
+                    query += " or ";
+            }
+
+            if (types.Length > 1)
+            {
+                query += ")";
+            }
+            return query;
         }
     }
 }

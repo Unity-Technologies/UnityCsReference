@@ -8,9 +8,12 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine.Scripting;
 using UnityEngine;
+using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEngine.InputModule")]
     internal class SendMouseEvents
     {
         struct HitInfo
@@ -68,18 +71,15 @@ namespace UnityEngine
                 s_MouseButtonPressedThisFrame = (state.Key == (int)LeftMouseButtonState.PressedThisFrame);
                 s_MouseButtonIsPressed = state.Key != (int)LeftMouseButtonState.NotPressed;
             }
-            else if (!UnityEngine.Input.CheckDisabled())
-            {
-                s_MousePosition = Input.mousePosition;
-                s_MouseButtonPressedThisFrame = Input.GetMouseButtonDown(0);
-                s_MouseButtonIsPressed = Input.GetMouseButton(0);
-            }
-            else
-            {
-                s_MousePosition = default;
-                s_MouseButtonPressedThisFrame = default;
-                s_MouseButtonIsPressed = default;
-            }
+        }
+
+        [VisibleToOtherModules("UnityEngine.InputModule")]
+        [RequiredByNativeCode]
+        internal static void SetMouse(bool pressed, bool pressedThisFrame, float positionX, float positionY)
+        {
+            s_MousePosition = new Vector2(positionX, positionY);
+            s_MouseButtonIsPressed = pressed;
+            s_MouseButtonPressedThisFrame = pressedThisFrame;
         }
 
         [RequiredByNativeCode]
@@ -88,8 +88,9 @@ namespace UnityEngine
             s_MouseUsed = true;
         }
 
+        [VisibleToOtherModules("UnityEngine.InputModule")]
         [RequiredByNativeCode]
-        static void DoSendMouseEvents(int skipRTCameras)
+        internal static void DoSendMouseEvents(int skipRTCameras)
         {
             UpdateMouse();
             var mousePosition = s_MousePosition;

@@ -27,7 +27,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private string m_Name;
         [SerializeField] private string m_InstanceDescriptionType;
         [SerializeField] private CancellationTokenSource m_FreeRunCancelTokenSource;
-        [SerializeField] private bool m_HasCompleted;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] private string m_BuildTarget;
         [SerializeField] private bool m_Drifted;
@@ -72,7 +71,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     return;
 
                 m_RunModeState = value;
-                RefreshAndNotifyStatus();
+                Reset();
             }
         }
 
@@ -135,14 +134,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // Reset the instance properties for a new run
             m_HasDeployedAndRun = false;
-            m_HasCompleted = false;
             m_CurrentMonitoringTasks.Clear();
             m_StatusData = default;
 
             // Reset the Execution graph
             m_ExecutionGraph.Reset();
 
-            RefreshAndNotifyStatus();
+            RefreshStatusData();
         }
 
         // Returns the Instance's Description configuration from the current Scenario Config
@@ -342,7 +340,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_FreeRunCancelTokenSource.Cancel();
             m_FreeRunCancelTokenSource = null;
-            m_HasCompleted = true;
             m_Drifted = false;
         }
 
@@ -353,7 +350,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsActive()
         {
-            return m_ExecutionGraph.HasStarted && !m_HasCompleted;
+            return m_StatusData.OverallStatus.State is ExecutionState.Running or ExecutionState.Active;
         }
 
         internal async Task<ExecutionGraph.ExecutionResult> RunOrResumeAsync(ExecutionStage executionStage,
@@ -382,7 +379,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             m_HasDeployedAndRun = true;
             await Task.WhenAll(GetCurrentMonitoringTasksForScenario());
-            m_HasCompleted = true;
             m_FreeRunCancelTokenSource = null;
         }
 

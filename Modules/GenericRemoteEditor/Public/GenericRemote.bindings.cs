@@ -41,6 +41,30 @@ namespace UnityEditor.Remote
             return false;
         }
 
+        // We're keeping a separate list of C# delegates so that they get lost
+        // en bloc in domain reload. Simplifies the handling of that as opposed
+        // to having GenericRemote.cpp having these delegates directly on its list.
+        private static List<Action<IntPtr, int>> s_EditorHandlers = new List<Action<IntPtr, int>>();
+
+        internal static void AddEditorMessageHandler(Action<IntPtr, int> handler)
+        {
+            s_EditorHandlers.Add(handler);
+        }
+
+        internal static void RemoveEditorMessageHandler(Action<IntPtr, int> handler)
+        {
+            s_EditorHandlers.Remove(handler);
+        }
+
+        [RequiredByNativeCode]
+        internal static void CallEditorMessageHandlers(IntPtr messageData, int size)
+        {
+            foreach (var handler in s_EditorHandlers)
+            {
+                handler(messageData, size);
+            }
+        }
+
         public static extern void SetGyroEnabled(bool enabled);
         public static extern void SetGyroUpdateInterval(float interval);
     }

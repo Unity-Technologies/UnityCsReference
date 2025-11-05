@@ -135,7 +135,7 @@ namespace UnityEditor.TextCore.Text
         protected MaterialEditor m_Editor;
 
         protected Material m_Material;
-        private int m_ShaderID;
+        private EntityId m_ShaderID;
 
         protected MaterialProperty[] m_Properties;
 
@@ -620,7 +620,7 @@ namespace UnityEditor.TextCore.Text
             if (m_Material == null)
                 return false;
 
-            int currentShaderID = m_Material.shader.GetInstanceID();
+            EntityId currentShaderID = m_Material.shader.GetEntityId();
 
             if (m_ShaderID == currentShaderID)
                 return false;

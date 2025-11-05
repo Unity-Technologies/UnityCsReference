@@ -73,12 +73,12 @@ namespace UnityEngine.TextCore.Text
         /// <param name="fontAsset">The font asset to be added.</param>
         internal static void AddFontAsset(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.instanceID;
+            EntityId entityId = fontAsset.entityId;
 
-            if (!s_FontAssetReferences.ContainsKey(instanceID))
+            if (!s_FontAssetReferences.ContainsKey(entityId))
             {
                 FontAssetRef fontAssetRef = new FontAssetRef(fontAsset.hashCode, fontAsset.familyNameHashCode, fontAsset.styleNameHashCode, fontAsset);
-                s_FontAssetReferences.Add(instanceID, fontAssetRef);
+                s_FontAssetReferences.Add(entityId, fontAssetRef);
 
                 // Add font asset to name reference lookup
                 if (!s_FontAssetNameReferenceLookup.ContainsKey(fontAssetRef.nameHashCode))
@@ -90,7 +90,7 @@ namespace UnityEngine.TextCore.Text
             }
             else
             {
-                FontAssetRef fontAssetRef = s_FontAssetReferences[instanceID];
+                FontAssetRef fontAssetRef = s_FontAssetReferences[entityId];
 
                 // Return if font asset name, family and style name have not changed.
                 if (fontAssetRef.nameHashCode == fontAsset.hashCode && fontAssetRef.familyNameHashCode == fontAsset.familyNameHashCode && fontAssetRef.styleNameHashCode == fontAsset.styleNameHashCode)
@@ -120,7 +120,7 @@ namespace UnityEngine.TextCore.Text
                         s_FontAssetFamilyNameAndStyleReferenceLookup.Add(fontAssetRef.familyNameAndStyleHashCode, fontAsset);
                 }
 
-                s_FontAssetReferences[instanceID] = fontAssetRef;
+                s_FontAssetReferences[entityId] = fontAssetRef;
             }
         }
 
@@ -130,7 +130,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="fontAsset">Font asset to be removed from the resource manager.</param>
         public static void RemoveFontAsset(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.instanceID;
+            int instanceID = fontAsset.entityId;
 
             if (s_FontAssetReferences.TryGetValue(instanceID, out FontAssetRef reference))
             {

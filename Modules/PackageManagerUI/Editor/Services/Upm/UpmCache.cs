@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal interface IUpmCache : IService
     {
         event Action<string, bool> onLoadAllVersionsChanged;
-        event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>> onPackageInfosUpdated;
+        event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
         event Action<PackageInfo> onExtraPackageInfoFetched;
         event Action onScopedRegistriesPotentiallyChanged;
 
@@ -23,8 +23,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         void SetLoadAllVersions(string packageUniqueId, bool value);
         void AddExtraPackageInfo(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
+        IReadOnlyCollection<PackageInfo> PreviewIncomingTrustIssuePackageInfos(IEnumerable<PackageInfo> packageInfos);
         PackageInfo GetInstalledPackageInfo(string packageName);
-        IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0);
+        IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         PackageInfo GetSearchPackageInfo(string packageName);
         PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
         IUpmPackageData GetPackageData(string packageName);
@@ -76,7 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedLoadAllVersions;
 
         public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
-        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>> onPackageInfosUpdated;
+        public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>, PackagesChangedSource> onPackageInfosUpdated;
         public event Action<PackageInfo> onExtraPackageInfoFetched;
         public event Action onScopedRegistriesPotentiallyChanged;
 
@@ -88,6 +89,40 @@ namespace UnityEditor.PackageManager.UI.Internal
         public UpmCache(IProjectSettingsProxy settingsProxy)
         {
             m_SettingsProxy = RegisterDependency(settingsProxy);
+        }
+
+        private bool HasDifferenceInTrustLevel(PackageInfo p1, PackageInfo p2)
+        {
+            var registryChanged = p1?.registry != null && p2?.registry != null
+                ? !p1.registry.IsEquivalentTo(p2.registry)
+                : p1?.registry != p2?.registry;
+            var complianceChanged = p1?.compliance != null && p2?.compliance != null
+                ? !p1.compliance.IsEquivalentTo(p2.compliance)
+                : p1?.compliance != p2?.compliance;
+
+            return p1?.packageId != p2?.packageId
+                   || p1?.source != p2?.source
+                   || p1?.signature?.status != p2?.signature?.status
+                   || p1?.trustLevel != p2?.trustLevel
+                   || registryChanged
+                   || complianceChanged;
+        }
+
+        public IReadOnlyCollection<PackageInfo> PreviewIncomingTrustIssuePackageInfos(IEnumerable<PackageInfo> packageInfos)
+        {
+            var newDict = packageInfos?.ToDictionary(p => p.name, p => p) ?? new Dictionary<string, PackageInfo>();
+            var result = new List<PackageInfo>();
+            foreach (var p in FindUpdatedPackageInfos(m_PackageNameToInstalledPackageInfosMap, newDict))
+            {
+                if (p.oldInfo == null)
+                {
+                    result.Add(p.newInfo);
+                    continue;
+                }
+                if (HasDifferenceInTrustLevel(p.oldInfo, p.newInfo))
+                    result.Add(p.newInfo);
+            }
+            return result;
         }
 
         private static List<(PackageInfo oldInfo, PackageInfo newInfo)> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
@@ -233,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ProductIdToInstalledPackageInfosMap[newProductId] = newInfo;
         }
 
-        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0)
+        public IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             var newPackageInfos = packageInfos.ToDictionary(p => p.name, p => p);
 
@@ -249,7 +284,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (updatedInfos.Count > 0)
             {
-                TriggerOnPackageInfosUpdated(updatedInfos);
+                TriggerOnPackageInfosUpdated(updatedInfos, changedSource);
                 DetectScopedRegistriesChanges(updatedInfos, false);
             }
             return updatedInfos;
@@ -371,7 +406,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void TriggerOnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos)
+        private void TriggerOnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, PackagesChangedSource changedSource = PackagesChangedSource.Other)
         {
             foreach (var (oldInfo, newInfo) in packageInfos)
             {
@@ -380,7 +415,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(newInfo?.packageId))
                     m_ParsedUpmReserved.Remove(newInfo.packageId);
             }
-            onPackageInfosUpdated?.Invoke(packageInfos);
+            onPackageInfosUpdated?.Invoke(packageInfos, changedSource);
         }
 
         public Dictionary<string, object> ParseUpmReserved(PackageInfo packageInfo)

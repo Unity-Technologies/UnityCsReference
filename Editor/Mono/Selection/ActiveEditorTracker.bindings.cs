@@ -128,7 +128,7 @@ namespace UnityEditor
         static extern void Internal_UnsavedChangesStateChanged(ActiveEditorTracker self, int editorInstance, bool value);
         internal void UnsavedChangesStateChanged(Editor editor, bool value)
         {
-            Internal_UnsavedChangesStateChanged(this, editor.GetInstanceID(), value);
+            Internal_UnsavedChangesStateChanged(this, editor.GetEntityId(), value);
         }
 
         [FreeFunction]

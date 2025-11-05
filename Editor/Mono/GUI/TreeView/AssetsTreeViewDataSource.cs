@@ -11,7 +11,6 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
-using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
 
 namespace UnityEditor
@@ -61,50 +60,6 @@ namespace UnityEditor
             : this(treeView)
         {
             m_rootInstanceID = rootInstanceID;
-        }
-
-        public override List<EntityId> GetNewSelection(TreeViewItem<EntityId> clickedItem, TreeViewSelectState<EntityId> selectState)
-        {
-            var assetTreeClickedItem = clickedItem as IAssetTreeViewItem;
-            var clickedEntry = new AssetReference() { entityId = clickedItem.id };
-            if (clickedItem.id == 0 && assetTreeClickedItem != null)
-                clickedEntry.guid = assetTreeClickedItem.Guid;
-
-            // Get ids from items
-            var visibleRows = GetRows();
-            var allIDs = new List<EntityId>(visibleRows.Count);
-            var allGuids = new List<string>(visibleRows.Count);
-
-            for (int i = 0; i < visibleRows.Count; ++i)
-            {
-                EntityId instanceID = visibleRows[i].id;
-                string guid = null;
-                if (instanceID == 0)
-                {
-                    var assetTreeViewItem = visibleRows[i] as IAssetTreeViewItem;
-                    if (assetTreeViewItem != null)
-                        guid = assetTreeViewItem.Guid;
-                }
-
-                allGuids.Add(guid);
-                allIDs.Add(instanceID);
-            }
-
-            var selectedIDs = selectState.selectedIDs;
-            int lastClickedID = selectState.lastClickedID;
-            bool allowMultiselection = CanBeMultiSelected(clickedItem);
-
-            var result = InternalEditorUtility.GetNewSelection(ref clickedEntry, allIDs, allGuids, selectedIDs, lastClickedID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection);
-
-            clickedItem.id = clickedEntry.entityId;
-
-            for (int i = 0; i < allIDs.Count; ++i)
-            {
-                if (allGuids[i] != null && allIDs[i] != 0)
-                    visibleRows[i].id = allIDs[i];
-            }
-
-            return result;
         }
 
         static string CreateDisplayName(int instanceID)

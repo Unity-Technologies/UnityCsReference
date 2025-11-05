@@ -29,6 +29,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
+
         }
 
         public override void OnAfterDeserialize()
@@ -80,6 +81,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
+
         }
 
         public override void OnAfterDeserialize()
@@ -131,6 +133,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         protected override void OnDefineNode(NodeDefinitionScope definitionScope)
         {
             ((IUserNodeModelImp)this).CustomOnDefineNode(definitionScope);
+            base.OnDefineNode(definitionScope);
         }
 
         public override void OnAfterDeserialize()

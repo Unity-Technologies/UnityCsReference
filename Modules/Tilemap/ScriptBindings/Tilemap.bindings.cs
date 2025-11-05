@@ -10,6 +10,8 @@ using UnityEngine.Bindings;
 using UnityEngine.U2D;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace UnityEngine.Tilemaps
 {
@@ -467,6 +469,342 @@ namespace UnityEngine.Tilemaps
         {
             HandlePositionsChangedCallback(count, positionsIntPtr);
         }
+
+        #region Non Allocating Getters
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct TilemapBuffer : IDisposable
+        {
+            public readonly IntPtr buffer => m_Buffer;
+            public readonly int length => m_Length;
+            public readonly Allocator allocator => m_Allocator;
+
+            public TilemapBuffer()
+            {
+                m_Buffer = IntPtr.Zero;
+                m_Length = 0;
+                m_Allocator = Allocator.None;
+            }
+
+            public unsafe readonly T AsEngineObject<T>(int index) where T : class
+            {
+                if (index < 0 || index >= m_Length)
+                    throw new ArgumentOutOfRangeException("index");
+
+                var entityId = UnsafeUtility.ArrayElementAsRef<EntityId>(m_Buffer.ToPointer(), index);
+                return Resources.EntityIdIsValid(entityId) ? Resources.EntityIdToObject(entityId) as T : null;
+            }
+
+            public unsafe readonly T As<T>(int index) where T : struct
+            {
+                if (index < 0 || index >= m_Length)
+                    throw new ArgumentOutOfRangeException("index");
+
+                return UnsafeUtility.ArrayElementAsRef<T>(m_Buffer.ToPointer(), index);
+            }
+
+            public unsafe void Dispose()
+            {
+                if (m_Buffer == null || m_Length == 0)
+                    return;
+
+                // Free the allocation.
+                UnsafeUtility.FreeTracked(m_Buffer.ToPointer(), m_Allocator);
+                m_Buffer = IntPtr.Zero;
+                m_Length = 0;
+                m_Allocator = Allocator.None;
+            }
+
+            #region Internal
+
+            IntPtr m_Buffer;
+            int m_Length;
+            Allocator m_Allocator;
+
+            #endregion
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct TileArray : IEnumerable<TileBase>, IDisposable
+        {
+            internal struct TileArrayEnumerator : IEnumerator<TileBase>
+            {
+                TileArray m_TileArray;
+                int m_Index;
+
+                public TileArrayEnumerator(TileArray tileArray)
+                {
+                    m_TileArray = tileArray;
+                    m_Index = -1;
+                }
+
+                TileBase IEnumerator<TileBase>.Current => m_TileArray[m_Index];
+
+                object IEnumerator.Current => m_TileArray[m_Index];
+
+                void IDisposable.Dispose()
+                {
+                    // Does not own the buffer, so nothing to dispose
+                }
+
+                bool IEnumerator.MoveNext()
+                {
+                    if (m_TileArray.Length == 0)
+                        return false;
+
+                    return ++m_Index < m_TileArray.Length;
+                }
+
+                void IEnumerator.Reset()
+                {
+                    m_Index = -1;
+                }
+            }
+
+            internal TileArray(TilemapBuffer tilemapBuffer)
+            {
+                m_TilemapBuffer = tilemapBuffer;
+            }
+
+            public readonly int Length => m_TilemapBuffer.length;
+            public readonly TileBase this[int index] => m_TilemapBuffer.AsEngineObject<TileBase>(index);
+
+            #region Enumeration
+
+            public readonly IEnumerator<TileBase> GetEnumerator() => new TileArrayEnumerator(this);
+            readonly IEnumerator IEnumerable.GetEnumerator() => new TileArrayEnumerator(this);
+
+            public void Dispose() => m_TilemapBuffer.Dispose();
+
+            #endregion
+
+            #region Internal
+
+            TilemapBuffer m_TilemapBuffer;
+
+            #endregion
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SpriteArray : IEnumerable<Sprite>, IDisposable
+        {
+            internal struct SpriteArrayEnumerator : IEnumerator<Sprite>
+            {
+                SpriteArray m_SpriteArray;
+                int m_Index;
+
+                public SpriteArrayEnumerator(SpriteArray spriteArray)
+                {
+                    m_SpriteArray = spriteArray;
+                    m_Index = -1;
+                }
+
+                Sprite IEnumerator<Sprite>.Current => m_SpriteArray[m_Index];
+
+                object IEnumerator.Current => m_SpriteArray[m_Index];
+
+                void IDisposable.Dispose()
+                {
+                    // Does not own the buffer, so nothing to dispose
+                }
+
+                bool IEnumerator.MoveNext()
+                {
+                    if (m_SpriteArray.Length == 0)
+                        return false;
+
+                    return ++m_Index < m_SpriteArray.Length;
+                }
+
+                void IEnumerator.Reset()
+                {
+                    m_Index = -1;
+                }
+            }
+
+            internal SpriteArray(TilemapBuffer tilemapBuffer)
+            {
+                m_TilemapBuffer = tilemapBuffer;
+            }
+
+            public readonly int Length => m_TilemapBuffer.length;
+            public readonly Sprite this[int index] => m_TilemapBuffer.AsEngineObject<Sprite>(index);
+
+            #region Enumeration
+
+            public readonly IEnumerator<Sprite> GetEnumerator() => new SpriteArrayEnumerator(this);
+            readonly IEnumerator IEnumerable.GetEnumerator() => new SpriteArrayEnumerator(this);
+
+            public void Dispose() => m_TilemapBuffer.Dispose();
+
+            #endregion
+
+            #region Internal
+
+            TilemapBuffer m_TilemapBuffer;
+
+            #endregion
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PositionArray : IEnumerable<Vector3Int>, IDisposable
+        {
+            internal struct PositionArrayEnumerator : IEnumerator<Vector3Int>
+            {
+                PositionArray m_PositionArray;
+                int m_Index;
+
+                public PositionArrayEnumerator(PositionArray positionArray)
+                {
+                    m_PositionArray = positionArray;
+                    m_Index = -1;
+                }
+
+                Vector3Int IEnumerator<Vector3Int>.Current => m_PositionArray[m_Index];
+
+                object IEnumerator.Current => m_PositionArray[m_Index];
+
+                void IDisposable.Dispose()
+                {
+                    // Does not own the buffer, so nothing to dispose
+                }
+
+                bool IEnumerator.MoveNext()
+                {
+                    if (m_PositionArray.Length == 0)
+                        return false;
+
+                    return ++m_Index < m_PositionArray.Length;
+                }
+
+                void IEnumerator.Reset()
+                {
+                    m_Index = -1;
+                }
+            }
+
+            internal PositionArray(TilemapBuffer tilemapBuffer)
+            {
+                m_TilemapBuffer = tilemapBuffer;
+            }
+
+            public readonly int Length => m_TilemapBuffer.length;
+            public readonly Vector3Int this[int index] => m_TilemapBuffer.As<Vector3Int>(index);
+
+            #region Enumeration
+
+            public readonly IEnumerator<Vector3Int> GetEnumerator() => new PositionArrayEnumerator(this);
+            readonly IEnumerator IEnumerable.GetEnumerator() => new PositionArrayEnumerator(this);
+            public void Dispose() => m_TilemapBuffer.Dispose();
+
+            #endregion
+
+            #region Internal
+
+            TilemapBuffer m_TilemapBuffer;
+
+            #endregion
+        }
+
+        private const string k_TilemapAllocationArgumentExceptionMessage = "Allocator must be 'Temp', 'Domain' or `Persistent`";
+        private const string k_TilemapMemoryLabelArgumentExceptionMessage = "MemoryLabel has not been created. Use the constructor to create it.";
+
+        private void MemoryLabelCheck(MemoryLabel memoryLabel)
+        {
+            if (!memoryLabel.IsCreated)
+                throw new ArgumentException(k_TilemapMemoryLabelArgumentExceptionMessage);
+        }
+
+        public TileArray GetUsedTiles(Allocator allocator = Allocator.Temp)
+        {
+            if (allocator == Allocator.Temp || allocator == Allocator.Persistent || allocator == Allocator.Domain)
+                return new(Internal_GetUsedTiles(allocator, IntPtr.Zero));
+
+            throw new ArgumentException(k_TilemapAllocationArgumentExceptionMessage);
+        }
+
+        public TileArray GetUsedTiles(MemoryLabel memoryLabel)
+        {
+            MemoryLabelCheck(memoryLabel);
+            // Memory Label Allocators must be Persistent or Domain
+            return new(Internal_GetUsedTiles(memoryLabel.allocator, memoryLabel.pointer));
+        }
+
+        public SpriteArray GetUsedSprites(Allocator allocator = Allocator.Temp)
+        {
+            if (allocator == Allocator.Temp || allocator == Allocator.Persistent || allocator == Allocator.Domain)
+                return new(Internal_GetUsedSprites(allocator, IntPtr.Zero));
+
+            throw new ArgumentException(k_TilemapAllocationArgumentExceptionMessage);
+        }
+
+        public SpriteArray GetUsedSprites(MemoryLabel memoryLabel)
+        {
+            MemoryLabelCheck(memoryLabel);
+            // Memory Label Allocators are Persistent or Domain
+            return new(Internal_GetUsedSprites(memoryLabel.allocator, memoryLabel.pointer));
+        }
+
+        public TileArray GetTiles(BoundsInt bounds, Allocator allocator = Allocator.Temp)
+        {
+            if (allocator == Allocator.Temp || allocator == Allocator.Persistent || allocator == Allocator.Domain)
+                return new(Internal_GetTiles(bounds.min, bounds.size, allocator, IntPtr.Zero));
+
+            throw new ArgumentException(k_TilemapAllocationArgumentExceptionMessage);
+        }
+
+        public TileArray GetTiles(BoundsInt bounds, MemoryLabel memoryLabel)
+        {
+            MemoryLabelCheck(memoryLabel);
+            // Memory Label Allocators are Persistent or Domain
+            return new(Internal_GetTiles(bounds.min, bounds.size, memoryLabel.allocator, memoryLabel.pointer));
+        }
+
+        public int GetTiles(BoundsInt bounds, out PositionArray positions, out TileArray tiles, Allocator allocator = Allocator.Temp, bool withinBounds = true)
+        {
+            if (allocator == Allocator.Temp || allocator == Allocator.Persistent || allocator == Allocator.Domain)
+            {
+                var positionsBuffer = new TilemapBuffer();
+                var tilesBuffer = new TilemapBuffer();
+                var length = Internal_GetTilePositions(bounds.min, bounds.max, ref positionsBuffer, ref tilesBuffer, withinBounds ? 1 : 0, allocator, IntPtr.Zero);
+
+                positions = new(positionsBuffer);
+                tiles = new(tilesBuffer);
+
+                return length;
+            }
+
+            throw new ArgumentException(k_TilemapAllocationArgumentExceptionMessage);
+        }
+
+        public int GetTiles(BoundsInt bounds, out PositionArray positions, out TileArray tiles, MemoryLabel memoryLabel, bool withinBounds = true)
+        {
+            MemoryLabelCheck(memoryLabel);
+            var positionsBuffer = new TilemapBuffer();
+            var tilesBuffer = new TilemapBuffer();
+
+            // Memory Label Allocators are Persistent or Domain
+            var length = Internal_GetTilePositions(bounds.min, bounds.max, ref positionsBuffer, ref tilesBuffer, withinBounds ? 1 : 0, memoryLabel.allocator, memoryLabel.pointer);
+
+            positions = new(positionsBuffer);
+            tiles = new(tilesBuffer);
+
+            return length;
+        }
+
+        [FreeFunction(Name = "TilemapBindings::GetUsedTiles", HasExplicitThis = true)]
+        extern TilemapBuffer Internal_GetUsedTiles(Allocator allocator, IntPtr memLabelPtr);
+
+        [FreeFunction(Name = "TilemapBindings::GetUsedSprites", HasExplicitThis = true)]
+        extern TilemapBuffer Internal_GetUsedSprites(Allocator allocator, IntPtr memLabelPtr);
+
+        [FreeFunction(Name = "TilemapBindings::GetTiles", HasExplicitThis = true)]
+        extern TilemapBuffer Internal_GetTiles(Vector3Int startPosition, Vector3Int blockDimensions, Allocator allocator, IntPtr memLabelPtr);
+
+        [FreeFunction(Name = "TilemapBindings::GetTilePositions", HasExplicitThis = true)]
+        extern int Internal_GetTilePositions(Vector3Int startPosition, Vector3Int endPosition, ref TilemapBuffer positions, ref TilemapBuffer tiles, int withinBounds, Allocator allocator, IntPtr memLabelPtr);
+
+        #endregion
     }
 
     [RequireComponent(typeof(Tilemap))]
@@ -568,11 +906,11 @@ namespace UnityEngine.Tilemaps
     [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileData
     {
-        public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetInstanceID() : 0; } }
+        public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetEntityId() : 0; } }
         public EntityId spriteEntityId { get => m_Sprite; set => m_Sprite = value; }
         public Color color { get { return m_Color; } set { m_Color = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
-        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetInstanceID() : 0; } }
+        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetEntityId() : 0; } }
         public EntityId gameObjectEntityId { get => m_GameObject; set => m_GameObject = value; }
         public TileFlags flags { get { return m_Flags; } set { m_Flags = value; } }
         public Tile.ColliderType colliderType { get { return m_ColliderType; } set { m_ColliderType = value; } }
@@ -684,7 +1022,7 @@ namespace UnityEngine.Tilemaps
                 for (int i = 0; i < other.animatedSprites.Length; ++i)
                 {
                     var sprite = other.animatedSprites[i];
-                    spriteArray[i] = sprite != null ? sprite.GetInstanceID() : EntityId.None;
+                    spriteArray[i] = sprite != null ? sprite.GetEntityId() : EntityId.None;
                 }
                 animatedSpritesEntityIds = spriteArray;
                 m_Count = other.animatedSprites.Length;

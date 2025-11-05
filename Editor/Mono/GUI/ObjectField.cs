@@ -84,7 +84,7 @@ namespace UnityEditor
 
             sceneView.isPingingObject = true;
             sceneView.pingStartTime = Time.realtimeSinceStartup;
-            sceneView.submeshOutlineMaterialId = targetMaterial.GetInstanceID();
+            sceneView.submeshOutlineMaterialId = targetMaterial.GetEntityId();
         }
 
         static Object AssignSelectedObject(SerializedProperty property, ObjectFieldValidator validator, System.Type objectType, Event evt)
@@ -140,7 +140,7 @@ namespace UnityEditor
             }
 
             var reference = references[0];
-            Object obj = EditorUtility.EntityIdToObject(reference.GetInstanceID());
+            Object obj = EditorUtility.EntityIdToObject(reference.GetEntityId());
             if (obj is MonoBehaviour || obj is ScriptableObject)
             {
                 if (!HasValidScript(obj))
@@ -337,7 +337,7 @@ namespace UnityEditor
                         return AssignSelectedObject(property, validator, objType, evt);
                     else if (commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == id && property != null && property.isScript)
                     {
-                        if (ObjectSelector.get.GetInstanceID() == 0)
+                        if (ObjectSelector.get.GetEntityId() == EntityId.None)
                         {
                             // User canceled object selection; don't apply
                             evt.Use();

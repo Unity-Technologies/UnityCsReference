@@ -131,12 +131,35 @@ namespace UnityEditor.Search
 
     class SearchSettingsStorage
     {
+        internal const int k_Version = 1; // ignoredProperties includes hidden properties.
+
         public string settingsFolder { get; set; }
         public string settingsPath { get; set; }
 
         public string itemIconSizePrefKey { get; set; }= "Search.ItemIconSize";
         public string favoritesQueryPrefKey { get; set; } = "SearchQuery.Favorites";
         public string ignoredPropertiesCustomDependency { get; set; } = "SearchIndexIgnoredProperties";
+
+        static readonly string[] k_IgnoredProperties = new []
+        {
+            "id",
+            "name",
+            "classname",
+            "imagecontentshash",
+            // Hidden properties that are not worth indexing:
+            "fileid",
+            "pathid",
+            "editorclassidentifier",
+            "objecthideflags",
+            "prefabasset",
+            "prefabinstance",
+            "editorhideflags",
+            "correspondingsourceobject",
+            "script",
+            "gameobject",
+            "addedobjectfileids",
+            "isprefabvariant"
+        };
 
         // Per project settings
         public bool trackSelection { get; set; }
@@ -158,6 +181,7 @@ namespace UnityEditor.Search
         public Dictionary<string, ObjectSelectorsSettings> objectSelectors { get; private set; } = new();
         public bool queryBuilder { get; set; }
         public string ignoredProperties { get; set; }
+        public int version { get; set; }
         public string helperWidgetCurrentArea { get; set; }
         public bool refreshSearchWindowsInPlayMode { get; set; }
         public bool pickerAdvancedUI { get; set; }
@@ -248,35 +272,37 @@ namespace UnityEditor.Search
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
             queryBuilder = ReadSetting(settings, nameof(queryBuilder), true);
-            ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
+            ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), GetIgnoredPropertiesStr());
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), GroupedSearchList.allGroupId);
             m_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
             refreshSearchWindowsInPlayMode = ReadSetting(settings, nameof(refreshSearchWindowsInPlayMode), false);
             pickerAdvancedUI = ReadSetting(settings, nameof(pickerAdvancedUI), false);
             minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
             findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
-
+            version = ReadSetting(settings, nameof(version), 0);
             itemIconSize = ReadSetting(settings, nameof(itemIconSize), (float)DisplayMode.List);
 
 
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
-            if (searches != null)
-                recentSearches = searches.Cast<string>().ToList();
+            recentSearches = searches != null ? searches.Cast<string>().ToList() : new List<string>();
 
             var favoriteItems = ReadSetting<object[]>(settings, nameof(searchItemFavorites));
             if (favoriteItems != null)
                 searchItemFavorites.UnionWith(favoriteItems.Cast<string>());
 
             var expandedObjects = ReadSetting<object[]>(settings, nameof(expandedQueries));
-            if (expandedObjects != null)
-                expandedQueries = expandedObjects.Select(Convert.ToInt32).ToArray();
+            expandedQueries = expandedObjects != null ? expandedObjects.Select(Convert.ToInt32).ToArray() : Array.Empty<int>();
 
             scopes = ReadProperties<string>(settings, nameof(scopes));
             providers = ReadProviderSettings(settings, nameof(providers));
             objectSelectors = ReadPickerSettings(settings, nameof(objectSelectors));
 
-            LoadFavorites();
+            if (version != k_Version)
+            {
+                ConvertSettings();
+            }
 
+            LoadFavorites();
             RegisterIgnoredPropertiesCustomDependencies();
         }
 
@@ -312,6 +338,7 @@ namespace UnityEditor.Search
                 [nameof(minIndexVariations)] = minIndexVariations,
                 [nameof(findProviderIndexHelper)] = findProviderIndexHelper,
                 [nameof(itemIconSize)] = itemIconSize,
+                [nameof(version)] = version,
 
             };
 
@@ -325,6 +352,25 @@ namespace UnityEditor.Search
             EditorPrefs.SetFloat(itemIconSizePrefKey, itemIconSize);
 
             RegisterIgnoredPropertiesCustomDependencies();
+        }
+
+        void ConvertSettings()
+        {
+            ignoredProperties = ConvertIgnoredProperties(ignoredProperties);
+            version = k_Version;
+        }
+
+        internal static string ConvertIgnoredProperties(string currentIgnoredPropertiesStr)
+        {
+            var currentIgnored = currentIgnoredPropertiesStr.Split(";");
+            var newIgnored = GetIgnoredPropertiesStr(k_IgnoredProperties.Concat(currentIgnored));
+            return newIgnored;
+        }
+
+        internal static string GetIgnoredPropertiesStr(IEnumerable<string> properties = null)
+        {
+            properties = properties ?? k_IgnoredProperties;
+            return string.Join(";", properties.Distinct().OrderBy(prop => prop));
         }
 
         public void RegisterIgnoredPropertiesCustomDependencies()

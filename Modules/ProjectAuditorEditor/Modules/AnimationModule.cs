@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -230,7 +229,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();
@@ -282,7 +281,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();
@@ -334,7 +333,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();
@@ -375,7 +374,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 progress?.Advance();
             }
 
-            if (issues.Any())
+            if (issues.Count > 0)
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear();

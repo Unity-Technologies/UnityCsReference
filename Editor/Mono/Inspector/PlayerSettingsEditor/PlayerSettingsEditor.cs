@@ -2562,24 +2562,28 @@ namespace UnityEditor
                         }
                     }
                 }
-                if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
+                if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget,
-                        platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget, newGraphicsJobs);
-
-                    OnTargetObjectChangedDirectly();
-
-                    if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))
+                    if (newGraphicsJobs != graphicsJobs)
                     {
-                        EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
-                        GUIUtility.ExitGUI();
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                        PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget,
+                            platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget, newGraphicsJobs);
+
+                        OnTargetObjectChangedDirectly();
+
+                        if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))
+                        {
+                            EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
+                            GUIUtility.ExitGUI();
+                        }
                     }
-                }
-                if (EditorGUI.EndChangeCheck() && (newGraphicsJobsSyncAfterKick != graphicsJobsSyncAfterKick))
-                {
-                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetSwitchGraphicsJobsSyncAfterKick(newGraphicsJobsSyncAfterKick);
+
+                    if (newGraphicsJobsSyncAfterKick != graphicsJobsSyncAfterKick)
+                    {
+                        Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                        PlayerSettings.SetSwitchGraphicsJobsSyncAfterKick(newGraphicsJobsSyncAfterKick);
+                    }
                 }
             }
             if (gfxJobModesSupported && newGraphicsJobs)

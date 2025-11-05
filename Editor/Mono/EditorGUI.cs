@@ -4533,6 +4533,14 @@ namespace UnityEditor
             return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects);
         }
 
+        internal static Object ObjectField(Rect position, GUIContent label, Object obj, Type objType, Type additionalType, bool allowSceneObjects)
+        {
+            int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
+            position = GetObjectFieldThumbnailRect(position, objType);
+            return DoObjectField(position, position, id, obj, null, objType, null, allowSceneObjects, additionalType);
+        }
+
         internal static void GetRectsForMiniThumbnailField(Rect position, out Rect thumbRect, out Rect labelRect)
         {
             thumbRect = IndentedRect(position);
@@ -7581,6 +7589,7 @@ namespace UnityEditor
                 case SerializedPropertyType.Bounds:
                 case SerializedPropertyType.BoundsInt:
                 case SerializedPropertyType.Hash128:
+                case SerializedPropertyType.GUID:
                 case SerializedPropertyType.EntityId:
                     return false;
             }
@@ -7871,6 +7880,16 @@ namespace UnityEditor
                         if (EndChangeCheck())
                         {
                             property.hash128Value = Hash128.Parse(newValue);
+                        }
+                        break;
+                    }
+                    case SerializedPropertyType.GUID:
+                    {
+                        BeginChangeCheck();
+                        string newValue = TextField(position, label, property.guidValue.ToString());
+                        if (EndChangeCheck())
+                        {
+                            property.guidValue = new GUID(newValue);
                         }
                         break;
                     }

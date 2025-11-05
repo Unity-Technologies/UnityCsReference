@@ -74,7 +74,7 @@ namespace Unity.GraphToolkit.Editor
             endAction.SetUp(graphObject, template, endActionCallback);
 
             ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
-                graphObject.GetInstanceID(),
+                graphObject.GetEntityId(),
                 endAction,
                 $"{path}/{template.NewAssetName}.{template.GraphFileExtension}",
                 AssetPreview.GetMiniThumbnail(graphObject),

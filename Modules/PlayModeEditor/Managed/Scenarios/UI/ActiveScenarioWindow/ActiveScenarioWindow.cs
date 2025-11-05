@@ -20,6 +20,8 @@ class ActiveScenarioWindow : EditorWindow
     const string k_DescriptionLabelClassName = "unity-active-scenario__description-label";
     const string k_EditButtonClassName = "unity-active-scenario__edit-button";
     const string k_ContentClassName = "unity-active-scenario__content";
+    private const float k_WindowMinWidth = 275f;
+    private const float k_WindowMinHeight = 400f;
 
     internal static void OpenWindow()
     {
@@ -29,6 +31,7 @@ class ActiveScenarioWindow : EditorWindow
     void OnEnable()
     {
         titleContent = new GUIContent(k_WindowTitle);
+        minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
         ScenarioManagerProvider.instance.ConfigAssetChanged -= Refresh;
         ScenarioManagerProvider.instance.ConfigAssetChanged += Refresh;
     }

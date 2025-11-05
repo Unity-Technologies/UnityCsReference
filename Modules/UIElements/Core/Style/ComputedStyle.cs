@@ -187,5 +187,12 @@ namespace UnityEngine.UIElements
             var to = filter.keyword == StyleKeyword.Initial ? InitialStyle.filter : filter.value;
             return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.visualData.Read().filter, to, durationMs, delayMs, easingCurve);
         }
+
+        public static bool StartAnimationInlineFilter(VisualElement element, ref ComputedStyle computedStyle, StyleMaterialDefinition matDef, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            var to = matDef.keyword == StyleKeyword.Initial ? InitialStyle.unityMaterial : matDef.value;
+            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.inheritedData.Read().unityMaterial, to, durationMs, delayMs, easingCurve);
+        }
+
     }
 }

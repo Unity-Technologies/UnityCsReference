@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Modules;
+using UnityEngine;
 using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
 
 namespace UnityEditor.Build.Profile.Elements

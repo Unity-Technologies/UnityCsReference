@@ -984,7 +984,7 @@ namespace UnityEngine.Events
             if (!method.IsStatic)
             {
                 var obj = targetObj as Object;
-                if (obj == null || obj.GetInstanceID() == 0)
+                if (obj == null || obj.GetEntityId() == EntityId.None)
                 {
                     throw new ArgumentException(
                         string.Format(

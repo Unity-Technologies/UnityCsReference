@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using Unity.EntitiesLike;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -418,8 +419,8 @@ namespace UnityEditor.UIElements
             {
                 // Missing asset reference fields will throw an exception because we're trying to write an Object,
                 // so we have to leave the old value as is.
-                var instanceID = obj.GetInstanceID();
-                if (!obj && instanceID != 0)
+                var entityId = obj.GetEntityId();
+                if (!obj && entityId != EntityId.None)
                 {
                     return;
                 }

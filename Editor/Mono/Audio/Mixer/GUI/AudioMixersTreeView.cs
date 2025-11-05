@@ -213,7 +213,7 @@ namespace UnityEditor
             if (m_Mixers.Count > 0)
             {
                 // First create a tree view item for each controller
-                var roots = m_Mixers.Select(mixer => new AudioMixerItem(mixer.GetInstanceID(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer))).ToList();
+                var roots = m_Mixers.Select(mixer => new AudioMixerItem(mixer.GetEntityId(), 0, m_RootItem, mixer.name, mixer, GetInfoText(mixer))).ToList();
 
                 // Rearrange items to a tree based on output mixer group
                 foreach (var item in roots)
@@ -244,7 +244,7 @@ namespace UnityEditor
             if (item.mixer.outputAudioMixerGroup != null)
             {
                 var parentMixer = item.mixer.outputAudioMixerGroup.audioMixer;
-                var parentItem = TreeViewUtility<EntityId>.FindItemInList(parentMixer.GetInstanceID(), items) as AudioMixerItem;
+                var parentItem = TreeViewUtility<EntityId>.FindItemInList(parentMixer.GetEntityId(), items) as AudioMixerItem;
                 if (parentItem != null)
                 {
                     parentItem.AddChild(item);
@@ -439,7 +439,7 @@ namespace UnityEditor
         protected override void RenameEnded()
         {
             string name = string.IsNullOrEmpty(GetRenameOverlay().name) ? GetRenameOverlay().originalName : GetRenameOverlay().name;
-            int instanceID = GetRenameOverlay().userData;
+            EntityId entityId = GetRenameOverlay().userData;
             bool isCreating = GetCreateAssetUtility().IsCreatingNewAsset();
             bool userAccepted = GetRenameOverlay().userAcceptedRename;
 
@@ -454,7 +454,7 @@ namespace UnityEditor
                 else
                 {
                     // Rename an existing asset
-                    ObjectNames.SetNameSmartWithInstanceID(instanceID, name);
+                    ObjectNames.SetNameSmartWithEntityId(entityId, name);
                 }
             }
             else if (isCreating)
@@ -499,7 +499,7 @@ namespace UnityEditor
             string resourceFileData = string.Empty;
             var selectedItem = GetSelectedItem();
             if (selectedItem != null && selectedItem.mixer.outputAudioMixerGroup != null)
-                resourceFileData = selectedItem.mixer.outputAudioMixerGroup.GetInstanceID().ToString();
+                resourceFileData = selectedItem.mixer.outputAudioMixerGroup.GetEntityId().ToString();
 
             int instanceID = 0;
 

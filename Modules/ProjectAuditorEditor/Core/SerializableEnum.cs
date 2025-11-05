@@ -10,10 +10,16 @@ using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
+    /// <summary>
+    /// A wrapper to enable serialization of enums
+    /// </summary>
     [Serializable]
     public struct SerializableEnum<T> : IEquatable<T>, IEquatable<SerializableEnum<T>>, ISerializationCallbackReceiver
             where T : struct, Enum
     {
+        /// <summary>
+        /// Creates a new SerializableEnum.
+        /// </summary>
         public SerializableEnum(T value) : this()
         {
             m_Value = value;
@@ -24,43 +30,67 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         private T m_Value;
 
+        /// <summary>
+        /// The value of this enum.
+        /// </summary>
         public T Value
         {
             get { return m_Value; }
             set { m_Value = value; }
         }
 
+        /// <summary>
+        /// Called prior to serialization.
+        /// </summary>
         public void OnBeforeSerialize()
         {
             m_String = m_Value.ToString();
         }
 
+        /// <summary>
+        /// Called after deserialization.
+        /// </summary>
         public void OnAfterDeserialize()
         {
             if (Enum.TryParse(m_String, out T value))
                 m_Value = value;
         }
 
+        /// <summary>
+        /// Implicit operator.
+        /// </summary>
         public static implicit operator T(SerializableEnum<T> obj)
         {
             return obj.m_Value;
         }
 
+        /// <summary>
+        /// Generic implicit operator.
+        /// </summary>
         public static implicit operator SerializableEnum<T>(T value)
         {
             return new SerializableEnum<T>(value);
         }
 
+        /// <summary>
+        /// Equals operator.
+        /// </summary>
         public bool Equals(T other)
         {
             return m_Value.Equals(other);
         }
 
+        /// <summary>
+        /// Equals operator.
+        /// </summary>
         public bool Equals(SerializableEnum<T> other)
         {
             return m_Value.Equals(other.m_Value);
         }
 
+        /// <summary>
+        /// Equals operator.
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj is SerializableEnum<T> other)

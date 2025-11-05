@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
+    [Serializable]
     class LocalInstanceController : PlayModeController
     {
         [SerializeReference] private LocalInstanceDescription m_Settings;
@@ -38,7 +39,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // TODO: UUM-50144 - There is currently a bug in windows dedicated server where screen related
             // arguments cause a crash. As a temporary workaround we detect that case and remove any
             // of those arguments that, in any case, take no effect on that platform.
-            var arguments = m_Settings.AdvancedConfiguration.Arguments;
+            var arguments = m_Settings.GetCurrentModeArguments();
             if (InternalUtilities.IsServerProfile(m_Settings.BuildProfile))
             {
                 arguments = CleanupScreenArguments(arguments);

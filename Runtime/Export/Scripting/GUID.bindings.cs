@@ -5,11 +5,15 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditor
+namespace UnityEngine
 {
     [Serializable]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [MovedFrom(true, "UnityEditor", "UnityEditor")]
     [NativeHeader("Runtime/Utilities/GUID.h")]
     public partial struct GUID : IComparable, IComparable<GUID>, IEquatable<GUID>
     {

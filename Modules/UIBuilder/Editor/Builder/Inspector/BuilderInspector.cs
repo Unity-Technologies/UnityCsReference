@@ -13,9 +13,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
-using UnityEditor.UIElements.Debugger;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEditor.UIElements.Bindings;
 
 namespace Unity.UI.Builder
 {
@@ -791,7 +789,6 @@ namespace Unity.UI.Builder
                 return;
             }
 
-
             if (isAttribute)
             {
                 var value = currentVisualElement.GetValueByReflection(attributeName);
@@ -823,6 +820,13 @@ namespace Unity.UI.Builder
                 {
                     var filterStyleField = field.GetFirstAncestorOfType<FilterStyleField>();
                     styleFields.RefreshStyleField(filterStyleField);
+                }
+                else if (id == StylePropertyId.UnityMaterial)
+                {
+                    var materialStyleField = field as MaterialDefinitionStyleField;
+                    if (materialStyleField == null)
+                        materialStyleField = field.GetFirstAncestorOfType<MaterialDefinitionStyleField>();
+                    styleFields.RefreshStyleField(materialStyleField);
                 }
                 else
                 {

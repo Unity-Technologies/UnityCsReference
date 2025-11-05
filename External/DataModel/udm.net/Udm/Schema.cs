@@ -377,22 +377,26 @@ internal unsafe struct Schema : IEquatable<Schema>
         return GetFieldByNameInternalUnsafe(hash, bytes);
     }
 
-    private SchemaFieldImpl* GetFieldByNameInternalUnsafe(uint fieldNameHash, ReadOnlySpan<byte> fieldName)
-    {
-        ReadOnlySpan<SchemaFieldImpl> fields = GetFieldsInternalUnsafe();
-        ReadOnlySpan<SchemaFieldKeyImpl> fieldKeys = GetFieldKeysInternalUnsafe();
-
-        ReadOnlySpan<SchemaFieldKeyImpl> range = EqualRange(fieldKeys, fieldNameHash);
-        foreach (ref readonly var fieldKey in range)
+        private SchemaFieldImpl* GetFieldByNameInternalUnsafe(uint fieldNameHash, ReadOnlySpan<byte> fieldName)
         {
-            ref readonly var field = ref fields[(int)fieldKey.Index];
-            if (field.Name.AsReadOnlySpan().SequenceEqual(fieldName))
-            {
-            }
-        }
+            ReadOnlySpan<SchemaFieldImpl> fields = GetFieldsInternalUnsafe();
+            ReadOnlySpan<SchemaFieldKeyImpl> fieldKeys = GetFieldKeysInternalUnsafe();
 
-        return null;
-    }
+            ReadOnlySpan<SchemaFieldKeyImpl> range = EqualRange(fieldKeys, fieldNameHash);
+            foreach (ref readonly var fieldKey in range)
+            {
+                ref readonly var field = ref fields[(int)fieldKey.Index];
+                if (field.Name.AsReadOnlySpan().SequenceEqual(fieldName))
+                {
+                    fixed (SchemaFieldImpl* fieldRef = &field)
+                    {
+                        return fieldRef;
+                    }
+                }
+            }
+
+            return null;
+        }
 
     private static ReadOnlySpan<SchemaFieldKeyImpl> EqualRange(ReadOnlySpan<SchemaFieldKeyImpl> fieldKeys, uint fieldNameHash)
     {

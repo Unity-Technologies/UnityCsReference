@@ -285,10 +285,10 @@ namespace UnityEditor.Search
             return other is SearchItem l && Equals(l);
         }
 
-        internal int GetInstanceId()
+        internal EntityId GetEntityId()
         {
-            if (provider != null && provider.toInstanceId != null)
-                return provider.toInstanceId(this);
+            if (provider != null && provider.toEntityId != null)
+                return provider.toEntityId(this);
             return id.GetHashCode();
         }
 

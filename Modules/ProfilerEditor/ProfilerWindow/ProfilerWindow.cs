@@ -111,9 +111,15 @@ namespace UnityEditor
         const string k_UxmlIdentifier_ChartsViewContainer = "profiler-view__charts-view-container";
         const string k_UxmlIdentifier_DetailsViewContainer = "profiler-view__details-view-container";
         const string k_MainSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.MainSplitView.FixedPaneSize";
+        const string k_CapturesSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.CapturesSplitView.FixedPaneSize";
+        const string k_CapturesSplitViewToggleIsVisibleStatePreferenceKey = "ProfilerWindow.CapturesSplitView.ToggleState";
         const int k_NoModuleSelected = -1;
         const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
         const string k_DynamicModulesPreferenceKey = "ProfilerWindow.DynamicModules";
+        const string k_FrameSelectionRangeStartKey = "ProfilerWindow.FrameSelectionRangeStart";
+        const string k_FrameSelectionRangeEndKey = "ProfilerWindow.FrameSelectionRangeEnd";
+        const string k_BottlenecksChartIsSelected = "ProfilerWindow.BottlenecksChartIsSelected";
+        const int k_NoFrameSelectionSession = -99;
 
         static readonly Vector2 k_MinimumWindowSize = new Vector2(900f, 216f);
         // the minimum width required to draw all the buttons on the toolbar. This is used to truncate the active connection name.
@@ -199,6 +205,7 @@ namespace UnityEditor
         // Captures list
         CapturesListViewController m_CapturesListViewController;
         VisualElement m_CapturesListViewContainer;
+        TwoPaneSplitView m_CapturesListSplitView;
         CaptureDataService m_CaptureDataService;
         ScreenshotsManager m_ScreenshotsManager;
         string m_CurrentLoadedCaptureFile;
@@ -213,9 +220,9 @@ namespace UnityEditor
                 m_CurrentLoadedCaptureFile = value;
                 if (string.IsNullOrEmpty(m_CurrentLoadedCaptureFile))
                 {
-                    // We already refresh when a capture is loaded, so
+                    // We already mark this when a capture is loaded, so
                     // only do it here if one is being cleared/changed.
-                    m_CapturesListViewController.RefreshView();
+                    m_CaptureDataService.LoadedCapturesHaveChanged();
                 }
             }
         }
@@ -281,7 +288,26 @@ namespace UnityEditor
         // At the time of writing, this is only used by the Highlights module to support range
         // selection. Over time, users of selectedFrameIndex can be migrated to support a
         // range selection before updating the public API.
-        internal Range? SelectedFrameRange { get; set; }
+        private Range? m_SelectedFrameRange;
+
+        internal Range? SelectedFrameRange
+        {
+            get
+            {
+                if (m_SelectedFrameRange == null && ProfilerHasAnyFrames())
+                {
+                    // SessionState doesn't appear to have a "HasKey", so try getting with an invalid default.
+                    var rangeStart = SessionState.GetInt(k_FrameSelectionRangeStartKey, k_NoFrameSelectionSession);
+                    var rangeEnd = SessionState.GetInt(k_FrameSelectionRangeEndKey, k_NoFrameSelectionSession);
+
+                    if (rangeStart != k_NoFrameSelectionSession)
+                        m_SelectedFrameRange = new Range(rangeStart, rangeEnd);
+                }
+
+                return m_SelectedFrameRange;
+            }
+            set => m_SelectedFrameRange = value;
+        }
 
         // these properties act as a redirect to ProfilerDriver for now.
         // Once the Profiler Window isn't so tightly coupled to the ProfilerDriver singleton anymore, they will relate just the data stream displayed in this instance.
@@ -431,7 +457,15 @@ namespace UnityEditor
             if (moduleIndexToSelect != k_NoModuleSelected)
                 SelectModuleAtIndex(moduleIndexToSelect);
             else
-                SelectFirstActiveModule();
+            {
+                // If we were looking at the highlights/bottlenecks view and had a domain reload, refocus it
+                if (SessionState.GetBool(k_BottlenecksChartIsSelected, false) && ProfilerHasAnyFrames())
+                {
+                    ((BottlenecksChartViewController.IResponder)this).ChartViewSelectedFrameRange(SelectedFrameRange);
+                }
+                else
+                    SelectFirstActiveModule();
+            }
         }
 
         void OnDisable()
@@ -632,10 +666,15 @@ namespace UnityEditor
             SetBottleneckViewVisible(bottleneckViewVisible);
 
             m_CaptureDataService = new CaptureDataService(this);
-            m_ScreenshotsManager = new ScreenshotsManager(dataService);
+            m_ScreenshotsManager = new ScreenshotsManager();
             m_CapturesListViewController = new CapturesListViewController(this, m_CaptureDataService, m_ScreenshotsManager);
             m_CapturesListViewContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_CapturesListViewContainer);
+            m_CapturesListSplitView = (TwoPaneSplitView)m_CapturesListViewContainer.parent;
+            // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
+            var capturePaneSize = EditorPrefs.GetFloat(k_CapturesSplitViewFixedPaneSizePreferenceKey, 270);
+            m_CapturesListSplitView.fixedPaneInitialDimension = capturePaneSize;
             m_CapturesListViewContainer.Add(m_CapturesListViewController.View);
+            ShowCapturesList(EditorPrefs.GetBool(k_CapturesSplitViewToggleIsVisibleStatePreferenceKey, true));
 
             m_ChartsIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UxmlIdentifier_ChartsViewContainer);
             m_ChartsIMGUIContainer.onGUIHandler = DoLegacyChartsGUI;
@@ -798,9 +837,21 @@ namespace UnityEditor
                 module.SaveViewSettings();
             }
 
-            if (MainSplitView.fixedPane != null)
+            if (MainSplitView.fixedPane is { resolvedStyle: not null } && !float.IsNaN(MainSplitView.fixedPane.resolvedStyle.height))
                 EditorPrefs.SetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, MainSplitView.fixedPane.resolvedStyle.height);
+
+            if (m_CapturesListSplitView is { resolvedStyle: not null } && !float.IsNaN(m_CapturesListSplitView.resolvedStyle.width) &&
+                m_CapturesListSplitView.fixedPane.style.display != DisplayStyle.None)
+                EditorPrefs.SetFloat(k_CapturesSplitViewFixedPaneSizePreferenceKey, m_CapturesListSplitView.fixedPane.resolvedStyle.width);
+
             SessionState.SetInt(k_SelectedModuleIndexPreferenceKey, m_SelectedModuleIndex);
+
+            // Don't go via accessor, since we save view on shutdown - at which point ProfilerDriver is
+            // no longer around, and the accessor makes use of that with ProfilerHasAnyFrames.
+            SessionState.SetInt(k_FrameSelectionRangeStartKey, m_SelectedFrameRange == null ? k_NoFrameSelectionSession : m_SelectedFrameRange.Value.Start.Value);
+            SessionState.SetInt(k_FrameSelectionRangeEndKey, m_SelectedFrameRange == null ? k_NoFrameSelectionSession : m_SelectedFrameRange.Value.End.Value);
+
+            SessionState.SetBool(k_BottlenecksChartIsSelected, IsBottleneckViewVisible());
         }
 
         void Awake()
@@ -1173,22 +1224,23 @@ namespace UnityEditor
 
             // Sanitise the product name
             var invalidChars = Path.GetInvalidFileNameChars();
-            StringBuilder prodNameSanitised = new StringBuilder(prodName);
-            for (int i = 0; i < invalidChars.Length; i++)
-            {
-                prodNameSanitised.Replace(invalidChars[i], '_');
-            }
+            var prodNameSanitised = new StringBuilder(prodName);
+            foreach (var t in invalidChars)
+                prodNameSanitised.Replace(t, '_');
 
-            string selected = $"{ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath}/{prodNameSanitised}_{dateString}.data";
-            if (selected.Length != 0)
+            var filePath = $"{ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath}/{prodNameSanitised}_{dateString}.data";
+            if (filePath.Length != 0)
             {
-                EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
-                if (ProfilerDriver.SaveProfile(selected))
+                EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, filePath);
+                if (ProfilerDriver.SaveProfile(filePath))
                 {
                     // Saving the .data was successful, now save the bottleneck data and screenshot
-                    m_BottlenecksChartViewController.SaveBottleneckInfo(selected);
-                    m_ScreenshotsManager.WriteOutTempScreenshot(selected);
-                    CurrentLoadedCaptureFile = selected;
+                    m_BottlenecksChartViewController.SaveHighlightsInfo(filePath);
+                    // If we fail to find screenshot data, try once with the previous frame,
+                    // in case the last one was cut short mid-write.
+                    if (!m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex))
+                        m_ScreenshotsManager.WriteOutMostRecentScreenshot(filePath, ProfilerDriver.lastFrameIndex - 1);
+                    CurrentLoadedCaptureFile = filePath;
                     m_CaptureDataService.SetCapturesFolderDirty();
                 }
             }
@@ -1231,10 +1283,18 @@ namespace UnityEditor
 
             // If there's an existing screenshot, start with that. If the user adds to this capture and saves,
             // it'll be better to have the old screenshot to show than nothing.
-            m_ScreenshotsManager.ReadInOrReset(path);
+            if (!m_ScreenshotsManager.ReadInOrReset(path))
+            {
+                // If there's no screenshot already written out, search the metadata.
+                // If we fail to find screenshot data, try once with the previous frame,
+                // in case the last one was cut short mid-write.
+                if (!m_ScreenshotsManager.WriteOutMostRecentScreenshot(path, ProfilerDriver.lastFrameIndex))
+                    m_ScreenshotsManager.WriteOutMostRecentScreenshot(path, ProfilerDriver.lastFrameIndex - 1);
+            }
 
-            // If the serialised bottleneck data hadn't been saved, do so now.
-            m_BottlenecksChartViewController.SaveBottleneckInfo(path);
+            // Update the serialised highlights data.
+            if (m_BottlenecksChartViewController.SaveHighlightsInfo(path))
+                m_CaptureDataService.SetCapturesFolderDirty();
         }
 
         internal void SetRecordingEnabled(bool profilerEnabled)
@@ -1343,16 +1403,26 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
+        void ShowCapturesList(bool visible)
+        {
+            if (visible)
+                m_CapturesListSplitView.UnCollapse();
+            else
+            {
+                if (!float.IsNaN(m_CapturesListSplitView.resolvedStyle.width))
+                    EditorPrefs.SetFloat(k_CapturesSplitViewFixedPaneSizePreferenceKey, m_CapturesListSplitView.fixedPane.resolvedStyle.width);
+                m_CapturesListSplitView.CollapseChild(0);
+            }
+
+            EditorPrefs.SetBool(k_CapturesSplitViewToggleIsVisibleStatePreferenceKey, visible);
+        }
+
         void DrawShowHideCapturesView()
         {
             if (GUILayout.Button(Styles.showHideCaptures, EditorStyles.toolbarButtonLeft, Styles.buttonWidthOption))
             {
-                var splitView = (TwoPaneSplitView)m_CapturesListViewContainer.parent;
-
-                if (splitView.fixedPane.style.display == DisplayStyle.None)
-                    splitView.UnCollapse();
-                else
-                    splitView.CollapseChild(0);
+                // Toggle based on existing visibility
+                ShowCapturesList(m_CapturesListSplitView.fixedPane.style.display == DisplayStyle.None);
             }
         }
 
@@ -1459,7 +1529,7 @@ namespace UnityEditor
             float maxWidth, minWidth;
             EditorStyles.toolbarLabel.CalcMinMaxWidth(frameCountLabel, out minWidth, out maxWidth);
             if (minWidth > m_FrameCountLabelMinWidth)
-                // to avoid increasing the size in too fine graned intervals, add a 10 pixel buffer.
+                // to avoid increasing the size in too fine-grained intervals, add a 10 pixel buffer.
                 m_FrameCountLabelMinWidth = minWidth + 10;
             GUILayout.Label(frameCountLabel, EditorStyles.toolbarLabel, GUILayout.MinWidth(m_FrameCountLabelMinWidth));
         }
@@ -2117,6 +2187,35 @@ namespace UnityEditor
                 SelectedFrameIndexChanged?.Invoke(selectedFrameIndex);
                 m_LastReportedSelectedFrameRange = SelectedFrameRange;
             }
+        }
+
+        static string NormalizePath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            return Path.GetFullPath(new Uri(path).LocalPath)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .ToUpperInvariant();
+        }
+
+        static bool IsSamePath(string path1, string path2)
+        {
+            return NormalizePath(path1) == NormalizePath(path2);
+        }
+
+        internal bool CaptureFileIsOpen(string path)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(m_CurrentLoadedCaptureFile))
+                return false;
+
+            return IsSamePath(path, m_CurrentLoadedCaptureFile);
+        }
+
+        internal void CaptureRenamed(string sourceFilePath, string targetFilePath)
+        {
+            if (CaptureFileIsOpen(sourceFilePath))
+                CurrentLoadedCaptureFile = targetFilePath;
         }
 
         long IProfilerWindowController.selectedFrameIndex { get => selectedFrameIndex; set => selectedFrameIndex = value; }

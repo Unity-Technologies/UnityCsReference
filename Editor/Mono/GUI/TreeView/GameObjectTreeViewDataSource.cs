@@ -672,7 +672,7 @@ namespace UnityEditor
                         var transform = subSceneInfo.transform;
                         GameObject gameObject = transform.gameObject;
                         int depth = SubSceneGUI.CalculateHierarchyDepthOfSubScene(subSceneInfo);
-                        InitTreeViewItem(item, gameObject.GetInstanceID(), subSceneInfo.scene, false, 0, gameObject, false, depth);
+                        InitTreeViewItem(item, gameObject.GetEntityId(), subSceneInfo.scene, false, 0, gameObject, false, depth);
                         m_StickySceneHeaderItems.Add(item);
                     }
                     else

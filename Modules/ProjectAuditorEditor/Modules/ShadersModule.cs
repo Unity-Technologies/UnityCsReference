@@ -430,7 +430,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
                         }));
                 }
             }
-            if (issues.Any())
+            if (issues.Count > 0)
                 analysisParams.OnIncomingIssues(issues);
         }
 

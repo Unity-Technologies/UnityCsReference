@@ -431,7 +431,7 @@ namespace UnityEditor.Search
             for (int index = 0; index < results.Count; index++)
             {
                 var item = results[index];
-                if (Array.IndexOf(viewState.selectedIds, item.GetInstanceId()) != -1)
+                if (Array.IndexOf(viewState.selectedIds, item.GetEntityId()) != -1)
                 {
                     indexesToSelect.Add(index);
                     if (indexesToSelect.Count == viewState.selectedIds.Length)
@@ -460,7 +460,7 @@ namespace UnityEditor.Search
             if (!multiselect && newSelection.Length > 1)
                 newSelection = newSelection.Slice(newSelection.Length - 1, 1);
 
-            var selectedIds = new List<int>();
+            var selectedIds = new List<EntityId>();
             var lastIndexAdded = k_ResetSelectionIndex;
 
             m_Selection.Clear();
@@ -470,7 +470,7 @@ namespace UnityEditor.Search
                 if (!IsItemValid(idx))
                     continue;
 
-                selectedIds.Add(m_FilteredItems[idx].GetInstanceId());
+                selectedIds.Add(m_FilteredItems[idx].GetEntityId());
                 m_Selection.Add(idx);
                 lastIndexAdded = idx;
             }

@@ -48,7 +48,7 @@ namespace UnityEditor.Search.Providers
 
             toObject = (item, type) => ObjectFromItem(item, type);
             toKey = (item) => ToKey(item);
-            toInstanceId = (item) => GetItemInstanceId(item);
+            toEntityId = (item) => GetItemInstanceId(item);
 
             fetchItems = (context, items, provider) => SearchItems(context, provider);
 
@@ -393,7 +393,7 @@ namespace UnityEditor.Search.Providers
         private int GetItemInstanceId(SearchItem item)
         {
             var obj = ObjectFromItem(item);
-            return obj.GetInstanceID();
+            return obj.GetEntityId();
         }
 
         private static GameObject ObjectFromItem(in SearchItem item)

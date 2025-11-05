@@ -17,7 +17,7 @@ class AudioContainerElementClipField : ObjectField
         public override object CreateInstance() => new AudioContainerElementClipField();
     }
 
-    public int AssetElementInstanceID { get; set; }
+    public EntityId AssetElementEntityId { get; set; }
     public double Progress
     {
         get => m_Progress;

@@ -68,22 +68,13 @@ internal static class SerializeUtilities
 
     private static ref byte GetBasePointerObject<T>(ref T data)
     {
-        var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-        unsafe
-        {
-            byte* ptr = (byte*)handle.AddrOfPinnedObject().ToPointer();
-            return ref *ptr;
-        }
+        return ref UnsafeHelper.As<T, byte>(ref data);
     }
 
     private static ref byte GetBasePointerContent<T>(ref T data)
     {
-        var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-        unsafe
-        {
-            byte* ptr = (byte*)handle.AddrOfPinnedObject().ToPointer();
-            return ref *ptr;
-        }
+        ref ByteWrapper byteWrapper = ref UnsafeHelper.As<T, ByteWrapper>(ref data);
+        return ref byteWrapper.firstByte;
     }
 
     internal static ref byte GetBasePointerForUdm<T>(ref T data)

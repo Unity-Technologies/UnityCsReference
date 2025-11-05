@@ -48,5 +48,15 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
         }
+
+        protected override TextShadowField CreateValueField()
+        {
+            return new TextShadowField();
+        }
+
+        protected override StyleTextShadow CreateStyleValue(TextShadow v)
+        {
+            return v;
+        }
     }
 }

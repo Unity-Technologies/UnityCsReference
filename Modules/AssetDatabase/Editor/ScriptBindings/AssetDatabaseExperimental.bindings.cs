@@ -99,7 +99,10 @@ namespace UnityEditor.Experimental
             Poll = 2
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern ImporterID GetImporterID(Type importerType);
+        
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         internal static extern Type ImporterIDToImporterType(ImporterID importerID);
 
         internal static ArtifactKey CreateArtifactKey(GUID guid) { return CreateImportAddress_Primary(guid); }
@@ -108,7 +111,10 @@ namespace UnityEditor.Experimental
 
         // Needed because bindings don't support overloads 
         // https://internaldocs.unity.com/editor_and_runtime_development_guide/Runtime/Core/marshalling/faq/#do-overloaded-methods-work
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private static extern ArtifactKey CreateImportAddress_Primary(GUID guid);
+        
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private static extern ArtifactKey CreateImportAddress_Full(GUID guid, Type importerType);
 
         public struct AssetDatabaseCounters
@@ -162,6 +168,7 @@ namespace UnityEditor.Experimental
             }
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static AssetDatabaseCounters GetCounters();
         public static AssetDatabaseCounters counters => GetCounters();
 
@@ -169,27 +176,45 @@ namespace UnityEditor.Experimental
         private extern static void CacheServerCountersResetDeltas();
 
         [FreeFunction("ImportCountersResetDeltas")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static void ImportCountersResetDeltas();
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static OnDemandMode ActiveOnDemandMode
         {
-            [FreeFunction("GetOnDemandModeV2")] get;
-            [FreeFunction("SetOnDemandModeV2")] set;
+            [FreeFunction("GetOnDemandModeV2")] 
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
+            get;
+            [FreeFunction("SetOnDemandModeV2")]
+            [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
+            set;
         }
+
         [NativeHeader("Modules/AssetDatabase/Editor/V2/Virtualization/Virtualization.h")]
         internal extern static bool VirtualizationEnabled
         {
-            [FreeFunction("Virtualization_IsEnabled")] get;
+            [FreeFunction("Virtualization_IsEnabled")] 
+            get;
         }
 
         [FreeFunction("AssetDatabaseExperimental::LookupArtifact")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static ImportResultID _LookupArtifact(ArtifactKey artifactKey);
         public static ImportResultID LookupArtifact(ArtifactKey artifactKey) => _LookupArtifact(artifactKey);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static ImportResultID ProduceArtifact(ArtifactKey artifactKey);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static ImportResultID ProduceArtifactAsync(ArtifactKey artifactKey);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static ImportResultID[] ProduceArtifactsAsync(GUID[] artifactKey, [uei.DefaultValue("null")] Type importerType = null);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static ImportResultID ForceProduceArtifact(ArtifactKey artifactKey);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void LookupArtifacts(IntPtr guidsPtr, IntPtr hashesPtr, int len, [uei.DefaultValue("null")] Type importerType = null);
         public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ImportResultID> hashes, Type importerType)
         {
@@ -199,6 +224,7 @@ namespace UnityEditor.Experimental
             LookupArtifacts((IntPtr)guids.GetUnsafePtr(), (IntPtr)hashes.GetUnsafePtr(), guids.Length, importerType);
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         extern internal static void LookupPrimaryArtifacts(IntPtr guidsPtr, IntPtr hashesPtr, int len);
         public unsafe static void LookupArtifacts(NativeArray<GUID> guids, NativeArray<ImportResultID> hashesOut)
         {
@@ -247,8 +273,10 @@ namespace UnityEditor.Experimental
             throw new NotImplementedException();
         }
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static string[] GetArtifactPathsImpl(ImportResultID hash, out bool success);
 
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         public extern static OnDemandProgress GetOnDemandArtifactProgress(ArtifactKey artifactKey);
 
         [Obsolete("GetOnDemandArtifactProgress(string) has been removed. Use GetOnDemandArtifactProgress(ArtifactKey) instead.", true)]
@@ -264,7 +292,9 @@ namespace UnityEditor.Experimental
         }
 
         [FreeFunction("AssetDatabase::GetArtifactStaticDependencyHash")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kCodeReload, PreventExecutionSeverity.PreventExecution_ManagedException, AssetDatabase.kPreventExecutionDuringCodeReloadHowToFixMsg)]
         private extern static Hash128 _GetArtifactStaticDependencyHash(ImportResultID importResultID);
+        
         internal static Hash128 GetArtifactStaticDependencyHash(ImportResultID importResultID) => _GetArtifactStaticDependencyHash(importResultID);
     }
 }

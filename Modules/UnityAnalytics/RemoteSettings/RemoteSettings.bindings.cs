@@ -23,6 +23,7 @@ namespace UnityEngine
         public static event Action BeforeFetchFromServer;
         public static event Action<bool, bool, int> Completed;
 
+        [Preserve]
         [RequiredByNativeCode]
         internal static void RemoteSettingsUpdated(bool wasLastUpdatedFromServer)
         {
@@ -31,6 +32,7 @@ namespace UnityEngine
                 handler();
         }
 
+        [Preserve]
         [RequiredByNativeCode]
         internal static void RemoteSettingsBeforeFetchFromServer()
         {
@@ -39,6 +41,7 @@ namespace UnityEngine
                 handler();
         }
 
+        [Preserve]
         [RequiredByNativeCode]
         internal static void RemoteSettingsUpdateCompleted(bool wasLastUpdatedFromServer, bool settingsChanged, int response)
         {
@@ -176,6 +179,7 @@ namespace UnityEngine
         [ThreadSafe]
         internal static extern void Internal_Destroy(IntPtr ptr);
 
+        [Preserve]
         [RequiredByNativeCode]
         internal static void RemoteConfigSettingsUpdated(RemoteConfigSettings rcs, bool wasLastUpdatedFromServer)
         {
@@ -275,6 +279,7 @@ namespace UnityEngine
 
     internal static class RemoteConfigSettingsHelper
     {
+        [Preserve]
         [RequiredByNativeCode]
         internal enum Tag
         {

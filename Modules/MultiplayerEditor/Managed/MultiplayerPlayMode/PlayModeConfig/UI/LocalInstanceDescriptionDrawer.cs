@@ -96,10 +96,51 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private VisualElement CreateAdvancedConfigurationField(SerializedProperty instanceProperty)
         {
             var advancedConfigProp = instanceProperty.FindPropertyRelative("advancedConfiguration");
-            var advancedConfigField = new PropertyField(advancedConfigProp);
-            advancedConfigField.Bind(instanceProperty.serializedObject);
+            var container = new Foldout();
+            container.AddToClassList("unity-base-field__aligned");
+            container.text = "Advanced Configuration";
 
-            return advancedConfigField;
+            var streamLogsProp = advancedConfigProp.FindPropertyRelative("m_StreamLogsToMainEditor");
+            var streamLogsField = new PropertyField(streamLogsProp);
+            streamLogsField.Bind(instanceProperty.serializedObject);
+            container.Add(streamLogsField);
+
+            var logsColorProp = advancedConfigProp.FindPropertyRelative("m_LogsColor");
+            var logsColorField = new PropertyField(logsColorProp);
+            logsColorField.Bind(instanceProperty.serializedObject);
+            container.Add(logsColorField);
+
+            // Add Arguments based on current deploy mode
+            var argumentsContainer = new VisualElement();
+            var serverSettingsProp = instanceProperty.FindPropertyRelative("m_ServerSettings");
+            var deployModeProp = serverSettingsProp.FindPropertyRelative("DeployMode");
+
+            UpdateArgumentsBasedOnDeployMode(argumentsContainer, advancedConfigProp, deployModeProp, instanceProperty);
+
+            argumentsContainer.TrackPropertyValue(deployModeProp, _ => {
+                argumentsContainer.Clear();
+                UpdateArgumentsBasedOnDeployMode(argumentsContainer, advancedConfigProp, deployModeProp, instanceProperty);
+            });
+
+            container.Add(argumentsContainer);
+
+            return container;
+        }
+
+        private void UpdateArgumentsBasedOnDeployMode(VisualElement container, SerializedProperty advancedConfigProp, SerializedProperty deployModeProp, SerializedProperty instanceProperty)
+        {
+            var deployMode = (ServerSettings.ServerDeployMode)deployModeProp.enumValueIndex;
+            var argumentsProp = deployMode switch
+            {
+                ServerSettings.ServerDeployMode.Local => advancedConfigProp.FindPropertyRelative("m_LocalArguments"),
+                ServerSettings.ServerDeployMode.Simulated => advancedConfigProp.FindPropertyRelative("m_SimulatedArguments"),
+                _ => advancedConfigProp.FindPropertyRelative("m_LocalArguments")
+            };
+
+            if (argumentsProp == null) return;
+            var argumentsField = new PropertyField(argumentsProp) { label = "Arguments" };
+            argumentsField.Bind(instanceProperty.serializedObject);
+            container.Add(argumentsField);
         }
 
         private VisualElement CreateServerSettingsField(SerializedProperty instanceProperty, TextField roleField)

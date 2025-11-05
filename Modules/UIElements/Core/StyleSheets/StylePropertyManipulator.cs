@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements.Layout;
@@ -926,6 +927,153 @@ namespace UnityEngine.UIElements
                     ? new FilterFunction(filterFunctionDefinition, parameters, parameterCount)
                     : new FilterFunction(filterFunctionType, parameters, parameterCount);
                 return true;
+            }
+
+            void WriteMaterialPropertyValue(MaterialPropertyValue value, int index)
+            {
+                switch (value.type)
+                {
+                    case MaterialPropertyValueType.Float:
+                        m_StyleSheet.WriteFloat(ref m_Property.values[index++], value.GetFloat());
+                        break;
+                    case MaterialPropertyValueType.Vector:
+                        var v = value.GetVector();
+                        m_StyleSheet.WriteFloat(ref m_Property.values[index++], v.x);
+                        m_StyleSheet.WriteFloat(ref m_Property.values[index++], v.y);
+                        m_StyleSheet.WriteFloat(ref m_Property.values[index++], v.z);
+                        m_StyleSheet.WriteFloat(ref m_Property.values[index++], v.w);
+                        break;
+                    case MaterialPropertyValueType.Color:
+                        m_StyleSheet.WriteColor(ref m_Property.values[index++], value.GetColor());
+                        break;
+                    case MaterialPropertyValueType.Texture:
+                        m_StyleSheet.WriteAssetReference(ref m_Property.values[index++], value.textureValue);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            public bool TryGetMaterialPropertyValue(int index, out MaterialPropertyValue value)
+            {
+                value = default;
+
+                // Get the span for the requested value (skipping material ref at index 0)
+                var span = GetValueSpan(index + 1);
+                if (span.length < 4) // Function + ArgCount + Name + at least 1 value
+                    return false;
+
+                // Check that the function is MaterialProperty
+                if (!m_StyleSheet.TryReadFunction(m_Property.values[span.start], out var function) ||
+                    function != StyleValueFunction.MaterialProperty)
+                    return false;
+
+                // Read argument count
+                if (!m_StyleSheet.TryReadFloat(m_Property.values[span.start + 1], out var argCountf))
+                    return false;
+                int argCount = (int)argCountf;
+
+                // Read property name
+                if (!m_StyleSheet.TryReadString(m_Property.values[span.start + 2], out var propertyName))
+                    return false;
+
+                int valueStart = span.start + 3;
+                int valueCount = argCount - 1; // 1 for name
+
+                // Try to read float
+                if (valueCount == 1 && m_StyleSheet.TryReadFloat(m_Property.values[valueStart], out var floatValue))
+                {
+                    value = new MaterialPropertyValue
+                    {
+                        name = propertyName,
+                        type = MaterialPropertyValueType.Float,
+                        packedValue = new Vector4(floatValue, 0, 0, 0)
+                    };
+                    return true;
+                }
+                // Try to read color
+                else if (valueCount == 1 && m_StyleSheet.TryReadColor(m_Property.values[valueStart], out var colorValue))
+                {
+                    value = new MaterialPropertyValue
+                    {
+                        name = propertyName,
+                        type = MaterialPropertyValueType.Color,
+                        packedValue = new Vector4(colorValue.r, colorValue.g, colorValue.b, colorValue.a)
+                    };
+                    return true;
+                }
+                // Try to read vector
+                else if (valueCount == 4 &&
+                    m_StyleSheet.TryReadFloat(m_Property.values[valueStart], out var x) &&
+                    m_StyleSheet.TryReadFloat(m_Property.values[valueStart + 1], out var y) &&
+                    m_StyleSheet.TryReadFloat(m_Property.values[valueStart + 2], out var z) &&
+                    m_StyleSheet.TryReadFloat(m_Property.values[valueStart + 3], out var w))
+                {
+                    value = new MaterialPropertyValue
+                    {
+                        name = propertyName,
+                        type = MaterialPropertyValueType.Vector,
+                        packedValue = new Vector4(x, y, z, w)
+
+                    };
+                    // value.SetVector(new Vector4(x, y, z, w)); // If available
+                    return true;
+                }
+                // Try to read texture
+                else if (valueCount == 1 && m_StyleSheet.TryReadAssetReference(m_Property.values[valueStart], out var textureObj))
+                {
+                    value = new MaterialPropertyValue
+                    {
+                        name = propertyName,
+                        type = MaterialPropertyValueType.Texture,
+                        textureValue = textureObj as Texture
+                    };
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void AddMaterialPropertyValue(MaterialPropertyValue value)
+            {
+                var start = m_Property.values.Length;
+                int argCount = 1 + ArgumentCountForMaterialPropertyValueType(value.type); // Name + Args
+
+                Insert(m_Property, m_Property.values.Length, 2 + argCount); // Function + Arg count + Args
+
+                m_StyleSheet.WriteFunction(ref m_Property.values[start], StyleValueFunction.MaterialProperty);
+                m_StyleSheet.WriteFloat(ref m_Property.values[start + 1], argCount);
+                m_StyleSheet.WriteString(ref m_Property.values[start + 2], value.name);
+
+                WriteMaterialPropertyValue(value, start + 3);
+            }
+
+            public void SetMaterialPropertyValue(int index, MaterialPropertyValue value)
+            {
+                var argCount = ArgumentCountForMaterialPropertyValueType(value.type) + 1; // Name + Args
+                var handleCount = 2 + argCount; // Function + Args count + Args
+                var span = GetValueSpan(index + 1); // Skip material ref
+                ResizeValue(ref span, handleCount);
+
+                m_StyleSheet.WriteFunction(ref m_Property.values[span.start], StyleValueFunction.MaterialProperty);
+                m_StyleSheet.WriteFloat(ref m_Property.values[span.start + 1], argCount);
+                m_StyleSheet.WriteString(ref m_Property.values[span.start + 2], value.name);
+
+                WriteMaterialPropertyValue(value, span.start + 3);
+            }
+
+            public void InsertMaterialPropertyValue(int index, MaterialPropertyValue value)
+            {
+                var argCount = ArgumentCountForMaterialPropertyValueType(value.type) + 1; // Name + Args
+                var handleCount = 2 + argCount; // Function + Args count + Args
+                var span = GetValueSpan(index + 1, true); // Skip material ref
+                Insert(m_Property, span.start, handleCount);
+
+                m_StyleSheet.WriteFunction(ref m_Property.values[span.start], StyleValueFunction.MaterialProperty);
+                m_StyleSheet.WriteFloat(ref m_Property.values[span.start + 1], argCount);
+                m_StyleSheet.WriteString(ref m_Property.values[span.start + 2], value.name);
+
+                WriteMaterialPropertyValue(value, span.start + 3);
             }
 
             public void AddCommaSeparator()

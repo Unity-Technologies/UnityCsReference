@@ -69,7 +69,7 @@ namespace Unity.GraphToolkit.Editor
 
             registrar.RegisterDefaultCommandHandler<AlignNodesCommand>();
             registrar.RegisterDefaultCommandHandler<RenameElementsCommand>();
-            registrar.RegisterDefaultCommandHandler<BypassNodesCommand>();
+            registrar.RegisterDefaultCommandHandler<DeleteAndReconnectCommand>();
             registrar.RegisterDefaultCommandHandler<MoveElementsCommand>();
             registrar.RegisterDefaultCommandHandler<MoveElementsAndBringPlacematToFrontCommand>();
             registrar.RegisterDefaultCommandHandler<AutoPlaceElementsCommand>();

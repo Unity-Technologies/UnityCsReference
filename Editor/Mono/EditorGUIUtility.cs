@@ -966,12 +966,12 @@ namespace UnityEditor
         // Return a GUIContent object with the name and icon of an Object.
         public static GUIContent ObjectContent(UnityObject obj, Type type)
         {
-            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID());
+            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetEntityId());
         }
 
         internal static GUIContent ObjectContent(UnityObject obj, Type type, bool showNullIcon)
         {
-            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID(), showNullIcon);
+            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetEntityId(), showNullIcon);
         }
 
         internal static GUIContent ObjectContent(UnityObject obj, Type type, EntityId instanceID, bool showNullIcon = true)

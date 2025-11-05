@@ -92,6 +92,17 @@ namespace UnityEditor
             return t.rotation;
         }
     }
+    
+    [CustomPivot(k_DisplayName, tooltip = k_Tooltip, priority = CustomPivotAttribute.defaultPriority + 2)]
+    [Icon(k_Icon)]
+    class GridPivotRotation : CustomPivotRotation
+    {
+        const string k_DisplayName = "Grid";
+        const string k_Icon = "GridAnchor";
+        const string k_Tooltip = "Tool handles are in grid's rotation.";
+
+        public override Quaternion rotation => Tools.globalHandleRotation * GridSettings.instance.rotation;
+    }
 
     public static class PivotManager
     {

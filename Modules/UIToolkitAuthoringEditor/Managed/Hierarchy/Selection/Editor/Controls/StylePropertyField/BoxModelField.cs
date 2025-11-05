@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEngine;
@@ -107,7 +108,7 @@ namespace Unity.UIToolkit.Editor
     }
 
     class BoxModelField<TValueType, TControl> : BindableElement
-        where TControl : BaseField<TValueType>, new()
+        where TControl : BaseField<TValueType>
     {
         static readonly string MixedUnitLabel = "mixed";
         static readonly string BoxModelClassName = "unity-box-model";
@@ -158,17 +159,18 @@ namespace Unity.UIToolkit.Editor
 
         public BoxModelField(BoxType boxType, bool needsUnit, VisualElement content,
             VisualElement topFieldContainer, VisualElement bottomFieldContainer,
-            VisualElement leftFieldContainer, VisualElement rightFieldContainer)
+            VisualElement leftFieldContainer, VisualElement rightFieldContainer,
+            Func<TControl> create)
         {
             this.boxType = boxType;
 
             m_CenterContent = content;
             m_CenterContent.AddToClassList(CenterContentClassName);
 
-            m_TopField = new TControl();
-            m_BottomField = new TControl();
-            m_RightField = new TControl();
-            m_LeftField = new TControl();
+            m_TopField = create();
+            m_BottomField = create();
+            m_RightField = create();
+            m_LeftField = create();
 
             m_Fields = new List<BaseField<TValueType>>() { m_TopField, m_BottomField, m_RightField, m_LeftField };
 

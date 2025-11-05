@@ -19,6 +19,11 @@ internal static class EcsComponentSerializer
             if (!componentType.IsZeroSized)
             {
                 byte* componentDataRawRO = (byte*)context.EntityManager.GetComponentDataRawRO(new Entity(entityId), componentType.TypeIndex);
+
+                ref byte objectModelBasePtr = ref UnsafeHelper.AsRef<byte>(componentAccessor.Data.ToPointer());
+                ref byte runtimeComponentPtr = ref UnsafeHelper.AsRef<byte>(componentDataRawRO);
+
+                UdmManagedSerialization.FromLiveToObjModel(ref runtimeComponentPtr, ref objectModelBasePtr, rtti.TransferData, context);
             }
         }
     }
@@ -113,6 +118,10 @@ internal static class EcsComponentSerializer
 
     internal static unsafe void DeserializeEcsComponent(PureManagedObjectRtti rtti, DeserializeContext context, ConstAccessor constAccessor, byte* componentDataPtr)
     {
+        ref var componentObjectModelBasePtr = ref UnsafeHelper.AsRef<byte>(constAccessor.Data.ToPointer());
+        ref byte runtimeComponentPtr = ref UnsafeHelper.AsRef<byte>(componentDataPtr);
+
+        UdmManagedSerialization.FromObjModelToLive(ref runtimeComponentPtr, ref componentObjectModelBasePtr, rtti.TransferData, context);
     }
 
     internal static unsafe void DeserializeDynamicBuffer(PureManagedObjectRtti elementRtti, DeserializeContext context, ConstAccessor constAccessor, BufferHeader* bufferHeaderPtr, int typeIndex)
@@ -268,9 +277,13 @@ internal static class EcsComponentSerializer
 
             PureManagedObjectRtti rtti = (PureManagedObjectRtti)RttiResolver.GetOrAddRTTI(type);
 
+            var objectModel = serializeContext.Document.CreateObjectModel(rtti.Schema, gameObjectInstanceID.GetRawData());
             if (!typeIndex.IsZeroSized)
             {
                 var componentDataRawRO = (byte*)serializeContext.EntityManager.GetComponentDataRawRO(gameObjectInstanceID, typeIndex);
+                ref byte runtimeComponentPtr = ref UnsafeHelper.AsRef<byte>(componentDataRawRO);
+                ref byte objectModelBasePtr = ref UnsafeHelper.AsRef<byte>(objectModel.GetAccessor().Data.ToPointer());
+                UdmManagedSerialization.FromLiveToObjModel(ref runtimeComponentPtr, ref objectModelBasePtr, rtti.TransferData, serializeContext);
             }
 
             documentModelPtr = documentModel.DocumentPtr;

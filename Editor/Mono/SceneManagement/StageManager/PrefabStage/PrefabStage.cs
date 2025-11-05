@@ -632,7 +632,7 @@ namespace UnityEditor.SceneManagement
 
                 var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
                 foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
-                    sceneHierarchyWindow.FrameObject(prefabContentsRoot.GetInstanceID(), false);
+                    sceneHierarchyWindow.FrameObject(prefabContentsRoot.GetEntityId(), false);
 
                 return true;
             }
@@ -941,7 +941,7 @@ namespace UnityEditor.SceneManagement
                 {
                     // Patched properties are grouped by targetInContent, so we can easily ensure we
                     // only make one attempt per target just by comparing with the previous target.
-                    int targetID = targetInContent.GetInstanceID();
+                    int targetID = targetInContent.GetEntityId();
                     if (targetID == lastTargetID)
                         targetInContent = lastTargetInContent;
                     else
@@ -1120,9 +1120,9 @@ namespace UnityEditor.SceneManagement
             sceneHierarchyWindow.sceneHierarchy.treeViewState.expandedIDs = expandedIDs;
         }
 
-        void AddParentsBelowButIgnoreNestedPrefabsRecursive(Transform transform, List<EntityId> gameObjectInstanceIDs)
+        void AddParentsBelowButIgnoreNestedPrefabsRecursive(Transform transform, List<EntityId> gameObjectEntityIds)
         {
-            gameObjectInstanceIDs.Add(transform.gameObject.GetInstanceID());
+            gameObjectEntityIds.Add(transform.gameObject.GetEntityId());
 
             int count = transform.childCount;
             for (int i = 0; i < count; ++i)
@@ -1130,7 +1130,7 @@ namespace UnityEditor.SceneManagement
                 var child = transform.GetChild(i);
                 if (child.childCount > 0 && !PrefabUtility.IsAnyPrefabInstanceRoot(child.gameObject))
                 {
-                    AddParentsBelowButIgnoreNestedPrefabsRecursive(child, gameObjectInstanceIDs);
+                    AddParentsBelowButIgnoreNestedPrefabsRecursive(child, gameObjectEntityIds);
                 }
             }
         }

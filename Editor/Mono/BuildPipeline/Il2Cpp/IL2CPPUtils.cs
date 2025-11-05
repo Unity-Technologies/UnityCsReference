@@ -572,7 +572,7 @@ namespace UnityEditorInternal
                 GetLibrarySearchPaths("Unity.IL2CPP.Api", "netstandard2.0"),
                 GetLibrarySearchPaths("Unity.Api.Attributes", "netstandard2.0"),
                 GetLibrarySearchPaths("Unity.IL2CPP.Bee.IL2CPPExeCompileCppBuildProgram.Data", "netstandard2.0"),
-                GetLibrarySearchPaths("Unity.IL2CPP.Bee.BuildLogic", "net6.0"),
+                GetLibrarySearchPaths("Unity.IL2CPP.Bee.BuildLogic", "net8.0"),
                 // Now the quirky part.  We need to locate the platform build logic assemblies.
                 // While il2cpp will have these during some build scenarios (IDE build or build.pl)
                 // the project that will always have all of the is il2cpp-compile

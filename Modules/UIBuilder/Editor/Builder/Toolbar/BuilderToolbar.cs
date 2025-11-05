@@ -33,6 +33,7 @@ namespace Unity.UI.Builder
         ToolbarMenu m_ZoomMenu;
         ToolbarButton m_FitViewportButton;
         ToolbarMenu m_CanvasThemeMenu;
+        ToolbarButton m_ResetThemeButton;
         ToolbarMenu m_SettingsMenu;
         Toolbar m_BreadcrumbsToolbar;
         ToolbarBreadcrumbs m_Breadcrumbs;
@@ -92,7 +93,11 @@ namespace Unity.UI.Builder
 
             m_CanvasThemeMenu = this.Q<ToolbarMenu>("canvas-theme-menu");
 
+            m_ResetThemeButton = this.Q<ToolbarButton>("reset-theme-button");
+            m_ResetThemeButton.clicked += ResetThemeToProjectSettings;
+
             InitCanvasTheme();
+            UpdateResetThemeButtonState();
 
             SetViewportSubTitle();
 
@@ -110,67 +115,16 @@ namespace Unity.UI.Builder
             RegisterCallback<AttachToPanelEvent>(RegisterCallbacks);
         }
 
-        public void InitCanvasTheme()
+        /// Initializes the themes using a 2-layer hierarchy:
+        /// 1. User override
+        /// 2. Project settings if it exists, otherwise built-in defaults
+        internal void InitCanvasTheme()
         {
-            var projectDefaultTssAsset = m_ThemeManager.FindProjectDefaultRuntimeThemeAsset();
+            // Get the effective theme
+            var (theme, themeSheet) = ThemeUtility.GetEffectiveTheme(document.fileSettings.editorExtensionMode, m_ThemeManager.themeFiles);
 
-            // If we find a Default Runtime Theme in the project, use that as the default theme
-            // Otherwise we use the built-in Default Runtime Theme
-            var defaultTssAsset = projectDefaultTssAsset == null ? m_ThemeManager.builtInDefaultRuntimeTheme : projectDefaultTssAsset;
-            InitCanvasTheme(defaultTssAsset);
-        }
-
-        private void InitCanvasTheme(ThemeStyleSheet defaultTssAsset)
-        {
-            var currentTheme = document.currentCanvasTheme;
-            var currentThemeSheet = document.currentCanvasThemeStyleSheet;
-
-            // If canvas theme is editor-only without Editor Extensions mode enabled, treat this as a Runtime theme
-            if (!document.fileSettings.editorExtensionMode && IsEditorCanvasTheme(currentTheme))
-            {
-                currentTheme = BuilderDocument.CanvasTheme.Runtime;
-            }
-            else if (currentTheme == BuilderDocument.CanvasTheme.Custom && currentThemeSheet == null)
-            {
-                // Theme file was deleted, fallback to default theme
-                currentTheme = BuilderDocument.CanvasTheme.Runtime;
-            }
-            else if (currentTheme == BuilderDocument.CanvasTheme.Custom
-                     && currentThemeSheet == m_ThemeManager.builtInDefaultRuntimeTheme
-                     && defaultTssAsset != m_ThemeManager.builtInDefaultRuntimeTheme)
-            {
-                // If a new Default Runtime Theme was added to the project, use that instead of the built-in one
-                currentTheme = BuilderDocument.CanvasTheme.Runtime;
-            }
-
-            // If canvas theme is equal to the obsolete Runtime enum, search for the Unity default runtime theme
-            // in the current project.  If that can't be found, try one of the custom themes, otherwise
-            // fallback to default Editor theme
-            if (currentTheme == BuilderDocument.CanvasTheme.Runtime)
-            {
-                if (defaultTssAsset != null)
-                {
-                    currentTheme = BuilderDocument.CanvasTheme.Custom;
-                    currentThemeSheet = defaultTssAsset;
-                }
-                else
-                {
-                    // Fall back on first custom theme we find or default editor theme
-                    if (m_ThemeManager != null && m_ThemeManager.themeFiles.Count > 0)
-                    {
-                        var customThemeFile = m_ThemeManager.themeFiles[0];
-                        currentTheme = BuilderDocument.CanvasTheme.Custom;
-                        currentThemeSheet = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(customThemeFile);
-                    }
-                    else
-                    {
-                        currentTheme = BuilderDocument.CanvasTheme.Default;
-                        currentThemeSheet = null;
-                    }
-                }
-            }
-
-            ChangeCanvasTheme(currentTheme, currentThemeSheet, true);
+            // Apply the theme
+            ChangeCanvasTheme(theme, themeSheet, true);
             UpdateCanvasThemeMenuStatus();
         }
 
@@ -180,6 +134,7 @@ namespace Unity.UI.Builder
             BuilderAssetModificationProcessor.Register(this);
             if (m_ThemeManager != null)
                 BuilderAssetPostprocessor.Register(m_ThemeManager);
+            UIToolkitProjectSettings.onThemeChanged += OnProjectThemeChanged;
         }
 
         void UnregisterCallbacks(DetachFromPanelEvent evt)
@@ -188,6 +143,13 @@ namespace Unity.UI.Builder
             BuilderAssetModificationProcessor.Unregister(this);
             if (m_ThemeManager != null)
                 BuilderAssetPostprocessor.Unregister(m_ThemeManager);
+            UIToolkitProjectSettings.onThemeChanged -= OnProjectThemeChanged;
+        }
+
+        void OnProjectThemeChanged()
+        {
+            // Refresh the canvas theme when project settings change
+            InitCanvasTheme();
         }
 
         public void SetToolbarBreadCrumbs()
@@ -384,15 +346,15 @@ namespace Unity.UI.Builder
 
         public bool ReloadDocument()
         {
-            return LoadDocument(document.visualTreeAsset, false, false, null, m_ThemeManager);
+            return LoadDocument(document.visualTreeAsset, false);
         }
 
         public bool LoadDocument(VisualTreeAsset visualTreeAsset, string assetPath)
         {
-            return LoadDocument(visualTreeAsset, true, false, assetPath, m_ThemeManager);
+            return LoadDocument(visualTreeAsset, true, false, assetPath);
         }
 
-        public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false, string assetPath = null, ThemeStyleSheetManager themeStyleSheetManager = null)
+        public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false, string assetPath = null)
         {
             if (!BuilderAssetUtilities.ValidateAsset(visualTreeAsset, assetPath))
                 return false;
@@ -412,19 +374,20 @@ namespace Unity.UI.Builder
             if (unloadAllSubdocuments)
                 document.GoToRootDocument(m_Viewport.documentRootElement, m_PaneWindow);
 
-            LoadDocumentInternal(visualTreeAsset, themeStyleSheetManager);
+            LoadDocumentInternal(visualTreeAsset);
 
             return true;
         }
 
-        void LoadDocumentInternal(VisualTreeAsset visualTreeAsset, ThemeStyleSheetManager themeStyleSheetManager = null)
+        void LoadDocumentInternal(VisualTreeAsset visualTreeAsset)
         {
             m_Selection.ClearSelection(null);
 
-            document.LoadDocument(visualTreeAsset, m_Viewport.documentRootElement, themeStyleSheetManager);
+            document.LoadDocument(visualTreeAsset, m_Viewport.documentRootElement);
 
             m_Viewport.SetViewFromDocumentSetting();
             m_Inspector?.canvasInspector.Refresh();
+            InitCanvasTheme();
 
             m_Selection.NotifyOfStylingChange(document);
             m_Selection.NotifyOfHierarchyChange(document);
@@ -506,103 +469,135 @@ namespace Unity.UI.Builder
             UpdateZoomMenuText();
         }
 
-        internal static string GetEditorThemeText(BuilderDocument.CanvasTheme theme)
-        {
-            switch (theme)
-            {
-                case BuilderDocument.CanvasTheme.Default: return "Active Editor Theme";
-                case BuilderDocument.CanvasTheme.Dark: return "Dark Editor Theme";
-                case BuilderDocument.CanvasTheme.Light: return "Light Editor Theme";
-                default:
-                    break;
-            }
-
-            return null;
-        }
-
         void SetUpCanvasThemeMenu()
         {
             m_CanvasThemeMenu.menu.ClearItems();
 
+            // SortedSet automatically maintains sort order, no need to sort
+            AddProjectDefaultThemeToMenu();
+            AddRemainingThemesToMenu();
+
+            m_CanvasThemeMenu.menu.AppendSeparator();
+            m_CanvasThemeMenu.menu.AppendAction("Preview Theme Settings...", a => ShowSettingsWindow());
+        }
+
+        void AddProjectDefaultThemeToMenu()
+        {
+            var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(document.fileSettings.editorExtensionMode, m_ThemeManager.themeFiles);
+
+
+            var displayName = GetThemeDisplayName(projectTheme, projectThemeSheet) + ThemeUtility.ProjectThemeSuffix;
+            AddThemeMenuAction(displayName, projectTheme, projectThemeSheet);
+            m_CanvasThemeMenu.menu.AppendSeparator();
+        }
+
+        void AddRemainingThemesToMenu()
+        {
+            // Get project default to avoid duplicating it
+            var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(document.fileSettings.editorExtensionMode, m_ThemeManager.themeFiles);
+
             if (document.fileSettings.editorExtensionMode)
             {
-                m_CanvasThemeMenu.menu.AppendAction(GetEditorThemeText(BuilderDocument.CanvasTheme.Default), a =>
-                    {
-                        ChangeCanvasTheme(BuilderDocument.CanvasTheme.Default, null);
-                        UpdateCanvasThemeMenuStatus();
-                    },
-                    a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Default
-                        ? DropdownMenuAction.Status.Checked
-                        : DropdownMenuAction.Status.Normal);
-
-                m_CanvasThemeMenu.menu.AppendAction(GetEditorThemeText(BuilderDocument.CanvasTheme.Dark), a =>
-                    {
-                        ChangeCanvasTheme(BuilderDocument.CanvasTheme.Dark);
-                        UpdateCanvasThemeMenuStatus();
-                    },
-                    a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Dark
-                        ? DropdownMenuAction.Status.Checked
-                        : DropdownMenuAction.Status.Normal);
-
-                m_CanvasThemeMenu.menu.AppendAction(GetEditorThemeText(BuilderDocument.CanvasTheme.Light), a =>
-                    {
-                        ChangeCanvasTheme(BuilderDocument.CanvasTheme.Light);
-                        UpdateCanvasThemeMenuStatus();
-                    },
-                    a => document.currentCanvasTheme == BuilderDocument.CanvasTheme.Light
-                        ? DropdownMenuAction.Status.Checked
-                        : DropdownMenuAction.Status.Normal);
+                // Add built-in editor themes
+                AddEditorThemeIfNotDefault(CanvasTheme.Default, projectTheme);
+                AddEditorThemeIfNotDefault(CanvasTheme.Dark, projectTheme);
+                AddEditorThemeIfNotDefault(CanvasTheme.Light, projectTheme);
             }
 
-            if (m_ThemeManager != null && m_ThemeManager.themeFiles.Count > 0)
+            // Add the runtime themes
+            if (m_ThemeManager?.themeFiles.Count > 0)
             {
                 m_CanvasThemeMenu.menu.AppendSeparator();
-                m_ThemeManager.themeFiles.Sort((a, b) => Path.GetFileName(a).CompareTo(Path.GetFileName(b)));
 
                 foreach (var themeFile in m_ThemeManager.themeFiles)
                 {
-                    var isBuiltInDefaultRuntimeTheme = themeFile == ThemeRegistry.k_DefaultStyleSheetPath;
-                    var themeName = isBuiltInDefaultRuntimeTheme ?
-                        BuilderConstants.ToolbarBuiltInDefaultRuntimeThemeName : ObjectNames.NicifyVariableName(Path.GetFileNameWithoutExtension(themeFile));
+                    var themeSheet = LoadThemeFromFile(themeFile);
 
-                    m_CanvasThemeMenu.menu.AppendAction(themeName, a =>
-                    {
-                        var theme = isBuiltInDefaultRuntimeTheme ? m_ThemeManager.builtInDefaultRuntimeTheme : AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themeFile);
-                        ChangeCanvasTheme(BuilderDocument.CanvasTheme.Custom, theme);
-                        UpdateCanvasThemeMenuStatus();
-                    },
-                        a => document.currentCanvasThemeStyleSheet != null
-                             && (AssetDatabase.GetAssetPath(document.currentCanvasThemeStyleSheet) == themeFile || isBuiltInDefaultRuntimeTheme && document.currentCanvasThemeStyleSheet == m_ThemeManager.builtInDefaultRuntimeTheme)
-                        ? DropdownMenuAction.Status.Checked
-                        : DropdownMenuAction.Status.Normal);
+                    // Skip if this is the project default (already shown)
+                    if (themeSheet == projectThemeSheet ||  themeSheet == null)
+                        continue;
+
+                    var displayName = GetThemeDisplayName(CanvasTheme.Custom, themeSheet);
+                    AddThemeMenuAction(displayName, CanvasTheme.Custom, themeSheet);
                 }
             }
         }
 
-        bool IsEditorCanvasTheme(BuilderDocument.CanvasTheme theme)
+        void AddEditorThemeIfNotDefault(CanvasTheme theme, CanvasTheme projectDefaultTheme)
         {
-            return theme is BuilderDocument.CanvasTheme.Default or BuilderDocument.CanvasTheme.Dark or BuilderDocument.CanvasTheme.Light;
+            if (theme != projectDefaultTheme)
+            {
+                var displayName = GetThemeDisplayName(theme, null);
+                AddThemeMenuAction(displayName, theme, null);
+            }
         }
 
-        public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet customThemeStyleSheet = null, bool isInit = false)
+        void AddThemeMenuAction(string displayName, CanvasTheme theme, ThemeStyleSheet themeSheet)
         {
-            m_Viewport.canvas.defaultBackgroundElement.style.display = theme == BuilderDocument.CanvasTheme.Custom ? DisplayStyle.None : DisplayStyle.Flex;
-            m_Viewport.canvas.checkerboardBackgroundElement.style.display = theme == BuilderDocument.CanvasTheme.Custom ? DisplayStyle.Flex : DisplayStyle.None;
+            m_CanvasThemeMenu.menu.AppendAction(
+                displayName,
+                a => ChangeCanvasTheme(theme, themeSheet),
+                a => IsThemeSelected(theme, themeSheet) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
+            );
+        }
+
+        bool IsThemeSelected(CanvasTheme theme, ThemeStyleSheet themeSheet)
+        {
+            // For built-in themes, check both theme and null sheet
+            if (theme != CanvasTheme.Custom)
+                return document.currentCanvasTheme == theme && document.currentCanvasThemeStyleSheet == null;
+
+            // For custom themes, check the stylesheet
+            return document.currentCanvasThemeStyleSheet == themeSheet;
+        }
+
+        string GetThemeDisplayName(CanvasTheme theme, ThemeStyleSheet themeSheet)
+        {
+            // Fallback
+            if (theme == CanvasTheme.ProjectSettings)
+            {
+                if (document.fileSettings.editorExtensionMode)
+                    theme = CanvasTheme.Default;
+                else
+                {
+                    theme = CanvasTheme.Custom;
+                    themeSheet = ThemeUtility.builtInDefaultRuntimeTheme;
+                }
+            }
+
+            if (document.fileSettings.editorExtensionMode && ThemeUtility.IsEditorCanvasTheme(theme))
+                return ThemeUtility.GetEditorThemeText(theme);
+
+            return ThemeUtility.NicifyThemeName(themeSheet);
+        }
+
+        ThemeStyleSheet LoadThemeFromFile(string themeFile)
+        {
+            if (themeFile == ThemeRegistry.k_DefaultStyleSheetPath)
+                return ThemeUtility.builtInDefaultRuntimeTheme;
+
+            return AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themeFile);
+        }
+
+        public void ChangeCanvasTheme(CanvasTheme theme, ThemeStyleSheet customThemeStyleSheet = null, bool isInit = false)
+        {
+            m_Viewport.canvas.defaultBackgroundElement.style.display = theme == CanvasTheme.Custom ? DisplayStyle.None : DisplayStyle.Flex;
+            m_Viewport.canvas.checkerboardBackgroundElement.style.display = theme == CanvasTheme.Custom ? DisplayStyle.Flex : DisplayStyle.None;
 
             StyleSheet activeThemeStyleSheet = null;
 
             switch (theme)
             {
-                case BuilderDocument.CanvasTheme.Dark:
+                case CanvasTheme.Dark:
                     activeThemeStyleSheet = UIElementsEditorUtility.GetCommonDarkStyleSheet();
                     break;
-                case BuilderDocument.CanvasTheme.Light:
+                case CanvasTheme.Light:
                     activeThemeStyleSheet = UIElementsEditorUtility.GetCommonLightStyleSheet();
                     break;
-                case BuilderDocument.CanvasTheme.Default:
+                case CanvasTheme.Default:
                     activeThemeStyleSheet = EditorGUIUtility.isProSkin ? UIElementsEditorUtility.GetCommonDarkStyleSheet() : UIElementsEditorUtility.GetCommonLightStyleSheet();
                     break;
-                case BuilderDocument.CanvasTheme.Custom:
+                case CanvasTheme.Custom:
                     activeThemeStyleSheet = customThemeStyleSheet;
                     break;
             }
@@ -612,11 +607,37 @@ namespace Unity.UI.Builder
             ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme);
             ApplyCanvasTheme(m_TooltipPreview, activeThemeStyleSheet, m_LastCustomTheme);
             ApplyCanvasBackground(m_TooltipPreview, theme);
-            document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, customThemeStyleSheet, m_ThemeManager, isInit);
-            UpdateCanvasThemeMenuStatus();
+            document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, customThemeStyleSheet, saveOverride: !isInit);
             m_LastCustomTheme = customThemeStyleSheet;
 
             m_Inspector?.selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
+
+            // Update reset button state and menu status after changing theme
+            UpdateResetThemeButtonState();
+            UpdateCanvasThemeMenuStatus();
+        }
+
+        internal void ResetThemeToProjectSettings()
+        {
+            // Reset document theme preferences to project settings
+            ThemeUtility.ClearThemeOverrides();
+            InitCanvasTheme(); // Refresh the current theme
+            UpdateResetThemeButtonState();
+        }
+
+        void UpdateResetThemeButtonState()
+        {
+            // Show button only if document has any non-default theme preferences
+            var hasOverride = ThemeUtility.HasLocalThemeOverride();
+            m_ResetThemeButton.style.display = hasOverride ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Update tooltip with project theme name
+            if (hasOverride)
+            {
+                var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(document.fileSettings.editorExtensionMode, m_ThemeManager.themeFiles);
+                var projectThemeName = GetThemeDisplayName(projectTheme, projectThemeSheet);
+                m_ResetThemeButton.tooltip = $"Reset to the preferred preview theme ({projectThemeName}) for this project.";
+            }
         }
 
         void ApplyCanvasTheme(VisualElement element, StyleSheet newThemeStyleSheet, StyleSheet oldCustomThemeStyleSheet)
@@ -664,7 +685,7 @@ namespace Unity.UI.Builder
             element.SetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName, newThemeStyleSheet);
         }
 
-        void ApplyCanvasBackground(VisualElement element, BuilderDocument.CanvasTheme theme)
+        void ApplyCanvasBackground(VisualElement element, CanvasTheme theme)
         {
             if (element == null)
                 return;
@@ -675,22 +696,19 @@ namespace Unity.UI.Builder
 
             switch (theme)
             {
-                case BuilderDocument.CanvasTheme.Dark:
+                case CanvasTheme.Dark:
                     element.AddToClassList(BuilderConstants.CanvasContainerDarkStyleClassName);
                     break;
-                case BuilderDocument.CanvasTheme.Light:
+                case CanvasTheme.Light:
                     element.AddToClassList(BuilderConstants.CanvasContainerLightStyleClassName);
                     break;
-                case BuilderDocument.CanvasTheme.Runtime:
-                    element.AddToClassList(BuilderConstants.CanvasContainerRuntimeStyleClassName);
-                    break;
-                case BuilderDocument.CanvasTheme.Default:
+                case CanvasTheme.Default:
                     string defaultClass = EditorGUIUtility.isProSkin
                         ? BuilderConstants.CanvasContainerDarkStyleClassName
                         : BuilderConstants.CanvasContainerLightStyleClassName;
                     element.AddToClassList(defaultClass);
                     break;
-                case BuilderDocument.CanvasTheme.Custom:
+                case CanvasTheme.Custom:
                     element.AddToClassList(BuilderConstants.CanvasContainerRuntimeStyleClassName);
                     break;
             }
@@ -703,50 +721,36 @@ namespace Unity.UI.Builder
             if (m_CanvasThemeMenu.menu.MenuItems().Count == 0)
             {
                 m_CanvasThemeMenu.tooltip = BuilderConstants.ToolbarCanvasThemeMenuEmptyTooltip;
-                m_CanvasThemeMenu.text = GetEditorThemeText(BuilderDocument.CanvasTheme.Default);
+                m_CanvasThemeMenu.text = ThemeUtility.GetEditorThemeText(CanvasTheme.Default);
                 return;
             }
 
-            m_CanvasThemeMenu.tooltip = document.fileSettings.editorExtensionMode ?
-                BuilderConstants.ToolbarCanvasThemeMenuEditorTooltip :
-                BuilderConstants.ToolbarCanvasThemeMenuTooltip;
+            m_CanvasThemeMenu.tooltip = document.fileSettings.editorExtensionMode
+                ? BuilderConstants.ToolbarCanvasThemeMenuEditorTooltip
+                : BuilderConstants.ToolbarCanvasThemeMenuTooltip;
 
-            foreach (var item in m_CanvasThemeMenu.menu.MenuItems())
-            {
-                var action = item as DropdownMenuAction;
+            // Update menu text to match currently selected theme
+            m_CanvasThemeMenu.text = GetCurrentThemeMenuText();
+        }
 
-                // Skip separators
-                if (action == null)
-                {
-                    continue;
-                }
+        string GetCurrentThemeMenuText()
+        {
+            var currentTheme = document.currentCanvasTheme;
+            var currentThemeSheet = document.currentCanvasThemeStyleSheet;
 
-                action.UpdateActionStatus(null);
+            // Get project default to check if current theme matches it
+            var (projectTheme, projectThemeSheet) = ThemeUtility.GetProjectDefaultTheme(document.fileSettings.editorExtensionMode, m_ThemeManager.themeFiles);
 
-                var theme = document.currentCanvasTheme;
+            if (!document.fileSettings.editorExtensionMode && currentThemeSheet == null)
+                currentThemeSheet = projectThemeSheet;
 
-                if (action.status == DropdownMenuAction.Status.Checked)
-                {
-                    if (theme == BuilderDocument.CanvasTheme.Custom)
-                    {
-                        if (document.currentCanvasThemeStyleSheet == m_ThemeManager.builtInDefaultRuntimeTheme)
-                        {
-                            m_CanvasThemeMenu.text = BuilderConstants.ToolbarBuiltInDefaultRuntimeThemeName;
-                        }
-                        else
-                        {
-                            var assetPath = AssetDatabase.GetAssetPath(document.currentCanvasThemeStyleSheet);
-                            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(assetPath);
-                            var themeName = ObjectNames.NicifyVariableName(fileNameWithoutExtension);
-                            m_CanvasThemeMenu.text = themeName;
-                        }
-                    }
-                    else
-                    {
-                        m_CanvasThemeMenu.text = GetEditorThemeText(theme);
-                    }
-                }
-            }
+            // Check if current theme is the project default
+            bool isProjectDefault = (currentTheme == projectTheme && currentThemeSheet == projectThemeSheet) ||
+                                   (currentTheme == CanvasTheme.Custom && currentThemeSheet == projectThemeSheet);
+
+            var displayName = GetThemeDisplayName(currentTheme, currentThemeSheet);
+
+            return isProjectDefault ? displayName + ThemeUtility.ProjectThemeSuffix : displayName;
         }
 
         void TogglePreviewMode(ChangeEvent<bool> evt)
@@ -801,6 +805,8 @@ namespace Unity.UI.Builder
                 _ => BuilderProjectSettings.ResetNotifications(),
                 _ => BuilderProjectSettings.HasBlockedNotifications() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
+            m_SettingsMenu.menu.AppendSeparator();
+
             m_SettingsMenu.menu.AppendAction("Settings"
                 , a => ShowSettingsWindow()
                 , a => DropdownMenuAction.Status.Normal);
@@ -830,22 +836,16 @@ namespace Unity.UI.Builder
 
     class ThemeStyleSheetManager : IBuilderAssetPostprocessor
     {
-        SearchFilter m_SearchFilter;
         BuilderToolbar m_ToolBar;
-        List<string> m_ThemeFiles;
+        SortedSet<string> m_ThemeFiles;
 
-        internal ThemeStyleSheet builtInDefaultRuntimeTheme
-        {
-            get;
-        }
-
-        public List<string> themeFiles
+        public SortedSet<string> themeFiles
         {
             get
             {
                 if (m_ThemeFiles == null)
                 {
-                    m_ThemeFiles = new List<string>();
+                    m_ThemeFiles = new SortedSet<string>();
                     RefreshThemeFiles();
                 }
 
@@ -861,47 +861,16 @@ namespace Unity.UI.Builder
         public ThemeStyleSheetManager(BuilderToolbar toolbar)
         {
             m_ToolBar = toolbar;
-            m_SearchFilter = new SearchFilter
-            {
-                searchArea = SearchFilter.SearchArea.AllAssets,
-                classNames = new[] { nameof(ThemeStyleSheet) }
-            };
-
-            builtInDefaultRuntimeTheme = EditorGUIUtility.Load(ThemeRegistry.k_DefaultStyleSheetPath) as ThemeStyleSheet;
-        }
-
-        internal ThemeStyleSheet FindProjectDefaultRuntimeThemeAsset()
-        {
-            if (themeFiles.Count <= 0)
-            {
-                return null;
-            }
-
-            foreach (var themeFilePath in themeFiles)
-            {
-                if (BuilderAssetUtilities.IsProjectDefaultRuntimeAsset(themeFilePath))
-                {
-                    return AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themeFilePath);
-                }
-            }
-
-            return null;
         }
 
         bool AddThemeFile(string theme)
         {
-            if (themeFiles.Contains(theme))
-                return false;
-            themeFiles.Add(theme);
-            return true;
+            return themeFiles.Add(theme);
         }
 
         bool RemoveThemeFile(string theme)
         {
-            if (!themeFiles.Contains(theme))
-                return false;
-            themeFiles.Remove(theme);
-            return true;
+            return themeFiles.Remove(theme);
         }
 
         void NotifyThemesChanged()
@@ -911,21 +880,7 @@ namespace Unity.UI.Builder
 
         public void RefreshThemeFiles()
         {
-            m_ThemeFiles?.Clear();
-            var assets = AssetDatabase.FindAllAssets(m_SearchFilter);
-
-            foreach (var asset in assets)
-            {
-                var assetPath = AssetDatabase.GetAssetPath(asset.entityId);
-                AddThemeFile(assetPath);
-            }
-
-            // If we don't have a Default Runtime Theme in the project, we add the built-in one
-            if (FindProjectDefaultRuntimeThemeAsset() == null)
-            {
-                AddThemeFile(ThemeRegistry.k_DefaultStyleSheetPath);
-            }
-
+            ThemeUtility.GetRuntimeThemeFiles(m_ThemeFiles);
             NotifyThemesChanged();
         }
 
@@ -955,31 +910,32 @@ namespace Unity.UI.Builder
                 listChanged |= AddThemeFile(assetPath);
             }
 
-            var projectDefaultRuntimeAsset = FindProjectDefaultRuntimeThemeAsset();
+            var projectDefaultRuntimeAsset = ThemeUtility.FindProjectDefaultRuntimeThemeAsset(m_ThemeFiles);
 
             foreach (var assetPath in deletedAssets)
             {
                 if (!assetPath.EndsWith(BuilderConstants.TssExtension))
                     continue;
 
-                // Check if the current theme has been removed then revert to the default one
-                if (document.currentCanvasTheme == BuilderDocument.CanvasTheme.Custom &&
+                // Current theme has been removed, revert to the default one
+                if (!ThemeUtility.IsEditorCanvasTheme(document.currentCanvasTheme) &&
                     document.currentCanvasThemeStyleSheet == null)
                 {
+                    listChanged |= RemoveThemeFile(assetPath);
+
                     if (document.fileSettings.editorExtensionMode)
                     {
-                        m_ToolBar.ChangeCanvasTheme(BuilderDocument.CanvasTheme.Default, null);
+                        m_ToolBar.ChangeCanvasTheme(CanvasTheme.Default, null, true);
                     }
                     else
                     {
-                        m_ToolBar.ChangeCanvasTheme(BuilderDocument.CanvasTheme.Custom,
+                        m_ToolBar.ChangeCanvasTheme(CanvasTheme.Custom,
                             projectDefaultRuntimeAsset != null
                                 ? projectDefaultRuntimeAsset
-                                : builtInDefaultRuntimeTheme);
+                                : ThemeUtility.builtInDefaultRuntimeTheme,
+                            isInit: true);
                     }
                 }
-
-                listChanged |= RemoveThemeFile(assetPath);
             }
 
             if (projectDefaultRuntimeAsset == null && !themeFiles.Contains(ThemeRegistry.k_DefaultStyleSheetPath))

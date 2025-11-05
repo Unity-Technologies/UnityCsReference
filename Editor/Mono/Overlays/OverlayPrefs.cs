@@ -28,6 +28,10 @@ namespace UnityEditor.Overlays
         }
     }
 
+    // An overlay background color preference is expected to persist across sessions and domain reloads, but it will NOT persist across theme
+    // changes, since the overlay text color will change and likely be incompatible with the previous background color, hindering accessibility.
+    // All floating (displayed OVER window) overlays are expected to take on the custom color.
+    // All docked (displacing window) overlays are expected to maintain the default toolbar color, since they do not obstruct the view.
     internal class OverlayPrefs : ScriptableSingleton<OverlayPrefs>
     {
         class WindowSettings
@@ -109,14 +113,7 @@ namespace UnityEditor.Overlays
             if (instance.m_Windows.TryGetValue(windowType, out var settings))
             {
                 settings.backgroundColor.Color = color;
-                // If the key exists, update the value; otherwise, create a new key-value pair.
-                if (EditorPrefs.HasKey(settings.backgroundColor.Name))
-                    PrefSettings.Set(settings.backgroundColor.Name, settings.backgroundColor);
-                else
-                {
-                    PrefSettings.Add(settings.backgroundColor);
-                    PrefSettings.settingChanged.Invoke(settings.backgroundColor.Name, typeof(OverlayPrefs));
-                }
+                PrefSettings.Set(settings.backgroundColor.Name, settings.backgroundColor);
             }
         }
 
@@ -125,8 +122,7 @@ namespace UnityEditor.Overlays
             if (instance.m_Windows.TryGetValue(windowType, out var settings))
             {
                 settings.backgroundColor.ResetToDefault();
-                PrefSettings.settingChanged.Invoke(settings.backgroundColor.Name, typeof(OverlayPrefs));
-                EditorPrefs.DeleteKey(settings.backgroundColor.Name);
+                WriteStylesheetFromPrefs();
             }
         }
 
@@ -180,6 +176,12 @@ namespace UnityEditor.Overlays
                 WriteStylesheetFromPrefs();
         }
 
+        public static void DeleteOverlayKey(Type windowType)
+        {
+            instance.m_Windows.TryGetValue(windowType, out var settings);
+            EditorPrefs.DeleteKey(settings.backgroundColor.Name);
+        }
+
         void OnEnable()
         {
             // Build supported types array
@@ -213,6 +215,7 @@ namespace UnityEditor.Overlays
                 foreach (var windowType in GetSupportedWindowTypes())
                 {
                     RevertToDefaultColor(windowType);
+                    DeleteOverlayKey(windowType);
                 }
             };
 
@@ -221,7 +224,10 @@ namespace UnityEditor.Overlays
             if (EditorPrefs.HasKey(k_WasProSkinPrefKey) && EditorPrefs.GetBool(k_WasProSkinPrefKey) != EditorGUIUtility.isProSkin)
             {
                 foreach (var windowType in GetSupportedWindowTypes())
+                {
                     RevertToDefaultColor(windowType);
+                    DeleteOverlayKey(windowType);
+                }
             }
             EditorPrefs.SetBool(k_WasProSkinPrefKey, EditorGUIUtility.isProSkin);
 

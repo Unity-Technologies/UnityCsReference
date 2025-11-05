@@ -42,6 +42,15 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
     {
         const string k_VirtualPackagesRoot = "Packages";
 
+        [Serializable]
+        private class AsmdefData
+        {
+#pragma warning disable 0649
+            public string name;
+            public string[] optionalUnityReferences;
+#pragma warning restore 0649
+        }
+
         internal static IEnumerable<string> GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes flags)
         {
             var assemblyPaths = new List<string>();
@@ -55,11 +64,6 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
         {
             foreach (var dir in GetPrecompiledAssemblyPaths(flags).Select(Path.GetDirectoryName).Distinct())
                 yield return dir;
-        }
-
-        internal static bool IsUserAssembly(string assemblyName)
-        {
-            return GetPrecompiledAssemblyPaths(PrecompiledAssemblyTypes.UserAssembly).FirstOrDefault(a => a.Contains(assemblyName)) != null;
         }
 
         internal static bool IsUnityEngineAssembly(string assemblyName)
@@ -105,13 +109,25 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             var asmDefPath = UnityEditor.Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assemblyInfo.Name);
             if (asmDefPath != null)
             {
+                try
+                {
+                    string fileContent = File.ReadAllText(asmDefPath);
+                    var data = JsonUtility.FromJson<AsmdefData>(fileContent);
+
+                    if (data.optionalUnityReferences != null && data.optionalUnityReferences.Contains("TestAssemblies"))
+                        assemblyInfo.IsTestAssembly = true;
+                }
+                catch (Exception)
+                {
+                }
+
                 assemblyInfo.AsmDefPath = asmDefPath;
                 var folders = PathUtils.Split(asmDefPath);
                 if (folders.Length > 2 && folders[0].Equals(k_VirtualPackagesRoot))
                 {
                     assemblyInfo.RelativePath = PathUtils.Combine(folders[0], folders[1]);
 
-                    var info =  UnityEditor.PackageManager.PackageInfo.FindForAssetPath(asmDefPath);
+                    var info =  PackageInfo.FindForAssetPath(asmDefPath);
                     if (info != null)
                     {
                         assemblyInfo.IsPackageReadOnly = info.source != PackageSource.Embedded && info.source != PackageSource.Local;
@@ -127,7 +143,8 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
             else
             {
                 // this might happen when loading a report from a different project
-                Debug.LogWarningFormat("Assembly Definition cannot be found for " + assemblyInfo.Name);
+                if (assemblyInfo.Name != AssemblyInfo.DefaultEditorAssemblyName)
+                    Debug.LogWarningFormat("Assembly Definition cannot be found for " + assemblyInfo.Name);
             }
 
             return assemblyInfo;

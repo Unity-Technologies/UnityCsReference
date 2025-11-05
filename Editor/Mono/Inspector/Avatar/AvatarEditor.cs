@@ -298,7 +298,7 @@ namespace UnityEditor
 
             if (m_SerializedAssetImporter != null)
             {
-                m_SerializedAssetImporter.Cache(GetInstanceID());
+                m_SerializedAssetImporter.Cache(GetEntityId());
                 m_SerializedAssetImporter = null;
             }
         }
@@ -509,7 +509,7 @@ namespace UnityEditor
             // Unfold all nodes in hierarchy
             // TODO@MECANIM: Only expand actual bones
             foreach (SceneHierarchyWindow shw in Resources.FindObjectsOfTypeAll(typeof(SceneHierarchyWindow)))
-                shw.SetExpandedRecursive(m_GameObject.GetInstanceID(), true);
+                shw.SetExpandedRecursive(m_GameObject.GetEntityId(), true);
 
             CreateEditor();
 

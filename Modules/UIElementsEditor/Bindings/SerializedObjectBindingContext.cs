@@ -452,6 +452,9 @@ internal class SerializedObjectBindingContext
             case SerializedPropertyType.Hash128:
                 DefaultBind(element, prop, SerializedPropertyHelper.GetHash128PropertyValue, SerializedPropertyHelper.SetHash128PropertyValue, SerializedPropertyHelper.ValueEquals);
                 break;
+            case SerializedPropertyType.GUID:
+                DefaultBind(element, prop, SerializedPropertyHelper.GetGUIDPropertyValue, SerializedPropertyHelper.SetGUIDPropertyValue, SerializedPropertyHelper.ValueEquals);
+                break;
             case SerializedPropertyType.EntityId:
                 DefaultBind(element, prop, SerializedPropertyHelper.GetEntityIdPropertyValue, SerializedPropertyHelper.SetEntityIdPropertyValue, SerializedPropertyHelper.ValueEquals);
                 break;

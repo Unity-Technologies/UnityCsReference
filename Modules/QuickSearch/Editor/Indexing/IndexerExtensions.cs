@@ -52,7 +52,7 @@ namespace UnityEditor.Search
             using var _ = k_IndexPrefabPropertiesMarker.Auto();
 
             var prefabIndexCache = s_PrefabIndexCaches.GetOrAdd(indexer, _ => new HashSet<PrefabPropertyIndexKey>());
-            var key = new PrefabPropertyIndexKey(documentIndex, prefab.GetInstanceID());
+            var key = new PrefabPropertyIndexKey(documentIndex, prefab.GetEntityId());
             if (prefabIndexCache.Contains(key))
                 return; // Already indexed
 
@@ -76,7 +76,7 @@ namespace UnityEditor.Search
             }
 
             var instanceRoot = PrefabUtility.GetPrefabInstanceHandle(prefab);
-            var instanceRootId = instanceRoot != null ? instanceRoot.GetInstanceID() : 0;
+            var instanceRootId = instanceRoot != null ? instanceRoot.GetEntityId() : EntityId.None;
             var indexerDictionary = s_PrefabInstanceRootCaches.GetOrAdd(indexer, _ => new Dictionary<int, PrefabPropertyIndexData>());
 
             if (instanceRoot != null && indexerDictionary.TryGetValue(instanceRootId, out var data))
@@ -232,7 +232,7 @@ namespace UnityEditor.Search
                         {
                             // Loop over all properties in the DefaultPlatformSettings
                             var parentPath = platformSettings.propertyPath;
-                            indexer.IndexVisibleProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
+                            indexer.IndexProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
                             break;
                         }
                     }

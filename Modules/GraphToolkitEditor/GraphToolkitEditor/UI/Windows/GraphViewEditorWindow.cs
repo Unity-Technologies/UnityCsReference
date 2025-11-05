@@ -308,7 +308,7 @@ Would you like to save these changes?
         /// </summary>
         protected GraphViewEditorWindow()
         {
-            s_LastFocusedEditor = GetInstanceID();
+            s_LastFocusedEditor = GetEntityId();
             m_WindowHash = Hash128Helpers.GenerateUnique();
         }
 
@@ -1146,7 +1146,7 @@ Would you like to save these changes?
 
         protected virtual void OnFocus()
         {
-            s_LastFocusedEditor = GetInstanceID();
+            s_LastFocusedEditor = GetEntityId();
 
             if (m_Focused)
                 return;
@@ -1176,7 +1176,7 @@ Would you like to save these changes?
 
             foreach (var window in windows)
             {
-                if (window.GetInstanceID() == s_LastFocusedEditor)
+                if (window.GetEntityId() == s_LastFocusedEditor)
                     continue;
 
                 var otherGraph = window.GraphTool?.ToolState?.CurrentGraph;
@@ -1567,7 +1567,7 @@ Would you like to save these changes?
 
             foreach (var window in windows)
             {
-                if (window.GetInstanceID() != s_LastFocusedEditor)
+                if (window.GetEntityId() != s_LastFocusedEditor)
                 {
                     var otherGraph = window.GraphTool?.ToolState?.GraphModel;
                     if (otherGraph != null && currentAsset.GraphModel == otherGraph)

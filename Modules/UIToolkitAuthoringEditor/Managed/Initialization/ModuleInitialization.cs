@@ -55,6 +55,7 @@ namespace Unity.UIToolkit.Editor
             TextGeneratorTypeStyleEnumField.UxmlSerializedData.Register();
             TextOverflowPositionStyleEnumField.UxmlSerializedData.Register();
             TextOverflowStyleEnumField.UxmlSerializedData.Register();
+            TextShadowField.UxmlSerializedData.Register();
             UnityTextAlignStyleEnumField.UxmlSerializedData.Register();
             VisibilityStyleEnumField.UxmlSerializedData.Register();
             WhiteSpaceStyleEnumField.UxmlSerializedData.Register();

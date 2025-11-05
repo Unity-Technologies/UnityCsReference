@@ -1051,7 +1051,7 @@ namespace UnityEditor.Search
             m_IndexerThread = null;
         }
 
-        struct IndexerThreadScope : IDisposable
+        internal struct IndexerThreadScope : IDisposable
         {
             private bool m_Disposed;
             private readonly AssemblyReloadEvents.AssemblyReloadCallback m_AbortHandler;

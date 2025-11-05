@@ -22,8 +22,7 @@ namespace UnityEngine.Accessibility;
 ///
 ///- <see cref="RuntimePlatform.Android"/>
 ///- <see cref="RuntimePlatform.IPhonePlayer"/>
-/// </para>
-/// <para>
+/// 
 /// SA:
 ///
 ///- [[wiki:accessibility|Accessibility for mobile applications]]

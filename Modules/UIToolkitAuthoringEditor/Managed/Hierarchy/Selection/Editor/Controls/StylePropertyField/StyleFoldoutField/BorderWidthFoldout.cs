@@ -125,28 +125,28 @@ namespace Unity.UIToolkit.Editor
         }
 
         public BorderWidthFoldout()
-            : this("Border Width") { }
+            : this("Width") { }
 
         public BorderWidthFoldout(string text)
             : base(text)
         {
             var topRow = new OverrideRow() { name = k_TopFieldName };
-            topField = new StyleLengthField("Top") { name = k_TopFieldName };
+            topField = new StyleLengthField("Top") { name = k_TopFieldName, classList = { TextField.alignedFieldUssClassName }};
             topRow.Add(topField);
             Add(topRow);
 
             var rightRow = new OverrideRow() { name = k_RightFieldName };
-            rightField = new StyleLengthField("Right") { name = k_RightFieldName };
+            rightField = new StyleLengthField("Right") { name = k_RightFieldName, classList = { TextField.alignedFieldUssClassName }};
             rightRow.Add(rightField);
             Add(rightRow);
 
             var bottomRow = new OverrideRow() { name = k_BottomFieldName };
-            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName };
+            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName, classList = { TextField.alignedFieldUssClassName }};
             bottomRow.Add(bottomField);
             Add(bottomRow);
 
             var leftRow = new OverrideRow() { name = k_LeftFieldName };
-            leftField = new StyleLengthField("Left") { name = k_LeftFieldName };
+            leftField = new StyleLengthField("Left") { name = k_LeftFieldName, classList = { TextField.alignedFieldUssClassName }};
             leftRow.Add(leftField);
             Add(leftRow);
 
@@ -196,6 +196,11 @@ namespace Unity.UIToolkit.Editor
             headerInputField.RegisterValueChangedCallback(OnHeaderValueChange);
 
             UpdateFromChildFields();
+        }
+
+        protected override TextField CreateHeaderInputElement()
+        {
+            return new TextField();
         }
 
         public override void UpdateFromChildFields()

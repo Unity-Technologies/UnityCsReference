@@ -88,6 +88,11 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
 
     private void OnPackagesChanged(PackagesChangeArgs args)
     {
+        // The Active Trust window will have warned users about packages being added or removed
+        // so we don't need to show the untrusted/invalid signature dialog in that case
+        if (args.packagesChangedSource == PackagesChangedSource.AddAndRemove)
+            return;
+
         if (!m_StartupPackagesChecked)
         {
             if (!m_UpmCache.installedPackageInfosReady)

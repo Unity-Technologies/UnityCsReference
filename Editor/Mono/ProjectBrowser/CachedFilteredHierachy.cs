@@ -123,9 +123,9 @@ namespace UnityEditor
 
         public bool foldersFirst { get; set; }
 
-        public void SetResults(int[] instanceIDs)
+        public void SetResults(EntityId[] instanceIDs)
         {
-            var instanceIdSet = new HashSet<int>(instanceIDs);
+            var entityIdSet = new HashSet<EntityId>(instanceIDs);
             if (m_HierarchyType ==  HierarchyType.Assets)
             {
                 var idsUnderEachRoot = new Dictionary<string, int>();
@@ -144,7 +144,7 @@ namespace UnityEditor
                     ++idsUnderEachRoot[rootPath];
                 }
 
-                SetAssetsResults(instanceIdSet, idsUnderEachRoot);
+                SetAssetsResults(entityIdSet, idsUnderEachRoot);
             }
             else
             {
@@ -160,9 +160,9 @@ namespace UnityEditor
             }
         }
 
-        internal void SetResults(int[] instanceIDs, string[] rootPaths)
+        internal void SetResults(EntityId[] entityIds, string[] rootPaths)
         {
-            var instanceIdSet = new HashSet<int>(instanceIDs);
+            var entityIdSet = new HashSet<EntityId>(entityIds);
             if (m_HierarchyType == HierarchyType.Assets)
             {
                 var idsUnderEachRoot = new Dictionary<string, int>();
@@ -172,25 +172,25 @@ namespace UnityEditor
                         idsUnderEachRoot.Add(rootPath, 0);
                     ++idsUnderEachRoot[rootPath];
                 }
-                SetAssetsResults(instanceIdSet, idsUnderEachRoot);
+                SetAssetsResults(entityIdSet, idsUnderEachRoot);
             }
             else
             {
                 var property = new HierarchyIterator(m_HierarchyType, false);
                 property.Reset();
 
-                System.Array.Resize(ref m_Results, instanceIDs.Length);
-                for (int i = 0; i < instanceIDs.Length; ++i)
+                System.Array.Resize(ref m_Results, entityIds.Length);
+                for (int i = 0; i < entityIds.Length; ++i)
                 {
-                    if (property.Find(instanceIDs[i], null))
+                    if (property.Find(entityIds[i], null))
                         CopyPropertyData(ref m_Results[i], property);
                 }
             }
         }
 
-        void SetAssetsResults(HashSet<int> instanceIdsSet, Dictionary<string, int> idsUnderEachRoot)
+        void SetAssetsResults(HashSet<EntityId> entityIdsSet, Dictionary<string, int> idsUnderEachRoot)
         {
-            System.Array.Resize(ref m_Results, instanceIdsSet.Count);
+            System.Array.Resize(ref m_Results, entityIdsSet.Count);
             var currentResultIndex = 0;
             var rootPaths = idsUnderEachRoot.Keys.ToArray();
             var idCounts = idsUnderEachRoot.Values.ToArray();
@@ -202,8 +202,8 @@ namespace UnityEditor
                 var propertiesFound = 0;
                 while (property.Next(null) && propertiesFound < nbIds)
                 {
-                    var instanceId = property.GetEntityIdIfImported();
-                    if (instanceIdsSet.Contains(instanceId))
+                    var entityId = property.GetEntityIdIfImported();
+                    if (entityIdsSet.Contains(entityId))
                     {
                         ++propertiesFound;
                         CopyPropertyData(ref m_Results[currentResultIndex], property);

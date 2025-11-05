@@ -182,7 +182,7 @@ namespace UnityEditor.Presets
             m_CanCreateNew = createNewAllowed;
             InitListArea();
             m_Presets = FindAllPresetsOfType(presetType);
-            UpdateSearchResult(currentSelection != null ? currentSelection.GetInstanceID() : 0);
+            UpdateSearchResult(currentSelection != null ? currentSelection.GetEntityId() : EntityId.None);
 
             m_EventObject = eventReceiver;
 
@@ -246,7 +246,7 @@ namespace UnityEditor.Presets
             );
 
             viewState.windowTitle = new GUIContent("Preset Selector");
-            viewState.selectedIds = presetContext.CurrentSelection != null ? new[] { presetContext.CurrentSelection.GetInstanceID() } : null;
+            viewState.selectedIds = presetContext.CurrentSelection != null ? new[] { presetContext.CurrentSelection.GetEntityId() } : null;
             PresetEditorHelper.presetEditorOpen = true;
             return UnityEditor.Search.SearchService.ShowPicker(viewState);
         }
@@ -431,7 +431,7 @@ namespace UnityEditor.Presets
         {
             var searchResult = m_Presets
                 .Where(p => p.name.ToLower().Contains(m_SearchField.ToLower()))
-                .Select(p => p.GetInstanceID())
+                .Select(p => p.GetEntityId())
                 .ToArray();
             m_ListArea.ShowObjectsInList(searchResult);
             m_ListArea.InitSelection(new[] { currentSelection });
@@ -525,7 +525,7 @@ namespace UnityEditor.Presets
                 m_SearchField = EditorGUI.SearchField(new Rect(5f, 5f, position.width - 10f, 15f), m_SearchField);
                 if (change.changed)
                 {
-                    UpdateSearchResult(0);
+                    UpdateSearchResult(EntityId.None);
                 }
             }
         }

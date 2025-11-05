@@ -99,7 +99,7 @@ namespace UnityEngine.UIElements
 
         internal void OnKeyDown(KeyDownEvent evt)
         {
-            // At the moment these actions are not mapped dynamically in the InputSystemEventSystem component.
+            // At the moment these actions are not mapped dynamically in the InputForUI module.
             // When that becomes the case in the future, remove the following and use corresponding Navigation events.
             KeyboardNavigationOperation GetOperation()
             {

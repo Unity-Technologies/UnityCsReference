@@ -4,17 +4,16 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.UIElements
-{
+namespace Unity.UIToolkit.Editor;
+
     /// <summary>
     /// Makes a field for entering TextShadow.
     /// </summary>
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal class TextShadowField : BaseField<TextShadow>
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
@@ -35,35 +34,31 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string ussClassName = "unity-text-shadow-field";
 
+        static readonly string s_UxmlPath = "UIToolkitAuthoring/Inspector/Controls/TextShadowField.uxml";
+        static readonly string s_UssPath = "UIToolkitAuthoring/Inspector/Controls/TextShadowField.uss";
+
         ColorField m_ColorField;
-        FloatField m_BlurRadiusField;
-        Vector2Field m_OffsetField;
+        StyleLengthField m_BlurRadiusField;
+        TextShadowOffsetField m_OffsetField;
 
         public ColorField colorField => m_ColorField;
-        public FloatField blurRadiusField => m_BlurRadiusField;
-        public Vector2Field offsetField => m_OffsetField;
+        public StyleLengthField blurRadiusField => m_BlurRadiusField;
+        public TextShadowOffsetField offsetField => m_OffsetField;
 
         public TextShadowField() : this(null) { }
 
         public TextShadowField(string label)
-            : base(label, null)
+            : base(label)
         {
+            styleSheets.Add(EditorGUIUtility.Load(s_UssPath) as StyleSheet);
+            var template = EditorGUIUtility.Load(s_UxmlPath) as VisualTreeAsset;
+            template.CloneTree(this);
+
             AddToClassList(ussClassName);
 
-            m_ColorField = new ColorField("Color");
-            m_BlurRadiusField = new FloatField("Blur Radius");
-            m_OffsetField = new Vector2Field("Offset");
-
-            m_BlurRadiusField.AddToClassList(alignedFieldUssClassName);
-            m_OffsetField.AddToClassList(alignedFieldUssClassName);
-            m_ColorField.AddToClassList(alignedFieldUssClassName);
-
-            visualInput.Add(m_ColorField);
-            visualInput.Add(m_BlurRadiusField);
-            visualInput.Add(m_OffsetField);
-
-            m_OffsetField.fields[0].label = "Horizontal";
-            m_OffsetField.fields[1].label = "Vertical";
+            m_ColorField = this.Q<ColorField>("text-shadow-field-color");
+            m_BlurRadiusField = this.Q<StyleLengthField>("text-shadow-field-blur-radius");
+            m_OffsetField = this.Q<TextShadowOffsetField>("text-shadow-field-offset");
 
             m_ColorField.RegisterValueChangedCallback(e =>
             {
@@ -80,7 +75,7 @@ namespace UnityEditor.UIElements
                 if (e.newValue != value.blurRadius)
                 {
                     var newVal = value;
-                    newVal.blurRadius = e.newValue;
+                    newVal.blurRadius = e.newValue.value.value;
                     value = newVal;
                 }
             });
@@ -105,4 +100,3 @@ namespace UnityEditor.UIElements
         }
     }
 
-}

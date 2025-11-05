@@ -477,7 +477,9 @@ namespace Unity.GraphToolkit.Editor
                 parentNode?.DisableCullingForFrame();
 
                 this.PreallocForMoreClasses(6); // hidden, connected, direction, capacity, datatype, type
-                var hidden = PortModel != null && PortHasOption(PortModel.Options, PortModelOptions.Hidden);
+
+                // A port should be hidden if it has no wire and has the Hidden option.
+                var hidden = PortModel != null && PortModel.GetConnectedWires().Count == 0 && PortHasOption(PortModel.Options, PortModelOptions.Hidden);
                 EnableClass(hiddenUssClassName, hidden);
 
                 EnableClass(inputUssClassName, PortModel.Direction == PortDirection.Input);

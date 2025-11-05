@@ -9,7 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Xml;
-using UnityEngine.Assemblies;
 
 namespace UnityEditor.Macros
 {

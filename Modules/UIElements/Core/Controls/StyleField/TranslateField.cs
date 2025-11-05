@@ -36,6 +36,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         static readonly string compositeUssClassName = "unity-composite-field";
         /// <summary>
+        /// USS class name of the visual input in elements of this type.
+        /// </summary>
+        static readonly string compositeFieldInputUssClassName = compositeUssClassName + "__input";
+        /// <summary>
         /// USS class name of the fields that make up the composite field in elements of this type.
         /// </summary>
         static readonly string compositeFieldUssClassName = compositeUssClassName + "__field";
@@ -71,6 +75,8 @@ namespace UnityEngine.UIElements
             : base(label, null)
         {
             AddToClassList(ussClassName);
+            AddToClassList(compositeUssClassName);
+            visualInput.AddToClassList(compositeFieldInputUssClassName);
 
             m_XField = new LengthField("X") { classList = { compositeFieldUssClassName } };
             m_YField = new LengthField("Y") { classList = { compositeFieldUssClassName } };

@@ -48,7 +48,7 @@ namespace UnityEditorInternal
         private bool m_RippleTimeClutch; // Toggle ripple time option for curve editor and dopesheet.
         [SerializeField] private int m_ActiveKeyframeHash; // Which keyframe is active (selected key that user previously interacted with)
         [SerializeField] private float m_FrameRate = kDefaultFrameRate;
-        [SerializeField] private int[] m_SelectionFilter;
+        [SerializeField] private EntityId[] m_SelectionFilter;
 
         [NonSerialized] public Action onStartLiveEdit;
         [NonSerialized] public Action onEndLiveEdit;
@@ -608,7 +608,7 @@ namespace UnityEditorInternal
                     Transform t = activeRootGameObject.transform.Find(curve.path);
                     if (t != null)
                     {
-                        if (!m_SelectionFilter.Contains(t.gameObject.GetInstanceID()))
+                        if (!m_SelectionFilter.Contains(t.gameObject.GetEntityId()))
                             return false;
                     }
                     else
@@ -623,7 +623,7 @@ namespace UnityEditorInternal
 
         private void UpdateSelectionFilter()
         {
-            m_SelectionFilter = (filterBySelection) ? (int[])Selection.entityIds.ToIntArray().Clone() : null;
+            m_SelectionFilter = (filterBySelection) ? (EntityId[])Selection.entityIds.Clone() : null;
         }
 
         void RebuildAllCurvesCacheIfNecessary()
@@ -1603,7 +1603,7 @@ namespace UnityEditorInternal
             if (rootGameObject == null)
                 return;
 
-            var selectedGameObjectIDs = new List<int>(selectedNodeIDs.Length);
+            var selectedGameObjectIDs = new List<EntityId>(selectedNodeIDs.Length);
             foreach (var selectedNodeID in selectedNodeIDs)
             {
                 // Skip nodes without associated curves.
@@ -1624,11 +1624,11 @@ namespace UnityEditorInternal
                 // When selection changes, animation window will always pick nearest animator component in terms of hierarchy depth
                 // Automatically syncinc scene selection in nested scenarios would cause unintuitive clip & animation change for animation window so we check for it and deny sync if necessary
                 if (selection.IsCompatibleWith(t))
-                    selectedGameObjectIDs.Add(t.gameObject.GetInstanceID());
+                    selectedGameObjectIDs.Add(t.gameObject.GetEntityId());
             }
 
             if (selectedGameObjectIDs.Count > 0)
-                UnityEditor.Selection.entityIds = selectedGameObjectIDs.ToArray().ToEntityIdArray();
+                UnityEditor.Selection.entityIds = selectedGameObjectIDs.ToArray();
             else
                 UnityEditor.Selection.activeGameObject = rootGameObject;
         }

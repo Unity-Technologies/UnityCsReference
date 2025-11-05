@@ -90,7 +90,7 @@ namespace UnityEditor.SceneTemplate
 
             dependencies = depList.Select(d =>
             {
-                var oldDependencyInfo = dependencies.FirstOrDefault(di => di.dependency.GetInstanceID() == d.GetInstanceID());
+                var oldDependencyInfo = dependencies.FirstOrDefault(di => di.dependency.GetEntityId() == d.GetEntityId());
                 if (oldDependencyInfo != null)
                     return oldDependencyInfo;
 

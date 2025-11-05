@@ -136,22 +136,22 @@ namespace Unity.UIToolkit.Editor
             : base(text)
         {
             topRow = new OverrideRow() { name = k_TopFieldName };
-            topField = new StyleLengthField("Top") { name = k_TopFieldName };
+            topField = new StyleLengthField("Top") { name = k_TopFieldName, classList = { TextField.alignedFieldUssClassName }};
             topRow.Add(topField);
             Add(topRow);
 
             rightRow = new OverrideRow() { name = k_RightFieldName };
-            rightField = new StyleLengthField("Right") { name = k_RightFieldName };
+            rightField = new StyleLengthField("Right") { name = k_RightFieldName, classList = { TextField.alignedFieldUssClassName }};
             rightRow.Add(rightField);
             Add(rightRow);
 
             bottomRow = new OverrideRow() { name = k_BottomFieldName };
-            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName };
+            bottomField = new StyleLengthField("Bottom") { name = k_BottomFieldName, classList = { TextField.alignedFieldUssClassName }};
             bottomRow.Add(bottomField);
             Add(bottomRow);
 
             leftRow = new OverrideRow() { name = k_LeftFieldName };
-            leftField = new StyleLengthField("Left") { name = k_LeftFieldName };
+            leftField = new StyleLengthField("Left") { name = k_LeftFieldName, classList = { TextField.alignedFieldUssClassName }};
             leftRow.Add(leftField);
             Add(leftRow);
 
@@ -174,6 +174,11 @@ namespace Unity.UIToolkit.Editor
             headerInputField.RegisterValueChangedCallback(OnHeaderValueChange);
 
             UpdateFromChildFields();
+        }
+
+        protected override TextField CreateHeaderInputElement()
+        {
+            return new TextField();
         }
 
         public override void UpdateFromChildFields()
@@ -308,7 +313,7 @@ namespace Unity.UIToolkit.Editor
         protected override string bottomPropertyName { get; } = "paddingBottom";
         protected override string leftPropertyName { get; } = "paddingLeft";
 
-        public PaddingFoldoutField()
+        public PaddingFoldoutField() : base("Padding")
         {
             topField.tooltip = "USS property: padding-top\n\nSpace reserved for the top edge of the padding during the layout phase.";
             rightField.tooltip = "USS property: padding-right\n\nSpace reserved for the right edge of the padding during the layout phase.";
@@ -330,7 +335,7 @@ namespace Unity.UIToolkit.Editor
         protected override string bottomPropertyName { get; } = "marginBottom";
         protected override string leftPropertyName { get; } = "marginLeft";
 
-        public MarginFoldoutField()
+        public MarginFoldoutField() : base("Margin")
         {
             topField.tooltip = "USS property: margin-top\n\nSpace reserved for the top edge of the margin during the layout phase.";
             rightField.tooltip = "USS property: margin-right\n\nSpace reserved for the right edge of the margin during the layout phase.";

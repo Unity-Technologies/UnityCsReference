@@ -118,6 +118,8 @@ namespace UnityEngine.PlayerLoop
         public struct ARCoreUpdate {}
         [RequiredByNativeCode]
         public struct PerformanceAnalyticsUpdate {}
+        [RequiredByNativeCode]
+        public struct TilemapRendererEarlyUpdate {}
     }
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.Experimental.PlayerLoop")]
@@ -166,6 +168,7 @@ namespace UnityEngine.PlayerLoop
         public struct IMGUISendQueuedEvents {}
         [RequiredByNativeCode]
         public struct SendMouseEvents {}
+
         [RequiredByNativeCode]
         public struct AIUpdate {}
         [RequiredByNativeCode]

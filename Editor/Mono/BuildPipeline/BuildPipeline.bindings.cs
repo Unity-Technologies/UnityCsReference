@@ -60,6 +60,10 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern void ShowBuildProfileWindow();
 
+        [NativeHeader("Editor/Src/BuildPipeline/BuildPlayerHelpers.h")]
+        [FreeFunction]
+        internal static extern void ShowBuildProfileWindowAndRequireActiveProfile();
+
         private static void LogBuildExceptionAndExit(string buildFunctionName, System.Exception exception)
         {
             Debug.LogErrorFormat("Internal Error in {0}:", buildFunctionName);

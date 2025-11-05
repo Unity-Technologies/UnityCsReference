@@ -82,7 +82,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_AssetGuidAsHash = Hash128Helpers.FromGUID(graphModel.GraphObject?.AssetFileGuid ?? default);
                 if (m_AssetGuidAsHash == default)
-                    m_GraphObjectInstanceID = graphModel.GraphObject.GetInstanceID();
+                    m_GraphObjectInstanceID = graphModel.GraphObject.GetEntityId();
             }
             m_GraphModelGuid = graphModel.Guid;
         }

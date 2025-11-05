@@ -64,11 +64,11 @@ namespace UnityEngine
         [FreeFunction("Physics::PhysXGeometryExtension::TranslateTriangleIndex", true)]
         extern internal static uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
 
-        [FreeFunction("Physics::PhysXContactModificationExtension::ResolveShapeToInstanceID", true)]
-        extern internal static int ResolveShapeToInstanceID(IntPtr shapePtr);
+        [FreeFunction("Physics::PhysXContactModificationExtension::ResolveShapeToEntityId", true)]
+        extern internal static EntityId ResolveShapeToEntityId(IntPtr shapePtr);
 
-        [FreeFunction("Physics::PhysXContactModificationExtension::ResolveActorToInstanceID", true)]
-        extern internal static int ResolveActorToInstanceID(IntPtr actorPtr);
+        [FreeFunction("Physics::PhysXContactModificationExtension::ResolveActorToEntityId", true)]
+        extern internal static EntityId ResolveActorToEntityId(IntPtr actorPtr);
 
         [FreeFunction("Physics::PhysXContactModificationExtension::GetActorLinearVelocity", true)]
         extern internal static Vector3 GetActorLinearVelocity(IntPtr actorPtr);
@@ -76,10 +76,21 @@ namespace UnityEngine
         [FreeFunction("Physics::PhysXContactModificationExtension::GetActorAngularVelocity", true)]
         extern internal static Vector3 GetActorAngularVelocity(IntPtr actorPtr);
 
-        public int colliderInstanceID => ResolveShapeToInstanceID(shape);
-        public int otherColliderInstanceID => ResolveShapeToInstanceID(otherShape);
-        public int bodyInstanceID => ResolveActorToInstanceID(actor);
-        public int otherBodyInstanceID => ResolveActorToInstanceID(otherActor);
+        public EntityId colliderEntityId => ResolveShapeToEntityId(shape);
+        [System.Obsolete("colliderInstanceID is deprecated, use colliderEntityId instead.", false)]
+        public int colliderInstanceID => ResolveShapeToEntityId(shape);
+
+        public EntityId otherColliderEntityId => ResolveShapeToEntityId(otherShape);
+        [System.Obsolete("otherColliderInstanceID is deprecated, use otherColliderEntityId instead.", false)]
+        public int otherColliderInstanceID => ResolveShapeToEntityId(otherShape);
+
+        public EntityId bodyEntityId => ResolveActorToEntityId(actor);
+        [System.Obsolete("bodyInstanceID is deprecated, use bodyEntityId instead.", false)]
+        public int bodyInstanceID => ResolveActorToEntityId(actor);
+
+        public EntityId otherBodyEntityId => ResolveActorToEntityId(otherActor);
+        [System.Obsolete("otherBodyInstanceID is deprecated, use otherBodyEntityId instead.", false)]
+        public int otherBodyInstanceID => ResolveActorToEntityId(otherActor);
 
         public Vector3 bodyVelocity => GetActorLinearVelocity(actor);
         public Vector3 bodyAngularVelocity => GetActorAngularVelocity(actor);

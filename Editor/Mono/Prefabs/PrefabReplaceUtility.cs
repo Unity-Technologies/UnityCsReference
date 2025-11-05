@@ -294,7 +294,7 @@ namespace UnityEditor
             var childCount = transform.childCount;
             for (int i = 0; i < childCount; i++)
             {
-                var childInstanceID = transform.GetChild(i).gameObject.GetInstanceID();
+                var childInstanceID = transform.GetChild(i).gameObject.GetEntityId();
                 childInstanceIDs.Add(childInstanceID);
             }
             return childInstanceIDs;
@@ -307,9 +307,9 @@ namespace UnityEditor
             var childCount = transform.childCount;
             for (int i = 0; i < childCount; i++)
             {
-                var childInstanceID = transform.GetChild(i).gameObject.GetInstanceID();
-                if (!oldChildren.Contains(childInstanceID))
-                    newChildren.Add(childInstanceID);
+                var childEntityId = transform.GetChild(i).gameObject.GetEntityId();
+                if (!oldChildren.Contains(childEntityId))
+                    newChildren.Add(childEntityId);
             }
             return newChildren;
         }

@@ -41,9 +41,6 @@ namespace UnityEditor
             public static GUIContent cacheServerEnableDownloadLabel = EditorGUIUtility.TrTextContent("Download", "Enables downloads from the cache server.");
             public static GUIContent cacheServerEnableUploadLabel = EditorGUIUtility.TrTextContent("Upload", "Enables uploads to the cache server.");
             public static GUIContent cacheServerEnableTlsLabel = EditorGUIUtility.TrTextContent("TLS/SSL", "Enabled encryption on the cache server connection.");
-            public static GUIContent cacheServerEnableAuthLabel = EditorGUIUtility.TrTextContent("Authentication (using Unity ID)", "Enable authentication for cache server using Unity ID. Also forces TLS/SSL encryption.");
-            public static GUIContent cacheServerAuthUserLabel = EditorGUIUtility.TrTextContent("User");
-            public static GUIContent cacheServerAuthPasswordLabel = EditorGUIUtility.TrTextContent("Password");
             public static GUIContent cacheServerValidationLabel = EditorGUIUtility.TrTextContent("Content Validation");
             public static GUIContent cacheServerDownloadBatchSizeLabel = EditorGUIUtility.TrTextContent("Download Batch Size");
             public static readonly GUIContent cacheServerLearnMore = new GUIContent("Learn more...", "Go to cacheserver documentation.");
@@ -882,27 +879,13 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                         EditorSettings.cacheServerEnableUpload = enableUpload;
 
-                    bool enableAuth = EditorSettings.cacheServerEnableAuth;
-                    using (new EditorGUI.DisabledScope(enableAuth))
-                    {
-                        EditorGUI.BeginChangeCheck();
-                        bool enableTls = EditorSettings.cacheServerEnableTls;
-                        enableTls = EditorGUILayout.Toggle(Content.cacheServerEnableTlsLabel, enableTls);
-                        if (EditorGUI.EndChangeCheck())
-                            EditorSettings.cacheServerEnableTls = enableTls;
-                    }
 
                     EditorGUI.BeginChangeCheck();
-                    enableAuth = EditorGUILayout.Toggle(Content.cacheServerEnableAuthLabel, enableAuth);
+                    bool enableTls = EditorSettings.cacheServerEnableTls;
+                    enableTls = EditorGUILayout.Toggle(Content.cacheServerEnableTlsLabel, enableTls);
                     if (EditorGUI.EndChangeCheck())
-                    {
-                        EditorSettings.cacheServerEnableAuth = enableAuth;
-                        if (enableAuth)
-                        {
-                            EditorSettings.cacheServerEnableTls = true;
-                        }
-                    }
-
+                        EditorSettings.cacheServerEnableTls = enableTls;
+   
                     int validationIndex = Mathf.Clamp((int)EditorSettings.cacheServerValidationMode, 0, cacheServerValidationPopupList.Length - 1);
                     EditorGUILayout.Popup(m_CacheServerValidationMode, cacheServerValidationPopupList, Content.cacheServerValidationLabel);
 

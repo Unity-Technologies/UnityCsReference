@@ -33,7 +33,8 @@ namespace UnityEditor
     {
         Custom = -1,
         Local = 0,
-        Global = 1
+        Global = 1,
+        Grid = 2
     }
     
     public enum Tool
@@ -179,7 +180,7 @@ namespace UnityEditor
             get
             {
                 var rotation = handleRotation;
-                if (pivotRotation == PivotRotation.Custom && activeRotationTracker.isRotationControlHot)
+                if ((pivotRotation == PivotRotation.Custom || pivotRotation == PivotRotation.Grid) && activeRotationTracker.isRotationControlHot)
                     rotation = activeRotationTracker.rotation;
                 
                 Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, rotation, rectBlueprintMode);
@@ -193,7 +194,7 @@ namespace UnityEditor
             get
             {
                 var rotation = handleRotation;
-                if (pivotRotation == PivotRotation.Custom && activeRotationTracker.isRotationControlHot)
+                if ((pivotRotation == PivotRotation.Custom || pivotRotation == PivotRotation.Grid) && activeRotationTracker.isRotationControlHot)
                     rotation = activeRotationTracker.rotation;
                 
                 Bounds bounds = InternalEditorUtility.CalculateSelectionBoundsInSpace(handlePosition, rotation, rectBlueprintMode);
@@ -340,11 +341,12 @@ namespace UnityEditor
         public static Quaternion handleRotation
         {
             get => EditorPivotManager.activePivotRotation.rotation;
-            
             set
             {
                 if (get.m_PivotRotation == PivotRotation.Global)
                     get.m_GlobalHandleRotation = value;
+                else if (get.m_PivotRotation == PivotRotation.Grid)
+                    get.m_GlobalHandleRotation = value * Quaternion.Inverse(GridSettings.instance.rotation);
             }
         }
 
@@ -381,6 +383,9 @@ namespace UnityEditor
                                 break;
                             case PivotRotation.Local:
                                 PivotManager.SetActivePivotRotation(typeof(LocalPivotRotation));
+                                break;
+                            case PivotRotation.Grid:
+                                PivotManager.SetActivePivotRotation(typeof(GridPivotRotation));
                                 break;
                         }
                     }
@@ -517,7 +522,14 @@ namespace UnityEditor
 
         internal static void ResetGlobalHandleRotation()
         {
-            get.m_GlobalHandleRotation = Quaternion.identity;
+            if (pivotRotation == PivotRotation.Global)
+            {
+                handleRotation = Quaternion.identity;
+            }
+            else if (pivotRotation == PivotRotation.Grid)
+            {
+                handleRotation = GridSettings.instance.rotation;
+            }
         }
 
         internal Quaternion m_GlobalHandleRotation = Quaternion.identity;

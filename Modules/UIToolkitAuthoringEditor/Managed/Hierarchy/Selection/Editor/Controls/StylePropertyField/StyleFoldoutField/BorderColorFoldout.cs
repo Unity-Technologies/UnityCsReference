@@ -138,7 +138,7 @@ namespace Unity.UIToolkit.Editor
         }
 
         public BorderColorFoldout()
-            : this("Border Color") { }
+            : this("Color") { }
 
         public BorderColorFoldout(string text)
             : base(text)
@@ -222,6 +222,11 @@ namespace Unity.UIToolkit.Editor
                 leftField.SendEvent(subEvent);
                 evt.StopImmediatePropagation();
             }
+        }
+
+        protected override ColorField CreateHeaderInputElement()
+        {
+            return new ColorField();
         }
 
         public override void UpdateFromChildFields()

@@ -82,8 +82,8 @@ namespace UnityEditor
             if (isRealtimeLightmap)
             {
                 Hash128 inputSystemHash;
-                if ((renderer != null && Lightmapping.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
-                    || (terrain != null && Lightmapping.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash)))
+                if ((renderer != null && Lightmapping.GetInputSystemHash(renderer.GetEntityId(), out inputSystemHash))
+                    || (terrain != null && Lightmapping.GetInputSystemHash(terrain.GetEntityId(), out inputSystemHash)))
                 {
                     m_ActiveGameObjectTextureHash = inputSystemHash;
                 }

@@ -195,7 +195,7 @@ namespace UnityEditor
                 // The source asset could have been deleted while open inside the stage so the library object might be null here (case 1086613)
                 var asset = AssetDatabase.LoadMainAssetAtPath(stage.assetPath);
                 if (asset != null)
-                    AssetsTreeViewGUI.OnIconOverlayGUI(asset.GetInstanceID(), overlayRect, true);
+                    AssetsTreeViewGUI.OnIconOverlayGUI(asset.GetEntityId(), overlayRect, true);
             }
         }
     }

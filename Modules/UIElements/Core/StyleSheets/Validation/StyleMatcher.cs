@@ -49,6 +49,8 @@ namespace UnityEngine.UIElements.StyleSheets
         protected abstract bool MatchUrl();
         protected abstract bool MatchTime();
         protected abstract bool MatchFilterFunction();
+
+        protected abstract bool MatchMaterialPropertyValue();
         protected abstract bool MatchAngle();
         protected abstract bool MatchCustomIdent();
 
@@ -410,6 +412,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     case DataType.FilterFunction:
                         result = MatchFilterFunction();
                         break;
+                    case DataType.Prop:
+                        result = MatchMaterialPropertyValue();
+                        break;
                     case DataType.Angle:
                         result = MatchAngle();
                         break;
@@ -601,6 +606,14 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
+        static readonly Regex s_PropFunctionRegex = new Regex(@"^prop\(""[a-zA-Z0-9_]+""\s+.+\)$", RegexOptions.Compiled);
+        protected override bool MatchMaterialPropertyValue()
+        {
+            var value = current;
+            Match match = s_PropFunctionRegex.Match(value);
+            return match.Success;
+        }
+
         static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
         protected override bool MatchAngle()
         {
@@ -786,6 +799,19 @@ namespace UnityEngine.UIElements.StyleSheets
         protected override bool MatchFilterFunction()
         {
             var filterType = current.handle.valueIndex;
+            MoveNext();
+
+            var value = current;
+            int argCount = (int)value.sheet.ReadFloat(value.handle);
+            for (int i = 0; i < argCount; ++i)
+                MoveNext();
+
+            return true;
+        }
+
+        protected override bool MatchMaterialPropertyValue()
+        {
+            var propFunc = current.handle.valueIndex;
             MoveNext();
 
             var value = current;

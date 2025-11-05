@@ -81,8 +81,6 @@ namespace Unity.Hierarchy
             delegatesFocus = false;
             m_PrewarmControl = false;
 
-            schedule.Execute(Focus);
-
             TextField.style.display = DisplayStyle.None;
             Label.style.display = DisplayStyle.Flex;
 

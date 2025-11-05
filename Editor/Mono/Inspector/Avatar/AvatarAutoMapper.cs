@@ -444,7 +444,7 @@ namespace UnityEditor
 
         private int BoneHasBadKeyword(Transform bone, params string[] keywords)
         {
-            string key = bone.GetInstanceID() + ":" + String.Concat(keywords);
+            string key = bone.GetEntityId() + ":" + String.Concat(keywords);
             if (m_BoneHasBadKeywordDict.ContainsKey(key))
                 return m_BoneHasBadKeywordDict[key];
 
@@ -480,7 +480,7 @@ namespace UnityEditor
 
         private int BoneHasKeyword(Transform bone, params string[] keywords)
         {
-            string key = bone.GetInstanceID() + ":" + String.Concat(keywords);
+            string key = bone.GetEntityId() + ":" + String.Concat(keywords);
             if (m_BoneHasKeywordDict.ContainsKey(key))
                 return m_BoneHasKeywordDict[key];
 
@@ -533,12 +533,12 @@ namespace UnityEditor
         {
             SimpleProfiler.Begin("GetMatchKey");
             int key = goalItem.bone;
-            key += t.GetInstanceID() * 1000;
+            key += t.GetEntityId().GetHashCode() * 1000;
             if (parentMatch != null)
             {
-                key += parentMatch.bone.GetInstanceID() * 1000000;
+                key += parentMatch.bone.GetEntityId().GetHashCode() * 1000000;
                 if (parentMatch.parent != null)
-                    key += parentMatch.parent.bone.GetInstanceID() * 1000000000;
+                    key += parentMatch.parent.bone.GetEntityId().GetHashCode() * 1000000000;
             }
             SimpleProfiler.End();
             return key;

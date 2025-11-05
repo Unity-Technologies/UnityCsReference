@@ -64,7 +64,7 @@ internal sealed class EngineHelper
 
     internal static void ResizeListContents(object list, Type elementType, int newSize)
     {
-// ResizeListContents uses Unsafe.As, which is in a nuget package
+        NoAllocHelpers.ResizeListContents(list, elementType, newSize);
     }
 
 

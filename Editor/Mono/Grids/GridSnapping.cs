@@ -33,5 +33,15 @@ namespace UnityEditor
                 Handles.SnapToGrid(selections, axis);
             }
         }
+        
+        public static void AlignSelectionToGrid(SnapAxis axis = SnapAxis.All)
+        {
+            var selections = Selection.transforms;
+            if (selections != null && selections.Length > 0)
+            {
+                Undo.RecordObjects(selections, L10n.Tr("Align to Grid"));
+                Handles.AlignToGrid(selections);
+            }
+        }
     }
 }

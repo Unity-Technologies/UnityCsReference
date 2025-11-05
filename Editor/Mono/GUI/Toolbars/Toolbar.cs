@@ -93,6 +93,10 @@ namespace UnityEditor
             foreach (var def in MainToolbar.GetAllElementDefinitions())
             {
                 var path = Path.GetDirectoryName(def.attr.path);
+                // UUM-116278: On Windows leaving the '\\' will result in a new empty menu later in
+                // the menu creation as dropdown.AddItem uses '/' as a submenu separator.
+                path = path.Replace(Path.DirectorySeparatorChar, '/');
+
                 while (!string.IsNullOrEmpty(path))
                 {
                     uniquePaths.Add(path);
@@ -129,7 +133,7 @@ namespace UnityEditor
 
             m_EditModeState = new EditMode(this);
             EditorApplication.modifierKeysChanged += OnModifierKeyChanged;
-            
+
             if (OverlayCanvasesData.instance.GetCanvasData(this, out var data))
             {
                 overlayCanvas.ApplySaveData(data.m_SaveData.ToArray(), data.m_DynamicPanelContainerData.ToArray());
@@ -226,12 +230,12 @@ namespace UnityEditor
                 var result = a.attrib.menuPriority.CompareTo(b.attrib.menuPriority);
                 if (result != 0)
                     return result;
-                
+
                 // Then alphabetically by path
                 result = String.Compare(a.attrib.path, b.attrib.path, StringComparison.OrdinalIgnoreCase);
                 if (result != 0)
                     return result;
-                
+
                 // Then by dock position and index
                 return ((int)a.attrib.defaultDockPosition * 100 + a.attrib.defaultDockIndex)
                     .CompareTo((int)b.attrib.defaultDockPosition * 100 + b.attrib.defaultDockIndex);
@@ -242,7 +246,7 @@ namespace UnityEditor
             {
                 if (s_UnityOnlyOverlays.Contains(prevOverlay) && !s_UnityOnlyOverlays.Contains(pair.overlay))
                     dropdown.AddSeparator("");
-                
+
                 if (pair.attrib.path != Toolbar.deprecatedElementsId || Toolbar.instance.deprecatedElements.Count > 0)
                 {
                     dropdown.AddItem(pair.attrib.path, pair.overlay.displayed, () =>

@@ -171,13 +171,13 @@ namespace UnityEditor
 
         private static void HighlightRowsMatchingObjects(IList<TreeViewItem> rows)
         {
-            List<int> instanceIds = new List<int>();
+            List<EntityId> entityIds = new List<EntityId>();
             foreach (var row in rows)
             {
                 var batchRow = row as BatchTreeViewItem;
                 if (batchRow != null)
                 {
-                    instanceIds.AddRange(batchRow.instanceIDs);
+                    entityIds.AddRange(batchRow.entityIds);
                     continue;
                 }
                 var canvasRow = row as CanvasTreeViewItem;
@@ -186,10 +186,10 @@ namespace UnityEditor
                 Canvas canvas = EditorUtility.EntityIdToObject(canvasRow.info.objectInstanceId) as Canvas;
                 if (canvas == null || canvas.gameObject == null)
                     continue;
-                instanceIds.Add(canvas.gameObject.GetInstanceID());
+                entityIds.Add(canvas.gameObject.GetEntityId());
             }
-            if (instanceIds.Count > 0)
-                Selection.entityIds = instanceIds.ToArray().ToEntityIdArray();
+            if (entityIds.Count > 0)
+                Selection.entityIds = entityIds.ToArray().ToArray();
         }
 
         private void SetupRows(TreeViewItem item, IList<TreeViewItem> rows)
@@ -239,14 +239,14 @@ namespace UnityEditor
                     case Column.GameObjectCount:
                         return info.instanceIDsCount.ToString();
                     case Column.InstanceIds:
-                        if (batchItem.instanceIDs.Length <= 5)
+                        if (batchItem.entityIds.Length <= 5)
                         {
                             StringBuilder sb = new StringBuilder();
-                            for (int i = 0; i < batchItem.instanceIDs.Length; i++)
+                            for (int i = 0; i < batchItem.entityIds.Length; i++)
                             {
                                 if (i != 0)
                                     sb.Append(", ");
-                                int iid = batchItem.instanceIDs[i];
+                                int iid = batchItem.entityIds[i];
                                 var o = EditorUtility.EntityIdToObject(iid);
                                 if (o == null)
                                     sb.Append(iid);
@@ -255,7 +255,7 @@ namespace UnityEditor
                             }
                             return sb.ToString();
                         }
-                        return string.Format("{0} objects", batchItem.instanceIDs.Length);
+                        return string.Format("{0} objects", batchItem.entityIds.Length);
                     case Column.Element:
                     case Column.BatchCount:
                     case Column.TotalBatchCount:
@@ -411,14 +411,14 @@ namespace UnityEditor
 
         internal sealed class BatchTreeViewItem : BaseTreeViewItem
         {
-            public int[] instanceIDs;
+            public EntityId[] entityIds;
 
             public BatchTreeViewItem(UISystemProfilerInfo info, int depth, string displayName, int[] allBatchesInstanceIDs)
                 : base(info, depth, displayName)
             {
                 icon = null;
-                instanceIDs = new int[info.instanceIDsCount];
-                Array.Copy(allBatchesInstanceIDs, info.instanceIDsIndex, instanceIDs, 0, info.instanceIDsCount);
+                entityIds = new EntityId[info.instanceIDsCount];
+                Array.Copy(allBatchesInstanceIDs, info.instanceIDsIndex, entityIds, 0, info.instanceIDsCount);
                 renderDataIndex = info.renderDataIndex;
             }
         }

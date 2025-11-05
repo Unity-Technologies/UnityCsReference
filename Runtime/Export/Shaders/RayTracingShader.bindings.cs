@@ -12,6 +12,22 @@ namespace UnityEngine.Rendering
     [NativeHeader("Runtime/Graphics/RayTracing/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
 
+    class RayTracingShaderHelpURLAttribute : HelpURLAttribute
+    {
+        public RayTracingShaderHelpURLAttribute()
+            : base(null)
+        {
+        }
+        public override string URL
+        {
+            get
+            {
+                return $"https://docs.unity3d.com//{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/ScriptReference/Rendering.RayTracingShader.html";
+            }
+        }
+    }
+
+    [RayTracingShaderHelpURLAttribute]
     public sealed partial class RayTracingShader : Object
     {
         public extern float maxRecursionDepth { get; }

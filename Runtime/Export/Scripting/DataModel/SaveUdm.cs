@@ -20,7 +20,7 @@ internal static class SaveUdm
     private static readonly ProfilerMarker s_SerializeCallMarker = new ProfilerMarker("Serialize");
     private static readonly ProfilerMarker s_RemappingMarker = new ProfilerMarker("Remapping");
 
-    internal static DocumentModel CreateDocumentFromLiveObjectsInternal(ReadOnlySpan<UdmWriteData> objectsToWrite, ReadOnlySpan<EntityId> pureEntitiesIds, SerializeInstructionFlags options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath = "", GUID assetGUID = default, bool serializeEcsData = true)
+    internal static DocumentModel CreateDocumentFromLiveObjectsInternal(ReadOnlySpan<UdmWriteData> objectsToWrite, ReadOnlySpan<EntityId> pureEntitiesIds, SerializeInstructionFlags options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath = "", UnityEngine.GUID assetGUID = default, bool serializeEcsData = true)
     {
         var document = DocumentModel.CreateNew();
 
@@ -51,7 +51,7 @@ internal static class SaveUdm
     }
 
     [RequiredByNativeCode]
-    internal static IntPtr CreateDocumentFromLiveObjectsInternalBindings(UdmWriteData[] objectsToWrite, EntityId[] pureEntitiesIds, ulong options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath, GUID assetGUID, bool serializeEcsData)
+    internal static IntPtr CreateDocumentFromLiveObjectsInternalBindings(UdmWriteData[] objectsToWrite, EntityId[] pureEntitiesIds, ulong options, bool remapInstanceIds, bool preserveUnresolvedInstanceIds, string resourcePath, UnityEngine.GUID assetGUID, bool serializeEcsData)
     {
         SerializeInstructionFlags serializeOptions = (SerializeInstructionFlags)options;
 

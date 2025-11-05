@@ -256,6 +256,7 @@ namespace UnityEngine
             return m_InstanceID;
         }
 
+        [Obsolete("GetInstanceID is deprecated. Use GetEntityId instead. This will be removed in a future version.")]
         [System.Security.SecuritySafeCritical]
         public unsafe int GetInstanceID()
         {
@@ -333,7 +334,7 @@ namespace UnityEngine
             if (o is MonoBehaviour || o is ScriptableObject)
                 return false;
 
-            return DoesObjectWithInstanceIDExist(o.GetInstanceID());
+            return DoesObjectWithInstanceIDExist(o.GetEntityId());
         }
 
         System.IntPtr GetCachedPtr()

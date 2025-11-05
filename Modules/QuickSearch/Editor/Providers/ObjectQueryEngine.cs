@@ -116,14 +116,9 @@ namespace UnityEditor.Search.Providers
         public ObjectQueryEngine(IEnumerable<T> objects)
         {
             m_Objects = objects.ToList();
-            m_QueryEngine.AddFilter<EntityId>("id", GetId);
-            m_QueryEngine.GetFilter("id").AddTypeParser(s =>
-            {
-                if (!ulong.TryParse(s, out ulong result))
-                    return ParseResult<EntityId>.none;
+            var filter = m_QueryEngine.SetFilter<EntityId>("id", GetId);
+            filter.AddTypeParser(EntityIdTypeParser);
 
-                return new ParseResult<EntityId>(true, EntityId.From(result));
-            });
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
@@ -198,12 +193,15 @@ namespace UnityEditor.Search.Providers
             return new SearchProposition(label: label, null, $"Search {typeName} components", icon: Utils.FindTextureForType(t));
         }
 
-        // TODO: This should not be an example. Documentation examples should be in the SearchExamples project.
-        #region search_query_error_example
         public IEnumerable<T> Search(SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
         {
+            return Search(context.searchQuery, context, provider, subset);
+        }
+
+        internal IEnumerable<T> Search(string queryStr, SearchContext context, SearchProvider provider, IEnumerable<T> subset = null)
+        {
             const bool useFastYielding = true;
-            var query = m_QueryEngine.ParseQuery(context.searchQuery, useFastYielding);
+            var query = m_QueryEngine.ParseQuery(queryStr, useFastYielding);
             if (!query.valid)
             {
                 if (reportError)
@@ -217,8 +215,6 @@ namespace UnityEditor.Search.Providers
             IEnumerable<T> validObjects = FilterValidObjectsOnPull(subset ?? m_Objects, useFastYielding);
             return query.Apply(validObjects, false);
         }
-
-        #endregion
 
         public virtual bool GetId(T obj, QueryFilterOperator op, EntityId entityId)
         {
@@ -563,6 +559,7 @@ namespace UnityEditor.Search.Providers
             filter.AddTypeParser(GlobalObjectIdTypeParser);
             filter.AddTypeParser(AssetPathTypeParser);
             filter.AddTypeParser(InstanceIdTypeParser);
+            filter.AddTypeParser(EntityIdTypeParser);
             filter.AddTypeParser(DefaultRefTypeParser);
         }
 
@@ -595,6 +592,14 @@ namespace UnityEditor.Search.Providers
             if (Utils.TryParse(potentialId, out ulong instanceId))
                 return new ParseResult<ulong>(true, instanceId);
             return ParseResult<ulong>.none;
+        }
+
+        static ParseResult<EntityId> EntityIdTypeParser(string filterValue)
+        {
+            var potentialId = filterValue;
+            if (Utils.TryParse(potentialId, out int entityId))
+                return new ParseResult<EntityId>(true, entityId);
+            return ParseResult<EntityId>.none;
         }
 
         static ParseResult<ulong> DefaultRefTypeParser(string filterValue)

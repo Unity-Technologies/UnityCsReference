@@ -960,10 +960,9 @@ namespace UnityEditor
             EntityId lastClickedID = selectedIDs.Count > 0 ? selectedIDs.Last() : EntityId.None;
             bool allowMultiselection = true;
             bool keepMultiSelection = Event.current.shift || clickedControlInGroup;
-            bool useShiftAsActionKey = false;
 
-            var newSelection = InternalEditorUtility.GetNewSelection(clickedGroup.GetEntityId(), allIDs, selectedIDs, lastClickedID, keepMultiSelection, useShiftAsActionKey, allowMultiselection);
-            List<AudioMixerGroupController> groups = (from x in p.allGroups where newSelection.Contains(x.GetInstanceID()) select x).ToList();
+            var newSelection = InternalEditorUtility.HandleMultiSelectionWithCurrentModifiers(clickedGroup.GetEntityId(), allIDs, selectedIDs, lastClickedID, keepMultiSelection, allowMultiselection, useShiftAsActionKey:false);
+            List<AudioMixerGroupController> groups = (from x in p.allGroups where newSelection.Contains(x.GetEntityId()) select x).ToList();
 
             Selection.objects = groups.ToArray();
             m_Controller.OnUnitySelectionChanged();
@@ -1600,7 +1599,7 @@ namespace UnityEditor
                     if (!patchslots.ContainsKey(targetEffect))
                         continue;
                     var targetSlot = patchslots[targetEffect];
-                    int color = sourceEffect.GetInstanceID() ^ targetEffect.GetInstanceID();
+                    int color = sourceEffect.GetEntityId().GetHashCode() ^ targetEffect.GetEntityId().GetHashCode();
                     float phase = (color & 63) * 0.1f;
                     float mx1 = Mathf.Abs(targetSlot.x - sourceSlot.x) * Mathf.Sin(Time.time * 5.0f + phase) * moveamp + (sourceSlot.x + targetSlot.x) * 0.5f;
                     float my1 = Mathf.Abs(targetSlot.y - sourceSlot.y) * Mathf.Cos(Time.time * 5.0f + phase) * moveamp + Math.Max(sourceSlot.y, targetSlot.y) + Mathf.Max(Mathf.Min(0.5f * Math.Abs(targetSlot.y - sourceSlot.y), 50.0f), 50.0f);

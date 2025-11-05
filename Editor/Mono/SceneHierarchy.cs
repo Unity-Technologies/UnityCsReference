@@ -298,13 +298,13 @@ namespace UnityEditor
             m_TreeView.ReloadData();
         }
 
-        void ItemRenameEnded(bool userAcceptedRename, int itemID, string name, string originalName)
+        void ItemRenameEnded(bool userAcceptedRename, EntityId itemID, string name, string originalName)
         {
             if (userAcceptedRename && name != originalName)
             {
                 // Handle reloading immediately when an internal change happens instead of waiting for
                 // the delayed OnHierarchyChange event (fixes case 981190)
-                ObjectNames.SetNameSmartWithInstanceID(itemID, name);
+                ObjectNames.SetNameSmartWithEntityId(itemID, name);
                 m_IgnoreNextHierarchyChangedEvent = true;
                 ReloadData();
 
@@ -1369,7 +1369,7 @@ namespace UnityEditor
             var selectedObject = Selection.activeObject;
             if (!selectedObject)
                 return;
-            SearchableEditorWindow.SearchForReferencesToInstanceID(selectedObject.GetInstanceID());
+            SearchableEditorWindow.SearchForReferencesToInstanceID(selectedObject.GetEntityId());
         }
 
         private void FindReferenceInProject()
@@ -1686,13 +1686,13 @@ namespace UnityEditor
             if (defaultParentObject != null)
             {
                 lastSelectedObject = defaultParentObject;
-                id = lastSelectedObject.GetInstanceID();
+                id = lastSelectedObject.GetEntityId();
             }
             else if (Selection.objects.Length > 0)
             {
                 lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
                 if (lastSelectedObject != null && !PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(lastSelectedObject))
-                    id = lastSelectedObject.GetInstanceID();
+                    id = lastSelectedObject.GetEntityId();
             }
 
             var sceneGUID = "";
@@ -1717,13 +1717,13 @@ namespace UnityEditor
             string undoText = "Set Default Parent Object";
             var currentlySetID = scene.defaultParent;
 
-            var objectInstanceID = lastSelectedObject ? lastSelectedObject.GetInstanceID() : 0;
+            EntityId objectEntityId = lastSelectedObject ? lastSelectedObject.GetEntityId() : EntityId.None;
             var isPrefabStage = PrefabStageUtility.IsPrefabStageScene(scene);
 
             // if we're toggling an object that is already the default parent object in an inactive scene,
             // we set the active scene and leave the same object as the active parent
             // this is to avoid confusion because active parent objects are not highlighted in inactive scenes
-            if (toggle && currentlySetID == objectInstanceID && sceneGUID != EditorSceneManager.GetActiveScene().guid && !isPrefabStage)
+            if (toggle && currentlySetID == objectEntityId && sceneGUID != EditorSceneManager.GetActiveScene().guid && !isPrefabStage)
             {
                 EditorSceneManager.SetActiveScene(scene);
                 return;
@@ -1963,7 +1963,7 @@ namespace UnityEditor
 
         void SelectChildren()
         {
-            List<EntityId> instanceIDs = new List<EntityId>(treeView.GetSelection());
+            List<EntityId> entityIds = new List<EntityId>(treeView.GetSelection());
             foreach (var id in treeView.GetSelection())
             {
                 var sceneHandle = SceneHandle.From(id);
@@ -1972,19 +1972,19 @@ namespace UnityEditor
                 {
                     foreach (var rootGameObject in scene.GetRootGameObjects())
                     {
-                        instanceIDs.Add(rootGameObject.GetInstanceID());
-                        instanceIDs.AddRange(rootGameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
+                        entityIds.Add(rootGameObject.GetEntityId());
+                        entityIds.AddRange(rootGameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
                     }
                 }
                 else
                 {
                     var go = InternalEditorUtility.GetObjectFromEntityId(id) as GameObject;
                     if (go != null)
-                        instanceIDs.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
+                        entityIds.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
                 }
             }
 
-            var newSelection = instanceIDs.Distinct().ToArray();
+            var newSelection = entityIds.Distinct().ToArray();
             treeView.SetSelection(newSelection, true);
 
             TreeViewSelectionChanged(newSelection);
@@ -2019,7 +2019,7 @@ namespace UnityEditor
                     var root = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
                     if (root != null)
                     {
-                        instanceIDs.Add(root.GetInstanceID());
+                        instanceIDs.Add(root.GetEntityId());
                     }
                 }
             }

@@ -234,7 +234,7 @@ namespace UnityEditor
                                 }
                                 else if (renderer.sharedMaterial != null)
                                 {
-                                    entityId = renderer.sharedMaterial.GetInstanceID();
+                                    entityId = renderer.sharedMaterial.GetEntityId();
 
                                     // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
                                     if (m_CachedMaterialInstanceID != entityId)
@@ -253,7 +253,7 @@ namespace UnityEditor
                             if (multiEdit || !isEditable)
                             {
                                 // Presets should use the default material.
-                                entityId = Material.GetDefaultParticleMaterial().GetInstanceID();
+                                entityId = Material.GetDefaultParticleMaterial().GetEntityId();
                             }
 
                             if (entityId != 0)

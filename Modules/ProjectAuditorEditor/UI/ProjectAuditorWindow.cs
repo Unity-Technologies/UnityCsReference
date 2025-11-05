@@ -1132,7 +1132,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         BuildTarget GetSelectedAnalysisPlatform()
         {
-            var platform = UserPreferences.AnalysisTargetPlatform;
+            BuildTarget platform = UserPreferences.AnalysisTargetPlatform;
 
             // if platform is not selected or supported, fallback to active build target
             if (platform == BuildTarget.NoTarget ||
@@ -1152,15 +1152,16 @@ namespace Unity.ProjectAuditor.Editor.UI
             var selectedCategories = UserPreferences.ProjectAreasToAnalyze;
 
             var requestedCategories = new List<IssueCategory>(new[] { IssueCategory.Metadata });
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Code))
+            ProjectAreaFlags categories = selectedCategories;
+            if (categories.HasFlag(ProjectAreaFlags.Code))
                 requestedCategories.AddRange(GetTabCategories(TabId.Code));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.ProjectSettings))
+            if (categories.HasFlag(ProjectAreaFlags.ProjectSettings))
                 requestedCategories.AddRange(GetTabCategories(TabId.Settings));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Assets))
+            if (categories.HasFlag(ProjectAreaFlags.Assets))
                 requestedCategories.AddRange(GetTabCategories(TabId.Assets));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Shaders))
+            if (categories.HasFlag(ProjectAreaFlags.Shaders))
                 requestedCategories.AddRange(GetTabCategories(TabId.Shaders));
-            if (selectedCategories.HasFlag(ProjectAreaFlags.Build))
+            if (categories.HasFlag(ProjectAreaFlags.Build))
                 requestedCategories.AddRange(GetTabCategories(TabId.Build));
 
             return requestedCategories.ToArray();
@@ -1383,7 +1384,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                                 {
                                     if (EditorUtility.DisplayDialog(k_EnableAreas, k_EnableAreasQuestion, "Ok", "Cancel"))
                                     {
-                                        UserPreferences.ProjectAreasToAnalyze = ProjectAreaFlags.All;
+                                        UserPreferences.ProjectAreasToAnalyze.Set(ProjectAreaFlags.All);
                                         Analyze();
                                         GUIUtility.ExitGUI();
                                     }

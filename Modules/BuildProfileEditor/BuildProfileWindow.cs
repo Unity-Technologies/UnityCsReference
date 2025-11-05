@@ -72,6 +72,37 @@ namespace UnityEditor.Build.Profile
             window.minSize = new Vector2(725, 400);
         }
 
+        [UsedImplicitly, RequiredByNativeCode]
+        public static void ShowBuildProfileWindowAndRequireActiveProfile()
+        {
+            var window = GetWindow<BuildProfileWindow>(TrText.buildProfilesName);
+            window.minSize = new Vector2(725, 400);
+
+            // Activate the first buildable profile if none is active.
+            foreach (var profile in window.m_BuildProfileDataSource.customBuildProfiles)
+            {
+                if (profile.CanBuildLocally())
+                {
+                    BuildProfile.SetActiveBuildProfile(profile);
+                    return;
+                }
+            }
+
+            // Prompts for build profile creation and try again
+            // to activate an editor buildable profile.
+            PlatformDiscoveryWindow.ShowWindow(() =>
+            {
+                foreach (var profile in window.m_BuildProfileDataSource.customBuildProfiles)
+                {
+                    if (profile.CanBuildLocally())
+                    {
+                        BuildProfile.SetActiveBuildProfile(profile);
+                        return;
+                    }
+                }
+            });
+        }
+
         public static void OnEditorSettingsChanged()
         {
             if (!HasOpenInstances<BuildProfileWindow>())
@@ -152,8 +183,8 @@ namespace UnityEditor.Build.Profile
             };
             m_ActivateButton.clicked += OnActivateButtonClicked;
             m_BuildInCloudPackageButton.clicked += OnCloudBuildClicked;
-            addBuildProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
-            listViewAddProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
+            addBuildProfileButton.clicked += this.OpenPlatformDiscoveryWindow; ;
+            listViewAddProfileButton.clicked += this.OpenPlatformDiscoveryWindow;
             playerSettingsButton.clicked += () =>
             {
                 SettingsService.OpenProjectSettings(k_PlayerSettingsWindow);
@@ -320,7 +351,7 @@ namespace UnityEditor.Build.Profile
             m_SelectionHeader.Hide();
             m_SelectionFooter.Hide();
 
-            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement());
+            m_BuildProfileInspectorElement.Add(new BuildProfileWelcomeElement(OpenPlatformDiscoveryWindow));
         }
 
         /// <summary>
@@ -751,6 +782,30 @@ namespace UnityEditor.Build.Profile
             }
 
             RebuildProfileListViews();
+        }
+
+        /// <summary>
+        /// Opens the platform discovery window, activates the first profile created.
+        /// </summary>
+        void OpenPlatformDiscoveryWindow()
+        {
+            if (m_BuildProfileDataSource.customBuildProfiles.Count == 0)
+            {
+                PlatformDiscoveryWindow.ShowWindow(() =>
+                {
+                    foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
+                    {
+                        if (profile.CanBuildLocally())
+                        {
+                            BuildProfile.SetActiveBuildProfile(profile);
+                            return;
+                        }
+                    }
+                });
+                return;
+            }
+
+            PlatformDiscoveryWindow.ShowWindow();
         }
     }
 }

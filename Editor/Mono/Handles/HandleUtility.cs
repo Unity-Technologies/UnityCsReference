@@ -1908,7 +1908,7 @@ namespace UnityEditor
             if (SceneView.lastActiveSceneView.showGrid)
             {
                 var axis = sceneView.sceneViewGrids.gridAxis;
-                var point = sceneView.sceneViewGrids.GetPivot(axis);
+                var point = sceneView.sceneViewGrids.GetOffsetAlongAxis(axis);
 
                 var normal = sceneView.in2DMode ?
                     Vector3.forward :

@@ -225,9 +225,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var folderObject = AssetDatabase.LoadAssetAtPath<Object>(path);
             if (folderObject == null)
                 return false;
-            var instanceID = folderObject.GetInstanceID();
+            var entityId = folderObject.GetEntityId();
             // We need the delayCall to make sure the Project Browser window is open before pinging the manifest, otherwise we use the request
-            EditorApplication.delayCall += () => window.FrameObject(instanceID, true);
+            EditorApplication.delayCall += () => window.FrameObject(entityId, true);
             return true;
         }
     }

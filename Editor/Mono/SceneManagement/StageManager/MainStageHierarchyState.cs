@@ -19,14 +19,14 @@ namespace UnityEditor
         [SerializeField]
         List<EntityId> m_ExpandedSceneGameObjectInstanceIDs = new List<EntityId>();
         [SerializeField]
-        EntityId m_LastClickedInstanceID;
+        EntityId m_LastClickedEntityId;
         [SerializeField]
         string[] m_OpenSceneGUIDs = null;
 
         public void SaveStateFromHierarchy(SceneHierarchyWindow hierarchy, Stage stage)
         {
             var lastClickedGameObject = EditorUtility.EntityIdToObject(hierarchy.sceneHierarchy.treeViewState.lastClickedID) as GameObject;
-            m_LastClickedInstanceID = lastClickedGameObject != null ? lastClickedGameObject.GetInstanceID() : 0;
+            m_LastClickedEntityId = lastClickedGameObject != null ? lastClickedGameObject.GetEntityId() : 0;
             m_ExpandedSceneGameObjectInstanceIDs = hierarchy.sceneHierarchy.treeViewState.expandedIDs;
 
             m_ScrollY = hierarchy.sceneHierarchy.treeViewState.scrollPos.y;
@@ -45,7 +45,7 @@ namespace UnityEditor
             // Restore selection and scroll value when requested
             if (stage.setSelectionAndScrollWhenBecomingCurrentStage)
             {
-                Selection.activeEntityId = m_LastClickedInstanceID;
+                Selection.activeEntityId = m_LastClickedEntityId;
 
                 // We only want to set scroll position if none of the scene that were open
                 // when the scroll was recorded have been closed in the mean time.
@@ -79,7 +79,7 @@ namespace UnityEditor
             Debug.Log(prefix + (stage.GetType().ToString()) + string.Format("-main stage: {0}, -scrollY: {1}, -selection {2}, -setSelection {3}",
                 DebugUtils.ListToString(m_ExpandedSceneGameObjectInstanceIDs),
                 m_ScrollY,
-                m_LastClickedInstanceID,
+                m_LastClickedEntityId,
                 stage.setSelectionAndScrollWhenBecomingCurrentStage));
         }
 

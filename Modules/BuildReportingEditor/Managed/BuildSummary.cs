@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.Build.Reporting
@@ -31,6 +32,8 @@ namespace UnityEditor.Build.Reporting
         internal BuildAssetBundleOptions assetBundleOptions { get; }
         ///<summary>The output path for the build, as provided to <see cref="BuildPipeline.BuildPlayer" />.</summary>
         public string outputPath { get; }
+        ///<summary>The platform-specific path of the Data folder for a player build. For AssetBundle builds, this value of this will be identical to the output path.</summary>
+        public string dataPath { get; }
         internal uint crc { get; }
         ///<summary>The total size of the build output, in bytes.</summary>
         public ulong totalSize { get; }

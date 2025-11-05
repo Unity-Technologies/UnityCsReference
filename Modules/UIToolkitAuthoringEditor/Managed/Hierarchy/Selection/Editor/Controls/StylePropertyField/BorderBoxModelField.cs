@@ -145,7 +145,8 @@ namespace Unity.UIToolkit.Editor
 
             m_BorderWidthBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.BorderWidth, true, m_ContentBox,
                 m_TopBorderWidthFieldContainer, m_BottomBorderWidthFieldContainer,
-                m_LeftBorderWidthFieldContainer, m_RightBorderWidthFieldContainer);
+                m_LeftBorderWidthFieldContainer, m_RightBorderWidthFieldContainer,
+                () => new BoxModelEditableLabel());
             m_BorderWidthBox.AddToClassList(BoxModelClassName);
             m_BorderWidthBox.AddToClassList(ContainerBorderWidthClassName);
             m_BorderWidthBox.AddToClassList(InspectorCompositeStyleRowElementClassName);
@@ -157,7 +158,8 @@ namespace Unity.UIToolkit.Editor
 
             m_BorderRadiusBox = new BoxModelField<StyleLength, BoxModelEditableLabel>(BoxType.BorderRadius, true, new VisualElement(),
                 m_TopBorderRadiusFieldContainer, m_BottomBorderRadiusFieldContainer,
-                m_LeftBorderRadiusFieldContainer, m_RightBorderRadiusFieldContainer);
+                m_LeftBorderRadiusFieldContainer, m_RightBorderRadiusFieldContainer,
+                () => new BoxModelEditableLabel());
             m_BorderRadiusBox.AddToClassList(BoxModelClassName);
             m_BorderRadiusBox.AddToClassList(ContainerBorderRadiusClassName);
             m_BorderRadiusBox.AddToClassList(InspectorCompositeStyleRowElementClassName);
@@ -176,7 +178,8 @@ namespace Unity.UIToolkit.Editor
 
             m_ColorBox = new BoxModelField<StyleColor, StyleColorField>(BoxType.BorderColor, true, m_BorderWidthBox,
                 m_TopColorFieldContainer, m_BottomColorFieldContainer,
-                m_LeftColorFieldContainer, m_RightColorFieldContainer);
+                m_LeftColorFieldContainer, m_RightColorFieldContainer,
+                () => new StyleColorField());
 
             m_ColorBox.fields.ForEach(f =>
             {

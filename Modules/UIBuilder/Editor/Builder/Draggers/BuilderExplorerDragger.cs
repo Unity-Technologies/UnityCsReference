@@ -56,8 +56,8 @@ namespace Unity.UI.Builder
             var element = target.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
             if (element == null)
             {
-                var explorerItem = target.GetFirstAncestorWithClass(BuilderConstants.ExplorerItemLabelContClassName).parent;
-                element = explorerItem.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
+                var explorerItem = target.GetFirstAncestorWithClass(BuilderConstants.ExplorerItemLabelContClassName)?.parent;
+                element = explorerItem?.GetProperty(BuilderConstants.ExplorerItemElementLinkVEPropertyName) as VisualElement;
             }
 
             return element;
@@ -93,7 +93,7 @@ namespace Unity.UI.Builder
 
         protected override bool PrepareDrag(VisualElement target, Vector2 mousePosition)
         {
-            if (DragAndDrop.paths != null && DragAndDrop.paths.Length > 0)
+            if (DragAndDrop.entityIds?.Length > 0)
             {
                 return VerifyExternalDrag();
             }
@@ -204,19 +204,14 @@ namespace Unity.UI.Builder
 
         bool VerifyExternalDrag()
         {
-            string ext = string.Empty;
+            bool isStyleSheetsDragger = this is BuilderStyleSheetsDragger;
+            bool isHierarchyDragger = this is BuilderHierarchyDragger;
 
-            if (this is BuilderStyleSheetsDragger)
-                ext = BuilderConstants.UssExtension;
-            else if (this is BuilderHierarchyDragger)
-                ext = BuilderConstants.UxmlExtension;
-
-            List<string> listOfPaths = new List<string>();
-            BuilderAssetUtilities.GetListOfPathsInDragAndDrop(listOfPaths);
-
-            foreach (var path in listOfPaths)
+            foreach (var entityID in DragAndDrop.entityIds)
             {
-                if (path.EndsWith(ext))
+                bool isVTA = EditorUtility.EntityIdToObject(entityID) as VisualTreeAsset;
+                bool isStylesheet = EditorUtility.EntityIdToObject(entityID) as StyleSheet;
+                if (isVTA && isHierarchyDragger || isStylesheet && isStyleSheetsDragger)
                     return true;
             }
 

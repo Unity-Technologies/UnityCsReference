@@ -84,7 +84,8 @@ namespace UnityEditor
 
         protected void ResetGlobalHandleRotationIfNeeded()
         {
-            if (Tools.pivotRotation == PivotRotation.Global && Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp)
+            if ((Tools.pivotRotation == PivotRotation.Global || Tools.pivotRotation == PivotRotation.Grid)
+                && Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp)
             {
                 Tools.ResetGlobalHandleRotation();
             }
@@ -178,7 +179,12 @@ namespace UnityEditor
 
         public override bool gridSnapEnabled
         {
-            get { return Tools.pivotRotation == PivotRotation.Global; }
+            get
+            {
+                var gridSettings = GridSettings.instance;
+                return (Tools.pivotRotation == PivotRotation.Global && gridSettings.activeModeIndex == GridMode.World) ||
+                       (Tools.pivotRotation == PivotRotation.Grid && (gridSettings.activeModeIndex == GridMode.World || gridSettings.activeModeIndex == GridMode.Custom));
+            }
         }
 
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
@@ -282,7 +288,12 @@ namespace UnityEditor
 
         public override bool gridSnapEnabled
         {
-            get { return Tools.pivotRotation == PivotRotation.Global; }
+            get
+            {
+                var gridSettings = GridSettings.instance;
+                return (Tools.pivotRotation == PivotRotation.Global && gridSettings.activeModeIndex == GridMode.World) ||
+                       (Tools.pivotRotation == PivotRotation.Grid && (gridSettings.activeModeIndex == GridMode.World || gridSettings.activeModeIndex == GridMode.Custom));
+            }
         }
 
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)

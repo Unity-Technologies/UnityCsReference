@@ -228,6 +228,8 @@ namespace UnityEditor
         GUIContent m_OpenPrefabContent;
         GUIContent m_SelectedObjectCountContent;
         GameObject m_MissingGameObject;
+        Material m_Material;
+        GameObject m_GameObject;
 
         public void OnEnable()
         {
@@ -263,6 +265,14 @@ namespace UnityEditor
             SetSelectedObjectCountLabelContent();
             CalculatePrefabStatus();
             CaculateHasRenderableParts();
+
+            m_GameObject = target as GameObject;
+            if (m_GameObject != null)
+            {
+                var renderer = m_GameObject.GetComponent<Renderer>();
+                if (renderer != null)
+                    m_Material = renderer.sharedMaterial;
+            }
 
             m_MissingGameObject = EditorUtility.CreateGameObjectWithHideFlags("Missing GameObject for Object Field", HideFlags.HideAndDontSave);
             DestroyImmediate(m_MissingGameObject);
@@ -374,6 +384,8 @@ namespace UnityEditor
                 previewData.Dispose();
             ClearPreviewCache();
             m_PreviewCache = null;
+            m_Material = null;
+            m_GameObject = null;
 
             if (m_Name != null && string.IsNullOrEmpty(m_Name.stringValue) && !(string.IsNullOrEmpty(m_GOPreviousName)))
             {
@@ -402,17 +414,18 @@ namespace UnityEditor
 
         void ClearPreviewCache()
         {
-            if (m_PreviewCache == null)
-            {
+            if (m_PreviewCache == null || m_PreviewCache.Count == 0)
                 return;
-            }
 
             foreach (var texture in m_PreviewCache.Values)
             {
-                DestroyImmediate(texture);
+                if (texture != null)
+                    DestroyImmediate(texture);
             }
+
             m_PreviewCache.Clear();
         }
+
 
         private static StaticEditorFlags[] s_StaticEditorFlagValues;
 
@@ -1202,48 +1215,65 @@ namespace UnityEditor
             }
         }
 
+        private static bool HasChanged(UnityObject obj) => obj != null && EditorUtility.IsDirty(obj);
+
+        private bool ShouldClearPreviewCache(Rect r, Vector2 newDirection)
+        {
+            // Invalidate preview if the camera direction has changed.
+            if (newDirection != m_PreviewDir)
+                return true;
+
+            // Invalidate preview if the preview rect has changed.
+            if (m_PreviewRect != r)
+                return true;
+
+            // [UUM-116893] Always clear the preview cache if the user has modified either the GameObject or the Material.
+            // Since the first dirty is true, we must clear and rebuild the preview each time
+            if (HasChanged(m_GameObject) || HasChanged(m_Material))
+                return true;
+
+            return false;
+        }
+
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
+            bool isRepaint = Event.current.type == EventType.Repaint;
+
             var previewData = GetPreviewData();
 
+            // If we are showing the static asset preview and the user clicks, switch to dynamic.
             if (previewData.useStaticAssetPreview && GUI.Button(r, GUIContent.none))
             {
                 previewData.useStaticAssetPreview = false;
                 previewData.UpdateGameObject(target);
             }
 
+            // If still using static preview, or hardware does not support render textures, draw asset preview and exit.
             if (previewData.useStaticAssetPreview || !ShaderUtil.hardwareSupportsRectRenderTexture)
             {
-                if (Event.current.type == EventType.Repaint)
+                if (isRepaint)
                     DrawAssetPreviewTexture(r);
                 return;
             }
 
             var direction = PreviewGUI.Drag2D(m_PreviewDir, r);
-            if (direction != m_PreviewDir)
-            {
-                // None of the preview are valid since the camera position has changed.
-                ClearPreviewCache();
-                m_PreviewDir = direction;
-            }
 
-            if (Event.current.type != EventType.Repaint)
+            if (ShouldClearPreviewCache(r, direction))
+                ClearPreviewCache();
+
+            m_PreviewDir = direction;
+            m_PreviewRect = r;
+
+            if (!isRepaint)
                 return;
 
-            if (m_PreviewRect != r)
-            {
-                ClearPreviewCache();
-                m_PreviewRect = r;
-            }
-
-            var previewUtility = GetPreviewData().renderUtility;
-            Texture previewTexture;
-            if (m_PreviewCache.TryGetValue(referenceTargetIndex, out previewTexture))
+            if (m_PreviewCache.TryGetValue(referenceTargetIndex, out Texture previewTexture))
             {
                 PreviewRenderUtility.DrawPreview(r, previewTexture);
             }
             else
             {
+                var previewUtility = previewData.renderUtility;
                 previewUtility.BeginPreview(r, background);
                 DoRenderPreview(previewData);
                 previewUtility.EndAndDrawPreview(r);

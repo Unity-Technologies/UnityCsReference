@@ -1542,12 +1542,6 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetSwitchGraphicsJobsSyncAfterKick(bool syncAfterKick);
 
-        [StaticAccessor("GetPlayerSettings()")]
-        public static extern bool GetWsaHolographicRemotingEnabled();
-
-        [StaticAccessor("GetPlayerSettings()")]
-        public static extern void SetWsaHolographicRemotingEnabled(bool enabled);
-
         // Xbox 360 Pix Texture Capture
         public static extern bool xboxPIXTextureCapture { get; }
 

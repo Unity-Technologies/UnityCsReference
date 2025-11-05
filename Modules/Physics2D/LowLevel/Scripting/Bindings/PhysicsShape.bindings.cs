@@ -57,6 +57,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetContactFilter", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilter PhysicsShape_GetContactFilter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetMoverData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetMoverData(PhysicsShape shape, PhysicsShape.MoverData moverData);
         [NativeMethod(Name = "PhysicsShape::GetMoverData", IsThreadSafe = true)] extern internal static PhysicsShape.MoverData PhysicsShape_GetMoverData(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::ApplyWind", IsThreadSafe = true)] extern internal static void PhysicsShape_ApplyWind(PhysicsShape shape, Vector2 force, float drag, float lift, bool wake);
         [NativeMethod(Name = "PhysicsShape::SetTriggerEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetTriggerEvents(PhysicsShape shape, bool enableContactEvents);
         [NativeMethod(Name = "PhysicsShape::GetTriggerEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetTriggerEvents(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactEvents", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactEvents(PhysicsShape shape, bool enableContactEvents);
@@ -92,8 +93,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsShape_SetOwner(PhysicsShape shape, Object ownerObject);
         [NativeMethod(Name = "PhysicsShape::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsShape_GetOwner(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsOwned(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsShape_GetCallbackTarget(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
 

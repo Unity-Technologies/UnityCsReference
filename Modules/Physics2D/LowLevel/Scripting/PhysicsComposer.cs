@@ -459,6 +459,13 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly bool useDelaunay { get => PhysicsComposer_GetDelaunay(this); set => PhysicsComposer_SetDelaunay(this, value); }
 
         /// <summary>
+        /// Get/Set the maximum number of polygon vertices to be used when composing polygon output.
+        /// This should be in the range of 3 to <see cref="UnityEngine.LowLevelPhysics2D.PhysicsConstants.MaxPolygonVertices"/>.
+        /// The default is <see cref="UnityEngine.LowLevelPhysics2D.PhysicsConstants.MaxPolygonVertices"/>.
+        /// </summary>
+        public readonly int maxPolygonVertices { get => PhysicsComposer_GetMaxPolygonVertices(this); set => PhysicsComposer_SetMaxPolygonVertices(this, value); }
+
+        /// <summary>
         /// Get the number of layers currently added to the Physics Composer.
         /// </summary>
         public readonly int layerCount => PhysicsComposer_GetLayerCount(this);

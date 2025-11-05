@@ -78,7 +78,7 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
 
         void DrawHelpButton(VisualElement root, string helpURL)
         {
-            if (string.IsNullOrEmpty(helpURL))
+            if (!string.IsNullOrEmpty(helpURL))
             {
                 var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("_Help")), () => Help.BrowseURL(helpURL));
                 root.Add(button);

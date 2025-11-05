@@ -42,8 +42,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsJoint::SetOwner", IsThreadSafe = true)] extern internal static int PhysicsJoint_SetOwner(PhysicsJoint joint, Object ownerObject);
         [NativeMethod(Name = "PhysicsJoint::GetOwner", IsThreadSafe = true)] extern internal static Object PhysicsJoint_GetOwner(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsJoint_IsOwned(PhysicsJoint joint);
-        [NativeMethod(Name = "PhysicsJoint::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetCallbackTarget(PhysicsJoint joint, MonoBehaviour callbackTarget);
-        [NativeMethod(Name = "PhysicsJoint::GetCallbackTarget", IsThreadSafe = true)] extern internal static MonoBehaviour PhysicsJoint_GetCallbackTarget(PhysicsJoint joint);
+        [NativeMethod(Name = "PhysicsJoint::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetCallbackTarget(PhysicsJoint joint, System.Object callbackTarget);
+        [NativeMethod(Name = "PhysicsJoint::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsJoint_GetCallbackTarget(PhysicsJoint joint);
         [NativeMethod(Name = "PhysicsJoint::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsJoint_SetUserData(PhysicsJoint joint, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsJoint::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsJoint_GetUserData(PhysicsJoint joint);
 

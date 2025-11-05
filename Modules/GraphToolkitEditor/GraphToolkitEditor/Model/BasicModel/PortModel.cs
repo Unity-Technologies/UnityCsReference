@@ -573,7 +573,7 @@ namespace Unity.GraphToolkit.Editor
             for (var i = 0; i < wires.Count; i++)
             {
                 var wire = wires[i];
-                var port = Direction == PortDirection.Input ? wire.FromPort : wire.ToPort;
+                var port = wire.GetOtherPort(this);
                 if (port != null)
                 {
                     results.Add(port);
@@ -868,7 +868,7 @@ namespace Unity.GraphToolkit.Editor
              for (var i = 0; i < wires.Count; i++)
              {
                  var wire = wires[i];
-                 var port = Direction == PortDirection.Input ? wire.FromPort : wire.ToPort;
+                 var port = wire.GetOtherPort(this);
                  if (port == null)
                      return true;
                  if (port.NodeModel is WirePortalModel portal)

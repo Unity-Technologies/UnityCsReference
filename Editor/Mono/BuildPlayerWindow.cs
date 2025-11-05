@@ -192,6 +192,24 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         static void BuildPlayerAndRun()
         {
+            // When classic platforms are hidden, an active build profile is required.
+            if (EditorSettings.hideBuildProfileClassicPlatforms && BuildProfileContext.activeProfile == null)
+            {
+                if (EditorUtility.DisplayDialog(
+                    L10n.Tr("Active Build Profile Required"),
+                    L10n.Tr("To build players, you must first create and activate a Build Profile.\n\nWould you like to open the Build Profile window now?"),
+                    L10n.Tr("Open Build Profile Window"),
+                    L10n.Tr("Cancel")))
+                {
+                    BuildPipeline.ShowBuildProfileWindowAndRequireActiveProfile();
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
             var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             var lastBuildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
             bool buildLocationIsValid = BuildLocationIsValid(lastBuildLocation);

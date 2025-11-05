@@ -161,6 +161,18 @@ namespace Unity.GraphToolkit.Editor
     }
 
     /// <summary>
+    /// An event sent by the Delete and Reconnect shortcut.
+    /// </summary>
+    [ToolShortcutEvent(null, id, keyCode, modifiers)]
+    [UnityRestricted]
+    internal class ShortcutDeleteAndReconnectEvent : ShortcutEventBase<ShortcutDeleteAndReconnectEvent>
+    {
+        public const string id = "Delete and Reconnect";
+        const KeyCode keyCode = KeyCode.Delete;
+        const ShortcutModifiers modifiers = ShortcutModifiers.Shift;
+    }
+
+    /// <summary>
     /// An event sent by the Paste Without Wires shortcut.
     /// </summary>
     /// <remarks>The same shortcut is used for "Paste as New"</remarks>
