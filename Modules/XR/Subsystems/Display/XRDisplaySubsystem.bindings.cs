@@ -48,6 +48,7 @@ namespace UnityEngine.XR
 
         extern public bool displayOpaque { get; }
         extern public bool contentProtectionEnabled { get; set; }
+        extern public float appliedViewportScale { get; }
         extern public float scaleOfAllViewports { get; set; }
         extern public float scaleOfAllRenderTargets { get; set; }
         extern public float globalDynamicScale { get; }

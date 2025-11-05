@@ -196,4 +196,5 @@ using System.Runtime.CompilerServices;
 
 // Test Assemblies
 [assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
 
