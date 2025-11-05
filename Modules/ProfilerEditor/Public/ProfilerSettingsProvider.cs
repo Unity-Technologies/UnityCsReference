@@ -94,7 +94,7 @@ namespace UnityEditor.Profiling
             }
 
             EditorGUI.BeginChangeCheck();
-            m_TargetFramesPerSecond = System.Math.Clamp(EditorGUILayout.DelayedIntField(Content.k_TargetFps, ProfilerUserSettings.targetFramesPerSecond), ProfilerUserSettings.k_MinimumTargetFramesPerSecond, ProfilerUserSettings.k_MaximumTargetFramesPerSecond);
+            m_TargetFramesPerSecond = EditorGUILayout.IntSlider(Content.k_TargetFps, ProfilerUserSettings.targetFramesPerSecond, ProfilerUserSettings.k_MinimumTargetFramesPerSecond, ProfilerUserSettings.k_MaximumTargetFramesPerSecond);
             if (EditorGUI.EndChangeCheck())
             {
                 ProfilerUserSettings.targetFramesPerSecond = m_TargetFramesPerSecond;

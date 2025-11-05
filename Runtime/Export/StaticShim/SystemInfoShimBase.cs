@@ -242,6 +242,8 @@ namespace UnityEngine
 
         public virtual bool supportsDepthFetchInRenderPass => UnityEngine.SystemInfo.supportsDepthFetchInRenderPass;
 
+        public virtual bool supportsDynamicResolution => UnityEngine.SystemInfo.supportsDynamicResolution;
+
         public virtual bool IsFormatSupported(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             return UnityEngine.SystemInfo.IsFormatSupported(format, usage);

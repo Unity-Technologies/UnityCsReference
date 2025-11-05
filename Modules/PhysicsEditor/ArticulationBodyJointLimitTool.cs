@@ -321,6 +321,8 @@ namespace UnityEditor
             ArticulationReducedSpace jointPosition = body.jointPosition;
             Matrix4x4 twistAxisRotation = Matrix4x4.identity;
 
+            if (nbEnabledDrives >= jointPosition.dofCount) return;
+
             if (body.twistLock != ArticulationDofLock.LockedMotion)
             {
                 // In the case of Limited Twist Axis, the whole gizmo will be rotated based on its upper and lower limits
@@ -336,6 +338,8 @@ namespace UnityEditor
                 DrawJointPointerLine(parentAnchorSpace, endPoint, handle.xHandleColor, pointerThickness, Vector3.right);
                 nbEnabledDrives++;
             }
+
+            if (nbEnabledDrives >= jointPosition.dofCount) return;
 
             if (body.swingYLock != ArticulationDofLock.LockedMotion)
             {

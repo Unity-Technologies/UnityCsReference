@@ -138,8 +138,10 @@ namespace UnityEngine
         PS5 = 38,
         // Embedded Linux
         EmbeddedLinuxArm64 = 39,
+        [System.Obsolete("32-bit embedded platforms are no longer supported")]
         EmbeddedLinuxArm32 = 40,
         EmbeddedLinuxX64 = 41,
+        [System.Obsolete("32-bit embedded platforms are no longer supported")]
         EmbeddedLinuxX86 = 42,
 
         // Server (Standalone subtarget)
@@ -148,15 +150,19 @@ namespace UnityEngine
         OSXServer = 45,
 
         // QNX
+        [System.Obsolete("32-bit embedded platforms are no longer supported")]
         QNXArm32 = 46,
         QNXArm64 = 47,
         QNXX64 = 48,
+        [System.Obsolete("32-bit embedded platforms are no longer supported")]
         QNXX86 = 49,
         VisionOS = 50,
         Switch2 = 51,
 
         // Kepler
+        [System.Obsolete(), System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         KeplerArm64 = 52,
+        [System.Obsolete(), System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         KeplerX64 = 53,
     }
 
