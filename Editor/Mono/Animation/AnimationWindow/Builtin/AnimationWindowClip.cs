@@ -87,7 +87,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                 {
                     AnimationWindowCurve curve = new AnimationWindowCurve(
                         this,
-                        RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(curveBinding, m_Clip),
+                        curveBinding,
                         GetValueType(curveBinding));
                     curves.Add(curve);
 

@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-font", "<resource> | <url>"},
             {"-unity-font-definition", "<resource> | <url>"},
             {"-unity-font-style", "normal | italic | bold | bold-and-italic"},
-            {"-unity-material", "<resource> | <url> | none"},
+            {"-unity-material", "<resource> <prop>* | <url> <prop>* | none"},
             {"-unity-overflow-clip-box", "padding-box | content-box"},
             {"-unity-paragraph-spacing", "<length>"},
             {"-unity-slice-bottom", "<integer>"},

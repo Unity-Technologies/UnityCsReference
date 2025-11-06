@@ -10,6 +10,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     class PlayModeStatusWindow : EditorWindow
     {
+        private const float k_WindowMinWidth = 275f;
+        private const float k_WindowMinHeight = 400f;
+
         internal static void OpenWindow()
         {
             GetWindow<PlayModeStatusWindow>(typeof(InspectorWindow));
@@ -41,7 +44,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private void OnEnable()
         {
             titleContent = new GUIContent("Play Mode Status");
-
+            minSize = new Vector2(k_WindowMinWidth, k_WindowMinHeight);
             Refresh(null);
             Scenario.ScenarioStarted += Refresh;
         }

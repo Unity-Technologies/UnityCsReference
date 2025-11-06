@@ -495,6 +495,14 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly NativeArray<PolygonGeometry> CreatePolygonGeometry(Vector2 vertexScale, Allocator allocator) => PhysicsComposer_CreatePolygonGeometry(this, vertexScale, allocator).ToNativeArray<PolygonGeometry>();
 
         /// <summary>
+        /// Create <see cref="LowLevelPhysics2D.PolygonGeometry.ConvexHull"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
+        /// </summary>
+        /// <param name="vertexScale">The scaling to be applied to the composer vertices.</param>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing the Polygon Geometry convex hull created from the composer. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        public readonly NativeArray<PolygonGeometry.ConvexHull> CreateConvexHulls(Vector2 vertexScale, Allocator allocator) => PhysicsComposer_CreateConvexHulls(this, vertexScale, allocator).ToNativeArray<PolygonGeometry.ConvexHull>();
+
+        /// <summary>
         /// Create <see cref="LowLevelPhysics2D.ChainGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
         /// A limit is imposed on small vertex distances so it is recommended that scaling is applied here rather than on the returned geometry so geometry is not discarded due to it being invalid.
         /// </summary>

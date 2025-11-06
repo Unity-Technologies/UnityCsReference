@@ -1002,13 +1002,13 @@ namespace Unity.UI.Builder
                 description = $"{description}Value: {stringValue}";
 
                 e.tooltip = BuilderInspector.GetFieldTooltip(propertyField, valueInfo, description, false);
+                e.rect = e.elementTarget.worldBound;
             }
             else
             {
                 e.tooltip = null;
             }
 
-            e.rect = propertyField.worldBound;
             e.StopPropagation();
         }
 

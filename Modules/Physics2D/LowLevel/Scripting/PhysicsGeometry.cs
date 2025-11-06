@@ -535,6 +535,20 @@ namespace UnityEngine.LowLevelPhysics2D
         public static PolygonGeometry Create(ReadOnlySpan<Vector2> vertices, float radius, Matrix4x4 transform) => PolygonGeometry_Create_WithMatrix(vertices, radius, transform);
 
         /// <summary>
+        /// Create a Polygon from the specified convex hull.
+        /// </summary>
+        /// <param name="convexHull">The convex hull to create the polygon from.</param>
+        /// <param name="radius">The radius to use.</param>
+        /// <returns>The created geometry.</returns>
+        public static PolygonGeometry Create(ref ConvexHull convexHull, float radius) => new PolygonGeometry
+        {
+            vertices = convexHull.vertices,
+            count = convexHull.count,
+            radius = radius
+
+        }.Validate();
+
+        /// <summary>
         /// Check if the geometry is valid or not.
         /// </summary>
         public readonly bool isValid => PolygonGeometry_IsValid(this);
@@ -621,6 +635,19 @@ namespace UnityEngine.LowLevelPhysics2D
         /// The number of polygon vertices.
         /// </summary>
         public int count { readonly get => m_Count; set => m_Count = Mathf.Clamp(value, 3, PhysicsConstants.MaxPolygonVertices); }
+
+        /// <summary>
+        /// Get the polygon vertices as a read-only span.
+        /// </summary>
+        /// <returns>The read-only span representing the vertices in the convex hull.</returns>
+        public unsafe ReadOnlySpan<Vector2> AsReadOnlySpan()
+        {
+            ref Vector2 vertex0 = ref vertices[0];
+            fixed (Vector2* pThis = &vertex0)
+            {
+                return new ReadOnlySpan<Vector2>(pThis, m_Count);
+            }
+        }
 
         /// <summary>
         /// Get a validated version of the geometry, if possible.
@@ -740,6 +767,47 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <param name="scaleRadius">Whether to scale the radius of the shape.</param>
         /// <returns>The inverse-transformed geometry.</returns>
         public readonly PolygonGeometry InverseTransform(Matrix4x4 transform, bool scaleRadius) => PolygonGeometry_InverseTransform_WithMatrix(this, transform, scaleRadius);
+
+        /// <summary>
+        /// A simple convex hull.
+        /// The hull is not validated by physics so cannot be used directly for shapes.
+        /// </summary>
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct ConvexHull
+        {
+            /// <summary>
+            /// The geometry vertices stored in a <see cref="LowLevelPhysics2D.PhysicsShape.ShapeArray"/>.
+            /// </summary>
+            /// <remarks>
+            /// This is exposed directly as a field rather than a property as it is extremely unlikely to ever change and causes issues when changing values as a property.
+            /// </remarks>
+            public PhysicsShape.ShapeArray vertices;
+
+            /// <summary>
+            /// The number of polygon vertices.
+            /// </summary>
+            public int count { readonly get => m_Count; set => m_Count = Mathf.Clamp(value, 3, PhysicsConstants.MaxPolygonVertices); }
+
+            /// <summary>
+            /// Get the convex hull vertices as a read-only span.
+            /// </summary>
+            /// <returns>The read-only span representing the vertices in the convex hull.</returns>
+            public unsafe ReadOnlySpan<Vector2> AsReadOnlySpan()
+            {
+                ref Vector2 vertex0 = ref vertices[0];
+                fixed (Vector2* pThis = &vertex0)
+                {
+                    return new ReadOnlySpan<Vector2>(pThis, m_Count);
+                }
+            }
+
+            #region Internal
+
+            [SerializeField][Range(3, PhysicsConstants.MaxPolygonVertices)] internal int m_Count;
+
+            #endregion
+        }
 
         #region Internal
 

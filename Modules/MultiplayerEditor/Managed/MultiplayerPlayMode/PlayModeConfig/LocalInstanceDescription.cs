@@ -32,7 +32,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             [SerializeField] private bool m_StreamLogsToMainEditor = true;
             [SerializeField] private Color m_LogsColor = new Color(0.3643f, 0.581f, 0.8679f);
             [SerializeField, HideInInspector, FormerlySerializedAs("m_Arguments")] private string m_LocalArguments = "-screen-fullscreen 0 -screen-width 1024 -screen-height 720";
-            [SerializeField, HideInInspector] private string m_SimulatedArguments = "-screen-fullscreen 0 -screen-width 1024 -screen-height 720";
+            [SerializeField, HideInInspector] private string m_SimulatedArguments = "";
             [SerializeField, HideInInspector] private string m_DeviceID = "";
             [SerializeField, HideInInspector] private string m_DeviceName = "";
 

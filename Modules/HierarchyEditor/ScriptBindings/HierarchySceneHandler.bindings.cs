@@ -420,9 +420,10 @@ namespace Unity.Hierarchy.Editor
             menu.AppendSeparator();
             if (scene.IsValid())
             {
-                menu.AppendAction(L10n.Tr("Prefab/Remove Unused Overrides..."),
+                menu.AppendAction(
+                    L10n.Tr("Prefab/Remove Unused Overrides..."),
                     RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem,
-                    _ => DropdownMenuAction.Status.Normal,
+                    a => ((Scene)a.userData).isLoaded ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
                     scene);
             }
 

@@ -4638,7 +4638,7 @@ namespace UnityEngine
         [NativeMethod("CreatePrimitive")]
         extern private void CreatePrimitive_Internal(int sides, Vector2 scale, Vector2 offset, bool recreateCollider);
 
-        public bool CreateFromSprite(Sprite sprite, [DefaultValue("0.25f")] float detail = 0.25f, [DefaultValue("200")] byte alphaTolerance = 200, [DefaultValue("true")] bool holeDetection = true)
+        public bool CreateFromSprite(Sprite sprite, [DefaultValue("0.25f")] float detail = 0.25f, [DefaultValue("200")] byte alphaTolerance = 200, [DefaultValue("true")] bool holeDetection = true, [DefaultValue("true")] bool usePhysicsShapes = true)
         {
             if (sprite == null)
             {
@@ -4652,11 +4652,11 @@ namespace UnityEngine
                 return false;
             }
 
-            return CreateFromSprite_Internal(sprite, detail, alphaTolerance, holeDetection, true);
+            return CreateFromSprite_Internal(sprite, detail, alphaTolerance, holeDetection, true, usePhysicsShapes);
         }
 
         [NativeMethod("CreateFromSprite")]
-        extern private bool CreateFromSprite_Internal([NotNull] Sprite sprite, float detail, byte alphaTolerance, bool holeDetection, bool recreateCollider);
+        extern private bool CreateFromSprite_Internal([NotNull] Sprite sprite, float detail, byte alphaTolerance, bool holeDetection, bool recreateCollider, bool usePhysicsShapes);
     }
 
     [RequireComponent(typeof(Rigidbody2D))]

@@ -38,10 +38,8 @@ namespace Unity.Profiling.Editor.UI
                 case RuntimePlatform.LinuxServer:
                     buildTarget = BuildTarget.StandaloneLinux64;
                     break;
-                case RuntimePlatform.EmbeddedLinuxArm32:
                 case RuntimePlatform.EmbeddedLinuxArm64:
                 case RuntimePlatform.EmbeddedLinuxX64:
-                case RuntimePlatform.EmbeddedLinuxX86:
                     buildTarget = BuildTarget.EmbeddedLinux;
                     break;
                 case RuntimePlatform.WebGLPlayer:
@@ -71,10 +69,8 @@ namespace Unity.Profiling.Editor.UI
                 case RuntimePlatform.Switch2:
                     buildTarget = BuildTarget.Switch2;
                     break;
-                case RuntimePlatform.QNXArm32:
                 case RuntimePlatform.QNXArm64:
                 case RuntimePlatform.QNXX64:
-                case RuntimePlatform.QNXX86:
                     buildTarget = BuildTarget.QNX;
                     break;
                 case RuntimePlatform.LinuxHeadlessSimulation:

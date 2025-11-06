@@ -333,44 +333,11 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public MaterialDefinition ReadMaterialDefinition(int index)
         {
-            Material material = null;
-            var value = m_Values[m_CurrentValueIndex + index];
-            switch (value.handle.valueType)
-            {
-                case StyleValueType.ResourcePath:
-                    {
-                        string path = value.sheet.ReadResourcePath(value.handle);
-                        if (!string.IsNullOrEmpty(path))
-                            material = Panel.LoadResource(path, typeof(Material), dpiScaling) as Material;
+            if (property.TryGetMaterialDefinition(m_Sheet, out var value))
+                return value;
 
-                        if (material == null)
-                            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Material not found for path: {0}", path));
-                        break;
-                    }
-
-                case StyleValueType.AssetReference:
-                    {
-                        material = value.sheet.ReadAssetReference(value.handle) as Material;
-
-                        break;
-                    }
-
-                case StyleValueType.Keyword:
-                    {
-                        if (value.handle.valueIndex != (int)StyleValueKeyword.None)
-                            Debug.LogWarning("Invalid keyword for material " + (StyleValueKeyword)value.handle.valueIndex);
-
-                        break;
-                    }
-
-                default:
-                    Debug.LogWarning("Invalid value for material " + value.handle.valueType);
-                    break;
-            }
-
-            return material;
+            return default;
         }
-
 
         public Background ReadBackground(int index)
         {

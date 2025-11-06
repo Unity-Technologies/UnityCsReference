@@ -418,7 +418,8 @@ namespace Unity.Hierarchy.Editor
 
         void CreateGUI()
         {
-            m_SearchField.queryBuilder.blocksSupportExclude = false;
+            if (HierarchyPreferences.UseQueryBuilder && m_SearchField?.queryBuilder != null)
+                m_SearchField.queryBuilder.blocksSupportExclude = false;
         }
 
         void OnHierarchyWindowMouseUp(PointerUpEvent evt)

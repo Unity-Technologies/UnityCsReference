@@ -277,6 +277,18 @@ namespace UnityEditor
             GUI.Label(area, "---", centeredStyle);
         }
 
+        public static bool IsDrawingLabelInCurrentSceneView()
+        {
+            if (Event.current.type != EventType.Repaint
+                || Camera.current == null
+                || SceneView.lastActiveSceneView != SceneView.currentDrawingSceneView)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public static void DrawLODLabel(Camera camera, Vector3 position, float size, int LODLevel, Color[] colors, string LODText)
         {
             if (Vector3.Dot(camera.transform.forward, (camera.transform.position - position).normalized) > 0)

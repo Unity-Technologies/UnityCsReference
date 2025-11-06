@@ -3246,6 +3246,15 @@
     <Compile Include="..\..\Editor\Mono\ProjectTemplateWindow.cs">
       <Link>Editor\Mono\ProjectTemplateWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PromptWindow\PromptWindow.cs">
+      <Link>Editor\Mono\PromptWindow\PromptWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PromptWindow\PromptWindowBase.cs">
+      <Link>Editor\Mono\PromptWindow\PromptWindowBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PromptWindow\SavePromptUtility.cs">
+      <Link>Editor\Mono\PromptWindow\SavePromptUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\RegistryUtil.bindings.cs">
       <Link>Editor\Mono\RegistryUtil.bindings.cs</Link>
     </Compile>
@@ -9564,12 +9573,6 @@
     <Compile Include="..\..\Modules\ShortcutManagerEditor\PriorityContextAttribute.cs">
       <Link>Modules\ShortcutManagerEditor\PriorityContextAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShortcutManagerEditor\PromptWindow.cs">
-      <Link>Modules\ShortcutManagerEditor\PromptWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ShortcutManagerEditor\PromptWindowBase.cs">
-      <Link>Modules\ShortcutManagerEditor\PromptWindowBase.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs">
       <Link>Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs</Link>
     </Compile>
@@ -10170,6 +10173,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Filters.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Filters.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Materials.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Materials.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleFields+Transitions.cs</Link>
     </Compile>
@@ -10449,6 +10455,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\FoldoutField\FoldoutTransitionField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\FoldoutField\FoldoutTransitionField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\FoldoutField\MaterialPropertyValueListViewItem.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\FoldoutField\MaterialPropertyValueListViewItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\FoldoutWithCheckbox\FoldoutWithCheckbox.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\FoldoutWithCheckbox\FoldoutWithCheckbox.cs</Link>
     </Compile>
@@ -10466,6 +10475,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\LibraryFoldout\LibraryFoldout.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\LibraryFoldout\LibraryFoldout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\MaterialPropertiesEvents.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\MaterialPropertiesEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\ModalPopup\ModalPopup.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\ModalPopup\ModalPopup.cs</Link>
@@ -10550,6 +10562,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\IntegerStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\IntegerStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\MaterialDefinitionStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\MaterialDefinitionStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\NumericStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\NumericStyleField.cs</Link>

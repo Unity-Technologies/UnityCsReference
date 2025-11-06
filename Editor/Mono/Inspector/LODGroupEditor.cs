@@ -233,14 +233,7 @@ namespace UnityEditor
 
         public static bool IsSceneGUIEnabled()
         {
-            if (Event.current.type != EventType.Repaint
-                || Camera.current == null
-                || SceneView.lastActiveSceneView != SceneView.currentDrawingSceneView)
-            {
-                return false;
-            }
-
-            return true;
+            return LODGUI.IsDrawingLabelInCurrentSceneView();
         }
 
         public void OnSceneGUI()

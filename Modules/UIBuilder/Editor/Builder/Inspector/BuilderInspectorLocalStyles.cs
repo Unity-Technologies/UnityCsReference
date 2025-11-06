@@ -77,6 +77,10 @@ namespace Unity.UI.Builder
                         {
                             m_StyleFields.BindStyleField(styleRow, filterStyleField);
                         }
+                        else if (styleField is MaterialDefinitionStyleField materialDefinitionStyleField)
+                        {
+                            m_StyleFields.BindStyleField(styleRow, materialDefinitionStyleField);
+                        }
                         else if (styleField is TransitionsListView transitionsListView)
                         {
                             GenerateTransitionPropertiesContent();
@@ -201,6 +205,10 @@ namespace Unity.UI.Builder
                     else if (styleField is FilterStyleField filterStyleField)
                     {
                         m_StyleFields.RefreshStyleField(filterStyleField);
+                    }
+                    else if (styleField is MaterialDefinitionStyleField materialDefinitionStyleField)
+                    {
+                        m_StyleFields.RefreshStyleField(materialDefinitionStyleField);
                     }
                     else if (styleField is TransitionsListView transitionsListView)
                     {

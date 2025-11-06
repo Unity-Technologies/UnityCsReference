@@ -41,6 +41,11 @@ namespace UnityEditor
             Lightmapping.lightingDataUpdated -= LightingDataUpdatedRepaint;
         }
 
+        public static bool IsSceneGUIEnabled()
+        {
+            return LODGUI.IsDrawingLabelInCurrentSceneView();
+        }
+
         public void OnSceneGUI()
         {
             if (!target)

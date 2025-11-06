@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 
@@ -55,6 +56,7 @@ namespace UnityEngine.UIElements.UIR
         public float fontSharpness;
         public VectorImage gradientsOwner;
         public Material material;
+        public MaterialPropertyBlock userProps;
         public Action immediateCallback;
         public TextureId textureId;
 
@@ -70,6 +72,7 @@ namespace UnityEngine.UIElements.UIR
             lastChild = null;
             texture = null;
             material = null;
+            userProps = null;
             gradientsOwner = null;
             flags = 0;
             immediateCallback = null;
@@ -252,11 +255,12 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushDefaultMaterial(Entry parentEntry, Material material)
+        public void PushDefaultMaterial(Entry parentEntry, MaterialDefinition matDef)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushDefaultMaterial;
-            entry.material = material;
+            entry.material = matDef.material;
+            entry.userProps = matDef.BuildPropertyBlock();
             Append(parentEntry, entry);
         }
 

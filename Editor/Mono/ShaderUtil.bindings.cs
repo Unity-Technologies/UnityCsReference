@@ -298,6 +298,7 @@ namespace UnityEditor
         extern public static bool IsPassCompiled([NotNull] Material material, int pass);
         extern public static void CompilePass([NotNull] Material material, int pass, bool forceSync = false);
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static MaterialProperty[] GetMaterialProperties(UnityEngine.Object[] mats)
         {
             return (MaterialProperty[])GetMaterialPropertiesImpl(mats);

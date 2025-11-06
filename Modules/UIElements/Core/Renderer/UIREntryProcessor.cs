@@ -370,6 +370,7 @@ namespace UnityEngine.UIElements.UIR
                         cmd.type = CommandType.PushDefaultMaterial;
                         cmd.owner = m_CurrentRenderData;
                         cmd.material = entry.material;
+                        cmd.userProps = entry.userProps;
                         AppendCommand(cmd);
                         break;
                     }

@@ -249,4 +249,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Transform.Tests.Internals")]
 [assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")]
 [assembly: InternalsVisibleTo("Unity.Modules.AssetBundle.AssetBundles.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
 

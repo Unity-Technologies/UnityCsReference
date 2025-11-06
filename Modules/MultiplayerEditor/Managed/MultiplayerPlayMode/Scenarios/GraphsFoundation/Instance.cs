@@ -27,7 +27,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] public String m_Name;
         [SerializeField] public String m_InstanceDescriptionType;
         [SerializeField] private CancellationTokenSource m_FreeRunCancelTokenSource;
-        [SerializeField] private bool m_HasCompleted;
         [SerializeField] private bool m_HasDeployedAndRun;
         [SerializeField] public string m_BuildTarget;
         [SerializeField] private bool m_Drifted;
@@ -135,7 +134,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             // Reset the instance properties for a new run
             m_HasDeployedAndRun = false;
-            m_HasCompleted = false;
             m_CurrentMonitoringTasks.Clear();
             m_CurrentStatus.Clear();
 
@@ -355,7 +353,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_FreeRunCancelTokenSource.Cancel();
             m_FreeRunCancelTokenSource = null;
-            m_HasCompleted = true;
             m_Drifted = false;
         }
 
@@ -366,7 +363,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal bool IsActive()
         {
-            return m_ExecutionGraph.HasStarted && !m_HasCompleted;
+            return GetInstanceExecutionState() is ExecutionState.Running or ExecutionState.Active;
         }
 
         internal async Task<ExecutionGraph.ExecutionResult> RunOrResumeAsync(ExecutionStage executionStage,
@@ -395,7 +392,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             m_HasDeployedAndRun = true;
             await Task.WhenAll(GetCurrentMonitoringTasksForScenario());
-            m_HasCompleted = true;
             m_FreeRunCancelTokenSource = null;
         }
 

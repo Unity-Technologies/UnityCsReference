@@ -15,7 +15,9 @@ namespace UnityEngine.UIElements.UIR
         DrawRanges,
         SetTexture,
         ApplyBatchProps,
+        ApplyUserProps
     }
+
 
     struct SerializedCommand
     {
@@ -30,6 +32,8 @@ namespace UnityEngine.UIElements.UIR
         public int gpuDataOffset;
         public Vector4 gpuData0;
         public Vector4 gpuData1;
+
+        public MaterialPropertyBlock userProps;
     }
 
     class CommandList : IDisposable
@@ -115,6 +119,9 @@ namespace UnityEngine.UIElements.UIR
                             Utility.SetVectorArray(shaderPropertySheetPtr, TextureSlotManager.textureTableId, m_GpuTextureData);
                             Utility.ApplyShaderPropertySheet(shaderPropertySheetPtr);
                             break;
+                        case SerializedCommandType.ApplyUserProps:
+                            Utility.SetPropertyBlock(cmd.userProps);
+                            break;
                         case SerializedCommandType.DrawRanges:
                             vStream[0] = cmd.vertexBuffer;
                             Utility.DrawRanges(cmd.indexBuffer, vStream, 1, new IntPtr(m_DrawRanges.GetSlice(cmd.firstRange, cmd.rangeCount).GetUnsafePtr()), cmd.rangeCount, m_VertexDecl);
@@ -142,6 +149,16 @@ namespace UnityEngine.UIElements.UIR
                 gpuData1 = gpuData1,
             };
 
+            m_Commands.Add(cmd);
+        }
+
+        public void ApplyUserProps(MaterialPropertyBlock userProps)
+        {
+            var cmd = new SerializedCommand
+            {
+                type = SerializedCommandType.ApplyUserProps,
+                userProps = userProps
+            };
             m_Commands.Add(cmd);
         }
 

@@ -8,7 +8,7 @@ using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace UnityEditor.ShortcutManagement
+namespace UnityEditor
 {
     class PromptWindow : PromptWindowBase
     {
@@ -24,7 +24,7 @@ namespace UnityEditor.ShortcutManagement
         Button m_SubmitButton;
 
         public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue,
-            string acceptButtonText, Func<string, string> validator, Action<string> action, float windowWidth = 380f, float windowHeight = 160f)
+            string acceptButtonText, EditorWindow owner, Func<string, string> validator, Action<string> action, float windowWidth = 380f, float windowHeight = 160f)
         {
             var promptWindow = GetWindow<PromptWindow>(true, title, true);
 
@@ -44,7 +44,7 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.m_TextField.Focus();
             promptWindow.UpdateValidation();
 
-            promptWindow.ShowWindow();
+            promptWindow.ShowWindow(owner);
         }
 
         void OnEnable()

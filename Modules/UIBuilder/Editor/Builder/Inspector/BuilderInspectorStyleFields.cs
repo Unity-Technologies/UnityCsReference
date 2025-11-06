@@ -1204,6 +1204,12 @@ namespace Unity.UI.Builder
                 return false; // To skip UpdateFieldStatus, not applicable here
             }
 
+            if (IsComputedStyleMaterial(val) && fieldElement is MaterialDefinitionStyleField materialsStyleField)
+            {
+                RefreshStyleField(materialsStyleField);
+                return false; // To skip UpdateFieldStatus, not applicable here
+            }
+
             if (IsComputedStyleCursor(val) && fieldElement is CursorStyleField)
             {
                 var uiField = fieldElement as CursorStyleField;
@@ -3040,6 +3046,12 @@ namespace Unity.UI.Builder
         {
             return val is List<FilterFunction>;
         }
+
+        static public bool IsComputedStyleMaterial(object val)
+        {
+            return val is MaterialDefinition;
+        }
+
         static public bool IsComputedStyleCursor(object val)
         {
             return val is StyleCursor || val is UnityEngine.UIElements.Cursor;

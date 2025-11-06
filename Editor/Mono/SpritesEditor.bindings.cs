@@ -25,13 +25,13 @@ namespace UnityEditor.Sprites
         [return:UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         static public ushort[] GetSpriteIndices(Sprite sprite, bool getAtlasData) { return sprite.triangles; }
 
-        internal static void GenerateOutline(Texture2D texture, Rect rect, float detail, byte alphaTolerance, bool holeDetection, out Vector2[][] paths)
+        internal static void GenerateOutline(Texture2D texture, Rect rect, float detail, byte alphaTolerance, bool holeDetection, out Vector2[][] paths, bool zeroExtrusion = false)
         {
-            var res = GenerateOutlineImpl(texture, ref rect, detail, alphaTolerance, holeDetection);
+            var res = GenerateOutlineImpl(texture, ref rect, detail, alphaTolerance, holeDetection, zeroExtrusion);
             paths = (Vector2[][])res;
         }
 
-        extern private static System.Object GenerateOutlineImpl([NotNull] Texture2D texture, ref Rect rect, float detail, byte alphaTolerance, bool holeDetection);
+        extern private static System.Object GenerateOutlineImpl([NotNull] Texture2D texture, ref Rect rect, float detail, byte alphaTolerance, bool holeDetection, bool zeroExtrusion);
 
         internal static void GenerateOutlineFromSprite(Sprite sprite, float detail, byte alphaTolerance, bool holeDetection, out Vector2[][] paths)
         {

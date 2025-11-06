@@ -716,7 +716,7 @@ namespace UnityEditor
                             new PlatformPackageInfo(L10n.Tr("Unity Render Service Support"), "com.unity.android.render-service", L10n.Tr("Enables you to build a Unity Render Service on Android and integrate into Android Applications. Contact your sales representative to get access."))
                         }
                     },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsDerivedBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly
                 }
             },
             {

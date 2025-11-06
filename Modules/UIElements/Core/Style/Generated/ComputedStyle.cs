@@ -1657,6 +1657,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, MaterialDefinition newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.UnityMaterial:
+                    inheritedData.Write().unityMaterial = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'MaterialDefinition' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
         public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, Ratio newValue)
         {
             switch (id)
@@ -1994,6 +2007,8 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, oldStyle.inheritedData.Read().unityFontDefinition, newStyle.inheritedData.Read().unityFontDefinition, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldStyle.inheritedData.Read().unityFontStyleAndWeight, (int)newStyle.inheritedData.Read().unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnityMaterial:
+                    return element.styleAnimation.Start(StylePropertyId.UnityMaterial, oldStyle.inheritedData.Read().unityMaterial, newStyle.inheritedData.Read().unityMaterial, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityOverflowClipBox:
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)oldStyle.rareData.Read().unityOverflowClipBox, (int)newStyle.rareData.Read().unityOverflowClipBox, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityParagraphSpacing:
@@ -2096,6 +2111,12 @@ namespace UnityEngine.UIElements
                     oldData.unityFontStyleAndWeight != newData.unityFontStyleAndWeight)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldData.unityFontStyleAndWeight, (int)newData.unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
+                    oldData.unityMaterial != newData.unityMaterial)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.UnityMaterial, oldData.unityMaterial, newData.unityMaterial, durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -2997,6 +3018,12 @@ namespace UnityEngine.UIElements
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityFontStyleAndWeight : (FontStyle)sv.number;
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)computedStyle.inheritedData.Read().unityFontStyleAndWeight, (int)to, durationMs, delayMs, easingCurve);
+                }
+
+                case StylePropertyId.UnityMaterial:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityMaterial : sv.resource.IsAllocated ? MaterialDefinition.FromObject(sv.resource.Target) : null;
+                    return element.styleAnimation.Start(StylePropertyId.UnityMaterial, computedStyle.inheritedData.Read().unityMaterial, to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.UnityOverflowClipBox:

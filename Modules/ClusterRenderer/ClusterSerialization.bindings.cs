@@ -11,7 +11,7 @@ namespace UnityEngine
 {
     [Internal.ExcludeFromDocs]
     [NativeHeader("Modules/ClusterRenderer/ClusterSerialization.h")]
-    [Obsolete("This type is deprecated and will be removed in Unity 7.", false)]
+    [Obsolete("This type is deprecated and will be removed in a future release.", false)]
     public static class ClusterSerialization
     {
         public static int SaveTimeManagerState(NativeArray<byte> buffer)

@@ -316,12 +316,12 @@ namespace Unity.Hierarchy
 
         void OnBeginRename()
         {
-            m_View.m_IsRenamingItem = true;
+            m_View.SetRenamingItem(this);
         }
 
         void OnEndRename(string text, bool canceled)
         {
-            m_View.m_IsRenamingItem = false;
+            m_View.SetRenamingItem(null);
 
             if (canceled)
                 return;

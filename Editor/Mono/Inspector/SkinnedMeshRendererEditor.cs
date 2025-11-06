@@ -213,7 +213,7 @@ namespace UnityEditor
                 }
             }
 
-            if (renderer.sharedMesh && renderer.sharedMesh.isLodSelectionActive)
+            if (renderer.sharedMesh && renderer.sharedMesh.isLodSelectionActive && LODGUI.IsDrawingLabelInCurrentSceneView())
             {
                 DrawMeshLODLabel(renderer);
             }

@@ -108,16 +108,16 @@ namespace UnityEditor.Overlays
         {
             if (IsReservedName(presetName))
             {
-                EditorUtility.DisplayDialog("Invalid Preset Name", string.Format(L10n.Tr("Trying to create a preset with the reserved name [{0}]."), presetName), "Ok");
+                EditorUtility.DisplayDialog(L10n.Tr("Invalid Preset Name"), string.Format(L10n.Tr("Trying to create a preset with the reserved name [{0}]."), presetName), L10n.Tr("Ok"));
                 return false;
             }
 
             return true;
         }
 
-        internal static OverlayPreset CreatePresetFromOverlayState(string presetName, EditorWindow window)
+        internal static OverlayPreset CreatePresetFromOverlayState(string presetName, EditorWindow window, bool validateName = false)
         {
-            if (!ValidatePresetName(presetName))
+            if (validateName && !ValidatePresetName(presetName))
                 return null;
 
             var windowType = window.GetType();
@@ -138,6 +138,8 @@ namespace UnityEditor.Overlays
 
         static void AddPreset(OverlayPreset preset)
         {
+            EnsureNameWithinCharacterLimit(preset);
+
             if (!loadedPresets.TryGetValue(preset.targetWindowType, out var presets))
                 loadedPresets.Add(preset.targetWindowType, presets = new Dictionary<string, OverlayPreset>());
 
@@ -314,6 +316,16 @@ namespace UnityEditor.Overlays
             }
         }
 
+        internal const string presetOverCharLimitWarning = "The preset {0} was over the character limit of {1} and was truncated.";
+        internal static void EnsureNameWithinCharacterLimit(OverlayPreset preset)
+        {
+            if (preset.name.Length <= SavePromptUtility.nameCharacterLimit)
+                return;
+
+            Debug.LogWarningFormat(presetOverCharLimitWarning, preset.name, SavePromptUtility.nameCharacterLimit);
+            preset.name = preset.name.Substring(0, SavePromptUtility.nameCharacterLimit);
+        }
+
         internal static OverlayPreset LoadFromFile(string path)
         {
             if (Path.GetExtension(path) != "." + k_FileExtension)
@@ -336,6 +348,44 @@ namespace UnityEditor.Overlays
             }
 
             return null;
+        }
+
+        static string CanCreatePreset(string name)
+        {
+            return SavePromptUtility.GetSaveError("Preset", name, (name) =>
+            {
+                if (IsReservedName(name))
+                {
+                    return string.Format(L10n.Tr("Preset Name is reserved"), name);
+                }
+
+                return null;
+            });
+        }
+
+        static void ShowSavePresetWindow(EditorWindow window, Action<OverlayPreset> onCreated, Action onFailed = null)
+        {
+            PromptWindow.Show(L10n.Tr("Create Preset"),
+                L10n.Tr("Create a preset"),
+                L10n.Tr("Enter the name of the preset you want to create"),
+                L10n.Tr("Preset Name"),
+                window.overlayCanvas.lastAppliedPresetName,
+                L10n.Tr("Create"),
+                window,
+                CanCreatePreset,
+                (name) =>
+                {
+                    var preset = CreatePresetFromOverlayState(name, window, true);
+                    if (preset != null)
+                    {
+                        SaveAllPreferences();
+                        onCreated?.Invoke(preset);
+                    }
+                    else
+                    {
+                        onFailed?.Invoke();
+                    }
+                });
         }
 
         public static void GenerateMenu(AbstractGenericMenu menu, string pathPrefix, EditorWindow window, params IOverlayPreset[] customPresets)
@@ -370,14 +420,9 @@ namespace UnityEditor.Overlays
 
             menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset..."), false, () =>
             {
-                SaveOverlayPreset.ShowWindow(window, name =>
+                ShowSavePresetWindow(window, preset =>
                 {
-                    var preset = CreatePresetFromOverlayState(name, window);
-                    if (preset != null)
-                    {
-                        SaveAllPreferences();
-                        window.overlayCanvas.ApplyPreset(preset);
-                    }
+                    window.overlayCanvas.ApplyPreset(preset);
                 });
             });
 

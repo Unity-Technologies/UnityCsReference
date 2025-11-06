@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
 
@@ -65,13 +66,14 @@ namespace UnityEngine.UIElements.UIR
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
-            bool setsMaterial = ve.resolvedStyle.unityMaterial != null;
+            var matDef = ve.resolvedStyle.unityMaterial;
+            bool setsMaterial = matDef.material != null;
             bool mustPopClipping = false;
 
             if (ve.visible)
             {
                 if (setsMaterial)
-                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
                 DrawVisualElementBackground(mgc);
                 DrawVisualElementBorder(mgc);
@@ -91,7 +93,7 @@ namespace UnityEngine.UIElements.UIR
                 if (isClippingWithScissors || isClippingWithStencil)
                 {
                     if (setsMaterial)
-                        mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                        mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
                     mustPopClipping = true;
                     PushVisualElementClipping(mgc);
@@ -106,7 +108,7 @@ namespace UnityEngine.UIElements.UIR
             if (mustPopClipping)
             {
                 if (setsMaterial)
-                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.resolvedStyle.unityMaterial.material);
+                    mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, matDef);
 
                 PopVisualElementClipping(mgc);
 

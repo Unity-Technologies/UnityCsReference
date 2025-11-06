@@ -177,7 +177,7 @@ namespace UnityEditor.Toolbars
 
     sealed class UnityOnlyToolbarPreset : IOverlayPreset
     {
-        public const string presetName = "Unity Only";
+        public const string presetName = "Unity Default";
 
         readonly static SaveData[] m_EmptySave = new SaveData[0];
         readonly static DynamicPanelContainerData[] m_EmptyDynamicPanelContainerData = new DynamicPanelContainerData[0];
