@@ -12,12 +12,16 @@ namespace UnityEngine
         public static Plane[] CalculateFrustumPlanes(Camera camera)
         {
             Plane[] planes = new Plane[6];
-            CalculateFrustumPlanes(camera, planes);
+            CalculateFrustumPlanes(camera, planes.AsSpan());
             return planes;
         }
 
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Plane[] CalculateFrustumPlanes(Matrix4x4 worldToProjectionMatrix) => CalculateFrustumPlanes(in worldToProjectionMatrix);
+        public static Plane[] CalculateFrustumPlanes(Matrix4x4 worldToProjectionMatrix)
+        {
+            Plane[] planes = new Plane[6];
+            CalculateFrustumPlanes(in worldToProjectionMatrix, planes.AsSpan());
+            return planes;
+        }
 
         public static Plane[] CalculateFrustumPlanes(in Matrix4x4 worldToProjectionMatrix)
         {
@@ -28,12 +32,21 @@ namespace UnityEngine
 
         public static void CalculateFrustumPlanes(Camera camera, Span<Plane> planes)
         {
-            CalculateFrustumPlanes(camera.projectionMatrix * camera.worldToCameraMatrix, planes);
+            Matrix4x4 worldToProjectionMatrix = camera.projectionMatrix * camera.worldToCameraMatrix;
+            CalculateFrustumPlanes(in worldToProjectionMatrix, planes);
         }
 
         public static void CalculateFrustumPlanes(Camera camera, Plane[] planes)
         {
-            CalculateFrustumPlanes(camera, planes.AsSpan());
+            Matrix4x4 worldToProjectionMatrix = camera.projectionMatrix * camera.worldToCameraMatrix;
+            CalculateFrustumPlanes(in worldToProjectionMatrix, planes.AsSpan());
+        }
+
+        public static void CalculateFrustumPlanes(Matrix4x4 worldToProjectionMatrix, Span<Plane> planes)
+        {
+            if (planes == null) throw new ArgumentNullException("planes");
+            if (planes.Length != 6) throw new ArgumentException("Planes array must be of length 6.", "planes");
+            Internal_ExtractPlanes(planes, in worldToProjectionMatrix);
         }
 
         public static void CalculateFrustumPlanes(in Matrix4x4 worldToProjectionMatrix, Span<Plane> planes)
@@ -43,16 +56,18 @@ namespace UnityEngine
             Internal_ExtractPlanes(planes, in worldToProjectionMatrix);
         }
 
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CalculateFrustumPlanes(Matrix4x4 worldToProjectionMatrix, Plane[] planes) => CalculateFrustumPlanes(in worldToProjectionMatrix, planes.AsSpan());
 
-        public static void CalculateFrustumPlanes(in Matrix4x4 worldToProjectionMatrix, Plane[] planes)
-        {
-            CalculateFrustumPlanes(worldToProjectionMatrix, planes.AsSpan());
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CalculateFrustumPlanes(in Matrix4x4 worldToProjectionMatrix, Plane[] planes) => CalculateFrustumPlanes(in worldToProjectionMatrix, planes.AsSpan());
 
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Bounds CalculateBounds(Vector3[] positions, Matrix4x4 transform) => CalculateBounds(positions, in transform);
+        public static Bounds CalculateBounds(Vector3[] positions, Matrix4x4 transform)
+        {
+            if (positions == null) throw new ArgumentNullException("positions");
+            if (positions.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.", "positions");
+            return Internal_CalculateBounds(positions, in transform);
+        }
 
         public static Bounds CalculateBounds(Vector3[] positions, in Matrix4x4 transform)
         {

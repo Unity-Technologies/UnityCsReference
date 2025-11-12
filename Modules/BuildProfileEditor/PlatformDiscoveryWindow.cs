@@ -36,6 +36,7 @@ namespace UnityEditor.Build.Profile
         Image m_SelectedCardImage;
         Label m_SelectedDisplayNameLabel;
         VisualElement m_SelectedDescription;
+        VisualElement m_PlatformBrowserHeaderBG;
 
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
@@ -150,6 +151,7 @@ namespace UnityEditor.Build.Profile
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
                     platformId = platformId,
                     description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    platformBannerBgColorHex = BuildProfileModuleUtil.GetPlatformColorString(platformId),
                     internalPackages = internalPackages,
                     partnerPackages = partnerPackages,
                     preconfiguredSettingsVariants = preconfiguredSettingsVariants
@@ -176,6 +178,7 @@ namespace UnityEditor.Build.Profile
             m_AddBuildProfileButton = rootVisualElement.Q<Button>("add-build-profile-button");
             m_SelectedDisplayNameLabel = rootVisualElement.Q<Label>("selected-card-name");
             m_SelectedCardImage = rootVisualElement.Q<Image>("selected-card-icon");
+            m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
             m_SelectedDescription = rootVisualElement.Q<VisualElement>("platform-description");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
@@ -384,6 +387,12 @@ namespace UnityEditor.Build.Profile
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIconHero(card.platformId);
             m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
+
+            // Only color if not a default color and color can be parsed.
+            if (!card.platformBannerBgColorHex.Equals("#00000000") && ColorUtility.TryParseHtmlString(card.platformBannerBgColorHex, out Color bgColor))
+                m_PlatformBrowserHeaderBG.style.backgroundColor = bgColor;
+            else
+                m_PlatformBrowserHeaderBG.style.backgroundColor = new StyleColor(StyleKeyword.Null);
 
             if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
                 m_HelpBoxWrapper.Show();

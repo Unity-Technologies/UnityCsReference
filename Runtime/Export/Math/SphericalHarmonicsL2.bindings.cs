@@ -35,7 +35,11 @@ namespace UnityEngine.Rendering
         public void AddAmbientLight(in Color color) => Internal_AddAmbientLight(ref this, in color);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void AddDirectionalLight(Vector3 direction, Color color, float intensity) => AddDirectionalLight(in direction, in color, intensity);
+        public void AddDirectionalLight(Vector3 direction, Color color, float intensity)
+        {
+            var colorAndIntensity = color * (2.0f * intensity);
+            AddDirectionalLightInternal(ref this, in direction, in colorAndIntensity);
+        }
 
         public void AddDirectionalLight(in Vector3 direction, in Color color, float intensity)
         {
@@ -147,7 +151,9 @@ namespace UnityEngine.Rendering
         {
             // Hash code idea from http://stackoverflow.com/a/263416
 
-            unchecked { // // Overflow is fine, just wrap
+            // // Overflow is fine, just wrap
+            unchecked
+            {
                 int hash = 17;
                 hash = hash * 23 + shr0.GetHashCode();
                 hash = hash * 23 + shr1.GetHashCode();
@@ -181,141 +187,136 @@ namespace UnityEngine.Rendering
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public override readonly bool Equals(object other) => other is SphericalHarmonicsL2 sh && Equals(sh);
+        public override readonly bool Equals(object other) => other is SphericalHarmonicsL2 sh && Equals(in sh);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool Equals(SphericalHarmonicsL2 other) => this == other;
 
-        static public SphericalHarmonicsL2 operator*(in SphericalHarmonicsL2 lhs, float rhs)
-        {
-            SphericalHarmonicsL2 r;
-            r.shr0 = lhs.shr0 * rhs;
-            r.shr1 = lhs.shr1 * rhs;
-            r.shr2 = lhs.shr2 * rhs;
-            r.shr3 = lhs.shr3 * rhs;
-            r.shr4 = lhs.shr4 * rhs;
-            r.shr5 = lhs.shr5 * rhs;
-            r.shr6 = lhs.shr6 * rhs;
-            r.shr7 = lhs.shr7 * rhs;
-            r.shr8 = lhs.shr8 * rhs;
-            r.shg0 = lhs.shg0 * rhs;
-            r.shg1 = lhs.shg1 * rhs;
-            r.shg2 = lhs.shg2 * rhs;
-            r.shg3 = lhs.shg3 * rhs;
-            r.shg4 = lhs.shg4 * rhs;
-            r.shg5 = lhs.shg5 * rhs;
-            r.shg6 = lhs.shg6 * rhs;
-            r.shg7 = lhs.shg7 * rhs;
-            r.shg8 = lhs.shg8 * rhs;
-            r.shb0 = lhs.shb0 * rhs;
-            r.shb1 = lhs.shb1 * rhs;
-            r.shb2 = lhs.shb2 * rhs;
-            r.shb3 = lhs.shb3 * rhs;
-            r.shb4 = lhs.shb4 * rhs;
-            r.shb5 = lhs.shb5 * rhs;
-            r.shb6 = lhs.shb6 * rhs;
-            r.shb7 = lhs.shb7 * rhs;
-            r.shb8 = lhs.shb8 * rhs;
-            return r;
-        }
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(in SphericalHarmonicsL2 other) => this == other;
 
-        static public SphericalHarmonicsL2 operator*(float lhs, in SphericalHarmonicsL2 rhs)
-        {
-            SphericalHarmonicsL2 r;
-            r.shr0 = rhs.shr0 * lhs;
-            r.shr1 = rhs.shr1 * lhs;
-            r.shr2 = rhs.shr2 * lhs;
-            r.shr3 = rhs.shr3 * lhs;
-            r.shr4 = rhs.shr4 * lhs;
-            r.shr5 = rhs.shr5 * lhs;
-            r.shr6 = rhs.shr6 * lhs;
-            r.shr7 = rhs.shr7 * lhs;
-            r.shr8 = rhs.shr8 * lhs;
-            r.shg0 = rhs.shg0 * lhs;
-            r.shg1 = rhs.shg1 * lhs;
-            r.shg2 = rhs.shg2 * lhs;
-            r.shg3 = rhs.shg3 * lhs;
-            r.shg4 = rhs.shg4 * lhs;
-            r.shg5 = rhs.shg5 * lhs;
-            r.shg6 = rhs.shg6 * lhs;
-            r.shg7 = rhs.shg7 * lhs;
-            r.shg8 = rhs.shg8 * lhs;
-            r.shb0 = rhs.shb0 * lhs;
-            r.shb1 = rhs.shb1 * lhs;
-            r.shb2 = rhs.shb2 * lhs;
-            r.shb3 = rhs.shb3 * lhs;
-            r.shb4 = rhs.shb4 * lhs;
-            r.shb5 = rhs.shb5 * lhs;
-            r.shb6 = rhs.shb6 * lhs;
-            r.shb7 = rhs.shb7 * lhs;
-            r.shb8 = rhs.shb8 * lhs;
-            return r;
-        }
+        static public SphericalHarmonicsL2 operator*(SphericalHarmonicsL2 lhs, float rhs) => new SphericalHarmonicsL2() {
+            shr0 = lhs.shr0 * rhs,
+            shr1 = lhs.shr1 * rhs,
+            shr2 = lhs.shr2 * rhs,
+            shr3 = lhs.shr3 * rhs,
+            shr4 = lhs.shr4 * rhs,
+            shr5 = lhs.shr5 * rhs,
+            shr6 = lhs.shr6 * rhs,
+            shr7 = lhs.shr7 * rhs,
+            shr8 = lhs.shr8 * rhs,
+            shg0 = lhs.shg0 * rhs,
+            shg1 = lhs.shg1 * rhs,
+            shg2 = lhs.shg2 * rhs,
+            shg3 = lhs.shg3 * rhs,
+            shg4 = lhs.shg4 * rhs,
+            shg5 = lhs.shg5 * rhs,
+            shg6 = lhs.shg6 * rhs,
+            shg7 = lhs.shg7 * rhs,
+            shg8 = lhs.shg8 * rhs,
+            shb0 = lhs.shb0 * rhs,
+            shb1 = lhs.shb1 * rhs,
+            shb2 = lhs.shb2 * rhs,
+            shb3 = lhs.shb3 * rhs,
+            shb4 = lhs.shb4 * rhs,
+            shb5 = lhs.shb5 * rhs,
+            shb6 = lhs.shb6 * rhs,
+            shb7 = lhs.shb7 * rhs,
+            shb8 = lhs.shb8 * rhs
+        };
 
-        static public SphericalHarmonicsL2 operator+(in SphericalHarmonicsL2 lhs, in SphericalHarmonicsL2 rhs)
-        {
-            SphericalHarmonicsL2 r;
-            r.shr0 = lhs.shr0 + rhs.shr0;
-            r.shr1 = lhs.shr1 + rhs.shr1;
-            r.shr2 = lhs.shr2 + rhs.shr2;
-            r.shr3 = lhs.shr3 + rhs.shr3;
-            r.shr4 = lhs.shr4 + rhs.shr4;
-            r.shr5 = lhs.shr5 + rhs.shr5;
-            r.shr6 = lhs.shr6 + rhs.shr6;
-            r.shr7 = lhs.shr7 + rhs.shr7;
-            r.shr8 = lhs.shr8 + rhs.shr8;
-            r.shg0 = lhs.shg0 + rhs.shg0;
-            r.shg1 = lhs.shg1 + rhs.shg1;
-            r.shg2 = lhs.shg2 + rhs.shg2;
-            r.shg3 = lhs.shg3 + rhs.shg3;
-            r.shg4 = lhs.shg4 + rhs.shg4;
-            r.shg5 = lhs.shg5 + rhs.shg5;
-            r.shg6 = lhs.shg6 + rhs.shg6;
-            r.shg7 = lhs.shg7 + rhs.shg7;
-            r.shg8 = lhs.shg8 + rhs.shg8;
-            r.shb0 = lhs.shb0 + rhs.shb0;
-            r.shb1 = lhs.shb1 + rhs.shb1;
-            r.shb2 = lhs.shb2 + rhs.shb2;
-            r.shb3 = lhs.shb3 + rhs.shb3;
-            r.shb4 = lhs.shb4 + rhs.shb4;
-            r.shb5 = lhs.shb5 + rhs.shb5;
-            r.shb6 = lhs.shb6 + rhs.shb6;
-            r.shb7 = lhs.shb7 + rhs.shb7;
-            r.shb8 = lhs.shb8 + rhs.shb8;
-            return r;
-        }
+        static public SphericalHarmonicsL2 operator*(float lhs, SphericalHarmonicsL2 rhs) => new SphericalHarmonicsL2() {
+            shr0 = rhs.shr0 * lhs,
+            shr1 = rhs.shr1 * lhs,
+            shr2 = rhs.shr2 * lhs,
+            shr3 = rhs.shr3 * lhs,
+            shr4 = rhs.shr4 * lhs,
+            shr5 = rhs.shr5 * lhs,
+            shr6 = rhs.shr6 * lhs,
+            shr7 = rhs.shr7 * lhs,
+            shr8 = rhs.shr8 * lhs,
+            shg0 = rhs.shg0 * lhs,
+            shg1 = rhs.shg1 * lhs,
+            shg2 = rhs.shg2 * lhs,
+            shg3 = rhs.shg3 * lhs,
+            shg4 = rhs.shg4 * lhs,
+            shg5 = rhs.shg5 * lhs,
+            shg6 = rhs.shg6 * lhs,
+            shg7 = rhs.shg7 * lhs,
+            shg8 = rhs.shg8 * lhs,
+            shb0 = rhs.shb0 * lhs,
+            shb1 = rhs.shb1 * lhs,
+            shb2 = rhs.shb2 * lhs,
+            shb3 = rhs.shb3 * lhs,
+            shb4 = rhs.shb4 * lhs,
+            shb5 = rhs.shb5 * lhs,
+            shb6 = rhs.shb6 * lhs,
+            shb7 = rhs.shb7 * lhs,
+            shb8 = rhs.shb8 * lhs
+        };
+
+        static public SphericalHarmonicsL2 operator+(SphericalHarmonicsL2 lhs, SphericalHarmonicsL2 rhs) => new SphericalHarmonicsL2() {
+            shr0 = lhs.shr0 + rhs.shr0,
+            shr1 = lhs.shr1 + rhs.shr1,
+            shr2 = lhs.shr2 + rhs.shr2,
+            shr3 = lhs.shr3 + rhs.shr3,
+            shr4 = lhs.shr4 + rhs.shr4,
+            shr5 = lhs.shr5 + rhs.shr5,
+            shr6 = lhs.shr6 + rhs.shr6,
+            shr7 = lhs.shr7 + rhs.shr7,
+            shr8 = lhs.shr8 + rhs.shr8,
+            shg0 = lhs.shg0 + rhs.shg0,
+            shg1 = lhs.shg1 + rhs.shg1,
+            shg2 = lhs.shg2 + rhs.shg2,
+            shg3 = lhs.shg3 + rhs.shg3,
+            shg4 = lhs.shg4 + rhs.shg4,
+            shg5 = lhs.shg5 + rhs.shg5,
+            shg6 = lhs.shg6 + rhs.shg6,
+            shg7 = lhs.shg7 + rhs.shg7,
+            shg8 = lhs.shg8 + rhs.shg8,
+            shb0 = lhs.shb0 + rhs.shb0,
+            shb1 = lhs.shb1 + rhs.shb1,
+            shb2 = lhs.shb2 + rhs.shb2,
+            shb3 = lhs.shb3 + rhs.shb3,
+            shb4 = lhs.shb4 + rhs.shb4,
+            shb5 = lhs.shb5 + rhs.shb5,
+            shb6 = lhs.shb6 + rhs.shb6,
+            shb7 = lhs.shb7 + rhs.shb7,
+            shb8 = lhs.shb8 + rhs.shb8
+        };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(in SphericalHarmonicsL2 lhs, in SphericalHarmonicsL2 rhs) =>
-                lhs.shr0 == rhs.shr0 &&
-                lhs.shr1 == rhs.shr1 &&
-                lhs.shr2 == rhs.shr2 &&
-                lhs.shr3 == rhs.shr3 &&
-                lhs.shr4 == rhs.shr4 &&
-                lhs.shr5 == rhs.shr5 &&
-                lhs.shr6 == rhs.shr6 &&
-                lhs.shr7 == rhs.shr7 &&
-                lhs.shr8 == rhs.shr8 &&
-                lhs.shg0 == rhs.shg0 &&
-                lhs.shg1 == rhs.shg1 &&
-                lhs.shg2 == rhs.shg2 &&
-                lhs.shg3 == rhs.shg3 &&
-                lhs.shg4 == rhs.shg4 &&
-                lhs.shg5 == rhs.shg5 &&
-                lhs.shg6 == rhs.shg6 &&
-                lhs.shg7 == rhs.shg7 &&
-                lhs.shg8 == rhs.shg8 &&
-                lhs.shb0 == rhs.shb0 &&
-                lhs.shb1 == rhs.shb1 &&
-                lhs.shb2 == rhs.shb2 &&
-                lhs.shb3 == rhs.shb3 &&
-                lhs.shb4 == rhs.shb4 &&
-                lhs.shb5 == rhs.shb5 &&
-                lhs.shb6 == rhs.shb6 &&
-                lhs.shb7 == rhs.shb7 &&
-                lhs.shb8 == rhs.shb8;
+        public static bool operator==(SphericalHarmonicsL2 lhs, SphericalHarmonicsL2 rhs) =>
+            lhs.shr0 == rhs.shr0 &&
+            lhs.shr1 == rhs.shr1 &&
+            lhs.shr2 == rhs.shr2 &&
+            lhs.shr3 == rhs.shr3 &&
+            lhs.shr4 == rhs.shr4 &&
+            lhs.shr5 == rhs.shr5 &&
+            lhs.shr6 == rhs.shr6 &&
+            lhs.shr7 == rhs.shr7 &&
+            lhs.shr8 == rhs.shr8 &&
+            lhs.shg0 == rhs.shg0 &&
+            lhs.shg1 == rhs.shg1 &&
+            lhs.shg2 == rhs.shg2 &&
+            lhs.shg3 == rhs.shg3 &&
+            lhs.shg4 == rhs.shg4 &&
+            lhs.shg5 == rhs.shg5 &&
+            lhs.shg6 == rhs.shg6 &&
+            lhs.shg7 == rhs.shg7 &&
+            lhs.shg8 == rhs.shg8 &&
+            lhs.shb0 == rhs.shb0 &&
+            lhs.shb1 == rhs.shb1 &&
+            lhs.shb2 == rhs.shb2 &&
+            lhs.shb3 == rhs.shb3 &&
+            lhs.shb4 == rhs.shb4 &&
+            lhs.shb5 == rhs.shb5 &&
+            lhs.shb6 == rhs.shb6 &&
+            lhs.shb7 == rhs.shb7 &&
+            lhs.shb8 == rhs.shb8;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(in SphericalHarmonicsL2 lhs, in SphericalHarmonicsL2 rhs) => !(lhs == rhs);
+        public static bool operator!=(SphericalHarmonicsL2 lhs, SphericalHarmonicsL2 rhs) => !(lhs == rhs);
+
     }
 }

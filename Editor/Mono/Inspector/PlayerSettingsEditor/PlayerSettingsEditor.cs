@@ -1030,6 +1030,11 @@ namespace UnityEditor
                 return;
             }
 
+            if (BuildProfileContext.activeProfile != null)
+            {
+                BuildProfileContext.HandleScriptingDefinesChanged();
+            }
+
             var reasons = ConvertReasonsToString();
             PlayerSettings.RecompileScripts(reasons);
             m_Reasons.Clear();

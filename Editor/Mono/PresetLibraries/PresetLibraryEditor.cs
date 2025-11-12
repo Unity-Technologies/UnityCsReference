@@ -152,18 +152,6 @@ namespace UnityEditor
             m_PresetLibraryFileLocation = PresetLibraryLocations.GetFileLocationFromPath(currentLibraryWithoutExtension);
         }
 
-        public void InitializeGrid(float availableWidth)
-        {
-            T lib = GetCurrentLib();
-            if (lib != null)
-            {
-                if (availableWidth > 0f)
-                    SetupGrid(availableWidth, lib.Count());
-            }
-            else
-                Debug.LogError("Could not load preset library " + currentLibraryWithoutExtension);
-        }
-
         void Repaint()
         {
             // Repaints current view
@@ -302,6 +290,9 @@ namespace UnityEditor
             m_State.m_RenameOverlay.OnEvent();
 
             T lib = GetCurrentLib();
+
+            if (lib == null)
+                Debug.LogError("Could not load preset library " + currentLibraryWithoutExtension);
 
             if (s_Styles == null)
                 s_Styles = new Styles();

@@ -51,6 +51,27 @@ namespace UnityEngine.LowLevelPhysics2D
         #endregion
 
         /// <summary>
+        /// Defines when the simulation will run.
+        /// </summary>
+        public enum SimulationType
+        {
+            /// <summary>
+            /// The simulation will automatically run during the FixedUpdate.
+            /// </summary>
+            FixedUpdate = 0,
+
+            /// <summary>
+            /// The simulation will automatically run during the Update.
+            /// </summary>
+            Update = 1,
+
+            /// <summary>
+            /// The simulation will only run when manually called with <see cref="LowLevelPhysics2D.PhysicsWorld.Simulate(float)"/>.
+            /// </summary>
+            Script = 2
+        }
+
+        /// <summary>
         /// Defines how the 2D Transforms from each <see cref="LowLevelPhysics2D.PhysicsBody"/> are written to the 3D Transform system.
         /// </summary>
         public enum TransformWriteMode
@@ -434,10 +455,14 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly int simulationWorkers { get => PhysicsWorld_GetSimulationWorkers(this); set => PhysicsWorld_SetSimulationWorkers(this, value); }
 
         /// <summary>
-        /// Get/Set the simulation mode which controls when or if the simulation will be automatically simulated.
-        /// See <see cref="UnityEngine.SimulationMode2D"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.Simulate(float)"/>.
+        /// Get/Set the simulation type which controls when or if the simulation will be automatically simulated.
+        /// See <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType"/>.
         /// </summary>
-        public readonly SimulationMode2D simulationMode { get => PhysicsWorld_GetSimulationMode(this); set => PhysicsWorld_SetSimulationMode(this, value); }
+        public readonly SimulationType simulationType { get => PhysicsWorld_GetSimulationType(this); set => PhysicsWorld_SetSimulationType(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsWorld.simulationMode has been deprecated. Please use PhysicsWorld.simulationType instead.", false)]
+        public readonly SimulationMode2D simulationMode { get => (SimulationMode2D)simulationType; set => simulationType = (PhysicsWorld.SimulationType)value; }
 
         /// <summary>
         /// Get/Set the simulation sub-steps to use during simulation.
@@ -471,7 +496,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// Controls if Transform tweening is used. Transform tweening is where bodies that have their <see cref="LowLevelPhysics2D.PhysicsBody.transformObject"/> set, write to the <see cref="UnityEngine.Transform"/> each frame
         /// depending on the specific body <see cref="LowLevelPhysics2D.PhysicsBody.TransformWriteMode"/> set.
-        /// Regardless of this setting, Transform tweening is never used if the <see cref="LowLevelPhysics2D.PhysicsWorld.simulationMode"/> is <see cref="UnityEngine.SimulationMode2D.Update"/> or <see cref="LowLevelPhysics2D.PhysicsWorld.transformWriteMode"/> is <see cref="LowLevelPhysics2D.PhysicsWorld.TransformWriteMode.Off"/>.
+        /// Regardless of this setting, Transform tweening is never used if the <see cref="LowLevelPhysics2D.PhysicsWorld.simulationType"/> is <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType.Update"/> or <see cref="LowLevelPhysics2D.PhysicsWorld.transformWriteMode"/> is <see cref="LowLevelPhysics2D.PhysicsWorld.TransformWriteMode.Off"/>.
         /// </summary>
         public readonly bool transformTweening { get => PhysicsWorld_GetTransformTweening(this); set => PhysicsWorld_SetTransformTweening(this, value); }
 
@@ -496,19 +521,19 @@ namespace UnityEngine.LowLevelPhysics2D
 
         /// <summary>
         /// Simulate the world.
-        /// The world should must have its simulation mode set to <see cref="UnityEngine.SimulationMode2D.Script"/>.
+        /// The world should must have its <see cref="LowLevelPhysics2D.PhysicsWorld.simulationType"/> set to <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType.Script"/> for this to work.
         /// </summary>
         /// <param name="deltaTime">The amount of time to forward simulate the world.</param>
-        public readonly void Simulate(float deltaTime) => PhysicsWorld_Simulate(this, deltaTime, SimulationMode2D.Script);
+        public readonly void Simulate(float deltaTime) => PhysicsWorld_Simulate(this, deltaTime, SimulationType.Script);
 
         /// <summary>
         /// Simulate a batch of worlds.
         /// The worlds can be simulated concurrently depending on the setting of <see cref="PhysicsLowLevelSettings2D.concurrentSimulations"/>.
-        /// The worlds in the batch must have their simulation mode set to <see cref="UnityEngine.SimulationMode2D.Script"/>.
+        /// The worlds in the batch must have their <see cref="LowLevelPhysics2D.PhysicsWorld.simulationType"/> set to <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType.Script"/>.
         /// </summary>
         /// <param name="worlds">The worlds to forward simulate.</param>
         /// <param name="deltaTime">The amount of time to forward simulate the world.</param>
-        public static void Simulate(ReadOnlySpan<PhysicsWorld> worlds, float deltaTime) => PhysicsWorld_SimulateBatch(worlds, deltaTime, SimulationMode2D.Script);
+        public static void Simulate(ReadOnlySpan<PhysicsWorld> worlds, float deltaTime) => PhysicsWorld_SimulateBatch(worlds, deltaTime, SimulationType.Script);
 
         #region Explode
 
@@ -576,6 +601,15 @@ namespace UnityEngine.LowLevelPhysics2D
         #endregion
 
         #region PhysicsEvents
+
+        /// <summary>
+        /// Get all <see cref="LowLevelPhysics2D.PhysicsUserData"/> assigned to each <see cref="LowLevelPhysics2D.PhysicsBody"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
+        /// The Native Array returned will be of the same length and be ordered the same as the <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.
+        /// Any <see cref="LowLevelPhysics2D.PhysicsBody"/> that are not valid will return a default <see cref="LowLevelPhysics2D.PhysicsUserData"/>.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A Native Array containing all <see cref="LowLevelPhysics2D.PhysicsUserData"/> for each <see cref="LowLevelPhysics2D.PhysicsEvents.BodyUpdateEvent"/> returned with <see cref="LowLevelPhysics2D.PhysicsWorld.bodyUpdateEvents"/>.</returns>
+        public NativeArray<PhysicsUserData> GetBodyUpdateUserData(Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsWorld_GetBodyUpdateUserData(this, allocator).ToNativeArray<PhysicsUserData>();
 
         /// <summary>
         /// Get the body events from the last simulation.

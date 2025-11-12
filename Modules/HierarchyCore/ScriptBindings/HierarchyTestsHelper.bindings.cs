@@ -139,7 +139,7 @@ namespace Unity.Hierarchy
         internal static extern int GetChildrenCapacity(Hierarchy hierarchy, in HierarchyNode node);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern bool CompareSortIndex(Hierarchy hierarchy, in HierarchyNode a, in HierarchyNode b);
+        internal static extern bool CompareNodeSortIndex(Hierarchy hierarchy, in HierarchyNode a, in HierarchyNode b);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern object GetHierarchyScriptingObject(Hierarchy hierarchy);

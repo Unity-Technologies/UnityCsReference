@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         internal Color atgHyperlinkColor = Color.blue;
         bool uvsAreGenerated = false;
 
-        void ComputeNativeTextSize(in string textToMeasure, float width, float height, float? fontsize = null)
+        void ComputeNativeTextSize(in string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
         {
             if (!ConvertUssToNativeTextGenerationSettings(textToMeasure, fontsize))
                 return;
@@ -31,8 +31,15 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(nativeSettings.text) && m_TextElement.isInputField)
                 nativeSettings.text = "\u200B";
 
-            nativeSettings.screenWidth = (float.IsNaN(width) || float.IsNegative(width)) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
-            nativeSettings.screenHeight = (float.IsNaN(height) || float.IsNegative(height)) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
+            if (widthMode == VisualElement.MeasureMode.Undefined || float.IsNaN(width) || float.IsNegative(width))
+                nativeSettings.screenWidth = TextLib.k_unconstrainedScreenSize;
+            else
+                nativeSettings.screenWidth = (int)(width * 64.0f);
+
+            if (heightMode == VisualElement.MeasureMode.Undefined || float.IsNaN(height) || float.IsNegative(height))
+                nativeSettings.screenHeight = TextLib.k_unconstrainedScreenSize;
+            else
+                nativeSettings.screenHeight = (int)(height * 64.0f);
 
             if (textGenerationInfo == IntPtr.Zero)
             {

@@ -11,6 +11,7 @@ using UnityEditor.PackageManager;
 using UnityEngine;
 using System.Threading;
 using Unity.PlayMode.Editor;
+using UnityEditor.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -255,6 +256,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private VisualElement CreateRemoteInstanceElement()
         {
+            if (!EditorMultiplayerManager.enablePlayModeRemoteDeployment)
+                return null;
+
             var container = new VisualElement();
             container.AddToClassList("instances-group");
             var remoteInstancesProperty = serializedObject.FindProperty("m_RemoteInstances");

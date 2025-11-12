@@ -31,7 +31,7 @@ namespace UnityEngine.LowLevelPhysics2D
         readonly UInt16 m_Generation;
 
         /// <undoc/>
-        public override readonly string ToString() => isValid ? $"type={bodyType}, index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
+        public override readonly string ToString() => isValid ? $"type={type}, index={m_Index1}, world={m_World0}, generation={m_Generation}" : "<INVALID>";
 
         #endregion
 
@@ -53,6 +53,64 @@ namespace UnityEngine.LowLevelPhysics2D
         public override int GetHashCode() { return HashCode.Combine(m_Index1, m_World0, m_Generation); }
 
         #endregion
+
+        /// <summary>
+        /// A body is one of these three body types, Dynamic, Kinematic or Static, each of which determines how the body behaves in the simulation.
+        /// </summary>
+        public enum BodyType
+        {
+            /// <summary>
+            /// A dynamic body has positive mass, velocity determined by forces and is moved by solver.
+            /// </summary>
+            Dynamic = 0,
+
+            /// <summary>
+            /// A kinematic body has zero mass, velocity set by user and is moved by solver
+            /// </summary>
+            Kinematic = 1,
+
+            /// <summary>
+            /// A static body has zero mass, zero velocity and may be manually moved.
+            /// </summary>
+            Static = 2,
+        }
+
+        /// <summary>
+        /// Body constrains constrain the degrees of freedom a body when solving the simulation.
+        /// </summary>
+        [Flags]
+        public enum BodyConstraints
+        {
+            /// <summary>
+            /// No constraints
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            /// Constrain motion along the X-axis.
+            /// </summary>
+            PositionX = 1 << 0,
+
+            /// <summary>
+            /// Constrain motion along the Y-axis.
+            /// </summary>
+            PositionY = 1 << 1,
+
+            /// <summary>
+            /// FreConstraineze rotation along the Z-axis.
+            /// </summary>
+            Rotation = 1 << 2,
+
+            /// <summary>
+            /// Constrain motion along all axes.
+            /// </summary>
+            Position = PositionX | PositionY,
+
+            /// <summary>
+            /// Constrain rotation and motion along all axes.
+            /// </summary>
+            All = Position | Rotation,
+        }
 
         /// <summary>
         /// The method used to Write the body pose to the Transform.
@@ -566,12 +624,20 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// A body is one of these three body types, Dynamic, Kinematic or Static, each of which determines how the body behaves in the simulation.
         /// </summary>
-        public readonly RigidbodyType2D bodyType { get => PhysicsBody_GetBodyType(this); set => PhysicsBody_SetBodyType(this, value); }
+        public readonly PhysicsBody.BodyType type { get => PhysicsBody_GetBodyType(this); set => PhysicsBody_SetBodyType(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsBody.bodyType has been deprecated. Please use PhysicsBody.type instead.", false)]
+        public readonly RigidbodyType2D bodyType { get => (RigidbodyType2D)type; set => type = (PhysicsBody.BodyType)value; }
 
         /// <summary>
         /// Get/Set the degrees of freedom constraints (locks) for the body of Linear X, Linear Y and Rotation Z.
         /// </summary>
-        public readonly RigidbodyConstraints2D bodyConstraints { get => PhysicsBody_GetMotionConstraints(this); set => PhysicsBody_SetMotionConstraints(this, value); }
+        public readonly PhysicsBody.BodyConstraints constraints { get => PhysicsBody_GetBodyConstraints(this); set => PhysicsBody_SetBodyConstraints(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsBody.bodyConstraints has been deprecated. Please use PhysicsBody.constraints instead.", false)]
+        public readonly RigidbodyConstraints2D bodyConstraints { get => (RigidbodyConstraints2D)constraints; set => constraints = (PhysicsBody.BodyConstraints)value; }
 
         /// <summary>
         /// The position of the body in the world.

@@ -341,7 +341,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                 }
             }
 
-            Debug.Assert(maxPriority != Int32.MaxValue, "No default loader found");
             return defaultLoader;
         }
 

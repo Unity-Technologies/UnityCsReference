@@ -43,7 +43,7 @@ namespace UnityEditor.Overlays
 
         internal override void AddMenuItems(AbstractGenericMenu menu)
         {
-            OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow, new DefaultOverlayPreset());
+            OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow, true, null, new DefaultOverlayPreset());
         }
 
         internal override string GetValueToDisplay()

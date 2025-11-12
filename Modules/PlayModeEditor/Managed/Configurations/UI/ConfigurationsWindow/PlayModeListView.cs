@@ -40,7 +40,11 @@ namespace Unity.PlayMode.Editor
             m_NewItemTextField.OnFinishEdit += s =>
             {
                 m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-                PlayModeConfigurationUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                var newConfig = PlayModeConfigurationUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                if (newConfig != null)
+                {
+                    TrySelect(newConfig);
+                }
             };
 
             m_NewItemTextField.OnEdit += s =>
@@ -74,6 +78,17 @@ namespace Unity.PlayMode.Editor
                 break;
             }
             OnConfigSelected?.Invoke(selectedConfig);
+        }
+
+        internal bool TrySelect(PlayModeConfiguration config)
+        {
+            var index = m_ListView.itemsSource.IndexOf(config);
+            if (index != -1)
+            {
+                m_ListView.SetSelection(index);
+                return true;
+            }
+            return false;
         }
 
         void RefreshList()

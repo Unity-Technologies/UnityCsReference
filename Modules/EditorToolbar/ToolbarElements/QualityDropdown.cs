@@ -22,7 +22,7 @@ namespace UnityEditor.Toolbars
             MainToolbar.Refresh(k_Path);
         }
 
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             string currentQualityName = QualitySettings.names[QualitySettings.GetQualityLevel()];

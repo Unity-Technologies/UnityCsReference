@@ -39,7 +39,7 @@ namespace UnityEditor.Search
         }
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 2, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, defaultDockIndex = 2, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             return new MainToolbarButton(new MainToolbarContent("", EditorGUIUtility.FindTexture("Search Icon"), GetTooltipText()), () => CommandService.Execute(k_CommandName))

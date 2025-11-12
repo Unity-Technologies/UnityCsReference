@@ -82,7 +82,7 @@ namespace UnityEngine.UIElements
             Vector2 measuredSize = Vector2.zero;
             if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
             {
-                measuredSize = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height, fontsize);
+                measuredSize = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, widthMode, height, heightMode, fontsize);
             }
 
             return PostProcessMeasuredSize(te, measuredSize, width, widthMode, height, heightMode, pixelsPerPoint);

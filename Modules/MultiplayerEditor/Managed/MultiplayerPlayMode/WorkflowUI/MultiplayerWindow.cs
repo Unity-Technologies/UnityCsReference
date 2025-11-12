@@ -236,6 +236,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     });
                     view.ActiveUpdatedEvent += newValue =>
                     {
+                        ShouldUpdateUI = true;
+
                         if (newValue)
                         {
                             if (!EditorApplication.isPlaying && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -255,8 +257,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         {
                             player.Deactivate(out _);
                         }
-
-                        ShouldUpdateUI = true;
                     };
                     view.PlayerTagDropdown.RegisterValueChangedCallback(evt =>
                     {

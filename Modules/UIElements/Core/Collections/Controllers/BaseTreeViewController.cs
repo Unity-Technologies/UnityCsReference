@@ -207,8 +207,8 @@ namespace UnityEngine.UIElements
 
                 var flattenedNodeChildren = m_HierarchyFlattened.EnumerateChildren(parentNode);
 
-                foreach (var node in flattenedNodeChildren)
-                    yield return m_TreeViewDataProperty.GetValue(node);
+                foreach (var flattenedNode in flattenedNodeChildren)
+                    yield return m_TreeViewDataProperty.GetValue(flattenedNode.Node);
 
                 yield return id;
             }

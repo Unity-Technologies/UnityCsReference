@@ -27,7 +27,6 @@ namespace UnityEditor.Toolbars
         public const int defaultMenuPriority = 1000;
         
         string m_Path;
-        bool m_DefaultDisplay;
         int m_DefaultDockIndex = 100;
         MainToolbarDockPosition m_DefaultDropZone;
         int m_MenuPriority = defaultMenuPriority;
@@ -61,11 +60,6 @@ namespace UnityEditor.Toolbars
             get => m_Path.Split('/', StringSplitOptions.RemoveEmptyEntries)[^1];
         }
 
-        internal bool defaultDisplay
-        {
-            get => m_DefaultDisplay;
-        }
-
         string m_UssNameOverride;
         public string ussName
         {
@@ -76,12 +70,6 @@ namespace UnityEditor.Toolbars
         public MainToolbarElementAttribute(string path)
         {
             this.path = path;
-        }
-
-        internal MainToolbarElementAttribute(string path, bool defaultDisplay)
-        {
-            this.path = path;
-            m_DefaultDisplay = defaultDisplay;
         }
     }
 }

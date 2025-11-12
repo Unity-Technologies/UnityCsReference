@@ -16,10 +16,20 @@ namespace UnityEngine
 
         // Creates a ray starting at /origin/ along /direction/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public Ray(Vector3 origin, Vector3 direction)
+        {
+            m_Origin = origin;
+            m_Direction = direction;
+            m_Direction.Normalize();
+        }
+
+        // Creates a ray starting at /origin/ along /direction/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public Ray(in Vector3 origin, in Vector3 direction)
         {
             m_Origin = origin;
-            m_Direction = direction.normalized;
+            m_Direction = direction;
+            m_Direction.Normalize();
         }
 
         // The origin point of the ray.
@@ -33,12 +43,16 @@ namespace UnityEngine
         public Vector3 direction
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Direction;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Direction = value.normalized;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Direction = value; m_Direction.Normalize(); }
         }
 
         // Returns a point at /distance/ units along the ray.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 GetPoint(float distance) => m_Origin + m_Direction * distance;
+        public readonly Vector3 GetPoint(float distance) => new Vector3() {
+            x = m_Origin.x + m_Direction.x * distance,
+            y = m_Origin.y + m_Direction.y * distance,
+            z = m_Origin.z + m_Direction.z * distance
+        };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly string ToString() => ToString(null, null);

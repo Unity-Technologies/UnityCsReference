@@ -133,11 +133,31 @@ namespace UnityEditor
 
             m_EditModeState = new EditMode(this);
             EditorApplication.modifierKeysChanged += OnModifierKeyChanged;
+            
+            if (OverlayCanvasesData.instance.GetCanvasData(this, out var data))
+            {
+                overlayCanvas.ApplySaveData(data.m_SaveData.ToArray(), data.m_DynamicPanelContainerData.ToArray());
+            }
+
+            overlayCanvas.presetChanged += UpdateLatestSaveState;
+
+            // Setup initial save state
+            if (OverlayCanvasesData.instance.toolbarSaveState.overlays == null
+                || OverlayCanvasesData.instance.toolbarSaveState.overlays.Length == 0)
+            {
+                UpdateLatestSaveState();
+            }
+        }
+
+        void UpdateLatestSaveState()
+        {
+            OverlayCanvasesData.instance.SetToolbarSaveState(overlayCanvas.CopySaveData());
         }
 
         void OnDisable()
         {
             EditorApplication.modifierKeysChanged -= OnModifierKeyChanged;
+            OverlayCanvasesData.instance.SetLastActiveCanvasForWindowType(overlayCanvas);
         }
 
         void CreateGUI()
@@ -247,9 +267,14 @@ namespace UnityEditor
 
             dropdown.AddSeparator("");
 
-            OverlayPresetManager.GenerateMenu(dropdown, "Presets/", this, new DefaultOverlayPreset(), new UnityOnlyToolbarPreset());
+            OverlayPresetManager.GenerateMenu(dropdown, "Presets/", this, false, CheckIfCanvasChangedSinceLastPreset, new UnityOnlyToolbarPreset());
 
             dropdown.DropDown(dropdownRect, rootVisualElement, DropdownMenuSizeMode.Auto);
+        }
+
+        bool CheckIfCanvasChangedSinceLastPreset(OverlayCanvas canvas)
+        {
+            return OverlayUtilities.IsCanvasStateDifferent(canvas.CopySaveData(), OverlayCanvasesData.instance.toolbarSaveState);
         }
     }
 

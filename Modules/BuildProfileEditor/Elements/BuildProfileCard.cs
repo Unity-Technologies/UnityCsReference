@@ -22,6 +22,8 @@ namespace UnityEditor.Build.Profile.Elements
 
         public string description { get; set; }
 
+        public string platformBannerBgColorHex { get; set; }
+
         /// <summary>
         /// List of Unity-maintained required and recommended packages for a platform.
         /// </summary>
@@ -42,6 +44,7 @@ namespace UnityEditor.Build.Profile.Elements
             partnerPackages = new PlatformPackageList();
             preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
             description = string.Empty;
+            platformBannerBgColorHex = "#00000000";
         }
     }
 }

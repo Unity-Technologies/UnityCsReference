@@ -44,6 +44,9 @@ namespace UnityEditor.Overlays
         List<WindowToCanvasDataPair> m_CanvasesData = new();
         Dictionary<string, OverlayCanvasesDataContainer> m_WindowToCanvasData = new();
 
+        [SerializeField]
+        OverlayCanvasSaveState m_LastToolbarSaveState;
+
         [Serializable]
         struct WindowToCanvasPair
         {
@@ -162,6 +165,12 @@ namespace UnityEditor.Overlays
             var windowType = canvas.containerWindow.GetType().AssemblyQualifiedName;
             if (!m_WindowToLastActiveCanvasMap.TryAdd(windowType, canvas))
                 m_WindowToLastActiveCanvasMap[windowType] = canvas;
+        }
+
+        public OverlayCanvasSaveState toolbarSaveState => m_LastToolbarSaveState;
+        public void SetToolbarSaveState(OverlayCanvasSaveState save)
+        {
+            m_LastToolbarSaveState = save;
         }
     }
 }

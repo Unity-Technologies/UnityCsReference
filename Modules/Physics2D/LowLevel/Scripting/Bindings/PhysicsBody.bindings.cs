@@ -25,10 +25,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsBody::WriteDefinition")] extern internal static void PhysicsBody_WriteDefinition(PhysicsBody body, PhysicsBodyDefinition definition, bool onlyExtendedProperties);
         [NativeMethod(Name = "PhysicsBody::ReadDefinition")] extern internal static PhysicsBodyDefinition PhysicsBody_ReadDefinition(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetWorld", IsThreadSafe = true)] extern internal static PhysicsWorld PhysicsBody_GetWorld(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::GetBodyType", IsThreadSafe = true)] extern internal static RigidbodyType2D PhysicsBody_GetBodyType(PhysicsBody body);
-        [NativeMethod(Name = "PhysicsBody::SetBodyType")] extern internal static void PhysicsBody_SetBodyType(PhysicsBody body, RigidbodyType2D type);
-        [NativeMethod(Name = "PhysicsBody::SetMotionConstraints")] extern internal static void PhysicsBody_SetMotionConstraints(PhysicsBody body, RigidbodyConstraints2D constraints);
-        [NativeMethod(Name = "PhysicsBody::GetMotionConstraints", IsThreadSafe = true)] extern internal static RigidbodyConstraints2D PhysicsBody_GetMotionConstraints(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::GetBodyType", IsThreadSafe = true)] extern internal static PhysicsBody.BodyType PhysicsBody_GetBodyType(PhysicsBody body);
+        [NativeMethod(Name = "PhysicsBody::SetBodyType")] extern internal static void PhysicsBody_SetBodyType(PhysicsBody body, PhysicsBody.BodyType type);
+        [NativeMethod(Name = "PhysicsBody::SetBodyConstraints")] extern internal static void PhysicsBody_SetBodyConstraints(PhysicsBody body, PhysicsBody.BodyConstraints constraints);
+        [NativeMethod(Name = "PhysicsBody::GetBodyConstraints", IsThreadSafe = true)] extern internal static PhysicsBody.BodyConstraints PhysicsBody_GetBodyConstraints(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::GetPosition", IsThreadSafe = true)] extern internal static Vector2 PhysicsBody_GetPosition(PhysicsBody body);
         [NativeMethod(Name = "PhysicsBody::SetPosition", IsThreadSafe = true)] extern internal static void PhysicsBody_SetPosition(PhysicsBody body, Vector2 position);
         [NativeMethod(Name = "PhysicsBody::GetRotation", IsThreadSafe = true)] extern internal static PhysicsRotate PhysicsBody_GetRotation(PhysicsBody body);

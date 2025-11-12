@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
         HueRotate,
 
         /// <undoc/>
+        [Obsolete("Use Enum.GetValues(typeof(FilterFunctionType)).Length instead", false)]
         Count
     }
 

@@ -17,7 +17,7 @@ namespace UnityEditor.Toolbars
         static Texture2D s_AccountIcon;
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement("Services/Account", true, defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Left)]
+        [MainToolbarElement("Services/Account", defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Left)]
         static MainToolbarElement QueryElementInfo()
         {
             MainToolbarElement info;

@@ -25,7 +25,7 @@ namespace UnityEditor.Toolbars
         [AutoStaticsCleanupOnCodeReload] internal static event Action<VisualElement> onPlayModeButtonsCreated;
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_ElementId, true, ussName = "PlayMode", defaultDockIndex = 0,
+        [MainToolbarElement(k_ElementId, ussName = "PlayMode", defaultDockIndex = 0,
                             defaultDockPosition = MainToolbarDockPosition.Middle, menuPriority = MainToolbarElementAttribute.defaultMenuPriority - 1)]
         static IEnumerable<MainToolbarElement> Create()
         {

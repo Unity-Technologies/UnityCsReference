@@ -41,11 +41,13 @@ namespace UnityEditor.LowLevelPhysics2D
                 var physicsMaskProperty = property.FindPropertyRelative(nameof(PhysicsUserData.m_PhysicsMask));
                 var floatProperty = property.FindPropertyRelative(nameof(PhysicsUserData.m_Float));
                 var intProperty = property.FindPropertyRelative(nameof(PhysicsUserData.m_Int));
+                var int64Property = property.FindPropertyRelative(nameof(PhysicsUserData.m_Int64));
                 var boolProperty = property.FindPropertyRelative(nameof(PhysicsUserData.m_Bool));
 
                 foldout.Add(new PropertyField(physicsMaskProperty));
                 foldout.Add(new PropertyField(floatProperty));
                 foldout.Add(new PropertyField(intProperty));
+                foldout.Add(new PropertyField(int64Property));
                 foldout.Add(new PropertyField(boolProperty));
             }
 

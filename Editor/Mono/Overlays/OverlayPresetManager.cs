@@ -215,12 +215,12 @@ namespace UnityEditor.Overlays
             return new DefaultOverlayPreset();
         }
 
-        internal static List<IOverlayPreset> GetAllPresets(Type windowType)
+        internal static List<IOverlayPreset> GetAllPresets(Type windowType, bool includeDefault = true)
         {
             List<IOverlayPreset> presets = new List<IOverlayPreset>();
 
             // Add a default preset if the user hasn't overwritten it
-            if (!TryGetPreset(windowType, defaultPresetName, out OverlayPreset preset))
+            if (includeDefault && !TryGetPreset(windowType, defaultPresetName, out OverlayPreset preset))
                 presets.Add(new DefaultOverlayPreset());
 
             foreach (var i in windowType.GetInterfaces())
@@ -388,9 +388,61 @@ namespace UnityEditor.Overlays
                 });
         }
 
-        public static void GenerateMenu(AbstractGenericMenu menu, string pathPrefix, EditorWindow window, params IOverlayPreset[] customPresets)
+        static void ApplyPreset(OverlayCanvas canvas, IOverlayPreset preset, Func<OverlayCanvas, bool> canvasChangedCheck = null)
         {
-            var presets = GetAllPresets(window.GetType());
+            CheckUnsavedChanges(canvas, canvasChangedCheck, () => canvas.ApplyPreset(preset));
+        }
+
+        static void CheckUnsavedChanges(OverlayCanvas canvas, Func<OverlayCanvas, bool> canvasChangeCheck, Action onContinue)
+        {
+            if (canvasChangeCheck == null || !canvasChangeCheck.Invoke(canvas))
+            {
+                onContinue?.Invoke();
+                return;
+            }
+
+            int choice = EditorUtility.DisplayDialogComplex(
+                    L10n.Tr("Unsaved Changes"),
+                    L10n.Tr("Your current toolbar preset has unsaved changes that will be overriden by your current action."),
+                    L10n.Tr("Save changes..."),
+                    L10n.Tr("Cancel"),
+                    L10n.Tr("Continue without saving"));
+
+            switch (choice)
+            {
+                // Save Changes
+                case 0:
+                    ShowSavePresetWindow(canvas.containerWindow, onContinue);
+                    break;
+
+                // Cancel
+                case 1:
+                    return;
+
+                // Continue Unsaved
+                case 2:
+                    onContinue?.Invoke();
+                    break;
+            }
+        }
+
+        static void ShowSavePresetWindow(EditorWindow window, Action onCompleted)
+        {
+            SaveOverlayPreset.ShowWindow(window, name =>
+            {
+                var preset = CreatePresetFromOverlayState(name, window);
+                if (preset != null)
+                {
+                    SaveAllPreferences();
+                    ApplyPreset(window.overlayCanvas, preset);
+                    onCompleted?.Invoke();
+                }
+            });
+        }
+
+        public static void GenerateMenu(AbstractGenericMenu menu, string pathPrefix, EditorWindow window, bool includeDefaultPreset, Func<OverlayCanvas, bool> canvasChangeCheck, params IOverlayPreset[] customPresets)
+        {
+            var presets = GetAllPresets(window.GetType(), includeDefaultPreset);
             var overlayTargetType = window is MainToolbarWindow ? "Toolbar" : "Overlay";
 
             foreach (var customPreset in customPresets)
@@ -400,7 +452,7 @@ namespace UnityEditor.Overlays
                 {
                     menu.AddItem(pathPrefix + customPreset.name, false, () =>
                     {
-                        window.overlayCanvas.ApplyPreset(customPreset);
+                        ApplyPreset(window.overlayCanvas, customPreset, canvasChangeCheck);
                     });
                 }
             }
@@ -412,7 +464,7 @@ namespace UnityEditor.Overlays
 
                 menu.AddItem(pathPrefix + preset.name, false, () =>
                 {
-                    window.overlayCanvas.ApplyPreset(preset);
+                    ApplyPreset(window.overlayCanvas, preset, canvasChangeCheck);
                 });
             }
 
@@ -420,10 +472,7 @@ namespace UnityEditor.Overlays
 
             menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset..."), false, () =>
             {
-                ShowSavePresetWindow(window, preset =>
-                {
-                    window.overlayCanvas.ApplyPreset(preset);
-                });
+                ShowSavePresetWindow(window, null);
             });
 
             menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset To File..."), false, () =>
@@ -438,55 +487,57 @@ namespace UnityEditor.Overlays
 
             menu.AddItem(L10n.Tr($"{pathPrefix}Load Preset From File..."), false, () =>
             {
-                var filePath = EditorUtility.OpenFilePanel("Load preset from disk...", "", k_FileExtension);
-                if (!string.IsNullOrEmpty(filePath))
+                CheckUnsavedChanges(window.overlayCanvas, canvasChangeCheck, () =>
                 {
-                    var preset = LoadFromFile(filePath);
-                    bool failed = false;
-                    if (preset == null)
+                    var filePath = EditorUtility.OpenFilePanel("Load preset from disk...", "", k_FileExtension);
+                    if (!string.IsNullOrEmpty(filePath))
                     {
-                        EditorUtility.DisplayDialog(
-                            L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
-                            string.Format(L10n.Tr("Failed to load the chosen preset, the file may not be a .{0} or was corrupted."), k_FileExtension),
-                            L10n.Tr("OK"));
-                        failed = true;
-                    }
-                    else if (!preset.CanApplyToWindow(window.GetType()))
-                    {
-                        EditorUtility.DisplayDialog(
-                            L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
-                            string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This preset targets the window type {1}, which isn't valid for {2} window."), 
-                                overlayTargetType.ToLower(), preset.targetWindowType, window.GetType()),
-                            L10n.Tr("OK"));
-                        failed = true;
-                    }
+                        var preset = LoadFromFile(filePath);
+                        bool failed = false;
+                        if (preset == null)
+                        {
+                            EditorUtility.DisplayDialog(
+                                L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
+                                string.Format(L10n.Tr("Failed to load the chosen preset. The file may not be a .{0} or it was corrupted."), k_FileExtension),
+                                L10n.Tr("OK"));
+                            failed = true;
+                        }
+                        else if (!preset.CanApplyToWindow(window.GetType()))
+                        {
+                            EditorUtility.DisplayDialog(
+                                L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
+                                string.Format(L10n.Tr($"Trying to load an {0} preset with the name {1}. This preset targets the window type {1}, which isn't valid for this window."), overlayTargetType.ToLower(), preset.targetWindowType),
+                                L10n.Tr("OK"));
+                            failed = true;
+                        }
 
-                    if (!failed && !ValidatePresetName(preset.name))
-                    {
-                        failed = true;
-                    }
-
-                    if (!failed && Exists(preset.targetWindowType, preset.name))
-                    {
-                        if (!EditorUtility.DisplayDialog(
-                            L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
-                            string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This name is already in used in the window, do you want to overwrite it?"), overlayTargetType.ToLower(), preset.name),
-                            L10n.Tr("Yes"), L10n.Tr("No")))
+                        if (!failed && !ValidatePresetName(preset.name))
                         {
                             failed = true;
                         }
-                    }
 
-                    if (failed)
-                    {
-                        if (!EditorUtility.IsPersistent(preset))
-                            DestroyImmediate(preset);
-                        return;
-                    }
+                        if (!failed && Exists(preset.targetWindowType, preset.name))
+                        {
+                            if (!EditorUtility.DisplayDialog(
+                                L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
+                                string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This name is already in use in the window. Do you want to overwrite it?"), overlayTargetType.ToLower(), preset.name),
+                                L10n.Tr("Yes"), L10n.Tr("No")))
+                            {
+                                failed = true;
+                            }
+                        }
 
-                    AddPreset(preset);
-                    window.overlayCanvas.ApplyPreset(preset);
-                }
+                        if (failed)
+                        {
+                            if (!EditorUtility.IsPersistent(preset))
+                                DestroyImmediate(preset);
+                            return;
+                        }
+
+                        AddPreset(preset);
+                        ApplyPreset(window.overlayCanvas, preset);
+                    }
+                });
             });
 
             foreach (var rawPreset in presets)
@@ -512,7 +563,7 @@ namespace UnityEditor.Overlays
                 {
                     RevertPreferencesPresetsToDefault();
                     ReloadAllPresets();
-                    window.overlayCanvas.ApplyPreset(GetDefaultPreset(window.GetType()));
+                    ApplyPreset(window.overlayCanvas, GetDefaultPreset(window.GetType()));
                 }
             });
         }

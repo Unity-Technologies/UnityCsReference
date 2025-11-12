@@ -82,6 +82,14 @@ namespace UnityEngine
         [NativeName("m_Data[15]")]
         public float m33;
 
+        public Matrix4x4(Vector4 column0, Vector4 column1, Vector4 column2, Vector4 column3)
+        {
+            this.m00 = column0.x; this.m01 = column1.x; this.m02 = column2.x; this.m03 = column3.x;
+            this.m10 = column0.y; this.m11 = column1.y; this.m12 = column2.y; this.m13 = column3.y;
+            this.m20 = column0.z; this.m21 = column1.z; this.m22 = column2.z; this.m23 = column3.z;
+            this.m30 = column0.w; this.m31 = column1.w; this.m32 = column2.w; this.m33 = column3.w;
+        }
+
         public Matrix4x4(in Vector4 column0, in Vector4 column1, in Vector4 column2, in Vector4 column3)
         {
             this.m00 = column0.x; this.m01 = column1.x; this.m02 = column2.x; this.m03 = column3.x;
@@ -166,7 +174,7 @@ namespace UnityEngine
         public readonly override bool Equals(object other)
         {
             if (other is Matrix4x4 m)
-                return Equals(m);
+                return Equals(in m);
             return false;
         }
 
@@ -176,58 +184,60 @@ namespace UnityEngine
                 && GetColumn(2).Equals(other.GetColumn(2))
                 && GetColumn(3).Equals(other.GetColumn(3));
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(in Matrix4x4 other) => GetColumn(0).Equals(other.GetColumn(0))
+                && GetColumn(1).Equals(other.GetColumn(1))
+                && GetColumn(2).Equals(other.GetColumn(2))
+                && GetColumn(3).Equals(other.GetColumn(3));
+
         // Multiplies two matrices.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Matrix4x4 operator*(in Matrix4x4 lhs, in Matrix4x4 rhs)
-        {
-            Matrix4x4 res;
-            res.m00 = lhs.m00 * rhs.m00 + lhs.m01 * rhs.m10 + lhs.m02 * rhs.m20 + lhs.m03 * rhs.m30;
-            res.m01 = lhs.m00 * rhs.m01 + lhs.m01 * rhs.m11 + lhs.m02 * rhs.m21 + lhs.m03 * rhs.m31;
-            res.m02 = lhs.m00 * rhs.m02 + lhs.m01 * rhs.m12 + lhs.m02 * rhs.m22 + lhs.m03 * rhs.m32;
-            res.m03 = lhs.m00 * rhs.m03 + lhs.m01 * rhs.m13 + lhs.m02 * rhs.m23 + lhs.m03 * rhs.m33;
+        public static Matrix4x4 operator*(Matrix4x4 lhs, Matrix4x4 rhs) => new Matrix4x4() {
+            m00 = lhs.m00 * rhs.m00 + lhs.m01 * rhs.m10 + lhs.m02 * rhs.m20 + lhs.m03 * rhs.m30,
+            m01 = lhs.m00 * rhs.m01 + lhs.m01 * rhs.m11 + lhs.m02 * rhs.m21 + lhs.m03 * rhs.m31,
+            m02 = lhs.m00 * rhs.m02 + lhs.m01 * rhs.m12 + lhs.m02 * rhs.m22 + lhs.m03 * rhs.m32,
+            m03 = lhs.m00 * rhs.m03 + lhs.m01 * rhs.m13 + lhs.m02 * rhs.m23 + lhs.m03 * rhs.m33,
 
-            res.m10 = lhs.m10 * rhs.m00 + lhs.m11 * rhs.m10 + lhs.m12 * rhs.m20 + lhs.m13 * rhs.m30;
-            res.m11 = lhs.m10 * rhs.m01 + lhs.m11 * rhs.m11 + lhs.m12 * rhs.m21 + lhs.m13 * rhs.m31;
-            res.m12 = lhs.m10 * rhs.m02 + lhs.m11 * rhs.m12 + lhs.m12 * rhs.m22 + lhs.m13 * rhs.m32;
-            res.m13 = lhs.m10 * rhs.m03 + lhs.m11 * rhs.m13 + lhs.m12 * rhs.m23 + lhs.m13 * rhs.m33;
+            m10 = lhs.m10 * rhs.m00 + lhs.m11 * rhs.m10 + lhs.m12 * rhs.m20 + lhs.m13 * rhs.m30,
+            m11 = lhs.m10 * rhs.m01 + lhs.m11 * rhs.m11 + lhs.m12 * rhs.m21 + lhs.m13 * rhs.m31,
+            m12 = lhs.m10 * rhs.m02 + lhs.m11 * rhs.m12 + lhs.m12 * rhs.m22 + lhs.m13 * rhs.m32,
+            m13 = lhs.m10 * rhs.m03 + lhs.m11 * rhs.m13 + lhs.m12 * rhs.m23 + lhs.m13 * rhs.m33,
 
-            res.m20 = lhs.m20 * rhs.m00 + lhs.m21 * rhs.m10 + lhs.m22 * rhs.m20 + lhs.m23 * rhs.m30;
-            res.m21 = lhs.m20 * rhs.m01 + lhs.m21 * rhs.m11 + lhs.m22 * rhs.m21 + lhs.m23 * rhs.m31;
-            res.m22 = lhs.m20 * rhs.m02 + lhs.m21 * rhs.m12 + lhs.m22 * rhs.m22 + lhs.m23 * rhs.m32;
-            res.m23 = lhs.m20 * rhs.m03 + lhs.m21 * rhs.m13 + lhs.m22 * rhs.m23 + lhs.m23 * rhs.m33;
+            m20 = lhs.m20 * rhs.m00 + lhs.m21 * rhs.m10 + lhs.m22 * rhs.m20 + lhs.m23 * rhs.m30,
+            m21 = lhs.m20 * rhs.m01 + lhs.m21 * rhs.m11 + lhs.m22 * rhs.m21 + lhs.m23 * rhs.m31,
+            m22 = lhs.m20 * rhs.m02 + lhs.m21 * rhs.m12 + lhs.m22 * rhs.m22 + lhs.m23 * rhs.m32,
+            m23 = lhs.m20 * rhs.m03 + lhs.m21 * rhs.m13 + lhs.m22 * rhs.m23 + lhs.m23 * rhs.m33,
 
-            res.m30 = lhs.m30 * rhs.m00 + lhs.m31 * rhs.m10 + lhs.m32 * rhs.m20 + lhs.m33 * rhs.m30;
-            res.m31 = lhs.m30 * rhs.m01 + lhs.m31 * rhs.m11 + lhs.m32 * rhs.m21 + lhs.m33 * rhs.m31;
-            res.m32 = lhs.m30 * rhs.m02 + lhs.m31 * rhs.m12 + lhs.m32 * rhs.m22 + lhs.m33 * rhs.m32;
-            res.m33 = lhs.m30 * rhs.m03 + lhs.m31 * rhs.m13 + lhs.m32 * rhs.m23 + lhs.m33 * rhs.m33;
-            return res;
-        }
+            m30 = lhs.m30 * rhs.m00 + lhs.m31 * rhs.m10 + lhs.m32 * rhs.m20 + lhs.m33 * rhs.m30,
+            m31 = lhs.m30 * rhs.m01 + lhs.m31 * rhs.m11 + lhs.m32 * rhs.m21 + lhs.m33 * rhs.m31,
+            m32 = lhs.m30 * rhs.m02 + lhs.m31 * rhs.m12 + lhs.m32 * rhs.m22 + lhs.m33 * rhs.m32,
+            m33 = lhs.m30 * rhs.m03 + lhs.m31 * rhs.m13 + lhs.m32 * rhs.m23 + lhs.m33 * rhs.m33
+        };
+
 
         // Transforms a [[Vector4]] by a matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector4 operator*(in Matrix4x4 lhs, in Vector4 vector)
-        {
-            Vector4 res;
-            res.x = lhs.m00 * vector.x + lhs.m01 * vector.y + lhs.m02 * vector.z + lhs.m03 * vector.w;
-            res.y = lhs.m10 * vector.x + lhs.m11 * vector.y + lhs.m12 * vector.z + lhs.m13 * vector.w;
-            res.z = lhs.m20 * vector.x + lhs.m21 * vector.y + lhs.m22 * vector.z + lhs.m23 * vector.w;
-            res.w = lhs.m30 * vector.x + lhs.m31 * vector.y + lhs.m32 * vector.z + lhs.m33 * vector.w;
-            return res;
-        }
+        public static Vector4 operator*(Matrix4x4 lhs, Vector4 vector) => new Vector4() {
+            x = lhs.m00 * vector.x + lhs.m01 * vector.y + lhs.m02 * vector.z + lhs.m03 * vector.w,
+            y = lhs.m10 * vector.x + lhs.m11 * vector.y + lhs.m12 * vector.z + lhs.m13 * vector.w,
+            z = lhs.m20 * vector.x + lhs.m21 * vector.y + lhs.m22 * vector.z + lhs.m23 * vector.w,
+            w = lhs.m30 * vector.x + lhs.m31 * vector.y + lhs.m32 * vector.z + lhs.m33 * vector.w
+        };
 
-        //*undoc*
+        /// <undoc/>
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(in Matrix4x4 lhs, in Matrix4x4 rhs) =>
+        public static bool operator==(Matrix4x4 lhs, Matrix4x4 rhs) =>
             // Returns false in the presence of NaN values.
             lhs.GetColumn(0) == rhs.GetColumn(0)
                 && lhs.GetColumn(1) == rhs.GetColumn(1)
                 && lhs.GetColumn(2) == rhs.GetColumn(2)
                 && lhs.GetColumn(3) == rhs.GetColumn(3);
 
-        //*undoc*
-        public static bool operator!=(in Matrix4x4 lhs, in Matrix4x4 rhs) =>
+        /// <undoc/>
+        public static bool operator!=(Matrix4x4 lhs, Matrix4x4 rhs) =>
             // Returns true in the presence of NaN values.
             !(lhs == rhs);
+
 
         // Get a column of the matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -235,10 +245,10 @@ namespace UnityEngine
         {
             switch (index)
             {
-                case 0: return new Vector4(m00, m10, m20, m30);
-                case 1: return new Vector4(m01, m11, m21, m31);
-                case 2: return new Vector4(m02, m12, m22, m32);
-                case 3: return new Vector4(m03, m13, m23, m33);
+                case 0: return new Vector4() { x = m00, y = m10, z = m20, w = m30 };
+                case 1: return new Vector4() { x = m01, y = m11, z = m21, w = m31 };
+                case 2: return new Vector4() { x = m02, y = m12, z = m22, w = m32 };
+                case 3: return new Vector4() { x = m03, y = m13, z = m23, w = m33 };
                 default:
                     throw new IndexOutOfRangeException("Invalid column index!");
             }
@@ -250,21 +260,27 @@ namespace UnityEngine
         {
             switch (index)
             {
-                case 0: return new Vector4(m00, m01, m02, m03);
-                case 1: return new Vector4(m10, m11, m12, m13);
-                case 2: return new Vector4(m20, m21, m22, m23);
-                case 3: return new Vector4(m30, m31, m32, m33);
+                case 0: return new Vector4() { x = m00, y = m01, z = m02, w = m03 };
+                case 1: return new Vector4() { x = m10, y = m11, z = m12, w = m13 };
+                case 2: return new Vector4() { x = m20, y = m21, z = m22, w = m23 };
+                case 3: return new Vector4() { x = m30, y = m31, z = m32, w = m33 };
                 default:
                     throw new IndexOutOfRangeException("Invalid row index!");
             }
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 GetPosition() => new Vector3(m03, m13, m23);
+        public readonly Vector3 GetPosition() => new Vector3() { x = m03, y = m13, z = m23 };
 
         // Sets a column of the matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetColumn(int index, Vector4 column) => SetColumn(index, in column);
+        public void SetColumn(int index, Vector4 column)
+        {
+            this[0, index] = column.x;
+            this[1, index] = column.y;
+            this[2, index] = column.z;
+            this[3, index] = column.w;
+        }
 
         // Sets a column of the matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -278,7 +294,13 @@ namespace UnityEngine
 
         // Sets a row of the matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void SetRow(int index, Vector4 row) => SetRow(index, in row);
+        public void SetRow(int index, Vector4 row)
+        {
+            this[index, 0] = row.x;
+            this[index, 1] = row.y;
+            this[index, 2] = row.z;
+            this[index, 3] = row.w;
+        }
 
         // Sets a row of the matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -292,7 +314,21 @@ namespace UnityEngine
 
         // Transforms a position by this matrix, with a perspective divide. (generic)
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 MultiplyPoint(Vector3 point) => MultiplyPoint(in point);
+        public readonly Vector3 MultiplyPoint(Vector3 point)
+        {
+            Vector3 res;
+            float w;
+            res.x = this.m00 * point.x + this.m01 * point.y + this.m02 * point.z + this.m03;
+            res.y = this.m10 * point.x + this.m11 * point.y + this.m12 * point.z + this.m13;
+            res.z = this.m20 * point.x + this.m21 * point.y + this.m22 * point.z + this.m23;
+            w = this.m30 * point.x + this.m31 * point.y + this.m32 * point.z + this.m33;
+
+            w = 1F / w;
+            res.x *= w;
+            res.y *= w;
+            res.z *= w;
+            return res;
+        }
 
         // Transforms a position by this matrix, with a perspective divide. (generic)
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -314,89 +350,134 @@ namespace UnityEngine
 
         // Transforms a position by this matrix, without a perspective divide. (fast)
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 MultiplyPoint3x4(Vector3 point) => MultiplyPoint3x4(in point);
+        public readonly Vector3 MultiplyPoint3x4(Vector3 point) => new Vector3() {
+            x = this.m00 * point.x + this.m01 * point.y + this.m02 * point.z + this.m03,
+            y = this.m10 * point.x + this.m11 * point.y + this.m12 * point.z + this.m13,
+            z = this.m20 * point.x + this.m21 * point.y + this.m22 * point.z + this.m23
+        };
 
         // Transforms a position by this matrix, without a perspective divide. (fast)
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 MultiplyPoint3x4(in Vector3 point)
-        {
-            Vector3 res;
-            res.x = this.m00 * point.x + this.m01 * point.y + this.m02 * point.z + this.m03;
-            res.y = this.m10 * point.x + this.m11 * point.y + this.m12 * point.z + this.m13;
-            res.z = this.m20 * point.x + this.m21 * point.y + this.m22 * point.z + this.m23;
-            return res;
-        }
+        public readonly Vector3 MultiplyPoint3x4(in Vector3 point) => new Vector3() {
+            x = this.m00 * point.x + this.m01 * point.y + this.m02 * point.z + this.m03,
+            y = this.m10 * point.x + this.m11 * point.y + this.m12 * point.z + this.m13,
+            z = this.m20 * point.x + this.m21 * point.y + this.m22 * point.z + this.m23
+        };
 
         // Transforms a direction by this matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 MultiplyVector(Vector3 vector) => MultiplyVector(in vector);
+        public readonly Vector3 MultiplyVector(Vector3 vector) => new Vector3() {
+            x = this.m00 * vector.x + this.m01 * vector.y + this.m02 * vector.z,
+            y = this.m10 * vector.x + this.m11 * vector.y + this.m12 * vector.z,
+            z = this.m20 * vector.x + this.m21 * vector.y + this.m22 * vector.z
+        };
 
         // Transforms a direction by this matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector3 MultiplyVector(in Vector3 vector)
-        {
-            Vector3 res;
-            res.x = this.m00 * vector.x + this.m01 * vector.y + this.m02 * vector.z;
-            res.y = this.m10 * vector.x + this.m11 * vector.y + this.m12 * vector.z;
-            res.z = this.m20 * vector.x + this.m21 * vector.y + this.m22 * vector.z;
-            return res;
-        }
+        public readonly Vector3 MultiplyVector(in Vector3 vector) => new Vector3() {
+            x = this.m00 * vector.x + this.m01 * vector.y + this.m02 * vector.z,
+            y = this.m10 * vector.x + this.m11 * vector.y + this.m12 * vector.z,
+            z = this.m20 * vector.x + this.m21 * vector.y + this.m22 * vector.z
+        };
 
         // Transforms a plane by this matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Plane TransformPlane(Plane plane) => TransformPlane(in plane);
-
-        // Transforms a plane by this matrix.
-        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Plane TransformPlane(in Plane plane)
+        public readonly Plane TransformPlane(Plane plane)
         {
             var ittrans = inverse;
+            var normal = plane.normal;
 
-            float x = plane.normal.x, y = plane.normal.y, z = plane.normal.z, w = plane.distance;
+            float x = normal.x, y = normal.y, z = normal.z, w = plane.distance;
             // note: a transpose is part of this transformation
             var a = ittrans.m00 * x + ittrans.m10 * y + ittrans.m20 * z + ittrans.m30 * w;
             var b = ittrans.m01 * x + ittrans.m11 * y + ittrans.m21 * z + ittrans.m31 * w;
             var c = ittrans.m02 * x + ittrans.m12 * y + ittrans.m22 * z + ittrans.m32 * w;
             var d = ittrans.m03 * x + ittrans.m13 * y + ittrans.m23 * z + ittrans.m33 * w;
 
-            return new Plane(new Vector3(a, b, c), d);
+            var n = new Vector3() { x = a, y = b, z = c };
+            return new Plane(in n, d);
+        }
+
+        // Transforms a plane by this matrix.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly Plane TransformPlane(in Plane plane)
+        {
+            var ittrans = inverse;
+            var normal = plane.normal;
+
+            float x = normal.x, y = normal.y, z = normal.z, w = plane.distance;
+            // note: a transpose is part of this transformation
+            var a = ittrans.m00 * x + ittrans.m10 * y + ittrans.m20 * z + ittrans.m30 * w;
+            var b = ittrans.m01 * x + ittrans.m11 * y + ittrans.m21 * z + ittrans.m31 * w;
+            var c = ittrans.m02 * x + ittrans.m12 * y + ittrans.m22 * z + ittrans.m32 * w;
+            var d = ittrans.m03 * x + ittrans.m13 * y + ittrans.m23 * z + ittrans.m33 * w;
+
+            var n = new Vector3() { x = a, y = b, z = c };
+            return new Plane(in n, d);
         }
 
         // Creates a scaling matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Matrix4x4 Scale(Vector3 vector) => Scale(in vector);
+        public static Matrix4x4 Scale(Vector3 vector) => new Matrix4x4() {
+            m00 = vector.x, m01 = 0F,       m02 = 0F,       m03 = 0F,
+            m10 = 0F,       m11 = vector.y, m12 = 0F,       m13 = 0F,
+            m20 = 0F,       m21 = 0F,       m22 = vector.z, m23 = 0F,
+            m30 = 0F,       m31 = 0F,       m32 = 0F,       m33 = 1F
+        };
 
         // Creates a scaling matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Matrix4x4 Scale(in Vector3 vector)
-        {
-            Matrix4x4 m;
-            m.m00 = vector.x; m.m01 = 0F; m.m02 = 0F; m.m03 = 0F;
-            m.m10 = 0F; m.m11 = vector.y; m.m12 = 0F; m.m13 = 0F;
-            m.m20 = 0F; m.m21 = 0F; m.m22 = vector.z; m.m23 = 0F;
-            m.m30 = 0F; m.m31 = 0F; m.m32 = 0F; m.m33 = 1F;
-            return m;
-        }
+        public static Matrix4x4 Scale(in Vector3 vector) => new Matrix4x4() {
+            m00 = vector.x, m01 = 0F,       m02 = 0F,       m03 = 0F,
+            m10 = 0F,       m11 = vector.y, m12 = 0F,       m13 = 0F,
+            m20 = 0F,       m21 = 0F,       m22 = vector.z, m23 = 0F,
+            m30 = 0F,       m31 = 0F,       m32 = 0F,       m33 = 1F
+        };
 
         // Creates a translation matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Matrix4x4 Translate(Vector3 vector) => Translate(in vector);
+        public static Matrix4x4 Translate(Vector3 vector) => new Matrix4x4() {
+            m00 = 1F,       m01 = 0F,       m02 = 0F,       m03 = vector.x,
+            m10 = 0F,       m11 = 1F,       m12 = 0F,       m13 = vector.y,
+            m20 = 0F,       m21 = 0F,       m22 = 1F,       m23 = vector.z,
+            m30 = 0F,       m31 = 0F,       m32 = 0F,       m33 = 1F
+        };
 
         // Creates a translation matrix.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Matrix4x4 Translate(in Vector3 vector)
-        {
-            Matrix4x4 m;
-            m.m00 = 1F; m.m01 = 0F; m.m02 = 0F; m.m03 = vector.x;
-            m.m10 = 0F; m.m11 = 1F; m.m12 = 0F; m.m13 = vector.y;
-            m.m20 = 0F; m.m21 = 0F; m.m22 = 1F; m.m23 = vector.z;
-            m.m30 = 0F; m.m31 = 0F; m.m32 = 0F; m.m33 = 1F;
-            return m;
-        }
+        public static Matrix4x4 Translate(in Vector3 vector) => new Matrix4x4() {
+            m00 = 1F,       m01 = 0F,       m02 = 0F,       m03 = vector.x,
+            m10 = 0F,       m11 = 1F,       m12 = 0F,       m13 = vector.y,
+            m20 = 0F,       m21 = 0F,       m22 = 1F,       m23 = vector.z,
+            m30 = 0F,       m31 = 0F,       m32 = 0F,       m33 = 1F
+        };
 
         // Creates a rotation matrix. Note: Assumes unit quaternion
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Matrix4x4 Rotate(Quaternion q) => Rotate(in q);
+        public static Matrix4x4 Rotate(Quaternion q)
+        {
+            // Precalculate coordinate products
+            float x = q.x * 2.0F;
+            float y = q.y * 2.0F;
+            float z = q.z * 2.0F;
+            float xx = q.x * x;
+            float yy = q.y * y;
+            float zz = q.z * z;
+            float xy = q.x * y;
+            float xz = q.x * z;
+            float yz = q.y * z;
+            float wx = q.w * x;
+            float wy = q.w * y;
+            float wz = q.w * z;
+
+            // Calculate 3x3 matrix from orthonormal basis
+            Matrix4x4 m;
+            m.m00 = 1.0f - (yy + zz);   m.m10 = xy + wz;            m.m20 = xz - wy;            m.m30 = 0.0F;
+            m.m01 = xy - wz;            m.m11 = 1.0f - (xx + zz);   m.m21 = yz + wx;            m.m31 = 0.0F;
+            m.m02 = xz + wy;            m.m12 = yz - wx;            m.m22 = 1.0f - (xx + yy);   m.m32 = 0.0F;
+            m.m03 = 0.0F;               m.m13 = 0.0F;               m.m23 = 0.0F;               m.m33 = 1.0F;
+            return m;
+        }
 
         // Creates a rotation matrix. Note: Assumes unit quaternion
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -418,10 +499,10 @@ namespace UnityEngine
 
             // Calculate 3x3 matrix from orthonormal basis
             Matrix4x4 m;
-            m.m00 = 1.0f - (yy + zz); m.m10 = xy + wz; m.m20 = xz - wy; m.m30 = 0.0F;
-            m.m01 = xy - wz; m.m11 = 1.0f - (xx + zz); m.m21 = yz + wx; m.m31 = 0.0F;
-            m.m02 = xz + wy; m.m12 = yz - wx; m.m22 = 1.0f - (xx + yy); m.m32 = 0.0F;
-            m.m03 = 0.0F; m.m13 = 0.0F; m.m23 = 0.0F; m.m33 = 1.0F;
+            m.m00 = 1.0f - (yy + zz);   m.m10 = xy + wz;            m.m20 = xz - wy;            m.m30 = 0.0F;
+            m.m01 = xy - wz;            m.m11 = 1.0f - (xx + zz);   m.m21 = yz + wx;            m.m31 = 0.0F;
+            m.m02 = xz + wy;            m.m12 = yz - wx;            m.m22 = 1.0f - (xx + yy);   m.m32 = 0.0F;
+            m.m03 = 0.0F;               m.m13 = 0.0F;               m.m23 = 0.0F;               m.m33 = 1.0F;
             return m;
         }
 

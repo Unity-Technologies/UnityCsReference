@@ -11,7 +11,7 @@ namespace UnityEditor.Toolbars
     {
         const string k_Path = "Services/Collab";
 
-        [MainToolbarElement(k_Path, true, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 11)]
+        [MainToolbarElement(k_Path, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 11)]
         [UnityOnlyMainToolbarPreset]
         static IEnumerable<MainToolbarElement> CreateSubToolbarZone()
         {
@@ -92,10 +92,10 @@ namespace UnityEditor.Toolbars
             return element;
         }
 
-        [MainToolbarElement(Toolbar.deprecatedElementsId, false, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 11)]
+        [MainToolbarElement(Toolbar.deprecatedElementsId, defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 11)]
         static MainToolbarElement CreateSubToolbarZone()
         {
-            return new MainToolbarCustom(CreateToolbar);
+            return new MainToolbarCustom(CreateToolbar) { displayed = Toolbar.get.deprecatedElements.Count > 0 } ;
         }
 
         static VisualElement CreateToolbar()

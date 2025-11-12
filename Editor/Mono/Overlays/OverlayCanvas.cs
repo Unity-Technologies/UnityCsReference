@@ -16,6 +16,13 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Overlays
 {
     [Serializable]
+    struct OverlayCanvasSaveState
+    {
+        public SaveData[] overlays;
+        public DynamicPanelContainerData[] dynamicPanels;
+    }
+
+    [Serializable]
     public class SaveData : IEquatable<SaveData>
     {
         // Note on the obsolete fields in this class:
@@ -200,7 +207,7 @@ namespace UnityEditor.Overlays
     }
 
     [Serializable]
-    sealed class DynamicPanelContainerData
+    sealed class DynamicPanelContainerData : IEquatable<DynamicPanelContainerData>
     {
         public string containerId;
         public float width;
@@ -213,6 +220,13 @@ namespace UnityEditor.Overlays
             containerId = other.containerId;
             width = other.width;
             saveData = other.saveData;
+        }
+
+        public bool Equals(DynamicPanelContainerData other)
+        {
+            return containerId == other.containerId
+                && width == other.width
+                && saveData.Equals(other.saveData);
         }
     }
 
@@ -915,6 +929,13 @@ namespace UnityEditor.Overlays
                 dynamicPanelContainerData[i] = new DynamicPanelContainerData(dynamicPanelContainerData[i]);
         }
 
+        internal OverlayCanvasSaveState CopySaveData()
+        {
+            CopySaveData(out var overlays, out var dynamicPanels);
+
+            return new OverlayCanvasSaveState { overlays = overlays, dynamicPanels = dynamicPanels };
+        }
+
         internal void SavePreset(OverlayPreset preset)
         {
             CopySaveData(out var saveData, out var dynamicPanelContainerData);
@@ -951,6 +972,11 @@ namespace UnityEditor.Overlays
                 m_DynamicPanelContainerData = new List<DynamicPanelContainerData>(dynamicPanelContainerData);
 
             RestoreOverlays();
+        }
+
+        internal void ApplySaveData(OverlayCanvasSaveState save)
+        {
+            ApplySaveData(save.overlays, save.dynamicPanels);
         }
 
         internal void Move(Overlay overlay, DockZone zone, DockPosition position = DockPosition.Bottom)
@@ -1183,7 +1209,7 @@ namespace UnityEditor.Overlays
                     {
                         data.index = attr.defaultDockIndex;
                         data.dockPosition = (DockPosition)(int)attr.defaultDockPosition;
-                        data.displayed = attr.defaultDisplay;
+                        data.displayed = mtOverlay.createElementMethod.GetCustomAttribute<UnityOnlyMainToolbarPresetAttribute>() != null;
                     }
                 }
             }

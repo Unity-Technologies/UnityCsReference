@@ -7802,7 +7802,8 @@ namespace UnityEditor
                         string newValue = TextField(position, label, new string(value));
                         if (GUI.changed)
                         {
-                            if (newValue.Length == 1)
+                            if ((newValue.Length == 1 && newValue[0] != '\0') ||
+                                (newValue.Length == 2 && newValue[1] == '\0'))
                             {
                                 property.intValue = newValue[0];
                             }

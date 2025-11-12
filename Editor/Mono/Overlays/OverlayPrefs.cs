@@ -70,10 +70,12 @@ namespace UnityEditor.Overlays
         readonly static Color k_DefaultDarkBackgroundColor = new Color(0, 0, 0, 0.8f);
         readonly static Color k_DefaultLightBackgroundColor = new Color(182/255f, 182/255f, 182/255f, 0.9f);
 
-        internal StyleSheet styleSheet { get; private set; }
+        [SerializeField]
+        internal StyleSheet styleSheet;
         List<Type> m_SupportedTypes = new List<Type>();
         Dictionary<Type, WindowSettings> m_Windows = new Dictionary<Type, WindowSettings>();
         HashSet<string> m_ColorPrefKeys = new HashSet<string>();
+        bool m_StyleSheetDirty = false;
 
         public static event Action styleSheetChanged;
         public static event Action<Type, bool> enabledChanged;
@@ -142,6 +144,19 @@ namespace UnityEditor.Overlays
             var importer = new StyleSheetImporterImpl();
             importer.Import(instance.styleSheet, styleSheetString);
             styleSheetChanged?.Invoke();
+            instance.m_StyleSheetDirty = false;
+        }
+
+        static void RequestStyleSheetRebuild()
+        {
+            if (!instance.m_StyleSheetDirty)
+            {
+                instance.m_StyleSheetDirty = true;
+                EditorApplication.delayCall += () =>
+                {
+                    WriteStylesheetFromPrefs();
+                };
+            }
         }
 
         // String building refactored for performance test.
@@ -173,7 +188,7 @@ namespace UnityEditor.Overlays
         void OnSettingsChanged(string key, Type type)
         {
             if (m_ColorPrefKeys.Contains(key))
-                WriteStylesheetFromPrefs();
+                RequestStyleSheetRebuild();
         }
 
         public static void DeleteOverlayKey(Type windowType)
@@ -206,9 +221,13 @@ namespace UnityEditor.Overlays
             m_SupportedTypes.Sort((a, b) => a.Name.CompareTo(b.Name));
 
             // Initialize Stylesheet
-            styleSheet = CreateInstance<StyleSheet>();
-            styleSheet.name = "OverlayPreferences";
-            styleSheet.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+            if (styleSheet == null)
+            {
+                styleSheet = CreateInstance<StyleSheet>();
+                styleSheet.name = "OverlayPreferences";
+                styleSheet.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+                RequestStyleSheetRebuild();
+            }
 
             PrefSettings.settingsReverted += () =>
             {
@@ -230,15 +249,11 @@ namespace UnityEditor.Overlays
                 }
             }
             EditorPrefs.SetBool(k_WasProSkinPrefKey, EditorGUIUtility.isProSkin);
-
-            WriteStylesheetFromPrefs();
         }
 
         void OnDisable()
         {
             PrefSettings.settingChanged -= OnSettingsChanged;
-
-            DestroyImmediate(styleSheet);
         }
     }
 }

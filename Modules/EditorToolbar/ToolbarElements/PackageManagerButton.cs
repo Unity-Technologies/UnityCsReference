@@ -17,7 +17,7 @@ namespace UnityEditor.Toolbars
         const string k_ElementPath = "Package Management/Package Manager";
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_ElementPath, true, defaultDockIndex = 11, defaultDockPosition = MainToolbarDockPosition.Left)]
+        [MainToolbarElement(k_ElementPath, defaultDockIndex = 11, defaultDockPosition = MainToolbarDockPosition.Left)]
         static MainToolbarElement Create()
         {
             var (icon, tooltip, clickAction) = GetContent(s_PackageDatabase);

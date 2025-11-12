@@ -261,6 +261,11 @@ namespace UnityEditor
             public PlatformAttributes flags = PlatformAttributes.None;
 
             /// <summary>
+            /// To be used when fetching relevant platform specific colored icons or backgrounds.
+            /// </summary>
+            public string buildProfilePlatformBannerBgColorHex = "#00000000";
+
+            /// <summary>
             /// List of Unity-maintained required and recommended packages for a platform.
             /// </summary>
             public PlatformPackageList internalPackages = new PlatformPackageList();
@@ -561,12 +566,13 @@ namespace UnityEditor
                new("25a09d2ed10c42f789b61d99b4d9bf83"),
                new PlatformInfo
                {
-                    displayName = "Nintendo Switch 2",
+                    displayName = "Nintendo Switch™ 2",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
                     buildTarget = BuildTarget.Switch2,
                     iconName = "BuildSettings.Switch2",
-                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
+                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget,
+                    buildProfilePlatformBannerBgColorHex = "#E60012"
                 }
             },
             // then others
@@ -589,11 +595,7 @@ namespace UnityEditor
                {
                     displayName = "Facebook Instant Games",
                     downloadLinkName = "WebGL",
-                    description = L10n.Tr(
-                        "Build for Facebook Instant Games to take advantage of the extensive user base and social features within the Facebook and Messenger app. " +
-                        "This platform offers default settings for both mobile and desktop builds, along with optimization tools and a streamlined publishing process."
-                    ),
-                    subtitle = "From <color=\"white\"><b>Meta</b></color>",
+                    subtitle = "<color=\"#FFC107\">⚠️</color> The Facebook Instant Games platform is deprecated. Use the Web platform instead.",
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.Facebook",
                     settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
@@ -706,14 +708,14 @@ namespace UnityEditor
                 new("1e09bd9b55c8d45e9a11b4727bf18e88"),
                 new PlatformInfo
                 {
-                    displayName = "Android Render Service",
+                    displayName = "Unity Render Service for Android™",
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Unity Render Service Support"), "com.unity.android.render-service", L10n.Tr("Enables you to build a Unity Render Service on Android and integrate into Android Applications. Contact your sales representative to get access."))
+                            new PlatformPackageInfo(L10n.Tr("Unity Render Service for Android™ Support"), "com.unity.android.render-service", L10n.Tr("Enables building the Unity Render Service for Android™. Contact your sales representative for access."))
                         }
                     },
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsDerivedBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly
@@ -1160,6 +1162,13 @@ namespace UnityEditor
 
         [System.Obsolete("BuildPlatformDisplayName(NamedBuildTarget, BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
         public static string BuildPlatformDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget) => BuildPlatformDisplayName(GetGUIDFromBuildTarget(namedBuildTarget, buildTarget));
+        public static string GetPlatformColorString(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.buildProfilePlatformBannerBgColorHex;
+
+            return "#FFFFFF";
+        }
 
         public static string BuildPlatformDownloadLinkName(GUID guid)
         {

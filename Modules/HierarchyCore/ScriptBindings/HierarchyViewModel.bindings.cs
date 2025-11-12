@@ -289,6 +289,15 @@ namespace Unity.Hierarchy
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
+        /// Gets the child node at the specified index of a hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="index">The child index.</param>
+        /// <returns>A hierarchy node.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern HierarchyNode GetChild(in HierarchyNode node, int index);
+
+        /// <summary>
         /// Gets the index of a hierarchy node in its parent's children list.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
@@ -622,14 +631,14 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>An enumerable of hierarchy node.</returns>
-        public HierarchyViewNodesEnumerable EnumerateNodesWithAllFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, HasAllFlags);
+        public HierarchyViewModelNodesEnumerable EnumerateNodesWithAllFlags(HierarchyNodeFlags flags) => new HierarchyViewModelNodesEnumerable(this, flags, HasAllFlags);
 
         /// <summary>
         /// Gets an enumerable of all hierarchy nodes that have any of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>An enumerable of hierarchy node.</returns>
-        public HierarchyViewNodesEnumerable EnumerateNodesWithAnyFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, HasAnyFlags);
+        public HierarchyViewModelNodesEnumerable EnumerateNodesWithAnyFlags(HierarchyNodeFlags flags) => new HierarchyViewModelNodesEnumerable(this, flags, HasAnyFlags);
 
         /// <summary>
         /// Gets the indices for all hierarchy nodes that have all of the specified flags set.
@@ -732,14 +741,14 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>An enumerable of hierarchy node.</returns>
-        public HierarchyViewNodesEnumerable EnumerateNodesWithoutAllFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, DoesNotHaveAllFlags);
+        public HierarchyViewModelNodesEnumerable EnumerateNodesWithoutAllFlags(HierarchyNodeFlags flags) => new HierarchyViewModelNodesEnumerable(this, flags, DoesNotHaveAllFlags);
 
         /// <summary>
         /// Gets an enumerable of all hierarchy nodes that do not have any of the specified flags set.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>An enumerable of hierarchy node.</returns>
-        public HierarchyViewNodesEnumerable EnumerateNodesWithoutAnyFlags(HierarchyNodeFlags flags) => new HierarchyViewNodesEnumerable(this, flags, DoesNotHaveAnyFlags);
+        public HierarchyViewModelNodesEnumerable EnumerateNodesWithoutAnyFlags(HierarchyNodeFlags flags) => new HierarchyViewModelNodesEnumerable(this, flags, DoesNotHaveAnyFlags);
 
         /// <summary>
         /// Gets the indices of all hierarchy nodes that do not have all of the specified flags set.
@@ -1166,7 +1175,7 @@ namespace Unity.Hierarchy
 
         [Obsolete("EnumerateNodesWithFlags is obsolete, please use EnumerateNodesWithAllFlags or EnumerateNodesWithAnyFlags instead.", false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public HierarchyViewNodesEnumerable EnumerateNodesWithFlags(HierarchyNodeFlags flags) => EnumerateNodesWithAllFlags(flags);
+        public HierarchyViewModelNodesEnumerable EnumerateNodesWithFlags(HierarchyNodeFlags flags) => EnumerateNodesWithAllFlags(flags);
 
         [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead.", false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -1186,7 +1195,7 @@ namespace Unity.Hierarchy
 
         [Obsolete("EnumerateNodesWithoutFlags is obsolete, please use EnumerateNodesWithoutAllFlags or EnumerateNodesWithoutAnyFlags instead.", false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public HierarchyViewNodesEnumerable EnumerateNodesWithoutFlags(HierarchyNodeFlags flags) => EnumerateNodesWithoutAllFlags(flags);
+        public HierarchyViewModelNodesEnumerable EnumerateNodesWithoutFlags(HierarchyNodeFlags flags) => EnumerateNodesWithoutAllFlags(flags);
 
         [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead.", false)]
         [EditorBrowsable(EditorBrowsableState.Never)]

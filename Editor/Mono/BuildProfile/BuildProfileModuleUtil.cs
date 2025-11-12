@@ -48,7 +48,6 @@ namespace UnityEditor.Build.Profile
         static HashSet<string> s_BuildProfileIconModules = new()
         {
             "Switch",
-            "Switch2",
         };
 
         /// <summary>
@@ -107,6 +106,9 @@ namespace UnityEditor.Build.Profile
         public static Texture2D GetPlatformIcon(GUID platformId)
         {
             if (LoadBuildProfileIcon(platformId, out Texture2D icon))
+                return icon;
+
+            if(LoadPlatformMipIcon(platformId, out icon))
                 return icon;
 
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId));
@@ -677,6 +679,15 @@ namespace UnityEditor.Build.Profile
             EditorPrefs.SetString(key, value);
         }
 
+        /// <summary>
+        /// Attempts to load the Mip mapped icon for the given platformId.
+        /// </summary>
+        static bool LoadPlatformMipIcon(GUID platformId, out Texture2D icon)
+        {
+            icon = EditorGUIUtility.FindTexture($"{GetModuleName(platformId)} Icon");
+            return icon != null;
+        }
+
         static bool LoadBuildProfileIcon(GUID platformId, out Texture2D icon)
         {
             var moduleName = GetModuleName(platformId);
@@ -742,6 +753,12 @@ namespace UnityEditor.Build.Profile
         {
             return BuildTargetDiscovery.BuildPlatformPartnerPackages(platformGuid);
         }
+
+        public static string GetPlatformColorString(GUID platformGuid)
+        {
+            return BuildTargetDiscovery.GetPlatformColorString(platformGuid);
+        }
+
 
         public static string[] GetAllPlatformPackageNames()
         {
@@ -949,9 +966,19 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        /// <summary>
+        /// Normalizes and removes invalid scripting defines from the provided array.
+        /// </summary>
+        public static string[] RemoveInvalidScriptingDefines(string[] defines)
+        {
+            // Converts to string and back to array to normalize, remove duplicates and empty entries.
+            return ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(
+              ScriptingDefinesHelper.ConvertScriptingDefineArrayToString(defines));
+        }
+
         /*
-         * private helper functions
-         */
+        * private helper functions
+        */
         private static bool ContainsPlayerSetting(PlayerSettingsRequiringRestart[] playerSettings, PlayerSettingsRequiringRestart targetSetting)
         {
             foreach (PlayerSettingsRequiringRestart setting in playerSettings)

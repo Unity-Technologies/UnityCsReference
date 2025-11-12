@@ -17,6 +17,7 @@ using Unity.PlayMode.Editor;
 using UnityEngine.Multiplayer.Internal;
 using System.Text;
 using UnityEditor.PackageManager;
+using UnityEditor.Multiplayer.Internal;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -54,7 +55,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public MainEditorInstanceDescription EditorInstance => m_MainEditorInstance;
         public ReadOnlyCollection<VirtualEditorInstanceDescription> VirtualEditorInstances => m_EditorInstances.AsReadOnly();
         public ReadOnlyCollection<LocalInstanceDescription> LocalInstances => m_LocalInstances.AsReadOnly();
-        public ReadOnlyCollection<RemoteInstanceDescription> RemoteInstances => m_RemoteInstances.AsReadOnly();
+        public ReadOnlyCollection<RemoteInstanceDescription> RemoteInstances
+            => EditorMultiplayerManager.enablePlayModeRemoteDeployment
+                ? m_RemoteInstances.AsReadOnly()
+                : new ReadOnlyCollection<RemoteInstanceDescription>(Array.Empty<RemoteInstanceDescription>());
 
         public override bool SupportsPauseAndStep => true;
 
@@ -95,7 +99,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             instances.AddRange(m_LocalInstances);
-            instances.AddRange(m_RemoteInstances);
+            instances.AddRange(RemoteInstances);
             return instances;
         }
 
@@ -412,7 +416,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Iterate through all local instances.
             // - Check if local mobile device instances have a device selected that is unique.
             // - Track any Local Sim instances that we have for verification later.
-            bool hasLocalSimOrRemoteInstance = false;
+            bool hasLocalSimInstances = false;
             List<LocalInstanceDescription> localMobileDevices = new List<LocalInstanceDescription>();
             foreach (var instance in allInstances)
             {
@@ -423,8 +427,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
                         if (InternalUtilities.IsAndroidBuildTarget(localInstance.BuildProfile))
                             localMobileDevices.Add(localInstance);
 
-                        if (localInstance.ServerSettings.DeployMode != ServerSettings.ServerDeployMode.Local)
-                            hasLocalSimOrRemoteInstance = true;
+                        if (localInstance.ServerSettings.DeployMode != ServerSettings.ServerDeployMode.Local
+                            && LocalDeploymentUtility.IsLocalDeploymentAvailable())
+                            hasLocalSimInstances = true;
                     }
                 }
             }
@@ -463,9 +468,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (!localBuildTargetsCanRunOnPlatform)
                 reasonForInvalidConfiguration += "\nLocal instance(s) buildtarget cannot run on current platform.";
 
+
+            var remoteInstances = RemoteInstances;
             // Check if we have the correct packages installed for running a remote server or Local Sim Instances
             var missingRequiredMultiplayPackages = false;
-            var requirePacks = hasLocalSimOrRemoteInstance || m_RemoteInstances.Count > 0;
+            var requirePacks = hasLocalSimInstances || remoteInstances.Count > 0;
             if (requirePacks && !PackagesForRemoteDeployInstalled(out var missingPacks))
             {
                 reasonForInvalidConfiguration += "\nPackages are missing:\n" + string.Join("\n", missingPacks);
@@ -473,18 +480,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             // Check if remote build targets are supported to be build.
-            var remoteBuildTargetsCorrect = m_RemoteInstances.Count == 0 || IsConditionMetForAll(instance =>
+            var remoteBuildTargetsCorrect = remoteInstances.Count == 0 || IsConditionMetForAll(instance =>
                 instance != null && instance.BuildProfile != null &&
                 InternalUtilities.IsBuildProfileSupported(instance.BuildProfile) &&
                 !InternalUtilities.IsAndroidBuildTarget(instance.BuildProfile),
-                m_RemoteInstances);
+                remoteInstances);
             if (!remoteBuildTargetsCorrect)
                 reasonForInvalidConfiguration += "\nRemote instance(s) have incorrect build target.";
 
             // Check if remote instances have incorrect multiplayer role
-            var remoteInstancesHaveServerRole = m_RemoteInstances.Count == 0 || IsConditionMetForAll(instance =>
+            var remoteInstancesHaveServerRole = remoteInstances.Count == 0 || IsConditionMetForAll(instance =>
                 instance != null && LocalDeploymentUtility.IsServerProfileOrRole(instance.BuildProfile),
-                m_RemoteInstances);
+                remoteInstances);
 
             if (!remoteInstancesHaveServerRole)
                 reasonForInvalidConfiguration += "\nRemote instance(s) must have Server Role or a Server Build Profile.";
@@ -497,7 +504,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             reasonForInvalidConfiguration = reasonForInvalidConfiguration.Trim('\n');
             return localBuildTargetsAreSupported && remoteBuildTargetsCorrect && localBuildTargetsCanRunOnPlatform &&
                    configHasMoreServerInstances && localMobileDevicesSelected && !containsTakenName &&
-                   !containsTakenDeviceID &&  remoteInstancesHaveServerRole && !missingRequiredMultiplayPackages;
+                   !containsTakenDeviceID && remoteInstancesHaveServerRole && !missingRequiredMultiplayPackages;
         }
 
         bool ConfigurationHasMaxOneServer()

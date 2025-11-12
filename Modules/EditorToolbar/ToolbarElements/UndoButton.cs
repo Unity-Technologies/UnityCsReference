@@ -33,7 +33,7 @@ namespace UnityEditor.Toolbars
         }
 
         [UnityOnlyMainToolbarPreset]
-        [MainToolbarElement(k_Path, true, defaultDockIndex = 4, defaultDockPosition = MainToolbarDockPosition.Right)]
+        [MainToolbarElement(k_Path, defaultDockIndex = 4, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
             return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("Icons/UndoHistory.png"), GetTooltipText()), UndoHistoryWindow.OpenUndoHistory);

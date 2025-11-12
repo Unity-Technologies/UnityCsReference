@@ -110,7 +110,10 @@ namespace UnityEditor.Build.Profile.Elements
             var additionalCompilerArguments = PlayerSettings.GetAdditionalCompilerArguments(targetName);
             var scriptingDefines = PlayerSettings.GetScriptingDefineSymbols(targetName);
             if (customScriptingDefines != scriptingDefines || !ArrayUtility.ArrayEquals(customAdditionalCompilerArguments, additionalCompilerArguments))
+            {
+                profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(profile.scriptingDefines);
                 BuildProfileModuleUtil.RequestScriptCompilation(profile);
+            }
         }
     }
 }

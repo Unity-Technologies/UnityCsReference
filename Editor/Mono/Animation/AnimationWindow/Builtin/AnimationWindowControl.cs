@@ -618,7 +618,7 @@ namespace UnityEditor.AnimationWindowBuiltin
             if (animationClip != null)
             {
                 var animationPlayer = state.activeAnimationPlayer;
-                bool usePlayableGraph = animationPlayer is Animator;
+                bool usePlayableGraph = animationPlayer is Animator && !animationClip.legacy;
 
                 if (usePlayableGraph)
                 {

@@ -992,7 +992,7 @@ namespace Unity.Hierarchy
         }
 
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal void PingNode(in HierarchyNode node)
+        internal void PingNode(HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).PingNode({node})");
             // Expand node parents
@@ -1005,6 +1005,19 @@ namespace Unity.Hierarchy
                 return;
 
             m_MultiColumnListView.ScrollToItem(index);
+
+            EnqueuePostUpdateAction(() =>
+            {
+                schedule.Execute(() => DoPingAnimation(node));
+            });
+        }
+
+        void DoPingAnimation(HierarchyNode node)
+        {
+            var index = m_HierarchyViewModel.IndexOf(in node);
+            if (index < 0)
+                return;
+
             var item = GetHierarchyViewItemFromIndex(index);
             if (item == null)
                 return;
@@ -1239,19 +1252,16 @@ namespace Unity.Hierarchy
             }
             else
             {
-                var item = GetHierarchyViewItemFromIndex(selectedIndex);
-                if (item == null)
-                    return;
-
-                ref readonly var currentNode = ref m_HierarchyViewModel[selectedIndex];
                 switch (evt.direction)
                 {
                     case NavigationMoveEvent.Direction.Right:
-                        SetExpandedState(currentNode, true, evt.altKey);
-                        break;
-
                     case NavigationMoveEvent.Direction.Left:
-                        SetExpandedState(currentNode, false, evt.altKey);
+                        var count = m_HierarchyViewModel.HasAnyFlagsCount(HierarchyNodeFlags.Selected);
+                        using (var selectedNodes = new RentSpanUnmanaged<HierarchyNode>(count))
+                        {
+                            m_HierarchyViewModel.GetNodesWithAnyFlags(HierarchyNodeFlags.Selected, selectedNodes);
+                            SetExpandedState(selectedNodes, evt.direction == NavigationMoveEvent.Direction.Right, evt.altKey);
+                        }
                         break;
 
                     default:
@@ -1374,6 +1384,24 @@ namespace Unity.Hierarchy
                     ClearFlagsRecursive(in node, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
                 else
                     ClearFlags(in node, HierarchyNodeFlags.Expanded);
+            }
+        }
+
+        void SetExpandedState(ReadOnlySpan<HierarchyNode> nodes, bool isExpanded, bool recurse)
+        {
+            if (isExpanded)
+            {
+                if (recurse)
+                    SetFlagsRecursive(nodes, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                else
+                    SetFlags(nodes, HierarchyNodeFlags.Expanded);
+            }
+            else
+            {
+                if (recurse)
+                    ClearFlagsRecursive(nodes, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                else
+                    ClearFlags(nodes, HierarchyNodeFlags.Expanded);
             }
         }
 
