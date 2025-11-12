@@ -873,9 +873,19 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        /// <summary>
+        /// Normalizes and removes invalid scripting defines from the provided array.
+        /// </summary>
+        public static string[] RemoveInvalidScriptingDefines(string[] defines)
+        {
+            // Converts to string and back to array to normalize, remove duplicates and empty entries.
+            return ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(
+              ScriptingDefinesHelper.ConvertScriptingDefineArrayToString(defines));
+        }
+
         /*
-         * private helper functions
-         */
+        * private helper functions
+        */
         private static bool ContainsPlayerSetting(PlayerSettingsRequiringRestart[] playerSettings, PlayerSettingsRequiringRestart targetSetting)
         {
             foreach (PlayerSettingsRequiringRestart setting in playerSettings)

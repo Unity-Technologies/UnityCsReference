@@ -420,7 +420,10 @@ namespace UnityEditor.Build.Profile
             revertDefinesButton.text = TrText.revert;
             recompileDefinesButton.text = TrText.apply;
 
-            recompileDefinesButton.clicked += () => BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+            recompileDefinesButton.clicked += () => {
+                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
+                BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+            };
             revertDefinesButton.clicked += RevertScriptingDefines;
             listView.TrackPropertyValue(property, this.OnScriptingDefinePropertyChange);
             listView.BindProperty(property);

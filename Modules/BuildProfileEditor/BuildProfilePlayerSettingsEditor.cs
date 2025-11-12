@@ -285,7 +285,10 @@ namespace UnityEditor.Build.Profile
             var additionalCompilerArguments = PlayerSettings.GetAdditionalCompilerArguments(targetName);
             var scriptingDefines = PlayerSettings.GetScriptingDefineSymbols(targetName);
             if (customScriptingDefines != scriptingDefines || !ArrayUtility.ArrayEquals(customAdditionalCompilerArguments, additionalCompilerArguments))
+            {
+                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
                 BuildProfileModuleUtil.RequestScriptCompilation(m_Profile);
+            }
         }
 
         void UpdateBuildProfile()

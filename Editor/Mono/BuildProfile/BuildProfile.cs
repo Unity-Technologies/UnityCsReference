@@ -304,6 +304,7 @@ namespace UnityEditor.Build.Profile
             // On disk changes invoke OnEnable,
             // Check against the last observed editor defines.
             string[] lastCompiledDefines = BuildProfileContext.instance.cachedEditorScriptingDefines;
+            m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);
             if (ArrayUtility.ArrayEquals(m_ScriptingDefines, lastCompiledDefines))
             {
                 return;
@@ -346,6 +347,7 @@ namespace UnityEditor.Build.Profile
         {
             if (IsActiveBuildProfileOrPlatform())
             {
+                m_ScriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_ScriptingDefines);                
                 EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
                 if (!overrideGlobalScenes)
                     EditorUserBuildSettings.SetCachedActiveProfileScenes(EditorBuildSettings.globalScenes);

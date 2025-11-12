@@ -4,13 +4,16 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEditor;
 
+[VisibleToOtherModules]
 internal static class ScriptingDefinesHelper
 {
     private static readonly char[] DefineSeparators = { ';', ',', ' ' };
 
+    [VisibleToOtherModules]
     internal static string ConvertScriptingDefineArrayToString(string[] defines)
     {
         if (defines == null)
@@ -33,6 +36,7 @@ internal static class ScriptingDefinesHelper
         return string.Join(";", distinctDefines);
     }
 
+    [VisibleToOtherModules]
     internal static string[] ConvertScriptingDefineStringToArray(string defines)
     {
         var splitDefines = string.IsNullOrEmpty(defines)
