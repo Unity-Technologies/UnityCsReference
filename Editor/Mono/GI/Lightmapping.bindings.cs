@@ -306,12 +306,11 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void Internal_CallBakeStartedFunctions()
         {
-            if (bakeStarted != null)
-                bakeStarted();
-
             // Open all sub scenes before the bake so they can participate in the GI calculations.
             OpenNestedSubScenes();
 
+            if (bakeStarted != null)
+                bakeStarted();
 #pragma warning disable 0618
             if (started != null)
                 started();

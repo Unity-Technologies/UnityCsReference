@@ -102,6 +102,7 @@ namespace UnityEngine.UIElements.UIR
         readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => {});
         readonly DrawParams m_DrawParams = new DrawParams();
         readonly TextureSlotManager m_TextureSlotManager = new TextureSlotManager();
+        HashSet<Material> m_ScreenSpaceAlteredMaterials = new();
         static LinkedList<DeviceToFree> m_DeviceFreeQueue = new LinkedList<DeviceToFree>();   // Not thread safe for now
         static int m_ActiveDeviceCount = 0; // Not thread safe for now
         static bool m_SubscribedToNotifications; // Not thread safe for now
@@ -680,7 +681,10 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(isFlat); // World-space rendering should not go through this code path.
 
                     if (forceGammaRendering)
+                    {
                         st.curState.material.EnableKeyword(Shaders.k_ForceGammaKeyword);
+                        m_ScreenSpaceAlteredMaterials.Add(st.curState.material);
+                    }
                     else
                         st.curState.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
 
@@ -932,6 +936,11 @@ namespace UnityEngine.UIElements.UIR
                             st.commandListOwner = head.owner.owner;
                         }
 
+                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
+                        {
+                            ResetScreenSpaceMaterials();
+                        }
+
                         head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
                         if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
                         {
@@ -981,6 +990,21 @@ namespace UnityEngine.UIElements.UIR
 
             Utility.ProfileDrawChainEnd();
 
+            ResetScreenSpaceMaterials();
+
+        }
+
+        void ResetScreenSpaceMaterials()
+        {
+            foreach (Material material in m_ScreenSpaceAlteredMaterials)
+            {
+                if (material == null)
+                    continue;
+
+                material.DisableKeyword(Shaders.k_ForceGammaKeyword);
+            }
+
+            m_ScreenSpaceAlteredMaterials.Clear();
         }
 
         private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, Texture shaderInfo)

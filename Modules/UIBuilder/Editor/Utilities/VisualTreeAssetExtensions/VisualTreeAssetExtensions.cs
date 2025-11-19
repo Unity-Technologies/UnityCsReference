@@ -395,16 +395,12 @@ namespace Unity.UI.Builder
         }
 
         public static void RemoveElement(
-            this VisualTreeAsset vta, VisualElement element)
+            this VisualTreeAsset vta, VisualElementAsset vea)
         {
-            var vea = element.GetVisualElementAsset();
-            if (vea == null)
-                return;
-
-            if (element is TemplateContainer templateContainer && vea is TemplateAsset templateAsset)
+            if (vea is TemplateAsset templateAsset)
             {
                 vta.templateAssets.Remove(templateAsset);
-                vta.UnregisterTemplate(templateContainer.templateSource);
+                vta.TryUnregisterTemplate(templateAsset.templateAlias);
             }
             else
                 vta.RemoveElementAndDependencies(vea);

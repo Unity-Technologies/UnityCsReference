@@ -60,6 +60,9 @@ namespace UnityEngine.UIElements
                     m_ColumnsWidth = 0;
                     foreach (var column in m_Columns.visibleList)
                     {
+                        if (float.IsNaN(column.desiredWidth))
+                            continue;
+
                         m_ColumnsWidth += column.desiredWidth;
                     }
                     m_ColumnsWidthDirty = false;
@@ -184,7 +187,80 @@ namespace UnityEngine.UIElements
             // Do not dirty the layout if the user is resizing columns interactively
             if (m_DragResizing || !RequiresLayoutUpdate(type))
                 return;
+
             Dirty();
+
+            // If the visibility of a column has changed to visible then try to make room for it.
+            // Ignore percent width columns as they will resize automatically.
+            // This behavior is only applied when the stretch mode is set to Grow.
+            if (m_Columns.stretchMode == Columns.StretchMode.Grow
+                && type == ColumnDataType.Visibility && column.visible && column.width.unit != LengthUnit.Percent
+                && !float.IsNaN(m_LayoutWidth))
+            {
+                var otherColumnsWidth = columnsWidth - (!float.IsNaN(column.desiredWidth) ? column.desiredWidth : 0);
+
+                // If the other columns are already overflowing the layout width then return
+                if (otherColumnsWidth > layoutWidth)
+                    return;
+
+                var hasStretchableCols = false;
+
+                // Check if there are stretchable columns other than the one being made visible
+                for (var i = 0; i < m_Columns.Count; ++i)
+                {
+                    var col = m_Columns[i];
+
+                    if (col.visible && col.stretchable && col != column)
+                    {
+                        hasStretchableCols = true;
+                        break;
+                    }
+                }
+
+                // If there is no stretchable column then return
+                if (!hasStretchableCols)
+                    return;
+
+                MakeRoomForColumn(column);
+            }
+        }
+
+        void MakeRoomForColumn(Column column)
+        {
+            // Make room for the specified column by shrinking other stretchable columns only if the
+            // total width of columns is smaller or equal than the layout width.
+            UpdateCache();
+
+            var minWidth = column.GetMinWidth(m_LayoutWidth);
+            var maxWidth = column.GetMaxWidth(m_LayoutWidth);
+            var desiredWidth = column.desiredWidth;
+
+            if (float.IsNaN(desiredWidth))
+                desiredWidth = column.GetWidth(m_LayoutWidth);
+
+            // Clamp the desired width of the column to its min and max width
+            desiredWidth = Mathf.Clamp(desiredWidth, minWidth, maxWidth);
+
+            // Compute the available space by excluding the width of the target column
+            var otherColumnsWidth = columnsWidth - (!float.IsNaN(column.desiredWidth) ? column.desiredWidth : 0);
+            var availableWidth = m_LayoutWidth - otherColumnsWidth;
+
+            // If the available space is enough to fit the desired width of the column then return
+            float deltaWidth = desiredWidth - availableWidth;
+
+            if (deltaWidth < 0)
+                return;
+
+            using var i = ListPool<Column>.Get(out var stretchableColumnsToFit);
+            using var j = ListPool<Column>.Get(out var emptyList);
+
+            stretchableColumnsToFit.AddRange(m_StretchableColumns);
+
+            // Exclude the column itself from the list of stretchable columns to fit
+            if (column.stretchable)
+                stretchableColumnsToFit.Remove(column);
+
+            StretchResizeColumns(stretchableColumnsToFit, emptyList, emptyList, ref deltaWidth, false, false);
         }
 
         /// <summary>
@@ -314,11 +390,43 @@ namespace UnityEngine.UIElements
 
                 if (m_Columns.stretchMode == Columns.StretchMode.Grow)
                 {
+                    // If the layout has been already computed once before then compute the delta width based on the previous width or
+                    // the total width of columns
                     if (!float.IsNaN(m_PreviousWidth))
                     {
-                        // Remove the delta width of the columns with percentage width.
-                        // They already have been resized. Therefore, their growth/shrink must be accounted for.
-                        deltaWidth = m_PreviousWidth - width + deltaWidthOfRelativeWidthColumns;
+                        // if the width has increased
+                        if (m_PreviousWidth < width)
+                        {
+                            // If the width of the view is greater than the width of columns then grow columns.
+                            // However, compute the delta width using the greater value between the previous width and the columns width.
+                            // For example, if the previous width was 300px, the columns width was 304px and the new width is 306px
+                            // then the delta width should be 2px (306 - 304) and not 6px (306 - 300).
+                            // This helps the columns to align with the right edge of the view.
+                            if (width > columnsWidth)
+                                deltaWidth = Math.Max(m_PreviousWidth, columnsWidth) - width + deltaWidthOfRelativeWidthColumns;
+                            // Do not grow if the width of the view is smaller than the width of columns
+                            else
+                                deltaWidth = 0;
+                        }
+                        // Otherwise, if the width has decreased
+                        else
+                        {
+                            const float eps = 0.5f;
+
+                            // If the current width and the previous width are both smaller than the columns width then do not shrink columns
+                            if (width < (columnsWidth - eps) && m_PreviousWidth < (columnsWidth - eps))
+                                deltaWidth = 0;
+                            // If the current width is smaller than the columns width but the previous width is greater than the columns width
+                            // then use the difference between the columns width and the current width to compute the delta width.
+                            // This helps the columns to align with the right edge of the view.
+                            // For example, if the previous width was 306px, the columns width was 304px and the new width is 300px
+                            // then the delta width should be 4px (304 - 300) and not 6px (306 - 300).
+                            else if (width < (columnsWidth - eps) && m_PreviousWidth > (columnsWidth + eps))
+                                deltaWidth = columnsWidth - width + deltaWidthOfRelativeWidthColumns;
+                            // Otherwise, compute the delta width using the previous width
+                            else
+                                deltaWidth = m_PreviousWidth - width + deltaWidthOfRelativeWidthColumns;
+                        }
                     }
                 }
                 else
