@@ -70,6 +70,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
+        private void ResetAfterCancellation()
+        {
+            // After a cancellation, instances that failed should remain in their failed state
+            // so users can see the failure result. While instances that were running or completed
+            // should be reset to the idle state.
+            foreach (var instance in m_Instances)
+            {
+                if (instance.IsFreeRunMode())
+                    continue;
+                
+                if (instance.StatusData.OverallStatus.State is not ExecutionState.Failed)
+                {
+                    instance.Reset();
+                }
+            }
+        }
+
         internal void AddInstance(Instance instance)
         {
             if (m_HasStarted)
@@ -315,6 +332,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // At this point, all instances ran successfully. Now simply monitor the ExecutionStage until it is complete.
             await MonitorAllInstances();
+
+            if (cancellationToken.IsCancellationRequested)
+                ResetAfterCancellation();
 
             // This will make sure that the status will be updated after the last ExecutionStage is finished
             // even in the case where the scenario has no nodes.

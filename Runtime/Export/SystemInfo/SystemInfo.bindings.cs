@@ -448,6 +448,11 @@ namespace UnityEngine
             get { return MaxTiledPixelStorageSize(); }
         }
 
+        public static bool supportsDynamicResolution
+        {
+            get { return SupportsDynamicResolution(); }
+        }
+
         // The enums are only marked as obsolete in the editor.
         /// <summary>
         /// Determine if enum value is obsolete.
@@ -1133,5 +1138,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::MaxTiledPixelStorageSize")]
         static extern int MaxTiledPixelStorageSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsDynamicResolution")]
+        static extern bool SupportsDynamicResolution();
     }
 }

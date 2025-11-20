@@ -157,7 +157,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public Mesh m_Mesh;
         public int m_MeshInstanceID;
         public int m_MeshSubset;
-        public int[] m_MeshInstanceIDs;
+        public EntityId[] m_MeshEntityIds;
 
         // state for compute shader dispatches
         public int m_ComputeShaderInstanceID;

@@ -26,7 +26,7 @@ namespace UnityEditor
         const HierarchyType k_HierarchyType = HierarchyType.GameObjects;
         const int k_DefaultStartCapacity = 1000;
 
-        EntityId m_RootInstanceID;
+        EntityId m_RootEntityId;
         string m_SearchString = "";
         readonly SearchService.SceneSearchSessionHandler m_SearchSessionHandler = new SearchService.SceneSearchSessionHandler();
         SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = 0; // 0 = All
@@ -63,7 +63,7 @@ namespace UnityEditor
         public GameObjectTreeViewDataSource(TreeViewController<EntityId> treeView, EntityId rootInstanceID, bool showRoot, bool rootItemIsCollapsable)
             : base(treeView)
         {
-            m_RootInstanceID = rootInstanceID;
+            m_RootEntityId = rootInstanceID;
             showRootItem = showRoot;
             rootIsCollapsable = rootItemIsCollapsable;
         }
@@ -254,12 +254,12 @@ namespace UnityEditor
             if (property.isValid)
             {
                 // Game Object sub tree
-                m_RootItem = new GameObjectTreeViewItem(m_RootInstanceID, rootDepth, null, property.name);
+                m_RootItem = new GameObjectTreeViewItem(m_RootEntityId, rootDepth, null, property.name);
             }
             else
             {
                 // All game objects
-                m_RootItem = new GameObjectTreeViewItem(m_RootInstanceID, rootDepth, null, "RootOfAll");
+                m_RootItem = new GameObjectTreeViewItem(m_RootEntityId, rootDepth, null, "RootOfAll");
             }
         }
 
@@ -279,13 +279,13 @@ namespace UnityEditor
             double fetchStartTime = EditorApplication.timeSinceStartup;
 
             var property = CreateHierarchyProperty();
-            if (m_RootInstanceID != 0)
+            if (m_RootEntityId != EntityId.None)
             {
-                bool found = property.Find(m_RootInstanceID, null);
+                bool found = property.Find(m_RootEntityId, null);
                 if (!found)
                 {
-                    Debug.LogError("Root gameobject with id " + m_RootInstanceID + " not found!!");
-                    m_RootInstanceID = 0;
+                    Debug.LogError("Root gameobject with id " + m_RootEntityId + " not found!!");
+                    m_RootEntityId = EntityId.None;
                     property.Reset();
                 }
             }
@@ -297,7 +297,7 @@ namespace UnityEditor
 
             m_NeedsChildParentReferenceSetup = true;
 
-            bool subTreeWanted = m_RootInstanceID != 0;
+            bool subTreeWanted = m_RootEntityId != EntityId.None;
             bool isSearching = !string.IsNullOrEmpty(m_SearchString);
 
             if (isSearching)
@@ -536,7 +536,7 @@ namespace UnityEditor
             var item = (GameObjectTreeViewItem)m_Rows[row];
             if (item == null)
             {
-                item = new GameObjectTreeViewItem(0, 0, null, null);
+                item = new GameObjectTreeViewItem(EntityId.None, 0, null, null);
                 m_Rows[row] = item;
             }
             return item;
@@ -572,7 +572,7 @@ namespace UnityEditor
             InitTreeViewItem(item, property.entityId, property.GetScene(), property.isSceneHeader, property.colorCode, property.pptrValue, itemHasChildren, itemDepth);
         }
 
-        private void InitTreeViewItem(GameObjectTreeViewItem item, int itemID, Scene scene, bool isSceneHeader, int colorCode, Object pptrObject, bool hasChildren, int depth)
+        private void InitTreeViewItem(GameObjectTreeViewItem item, EntityId itemID, Scene scene, bool isSceneHeader, int colorCode, Object pptrObject, bool hasChildren, int depth)
         {
             item.children = null;
             item.id = itemID;
@@ -668,7 +668,7 @@ namespace UnityEditor
                     var subSceneInfo = SubSceneGUI.GetSubSceneInfo(scene);
                     if (subSceneInfo.isValid)
                     {
-                        var item = new GameObjectTreeViewItem(0, 0, null, null);
+                        var item = new GameObjectTreeViewItem(EntityId.None, 0, null, null);
                         var transform = subSceneInfo.transform;
                         GameObject gameObject = transform.gameObject;
                         int depth = SubSceneGUI.CalculateHierarchyDepthOfSubScene(subSceneInfo);
@@ -677,7 +677,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        var item = new GameObjectTreeViewItem(0, 0, null, null);
+                        var item = new GameObjectTreeViewItem(EntityId.None, 0, null, null);
                         InitTreeViewItem(item, scene.handle.ToEntityId(), scene, true, 0, null, false, 0);
                         m_StickySceneHeaderItems.Add(item);
                     }
@@ -689,7 +689,7 @@ namespace UnityEditor
                 {
                     Scene scene = SceneManager.GetSceneAt(i);
 
-                    var item = new GameObjectTreeViewItem(0, 0, null, null);
+                    var item = new GameObjectTreeViewItem(EntityId.None, 0, null, null);
                     InitTreeViewItem(item, scene.handle.ToEntityId(), scene, true, 0, null, false, 0);
                     m_StickySceneHeaderItems.Add(item);
                 }

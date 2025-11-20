@@ -38,10 +38,10 @@ namespace UnityEditor
                 return 0;
 
             // For efficiency, ignore indices inside brackets [] in order to make array elements share handlers.
-            int key = property.serializedObject.targetObject.GetEntityId() ^ property.hashCodeForPropertyPathWithoutArrayIndex;
+            int key = property.serializedObject.targetObject.GetEntityId().GetHashCode() ^ property.hashCodeForPropertyPathWithoutArrayIndex;
             if (property.propertyType == SerializedPropertyType.ObjectReference)
             {
-                key ^= property.objectReferenceEntityIdValue;
+                key ^= property.objectReferenceEntityIdValue.GetHashCode();
             }
             return key;
         }

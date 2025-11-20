@@ -7,10 +7,8 @@ using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.SubsystemsImplementation;
 
-[assembly: AlwaysLinkAssembly]
 namespace UnityEngine.AdaptivePerformance.Provider
 {
-    [Preserve]
     internal static class AdaptivePerformanceSubsystemRegistry
     {
         /// <summary>
@@ -40,7 +38,6 @@ namespace UnityEngine.AdaptivePerformance.Provider
     /// <summary>
     /// The Adaptive Performance Subsystem Descriptor is used for describing the subsystem so it can be picked up by the subsystem management system.
     /// </summary>
-    [Preserve]
     public sealed class AdaptivePerformanceSubsystemDescriptor : SubsystemDescriptorWithProvider<AdaptivePerformanceSubsystem, AdaptivePerformanceSubsystem.APProvider>
     {
         /// <summary>

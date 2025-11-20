@@ -438,10 +438,12 @@ namespace UnityEditor.Profiling
             [NativeName("rootId")]
             readonly ulong m_RootId;
             [NativeName("instanceId")]
-            readonly EntityId m_InstanceId;
+            readonly EntityId m_EntityId;
 
             public ulong relatedAllocationRootId => m_RootId;
-            public int relatedInstanceId => m_InstanceId;
+            public EntityId relatedEntityId => m_EntityId;
+            [Obsolete("relatedInstanceId is obsolete. Use relatedEntityId instead.", false)]
+            public int relatedInstanceId => m_EntityId;
         }
 
         [NativeMethod(IsThreadSafe = true)]

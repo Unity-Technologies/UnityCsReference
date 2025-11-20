@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     {
         bool TakeCapture();
         bool ReleaseCapture();
-        bool ProcessEvent(int instanceID,  IntPtr nativeEventPtr, ref bool eventHandled);
+        bool ProcessEvent(EntityId entityId,  IntPtr nativeEventPtr, ref bool eventHandled);
         bool CleanupRoots();
         bool EndContainerGUIFromException(Exception exception);
         bool MakeCurrentIMGUIContainerDirty();
@@ -75,12 +75,12 @@ namespace UnityEngine.UIElements
             return GUIUtility.ShouldRethrowException(exception);
         }
 
-        private static bool ProcessEvent(int instanceID, IntPtr nativeEventPtr)
+        private static bool ProcessEvent(EntityId entityId, IntPtr nativeEventPtr)
         {
             bool eventHandled = false;
             foreach (var uiElementsUtility in s_Utilities)
             {
-                if (uiElementsUtility.ProcessEvent(instanceID, nativeEventPtr, ref eventHandled))
+                if (uiElementsUtility.ProcessEvent(entityId, nativeEventPtr, ref eventHandled))
                 {
                     return eventHandled;
                 }
@@ -129,7 +129,7 @@ namespace UnityEngine.UIElements
     internal class UIElementsUtility : IUIElementsUtility
     {
         private static Stack<IMGUIContainer> s_ContainerStack = new Stack<IMGUIContainer>();
-        private static Dictionary<int, Panel> s_UIElementsCache = new Dictionary<int, Panel>();
+        private static Dictionary<EntityId, Panel> s_UIElementsCache = new Dictionary<EntityId, Panel>();
 
         private static Event s_EventInstance = new Event(); // event instance reused for ProcessEvent()
 
@@ -222,10 +222,10 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        bool IUIElementsUtility.ProcessEvent(int instanceID, IntPtr nativeEventPtr, ref bool eventHandled)
+        bool IUIElementsUtility.ProcessEvent(EntityId entityId, IntPtr nativeEventPtr, ref bool eventHandled)
         {
             Panel panel;
-            if (nativeEventPtr != IntPtr.Zero && s_UIElementsCache.TryGetValue(instanceID, out panel))
+            if (nativeEventPtr != IntPtr.Zero && s_UIElementsCache.TryGetValue(entityId, out panel))
             {
                 if (panel.contextType == ContextType.Editor)
                 {
@@ -335,19 +335,19 @@ namespace UnityEngine.UIElements
             TextGenerationInfo.OnRepaintEnd();
         }
 
-        public static void RegisterCachedPanel(int instanceID, Panel panel)
+        public static void RegisterCachedPanel(EntityId entityId, Panel panel)
         {
-            s_UIElementsCache.Add(instanceID, panel);
+            s_UIElementsCache.Add(entityId, panel);
         }
 
-        public static void RemoveCachedPanel(int instanceID)
+        public static void RemoveCachedPanel(EntityId entityId)
         {
-            s_UIElementsCache.Remove(instanceID);
+            s_UIElementsCache.Remove(entityId);
         }
 
-        public static bool TryGetPanel(int instanceID, out Panel panel)
+        public static bool TryGetPanel(EntityId entityId, out Panel panel)
         {
-            return s_UIElementsCache.TryGetValue(instanceID, out panel);
+            return s_UIElementsCache.TryGetValue(entityId, out panel);
         }
 
         internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, Event evt, IMGUIContainer container)
@@ -565,7 +565,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static Dictionary<int, Panel>.Enumerator GetPanelsIterator()
+        internal static Dictionary<EntityId, Panel>.Enumerator GetPanelsIterator()
         {
             return s_UIElementsCache.GetEnumerator();
         }

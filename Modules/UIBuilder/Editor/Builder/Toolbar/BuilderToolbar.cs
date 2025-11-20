@@ -314,6 +314,7 @@ namespace Unity.UI.Builder
             if (viewportWindow == null)
                 return;
 
+            m_Selection.NotifyPreSaveDocument();
             m_Explorer.elementHierarchyView.RegisterTreeState();
 
             // Set asset.

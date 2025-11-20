@@ -84,9 +84,9 @@ namespace Unity.CodeEditor
         }
 
         [OnOpenAsset]
-        private static bool OnOpenAsset(int instanceID, int line, int column)
+        private static bool OnOpenAsset(EntityId entityId, int line, int column)
         {
-            var selected = EditorUtility.EntityIdToObject(instanceID);
+            var selected = EditorUtility.EntityIdToObject(entityId);
             var assetPath = AssetDatabase.GetAssetPath(selected);
 
             if (string.IsNullOrEmpty(assetPath))

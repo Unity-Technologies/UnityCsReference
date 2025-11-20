@@ -40,7 +40,11 @@ namespace Unity.PlayMode.Editor
             m_NewItemTextField.OnFinishEdit += s =>
             {
                 m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-                PlayModeScenarioUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(s, m_NewItemTextField.userData as Type);
+                if (newConfig != null)
+                {
+                    TrySelect(newConfig);
+                }
             };
 
             m_NewItemTextField.OnEdit += s =>

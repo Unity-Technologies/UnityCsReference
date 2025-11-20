@@ -662,8 +662,7 @@ namespace UnityEditor
         void SaveExpandedState()
         {
             Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
-            var expandedIDsRaw = Array.ConvertAll(m_AudioGroupTreeState.expandedIDs.ToArray(), input => (int) input);
-            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), expandedIDsRaw);
+            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), m_AudioGroupTreeState.expandedIDs.ToArray().AsIntArray());
         }
 
         void LoadExpandedState()

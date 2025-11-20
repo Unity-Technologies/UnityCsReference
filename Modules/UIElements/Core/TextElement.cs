@@ -517,7 +517,6 @@ namespace UnityEngine.UIElements
         /// <param name="heightMode">Height restrictions.</param>
         /// <param name="fontsize">Optional parameter that override the fontSize that would be applied on the visualElement.</param>
         /// <returns>The horizontal and vertical size needed to display the text string.</returns>
-        [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode, fontsize);

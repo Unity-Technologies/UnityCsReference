@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Utils;
 using UnityEngine;
 
@@ -78,12 +79,12 @@ namespace UnityEditor.Search
 
         readonly struct SelectionResult
         {
-            public readonly int instanceId;
+            public readonly EntityId entityId;
             public readonly string assetPath;
 
-            public SelectionResult(int instanceId, string assetPath)
+            public SelectionResult(EntityId entityId, string assetPath)
             {
-                this.instanceId = instanceId;
+                this.entityId = entityId;
                 this.assetPath = assetPath;
             }
         }
@@ -104,7 +105,10 @@ namespace UnityEditor.Search
             foreach (var selectionResult in selection)
             {
                 if (string.IsNullOrEmpty(selectionResult.assetPath))
-                    yield return SearchExpression.CreateItem(selectionResult.instanceId, c.ResolveAlias("Selection"));
+                {
+                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code below");
+                    yield return SearchExpression.CreateItem(selectionResult.entityId.GetRawData(), c.ResolveAlias("Selection"));
+                }
                 else
                     yield return SearchExpression.CreateItem(selectionResult.assetPath, c.ResolveAlias("Selection"));
             }

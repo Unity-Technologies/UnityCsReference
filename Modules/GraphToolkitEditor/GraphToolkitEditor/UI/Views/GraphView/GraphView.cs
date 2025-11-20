@@ -348,8 +348,6 @@ namespace Unity.GraphToolkit.Editor
             AddToClassList(ussClassName);
             EnableInClassList(nonInteractiveUssClassName, DisplayMode == GraphViewDisplayMode.NonInteractive);
 
-            this.SetRenderHintsClipWithScissors();
-
             m_GraphViewContainer = new VisualElement() { name = "graph-view-container" };
             m_GraphViewContainer.pickingMode = PickingMode.Ignore;
             hierarchy.Add(m_GraphViewContainer);

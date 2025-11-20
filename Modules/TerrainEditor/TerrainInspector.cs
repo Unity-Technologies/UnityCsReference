@@ -984,7 +984,7 @@ namespace UnityEditor
 
             // if onEnable is called but there is no active editor, that means we are in full screen mode
             bool fullScreenMode = true;
-            if (s_activeTerrainInspector == 0 || s_activeTerrainInspectorInstance == null)
+            if (s_activeTerrainInspector == EntityId.None || s_activeTerrainInspectorInstance == null)
             {
                 var inspectors = InspectorWindow.GetInspectors();
                 foreach (var inspector in inspectors)

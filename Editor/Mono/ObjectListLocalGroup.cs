@@ -50,7 +50,7 @@ namespace UnityEditor
             bool m_ShowNoneItem;
             public bool ShowNone { get { return m_ShowNoneItem; } }
             public override bool NeedsRepaint { get { return false; } protected set {} }
-            List<EntityId> m_LastRenderedAssetEntityIds = new ();
+            List<EntityId> m_LastRenderedAssetInstanceIDs = new List<EntityId>();
             List<int> m_LastRenderedAssetDirtyCounts = new List<int>();
 
             public bool m_ListMode = false;
@@ -229,7 +229,7 @@ namespace UnityEditor
                     {
                         BuiltinResource newAsset = new BuiltinResource();
                         newAsset.m_Name = m_Owner.GetCreateAssetUtility().originalName;
-                        newAsset.m_EntityId = m_Owner.GetCreateAssetUtility().instanceID;
+                        newAsset.m_EntityId = m_Owner.GetCreateAssetUtility().entityId;
 
                         DrawItem(m_Grid.CalcRect(itemIndex, yOffset), null, newAsset, isFolderBrowsing);
                         itemIndex++; // Push following items forward
@@ -269,21 +269,21 @@ namespace UnityEditor
 
             void ClearDirtyStateTracking()
             {
-                m_LastRenderedAssetEntityIds.Clear();
+                m_LastRenderedAssetInstanceIDs.Clear();
                 m_LastRenderedAssetDirtyCounts.Clear();
             }
 
             void AddDirtyStateFor(EntityId entityId)
             {
-                m_LastRenderedAssetEntityIds.Add(entityId);
+                m_LastRenderedAssetInstanceIDs.Add(entityId);
                 m_LastRenderedAssetDirtyCounts.Add(EditorUtility.GetDirtyCount(entityId));
             }
 
             public bool IsAnyLastRenderedAssetsDirty()
             {
-                for (int i = 0; i < m_LastRenderedAssetEntityIds.Count; ++i)
+                for (int i = 0; i < m_LastRenderedAssetInstanceIDs.Count; ++i)
                 {
-                    int dirtyCount = EditorUtility.GetDirtyCount(m_LastRenderedAssetEntityIds[i]);
+                    int dirtyCount = EditorUtility.GetDirtyCount(m_LastRenderedAssetInstanceIDs[i]);
                     if (dirtyCount != m_LastRenderedAssetDirtyCounts[i])
                     {
                         m_LastRenderedAssetDirtyCounts[i] = dirtyCount;
@@ -310,9 +310,9 @@ namespace UnityEditor
                             if (isFolderBrowsing && m_FilteredHierarchy.searchFilter.folders.Length == 1)
                             {
                                 string folder = m_FilteredHierarchy.searchFilter.folders[0];
-                                int instanceID = AssetDatabase.GetMainAssetEntityId(folder);
+                                EntityId entityId = AssetDatabase.GetMainAssetEntityId(folder);
                                 bool perform = evt.type == EventType.DragPerform;
-                                mode = DoDrag(instanceID, perform);
+                                mode = DoDrag(entityId, perform);
                                 if (perform && mode != DragAndDropVisualMode.None)
                                     DragAndDrop.AcceptDrag();
                             }
@@ -353,7 +353,7 @@ namespace UnityEditor
                                 // Begin drag
                                 var newSelection = GetNewSelection(assetEntityId, false, false);
                                 var oldItemControlID = controlID;
-                                controlID = GetControlIDFromInstanceID(assetEntityId);
+                                controlID = GetControlIDFromEntityId(assetEntityId);
                                 if (controlID == oldItemControlID)
                                 {
                                     newSelection = GetNewSelection(assetEntityId, true, false);
@@ -527,40 +527,40 @@ namespace UnityEditor
                 }
             }
 
-            public void ChangeExpandedState(int instanceID, bool expanded)
+            public void ChangeExpandedState(EntityId entityId, bool expanded)
             {
-                m_Owner.m_State.m_ExpandedInstanceIDs.Remove(instanceID);
+                m_Owner.m_State.m_ExpandedInstanceIDs.Remove(entityId);
                 if (expanded)
-                    m_Owner.m_State.m_ExpandedInstanceIDs.Add(instanceID);
+                    m_Owner.m_State.m_ExpandedInstanceIDs.Add(entityId);
                 m_FilteredHierarchy.RefreshVisibleItems(m_Owner.m_State.m_ExpandedInstanceIDs);
             }
 
-            bool IsExpanded(int instanceID)
+            bool IsExpanded(EntityId entityId)
             {
-                return (m_Owner.m_State.m_ExpandedInstanceIDs.IndexOf(instanceID) >= 0);
+                return (m_Owner.m_State.m_ExpandedInstanceIDs.IndexOf(entityId) >= 0);
             }
 
-            void SelectAndFrameParentOf(int instanceID)
+            void SelectAndFrameParentOf(EntityId entityId)
             {
-                int parentInstanceID = 0;
+                EntityId parentEntityId = EntityId.None;
                 FilteredHierarchy.FilterResult[] results = m_FilteredHierarchy.results;
                 for (int i = 0; i < results.Length; ++i)
                 {
-                    if (results[i].entityId == instanceID)
+                    if (results[i].entityId == entityId)
                     {
                         if (results[i].isMainRepresentation)
-                            parentInstanceID = 0;
+                            parentEntityId = EntityId.None;
                         break;
                     }
 
                     if (results[i].isMainRepresentation)
-                        parentInstanceID = results[i].entityId;
+                        parentEntityId = results[i].entityId;
                 }
 
-                if (parentInstanceID != 0)
+                if (parentEntityId != EntityId.None)
                 {
-                    m_Owner.SetSelection(new EntityId[] {parentInstanceID}, false);
-                    m_Owner.Frame(parentInstanceID, true, false);
+                    m_Owner.SetSelection(new EntityId[] {parentEntityId}, false);
+                    m_Owner.Frame(parentEntityId, true, false);
                 }
             }
 
@@ -683,7 +683,7 @@ namespace UnityEditor
                     assetEntityId = builtinResource.m_EntityId;
                 }
 
-                int controlID = GetControlIDFromInstanceID(assetEntityId);
+                int controlID = GetControlIDFromEntityId(assetEntityId);
 
                 bool selected;
                 if (m_Owner.allowDragging)
@@ -691,7 +691,7 @@ namespace UnityEditor
                 else
                     selected = m_Owner.IsSelected(assetEntityId);
 
-                if (selected && assetEntityId == m_Owner.m_State.m_LastClickedInstanceID)
+                if (selected && assetEntityId == m_Owner.m_State.m_LastClickedEntityId)
                     m_LastClickedDrawTime = EditorApplication.timeSinceStartup;
 
                 Rect foldoutRect = new Rect(position.x + Styles.groupFoldout.margin.left, position.y, Styles.groupFoldout.padding.left, position.height); // ListMode foldout
@@ -783,7 +783,7 @@ namespace UnityEditor
                 {
                     if (m_DropTargetControlID == controlID && !position.Contains(evt.mousePosition))
                         m_DropTargetControlID = 0;
-                    bool isDropTarget = controlID == m_DropTargetControlID && m_DragSelection.IndexOf(m_DropTargetControlID) == -1;
+                    bool isDropTarget = controlID == m_DropTargetControlID;
 
                     string labeltext = filterItem != null ? filterItem.name : builtinResource.m_Name;
                     if (ListMode)
@@ -798,7 +798,7 @@ namespace UnityEditor
                         m_Content.image = null;
                         Texture2D icon;
 
-                        if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().instanceID == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().entityId == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
                             icon = m_Owner.GetCreateAssetUtility().icon;
@@ -845,7 +845,7 @@ namespace UnityEditor
 
                         // Get icon
                         bool drawDropShadow = false;
-                        if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().instanceID == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
+                        if (string.IsNullOrEmpty(assetGuid) && m_Owner.GetCreateAssetUtility().entityId == assetEntityId && m_Owner.GetCreateAssetUtility().icon != null)
                         {
                             // If we are creating a new asset we might have an icon to use
                             m_Content.image = m_Owner.GetCreateAssetUtility().icon;
@@ -976,7 +976,7 @@ namespace UnityEditor
 
                                 if (builtinResource != null)
                                 {
-                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject(builtinResource.m_EntityId);
+                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject((EntityId)builtinResource.m_EntityId);
 
                                     if (type != typeof(Texture2D))
                                     {
@@ -1075,11 +1075,6 @@ namespace UnityEditor
                     if (EditorApplication.projectWindowItemOnGUI != null)
                         EditorApplication.projectWindowItemOnGUI(filterItem.guid, itemRect);
 
-                    #pragma warning disable 618
-                    if (EditorApplication.projectWindowItemInstanceOnGUI != null)
-                        EditorApplication.projectWindowItemInstanceOnGUI(filterItem.entityId, itemRect);
-                    #pragma warning restore 618
-
                     if (EditorApplication.projectWindowItemByEntityIdOnGUI != null)
                         EditorApplication.projectWindowItemByEntityIdOnGUI(filterItem.entityId, itemRect);
                 }
@@ -1109,21 +1104,21 @@ namespace UnityEditor
                 }
             }
 
-            public List<KeyValuePair<string, int>> GetVisibleNameAndInstanceIDs()
+            public List<KeyValuePair<string, EntityId>> GetVisibleNameAndEntityIds()
             {
-                List<KeyValuePair<string, int>> result = new List<KeyValuePair<string, int>>();
+                List<KeyValuePair<string, EntityId>> result = new List<KeyValuePair<string, EntityId>>();
 
                 // 1. None item
                 if (m_NoneList.Length > 0)
-                    result.Add(new KeyValuePair<string, int>(m_NoneList[0].m_Name, m_NoneList[0].m_EntityId)); // 0
+                    result.Add(new KeyValuePair<string, EntityId>(m_NoneList[0].m_Name, m_NoneList[0].m_EntityId)); // 0
 
                 // 2. Project Assets
                 foreach (FilteredHierarchy.FilterResult r in m_FilteredHierarchy.results)
-                    result.Add(new KeyValuePair<string, int>(r.name, r.entityId));
+                    result.Add(new KeyValuePair<string, EntityId>(r.name, r.entityId));
 
                 // 3. Builtin
                 for (int i = 0; i < m_ActiveBuiltinList.Length; ++i)
-                    result.Add(new KeyValuePair<string, int>(m_ActiveBuiltinList[i].m_Name, m_ActiveBuiltinList[i].m_EntityId));
+                    result.Add(new KeyValuePair<string, EntityId>(m_ActiveBuiltinList[i].m_Name, m_ActiveBuiltinList[i].m_EntityId));
 
                 return result;
             }
@@ -1150,7 +1145,7 @@ namespace UnityEditor
 
                 if (m_Owner.m_State.m_NewAssetIndexInList >= 0)
                 {
-                    assetIds.Add(m_Owner.GetCreateAssetUtility().instanceID);
+                    assetIds.Add(m_Owner.GetCreateAssetUtility().entityId);
                 }
 
                 // 3. Builtin
@@ -1167,7 +1162,7 @@ namespace UnityEditor
                 List<EntityId> assetIds;
                 GetAssetIds(out assetIds);
                 var selectedIds = m_Owner.m_State.m_SelectedInstanceIDs;
-                int lastClickedAssetId = m_Owner.m_State.m_LastClickedInstanceID;
+                int lastClickedAssetId = m_Owner.m_State.m_LastClickedEntityId;
                 bool allowMultiselection = m_Owner.allowMultiSelect;
 
                 return InternalEditorUtility.HandleMultiSelectionWithCurrentModifiers(clickedAssetEntityId, assetIds, selectedIds, lastClickedAssetId, beginOfDrag, allowMultiselection, useShiftAsActionKey);
@@ -1248,23 +1243,23 @@ namespace UnityEditor
                 m_CurrentBuiltinResources = builtinList;
             }
 
-            public string GetNameOfLocalAsset(int instanceID)
+            public string GetNameOfLocalAsset(EntityId entityId)
             {
                 foreach (var r in m_FilteredHierarchy.results)
                 {
-                    if (r.entityId == instanceID)
+                    if (r.entityId == entityId)
                         return r.name;
                 }
                 return null;
             }
 
-            public bool IsBuiltinAsset(int instanceID)
+            public bool IsBuiltinAsset(EntityId entityId)
             {
                 foreach (KeyValuePair<string, BuiltinResource[]> kvp in m_BuiltinResourceMap)
                 {
                     BuiltinResource[] list = kvp.Value;
                     for (int i = 0; i < list.Length; ++i)
-                        if (list[i].m_EntityId == instanceID)
+                        if (list[i].m_EntityId == entityId)
                             return true;
                 }
                 return false;
@@ -1493,10 +1488,8 @@ namespace UnityEditor
                 return DragAndDrop.DropOnProjectBrowserWindow(dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
             }
 
-            static internal int GetControlIDFromInstanceID(int instanceID)
-            {
-                return instanceID + 100000000;
-            }
+            private const int ImGUI_IdOffset = 100000000;
+            static internal int GetControlIDFromEntityId(EntityId entityId) => entityId.GetHashCode() + ImGUI_IdOffset;
 
             public bool DoCharacterOffsetSelection()
             {
@@ -1508,7 +1501,7 @@ namespace UnityEditor
                         startName = Selection.activeObject.name;
 
                     string c = new string(new[] {Event.current.character});
-                    List<KeyValuePair<string, int>> list = GetVisibleNameAndInstanceIDs();
+                    List<KeyValuePair<string, EntityId>> list = GetVisibleNameAndEntityIds();
                     if (list.Count == 0)
                         return false;
 
@@ -1630,30 +1623,30 @@ namespace UnityEditor
                 double m_FirstToLastDuration = 0.3;
                 double m_FadeStartTime;
                 double m_TimeBetweenEachItem;
-                List<int> m_InstanceIDs;
+                List<EntityId> m_EntityIds;
 
-                public void Start(List<int> instanceIDs)
+                public void Start(List<EntityId> entityIds)
                 {
-                    m_InstanceIDs = instanceIDs;
+                    m_EntityIds = entityIds;
                     m_FadeStartTime = EditorApplication.timeSinceStartup;
-                    m_FirstToLastDuration = Math.Min(0.5, instanceIDs.Count * 0.03);
+                    m_FirstToLastDuration = Math.Min(0.5, entityIds.Count * 0.03);
                     m_TimeBetweenEachItem = 0;
-                    if (m_InstanceIDs.Count > 1)
-                        m_TimeBetweenEachItem = m_FirstToLastDuration / (m_InstanceIDs.Count - 1);
+                    if (m_EntityIds.Count > 1)
+                        m_TimeBetweenEachItem = m_FirstToLastDuration / (m_EntityIds.Count - 1);
                 }
 
-                public float GetAlpha(int instanceID)
+                public float GetAlpha(EntityId entityId)
                 {
-                    if (m_InstanceIDs == null)
+                    if (m_EntityIds == null)
                         return 1f;
 
                     if (EditorApplication.timeSinceStartup > m_FadeStartTime + m_FadeDuration + m_FirstToLastDuration)
                     {
-                        m_InstanceIDs = null; // reset
+                        m_EntityIds = null; // reset
                         return 1f;
                     }
 
-                    int index = m_InstanceIDs.IndexOf(instanceID);
+                    int index = m_EntityIds.IndexOf(entityId);
                     if (index >= 0)
                     {
                         double elapsed = EditorApplication.timeSinceStartup - m_FadeStartTime;

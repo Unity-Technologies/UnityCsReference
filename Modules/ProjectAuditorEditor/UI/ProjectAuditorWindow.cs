@@ -112,6 +112,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorApplication.update -= RulesPackageInstallProgressCallback;
                 RulesPackageInstallRequest = null;
+
+                ProjectAuditorRulesPackage.Initialize();
             }
         }
 
@@ -2081,7 +2083,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent InstallRulesButton =
                 new GUIContent("Install Rules", $"Please install the rules package to analyze your project ({ProjectAuditorRulesPackage.Name}).");
             public static readonly GUIContent UpdateRulesButton =
-                new GUIContent("Update Rules", $"Please update your rules package to the latest version ({{ProjectAuditorRulesPackage.Name}}).");
+                new GUIContent("Update Rules", $"Please update your rules package to the latest version ({ProjectAuditorRulesPackage.Name}@{ProjectAuditorRulesPackage.LatestVersion}).");
             public static readonly GUIContent UpdateRulesButtonDisabled =
                 new GUIContent("Update Rules", "Everything is up to date!");
             public static readonly GUIContent[] UpdateRulesButtonInProgress;

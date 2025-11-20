@@ -145,16 +145,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private VisualElement CreateServerSettingsField(SerializedProperty instanceProperty, TextField roleField)
         {
+            if (!LocalDeploymentUtility.IsLocalDeploymentAvailable())
+                return null;
+
             var container = new VisualElement();
             var buildProfileProperty = instanceProperty.FindPropertyRelative("m_BuildProfile");
-            container.TrackPropertyValue(buildProfileProperty, _ => RefreshSettings(container, instanceProperty, buildProfileProperty));
-            roleField.RegisterValueChangedCallback( _ => RefreshSettings(container, instanceProperty, buildProfileProperty));
-            RefreshSettings(container, instanceProperty, buildProfileProperty);
+            container.TrackPropertyValue(buildProfileProperty, _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
+            roleField.RegisterValueChangedCallback( _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
+            RefreshServerSettings(container, instanceProperty, buildProfileProperty);
 
             return container;
         }
 
-        private static void RefreshSettings(VisualElement container, SerializedProperty instanceProperty, SerializedProperty buildProfileProperty)
+        private static void RefreshServerSettings(VisualElement container, SerializedProperty instanceProperty, SerializedProperty buildProfileProperty)
         {
             container.Clear();
 
@@ -169,7 +172,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 : new StyleEnum<DisplayStyle>(DisplayStyle.None);
 
             if (buildProfile != null)
-                serverSettingsField.TrackSerializedObjectValue(new SerializedObject(buildProfile), _ => RefreshSettings(container, instanceProperty, buildProfileProperty));
+                serverSettingsField.TrackSerializedObjectValue(new SerializedObject(buildProfile), _ => RefreshServerSettings(container, instanceProperty, buildProfileProperty));
         }
 
         private VisualElement CreateBuildProfileField(SerializedProperty instanceProperty, out TextField roleFieldOut)

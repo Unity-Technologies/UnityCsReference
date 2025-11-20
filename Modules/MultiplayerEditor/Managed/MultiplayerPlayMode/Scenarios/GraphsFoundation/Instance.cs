@@ -140,7 +140,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Reset the Execution graph
             m_ExecutionGraph.Reset();
 
-            RefreshStatusData();
+            RefreshAndNotifyStatus();
         }
 
         // Returns the Instance's Description configuration from the current Scenario Config

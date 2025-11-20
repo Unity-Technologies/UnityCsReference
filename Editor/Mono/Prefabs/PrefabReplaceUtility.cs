@@ -282,27 +282,27 @@ namespace UnityEditor
             PrefabUtility.InstantiateDraggedPrefabUpon(droppedUponGameObject, prefabAssetRoot);
             var newChildren = GetNewChildren(droppedUponGameObject, childInstanceIDs);
             if (newChildren != null && newChildren.Count > 0)
-                Selection.entityIds = newChildren.ToArray().ToEntityIdArray();
+                Selection.entityIds = newChildren.ToArray();
 
             Undo.IncrementCurrentGroup();
         }
 
-        static HashSet<int> GetChildrenInstanceIDs(GameObject parent)
+        static HashSet<EntityId> GetChildrenInstanceIDs(GameObject parent)
         {
-            var childInstanceIDs = new HashSet<int>();
+            var childEntityIds = new HashSet<EntityId>();
             var transform = parent.transform;
             var childCount = transform.childCount;
             for (int i = 0; i < childCount; i++)
             {
-                var childInstanceID = transform.GetChild(i).gameObject.GetEntityId();
-                childInstanceIDs.Add(childInstanceID);
+                var childEntityId = transform.GetChild(i).gameObject.GetEntityId();
+                childEntityIds.Add(childEntityId);
             }
-            return childInstanceIDs;
+            return childEntityIds;
         }
 
-        static List<int> GetNewChildren(GameObject parent, HashSet<int> oldChildren)
+        static List<EntityId> GetNewChildren(GameObject parent, HashSet<EntityId> oldChildren)
         {
-            var newChildren = new List<int>();
+            var newChildren = new List<EntityId>();
             var transform = parent.transform;
             var childCount = transform.childCount;
             for (int i = 0; i < childCount; i++)

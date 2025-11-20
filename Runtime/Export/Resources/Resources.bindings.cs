@@ -233,9 +233,9 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::IsInstanceLoaded")]
         internal extern static bool IsObjectLoaded(EntityId entityId);
 
-        internal static bool IsInstanceLoaded(int instanceID)
+        internal static bool IsInstanceLoaded(EntityId entityId)
         {
-            return IsObjectLoaded(instanceID);
+            return IsObjectLoaded(entityId);
         }
 
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]

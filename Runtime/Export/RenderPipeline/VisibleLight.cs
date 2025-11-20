@@ -24,11 +24,11 @@ namespace UnityEngine.Rendering
         Vector2              m_AreaSize;
         float                m_ShapeRadius;
 #pragma warning disable 649
-        int                 m_InstanceId;
+        EntityId             m_EntityId;
 #pragma warning restore 649
         VisibleLightFlags    m_Flags;
 
-        public Light light => (Light)Object.FindObjectFromInstanceID(m_InstanceId);
+        public Light light => (Light)Object.FindObjectFromInstanceID(m_EntityId);
 
         public LightType lightType
         {
@@ -77,7 +77,7 @@ namespace UnityEngine.Rendering
             get { return m_AreaSize; }
             set { m_AreaSize = value; }
         }
-        
+
         public float shapeRadius
         {
             get { return m_ShapeRadius; }
@@ -125,7 +125,7 @@ namespace UnityEngine.Rendering
                 m_InnerSpotAngle.Equals(other.m_InnerSpotAngle) &&
                 m_AreaSize.Equals(other.m_AreaSize) &&
                 m_ShapeRadius == other.m_ShapeRadius &&
-                m_InstanceId == other.m_InstanceId &&
+                m_EntityId == other.m_EntityId &&
                 m_Flags == other.m_Flags;
         }
 
@@ -148,7 +148,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_InnerSpotAngle.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_AreaSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_ShapeRadius.GetHashCode();
-                hashCode = (hashCode * 397) ^ m_InstanceId;
+                hashCode = (hashCode * 397) ^ m_EntityId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_Flags;
                 return hashCode;
             }

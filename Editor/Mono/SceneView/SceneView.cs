@@ -258,17 +258,17 @@ namespace UnityEditor
             return parentObject;
         }
 
-        static void OnSelectedObjectWasDestroyed(int unused)
+        static void OnSelectedObjectWasDestroyed(EntityId unused)
         {
             s_ActiveEditorsDirty = true;
             s_SelectionCacheDirty = true;
         }
 
-        static void OnNonSelectedObjectWasDestroyed(int instanceID)
+        static void OnNonSelectedObjectWasDestroyed(EntityId entityId)
         {
             if ((!s_ActiveEditorsDirty) || (!s_SelectionCacheDirty))
             {
-                if (s_CachedChildRenderersForOutliningHashSet != null && s_CachedChildRenderersForOutliningHashSet.Contains(instanceID))
+                if (s_CachedChildRenderersForOutliningHashSet != null && s_CachedChildRenderersForOutliningHashSet.Contains(entityId))
                 {
                     s_ActiveEditorsDirty = true;
                     s_SelectionCacheDirty = true;
@@ -368,7 +368,7 @@ namespace UnityEditor
 
         internal bool isPingingObject { get; set; } = false;
         internal float alphaMultiplier { get; set; } = 0;
-        internal int submeshOutlineMaterialId { get; set; } = 0;
+        internal EntityId submeshOutlineMaterialId { get; set; } = EntityId.None;
 
         Scene m_CustomScene;
         protected internal Scene customScene
@@ -2365,7 +2365,7 @@ namespace UnityEditor
                 {
                     isPingingObject = false;
                     alphaMultiplier = 0;
-                    submeshOutlineMaterialId = 0;
+                    submeshOutlineMaterialId = EntityId.None;
                 }
                 else
                 {

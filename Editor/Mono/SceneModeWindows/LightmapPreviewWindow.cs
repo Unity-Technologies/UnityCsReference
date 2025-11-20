@@ -32,7 +32,7 @@ namespace UnityEditor
         [SerializeField]
         int m_LightmapIndex = -1;
         [SerializeField]
-        int m_InstanceID = -1;
+        EntityId m_EntityId = EntityId.None;
         [SerializeField]
         bool m_IsRealtimeLightmap = false;
 
@@ -41,7 +41,7 @@ namespace UnityEditor
         GameObject[] m_CachedTextureObjects;
 
         int m_ActiveGameObjectLightmapIndex = -1; // the object the user selects in the scene
-        int m_ActiveGameObjectInstanceId = -1; // for instance based non-atlas textures such as baked emissive for Progressive
+        EntityId m_ActiveGameObjectEntityId = EntityId.None; // for instance based non-atlas textures such as baked emissive for Progressive
         Hash128 m_ActiveGameObjectTextureHash = new Hash128(); // the object the user selects in the scene
 
         GITextureType[] kRealtimePreviewTextureTypes =
@@ -110,7 +110,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Baked UV Overlap"),
             };
 
-            public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.wordWrappedLabel);
+            public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.whiteLabel);
 
             public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TrTextContent("The texture is not available at the moment.");
             public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene, and make sure that this object is set to 'Contribute Global Illumination' if it's meant to be baked.");
@@ -124,9 +124,9 @@ namespace UnityEditor
             set { m_LightmapIndex = value; }
         }
 
-        public int instanceID
+        public EntityId entityId
         {
-            set { m_InstanceID = value; }
+            set { m_EntityId = value; }
         }
 
         public bool isRealtimeLightmap
@@ -138,7 +138,7 @@ namespace UnityEditor
         // this seperates between lightsmaps that we opened from a specific index, or the ones that are connected to an object (where the index can change)
         private bool isIndexBased
         {
-            get { return m_InstanceID == -1; }
+            get { return m_EntityId == EntityId.None; }
         }
 
         private GITextureType[] currentPreviewTextureTypes
@@ -181,7 +181,7 @@ namespace UnityEditor
 
                 if (isIndexBased) return $"{prefix}Lightmap Index {m_LightmapIndex}";
 
-                var obj = EditorUtility.EntityIdToObject(m_InstanceID);
+                var obj = EditorUtility.EntityIdToObject(m_EntityId);
 
                 if (obj)
                     return $"{prefix}Lightmap for '{obj.name}'";
@@ -195,17 +195,23 @@ namespace UnityEditor
             get { return SelectedTextureTypeNeedsExposureControl() ? m_ExposureSliderValue : 0.0f; }
         }
 
-        public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased, bool useInteractiveLightBakingData)
+        public static void CreateLightmapPreviewWindowIndexed(int lightmapId, bool realtimeLightmap, bool useInteractiveLightBakingData)
+        {
+
+            LightmapPreviewWindow window = EditorWindow.CreateInstance<LightmapPreviewWindow>();
+            window.minSize = new Vector2(370, 390);
+            window.isRealtimeLightmap = realtimeLightmap;
+            window.lightmapIndex = lightmapId;
+            window.useInteractiveLightBakingData = useInteractiveLightBakingData;
+            window.Show();
+        }
+
+        public static void CreateLightmapPreviewWindow(EntityId lightmapId, bool realtimeLightmap, bool useInteractiveLightBakingData)
         {
             LightmapPreviewWindow window = EditorWindow.CreateInstance<LightmapPreviewWindow>();
             window.minSize = new Vector2(370, 390);
             window.isRealtimeLightmap = realtimeLightmap;
-
-            if (indexBased)
-                window.lightmapIndex = lightmapId;
-            else
-                window.instanceID = lightmapId;
-
+            window.entityId = lightmapId;
             window.useInteractiveLightBakingData = useInteractiveLightBakingData;
 
             window.Show();
@@ -549,7 +555,7 @@ namespace UnityEditor
             if (LightmapVisualizationUtility.IsAtlasTextureType(textureType))
                 return (m_ActiveGameObjectLightmapIndex == m_LightmapIndex);
 
-            return (m_ActiveGameObjectInstanceId == m_InstanceID);
+            return (m_ActiveGameObjectEntityId == m_EntityId);
         }
 
         private void UpdateActiveGameObjectSelection()
@@ -564,7 +570,7 @@ namespace UnityEditor
                  !Selection.activeGameObject.TryGetComponent(out terrain)))
             {
                 m_ActiveGameObjectLightmapIndex = -1;
-                m_ActiveGameObjectInstanceId = -1;
+                m_ActiveGameObjectEntityId = EntityId.None;
                 m_ActiveGameObjectTextureHash = new Hash128();
                 return;
             }
@@ -582,10 +588,10 @@ namespace UnityEditor
             }
             else
             {
-                m_ActiveGameObjectInstanceId = renderer != null ? renderer.GetEntityId() : terrain.GetEntityId();
+                m_ActiveGameObjectEntityId = renderer != null ? renderer.GetEntityId() : terrain.GetEntityId();
 
                 if (useInteractiveLightBakingData)
-                    m_ActiveGameObjectLightmapIndex = InteractiveLightBaking.GetLightmapIndexFromRenderer(m_ActiveGameObjectInstanceId);
+                    m_ActiveGameObjectLightmapIndex = InteractiveLightBaking.GetLightmapIndexFromRenderer(m_ActiveGameObjectEntityId);
                 else
                     m_ActiveGameObjectLightmapIndex = renderer != null ? renderer.lightmapIndex : terrain.lightmapIndex;
             }
@@ -611,7 +617,7 @@ namespace UnityEditor
                 {
                     Hash128 systemHash;
 
-                    if (!Lightmapping.GetInputSystemHash(m_InstanceID, out systemHash))
+                    if (!Lightmapping.GetInputSystemHash(m_EntityId, out systemHash))
                     {
                         m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
                         return;
@@ -620,7 +626,7 @@ namespace UnityEditor
                 }
                 else if (useInteractiveLightBakingData)
                 {
-                    ushort lightmapIndex = InteractiveLightBaking.GetLightmapIndexFromRenderer(m_InstanceID);
+                    ushort lightmapIndex = InteractiveLightBaking.GetLightmapIndexFromRenderer(m_EntityId);
                     if (lightmapIndex >= 0xFFFF)
                     {
                         m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
@@ -632,7 +638,7 @@ namespace UnityEditor
                 else
                 {
                     int lightmapIndex;
-                    if (!Lightmapping.GetLightmapIndex(m_InstanceID, out lightmapIndex))
+                    if (!Lightmapping.GetLightmapIndex(m_EntityId, out lightmapIndex))
                     {
                         m_CachedTexture.textureAvailability = GITextureAvailability.GITextureNotAvailable;
                         return;
@@ -643,14 +649,14 @@ namespace UnityEditor
             }
 
             Hash128 contentHash = isRealtimeLightmap ? LightmapVisualizationUtility.GetRealtimeGITextureHash(m_RealtimeTextureHash, textureType) :
-                LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex, m_InstanceID, textureType, useInteractiveLightBakingData);
+                LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex, m_EntityId, textureType, useInteractiveLightBakingData);
 
             // if we need to fetch a new texture
             if (m_CachedTexture.texture == null || m_CachedTexture.type != textureType || m_CachedTexture.contentHash != contentHash || m_CachedTexture.contentHash == new Hash128())
             {
                 m_CachedTexture = isRealtimeLightmap ?
                     LightmapVisualizationUtility.GetRealtimeGITexture(m_RealtimeTextureHash, textureType) :
-                    LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex, m_InstanceID, textureType, useInteractiveLightBakingData);
+                    LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex, m_EntityId, textureType, useInteractiveLightBakingData);
                 Repaint();
             }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine.AdaptivePerformance.Provider;
 using UnityEngine.Scripting;
 
@@ -11,8 +12,9 @@ namespace UnityEngine.AdaptivePerformance.Basic
      // Class needed to register Descriptor
      internal class BasicProviderDescriptorRegistration
      {
-         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-         [RequiredByNativeCode]
+         [RequiredByNativeCode(optional: false)]
+         [DynamicDependency("#ctor()", typeof(BasicAdaptivePerformanceSubsystem))]
+         [DynamicDependency("#ctor()", typeof(BasicAdaptivePerformanceSubsystem.BasicProvider))]
          static AdaptivePerformanceSubsystemDescriptor RegisterDescriptor()
          {
              return AdaptivePerformanceSubsystemDescriptor.RegisterDescriptor(
@@ -25,7 +27,6 @@ namespace UnityEngine.AdaptivePerformance.Basic
          }
      }
 
-     [Preserve]
      internal class BasicAdaptivePerformanceSubsystem : AdaptivePerformanceSubsystem
      {
         internal class BasicProvider : APProvider, IApplicationLifecycle, IDevicePerformanceLevelControl

@@ -275,7 +275,7 @@ namespace UnityEditor
             s_CloseState = CloseState.CloseApproved;
         }
 
-        bool ProcessEvent(int a, System.IntPtr b)
+        bool ProcessEvent(EntityId a, System.IntPtr b)
         {
             Update();
             return false;

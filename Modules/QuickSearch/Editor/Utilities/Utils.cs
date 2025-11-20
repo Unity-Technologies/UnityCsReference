@@ -233,7 +233,7 @@ namespace UnityEditor.Search
 
         public static EntityId GetMainAssetEntityId(string assetPath)
         {
-            return (int)AssetDatabase.GetMainAssetEntityId(assetPath);
+            return AssetDatabase.GetMainAssetEntityId(assetPath);
         }
 
         internal static GUIContent GUIContentTemp(string text, string tooltip)
@@ -760,9 +760,9 @@ namespace UnityEditor.Search
             return path;
         }
 
-        private static int GetClientId(SearchContext ctx)
+        private static EntityId GetClientId(SearchContext ctx)
         {
-            return ctx != null && ctx.searchView != null ? ctx.searchView.GetViewId() : 0;
+            return ctx != null && ctx.searchView != null ? ctx.searchView.GetViewId() : EntityId.None;
         }
 
         internal static Texture2D GetSceneObjectPreview(SearchContext ctx, GameObject obj, Vector2 previewSize, FetchPreviewOptions options, Texture2D defaultThumbnail)
@@ -1326,9 +1326,9 @@ namespace UnityEditor.Search
             return property.objectReferenceStringValue;
         }
 
-        public static GUIContent ObjectContent(UnityEngine.Object obj, Type type, int instanceID)
+        public static GUIContent ObjectContent(UnityEngine.Object obj, Type type, EntityId entityId)
         {
-            return EditorGUIUtility.ObjectContent(obj, type, instanceID);
+            return EditorGUIUtility.ObjectContent(obj, type, entityId);
         }
 
         public static bool IsCommandDelete(string commandName)

@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
 
         protected TextElement m_TextElement;
 
-        public Vector2 ComputeTextSize(string textToMeasure, float width, float height, float? fontsize = null)
+        public Vector2 ComputeTextSize(string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)
         {
             if (!TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {
@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements
             width = Mathf.Floor(width * scale);
             height = Mathf.Floor(height * scale);
 
-            ComputeNativeTextSize(textToMeasure, width, height, fontsize);
+            ComputeNativeTextSize(textToMeasure, width, widthMode, height, heightMode, fontsize);
 
             return preferredSize;
         }

@@ -30,7 +30,8 @@ namespace UnityEditorInternal
 
         static EditMode()
         {
-            ownerID = SessionState.GetInt(kOwnerStringKey, ownerID);
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update below code to ulong");
+            ownerID = EntityId.From(SessionState.GetInt(kOwnerStringKey, (int)ownerID.GetRawData()));
             s_EditMode = (SceneViewEditMode)SessionState.GetInt(kEditModeStringKey, (int)s_EditMode);
             Selection.selectionChanged += OnSelectionChange;
             ToolManager.activeToolChanging += OnActiveToolWillChange;
@@ -95,7 +96,8 @@ namespace UnityEditorInternal
                 s_OwnerID = value;
                 Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update below code to ulong");
                 SessionState.SetInt(kOwnerStringKey, (int)s_OwnerID.GetRawData());
-                SessionState.SetInt(kOwnerStringKey, s_OwnerID);
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update below code to ulong");
+                SessionState.SetInt(kOwnerStringKey, (int)s_OwnerID.GetRawData());
             }
         }
 

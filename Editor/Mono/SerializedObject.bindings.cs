@@ -163,14 +163,14 @@ namespace UnityEditor
         [NativeProperty("ContextObject")]
         public extern Object context { get; }
 
-        internal void Cache(int instanceID)
+        internal void Cache(EntityId entityId)
         {
-            CacheInternal(instanceID);
+            CacheInternal(entityId);
             m_NativeObjectPtr = IntPtr.Zero;
         }
 
         [FreeFunction("SerializedObjectCache::SaveToCache", HasExplicitThis = true)]
-        private extern void CacheInternal(int instanceID);
+        private extern void CacheInternal(EntityId instanceID);
 
         [FreeFunction("SerializedObjectCache::LoadFromCache")]
         internal extern static SerializedObject LoadFromCache(int instanceID);

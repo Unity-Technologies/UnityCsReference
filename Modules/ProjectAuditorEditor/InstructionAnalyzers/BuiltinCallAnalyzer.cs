@@ -86,9 +86,24 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 if (descriptor == null)
                     return null;
 
-                if ((descriptor.Areas & Areas.MemoryIgnoreVoidReturn) == Areas.MemoryIgnoreVoidReturn)
-                    if (callee.MethodReturnType.ReturnType.MetadataType == MetadataType.Void)
-                        return null;
+                if (!string.IsNullOrEmpty(descriptor.ReturnType))
+                {
+                    bool not = descriptor.ReturnType[0] == '!';
+                    bool valid = Enum.TryParse(typeof(MetadataType), not ? descriptor.ReturnType.Substring(1) : descriptor.ReturnType, true, out var returnTypeEnum);
+                    if (valid)
+                    {
+                        if (not)
+                        {
+                            if (callee.MethodReturnType.ReturnType.MetadataType == (MetadataType)returnTypeEnum)
+                                return null;
+                        }
+                        else
+                        {
+                            if (callee.MethodReturnType.ReturnType.MetadataType != (MetadataType)returnTypeEnum)
+                                return null;
+                        }
+                    }
+                }
 
                 var genericInstanceMethod = callee as GenericInstanceMethod;
                 if (genericInstanceMethod != null && genericInstanceMethod.HasGenericArguments)

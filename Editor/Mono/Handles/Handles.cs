@@ -1513,7 +1513,7 @@ namespace UnityEditor
         {
             if(Event.current.type != EventType.Repaint)
                 return;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, EntityId.None, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
@@ -1576,10 +1576,10 @@ namespace UnityEditor
             var childOutlineAlpha = childNodeColor.a;
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, EntityId.None, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
         }
 
-        internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
+        internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, EntityId submeshOutlineMaterialId)
         {
             EntityId[] parentRenderers, childRenderers;
             HandleUtility.FilterEntityIds(Selection.gameObjects, out parentRenderers, out childRenderers, out _);

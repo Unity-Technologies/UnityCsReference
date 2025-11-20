@@ -396,10 +396,9 @@ namespace UnityEditor.Experimental.GraphView
                     template.category = isBuiltIn ? m_TemplateHelper.builtInCategory : template.category;
                     template.order =  isBuiltIn ? 0 : 1;
                     template.assetGuid = guid;
-                    if (isBuiltIn)
-                    {
-                        template.icon = GetSkinIcon(template.icon);
-                    }
+
+                    var skinIcon = GetSkinIcon(template.icon);
+                    template.icon = skinIcon == null ? template.icon : skinIcon;
                     allTemplates.Add(template);
                 }
             }

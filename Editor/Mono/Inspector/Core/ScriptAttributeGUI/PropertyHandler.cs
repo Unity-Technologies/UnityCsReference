@@ -43,7 +43,7 @@ namespace UnityEditor
         bool isCurrentlyNested => m_NestingLevel > 0;
 
         internal static Dictionary<string, ReorderableListWrapper> s_reorderableLists = new Dictionary<string, ReorderableListWrapper>();
-        static int s_LastInspectionTarget;
+        static EntityId s_LastInspectionTarget;
         static int s_LastInspectorNumComponents;
 
         static PropertyHandler()
@@ -59,7 +59,7 @@ namespace UnityEditor
         public static void ClearCache()
         {
             s_reorderableLists.Clear();
-            s_LastInspectionTarget = 0;
+            s_LastInspectionTarget = EntityId.None;
         }
 
         public static void InvalidateListCacheIncludingChildren(SerializedProperty property)

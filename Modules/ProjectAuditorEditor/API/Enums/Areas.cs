@@ -67,19 +67,12 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         Support = 1 << 9,
 
-        /// <summary>
-        /// Allocation Ignore Void Return
-        /// For the rules which analyze memory allocated by Unity API calls, ignore calls with a void return type because they do not allocate memory
-        /// See https://jira.unity3d.com/browse/PROFB-318 for more details
-        /// </summary>
-        MemoryIgnoreVoidReturn = 1 << 10,
-
         // Add new items in alphabetical order and adjust the values (including "All") accordingly.
         // Areas are serialised as strings, so it doesn't matter if the values change between package versions so long as old reports have been saved.
 
         /// <summary>
         /// Bitmask value representing all areas
         /// </summary>
-        All = (1 << 11) - 1
+        All = (1 << 10) - 1
     }
 }

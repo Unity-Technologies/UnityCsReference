@@ -20,8 +20,8 @@ namespace UnityEditor
         private static string[] s_ModuleNames;
         private string m_SupportsCullingText;
         private string m_SupportsCullingTextLabel; // Cached version including bullet points
-        private int m_CachedMeshInstanceID;
-        private int m_CachedMaterialInstanceID;
+        private EntityId m_CachedMeshEntityId;
+        private EntityId m_CachedMaterialEntityId;
         private int m_CachedMeshDirtyCount;
         private int m_CachedMaterialDirtyCount;
 
@@ -209,7 +209,7 @@ namespace UnityEditor
                         if (isRepaintEvent && renderer != null)
                         {
                             bool iconRendered = false;
-                            EntityId entityId = 0;
+                            EntityId entityId = EntityId.None;
 
                             if (!multiEdit)
                             {
@@ -220,9 +220,9 @@ namespace UnityEditor
                                         entityId = renderer.mesh.GetEntityId();
 
                                         // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
-                                        if (m_CachedMeshInstanceID != entityId)
+                                        if (m_CachedMeshEntityId != entityId)
                                         {
-                                            m_CachedMeshInstanceID = entityId;
+                                            m_CachedMeshEntityId = entityId;
                                             m_CachedMeshDirtyCount = -1;
                                         }
                                         if (EditorUtility.GetDirtyCount(entityId) != m_CachedMeshDirtyCount)
@@ -237,9 +237,9 @@ namespace UnityEditor
                                     entityId = renderer.sharedMaterial.GetEntityId();
 
                                     // If the asset is dirty we ensure to get a updated one by clearing cache of temporary previews
-                                    if (m_CachedMaterialInstanceID != entityId)
+                                    if (m_CachedMaterialEntityId != entityId)
                                     {
-                                        m_CachedMaterialInstanceID = entityId;
+                                        m_CachedMaterialEntityId = entityId;
                                         m_CachedMaterialDirtyCount = -1;
                                     }
                                     if (EditorUtility.GetDirtyCount(entityId) != m_CachedMaterialDirtyCount)
@@ -256,7 +256,7 @@ namespace UnityEditor
                                 entityId = Material.GetDefaultParticleMaterial().GetEntityId();
                             }
 
-                            if (entityId != 0)
+                            if (entityId != EntityId.None)
                             {
                                 Texture2D icon = AssetPreview.GetAssetPreview(entityId);
                                 if (icon != null)

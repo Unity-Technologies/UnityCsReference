@@ -108,7 +108,7 @@ namespace Unity.GraphToolkit.Editor
 
         static float GetTextWidthWithFontSize(TextElement element, float fontSize)
         {
-            return element.GetTextWidthWithFontSize(fontSize);
+            return element.MeasureTextSize(element.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined, fontSize).x;
         }
 
         string m_PreviousTitle;

@@ -61,9 +61,9 @@ Are you sure you want to proceed?",
             if (TryFindPath(importedAssets, k_GraphicsSettingsPath))
                 return true;
 
-            int id = renderPipelineAsset.pipelineType != null ?
-                EditorGraphicsSettings.Internal_GetSettingsInstanceIDForRenderPipeline(renderPipelineAsset.pipelineType.FullName) : 0;
-            if (id != 0)
+            EntityId id = renderPipelineAsset.pipelineType != null ?
+                EditorGraphicsSettings.Internal_GetSettingsEntityIdForRenderPipeline(renderPipelineAsset.pipelineType.FullName) : EntityId.None;
+            if (id != EntityId.None)
             {
                 string currentInstanceAssetPath = AssetDatabase.GetAssetPath((EntityId)id);
 

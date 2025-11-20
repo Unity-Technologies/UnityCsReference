@@ -211,7 +211,7 @@ namespace Unity.GraphToolkit.Editor
 
         void GenerateBorderVisualContent(MeshGenerationContext mgc)
         {
-            if (!this.GetHoverPseudoState() && !IsSelected() && !IsHighlighted())
+            if (!this.hasHoverPseudoState && !IsSelected() && !IsHighlighted())
                 return;
 
             var capsuleRect = m_Capsule.parent.ChangeCoordinatesTo(m_SelectionBorder, m_Capsule.localBound);
@@ -221,7 +221,7 @@ namespace Unity.GraphToolkit.Editor
 
             painter2D.strokeColor = color;
 
-            float lineWidth = this.GetHoverPseudoState() && IsSelected() ? 2 : 1;
+            float lineWidth = this.hasHoverPseudoState && IsSelected() ? 2 : 1;
             painter2D.lineWidth = lineWidth;
 
             capsuleRect.x -= lineWidth * 0.5f;

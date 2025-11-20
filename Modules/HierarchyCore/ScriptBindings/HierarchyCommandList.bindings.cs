@@ -176,8 +176,19 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node to set a parent for.</param>
         /// <param name="parent">The hierarchy node to set as the parent node.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern bool SetParent(in HierarchyNode node, in HierarchyNode parent);
+        public bool SetParent(in HierarchyNode node, in HierarchyNode parent) => SetNodeParent(in node, in parent);
+
+        /// <summary>
+        /// Sets the parent node of a hierarchy node.
+        /// </summary>
+        /// <remarks>
+        /// The index maximum value is the parent's child count, or child count minus one if moving within the same parent.
+        /// </remarks>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="parent">The hierarchy node to set as a parent.</param>
+        /// <param name="index">The index at which to insert the node in the parent's children list.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        public bool SetParent(in HierarchyNode node, in HierarchyNode parent, int index) => SetNodeParentAt(in node, in parent, index);
 
         /// <summary>
         /// Sets the sorting index for a hierarchy node.
@@ -304,6 +315,12 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyCommandListBindings::AddNodeSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern bool AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> outNodes);
+
+        [FreeFunction("HierarchyCommandListBindings::SetNodeParent", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool SetNodeParent(in HierarchyNode node, in HierarchyNode parent);
+
+        [FreeFunction("HierarchyCommandListBindings::SetNodeParentAt", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern bool SetNodeParentAt(in HierarchyNode node, in HierarchyNode parent, int index);
 
         [FreeFunction("HierarchyCommandListBindings::SetNodePropertyRaw", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern unsafe bool SetNodePropertyRaw(in HierarchyPropertyId property, in HierarchyNode node, void* ptr, int size);

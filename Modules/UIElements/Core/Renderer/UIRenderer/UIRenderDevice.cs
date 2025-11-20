@@ -1080,6 +1080,9 @@ namespace UnityEngine.UIElements.UIR
                             st.commandListOwner = head.owner.owner;
                         }
 
+                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull)
+                            ResetScreenSpaceMaterials();
+
                         head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
                         if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
                         {
@@ -1155,6 +1158,8 @@ namespace UnityEngine.UIElements.UIR
                 material.DisableKeyword(Shaders.k_ForceRenderTypeText);
                 material.DisableKeyword(Shaders.k_ForceRenderTypeSvgGradient);
             }
+
+            m_ScreenSpaceAlteredMaterials.Clear();
         }
 
         private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, Texture shaderInfo)

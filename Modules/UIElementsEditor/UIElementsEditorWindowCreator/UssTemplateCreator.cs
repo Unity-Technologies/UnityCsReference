@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements.StyleSheets;
@@ -16,7 +17,7 @@ namespace UnityEditor.UIElements
         {
             var contents = "VisualElement {}";
             var icon = EditorGUIUtility.IconContent<StyleSheet>().image as Texture2D;
-            ProjectWindowUtil.CreateAssetWithContent("NewUSSFile.uss", contents, icon);
+            ProjectWindowUtil.CreateAssetWithTextContent("NewUSSFile.uss", contents, icon);
         }
 
         [MenuItem("Assets/Create/UI Toolkit/TSS Theme File", false, 604, false)]
@@ -28,7 +29,7 @@ namespace UnityEditor.UIElements
             {
                 var contents = "VisualElement {}";
                 var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
-                ProjectWindowUtil.CreateAssetWithContent("NewTSSFile.tss", contents, icon);
+                ProjectWindowUtil.CreateAssetWithTextContent("NewTSSFile.tss", contents, icon);
             }
         }
 
@@ -41,7 +42,7 @@ namespace UnityEditor.UIElements
             {
                 var contents = "@import url(\"" + ThemeRegistry.kThemeScheme + "://default\");\nVisualElement {}";
                 var icon = EditorGUIUtility.IconContent<ThemeStyleSheet>().image as Texture2D;
-                ProjectWindowUtil.CreateAssetWithContent(ThemeRegistry.kUnityRuntimeThemeFileName, contents, icon);
+                ProjectWindowUtil.CreateAssetWithTextContent(ThemeRegistry.kUnityRuntimeThemeFileName, contents, icon);
             }
         }
     }

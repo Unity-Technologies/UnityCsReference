@@ -36,7 +36,7 @@ namespace UnityEditor
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
                             // at the same time so don't keep a reference in m_Icon here
-                            string path = entityId == 0 ? null : AssetDatabase.GetAssetPath(entityId);
+                            string path = entityId == EntityId.None ? null : AssetDatabase.GetAssetPath(entityId);
 
                             if (path != null)
                                 // Finding icon based on only file extension fails in several ways, and a different approach have to be found.
@@ -373,12 +373,12 @@ namespace UnityEditor
                 if (m_SearchFilter.skipHidden && !PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
                     continue;
 
-                int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
+                EntityId folderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
                 property = new HierarchyIterator(folderPath);
                 property.SetSearchFilter(m_SearchFilter);
 
                 int folderDepth = property.depth;
-                EntityId[] expanded = { folderInstanceID };
+                EntityId[] expanded = { folderEntityId };
                 Dictionary<string , List<FilterResult>> subAssets = new Dictionary<string, List<FilterResult>>();
                 List<FilterResult> parentAssets = new List<FilterResult>();
                 while (property.Next(expanded))
@@ -510,24 +510,24 @@ namespace UnityEditor
             m_VisibleItems = visibleItems.ToArray();
         }
 
-        public List<int> GetSubAssetInstanceIDs(int mainAssetInstanceID)
+        public List<EntityId> GetSubAssetInstanceIDs(EntityId mainAssetEntityId)
         {
             for (int i = 0; i < m_Results.Length; ++i)
             {
-                if (m_Results[i].entityId == mainAssetInstanceID)
+                if (m_Results[i].entityId == mainAssetEntityId)
                 {
-                    List<int> subAssetInstanceIDs = new List<int>();
+                    List<EntityId> subAssetEntityIds = new List<EntityId>();
                     int index = i + 1; // Start after the main representation
                     while (index < m_Results.Length && !m_Results[index].isMainRepresentation)
                     {
-                        subAssetInstanceIDs.Add(m_Results[index].entityId);
+                        subAssetEntityIds.Add(m_Results[index].entityId);
                         index++;
                     }
-                    return subAssetInstanceIDs;
+                    return subAssetEntityIds;
                 }
             }
-            Debug.LogError("Not main rep " + mainAssetInstanceID);
-            return new List<int>();
+            Debug.LogError("Not main rep " + mainAssetEntityId);
+            return new List<EntityId>();
         }
 
         public int AddSubItemsOfMainRepresentation(int mainRepresentionIndex, List<FilterResult> visibleItems)
@@ -573,7 +573,7 @@ namespace UnityEditor
             get
             {
                 var id = m_Hierarchy.results[m_Position].entityId;
-                if (id == 0)
+                if (id == EntityId.None)
                     m_Hierarchy.results[m_Position].entityId = AssetDatabase.GetMainAssetEntityId(guid);
                 return m_Hierarchy.results[m_Position].entityId;
             }

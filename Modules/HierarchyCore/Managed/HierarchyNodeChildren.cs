@@ -34,7 +34,7 @@ namespace Unity.Hierarchy
             m_Version = hierarchy.Version;
 
             ref var alloc = ref *(HierarchyNodeChildrenAlloc*)nodeChildrenPtr;
-            if ((alloc.Reserved[0] & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
+            if ((alloc.ControlBit & k_HierarchyNodeChildrenIsAllocBit) == k_HierarchyNodeChildrenIsAllocBit)
             {
                 m_Ptr = alloc.Ptr;
                 m_Count = alloc.Size;

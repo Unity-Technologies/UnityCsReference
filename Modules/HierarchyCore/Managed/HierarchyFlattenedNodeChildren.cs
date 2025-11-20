@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Unity.Hierarchy
@@ -10,6 +11,8 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represents an enumerable over the children of an <see cref="HierarchyNode"/>.
     /// </summary>
+    [Obsolete("HierarchyFlattenedNodeChildren is obsolete. It has been replaced by HierarchyFlattenedChildrenEnumerable.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public readonly struct HierarchyFlattenedNodeChildren
     {
         readonly HierarchyFlattened m_HierarchyFlattened;

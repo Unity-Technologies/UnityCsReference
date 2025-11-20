@@ -656,7 +656,7 @@ namespace UnityEditor
                             DestroyLatestRestoreEntry();
                             LogEntry entry = new LogEntry();
                             LogEntries.GetEntryInternal(el.row, entry);
-                            if (entry.entityId != 0 && e.clickCount != 2)
+                            if (entry.entityId != EntityId.None && e.clickCount != 2)
                                 EditorGUIUtility.PingObject(entry.entityId);
                             if (e.clickCount == 2)
                                 openSelectedItem = true;
@@ -1371,9 +1371,9 @@ namespace UnityEditor
         }
 
         [UsedImplicitly] // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
-        internal void AddMessageWithDoubleClickCallback(string message, string file, int mode, int instanceID)
+        internal void AddMessageWithDoubleClickCallback(string message, string file, int mode, EntityId entityId)
         {
-            var outputEntry = new LogEntry {message = message, file = file, mode = mode, entityId = instanceID};
+            var outputEntry = new LogEntry {message = message, file = file, mode = mode, entityId = entityId};
             LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
         }
 

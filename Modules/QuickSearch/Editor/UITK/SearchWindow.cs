@@ -144,7 +144,7 @@ namespace UnityEditor.Search
             guiCreated = true;
         }
 
-        int ISearchView.GetViewId()
+        EntityId ISearchView.GetViewId()
         {
             return ((ISearchView)m_SearchView).GetViewId();
         }

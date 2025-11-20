@@ -31,6 +31,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             public string maximumVersion;
             public string type;
             public string method;
+            public string returnType;
             public string value;
 
             internal SerializedDescriptor()
@@ -38,6 +39,7 @@ namespace Unity.ProjectAuditor.Editor.Core
                 // only for json serialization purposes.
                 type = string.Empty;
                 method = string.Empty;
+                returnType = string.Empty;
                 defaultSeverity = Severity.Default.ToString();
             }
 
@@ -74,6 +76,7 @@ namespace Unity.ProjectAuditor.Editor.Core
                 {
                     Type = rawDescriptor.type ?? string.Empty,
                     Method = rawDescriptor.method ?? string.Empty,
+                    ReturnType = rawDescriptor.returnType ?? string.Empty,
                     Value = rawDescriptor.value,
                     Platforms = platforms,
                     DefaultSeverity = rawDescriptor.defaultSeverity == Severity.Default.ToString() ? Severity.Moderate : (Severity)Enum.Parse(typeof(Severity), rawDescriptor.defaultSeverity),

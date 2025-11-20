@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Unity.Collections;
+using UnityEngine.Serialization;
 using static UnityEngine.LowLevelPhysics2D.PhysicsLowLevelScripting2D;
 
 namespace UnityEngine.LowLevelPhysics2D
@@ -102,6 +103,37 @@ namespace UnityEngine.LowLevelPhysics2D
         public struct SurfaceMaterial
         {
             /// <summary>
+            /// The method used to mix friction or bounciness values.
+            /// </summary>
+            public enum MixingMode
+            {
+                /// <summary>
+                /// The average of both surface values.
+                /// </summary>
+                Average = 0,
+
+                /// <summary>
+                /// The geometric mean of both surface values.
+                /// </summary>
+                Mean,
+
+                /// <summary>
+                /// The product of both surface values.
+                /// </summary>
+                Multiply,
+
+                /// <summary>
+                /// The minium of both surface values.
+                /// </summary>
+                Minimum,
+
+                /// <summary>
+                /// The maximum of both surface values.
+                /// </summary>
+                Maximum
+            }
+
+            /// <summary>
             /// Create a default surface material.
             /// </summary>
             public SurfaceMaterial() { this = Default; }
@@ -124,24 +156,32 @@ namespace UnityEngine.LowLevelPhysics2D
             /// <summary>
             /// Defines the method used when mixing the friction values of two shapes to form a contact.
             /// </summary>
-            public PhysicsMaterialCombine2D frictionCombine { readonly get => m_FrictionCombine; set => m_FrictionCombine = value; }
+            public MixingMode frictionMixing { readonly get => m_FrictionMixing; set => m_FrictionMixing = value; }
+
+            /// <undoc/>
+            [Obsolete("PhysicsShape.SurfaceMaterial.frictionCombine has been deprecated. Please use PhysicsShape.SurfaceMaterial.frictionMixing instead.", false)]
+            public PhysicsMaterialCombine2D frictionCombine { readonly get => (PhysicsMaterialCombine2D)frictionMixing; set => frictionMixing = (MixingMode)value; }
 
             /// <summary>
             /// Defines the method used when mixing the bounciness values of two shapes to form a contact.
             /// </summary>
-            public PhysicsMaterialCombine2D bouncinessCombine { readonly get => m_BouncinessCombine; set => m_BouncinessCombine = value; }
+            public MixingMode bouncinessMixing { readonly get => m_BouncinessMixing; set => m_BouncinessMixing = value; }
+
+            /// <undoc/>
+            [Obsolete("PhysicsShape.SurfaceMaterial.bouncinessCombine has been deprecated. Please use PhysicsShape.SurfaceMaterial.bouncinessMixing instead.", false)]
+            public PhysicsMaterialCombine2D bouncinessCombine { readonly get => (PhysicsMaterialCombine2D)bouncinessMixing; set => bouncinessMixing = (MixingMode)value; }
 
             /// <summary>
-            /// The priority for combining the <see cref="LowLevelPhysics2D.PhysicsShape.friction"/> properties when two shapes come into contact.
-            /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.frictionCombine"/> will be used.
-            /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
+            /// The priority for mixing the <see cref="LowLevelPhysics2D.PhysicsShape.friction"/> properties when two shapes come into contact.
+            /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.frictionMixing"/> will be used.
+            /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.MixingMode"/> from both shapes will be used.
             /// </summary>
             public UInt16 frictionPriority {  readonly get => m_FrictionPriority; set => m_FrictionPriority = value;}
 
             /// <summary>
-            /// The priority for combining the <see cref="LowLevelPhysics2D.PhysicsShape.bounciness"/> properties when two shapes come into contact.
-            /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.bouncinessCombine"/> will be used.
-            /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="UnityEngine.PhysicsMaterialCombine2D"/> from both shapes will be used.
+            /// The priority for mixing the <see cref="LowLevelPhysics2D.PhysicsShape.bounciness"/> properties when two shapes come into contact.
+            /// If the priority of one shape is higher than the other shape then the higher priority <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.bouncinessMixing"/> will be used.
+            /// If the priority of both shapes are the same then simply the higher enumeration value of <see cref="LowLevelPhysics2D.PhysicsShape.SurfaceMaterial.MixingMode"/> from both shapes will be used.
             /// </summary>
             public UInt16 bouncinessPriority {  readonly get => m_BouncinessPriority; set => m_BouncinessPriority = value;}
 
@@ -167,8 +207,8 @@ namespace UnityEngine.LowLevelPhysics2D
             
             [SerializeField] [Min(0.0f)] float m_Friction;
             [SerializeField] [Min(0.0f)] float m_Bounciness;
-            [SerializeField] PhysicsMaterialCombine2D m_FrictionCombine;
-            [SerializeField] PhysicsMaterialCombine2D m_BouncinessCombine;
+            [FormerlySerializedAs("m_FrictionCombine")][SerializeField] MixingMode m_FrictionMixing;
+            [FormerlySerializedAs("m_BouncinessCombine")][SerializeField] MixingMode m_BouncinessMixing;
             [SerializeField] [Range(0, UInt16.MaxValue)] UInt16 m_FrictionPriority;
             [SerializeField] [Range(0, UInt16.MaxValue)] UInt16 m_BouncinessPriority;
             [SerializeField] [Min(0.0f)] float m_RollingResistance;
@@ -1126,13 +1166,21 @@ namespace UnityEngine.LowLevelPhysics2D
         /// Defines the method used when mixing the friction values of two shapes to form a contact.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
-        public readonly PhysicsMaterialCombine2D frictionCombine { get => PhysicsShape_GetFrictionCombine(this); set => PhysicsShape_SetFrictionCombine(this, value); }
+        public readonly SurfaceMaterial.MixingMode frictionMixing { get => PhysicsShape_GetFrictionMixing(this); set => PhysicsShape_SetFrictionMixing(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsShape.frictionCombine has been deprecated. Please use PhysicsShape.frictionMixing instead.", false)]
+        public readonly PhysicsMaterialCombine2D frictionCombine { get => (PhysicsMaterialCombine2D)frictionMixing; set => frictionMixing = (SurfaceMaterial.MixingMode)value; }
 
         /// <summary>
         /// Defines the method used when mixing the friction values of two shapes to form a contact.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
-        public readonly PhysicsMaterialCombine2D bouncinessCombine { get => PhysicsShape_GetBouncinessCombine(this); set => PhysicsShape_SetBouncinessCombine(this, value); }
+        public readonly SurfaceMaterial.MixingMode bouncinessMixing { get => PhysicsShape_GetBouncinessMixing(this); set => PhysicsShape_SetBouncinessMixing(this, value); }
+
+        /// <undoc/>
+        [Obsolete("PhysicsShape.bouncinessCombine has been deprecated. Please use PhysicsShape.bouncinessMixing instead.", false)]
+        public readonly PhysicsMaterialCombine2D bouncinessCombine { get => (PhysicsMaterialCombine2D)bouncinessMixing; set => bouncinessMixing = (SurfaceMaterial.MixingMode)value; }
 
         /// <summary>
         /// The priority for combining the <see cref="LowLevelPhysics2D.PhysicsShape.friction"/> properties when two shapes come into contact.

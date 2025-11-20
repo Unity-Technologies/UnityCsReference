@@ -75,7 +75,7 @@ namespace UnityEditor
             readonly UInt64 m_FileID = 0;
 
             public List<EntityId> entityIds = new List<EntityId>();
-            public int entityId = 0;
+            public EntityId entityId = EntityId.None;
 
             public FileIDToEntityIdMapper(Transform searchRoot, List<UInt64> fileIDs, UInt64 fileID)
             {

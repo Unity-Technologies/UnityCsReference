@@ -522,7 +522,7 @@ namespace Unity.Hierarchy.Editor
             if (node == HierarchyNode.Null)
                 return;
 
-            m_HierarchyView.PingNode(in node);
+            m_HierarchyView.PingNode(node);
         }
 
         void OnRequestFrameAndRenameNewGameObjectOrEntity()

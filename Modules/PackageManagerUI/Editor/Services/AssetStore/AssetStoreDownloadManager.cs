@@ -92,7 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private DownloadDelegateHandler m_DownloadDelegateHandler;
         [SerializeField]
-        private int m_DownloadDelegateHandlerInstanceId = 0;
+        private EntityId m_DownloadDelegateHandlerInstanceId = EntityId.None;
         [SerializeField]
         private bool m_DelegateRegistered = false;
 
@@ -103,7 +103,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (m_DownloadDelegateHandler != null)
                     return m_DownloadDelegateHandler;
 
-                if (m_DownloadDelegateHandlerInstanceId != 0)
+                if (m_DownloadDelegateHandlerInstanceId != EntityId.None)
                     m_DownloadDelegateHandler = UnityEngine.Object.FindObjectFromInstanceID(m_DownloadDelegateHandlerInstanceId) as DownloadDelegateHandler;
 
                 if (m_DownloadDelegateHandler == null)

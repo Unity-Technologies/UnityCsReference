@@ -3212,10 +3212,10 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public partial class Collision2D
     {
-        internal int m_Collider;
-        internal int m_OtherCollider;
-        internal int m_Rigidbody;
-        internal int m_OtherRigidbody;
+        internal EntityId m_Collider;
+        internal EntityId m_OtherCollider;
+        internal EntityId m_Rigidbody;
+        internal EntityId m_OtherRigidbody;
         internal Vector2 m_RelativeVelocity;
         internal int m_Enabled;
         internal int m_ContactCount;

@@ -86,7 +86,7 @@ namespace UnityEditorInternal
 
         public override int GetHashCode()
         {
-            int clipID = (clip == null ? 0 : clip.id);
+            int clipID = (clip == null ? 0 : clip.id.GetHashCode());
             return unchecked(clipID.GetHashCode() * 19603 ^ GetBindingHashCode());
         }
 

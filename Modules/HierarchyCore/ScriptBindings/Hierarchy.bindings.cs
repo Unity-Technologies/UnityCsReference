@@ -298,14 +298,20 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets the parent of a hierarchy node.
         /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="parent">The hierarchy node to set as a parent.</param>
+        public void SetParent(in HierarchyNode node, in HierarchyNode parent) => SetNodeParent(in node, in parent);
+
+        /// <summary>
+        /// Sets the parent of a hierarchy node.
+        /// </summary>
         /// <remarks>
-        /// This operation fails if either the node or its potential parent have a handler that prohibits this parent-child relationship.
+        /// The index maximum value is the parent's child count, or child count minus one if moving within the same parent.
         /// </remarks>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="parent">The hierarchy node to set as a parent.</param>
-        /// <returns><see langword="true"/> if the parent was set, <see langword="false"/> otherwise.</returns>
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern bool SetParent(in HierarchyNode node, in HierarchyNode parent);
+        /// <param name="index">The index at which to insert the node in the parent's children list.</param>
+        public void SetParent(in HierarchyNode node, in HierarchyNode parent, int index) => SetNodeParentAt(in node, in parent, index);
 
         /// <summary>
         /// Gets the parent of a hierarchy node.
@@ -405,19 +411,19 @@ namespace Unity.Hierarchy
         public extern void SortChildrenRecursive(in HierarchyNode node);
 
         /// <summary>
+        /// Marks a hierarchy node as requiring sorting of its children in the next sorting operation.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void SetChildrenNeedsSorting(in HierarchyNode node);
+
+        /// <summary>
         /// Gets whether the child nodes of a hierarchy node need to be sorted.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the child nodes of a hierarchy node need to be sorted, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool DoesChildrenNeedsSorting(in HierarchyNode node);
-
-        /// <summary>
-        /// Marks a hierarchy node as requiring sorting of its children in the next sorting operation.
-        /// </summary>
-        /// <param name="node">The hierarchy node.</param>
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void SetChildrenNeedsSorting(in HierarchyNode node);
 
         /// <summary>
         /// Creates an unmanaged property with a specified name.
@@ -464,9 +470,8 @@ namespace Unity.Hierarchy
         /// </remarks>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="name">The name of the node.</param>
-        /// <returns><see langword="true"/> if the name was set, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern bool SetName(in HierarchyNode node, string name);
+        public extern void SetName(in HierarchyNode node, string name);
 
         /// <summary>
         /// Gets the name of a hierarchy node.
@@ -556,6 +561,12 @@ namespace Unity.Hierarchy
 
         [FreeFunction("HierarchyBindings::AddNodeSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void AddNodeSpan(in HierarchyNode parent, Span<HierarchyNode> nodes);
+
+        [FreeFunction("HierarchyBindings::SetNodeParent", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void SetNodeParent(in HierarchyNode node, in HierarchyNode parent);
+
+        [FreeFunction("HierarchyBindings::SetNodeParentAt", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void SetNodeParentAt(in HierarchyNode node, in HierarchyNode parent, int index);
 
         [FreeFunction("HierarchyBindings::GetNodeChildrenSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetNodeChildrenSpan(in HierarchyNode node, Span<HierarchyNode> outChildren);

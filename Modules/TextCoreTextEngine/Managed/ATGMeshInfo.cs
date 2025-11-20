@@ -16,7 +16,7 @@ namespace UnityEngine.TextCore.Text
     {
         private IntPtr m_TextElementInfosPtr;
         private int m_TextElementCount;
-        public int textAssetId;
+        public EntityId textAssetId;
 
         public unsafe Span<NativeTextElementInfo> textElementInfos
         {

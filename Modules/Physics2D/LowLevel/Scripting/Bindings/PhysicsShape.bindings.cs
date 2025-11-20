@@ -37,10 +37,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsShape::GetFriction", IsThreadSafe = true)] extern internal static float PhysicsShape_GetFriction(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetBounciness", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBounciness(PhysicsShape shape, float bounciness);
         [NativeMethod(Name = "PhysicsShape::GetBounciness", IsThreadSafe = true)] extern internal static float PhysicsShape_GetBounciness(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetFrictionCombine", IsThreadSafe = true)] extern internal static void PhysicsShape_SetFrictionCombine(PhysicsShape shape, PhysicsMaterialCombine2D frictionCombine);
-        [NativeMethod(Name = "PhysicsShape::GetFrictionCombine", IsThreadSafe = true)] extern internal static PhysicsMaterialCombine2D PhysicsShape_GetFrictionCombine(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetBouncinessCombine", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBouncinessCombine(PhysicsShape shape, PhysicsMaterialCombine2D bouncinessCombine);
-        [NativeMethod(Name = "PhysicsShape::GetBouncinessCombine", IsThreadSafe = true)] extern internal static PhysicsMaterialCombine2D PhysicsShape_GetBouncinessCombine(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetFrictionMixing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetFrictionMixing(PhysicsShape shape, PhysicsShape.SurfaceMaterial.MixingMode frictionMixing);
+        [NativeMethod(Name = "PhysicsShape::GetFrictionMixing", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial.MixingMode PhysicsShape_GetFrictionMixing(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetBouncinessMixing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBouncinessMixing(PhysicsShape shape, PhysicsShape.SurfaceMaterial.MixingMode bouncinessMixing);
+        [NativeMethod(Name = "PhysicsShape::GetBouncinessMixing", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial.MixingMode PhysicsShape_GetBouncinessMixing(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetFrictionPriority", IsThreadSafe = true)] extern internal static void PhysicsShape_SetFrictionPriority(PhysicsShape shape, UInt16 frictionPriority);
         [NativeMethod(Name = "PhysicsShape::GetFrictionPriority", IsThreadSafe = true)] extern internal static UInt16 PhysicsShape_GetFrictionPriority(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetBouncinessPriority", IsThreadSafe = true)] extern internal static void PhysicsShape_SetBouncinessPriority(PhysicsShape shape, UInt16 bouncinessPriority);

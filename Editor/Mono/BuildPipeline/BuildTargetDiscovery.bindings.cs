@@ -577,7 +577,7 @@ namespace UnityEditor
                new("25a09d2ed10c42f789b61d99b4d9bf83"),
                new PlatformInfo
                {
-                    displayName = "Nintendo Switch 2",
+                    displayName = "Nintendo Switch™ 2",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
                     buildTarget = BuildTarget.Switch2,

@@ -20,7 +20,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// <summary>
         /// A custom Unity object.
         /// </summary>
-        public Object objectValue { readonly get => PhysicsUserData_GetObject(m_EntityId); set => m_EntityId = value.GetEntityId(); }
+        public Object objectValue { readonly get => PhysicsUserData_GetObject(m_EntityId); set => m_EntityId = value != null ? value.GetEntityId() : EntityId.None; }
 
         /// <summary>
         /// A custom 64-bit <see cref="LowLevelPhysics2D.PhysicsMask"/>.
@@ -38,12 +38,17 @@ namespace UnityEngine.LowLevelPhysics2D
         public int intValue { readonly get => m_Int; set => m_Int = value; }
 
         /// <summary>
+        /// A custom 64-bit <see cref="System.Int64"/>.
+        /// </summary>
+        public UInt64 int64Value { readonly get => m_Int64; set => m_Int64 = value; }
+
+        /// <summary>
         /// A custom <see cref="System.Boolean"/>.
         /// </summary>
         public bool boolValue { readonly get => m_Bool; set => m_Bool = value; }
 
         /// <undoc/>
-        public override readonly string ToString() => $"object={objectValue}, physicsMask={physicsMaskValue}, float={floatValue}, int={intValue}, bool={boolValue}";
+        public override readonly string ToString() => $"object={objectValue}, physicsMask={physicsMaskValue}, float={floatValue}, int={intValue}, int64={int64Value}, bool={boolValue}";
 
         #region Internal
 
@@ -51,6 +56,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [SerializeField] internal PhysicsMask m_PhysicsMask;
         [SerializeField] internal float m_Float;
         [SerializeField] internal int m_Int;
+        [SerializeField] internal UInt64 m_Int64;
         [SerializeField] internal bool m_Bool;
 
         #endregion

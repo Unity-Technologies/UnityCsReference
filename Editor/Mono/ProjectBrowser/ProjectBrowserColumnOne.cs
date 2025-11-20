@@ -151,17 +151,17 @@ namespace UnityEditor
             string savedFilterName = "New Saved Search";
 
             m_IsCreatingSavedFilter = true;
-            int instanceID = SavedSearchFilters.AddSavedFilter(savedFilterName, filter, GetListAreaGridSize());
-            m_TreeView.Frame(instanceID, true, false);
+            EntityId entityId = SavedSearchFilters.AddSavedFilter(savedFilterName, filter, GetListAreaGridSize());
+            m_TreeView.Frame(entityId, true, false);
 
             // Start naming the asset
-            m_TreeView.state.renameOverlay.BeginRename(savedFilterName, instanceID, 0f);
+            m_TreeView.state.renameOverlay.BeginRename(savedFilterName, entityId, 0f);
         }
 
         override protected void RenameEnded()
         {
-            var instanceID = GetRenameOverlay().userData;
-            ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(instanceID);
+            var entityId = GetRenameOverlay().userData;
+            ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(entityId);
 
             if (m_IsCreatingSavedFilter)
             {
@@ -170,18 +170,18 @@ namespace UnityEditor
 
                 if (GetRenameOverlay().userAcceptedRename)
                 {
-                    SavedSearchFilters.SetName(instanceID,  GetRenameOverlay().name);
-                    m_TreeView.SetSelection(new[] { instanceID }, true);
+                    SavedSearchFilters.SetName(entityId,  GetRenameOverlay().name);
+                    m_TreeView.SetSelection(new[] { entityId }, true);
                 }
                 else
-                    SavedSearchFilters.RemoveSavedFilter(instanceID);
+                    SavedSearchFilters.RemoveSavedFilter(entityId);
             }
             else if (type == ProjectBrowser.ItemType.SavedFilter)
             {
                 // Renamed saved filter
                 if (GetRenameOverlay().userAcceptedRename)
                 {
-                    SavedSearchFilters.SetName(instanceID,  GetRenameOverlay().name);
+                    SavedSearchFilters.SetName(entityId,  GetRenameOverlay().name);
                 }
             }
             else
@@ -256,7 +256,7 @@ namespace UnityEditor
         public override void FetchData()
         {
             bool firstInitialize = !isInitialized;
-            m_RootItem = new TreeViewItem<EntityId>(0, 0, null, "Invisible Root Item");
+            m_RootItem = new TreeViewItem<EntityId>(EntityId.None, 0, null, "Invisible Root Item");
             SetExpanded(m_RootItem, true); // ensure always visible
 
             // We want three roots: Favorites, Assets, and Packages
@@ -503,14 +503,14 @@ namespace UnityEditor
             // Dragging saved filter
             if (savedFilterData != null)
             {
-                var instanceID = (EntityId)savedFilterData;
+                var entityId = (EntityId)savedFilterData;
                 if (targetItem is SearchFilterTreeItem && parentItem is SearchFilterTreeItem)// && targetItem.id != draggedInstanceID && parentItem.id != draggedInstanceID)
                 {
-                    bool validMove = SavedSearchFilters.CanMoveSavedFilter(instanceID, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
+                    bool validMove = SavedSearchFilters.CanMoveSavedFilter(entityId, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
                     if (validMove && perform)
                     {
-                        SavedSearchFilters.MoveSavedFilter(instanceID, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
-                        m_TreeView.SetSelection(new[] { instanceID }, false);
+                        SavedSearchFilters.MoveSavedFilter(entityId, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
+                        m_TreeView.SetSelection(new[] { entityId }, false);
                         m_TreeView.NotifyListenersThatSelectionChanged();
                     }
                     return validMove ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.None;
@@ -541,8 +541,8 @@ namespace UnityEditor
                                     bool addAsChild = targetItem == parentItem;
 
                                     float previewSize = ProjectBrowserColumnOneTreeViewGUI.GetListAreaGridSize();
-                                    EntityId instanceID = SavedSearchFilters.AddSavedFilterAfterInstanceID(folderName, searchFilter, previewSize, targetItem.id, addAsChild);
-                                    m_TreeView.SetSelection(new[] { instanceID }, false);
+                                    EntityId entityId = SavedSearchFilters.AddSavedFilterAfterInstanceID(folderName, searchFilter, previewSize, targetItem.id, addAsChild);
+                                    m_TreeView.SetSelection(new[] { entityId }, false);
                                     m_TreeView.NotifyListenersThatSelectionChanged();
                                 }
                                 else

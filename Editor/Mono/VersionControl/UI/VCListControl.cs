@@ -1203,13 +1203,13 @@ namespace UnityEditorInternal.VersionControl
             // UnityEngine.Object tmpObj = item.Asset.Load ();
 
             name = name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name;
-            int itemID = AssetDatabase.GetMainAssetEntityId(name.TrimEnd('/'));
+            EntityId itemID = AssetDatabase.GetMainAssetEntityId(name.TrimEnd('/'));
 
             EntityId[] newSel = new EntityId[arrayLen + 1];
 
             //asset is in current project - the correct folder is opened
             //asset is in another project - current project root folder is opened
-            if (itemID != 0)
+            if (itemID != EntityId.None)
             {
                 newSel[arrayLen] = itemID;
             }
@@ -1231,9 +1231,9 @@ namespace UnityEditorInternal.VersionControl
 
             // Sync with core selection list.
             name = name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name;
-            int itemID = AssetDatabase.GetMainAssetEntityId(name.TrimEnd('/'));
+            EntityId itemID = AssetDatabase.GetMainAssetEntityId(name.TrimEnd('/'));
             EntityId[] sel = Selection.entityIds;
-            if (itemID != 0 && sel.Length > 0)
+            if (itemID != EntityId.None && sel.Length > 0)
             {
                 int idx = Array.IndexOf(sel, itemID);
                 if (idx < 0)

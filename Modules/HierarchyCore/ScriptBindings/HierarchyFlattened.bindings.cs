@@ -192,11 +192,11 @@ namespace Unity.Hierarchy
         public extern HierarchyNode GetNextSibling(in HierarchyNode node);
 
         /// <summary>
-        /// Gets an enumerable of children <see cref="HierarchyNode"/> for the specified node.
+        /// Gets an enumerable of children <see cref="HierarchyFlattenedNode"/> for the specified node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The children enumerable.</returns>
-        public HierarchyFlattenedNodeChildren EnumerateChildren(in HierarchyNode node) => new HierarchyFlattenedNodeChildren(this, node);
+        public HierarchyFlattenedChildrenEnumerable EnumerateChildren(in HierarchyNode node) => new HierarchyFlattenedChildrenEnumerable(this, node);
 
         /// <summary>
         /// Gets the number of child nodes that a hierarchy node has.
@@ -213,6 +213,15 @@ namespace Unity.Hierarchy
         /// <returns>The number of child nodes, including children of children.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the child node at the specified index of a hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="index">The child index.</param>
+        /// <returns>A hierarchy node.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern HierarchyNode GetChild(in HierarchyNode node, int index);
 
         /// <summary>
         /// Gets the index of a hierarchy node in its parent's children list.

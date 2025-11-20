@@ -99,12 +99,6 @@ namespace UnityEngine.AdaptivePerformance
             }
         }
 
-        void Awake()
-        {
-            s_RuntimeSettingsInstance = this;
-            Application.quitting += Quit;
-            DontDestroyOnLoad(s_RuntimeSettingsInstance);
-        }
 
         static void Quit()
         {
@@ -121,8 +115,7 @@ namespace UnityEngine.AdaptivePerformance
             s_RuntimeSettingsInstance = null;
         }
 
-        [RequiredByNativeCode(optional: false)]
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)] //keep for editor module
+        [RequiredByNativeCode(optional: true)]
         internal static void AttemptInitializeAdaptivePerformanceGeneralSettingsOnLoad()
         {
             AdaptivePerformanceGeneralSettings instance = AdaptivePerformanceGeneralSettings.Instance;
@@ -132,8 +125,7 @@ namespace UnityEngine.AdaptivePerformance
             instance.InitAdaptivePerformance();
         }
 
-        [RequiredByNativeCode(optional: false)]
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)] //keep for editor module
+        [RequiredByNativeCode(optional: true)]
         internal static void AttemptStartAdaptivePerformanceGeneralSettingsOnBeforeSplashScreen()
         {
             AdaptivePerformanceGeneralSettings instance = AdaptivePerformanceGeneralSettings.Instance;
@@ -161,6 +153,10 @@ namespace UnityEngine.AdaptivePerformance
             m_AdaptivePerformanceManager.automaticLoading = false;
             m_AdaptivePerformanceManager.automaticRunning = false;
             m_AdaptivePerformanceManager.InitializeLoaderSync();
+
+            if (m_AdaptivePerformanceManager.activeLoader == null)
+                return;
+
             m_ProviderIntialized = true;
         }
 

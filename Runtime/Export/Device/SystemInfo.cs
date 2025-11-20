@@ -242,6 +242,8 @@ namespace UnityEngine.Device
 
         public static bool supportsDepthFetchInRenderPass => ShimManager.systemInfoShim.supportsDepthFetchInRenderPass;
 
+        public static bool supportsDynamicResolution => ShimManager.systemInfoShim.supportsDynamicResolution;
+
         [System.Obsolete("Use overload with a GraphicsFormatUsage parameter instead", false)]
         public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
         {
@@ -285,6 +287,5 @@ namespace UnityEngine.Device
         {
             return ShimManager.systemInfoShim.GetTiledRenderTargetStorageSize(format, sampleCount);
         }
-
     }
 }

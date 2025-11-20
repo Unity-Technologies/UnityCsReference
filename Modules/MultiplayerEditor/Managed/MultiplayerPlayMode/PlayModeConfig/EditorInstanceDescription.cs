@@ -39,7 +39,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             set => m_InitialScene = value;
         }
 
-        [NonSerialized] public int PlayerInstanceIndex;
+        [SerializeField] [HideInInspector] public int PlayerInstanceIndex;
 
         public EditorInstanceDescription()
         {

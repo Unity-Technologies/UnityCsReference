@@ -72,7 +72,8 @@ namespace Unity.UI.Builder
                 NameFormatter.FormatVariableName);
 
             var menu = new GenericDropdownMenu();
-            for (int i = 1; i < (int)FilterFunctionType.Count; ++i)
+            int count = enumData.displayNames.Length;
+            for (int i = 1; i < count; ++i)
             {
                 var ffType = (FilterFunctionType)i;
                 menu.AddItem(enumData.displayNames[i], false, (_) => OnFilterFunctionAdded(ffType), null);

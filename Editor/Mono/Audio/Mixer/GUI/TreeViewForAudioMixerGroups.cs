@@ -6,6 +6,7 @@ using UnityEditor.Audio;
 using UnityEditorInternal;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Audio;
 
@@ -16,7 +17,8 @@ namespace UnityEditor
     {
         public static void CreateAndSetTreeView(ObjectTreeForSelector.TreeSelectorData data)
         {
-            var ignoreController = InternalEditorUtility.GetObjectFromEntityId(data.userData) as AudioMixerController;
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update data.userData to use long instead of int");
+            var ignoreController = InternalEditorUtility.GetObjectFromEntityId(EntityId.From(data.userData)) as AudioMixerController;
 
             // Create treeview
             var treeView = new TreeViewController<EntityId>(data.editorWindow, data.state);

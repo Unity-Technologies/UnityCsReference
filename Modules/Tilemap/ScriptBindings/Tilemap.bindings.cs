@@ -906,11 +906,11 @@ namespace UnityEngine.Tilemaps
     [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
     public partial struct TileData
     {
-        public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetEntityId() : 0; } }
+        public Sprite sprite { get { return Object.ForceLoadFromInstanceID(m_Sprite) as Sprite; } set { m_Sprite = value != null ? value.GetEntityId() : EntityId.None; } }
         public EntityId spriteEntityId { get => m_Sprite; set => m_Sprite = value; }
         public Color color { get { return m_Color; } set { m_Color = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
-        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetEntityId() : 0; } }
+        public GameObject gameObject { get { return Object.ForceLoadFromInstanceID(m_GameObject) as GameObject; } set { m_GameObject = value != null ? value.GetEntityId() : EntityId.None; } }
         public EntityId gameObjectEntityId { get => m_GameObject; set => m_GameObject = value; }
         public TileFlags flags { get { return m_Flags; } set { m_Flags = value; } }
         public Tile.ColliderType colliderType { get { return m_ColliderType; } set { m_ColliderType = value; } }

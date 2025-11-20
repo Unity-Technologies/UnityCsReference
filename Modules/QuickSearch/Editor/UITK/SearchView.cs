@@ -19,7 +19,7 @@ namespace UnityEditor.Search
         const int k_ResetSelectionIndex = -1;
         internal const double resultViewUpdateThrottleDelay = 0.05d;
 
-        private int m_ViewId;
+        private EntityId m_ViewId;
         private bool m_Disposed = false;
         private SearchViewState m_ViewState;
         private IResultView m_ResultView;
@@ -139,7 +139,7 @@ namespace UnityEditor.Search
         public IEnumerable<SearchItem> items => m_FilteredItems;
         public bool searchInProgress => context.searchInProgress;
 
-        public SearchView(SearchViewState viewState, int viewId)
+        public SearchView(SearchViewState viewState, EntityId viewId)
         {
             using (new EditorPerformanceTracker("SearchView.ctor"))
             {
@@ -247,7 +247,7 @@ namespace UnityEditor.Search
             m_Disposed = true;
         }
 
-        int ISearchView.GetViewId()
+        EntityId ISearchView.GetViewId()
         {
             return m_ViewId;
         }

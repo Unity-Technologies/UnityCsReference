@@ -97,7 +97,7 @@ namespace UnityEditor
             CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
         }
 
-        private static System.Collections.Generic.Dictionary<int, Texture> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<int, Texture>();
+        private static System.Collections.Generic.Dictionary<EntityId, Texture> s_ActiveIconPathLUT = new System.Collections.Generic.Dictionary<EntityId, Texture>();
         internal static Texture GetIconInActiveState(Texture icon)
         {
             if (icon == null)

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -77,19 +78,19 @@ namespace UnityEditor
     [StructLayout(layoutKind: LayoutKind.Sequential)]
     internal readonly struct GameObjectChangeTrackerEvent
     {
-        public GameObjectChangeTrackerEvent(int instanceId, GameObjectChangeTrackerEventType eventType)
+        public GameObjectChangeTrackerEvent(EntityId entityId, GameObjectChangeTrackerEventType eventType)
         {
-            InstanceId = instanceId;
+            EntityId = entityId;
             EventType = eventType;
         }
 
         public GameObjectChangeTrackerEvent(GameObjectChangeTrackerEventType eventType)
         {
-            InstanceId = 0;
+            EntityId = EntityId.None;
             EventType = eventType;
         }
 
-        public readonly int InstanceId;
+        public readonly EntityId EntityId;
         public readonly GameObjectChangeTrackerEventType EventType;
     }
 

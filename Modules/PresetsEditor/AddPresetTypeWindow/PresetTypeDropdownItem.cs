@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 
 namespace UnityEditor.Presets
 {
@@ -32,8 +34,9 @@ namespace UnityEditor.Presets
             //Re-used method from ComponentDropdownItem
             if (command.StartsWith("SCRIPT"))
             {
+                Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "Update int.Parse to long.Parse when EntityId size changes");
                 var scriptId = int.Parse(command.Substring(6));
-                var obj = EditorUtility.EntityIdToObject(scriptId) as MonoScript;
+                var obj = EditorUtility.EntityIdToObject(EntityId.From(scriptId)) as MonoScript;
                 presetType = new PresetType(obj.GetClass());
             }
             else

@@ -21,12 +21,12 @@ namespace UnityEditor.UIElements
 
     internal abstract class BaseLiveReloadAssetTracker<T> : ILiveReloadAssetTracker<T> where T : ScriptableObject
     {
-        protected Dictionary<int, AssetTracking<T>> m_TrackedAssets = new Dictionary<int, AssetTracking<T>>();
-        protected List<int> m_RemovedAssets = new List<int>();
+        protected Dictionary<EntityId, AssetTracking<T>> m_TrackedAssets = new Dictionary<EntityId, AssetTracking<T>>();
+        protected List<EntityId> m_RemovedAssets = new List<EntityId>();
 
         public int StartTrackingAsset(T asset)
         {
-            int assetId = asset.GetEntityId();
+            EntityId assetId = asset.GetEntityId();
 
             if (m_TrackedAssets.TryGetValue(assetId, out var tracking))
             {
@@ -49,7 +49,7 @@ namespace UnityEditor.UIElements
 
         public void StopTrackingAsset(T asset)
         {
-            int assetId = asset.GetEntityId();
+            EntityId assetId = asset.GetEntityId();
 
             if (!m_TrackedAssets.ContainsKey(assetId))
             {
@@ -200,7 +200,7 @@ namespace UnityEditor.UIElements
 
             foreach (var changedAsset in changedAssets)
             {
-                int assetId = changedAsset.GetEntityId();
+                EntityId assetId = changedAsset.GetEntityId();
                 if (m_TrackedAssets.ContainsKey(assetId))
                 {
                     return true;

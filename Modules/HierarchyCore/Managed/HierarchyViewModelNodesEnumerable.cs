@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Unity.Hierarchy
@@ -11,9 +10,7 @@ namespace Unity.Hierarchy
     /// <summary>
     /// Represent an enumerable of <see cref="HierarchyNode"/> with specific <see cref="HierarchyNodeFlags"/>.
     /// </summary>
-    [Obsolete("HierarchyViewNodesEnumerable is obsolete, it has been renamed to HierarchyViewModelNodesEnumerable (UnityUpgradable) -> Unity.Hierarchy.HierarchyViewModelNodesEnumerable")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public readonly struct HierarchyViewNodesEnumerable
+    public readonly struct HierarchyViewModelNodesEnumerable
     {
         /// <summary>
         /// Delegate to filter <see cref="HierarchyNode"/> with specific <see cref="HierarchyNodeFlags"/>.
@@ -27,7 +24,7 @@ namespace Unity.Hierarchy
         readonly Predicate m_Predicate;
         readonly HierarchyNodeFlags m_Flags;
 
-        internal HierarchyViewNodesEnumerable(HierarchyViewModel viewModel, HierarchyNodeFlags flags, Predicate predicate)
+        internal HierarchyViewModelNodesEnumerable(HierarchyViewModel viewModel, HierarchyNodeFlags flags, Predicate predicate)
         {
             m_HierarchyViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             m_Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
@@ -53,7 +50,7 @@ namespace Unity.Hierarchy
             readonly int m_Version;
             int m_Index;
 
-            internal Enumerator(HierarchyViewNodesEnumerable enumerable)
+            internal Enumerator(HierarchyViewModelNodesEnumerable enumerable)
             {
                 m_HierarchyViewModel = enumerable.m_HierarchyViewModel;
                 m_Predicate = enumerable.m_Predicate;

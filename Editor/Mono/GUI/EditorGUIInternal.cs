@@ -60,9 +60,9 @@ namespace UnityEditor
             return DoBeginScrollView(position, scrollPosition, viewRect, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, background);
         }
 
-        internal static void BeginWindowsForward(int skinMode, int editorWindowInstanceID)
+        internal static void BeginWindowsForward(int skinMode, EntityId editorWindowEntityId)
         {
-            BeginWindows(skinMode, editorWindowInstanceID);
+            BeginWindows(skinMode, editorWindowEntityId);
         }
 
         internal static void AssetPopup<T>(SerializedProperty serializedProperty, GUIContent content, string fileExtension) where T : Object, new()

@@ -54,7 +54,7 @@ namespace UnityEditor
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentItem, TreeViewItem<EntityId> targetItem, bool perform, DropPosition dropPos)
         {
-            var dragToInstanceId = parentItem?.id ?? 0;
+            var dragToInstanceId = parentItem?.id ?? EntityId.None;
             return DragAndDrop.DropOnProjectBrowserWindow(dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
         }
     }
@@ -162,7 +162,7 @@ namespace UnityEditor
                 if (parentForDraggedObjectsOutsideItems != null)
                 {
                     // Use specific parent for DragAndDropForwarding
-                    return DragAndDrop.DropOnHierarchyWindow(0, option, parentForDraggedObjectsOutsideItems, perform);
+                    return DragAndDrop.DropOnHierarchyWindow(EntityId.None, option, parentForDraggedObjectsOutsideItems, perform);
                 }
                 else
                 {
@@ -205,14 +205,14 @@ namespace UnityEditor
                 option |= HierarchyDropFlags.DropAfterParent;
             }
 
-            int gameObjectOrSceneInstanceID = GetDropTargetInstanceID(hierarchyTargetItem, dropPos);
-            if (gameObjectOrSceneInstanceID == 0)
+            EntityId gameObjectOrSceneEntityId = GetDropTargetInstanceID(hierarchyTargetItem, dropPos);
+            if (gameObjectOrSceneEntityId == EntityId.None)
                 return DragAndDropVisualMode.Rejected;
 
-            if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
+            if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneEntityId, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
 
-            GameObject go = EditorUtility.EntityIdToObject(gameObjectOrSceneInstanceID) as GameObject;
+            GameObject go = EditorUtility.EntityIdToObject(gameObjectOrSceneEntityId) as GameObject;
             if (go != null)
             {
                 DragAndDropVisualMode visualMode;
@@ -222,10 +222,10 @@ namespace UnityEditor
                 }
             }
 
-            return DragAndDrop.DropOnHierarchyWindow(gameObjectOrSceneInstanceID, option, null, perform);
+            return DragAndDrop.DropOnHierarchyWindow(gameObjectOrSceneEntityId, option, null, perform);
         }
 
-        int GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem, DropPosition dropPosition)
+        EntityId GetDropTargetInstanceID(GameObjectTreeViewItem hierarchyTargetItem, DropPosition dropPosition)
         {
             if (SubSceneGUI.IsUsingSubScenes())
             {
@@ -240,14 +240,14 @@ namespace UnityEditor
                         if (subScene.IsValid())
                             return subScene.handle.ToEntityId();
                         else
-                            return 0;
+                            return EntityId.None;
                     }
                 }
             }
             return hierarchyTargetItem.id;
         }
 
-        bool IsValidSubSceneDropTarget(int dropTargetGameObjectOrSceneInstanceID, DropPosition dropPosition, Object[] draggedObjects)
+        bool IsValidSubSceneDropTarget(EntityId dropTargetGameObjectOrSceneInstanceID, DropPosition dropPosition, Object[] draggedObjects)
         {
             if (draggedObjects == null || draggedObjects.Length == 0)
                 return false;
@@ -274,7 +274,7 @@ namespace UnityEditor
             return true;
         }
 
-        Transform GetTransformParentForDrop(int gameObjectOrSceneInstanceID, DropPosition dropPosition)
+        Transform GetTransformParentForDrop(EntityId gameObjectOrSceneInstanceID, DropPosition dropPosition)
         {
             var obj = EditorUtility.EntityIdToObject(gameObjectOrSceneInstanceID);
             if (obj != null)
@@ -352,7 +352,7 @@ namespace UnityEditor
         private List<Scene> GetDraggedScenes(List<EntityId> draggedItemIDs)
         {
             List<Scene> scenes = new List<Scene>();
-            foreach (int id in draggedItemIDs)
+            foreach (EntityId id in draggedItemIDs)
             {
                 Scene scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(id));
                 if (!SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))

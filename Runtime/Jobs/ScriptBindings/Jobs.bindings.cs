@@ -124,7 +124,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
             return CreateJobReflectionData(wrapperJobType, userJobType, managedJobFunction0, null, null);
         }
 
-        public static extern bool IsExecutingJob { [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)] get; }
+        public static extern bool IsExecutingJob { [NativeMethod(Name = "GetIsExecutingScriptingJob", IsFreeFunction = true, IsThreadSafe = true)] get; }
 
         public static extern bool JobDebuggerEnabled { [FreeFunction] get; [FreeFunction] set; }
         public static extern bool JobCompilerEnabled { [FreeFunction] get; [FreeFunction] set; }

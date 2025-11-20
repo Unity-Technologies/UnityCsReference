@@ -307,7 +307,6 @@ namespace UnityEditor.Search
                     {
                         if (!v || v.GetType() == typeof(Transform) || (v.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                             continue;
-                        IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
 
                         if (settings.options.properties)
                         {

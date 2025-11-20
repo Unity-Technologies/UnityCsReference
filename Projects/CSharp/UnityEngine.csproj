@@ -950,6 +950,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\Managed\AssemblyInfo.cs">
       <Link>Modules\HierarchyCore\Managed\AssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyFlattenedChildrenEnumerable.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyFlattenedChildrenEnumerable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyFlattenedNodeChildren.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyFlattenedNodeChildren.cs</Link>
     </Compile>
@@ -982,6 +985,9 @@
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyViewModelFlagsChangeScope.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyViewModelFlagsChangeScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyViewModelNodesEnumerable.cs">
+      <Link>Modules\HierarchyCore\Managed\HierarchyViewModelNodesEnumerable.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyViewNodesEnumerable.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyViewNodesEnumerable.cs</Link>

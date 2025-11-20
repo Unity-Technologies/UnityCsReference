@@ -1596,9 +1596,9 @@ sealed partial class EditorGUILayout
     }
 
     // Make a foldout with a toggle and title
-    internal static bool ToggleTitlebar(bool foldout, GUIContent label, ref bool toggleValue)
+    internal static bool ToggleTitlebar(bool foldout, GUIContent label, ref bool toggleValue, bool supportHover = false)
     {
-        return EditorGUI.ToggleTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), label, foldout, ref toggleValue);
+        return EditorGUI.ToggleTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), label, foldout, ref toggleValue, supportHover);
     }
 
     internal static bool ToggleTitlebar(bool foldout, GUIContent label, SerializedProperty property)

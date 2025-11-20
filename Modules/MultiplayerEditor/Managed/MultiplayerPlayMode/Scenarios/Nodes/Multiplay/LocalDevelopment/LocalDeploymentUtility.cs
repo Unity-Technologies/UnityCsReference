@@ -56,10 +56,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             };
         }
 
+        internal static bool IsLocalDeploymentAvailable()
+        {
+            return EditorMultiplayerManager.enablePlayModeLocalDeployment;
+        }
+
         internal static bool ShouldEnableLocalDeployment(LocalInstanceDescription settings)
         {
-            return IsServerProfileOrRole(settings.BuildProfile) &&
-                   settings.ServerSettings.DeployMode == ServerSettings.ServerDeployMode.Simulated;
+            return IsLocalDeploymentAvailable() &&
+                IsServerProfileOrRole(settings.BuildProfile) &&
+                settings.ServerSettings.DeployMode == ServerSettings.ServerDeployMode.Simulated;
         }
 
         internal static bool IsServerProfileOrRole(BuildProfile buildProfile)

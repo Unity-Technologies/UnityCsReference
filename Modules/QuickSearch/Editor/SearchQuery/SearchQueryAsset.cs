@@ -393,9 +393,9 @@ namespace UnityEditor.Search
         }
 
         [OnOpenAsset]
-        private static bool OpenQuery(int instanceID, int line)
+        private static bool OpenQuery(EntityId entityId, int line)
         {
-            return Open(instanceID) != null;
+            return Open(entityId) != null;
         }
 
         public IEnumerable<SearchProvider> GetProviders()

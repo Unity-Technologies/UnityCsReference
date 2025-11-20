@@ -210,7 +210,7 @@ namespace UnityEngine.UIElements
                 },
             };
 
-            filter.passes[0].prepareMaterialPropertyBlockCallback = PrepareBuiltinColorEffectMaterialPropertyBlock;
+            filter.passes[0].applySettingsCallback = ApplySettings;
 
             return filter;
         }
@@ -229,20 +229,38 @@ namespace UnityEngine.UIElements
             return new PostProcessingMargins() { left = 0, top = kernelSize, right = 0, bottom = kernelSize };
         }
 
-        static void PrepareBuiltinColorEffectMaterialPropertyBlock(MaterialPropertyBlock mpb, FilterFunction func)
+        static void ApplySettings(MaterialPropertyBlock mpb, FilterPassContext context)
         {
             var colorMatrix = Matrix4x4.identity;
-            var colorTint = Color.white;
             float colorOffset = 0.0f;
             float colorInvert = 0.0f;
+
+            FilterFunction func = context.filterFunction;
 
             switch (func.type)
             {
                 case FilterFunctionType.Tint:
-                    colorTint = func.parameters[0].colorValue;
+                    Color tint = func.parameters[0].colorValue;
+                    if (!context.writesGamma)
+                        tint = tint.linear;
+
+                    tint.a = Mathf.Clamp01(tint.a);
+                    tint.r = Mathf.Clamp01(tint.r * tint.a);
+                    tint.g = Mathf.Clamp01(tint.g * tint.a);
+                    tint.b = Mathf.Clamp01(tint.b * tint.a);
+                    colorMatrix = new Matrix4x4(
+                        new Vector4(tint.r, 0, 0, 0),
+                        new Vector4(0, tint.g, 0, 0),
+                        new Vector4(0, 0, tint.b, 0),
+                        new Vector4(0, 0, 0, tint.a));
                     break;
                 case FilterFunctionType.Opacity:
-                    colorTint.a = Mathf.Clamp01(func.parameters[0].floatValue);
+                    float opacity = Mathf.Clamp01(func.parameters[0].floatValue);
+                    colorMatrix = new Matrix4x4(
+                        new Vector4(opacity, 0, 0, 0),
+                        new Vector4(0, opacity, 0, 0),
+                        new Vector4(0, 0, opacity, 0),
+                        new Vector4(0, 0, 0, opacity));
                     break;
                 case FilterFunctionType.Invert:
                     colorInvert = Mathf.Clamp01(func.parameters[0].floatValue);
@@ -305,7 +323,6 @@ namespace UnityEngine.UIElements
             }
 
             mpb.SetMatrix("_ColorMatrix", colorMatrix);
-            mpb.SetColor("_ColorTint", colorTint);
             mpb.SetFloat("_ColorOffset", colorOffset);
             mpb.SetFloat("_ColorInvert", colorInvert);
         }

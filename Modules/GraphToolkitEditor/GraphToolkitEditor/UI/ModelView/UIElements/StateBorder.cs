@@ -172,7 +172,7 @@ namespace Unity.GraphToolkit.Editor
             if (point != null)
             {
                 SetConnectorPosition(point.Value);
-                ShowConnector(wireUI.IsSelected() || wireUI.GetHoverPseudoState());
+                ShowConnector(wireUI.IsSelected() || wireUI.hasHoverPseudoState);
             }
             else
             {

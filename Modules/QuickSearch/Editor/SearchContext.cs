@@ -138,7 +138,7 @@ namespace UnityEditor.Search
         // Fields only used for serialization
         [SerializeField] private string[] providerIds;
         [SerializeField] private List<SearchProvider> m_SerializedProviders;
-        [SerializeField] private int m_SerializedSearchViewInstanceID;
+        [SerializeField] private EntityId m_SerializedSearchViewInstanceID;
         [SerializeField] private string m_SerializedFilterType;
         [SerializeField] private bool m_UseExplicitProvidersAsNormalProviders;
 
@@ -756,7 +756,7 @@ namespace UnityEditor.Search
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
-            if (m_SerializedSearchViewInstanceID != 0)
+            if (m_SerializedSearchViewInstanceID != EntityId.None)
                 searchView = UnityEngine.Object.FindObjectFromInstanceID(m_SerializedSearchViewInstanceID) as ISearchView;
 
             m_Providers = FilterProviders(providerIds.Select(id => SearchService.GetProvider(id)).Concat(m_SerializedProviders));

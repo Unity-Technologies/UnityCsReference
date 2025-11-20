@@ -35,7 +35,7 @@ namespace UnityEngine.TextCore.Text
             return textInfo;
         }
 
-        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset)
+        public bool HasMissingGlyphs(NativeTextInfo textInfo, ref Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset)
         {
             Span<ATGMeshInfo> meshInfosSpan = textInfo.meshInfos;
             bool hasMissingGlyphs = false;
@@ -144,7 +144,7 @@ namespace UnityEngine.TextCore.Text
                     var glyphID = textElementInfo.glyphID;
                     Glyph glyph = null;
                     int spriteIndex = 0;
-                    
+
                     if (isSprite)
                     {
                         spriteIndex = glyphID - '\uE000';
@@ -211,7 +211,7 @@ namespace UnityEngine.TextCore.Text
                         textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.topRight.uv0);
                         textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.bottomRight.uv0);
                     }
-                    
+
                 }
                 hasMultipleColorsByMesh.Add(hasMultipleColors);
                 meshInfoIndex++;

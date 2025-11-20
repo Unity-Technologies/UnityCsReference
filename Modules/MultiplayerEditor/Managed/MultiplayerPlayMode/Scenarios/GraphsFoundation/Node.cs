@@ -234,8 +234,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 case ExecutionState.Running:
                     m_HasNotBeenInterrupted = true;
-                    await ExecuteAndComplete(cancellationToken, true);
-                    return new NodeExecutionResult(Task.CompletedTask);
+                    return await ExecuteAndComplete(cancellationToken, true);
                 case ExecutionState.Active:
                     m_HasNotBeenInterrupted = true;
 

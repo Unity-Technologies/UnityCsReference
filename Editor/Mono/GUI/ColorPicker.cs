@@ -530,6 +530,21 @@ namespace UnityEditor
             {
                 var thumbSize = hueDialThumb.CalcSize(hueDialThumbFill);
                 hueDialThumbSize = Mathf.Max(thumbSize.x, thumbSize.y);
+
+                // Verify we're being called within OnGUI context to ensure proper style initialization.
+                // The ColorPicker styles only exist in GUIUtility.GetDefaultSkin() (dark or light theme),
+                // not in the minimal GameSkin from Editor Built-in Resources. The switch from GUISkin.current
+                // to GUIUtility.GetDefaultSkin() happens elsewhere in the initialization flow.
+                //
+                // If this static constructor runs outside OnGUI, GUISkin.current won't be properly set yet,
+                // causing style lookups to fail and breaking the Color Picker's layout.
+                //
+                // Instead of relying on the skin being correctly set up somewhere else, we enforce that
+                // this Styles class is only initialized during OnGUI. This guarantees that when OnGUI
+                // makes its first call to the Styles class, the default skin (dark or light) will be
+                // available and all styles will initialize correctly.
+                if (Event.current == null)
+                    throw new Exception("Calling GUISkin.current outside OnGUI. This might break the styling of the Color Picker. Please do not access to Styles outside OnGUI.");
             }
         }
 
@@ -568,7 +583,6 @@ namespace UnityEditor
                     marginsForGrid = new RectOffset(0, 0, 2, 2),
                     marginsForList = new RectOffset(0, 5, 2, 2)
                 };
-                m_ColorLibraryEditor.InitializeGrid(Styles.fixedWindowWidth - (Styles.background.padding.left + Styles.background.padding.right));
             }
         }
 

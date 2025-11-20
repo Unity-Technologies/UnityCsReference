@@ -929,7 +929,7 @@ namespace UnityEditor.SceneManagement
 
             var modificationsPerTargetInContent = new Dictionary<UnityEngine.Object, List<PropertyModification>>();
             UnityEngine.Object lastTargetInContent = null;
-            int lastTargetID = 0;
+            EntityId lastTargetID = EntityId.None;
             for (int i = m_PatchedProperties.Count - 1; i >= 0; i--)
             {
                 PatchedProperty patchedProperty = m_PatchedProperties[i];
@@ -941,7 +941,7 @@ namespace UnityEditor.SceneManagement
                 {
                     // Patched properties are grouped by targetInContent, so we can easily ensure we
                     // only make one attempt per target just by comparing with the previous target.
-                    int targetID = targetInContent.GetEntityId();
+                    EntityId targetID = targetInContent.GetEntityId();
                     if (targetID == lastTargetID)
                         targetInContent = lastTargetInContent;
                     else
@@ -2223,16 +2223,16 @@ namespace UnityEditor.SceneManagement
         }
 
         [OnOpenAsset]
-        static bool OnOpenAsset(int instanceID, int line)
+        static bool OnOpenAsset(EntityId entityId, int line)
         {
-            string assetPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
+            string assetPath = AssetDatabase.GetAssetPath(entityId);
 
-            if (assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
+            if (PrefabUtility.HasPrefabExtension(assetPath))
             {
-                // The 'line' parameter can be used for passing an instanceID of a prefab instance
-                GameObject instanceRoot = line == -1 ? null : EditorUtility.EntityIdToObject(line) as GameObject;
-                var prefabStageMode = instanceRoot != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
-                PrefabStageUtility.OpenPrefab(assetPath, instanceRoot, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaAssetOpened);
+                if (line != -1)
+                    Debug.LogWarning("Line is no longer supported as a way to enter Prefab Mode in Context. Instead use PrefabStageUtility.OpenPrefab.");
+
+                PrefabStageUtility.OpenPrefab(assetPath, null, Mode.InIsolation, StageNavigationManager.Analytics.ChangeType.EnterViaAssetOpened);
                 return true;
             }
             return false;

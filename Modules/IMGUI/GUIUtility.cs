@@ -42,7 +42,7 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static int s_SkinMode;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static int s_OriginalID;
+        internal static EntityId s_OriginalID;
 
         // IoC callbacks for UIElements
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -50,7 +50,7 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action releaseCapture;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static Func<int, IntPtr, bool> processEvent;
+        internal static Func<EntityId, IntPtr, bool> processEvent;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Action cleanupRoots;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -176,7 +176,7 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static void ProcessEvent(int instanceID, IntPtr nativeEventPtr, out bool result)
+        internal static void ProcessEvent(EntityId entityId, IntPtr nativeEventPtr, out bool result)
         {
             if (beforeEventProcessed != null)
             {
@@ -191,9 +191,9 @@ namespace UnityEngine
                 // Otherwise only the return from the last invocation is used.
                 foreach( var invocation in processEvent.GetInvocationList())
                 {
-                    if (invocation is not Func<int, IntPtr, bool> typed)
+                    if (invocation is not Func<EntityId, IntPtr, bool> typed)
                         continue;
-                    result |= typed.Invoke(instanceID, nativeEventPtr);
+                    result |= typed.Invoke(entityId, nativeEventPtr);
                 }
             }
         }
@@ -211,24 +211,24 @@ namespace UnityEngine
         }
 
         [RequiredByNativeCode]
-        internal static void BeginGUI(int skinMode, int instanceID, int useGUILayout)
+        internal static void BeginGUI(int skinMode, EntityId entityId, int useGUILayout)
         {
             s_SkinMode = skinMode;
-            s_OriginalID = instanceID;
+            s_OriginalID = entityId;
 
             ResetGlobalState();
 
             // Switch to the correct ID list & clear keyboard loop if we're about to layout (we rebuild it during layout, so we want it cleared beforehand)
             if (useGUILayout != 0)
             {
-                GUILayoutUtility.Begin(instanceID);
+                GUILayoutUtility.Begin(entityId);
             }
         }
 
         [RequiredByNativeCode]
-        internal static void DestroyGUI(EntityId instanceID)
+        internal static void DestroyGUI(EntityId entityId)
         {
-            GUILayoutUtility.RemoveSelectedIdListLayout(instanceID);
+            GUILayoutUtility.RemoveSelectedIdListLayout(entityId);
         }
 
         [RequiredByNativeCode]

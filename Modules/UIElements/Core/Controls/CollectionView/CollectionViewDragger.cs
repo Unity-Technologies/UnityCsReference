@@ -189,7 +189,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             // Scroll down
             else if (pointerPosition.y > targetScrollView.worldBound.yMax - k_AutoScrollAreaSize)
             {
-                var rangeEstimate = targetView.averageItemHeight * targetView.itemsSource.Count;
+                var rangeEstimate = targetView.fixedItemHeight * targetView.itemsSource.Count;
                 var containerHeight = targetScrollView.contentContainer.resolvedStyle.height;
                 if (rangeEstimate > containerHeight)
                 {

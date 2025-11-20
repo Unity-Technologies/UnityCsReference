@@ -49,14 +49,14 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUI.BeginChangeCheck();
 
             bool wasEnabled = GUI.enabled;
-            GUI.enabled = m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor || FrameDebuggerUtility.locallySupported;
+            GUI.enabled = frameDebuggerWindow.IsDebuggingAvailable();
             GUIContent button = (FrameDebugger.enabled) ? FrameDebuggerStyles.TopToolbar.s_RecordButtonDisable : FrameDebuggerStyles.TopToolbar.s_RecordButtonEnable;
             GUILayout.Toggle(FrameDebugger.enabled, button, EditorStyles.toolbarButtonLeft, GUILayout.MinWidth(80));
             GUI.enabled = wasEnabled;
 
-            if (!frameDebuggerWindow.IsDebuggingAvailable(out var _) || EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck())
             {
-                frameDebuggerWindow.ToggleFrameDebuggerEnabled();
+                frameDebuggerWindow.RequestTogglingFrameDebugger();
                 needsRepaint = true;
             }
         }

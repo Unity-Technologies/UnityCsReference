@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
@@ -88,9 +89,9 @@ namespace UnityEngine.TextCore.Text
         /// <param name="texture">The texture on which to call Apply().</param>
         internal static void RegisterAtlasTextureForApply(Texture2D texture)
         {
-            int entityId = texture.GetEntityId();
-
-            if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add(entityId))
+            EntityId entityId = texture.GetEntityId();
+            Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code below");
+            if (k_FontAssets_AtlasTexturesUpdateQueueLookup.Add((int)entityId.GetRawData()))
                 k_FontAssets_AtlasTexturesUpdateQueue.Add(texture);
         }
 

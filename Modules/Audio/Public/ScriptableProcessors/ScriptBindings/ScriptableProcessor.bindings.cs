@@ -728,6 +728,10 @@ namespace UnityEngine.Audio
 
         [NativeMethod(Name = "audio::CheckProcessorExists", IsFreeFunction = true)]
         static extern unsafe bool CheckProcessorExistsInternal(Unity.Audio.Handle handle, /*ControlHeader* */ void* control);
+
+        // This method is only used for testing what happens when exceptions are thrown from script bindings.
+        [NativeMethod(Name = "audio::ThrowScriptingExceptionForTest", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
+        internal static extern void ThrowScriptingExceptionForTest();
     }
 
     static class ProcessorExtensions

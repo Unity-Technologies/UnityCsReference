@@ -26,6 +26,7 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "SetMaxPolygonVertices", IsThreadSafe = true)] extern internal static void PhysicsComposer_SetMaxPolygonVertices(PhysicsComposer composer, int maxPolygonVertices);
         [NativeMethod(Name = "GetMaxPolygonVertices", IsThreadSafe = true)] extern internal static int PhysicsComposer_GetMaxPolygonVertices(PhysicsComposer composer);
         [NativeMethod(Name = "CreatePolygonGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreatePolygonGeometry(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
+        [NativeMethod(Name = "CreateConvexHulls", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreateConvexHulls(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
         [NativeMethod(Name = "CreateChainGeometry", IsThreadSafe = true)] extern internal static PhysicsBufferPair PhysicsComposer_CreateChainGeometry(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
     }
 }

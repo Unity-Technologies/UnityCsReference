@@ -6378,7 +6378,7 @@ namespace UnityEditor
             }
         }
 
-        internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue)
+        internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue, bool supportHover = false)
         {
             // Important to get controlId for the foldout first, so it gets keyboard focus before the toggle does.
             int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
@@ -6396,7 +6396,8 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                baseStyle.Draw(position, GUIContent.none, id, foldout);
+                bool hover = supportHover && position.Contains(Event.current.mousePosition);
+                baseStyle.Draw(position, GUIContent.none, id, foldout, hover);
                 foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position, baseStyle), GUIContent.none, id, foldout);
                 position = baseStyle.padding.Remove(position);
                 textStyle.Draw(textRect, label, id, foldout);
@@ -7803,7 +7804,8 @@ namespace UnityEditor
                         string newValue = TextField(position, label, new string(value));
                         if (GUI.changed)
                         {
-                            if (newValue.Length == 1)
+                            if ((newValue.Length == 1 && newValue[0] != '\0') ||
+                                (newValue.Length == 2 && newValue[1] == '\0'))
                             {
                                 property.intValue = newValue[0];
                             }

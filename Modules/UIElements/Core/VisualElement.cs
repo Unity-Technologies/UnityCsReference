@@ -641,7 +641,6 @@ namespace UnityEngine.UIElements
         internal RenderHints renderHints
         {
             get { return m_RenderHints; }
-            [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
             set
             {
                 // Filter out the dirty flags
@@ -1412,7 +1411,7 @@ namespace UnityEngine.UIElements
 
         private PseudoStates m_PseudoStates;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal PseudoStates pseudoStates
         {
             get { return m_PseudoStates; }

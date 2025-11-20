@@ -195,7 +195,7 @@ namespace Unity.GraphToolkit.Editor
                         }
                         else if (!float.IsNaN(label.resolvedStyle.fontSize))
                         {
-                            var width = label.GetTextWidth() + labelPosition.x;
+                            var width = label.MeasureTextSize(label.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined).x + labelPosition.x;
                             if (width > maxLabelWidth)
                                 maxLabelWidth = width;
                         }

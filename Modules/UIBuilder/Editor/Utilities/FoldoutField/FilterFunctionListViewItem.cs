@@ -46,6 +46,7 @@ namespace Unity.UI.Builder
                 styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssLightSkinPath));
 
             m_FilterFunctionTypeField = this.Q<EnumField>(k_FilterFunctionTypeName);
+            m_FilterFunctionTypeField.includeObsoleteValues = false;
             m_FilterFunctionTypeField.RegisterValueChangedCallback(OnFilterFunctionTypeChanged);
 
             m_ParametersContainer = this.Q<VisualElement>(k_ParamtersContainerName);
@@ -102,14 +103,14 @@ namespace Unity.UI.Builder
             {
                 var pDef = def?.parameters[i] ?? new FilterParameterDeclaration();
                 var pVal = func.GetParameter(i);
+
+                var label = pDef.name;
+                if (string.IsNullOrEmpty(label))
+                    label = paramCount == 1 ? "Value" : $"Value {i + 1}";
+
                 if (pVal.type == FilterParameterType.Float)
                 {
                     var field = new FloatField();
-
-                    var label = pDef.name;
-                    if (string.IsNullOrEmpty(label))
-                        label = paramCount == 1 ? "Value" : $"Value {i + 1}";
-
                     field.label = label;
                     field.value = pVal.floatValue;
                     field.userData = i;
@@ -119,9 +120,9 @@ namespace Unity.UI.Builder
                 else if (pVal.type == FilterParameterType.Color)
                 {
                     var field = new ColorField();
-                    field.userData = i;
-                    field.label = paramCount == 1 ? "Value" : $"Value {i + 1}";
+                    field.label = label;
                     field.value = pVal.colorValue;
+                    field.userData = i;
                     field.RegisterValueChangedCallback(OnParameterValueChanged);
                     m_ParametersContainer.Add(field);
                 }

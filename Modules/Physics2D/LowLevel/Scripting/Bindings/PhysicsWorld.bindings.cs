@@ -60,8 +60,8 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsWorld::GetGravity", IsThreadSafe = true)] extern internal static Vector2 PhysicsWorld_GetGravity(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetSimulationWorkers")] extern internal static void PhysicsWorld_SetSimulationWorkers(PhysicsWorld world, int simulationWorkers);
         [NativeMethod(Name = "PhysicsWorld::GetSimulationWorkers", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetSimulationWorkers(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::SetSimulationMode")] extern internal static void PhysicsWorld_SetSimulationMode(PhysicsWorld world, SimulationMode2D simulationMode);
-        [NativeMethod(Name = "PhysicsWorld::GetSimulationMode", IsThreadSafe = true)] extern internal static SimulationMode2D PhysicsWorld_GetSimulationMode(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::SetSimulationType")] extern internal static void PhysicsWorld_SetSimulationType(PhysicsWorld world, PhysicsWorld.SimulationType simulationType);
+        [NativeMethod(Name = "PhysicsWorld::GetSimulationType", IsThreadSafe = true)] extern internal static PhysicsWorld.SimulationType PhysicsWorld_GetSimulationType(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetSimulationSubSteps")] extern internal static void PhysicsWorld_SetSimulationSubSteps(PhysicsWorld world, int subStepCpunt);
         [NativeMethod(Name = "PhysicsWorld::GetSimulationSubSteps", IsThreadSafe = true)] extern internal static int PhysicsWorld_GetSimulationSubSteps(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetLastSimulationTimestamp", IsThreadSafe = true)] extern internal static double PhysicsWorld_GetLastSimulationTimestamp(PhysicsWorld world);
@@ -75,9 +75,10 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "PhysicsWorld::ClearTransformWriteTweens", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearTransformWriteTweens(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::SetTransformWriteTweens", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetTransformWriteTweens(PhysicsWorld world, ReadOnlySpan<PhysicsBody.TransformWriteTween> transformWriteTweens);
         [NativeMethod(Name = "PhysicsWorld::GetTransformWriteTweens", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTransformWriteTweens(PhysicsWorld world);
-        [NativeMethod(Name = "PhysicsWorld::Simulate")] extern internal static void PhysicsWorld_Simulate(PhysicsWorld world, float timeStep, SimulationMode2D expectedSimulationMode);
-        [NativeMethod(Name = "PhysicsWorld::SimulateBatch")] extern internal static void PhysicsWorld_SimulateBatch(ReadOnlySpan<PhysicsWorld> worlds, float timeStep, SimulationMode2D expectedSimulationMode);
+        [NativeMethod(Name = "PhysicsWorld::Simulate")] extern internal static void PhysicsWorld_Simulate(PhysicsWorld world, float timeStep, PhysicsWorld.SimulationType expectedSimulationType);
+        [NativeMethod(Name = "PhysicsWorld::SimulateBatch")] extern internal static void PhysicsWorld_SimulateBatch(ReadOnlySpan<PhysicsWorld> worlds, float timeStep, PhysicsWorld.SimulationType expectedSimulationType);
         [NativeMethod(Name = "PhysicsWorld::Explode")] extern internal static void PhysicsWorld_Explode(PhysicsWorld world, PhysicsWorld.ExplosionDefinition definition);
+        [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateUserData", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateUserData(PhysicsWorld world, Allocator allocator);
         [NativeMethod(Name = "PhysicsWorld::GetBodyUpdateEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetBodyUpdateEvents(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetTriggerBeginEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTriggerBeginEvents(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::GetTriggerEndEvents", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsWorld_GetTriggerEndEvents(PhysicsWorld world);

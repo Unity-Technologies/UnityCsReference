@@ -243,7 +243,7 @@ namespace UnityEditor.Search.Providers
                 return AssetDatabase.GetCachedIcon(info.source) as Texture2D;
 
             var objEntityId = info.obj ? info.obj.GetEntityId() : EntityId.None;
-            var clientId = context.searchView != null ? context.searchView.GetViewId() : 0;
+            var clientId = context.searchView != null ? context.searchView.GetViewId() : EntityId.None;
 
             if (info.gid.identifierType == (int)IdentifierType.kBuiltInAsset)
                 return AssetPreview.GetAssetPreview(objEntityId, clientId) ?? AssetPreview.GetMiniThumbnail(info.obj);

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.AdaptivePerformance.Editor.Metadata;
 using UnityEngine.AdaptivePerformance;
 
 namespace UnityEditor.AdaptivePerformance.Editor
@@ -20,6 +21,12 @@ namespace UnityEditor.AdaptivePerformance.Editor
         public void Reload()
         {
             m_LoaderUi.CurrentBuildTargetGroup = BuildTargetGroup.Unknown;
+        }
+
+        public void OnEnable()
+        {
+            AdaptivePerformancePackageInitializationBootstrap.BeginPackageInitialization();
+            AdaptivePerformancePackageMetadataStore.StartQueueWork();
         }
 
         /// <summary>

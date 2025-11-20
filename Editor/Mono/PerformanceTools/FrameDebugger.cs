@@ -4,20 +4,15 @@
 
 using System;
 using System.Collections.Generic;
-
-using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEngine.Networking.PlayerConnection;
-
-using UnityEditorInternal;
-using UnityEditorInternal.FrameDebuggerInternal;
-
-using UnityEditor.IMGUI.Controls;
 using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Rendering.Analytics;
-
-using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+using UnityEditorInternal;
+using UnityEditorInternal.FrameDebuggerInternal;
+using UnityEngine;
+using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Pool;
+using UnityEngine.Profiling;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -31,8 +26,6 @@ namespace UnityEditor
         private int m_EnablingWaitCounter = 0;
         private int m_RepaintFrames = k_NeedToRepaintFrames;
         private int m_FrameEventsHash;
-        private bool m_ShowErrorBox;
-        private bool m_HasOpenedPlaymodeView;
         private Rect m_SearchRect;
         private string m_SearchString = String.Empty;
         private IConnectionState m_AttachToPlayerState;
@@ -63,7 +56,7 @@ namespace UnityEditor
         public static void OpenWindowAndToggleEnabled()
         {
             FrameDebuggerWindow frameDebuggerWindow = OpenWindow();
-            frameDebuggerWindow.ToggleFrameDebuggerEnabled();
+            frameDebuggerWindow.RequestTogglingFrameDebugger();
         }
 
         [MenuItem("Window/Analysis/Frame Debugger", false, 10)]
@@ -84,12 +77,13 @@ namespace UnityEditor
             }
         }
 
-        internal void ToggleFrameDebuggerEnabled()
+        internal void RequestTogglingFrameDebugger()
         {
-            if (FrameDebugger.enabled)
-                DisableFrameDebugger();
-            else
-                EnableFrameDebugger();
+            // Don't toggle immediately - defer it to the next Update call.
+            // Reason: OnGUI can be invoked multiple times per frame (e.g., Layout event, then Repaint event).
+            // If we toggle during OnGUI, the Layout and Repaint passes might see different widget counts,
+            // which causes Unity to throw GUI errors. By deferring to Update, we avoid this issue.
+            togglingFrameDebuggerRequested = true;
         }
 
         internal override void OnResized()
@@ -157,11 +151,29 @@ namespace UnityEditor
             m_SearchString = EditorGUI.ToolbarSearchField(m_SearchRect, str, false);
         }
 
+        private bool togglingFrameDebuggerRequested { get; set; } = false;
+
+        private bool shouldToggleFrameDebugger => togglingFrameDebuggerRequested ||
+            (FrameDebugger.enabled && !IsDebuggingAvailable());
+
         // OnGUI does not always get called, which causes issues when profiling a remote player.
         // We need to call repaint in order to get the data without having to move the mouse
         // and to get things like foldouts to open/collapse normally etc.
         void Update()
         {
+            if (shouldToggleFrameDebugger)
+            {
+                togglingFrameDebuggerRequested = false;
+
+                if (FrameDebugger.enabled)
+                    DisableFrameDebugger();
+                else
+                    EnableFrameDebugger();
+
+                m_RepaintFrames = k_NeedToRepaintFrames;
+                Repaint();
+            }
+
             if (IsDisabledInEditor)
                 return;
 
@@ -211,9 +223,14 @@ namespace UnityEditor
                 message = (FrameDebuggerHelper.isOnLinuxOpenGL) ? FrameDebuggerStyles.EventDetails.k_WarningLinuxOpenGLMsg : FrameDebuggerStyles.EventDetails.k_WarningMultiThreadedMsg;
                 messageType = MessageType.Warning;
             }
-            else if (m_ShowErrorBox)
+            else if (!IsDebuggingAvailable())
             {
-                message = FrameDebuggerStyles.EventDetails.k_PlaymodeViewsErrorString;
+                message = m_AttachToPlayerState.connectedToTarget switch
+                {
+                    ConnectionTarget.Editor => FrameDebuggerStyles.EventDetails.k_PlaymodeViewsErrorStringEditor,
+                    ConnectionTarget.Player => FrameDebuggerStyles.EventDetails.k_ErrorInvalidPlayerGUID,
+                    _ => string.Empty
+                };
                 messageType = MessageType.Error;
             }
 
@@ -222,10 +239,6 @@ namespace UnityEditor
 
         private void HandleEnablingFrameDebugger()
         {
-            // Make sure the PlayMode window is enabled and shown...
-            if (!OpenPlayModeView())
-                return;
-
             if (Event.current.type != EventType.Repaint)
                 return;
 
@@ -257,15 +270,10 @@ namespace UnityEditor
             return playModeViews.Count;
         }
 
-        internal bool IsDebuggingAvailable(out PlayModeView playModeView)
+        internal bool GetFirstAvailablePlayModeView(out PlayModeView playModeView)
         {
             playModeView = null;
 
-            // If we are debugging a remote player, we don't care about PlayMode views
-            if (!FrameDebugger.IsLocalEnabled() && m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor)
-                return true;
-
-            // If we are not connected to a remote player, we need at least one PlayMode view, not docked with us
             using (ListPool<PlayModeView>.Get(out var availablePlaymodeViews))
             {
                 if (GetAllAvailablePlayModeViews(ref availablePlaymodeViews) > 0)
@@ -286,20 +294,25 @@ namespace UnityEditor
             return playModeView != null;
         }
 
+        const int k_RemotePlayerDisconnected = -1;
+        internal bool IsDebuggingAvailable()
+        {
+            return m_AttachToPlayerState.connectedToTarget switch
+            {
+                ConnectionTarget.Editor => FrameDebuggerUtility.locallySupported && GetFirstAvailablePlayModeView(out _),
+                ConnectionTarget.Player => ProfilerDriver.connectedProfiler != k_RemotePlayerDisconnected,
+                _ => false
+            };
+        }
+
         private bool OpenPlayModeView()
         {
-            if (m_HasOpenedPlaymodeView)
-                return true;
-
-            if (IsDebuggingAvailable(out var view))
+            if (GetFirstAvailablePlayModeView(out var view))
             {
                 view.ShowTab();
-                m_HasOpenedPlaymodeView = true;
                 return true;
             }
 
-            // No valid views found, display the error box to the user
-            m_ShowErrorBox = true;
             return false;
         }
 
@@ -307,6 +320,12 @@ namespace UnityEditor
         {
             int oldLimit = FrameDebuggerUtility.limit;
             FrameDebuggerEvent[] descs = FrameDebuggerUtility.GetFrameEvents();
+
+            if (m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Player && descs.Length == 0)
+            {
+                EditorGUILayout.HelpBox(FrameDebuggerStyles.EventDetails.k_WarningPlayerNotSendingData, MessageType.Warning, true);
+                return;
+            }
 
             // captured frame event contents have changed, rebuild the tree data
             if (HasEventHashChanged)
@@ -413,27 +432,23 @@ namespace UnityEditor
             if (FrameDebugger.enabled)
                 return;
 
-            bool enablingLocally = !FrameDebugger.enabled && m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor;
-            if (enablingLocally && !FrameDebuggerUtility.locallySupported)
+            if (!IsDebuggingAvailable())
                 return;
 
-            m_ShowErrorBox = false;
-            m_HasOpenedPlaymodeView = false;
-            if (!OpenPlayModeView())
-                return;
+            if (m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor)
+            {
+                if (!OpenPlayModeView())
+                    return;
 
-            // pause play mode if needed
-            if (enablingLocally)
+                // pause play mode if needed
                 if (EditorApplication.isPlaying && !EditorApplication.isPaused)
                     EditorApplication.isPaused = true;
+            }
 
             FrameDebuggerUtility.SetEnabled(true, ProfilerDriver.connectedProfiler);
 
-            if (m_TreeViewState == null)
-                m_TreeViewState = new TreeViewState();
-
-            if (m_EventDetailsView == null)
-                m_EventDetailsView = new FrameDebuggerEventDetailsView(this);
+            m_TreeViewState ??= new TreeViewState();
+            m_EventDetailsView ??= new FrameDebuggerEventDetailsView(this);
 
             m_EnablingWaitCounter = 0;
             m_EventDetailsView.Reset();
@@ -459,7 +474,6 @@ namespace UnityEditor
                 m_EventDetailsView = null;
             }
 
-            m_HasOpenedPlaymodeView = false;
             FrameDebuggerStyles.OnDisable();
             m_TreeViewState = null;
             m_TreeView = null;

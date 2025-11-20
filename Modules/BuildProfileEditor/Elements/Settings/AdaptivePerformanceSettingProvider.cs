@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.AdaptivePerformance.UI.Editor;
+using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 using UnityEngine.UIElements;
 
@@ -16,7 +17,7 @@ internal class AdaptivePerformanceSettingProvider : IBuildProfileSettingsProvide
 
     public bool CanAddSettings(BuildProfile profile)
     {
-        return profile.GetComponent<AdaptivePerformanceGeneralSettings>() == null;
+        return BuildProfileModuleUtil.IsModuleInstalled(profile.platformGuid) && profile.platformBuildProfile != null && profile.GetComponent<AdaptivePerformanceGeneralSettings>() == null;
     }
 
     public bool HasSettings(BuildProfile profile)

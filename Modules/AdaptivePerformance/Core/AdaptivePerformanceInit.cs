@@ -11,7 +11,6 @@ namespace UnityEngine.AdaptivePerformance
         static AdaptivePerformanceManagerSpawner s_Spawner;
 
         [RequiredByNativeCode(optional: false)]
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)] //keep for editor module
         public static void AutoInitializeAdaptivePerformanceManaged()
         {
             InitializeSpawner(isAuto: true);

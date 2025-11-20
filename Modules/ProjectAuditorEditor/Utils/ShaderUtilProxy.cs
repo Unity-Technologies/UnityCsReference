@@ -110,7 +110,11 @@ namespace Unity.ProjectAuditor.Editor.Utils
             if (s_MethodGetShaderVariantCount == null)
                 return 0;
 
-            return (ulong)s_MethodGetShaderVariantCount.Invoke(null, new object[] { shader, false});
+            ulong outCount = 0;
+            if (!(bool)s_MethodGetShaderVariantCount.Invoke(null, new object[] { shader, false, outCount }))
+                return 0;
+
+            return outCount;
         }
 
         public static bool HasInstancing(Shader shader)

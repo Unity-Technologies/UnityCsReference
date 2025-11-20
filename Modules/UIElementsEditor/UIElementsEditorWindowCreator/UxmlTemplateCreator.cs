@@ -41,13 +41,13 @@ namespace UnityEditor.UIElements
             CreateUXMLAssetWithCallback();
         }
 
-        public static void CreateUXMLAssetWithCallback(Action<int> onRenameComplete = null)
+        public static void CreateUXMLAssetWithCallback(Action<EntityId> onRenameComplete = null)
         {
             var folder = GetCurrentFolder();
             var contents = CreateUXMLTemplate(folder);
             var icon = EditorGUIUtility.IconContent<VisualTreeAsset>().image as Texture2D;
 
-            ProjectWindowUtil.CreateAssetWithContent("NewUXMLTemplate.uxml", contents, icon, onRenameComplete);
+            ProjectWindowUtil.CreateAssetWithTextContent("NewUXMLTemplate.uxml", contents, icon, onRenameComplete);
         }
 
         public static string CreateUXMLTemplate(string folder, string uxmlContent = "")

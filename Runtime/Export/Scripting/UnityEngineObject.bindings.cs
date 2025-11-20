@@ -180,7 +180,7 @@ namespace UnityEngine
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.AnimationModule")]
         internal static EntityId From(int input) => new EntityId {m_Data = input};
 
         internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };
@@ -223,18 +223,17 @@ namespace UnityEngine
     #pragma warning restore 612, 618
 
     [StructLayout(LayoutKind.Sequential)]
-    [RequiredByNativeCode(GenerateProxy = true)]
+    [RequiredByNativeCode(GenerateProxy = false)]
     [NativeHeader("Runtime/Export/Scripting/UnityEngineObject.bindings.h")]
     [NativeHeader("Runtime/GameCode/CloneObject.h")]
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
     public partial class Object
     {
-        private const int kInstanceID_None = 0;
 
 #pragma warning disable 649
         IntPtr   m_CachedPtr;
 
-        private int m_InstanceID;
+        private EntityId m_EntityId;
 #pragma warning disable 169
         private string m_UnityRuntimeErrorString;
 #pragma warning restore 169
@@ -253,7 +252,7 @@ namespace UnityEngine
             //doing this in the editor, so people notice this problem early. even though technically in the editor,
             //it is a threadsafe operation.
             EnsureRunningOnMainThread();
-            return m_InstanceID;
+            return m_EntityId;
         }
 
         [Obsolete("GetInstanceID is deprecated. Use GetEntityId instead. This will be removed in a future version.")]
@@ -264,15 +263,15 @@ namespace UnityEngine
             //doing this in the editor, so people notice this problem early. even though technically in the editor,
             //it is a threadsafe operation.
             EnsureRunningOnMainThread();
-            return m_InstanceID;
+            return m_EntityId;
         }
 
         public override int GetHashCode()
         {
-            //in the editor, we store the m_InstanceID in the c# objects. It's actually possible to have multiple c# objects
+            //in the editor, we store the m_EntityId in the c# objects. It's actually possible to have multiple c# objects
             //pointing to the same c++ object in some edge cases, and in those cases we'd like GetHashCode() and Equals() to treat
             //these objects as equals.
-            return m_InstanceID;
+            return m_EntityId.GetHashCode();
         }
 
         public override bool Equals(object other)
@@ -302,7 +301,7 @@ namespace UnityEngine
             if (rhsNull) return !IsNativeObjectAlive(lhs);
             if (lhsNull) return !IsNativeObjectAlive(rhs);
 
-            return lhs.m_InstanceID == rhs.m_InstanceID;
+            return lhs.m_EntityId == rhs.m_EntityId;
         }
 
         private void EnsureRunningOnMainThread()
@@ -337,13 +336,14 @@ namespace UnityEngine
             return DoesObjectWithInstanceIDExist(o.GetEntityId());
         }
 
+        [RequiredByNativeCode]
         System.IntPtr GetCachedPtr()
         {
             return m_CachedPtr;
         }
 
         [RequiredByNativeCode]
-        internal void GetInstanceIdFast(out EntityId v) { v = m_InstanceID; }
+        internal void GetInstanceIdFast(out EntityId v) { v = m_EntityId; }
 
         // The name of the object.
         public string name
@@ -890,7 +890,7 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Object CreateMissingReferenceObject(EntityId instanceID)
         {
-            return new Object { m_InstanceID = instanceID };
+            return new Object { m_EntityId = instanceID };
         }
 
         [FreeFunction("UnityEngineObjectBindings::MarkObjectDirty", HasExplicitThis = true)]
@@ -922,10 +922,10 @@ namespace UnityEngine
 
             private static IntPtr MarshalFromInstanceId<T>(T obj) where T:Object
             {
-                if (obj.m_InstanceID == kInstanceID_None)
+                if (obj.m_EntityId == EntityId.None)
                     return IntPtr.Zero;
 
-                var retPtr = GetPtrFromInstanceID(obj.m_InstanceID, typeof(T), out var isNativeInstanceMonoBehaviour);
+                var retPtr = GetPtrFromInstanceID(obj.m_EntityId, typeof(T), out var isNativeInstanceMonoBehaviour);
                 if (retPtr == IntPtr.Zero)
                     return IntPtr.Zero;
 
@@ -978,7 +978,7 @@ namespace UnityEngine
             public static void TryThrowEditorNullExceptionObject(Object unityObj, string parameterName)
             {
                 string error = unityObj.m_UnityRuntimeErrorString ?? "";
-                if (unityObj.m_InstanceID != kInstanceID_None && !error.StartsWith($"{nameof(MissingReferenceException)}:"))
+                if (unityObj.m_EntityId != EntityId.None && !error.StartsWith($"{nameof(MissingReferenceException)}:"))
                 {
                     error = $"The object of type '{unityObj.GetType().FullName}' has been destroyed but you are still trying to access it.\n" +
                         "Your script should either check if it is null or you should not destroy the object.";

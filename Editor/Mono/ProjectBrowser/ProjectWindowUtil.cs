@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.Audio;
 using UnityEditor.Compilation;
 using UnityEditor.ProjectWindowCallback;
@@ -201,7 +202,7 @@ namespace UnityEditor
         internal class DoCreateAssetWithContent : AssetCreationEndAction
         {
             public string filecontent;
-            public Action<int> onComplete;
+            public Action<EntityId> onComplete;
             public override void Action(EntityId entityId, string pathName, string resourceFile)
             {
                 Object o = ProjectWindowUtil.CreateScriptAssetWithContent(pathName, filecontent);
@@ -230,10 +231,10 @@ namespace UnityEditor
                 // Check if the output group should be initialized (instanceID is stored in the resource file) TODO: rename 'resourceFile' to 'userData' so it's more obvious that it can be used by all EndNameEditActions
                 if (!string.IsNullOrEmpty(resourceFile))
                 {
-                    int outputInstanceID;
-                    if (System.Int32.TryParse(resourceFile, out outputInstanceID))
+                    if (System.Int32.TryParse(resourceFile, out var outputEntityIdRaw))
                     {
-                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(outputInstanceID) as AudioMixerGroupController;
+                        Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId size has changed, please update the code to use ulong instead of int below");
+                        var outputGroup = InternalEditorUtility.GetObjectFromEntityId(EntityId.From((int)outputEntityIdRaw)) as AudioMixerGroupController;
                         if (outputGroup != null)
                             controller.outputAudioMixerGroup = outputGroup;
                     }
@@ -508,7 +509,15 @@ namespace UnityEditor
                 return string.Format("{0}/{1} Variant.prefab", folder, gameObject.name);
         }
 
+        [Obsolete("CreateAssetWithContent(string, string, Texture2D, Action<int>) is obsolete. Use CreateAssetWithTextContent(string, string, Texture2D, Action<EntityId>) instead.", false)]
         public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, Action<int> onRenameComplete = null)
+        {
+            var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
+            action.filecontent = content;
+            action.onComplete = onRenameComplete != null ? (id) => onRenameComplete(id) : null; // Wrap to obsolete int version
+            StartNameEditingIfProjectWindowExists(EntityId.None, action, filename, icon, null);
+        }
+        public static void CreateAssetWithTextContent(string filename, string content, Texture2D icon = null, Action<EntityId> onRenameComplete = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
@@ -781,14 +790,21 @@ namespace UnityEditor
             }
         }
 
-        // InstanceIDs larger than this is considered a favorite by the projectwindows
-        internal static int k_FavoritesStartInstanceID = 1000000000;
+
+        internal static int k_FavoritesStartUniqueId = 1000000000;
         internal static string k_DraggingFavoriteGenericData = "DraggingFavorite";
         internal static string k_IsFolderGenericData = "IsFolder";
 
-        internal static bool IsFavoritesItem(EntityId instanceID)
+        internal static bool IsFavoritesItem(EntityId entityId)
         {
-            return instanceID >= k_FavoritesStartInstanceID && instanceID != ProjectBrowser.kPackagesFolderInstanceId;
+            // (Fabrice) Testing EntityId ranges is problematic.
+            // Unfortunately, search filters (aka favorites) use fake EntityId and the implementation
+            // is impossible to untangle at this point without changing way too much code.
+            // Checking if the EntityId is lower than 2^32 relies on the fact that entity allocation
+            // never returns a valid entity with an even version number (higher 32 bits).
+            return (int)entityId.GetRawData() >= k_FavoritesStartUniqueId
+                   && entityId.GetRawData() <= UInt32.MaxValue
+                   && entityId != ProjectBrowser.kPackagesFolderInstanceId;
         }
 
         internal static void StartDrag(EntityId draggedEntityId, List<EntityId> selectedInstanceIDs)

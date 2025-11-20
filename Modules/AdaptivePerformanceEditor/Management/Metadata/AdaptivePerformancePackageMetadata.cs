@@ -113,7 +113,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
     /// Provide access to the metadata store. Currently only usable as a way to assign and remove loaders
     /// to or from an <see cref="AdaptivePerformanceManagerSettings"/> instance.
     /// </summary>
-    [InitializeOnLoad]
     public class AdaptivePerformancePackageMetadataStore
     {
         const string k_WaitingPackmanQuery = "APMGT Waiting Packman Query.";
@@ -246,7 +245,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal struct LoaderBuildTargetQueryResult
         {
             public string packageName;
@@ -283,7 +281,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             return result;
         }
 
-        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static List<LoaderBuildTargetQueryResult> GetLoadersForBuildTarget(BuildTargetGroup buildTargetGroup)
         {
             var loadersForBuildTarget = new List<LoaderBuildTargetQueryResult>();
@@ -341,7 +338,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                 }
             }
 
-            Debug.Assert(maxPriority != Int32.MaxValue, "No default loader found");
             return defaultLoader;
         }
 
@@ -451,10 +447,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                     if (newInstance != null && assignedLoaders.Contains(newInstance))
                     {
                         settings.loaders.Add(newInstance);
-//#if UNITY_EDITOR
-                       // var loaderHelper = newLoader as AdaptivePerformanceLoaderHelper;
-                       // loaderHelper?.WasAssignedToBuildTarget(buildTargetGroup);
-//#endif
                     }
                 }
 
@@ -488,10 +480,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                 settings.loaders.Remove(loader);
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
-//#if UNITY_EDITOR
-                //var loaderHelper = loader as AdaptivePerformanceLoaderHelper;
-                //loaderHelper?.WasUnassignedFromBuildTarget(buildTargetGroup);
-//#endif
             }
 
             return true;
@@ -583,8 +571,6 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
             if (IsEditorInPlayMode())
                 return;
-            // Only rebuild package cache if a package is newly registered.
-            PackageManager.Events.registeredPackages += RebuildPackageCache;
         }
 
         static void RebuildPackageCache(PackageRegistrationEventArgs args)
@@ -617,15 +603,15 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
                     StopAllQueues();
                     StoreCachedMDStoreInformation();
                     break;
-
-                case PlayModeStateChange.EnteredPlayMode:
-                    break;
-
-                case PlayModeStateChange.EnteredEditMode:
-                    LoadCachedMDStoreInformation();
-                    StartAllQueues();
-                    break;
             }
+        }
+
+        internal static void StartQueueWork()
+        {
+            // Only rebuild package cache if a package is newly registered.
+            PackageManager.Events.registeredPackages += RebuildPackageCache;
+            LoadCachedMDStoreInformation();
+            StartAllQueues();
         }
 
         static void StopAllQueues()

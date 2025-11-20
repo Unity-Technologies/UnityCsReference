@@ -984,19 +984,19 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_DetailsStringBuilder.Append(batchbreakCause).AppendLine();
             m_DetailsStringBuilder.AppendLine();
 
-            if (curEventData.m_MeshInstanceIDs != null && curEventData.m_MeshInstanceIDs.Length > 0)
+            if (curEventData.m_MeshEntityIds != null && curEventData.m_MeshEntityIds.Length > 0)
             {
-                HashSet<int> meshIDs = new HashSet<int>();
-                for (int i = 0; i < curEventData.m_MeshInstanceIDs.Length; i++)
+                HashSet<EntityId> meshIDs = new HashSet<EntityId>();
+                for (int i = 0; i < curEventData.m_MeshEntityIds.Length; i++)
                 {
-                    int id = curEventData.m_MeshInstanceIDs[i];
+                    EntityId id = curEventData.m_MeshEntityIds[i];
                     Mesh mesh = EditorUtility.EntityIdToObject(id) as Mesh;
                     if (mesh != null)
                         meshIDs.Add(id);
                 }
 
                 List<Mesh> meshes = new List<Mesh>();
-                foreach (int id in meshIDs)
+                foreach (EntityId id in meshIDs)
                 {
                     Mesh mesh = EditorUtility.EntityIdToObject(id) as Mesh;
                     meshes.Add(mesh);

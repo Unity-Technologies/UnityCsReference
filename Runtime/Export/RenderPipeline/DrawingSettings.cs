@@ -42,11 +42,11 @@ namespace UnityEngine.Rendering
             m_PerObjectData = PerObjectData.None;
             m_Flags = DrawRendererFlags.EnableInstancing;
 
-            m_OverrideShaderID = 0;
+            m_OverrideShaderID = EntityId.None;
             m_OverrideShaderPassIndex = 0;
             m_OverrideMaterialEntityId = EntityId.None;
             m_OverrideMaterialPassIndex = 0;
-            m_fallbackMaterialEntityId = 0;
+            m_fallbackMaterialEntityId = EntityId.None;
             m_MainLightIndex = -1;
 
             fixed(int* p = shaderPassNames)
@@ -106,7 +106,7 @@ namespace UnityEngine.Rendering
 
         public Shader overrideShader
         {
-            get { return m_OverrideShaderID != 0 ? Object.FindObjectFromInstanceID(m_OverrideShaderID) as Shader : null; }
+            get { return m_OverrideShaderID != EntityId.None ? Object.FindObjectFromInstanceID(m_OverrideShaderID) as Shader : null; }
             set { m_OverrideShaderID = value?.GetEntityId() ?? EntityId.None; }
         }
 
@@ -124,7 +124,7 @@ namespace UnityEngine.Rendering
 
         public Material fallbackMaterial
         {
-            get { return m_fallbackMaterialEntityId != 0 ? Object.FindObjectFromInstanceID(m_fallbackMaterialEntityId) as Material : null; }
+            get { return m_fallbackMaterialEntityId != EntityId.None ? Object.FindObjectFromInstanceID(m_fallbackMaterialEntityId) as Material : null; }
             set { m_fallbackMaterialEntityId = value?.GetEntityId() ?? EntityId.None; }
         }
 

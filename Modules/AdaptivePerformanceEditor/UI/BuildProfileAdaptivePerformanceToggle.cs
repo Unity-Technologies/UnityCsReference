@@ -123,6 +123,7 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
             {
                 InitializeSettingsAndUI();
             }
+            EditorUtilities.EnableAPModule(evt.newValue);
         }
 
         public void InitializeSettingsAndUI()

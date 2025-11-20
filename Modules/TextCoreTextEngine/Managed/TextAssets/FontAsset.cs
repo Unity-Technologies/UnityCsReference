@@ -1658,7 +1658,7 @@ namespace UnityEngine.TextCore.Text
                 for (int i = 0; i < fallbackFontAssetTable.Count && fallbackFontAssetTable[i] != null; i++)
                 {
                     FontAsset fallback = fallbackFontAssetTable[i];
-                    int fallbackID = fallback.GetEntityId();
+                    EntityId fallbackID = fallback.GetEntityId();
 
                     // Search fallback if it has not already been searched
                     if (k_SearchedFontAssetLookup.Add(fallbackID))
@@ -1756,7 +1756,7 @@ namespace UnityEngine.TextCore.Text
                         for (int j = 0; j < fallbackFontAssetTable.Count && fallbackFontAssetTable[j] != null; j++)
                         {
                             FontAsset fallback = fallbackFontAssetTable[j];
-                            int fallbackID = fallback.GetEntityId();
+                            EntityId fallbackID = fallback.GetEntityId();
 
                             // Search fallback if it has not already been searched
                             if (k_SearchedFontAssetLookup.Add(fallbackID))

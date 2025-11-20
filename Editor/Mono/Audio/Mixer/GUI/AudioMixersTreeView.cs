@@ -281,24 +281,24 @@ namespace UnityEditor
             return true;
         }
 
-        public int GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem)
+        public EntityId GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem)
         {
             // Find pos under parent
-            int insertAfterID = parentItem.id;
+            EntityId insertAfterID = parentItem.id;
 
             if (!parentItem.hasChildren)
                 return insertAfterID;
 
             for (int idx = 0; idx < parentItem.children.Count; ++idx)
             {
-                int instanceID = parentItem.children[idx].id;
+                EntityId entityId = parentItem.children[idx].id;
 
                 // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
-                string propertyPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                string propertyPath = AssetDatabase.GetAssetPath(entityId);
                 if (EditorUtility.NaturalCompare(Path.GetFileNameWithoutExtension(propertyPath), newName) > 0)
                     break;
 
-                insertAfterID = instanceID;
+                insertAfterID = entityId;
             }
             return insertAfterID;
         }
@@ -332,7 +332,7 @@ namespace UnityEditor
                 m_FakeItem.icon = icon;
 
                 // Find pos under parent
-                int insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem);
+                EntityId insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem);
 
                 // Find pos in expanded rows and insert
                 int index = TreeViewController<EntityId>.GetIndexOfID(visibleRows, insertAfterID);
@@ -477,11 +477,11 @@ namespace UnityEditor
             if (!m_TreeView.data.HasFakeItem() && GetCreateAssetUtility().IsCreatingNewAsset())
             {
                 // Get selection from tree
-                int parentInstanceID = m_TreeView.data.root.id;
+                EntityId parentEntityId = m_TreeView.data.root.id;
                 var selectedItem = GetSelectedItem();
                 if (selectedItem != null)
-                    parentInstanceID = selectedItem.parent.id;
-                m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().instanceID, parentInstanceID, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
+                    parentEntityId = selectedItem.parent.id;
+                m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().entityId, parentEntityId, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
             }
 
             if (m_TreeView.data.HasFakeItem() && !GetCreateAssetUtility().IsCreatingNewAsset())
@@ -501,15 +501,15 @@ namespace UnityEditor
             if (selectedItem != null && selectedItem.mixer.outputAudioMixerGroup != null)
                 resourceFileData = selectedItem.mixer.outputAudioMixerGroup.GetEntityId().ToString();
 
-            int instanceID = 0;
+            EntityId entityId = EntityId.None;
 
             if (GetCreateAssetUtility().BeginNewAssetCreation(
-                instanceID, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", null, resourceFileData))
+                    entityId, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", null, resourceFileData))
             {
                 SyncFakeItem();
 
                 // Start naming the asset
-                bool renameStarted = GetRenameOverlay().BeginRename(GetCreateAssetUtility().originalName, instanceID, 0f);
+                bool renameStarted = GetRenameOverlay().BeginRename(GetCreateAssetUtility().originalName, entityId, 0f);
                 if (!renameStarted)
                     Debug.LogError("Rename not started (when creating new asset)");
             }

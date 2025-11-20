@@ -368,7 +368,7 @@ namespace UnityEditor.EditorTools
                 RestorePreviousPersistentTool();
         }
 
-        void SelectedObjectWasDestroyed(int id)
+        void SelectedObjectWasDestroyed(EntityId id)
         {
             bool componentToolActive = m_ComponentTools.Any(
                 x => x?.GetEditor<EditorTool>() == m_ActiveTool)

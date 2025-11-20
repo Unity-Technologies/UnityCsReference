@@ -32,7 +32,7 @@ internal class ATGTextJobSystem
         public List<bool> hasMultipleColorsByMesh = new();
         // Key: FontAsset ID
         // Value: Set of missing glyphs (glyphID) for that font asset.
-        public Dictionary<int, HashSet<uint>> missingGlyphsPerFontAsset = new();
+        public Dictionary<EntityId, HashSet<uint>> missingGlyphsPerFontAsset = new();
         public bool hasMissingGlyphs;
 
         public void Clear()
@@ -76,9 +76,9 @@ internal class ATGTextJobSystem
            null,
            false);
 
-    static UnityEngine.Pool.ObjectPool<Dictionary<int, HashSet<uint>>> s_AggregatedMissingGlyphsPool = new(() =>
+    static UnityEngine.Pool.ObjectPool<Dictionary<EntityId, HashSet<uint>>> s_AggregatedMissingGlyphsPool = new(() =>
     {
-        var inst = new Dictionary<int, HashSet<uint>>();
+        var inst = new Dictionary<EntityId, HashSet<uint>>();
         return inst;
     }, null,
         (dict) =>
@@ -153,7 +153,7 @@ internal class ATGTextJobSystem
                     // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
                     if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
                         textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
-  
+
                     m_PrepareShapingDataList.Add(textElement);
                 }
             }
@@ -288,7 +288,7 @@ internal class ATGTextJobSystem
     static List<uint> s_GlyphsToAddBuffer = new List<uint>();
     void PopulateGlyphs(MeshGenerationContext mgc, object _)
     {
-        Dictionary<int, HashSet<uint>> allUniqueMissingGlyphs = s_AggregatedMissingGlyphsPool.Get();
+        Dictionary<EntityId, HashSet<uint>> allUniqueMissingGlyphs = s_AggregatedMissingGlyphsPool.Get();
         bool hasMissingGlyphs = false;
         foreach (var managedJobData in textJobDatas)
         {

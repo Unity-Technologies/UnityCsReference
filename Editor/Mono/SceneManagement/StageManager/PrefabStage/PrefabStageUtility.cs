@@ -594,7 +594,7 @@ namespace UnityEditor.SceneManagement
             return Event.current.alt ? alternativePrefabMode : defaultPrefabMode;
         }
 
-        internal static GUIContent GetPrefabButtonContent(int instanceID)
+        internal static GUIContent GetPrefabButtonContent(EntityId entityId)
         {
             GUIContent result;
             var defaultPrefabMode = HierarchyPreferences.DefaultPrefabModeFromHierarchy;

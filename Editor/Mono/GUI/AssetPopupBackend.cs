@@ -102,7 +102,7 @@ namespace UnityEditor
             // If no defalut asset was found, add defualt null value.
             if (!foundDefaultAsset)
             {
-                gm.AddItem(new GUIContent(defaultFieldName), selectedEntityId == 0, AssetPopupMenuCallback, new object[] { EntityId.None, serializedProperty });
+                gm.AddItem(new GUIContent(defaultFieldName), selectedEntityId == EntityId.None, AssetPopupMenuCallback, new object[] { EntityId.None, serializedProperty });
             }
 
             // Add items from asset database

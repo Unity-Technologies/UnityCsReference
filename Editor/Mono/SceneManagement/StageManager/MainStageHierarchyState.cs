@@ -26,7 +26,7 @@ namespace UnityEditor
         public void SaveStateFromHierarchy(SceneHierarchyWindow hierarchy, Stage stage)
         {
             var lastClickedGameObject = EditorUtility.EntityIdToObject(hierarchy.sceneHierarchy.treeViewState.lastClickedID) as GameObject;
-            m_LastClickedEntityId = lastClickedGameObject != null ? lastClickedGameObject.GetEntityId() : 0;
+            m_LastClickedEntityId = lastClickedGameObject != null ? lastClickedGameObject.GetEntityId() : EntityId.None;
             m_ExpandedSceneGameObjectInstanceIDs = hierarchy.sceneHierarchy.treeViewState.expandedIDs;
 
             m_ScrollY = hierarchy.sceneHierarchy.treeViewState.scrollPos.y;

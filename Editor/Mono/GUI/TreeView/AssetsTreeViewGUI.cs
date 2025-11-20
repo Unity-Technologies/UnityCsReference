@@ -47,7 +47,7 @@ namespace UnityEditor
         internal delegate bool OnAssetLabelDrawDelegate(Rect drawRect, string guid);
         internal static event OnAssetLabelDrawDelegate postAssetLabelDrawCallback = null;
 
-        private static IDictionary<int, string> s_GUIDCache = null;
+        private static IDictionary<EntityId, string> s_GUIDCache = null;
         private readonly Action m_TreeViewRepaintAction;
 
         public AssetsTreeViewGUI(TreeViewController<EntityId> treeView)
@@ -77,9 +77,9 @@ namespace UnityEditor
             return ((TreeViewStateWithAssetUtility)m_TreeView.state).createAssetUtility;
         }
 
-        virtual protected bool IsCreatingNewAsset(int instanceID)
+        virtual protected bool IsCreatingNewAsset(EntityId entityId)
         {
-            return GetCreateAssetUtility().IsCreatingNewAsset() && IsRenaming(instanceID);
+            return GetCreateAssetUtility().IsCreatingNewAsset() && IsRenaming(entityId);
         }
 
         override protected void ClearRenameAndNewItemState()
@@ -116,8 +116,8 @@ namespace UnityEditor
         {
             if (!m_TreeView.data.HasFakeItem() && GetCreateAssetUtility().IsCreatingNewAsset())
             {
-                int parentInstanceID = AssetDatabase.GetMainAssetEntityId(GetCreateAssetUtility().folder);
-                m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().instanceID, parentInstanceID, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
+                EntityId parentEntityId = AssetDatabase.GetMainAssetEntityId(GetCreateAssetUtility().folder);
+                m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().entityId, parentEntityId, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
             }
 
             if (m_TreeView.data.HasFakeItem() && !GetCreateAssetUtility().IsCreatingNewAsset())
@@ -155,7 +155,7 @@ namespace UnityEditor
             if (icon == null)
                 icon = item.icon;
 
-            if (icon == null && item.id != 0)
+            if (icon == null && item.id != EntityId.None)
             {
                 string path = AssetDatabase.GetAssetPath(item.id);
                 icon = AssetDatabase.GetCachedIcon(path);
@@ -190,7 +190,7 @@ namespace UnityEditor
             OnIconOverlayGUI(item.id, overlayRect, false, m_TreeViewRepaintAction);
         }
 
-        internal static void OnIconOverlayGUI(int instanceID, Rect overlayRect, bool addPadding, Action repaintAction = null)
+        internal static void OnIconOverlayGUI(EntityId entityId, Rect overlayRect, bool addPadding, Action repaintAction = null)
         {
             if (addPadding)
             {
@@ -198,16 +198,16 @@ namespace UnityEditor
                 overlayRect.width += k_IconOverlayPadding * 2;
             }
 
-            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset((EntityId)instanceID))
+            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(entityId))
             {
-                string guid = GetGUIDForInstanceID(instanceID);
+                string guid = GetGUIDForInstanceID(entityId);
                 postAssetIconDrawCallback(overlayRect, guid);
             }
 
             // Draw vcs icons
-            if (s_VCEnabled && AssetDatabase.IsMainAsset((EntityId)instanceID))
+            if (s_VCEnabled && AssetDatabase.IsMainAsset(entityId))
             {
-                string guid = GetGUIDForInstanceID(instanceID);
+                string guid = GetGUIDForInstanceID(entityId);
                 ProjectHooks.OnProjectWindowItem(guid, overlayRect, repaintAction);
             }
         }
@@ -223,20 +223,20 @@ namespace UnityEditor
 
         // Returns a previously stored GUID for the given ID,
         // else retrieves it from the asset database and stores it.
-        private static string GetGUIDForInstanceID(int instanceID)
+        private static string GetGUIDForInstanceID(EntityId entityId)
         {
             if (s_GUIDCache == null)
             {
-                s_GUIDCache = new Dictionary<int, string>();
+                s_GUIDCache = new Dictionary<EntityId, string>();
             }
 
             string GUID = null;
-            if (!s_GUIDCache.TryGetValue(instanceID, out GUID))
+            if (!s_GUIDCache.TryGetValue(entityId, out GUID))
             {
-                string path = AssetDatabase.GetAssetPath((EntityId)instanceID);
+                string path = AssetDatabase.GetAssetPath((EntityId)entityId);
                 GUID = AssetDatabase.AssetPathToGUID(path);
                 Assert.IsTrue(!string.IsNullOrEmpty(GUID));
-                s_GUIDCache.Add(instanceID, GUID);
+                s_GUIDCache.Add(entityId, GUID);
             }
 
             return GUID;

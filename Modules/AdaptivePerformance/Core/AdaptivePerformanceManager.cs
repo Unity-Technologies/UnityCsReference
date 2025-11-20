@@ -569,7 +569,7 @@ namespace UnityEngine.AdaptivePerformance
             {
                 // did not initialize successfully
 
-                APLog.Debug("Initialization of Provider was not successful. Are there errors present?");
+                APLog.Debug("Initialization of Provider was not successful. Are there errors present? Make sure to select your loader in the Adaptive Performance Settings for this platform.");
                 AdaptivePerformanceAnalytics.SendAdaptiveStartupEvent(m_Subsystem);
                 return;
             }

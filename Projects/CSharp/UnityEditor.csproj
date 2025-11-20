@@ -4661,9 +4661,6 @@
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\ProviderSettingsEditor.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\ProviderSettingsEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\SettingsCreator.cs">
-      <Link>Modules\AdaptivePerformanceEditor\Management\SettingsCreator.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\TypeLoaderExtensions.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\TypeLoaderExtensions.cs</Link>
     </Compile>

@@ -530,7 +530,7 @@ namespace UnityEditor.Search
                     case GameObjectChangeTrackerEventType.Destroyed:
                     case GameObjectChangeTrackerEventType.ChangedParent:
                     case GameObjectChangeTrackerEventType.ChangedScene:
-                        InvalidateObject(e.InstanceId);
+                        InvalidateObject(e.EntityId);
                         break;
 
                     // Other events are not relevant for us since they do not affect properties.

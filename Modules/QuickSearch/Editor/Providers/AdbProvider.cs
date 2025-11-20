@@ -219,6 +219,7 @@ namespace UnityEditor.Search.Providers
             m_AdbImplicitQueryEngine = new QueryEngine<UnityEngine.Object>(options);
             m_AdbImplicitQueryEngine.AddFilter("t", k_Operators);
             m_AdbImplicitQueryEngine.AddFilter("l", k_Operators);
+            m_AdbImplicitQueryEngine.AddFilter("a", k_Operators);
             m_AdbImplicitQueryEngine.SetSearchDataCallback(GetWords);
         }
 
@@ -233,24 +234,19 @@ namespace UnityEditor.Search.Providers
             var filterType = context.filterType;
             var searchFilter = new SearchFilter
             {
-                searchArea = SearchFilter.SearchArea.AllAssets,
+                searchArea = SearchFilter.SearchArea.SelectedFolders, // Init to this value to see if the query itself contains an override for the area.
                 originalText = searchQuery
             };
-            if (!string.IsNullOrEmpty(searchQuery))
-                SearchUtility.ParseSearchString(searchQuery, searchFilter);
 
-            if (!flags.HasAny(SearchFlags.Packages))
+            if (!string.IsNullOrEmpty(searchQuery))
             {
-                // Reject all packages result:
-                if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets)
-                {
-                    searchFilter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
-                }
-                else if (searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
-                {
-                    // Query wants only package result but the switch to show Packages result is off: no results to be found
-                    return null;
-                }
+                SearchUtility.ParseSearchString(searchQuery, searchFilter);
+            }
+
+            // The query doesn't contain any area overrides: apply the are found in the context
+            if (searchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
+            {
+                searchFilter.searchArea = flags.HasAny(SearchFlags.Packages) ? SearchFilter.SearchArea.AllAssets : SearchFilter.SearchArea.InAssetsOnly;
             }
 
             if (filterType != null && searchFilter.classNames.Length == 0)
@@ -266,7 +262,7 @@ namespace UnityEditor.Search.Providers
             return SearchFilter.SearchArea.InAssetsOnly;
         }
 
-        static IEnumerable<int> EnumerateInstanceIDs(SearchFilter searchFilter)
+        static IEnumerable<EntityId> EnumerateEntityIds(SearchFilter searchFilter)
         {
             if (searchFilter == null || searchFilter.GetState() == SearchFilter.State.EmptySearchFilter)
                 yield break;
@@ -331,14 +327,14 @@ namespace UnityEditor.Search.Providers
             searchFilter.filterByTypeIntersection = (filterByTypeIntersection || parsedQuery.HasToggle(typeIntersectionToggle)) && !parsedQuery.HasToggle(typeUnionToggle);
             searchFilter.showAllHits = searchFilter.showAllHits || parsedQuery.HasToggle(showAllHitsToggle);
 
-            foreach (var id in EnumerateInstanceIDs(searchFilter))
+            foreach (var id in EnumerateEntityIds(searchFilter))
             {
-                var path = AssetDatabase.GetAssetPath((EntityId)id);
+                var path = AssetDatabase.GetAssetPath(id);
                 if (string.IsNullOrEmpty(path))
                     continue;
-                var gid = GlobalObjectId.GetGlobalObjectIdSlow((EntityId)id).ToString();
+                var gid = GlobalObjectId.GetGlobalObjectIdSlow(id).ToString();
                 var flags = SearchDocumentFlags.Asset;
-                if (AssetDatabase.IsSubAsset((EntityId)id))
+                if (AssetDatabase.IsSubAsset(id))
                 {
                     var obj = UnityEngine.Object.FindObjectFromInstanceID(id);
                     var filename = Path.GetFileNameWithoutExtension(path);

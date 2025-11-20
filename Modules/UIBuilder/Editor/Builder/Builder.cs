@@ -422,9 +422,9 @@ namespace Unity.UI.Builder
         }
 
         [OnOpenAsset(0)]
-        public static bool OnOpenAsset(int instanceID, int line)
+        public static bool OnOpenAsset(EntityId entityId, int line)
         {
-            var asset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
+            var asset = EditorUtility.EntityIdToObject(entityId) as VisualTreeAsset;
             if (asset == null)
                 return false;
 

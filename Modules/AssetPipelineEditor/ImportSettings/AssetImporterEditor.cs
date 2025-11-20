@@ -164,7 +164,7 @@ namespace UnityEditor.AssetImporters
         // This allow Importers to ignore the Apply/Revert mechanism and save their changes each update like normal Editor.
         protected virtual bool needsApplyRevert => !m_InstantApply && !EditorUtility.IsHiddenInInspector(target);
 
-        List<int> m_TargetsInstanceID;
+        List<EntityId> m_TargetsEntityId;
         // Check to make sure Users implemented their Inspector correctly for the Cancel deselection mechanism.
         bool m_ApplyRevertGUICalled;
         // Adding a check on OnEnable to make sure users call the base class, as it used to do nothing.
@@ -209,10 +209,10 @@ namespace UnityEditor.AssetImporters
             var editors = Resources.FindObjectsOfTypeAll(this.GetType()).Cast<AssetImporterEditor>().ToList();
 
             CheckExtraDataArray();
-            var loadedIds = new List<int>(targets.Length);
+            var loadedIds = new List<EntityId>(targets.Length);
             for (int i = 0; i < targets.Length; ++i)
             {
-                int entityId = targets[i].GetEntityId();
+                EntityId entityId = targets[i].GetEntityId();
                 loadedIds.Add(entityId);
                 var extraData = CreateOrReloadInspectorCopy(entityId, this);
                 if (m_ExtraDataTargets != null)
@@ -253,7 +253,7 @@ namespace UnityEditor.AssetImporters
                     FixCacheCount(entityId, allEditors);
                 }
             }
-            m_TargetsInstanceID = loadedIds;
+            m_TargetsEntityId = loadedIds;
         }
 
         void FixImporterAssetbundleName(string arg1, string arg2)
@@ -403,7 +403,7 @@ namespace UnityEditor.AssetImporters
             m_OnEnableCalled = false;
             m_ApplyRevertGUICalled = false;
 
-            foreach (var t in m_TargetsInstanceID)
+            foreach (var t in m_TargetsEntityId)
             {
                 ReleaseInspectorCopy(t, this);
             }

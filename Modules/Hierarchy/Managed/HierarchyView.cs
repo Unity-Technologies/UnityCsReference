@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -76,7 +77,7 @@ namespace Unity.Hierarchy
         readonly MultiColumnLayoutConfiguration m_MultiColumnLayoutConfiguration;
         readonly HierarchyViewItemColumn m_NameColumn;
         readonly HierarchyViewDragHandler m_DragHandler;
-        readonly VisualElement m_ListViewContentContainer;
+        readonly VisualElement m_ListViewScrollView;
 
         // UX update state
         VisualElement m_StyleContainer;
@@ -309,10 +310,9 @@ namespace Unity.Hierarchy
 
             m_CollectionView.layoutConfiguration = m_MultiColumnLayoutConfiguration;
 
-            var listViewInnerScrollView = m_CollectionView.scrollView;
-            m_ListViewContentContainer = listViewInnerScrollView.contentContainer;
-            m_ListViewContentContainer.RegisterCallback<ClickEvent>(OnClickEvent);
-            m_ListViewContentContainer.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
+            m_ListViewScrollView = m_CollectionView.scrollView;
+            m_ListViewScrollView.RegisterCallback<ClickEvent>(OnClickEvent);
+            m_ListViewScrollView.RegisterCallback<NavigationCancelEvent>(OnNavigationCancel);
 
             // UX update state
             m_StyleContainer = new();
@@ -940,7 +940,7 @@ namespace Unity.Hierarchy
         internal int GetIndexFromWorldPosition(Vector2 worldPos, float offset = 0)
         {
             var offsetWorldPosition = new Vector3(worldPos.x, worldPos.y - offset, 0f);
-            var localPosition = m_ListViewContentContainer.WorldToLocal(offsetWorldPosition);
+            var localPosition = m_ListViewScrollView.WorldToLocal(offsetWorldPosition);
             return GetIndexFromLocalPosition(localPosition);
         }
 
@@ -971,7 +971,7 @@ namespace Unity.Hierarchy
 
             evt.StopImmediatePropagation();
 
-            var localposition = hierarchyView.ChangeCoordinatesTo(m_ListViewContentContainer, evt.localMousePosition);
+            var localposition = hierarchyView.ChangeCoordinatesTo(m_ListViewScrollView, evt.localMousePosition);
             var itemIndex = GetIndexFromLocalPosition(localposition);
             var item = GetHierarchyViewItemFromIndex(itemIndex);
             // item == null if user right-clicks in empty space of HierarchyView.
@@ -1003,7 +1003,7 @@ namespace Unity.Hierarchy
         }
 
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
-        internal void PingNode(in HierarchyNode node)
+        internal void PingNode(HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).PingNode({node})");
             // Expand node parents
@@ -1016,6 +1016,19 @@ namespace Unity.Hierarchy
                 return;
 
             m_CollectionView.ScrollToItem(index);
+
+            EnqueuePostUpdateAction(() =>
+            {
+                schedule.Execute(() => DoPingAnimation(node));
+            });
+        }
+
+        void DoPingAnimation(HierarchyNode node)
+        {
+            var index = m_HierarchyViewModel.IndexOf(in node);
+            if (index < 0)
+                return;
+
             var item = GetHierarchyViewItemFromIndex(index);
             if (item == null)
                 return;
@@ -1219,7 +1232,7 @@ namespace Unity.Hierarchy
                     break;
             }
 
-            m_ListViewContentContainer.Focus();
+            m_ListViewScrollView.Focus();
 
             if (shouldStopPropagation)
                 evt.StopPropagation();
@@ -1246,23 +1259,20 @@ namespace Unity.Hierarchy
                         break;
                 }
 
-                m_ListViewContentContainer.Focus();
+                m_ListViewScrollView.Focus();
             }
             else
             {
-                var item = GetHierarchyViewItemFromIndex(selectedIndex);
-                if (item == null)
-                    return;
-
-                ref readonly var currentNode = ref m_HierarchyViewModel[selectedIndex];
                 switch (evt.direction)
                 {
                     case NavigationMoveEvent.Direction.Right:
-                        SetExpandedState(currentNode, true, evt.altKey);
-                        break;
-
                     case NavigationMoveEvent.Direction.Left:
-                        SetExpandedState(currentNode, false, evt.altKey);
+                        var count = m_HierarchyViewModel.HasAnyFlagsCount(HierarchyNodeFlags.Selected);
+                        using (var selectedNodes = new RentSpanUnmanaged<HierarchyNode>(count))
+                        {
+                            m_HierarchyViewModel.GetNodesWithAnyFlags(HierarchyNodeFlags.Selected, selectedNodes);
+                            SetExpandedState(selectedNodes, evt.direction == NavigationMoveEvent.Direction.Right, evt.altKey);
+                        }
                         break;
 
                     default:
@@ -1388,6 +1398,27 @@ namespace Unity.Hierarchy
             }
         }
 
+        readonly ProfilerMarker m_RefreshItemsProfilerMarker = new ProfilerMarker("HierarchyView.RefreshItems");
+        readonly ProfilerMarker m_SetSelectionMarker = new ProfilerMarker("HierarchyView.SetSelection");
+
+        void SetExpandedState(ReadOnlySpan<HierarchyNode> nodes, bool isExpanded, bool recurse)
+        {
+            if (isExpanded)
+            {
+                if (recurse)
+                    SetFlagsRecursive(nodes, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                else
+                    SetFlags(nodes, HierarchyNodeFlags.Expanded);
+            }
+            else
+            {
+                if (recurse)
+                    ClearFlagsRecursive(nodes, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+                else
+                    ClearFlags(nodes, HierarchyNodeFlags.Expanded);
+            }
+        }
+
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal bool UpdateListView()
         {
@@ -1398,19 +1429,25 @@ namespace Unity.Hierarchy
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).UpdateListView()");
 
             // Refresh the list view
-            m_CollectionView.RefreshItems();
-
-            // Refresh selected items
-            var selectedCount = m_HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
-            if (selectedCount == 0)
+            using (m_RefreshItemsProfilerMarker.Auto())
             {
-                SetListViewSelectionWithoutNotify(Array.Empty<int>());
+                m_CollectionView.RefreshItems();
             }
-            else
+
+            using (m_SetSelectionMarker.Auto())
             {
-                using var indices = new RentSpanUnmanaged<int>(selectedCount);
-                m_HierarchyViewModel.GetIndicesWithAllFlags(HierarchyNodeFlags.Selected, indices);
-                SetListViewSelectionWithoutNotify(indices);
+                // Refresh selected items
+                var selectedCount = m_HierarchyViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
+                if (selectedCount == 0)
+                {
+                    SetListViewSelectionWithoutNotify(Array.Empty<int>());
+                }
+                else
+                {
+                    using var indices = new RentSpanUnmanaged<int>(selectedCount);
+                    m_HierarchyViewModel.GetIndicesWithAllFlags(HierarchyNodeFlags.Selected, indices);
+                    SetListViewSelectionWithoutNotify(indices);
+                }
             }
 
             // Store last version
@@ -1421,6 +1458,12 @@ namespace Unity.Hierarchy
         void SetListViewSelectionWithoutNotify(Span<int> selection)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).SetListViewSelectionWithoutNotify(selection={HierarchyLogging.ToString<int>(selection)})");
+
+            if (selection.Length == 0)
+            {
+                m_CollectionView.SetSelectionWithoutNotify(new ReadOnlySpan<int>());
+                return;
+            }
 
             using var filteredSelection = new RentSpanUnmanaged<int>(selection.Length);
             var filteredSelectionLength = 0;

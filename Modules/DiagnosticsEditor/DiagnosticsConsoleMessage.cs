@@ -40,7 +40,7 @@ namespace UnityEditor
                 return;
 
             m_SwitchesInEffect = switchesInEffect;
-            Debug.RemoveLogEntriesByIdentifier(GetEntityId());
+            Debug.RemoveLogEntriesByIdentifier(GetEntityId().GetHashCode());
 
             if (m_SwitchesInEffect.Length > 0)
             {

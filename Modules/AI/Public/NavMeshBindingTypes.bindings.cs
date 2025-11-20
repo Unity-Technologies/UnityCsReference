@@ -51,15 +51,15 @@ namespace UnityEngine.AI
         public NavMeshBuildSourceShape shape { get { return m_Shape; } set { m_Shape = value; } }
         public int area { get { return m_Area; } set { m_Area = value; } }
         public bool generateLinks { get { return m_GenerateLinks != 0; } set { m_GenerateLinks = value ? 1 : 0; } }
-        public Object sourceObject { get { return InternalGetObject(m_InstanceID); } set { m_InstanceID = value != null ? value.GetEntityId() : EntityId.None; } }
+        public Object sourceObject { get { return InternalGetObject(m_EntityId); } set { m_EntityId = value != null ? value.GetEntityId() : EntityId.None; } }
         public Component component { get { return InternalGetComponent(m_ComponentID); } set { m_ComponentID = value != null ? value.GetEntityId() : EntityId.None; } }
 
         Matrix4x4 m_Transform;
         Vector3 m_Size;
         NavMeshBuildSourceShape m_Shape;
         int m_Area;
-        int m_InstanceID;
-        int m_ComponentID;
+        EntityId m_EntityId;
+        EntityId m_ComponentID;
         int m_GenerateLinks;
 
         [StaticAccessor("NavMeshBuildSource", StaticAccessorType.DoubleColon)]
@@ -80,7 +80,7 @@ namespace UnityEngine.AI
         public bool overrideGenerateLinks { get { return m_OverrideGenerateLinks != 0; } set { m_OverrideGenerateLinks = value ? 1 : 0; } }
         public bool generateLinks { get { return m_GenerateLinks != 0; } set { m_GenerateLinks = value ? 1 : 0; } }
         public bool applyToChildren { get { return m_IgnoreChildren == 0; } set { m_IgnoreChildren = value ? 0 : 1; } }
-        public Transform root { get { return InternalGetRootGO(m_InstanceID); } set { m_InstanceID = value != null ? value.GetEntityId() : EntityId.None; } }
+        public Transform root { get { return InternalGetRootGO(m_EntityId); } set { m_EntityId = value != null ? value.GetEntityId() : EntityId.None; } }
 
         int m_OverrideArea;
         int m_Area;
@@ -88,7 +88,7 @@ namespace UnityEngine.AI
         int m_IgnoreFromBuild;
         int m_OverrideGenerateLinks;
         int m_GenerateLinks;
-        int m_InstanceID;
+        EntityId m_EntityId;
         int m_IgnoreChildren; // backing field is reversed for the default value to align with the legacy default behaviour
 
         [StaticAccessor("NavMeshBuildMarkup", StaticAccessorType.DoubleColon)]

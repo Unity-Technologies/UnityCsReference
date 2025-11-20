@@ -81,9 +81,9 @@ namespace UnityEngine.UIElements
 
         private static bool s_RegisteredPlayerloopCallback = false;
 
-        private static void RegisterCachedPanelInternal(int instanceID, IPanel panel)
+        private static void RegisterCachedPanelInternal(EntityId entityId, IPanel panel)
         {
-            UIElementsUtility.RegisterCachedPanel(instanceID, panel as Panel);
+            UIElementsUtility.RegisterCachedPanel(entityId, panel as Panel);
             s_PanelOrderingOrDrawInCameraDirty = true;
             if (!s_RegisteredPlayerloopCallback)
             {
@@ -93,9 +93,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static void RemoveCachedPanelInternal(int instanceID)
+        private static void RemoveCachedPanelInternal(EntityId entityId)
         {
-            UIElementsUtility.RemoveCachedPanel(instanceID);
+            UIElementsUtility.RemoveCachedPanel(entityId);
 
             s_PanelOrderingOrDrawInCameraDirty = true;
 

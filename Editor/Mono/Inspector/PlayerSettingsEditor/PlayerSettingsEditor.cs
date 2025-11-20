@@ -3448,7 +3448,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
                 EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
 
-                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
+                if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.VisionOS)
                     EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);
             }
 

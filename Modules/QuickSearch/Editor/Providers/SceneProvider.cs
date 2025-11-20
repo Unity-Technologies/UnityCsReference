@@ -259,7 +259,7 @@ namespace UnityEditor.Search.Providers
                     case GameObjectChangeTrackerEventType.ChangedParent:
                     case GameObjectChangeTrackerEventType.ChangedScene:
                     case GameObjectChangeTrackerEventType.Destroyed:
-                        InvalidateObject(e.InstanceId);
+                        InvalidateObject(e.EntityId);
                         InvalidateScene();
                         break;
 
@@ -354,8 +354,8 @@ namespace UnityEditor.Search.Providers
             if (!go)
                 return null;
 
-            var instanceId = go.GetHashCode();
-            var item = provider.CreateItem(context, instanceId.ToString(), instanceId.GetHashCode(), null, null, null, new GameObjectData(go));
+            var entityId = go.GetEntityId();
+            var item = provider.CreateItem(context, entityId.ToString(), entityId.GetHashCode(), null, null, null, new GameObjectData(go));
             return SetItemDescriptionFormat(item, useFuzzySearch: false);
         }
 
@@ -390,7 +390,7 @@ namespace UnityEditor.Search.Providers
                 SceneView.lastActiveSceneView.FrameSelected();
         }
 
-        private int GetItemInstanceId(SearchItem item)
+        private EntityId GetItemInstanceId(SearchItem item)
         {
             var obj = ObjectFromItem(item);
             return obj.GetEntityId();

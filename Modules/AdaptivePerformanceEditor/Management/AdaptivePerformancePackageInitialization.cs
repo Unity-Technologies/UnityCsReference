@@ -39,37 +39,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
         bool PopulateSettingsOnInitialization(ScriptableObject obj);
     }
 
-
-    [InitializeOnLoad]
     class AdaptivePerformancePackageInitializationBootstrap
     {
-        static AdaptivePerformancePackageInitializationBootstrap()
-        {
-            if (!EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                EditorApplication.update += BeginPackageInitialization;
-            }
-
-            EditorApplication.playModeStateChanged += PlayModeStateChanged;
-        }
-
-        private static void PlayModeStateChanged(PlayModeStateChange state)
-        {
-            switch (state)
-            {
-                case PlayModeStateChange.EnteredPlayMode:
-                    BeginPackageInitialization();
-                    break;
-
-                case PlayModeStateChange.EnteredEditMode:
-                    BeginPackageInitialization();
-                    break;
-            }
-        }
-
         internal static void BeginPackageInitialization()
         {
-            EditorApplication.update -= BeginPackageInitialization;
 
             foreach (var t in TypeLoaderExtensions.GetAllTypesWithInterface<IAdaptivePerformancePackage>())
             {

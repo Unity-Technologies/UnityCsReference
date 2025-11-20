@@ -105,19 +105,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         // We keep a static array here so that even if we create multiple instances of resource loaders
         // they'll still share style sheets instead of creating new ones. Style sheets are ScriptableObjects
         // so they silently survive domain reload even when resource loaders are not serialized
-        private static readonly int[] s_ResolvedDarkStyleSheetIds = new int[(int)StyleSheetType.Count];
-        private static readonly int[] s_ResolvedLightStyleSheetIds = new int[(int)StyleSheetType.Count];
+        private static readonly EntityId[] s_ResolvedDarkStyleSheetIds = new EntityId[(int)StyleSheetType.Count];
+        private static readonly EntityId[] s_ResolvedLightStyleSheetIds = new EntityId[(int)StyleSheetType.Count];
 
         [SerializeField]
-        private int[] m_SerializedResolvedDarkStyleSheetIds;
+        private EntityId[] m_SerializedResolvedDarkStyleSheetIds;
 
         [SerializeField]
-        private int[] m_SerializedResolvedLightStyleSheetIds;
+        private EntityId[] m_SerializedResolvedLightStyleSheetIds;
 
         [SerializeField]
         private bool m_ModalStylesheetPreloaded = false;
 
-        private static int[] resolvedStyleSheetIds => EditorGUIUtility.isProSkin ? s_ResolvedDarkStyleSheetIds : s_ResolvedLightStyleSheetIds;
+        private static EntityId[] resolvedStyleSheetIds => EditorGUIUtility.isProSkin ? s_ResolvedDarkStyleSheetIds : s_ResolvedLightStyleSheetIds;
 
         public override void OnEnable()
         {
@@ -144,9 +144,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             for (var i = 0; i < (int)StyleSheetType.Count; i++)
             {
-                if (s_ResolvedDarkStyleSheetIds[i] == 0 && m_SerializedResolvedDarkStyleSheetIds[i] != 0)
+                if (s_ResolvedDarkStyleSheetIds[i] == EntityId.None && m_SerializedResolvedDarkStyleSheetIds[i] != EntityId.None)
                     s_ResolvedDarkStyleSheetIds[i] = m_SerializedResolvedDarkStyleSheetIds[i];
-                if (s_ResolvedLightStyleSheetIds[i] == 0 && m_SerializedResolvedLightStyleSheetIds[i] != 0)
+                if (s_ResolvedLightStyleSheetIds[i] == EntityId.None && m_SerializedResolvedLightStyleSheetIds[i] != EntityId.None)
                     s_ResolvedLightStyleSheetIds[i] = m_SerializedResolvedLightStyleSheetIds[i];
             }
         }
@@ -154,7 +154,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private StyleSheet FindResolvedStyleSheetFromType(StyleSheetType styleSheetType)
         {
             var styleSheetId = resolvedStyleSheetIds[(int)styleSheetType];
-            if (styleSheetId != 0)
+            if (styleSheetId != EntityId.None)
                 return UnityEngine.Object.FindObjectFromInstanceID(styleSheetId) as StyleSheet;
             return null;
         }
@@ -313,13 +313,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Reset()
         {
-            foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Concat(s_ResolvedLightStyleSheetIds).Where(id => id != 0))
+            foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Concat(s_ResolvedLightStyleSheetIds).Where(id => id != EntityId.None))
                 UnityEngine.Object.DestroyImmediate(UnityEngine.Object.FindObjectFromInstanceID(styleSheetId));
 
             for (var i = 0; i < (int)StyleSheetType.Count; i++)
             {
-                s_ResolvedDarkStyleSheetIds[i] = 0;
-                s_ResolvedLightStyleSheetIds[i] = 0;
+                s_ResolvedDarkStyleSheetIds[i] = EntityId.None;
+                s_ResolvedLightStyleSheetIds[i] = EntityId.None;
             }
         }
     }

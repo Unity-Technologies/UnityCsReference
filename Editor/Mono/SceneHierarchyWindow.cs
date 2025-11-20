@@ -279,7 +279,7 @@ namespace UnityEditor
             m_SceneHierarchy.DoWindowLockButton(rect);
         }
 
-        public void SetExpandedRecursive(int id, bool expand)
+        public void SetExpandedRecursive(EntityId id, bool expand)
         {
             m_SceneHierarchy.SetExpandedRecursive(id, expand);
         }
@@ -291,12 +291,12 @@ namespace UnityEditor
 
         void IHierarchyWindow.SetExpanded(EntityId entityId, bool expanded) => SetExpanded(entityId, expanded);
 
-        public void FrameObject(EntityId instanceID, bool ping)
+        public void FrameObject(EntityId entityId, bool ping)
         {
             // To be able to frame the object we need to clear the search filter
             SetSearchFilter("", SearchableEditorWindow.SearchMode.All, true);
             UnfocusSearchField();
-            m_SceneHierarchy.FrameObject(instanceID, ping);
+            m_SceneHierarchy.FrameObject(entityId, ping);
         }
 
         void OnSceneSelectionStateChanged(Scene selectedScene)

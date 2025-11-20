@@ -284,6 +284,10 @@ namespace UnityEngine.LowLevelPhysics2D
                 // Fetch the transform tween.
                 var transformTween = TransformWriteTweens[index];
 
+                // Skip if invalid body.
+                if (!transformTween.body.isValid)
+                    return;
+
                 // Fetch the tween transform write mode.
                 var tweenTransformWritemode = transformTween.transformWriteMode;
 

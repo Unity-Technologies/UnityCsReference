@@ -454,7 +454,7 @@ namespace UnityEditor.UIElements
 
             m_WasVisible = inspectorWindow.WasEditorVisible(editors, m_EditorIndex, target);
 
-            GUIUtility.GetControlID(target.GetEntityId(), FocusType.Passive);
+            GUIUtility.GetControlID(target.GetEntityId().GetHashCode(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
             GUI.color = playModeTintColor;
 

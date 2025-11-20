@@ -210,7 +210,7 @@ namespace Unity.GraphToolkit.Editor
 
         static float GetLabelTextWidth(TextElement element)
         {
-            return element.GetTextWidth();
+            return element.MeasureTextSize(element.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined).x;
         }
 
         /// <summary>

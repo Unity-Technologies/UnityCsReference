@@ -26,7 +26,7 @@ namespace UnityEditor
         [DataMember]
         public float m_PreviewSize = -1f; // if -1f then preview size is not applied when set
         [DataMember]
-        public EntityId m_ID;
+        public int m_ID;
         [DataMember]
         public SearchFilter m_Filter;
 
@@ -63,9 +63,9 @@ namespace UnityEditor
             return instanceID;
         }
 
-        public static EntityId AddSavedFilterAfterInstanceID(string displayName, SearchFilter filter, float previewSize, EntityId insertAfterID, bool addAsChild)
+        public static int AddSavedFilterAfterInstanceID(string displayName, SearchFilter filter, float previewSize, int insertAfterID, bool addAsChild)
         {
-            EntityId instanceID = instance.Add(displayName, filter, previewSize, insertAfterID, addAsChild);
+            int instanceID = instance.Add(displayName, filter, previewSize, insertAfterID, addAsChild);
             return instanceID;
         }
 
@@ -74,7 +74,7 @@ namespace UnityEditor
             instance.Remove(instanceID);
         }
 
-        public static bool IsSavedFilter(EntityId instanceID)
+        public static bool IsSavedFilter(int instanceID)
         {
             return instance.IndexOf(instanceID) >= 0;
         }
@@ -126,7 +126,7 @@ namespace UnityEditor
             return "";
         }
 
-        public static void SetName(EntityId instanceID, string name)
+        public static void SetName(int instanceID, string name)
         {
             SavedFilter filter = instance.Find(instanceID);
             if (filter != null)
@@ -286,12 +286,12 @@ namespace UnityEditor
         {
             List<int> allIDs = new List<int>();
             foreach (SavedFilter sf in m_SavedFilters)
-                if (sf.m_ID >= ProjectWindowUtil.k_FavoritesStartInstanceID)
+                if (sf.m_ID >= ProjectWindowUtil.k_FavoritesStartUniqueId)
                     allIDs.Add(sf.m_ID);
             allIDs.Sort();
 
             // Now try find
-            int result = ProjectWindowUtil.k_FavoritesStartInstanceID;
+            int result = ProjectWindowUtil.k_FavoritesStartUniqueId;
             int i = 0;
             while (i < 1000)
             {
@@ -303,10 +303,10 @@ namespace UnityEditor
             }
 
             Debug.LogError("Could not assign valid ID to saved filter " + DebugUtils.ListToString(allIDs) + " " + result);
-            return ProjectWindowUtil.k_FavoritesStartInstanceID + 1000;
+            return ProjectWindowUtil.k_FavoritesStartUniqueId + 1000;
         }
 
-        EntityId Add(string displayName, SearchFilter filter, float previewSize, EntityId insertAfterInstanceID, bool addAsChild)
+        int Add(string displayName, SearchFilter filter, float previewSize, int insertAfterUniqueId, bool addAsChild)
         {
             SearchFilter filterCopy = null;
             if (filter != null)
@@ -321,9 +321,9 @@ namespace UnityEditor
             }
 
             int afterIndex = 0; // add after root index
-            if (insertAfterInstanceID != EntityId.None)
+            if (insertAfterUniqueId != 0)
             {
-                afterIndex = IndexOf(insertAfterInstanceID);
+                afterIndex = IndexOf(insertAfterUniqueId);
                 if (afterIndex == -1)
                 {
                     Debug.LogError("Invalid insert position");
@@ -352,7 +352,7 @@ namespace UnityEditor
             return savedFilter.m_ID;
         }
 
-        List<SavedFilter> GetSavedFilterAndChildren(EntityId instanceID)
+        List<SavedFilter> GetSavedFilterAndChildren(int instanceID)
         {
             List<SavedFilter> result = new List<SavedFilter>();
             int index = IndexOf(instanceID);
@@ -371,12 +371,12 @@ namespace UnityEditor
             return result;
         }
 
-        void Remove(EntityId instanceID)
+        void Remove(int uniqueId)
         {
-            int index = IndexOf(instanceID);
+            int index = IndexOf(uniqueId);
             if (index >= 1)
             {
-                List<SavedFilter> deleteList = GetSavedFilterAndChildren(instanceID);
+                List<SavedFilter> deleteList = GetSavedFilterAndChildren(uniqueId);
                 if (deleteList.Count > 0)
                 {
                     m_SavedFilters.RemoveRange(index, deleteList.Count);
@@ -385,18 +385,18 @@ namespace UnityEditor
             }
         }
 
-        int IndexOf(EntityId instanceID)
+        int IndexOf(int uniqueId)
         {
             for (int i = 0; i < m_SavedFilters.Count; ++i)
-                if (m_SavedFilters[i].m_ID == instanceID)
+                if (m_SavedFilters[i].m_ID == uniqueId)
                     return i;
 
             return -1;
         }
 
-        SavedFilter Find(EntityId instanceID)
+        SavedFilter Find(int uniqueId)
         {
-            int index = IndexOf(instanceID);
+            int index = IndexOf(uniqueId);
             if (index >= 0)
                 return m_SavedFilters[index];
             return null;
@@ -419,11 +419,11 @@ namespace UnityEditor
             m_SavedFilters[0].m_Name = "Favorites";
             m_SavedFilters[0].m_Filter = filter;
             m_SavedFilters[0].m_Depth = 0;
-            m_SavedFilters[0].m_ID = ProjectWindowUtil.k_FavoritesStartInstanceID;
+            m_SavedFilters[0].m_ID = ProjectWindowUtil.k_FavoritesStartUniqueId;
 
             // At init check if all have valid ids (for patching up ids old saved filters)
             for (int i = 0; i < m_SavedFilters.Count; ++i)
-                if (m_SavedFilters[i].m_ID < ProjectWindowUtil.k_FavoritesStartInstanceID)
+                if (m_SavedFilters[i].m_ID < ProjectWindowUtil.k_FavoritesStartUniqueId)
                     m_SavedFilters[i].m_ID = GetNextAvailableID();
 
             // Ensure depth is valid
@@ -462,10 +462,10 @@ namespace UnityEditor
             for (int i = 0; i < m_SavedFilters.Count; ++i)
             {
                 SavedFilter savedFilter = m_SavedFilters[i];
-                int instanceID = savedFilter.m_ID;
+                EntityId entityId = EntityId.From(savedFilter.m_ID);
                 int depth = savedFilter.m_Depth;
                 bool isFolder = savedFilter.m_Filter.GetState() == SearchFilter.State.FolderBrowsing;
-                var item = new SearchFilterTreeItem(instanceID, depth, null, savedFilter.m_Name, isFolder);
+                var item = new SearchFilterTreeItem(entityId, depth, null, savedFilter.m_Name, isFolder);
                 if (i == 0)
                     root = item;
                 else

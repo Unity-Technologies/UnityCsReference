@@ -119,6 +119,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         const float k_DefaultPageSize = 20.0f;
         const double k_closeEnoughEpsilon = double.Epsilon * 16;
+        float m_Factor = 1;
 
         /// <summary>
         /// The slider used by this scroller.
@@ -231,6 +232,20 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
         }
 
+        // Caches the last factor in cases where we need it in a later frame
+        internal float factor
+        {
+            get { return m_Factor; }
+            set
+            {
+                if (Mathf.Approximately(m_Factor, value))
+                    return;
+
+                m_Factor = value;
+                Adjust();
+            }
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -267,11 +282,9 @@ namespace UnityEngine.UIElements.HierarchyV2
         /// <summary>
         /// Updates the slider element size as a ratio of total range. A value greater than or equal to 1 will disable the Scroller.
         /// </summary>
-        /// <param name="factor">Slider size ratio.</param>
-        public void Adjust(float factor)
+        public void Adjust()
         {
             // Any factor smaller than 1f will enable the scroller (and its children)
-            SetEnabled(factor < 1f);
             slider.AdjustDragElement(factor);
         }
 

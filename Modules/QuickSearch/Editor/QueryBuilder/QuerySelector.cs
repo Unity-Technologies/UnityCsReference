@@ -176,10 +176,16 @@ namespace UnityEditor.Search
         private IEnumerator<SearchProposition> m_PropositionEnumerator;
         private int m_PropositionsCount;
         private AdvancedDropdownItem m_RootItem;
+        private TimeSpan m_PropositionsIterationTimeInSeconds;
 
-        const double k_PropositionsIterationTimeInSeconds = 0.02;
+        static readonly TimeSpan k_PropositionsIterationTimes = TimeSpan.FromSeconds(0.02);
 
         public QuerySelector(Rect rect, IBlockSource dataSource, string title = null)
+            : this(rect, dataSource, title, k_PropositionsIterationTimes)
+        {
+        }
+
+        QuerySelector(Rect rect, IBlockSource dataSource, string title, TimeSpan propositionsIterationTimes)
             : base(new AdvancedDropdownState())
         {
             m_BlockSource = dataSource;
@@ -190,6 +196,7 @@ namespace UnityEditor.Search
             minimumSize = new Vector2(Mathf.Max(rect.width, 250f), 350f);
             maximumSize = new Vector2(Mathf.Max(rect.width, 400f), 450f);
 
+            m_PropositionsIterationTimeInSeconds = propositionsIterationTimes;
             m_DataSource = new CallbackDataSource(BuildRoot);
             m_DataSource.CurrentFolderContextualSearch = true;
             m_Gui = new QuerySelectorItemGUI(m_DataSource, this);
@@ -197,7 +204,12 @@ namespace UnityEditor.Search
 
         public static QuerySelector Open(Rect r, IBlockSource source, string title = null)
         {
-            var w = new QuerySelector(r, source, title);
+            return Open(r, source, title, k_PropositionsIterationTimes);
+        }
+
+        internal static QuerySelector Open(Rect r, IBlockSource source, string title, TimeSpan propositionsIterationTimes)
+        {
+            var w = new QuerySelector(r, source, title, propositionsIterationTimes);
             w.Show(r);
             w.Bind();
             return w;
@@ -328,11 +340,11 @@ namespace UnityEditor.Search
 
             var formatNames = m_BlockSource.formatNames;
             var hasData = m_PropositionEnumerator.MoveNext();
-            while ((EditorApplication.timeSinceStartup - startIteration) < k_PropositionsIterationTimeInSeconds && hasData)
+            while ((m_PropositionsIterationTimeInSeconds == TimeSpan.Zero || TimeSpan.FromSeconds(EditorApplication.timeSinceStartup - startIteration) < m_PropositionsIterationTimeInSeconds)
+                   && hasData)
             {
                 var p = m_PropositionEnumerator.Current;
                 var newItem = CreateItem(p, formatNames, out var path, out var name, out var prefix);
-                m_PathIdToItem[path.GetHashCode()] = newItem;
                 var parent = m_RootItem;
                 if (prefix != null)
                     parent = MakeParents(prefix, p, m_RootItem);
@@ -343,11 +355,14 @@ namespace UnityEditor.Search
                 }
                 else
                 {
-                    var fit = FindItem(name, parent);
-                    if (fit == null)
+                    var itemAlreadyInTree = FindItem(name, parent);
+                    if (itemAlreadyInTree == null)
+                    {
                         parent.AddChild(newItem);
+                        m_PathIdToItem[path.GetHashCode()] = newItem;
+                    }
                     else if (p.icon)
-                        fit.icon = p.icon;
+                        itemAlreadyInTree.icon = p.icon;
                 }
                 hasData = m_PropositionEnumerator.MoveNext();
                 m_PropositionsCount++;
@@ -377,13 +392,13 @@ namespace UnityEditor.Search
             return null;
         }
 
-        static readonly string[] s_Tokens = new string[10];
+        static readonly string[] k_Tokens = new string[10];
         private AdvancedDropdownItem MakeParents(string prefix, in SearchProposition proposition, AdvancedDropdownItem parent)
         {
-            var tokenCount = SearchUtils.SplitTokens(prefix,  '/', s_Tokens);
+            var tokenCount = SearchUtils.SplitTokens(prefix,  '/', k_Tokens);
             for (var i = 0; i < tokenCount; ++i)
             {
-                var p = s_Tokens[i];
+                var p = k_Tokens[i];
                 var f = FindItem(p, parent);
                 if (f != null)
                 {
