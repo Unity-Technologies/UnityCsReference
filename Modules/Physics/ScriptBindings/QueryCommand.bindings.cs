@@ -57,6 +57,7 @@ namespace UnityEngine
             this.queryParameters = queryParameters;
 
         }
+
         public RaycastCommand(PhysicsScene physicsScene, Vector3 from, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
         {
             this.from = from;
@@ -115,7 +116,7 @@ namespace UnityEngine
             this.queryParameters = queryParameters;
         }
 
-        public SpherecastCommand(PhysicsScene physicsScene, Vector3 origin,  float radius, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
+        public SpherecastCommand(PhysicsScene physicsScene, Vector3 origin, float radius, Vector3 direction, QueryParameters queryParameters, float distance = float.MaxValue)
         {
             this.origin = origin;
             this.direction = direction;

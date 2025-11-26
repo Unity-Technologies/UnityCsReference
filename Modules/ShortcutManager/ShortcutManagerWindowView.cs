@@ -77,6 +77,7 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshShortcutList()
         {
             m_ShortcutsTable.Rebuild();
+            ShortcutSelectionChanged(m_ShortcutsTable.selectedItems);
         }
 
         void RefreshListSelection()

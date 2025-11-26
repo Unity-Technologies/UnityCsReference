@@ -532,8 +532,9 @@ namespace UnityEngine.UIElements
                     m_Footer.Add(m_AddButton);
 
                     m_RemoveButton = new Button(OnRemoveClicked) { name = footerRemoveButtonName, text = "-" };
-                    m_RemoveButton.SetEnabled(allowRemove);
                     m_Footer.Add(m_RemoveButton);
+
+                    UpdateRemoveButton();
                 }
 
                 if (m_Foldout != null)
@@ -673,6 +674,11 @@ namespace UnityEngine.UIElements
             }
 
             UpdateListViewLabel();
+        }
+
+        private void UpdateRemoveButton()
+        {
+            m_RemoveButton?.SetEnabled(allowRemove && viewController?.GetItemsCount() > 0);
         }
 
         internal void UpdateArraySizeField()
@@ -1043,7 +1049,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_AllowRemove = value;
-                m_RemoveButton?.SetEnabled(allowRemove);
+                UpdateRemoveButton();
                 NotifyPropertyChanged(allowRemoveProperty);
             }
         }
@@ -1263,6 +1269,7 @@ namespace UnityEngine.UIElements
         private protected override void PostRefresh()
         {
             UpdateArraySizeField();
+            UpdateRemoveButton();
             UpdateListViewLabel();
             base.PostRefresh();
         }

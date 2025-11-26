@@ -560,8 +560,31 @@ namespace UnityEngine.UIElements.StyleSheets
                     string path = propertyValue.sheet.ReadResourcePath(propertyValue.handle);
                     if (!string.IsNullOrEmpty(path))
                     {
+                        UnityEngine.Object obj = Resources.Load(path);
+                        if (obj != null)
+                        {
+                            var type = obj.GetType();
+                            if (type == typeof(Texture2D))
+                            {
+                                source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
+                            }
+                            else if (type == typeof(Sprite))
+                            {
+                                source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
+                            }
+                            else if (type == typeof(VectorImage))
+                            {
+                                source.vectorImage = Panel.LoadResource(path, typeof(VectorImage), dpiScaling) as VectorImage;
+                            }
+                            else if (type == typeof(RenderTexture))
+                            {
+                                source.renderTexture = Panel.LoadResource(path, typeof(RenderTexture), dpiScaling) as RenderTexture;
+                            }
+                        }
+
                         //TODO: This will use GUIUtility.pixelsPerPoint as targetDpi, this may not be the best value for the current panel
-                        source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
+                        if (source.IsNull())
+                            source.sprite = Panel.LoadResource(path, typeof(Sprite), dpiScaling) as Sprite;
                         if (source.IsNull())
                             source.texture = Panel.LoadResource(path, typeof(Texture2D), dpiScaling) as Texture2D;
                         if (source.IsNull())
