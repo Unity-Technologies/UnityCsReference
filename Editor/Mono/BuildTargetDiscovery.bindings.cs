@@ -17,6 +17,7 @@ namespace UnityEditor
     [StaticAccessor("BuildTargetDiscovery::GetInstance()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetDiscovery.h")]
     [RequiredByNativeCode]
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal static class BuildTargetDiscovery
     {
         [Flags]
@@ -240,6 +241,11 @@ namespace UnityEditor
             public StandaloneBuildSubtarget subtarget = StandaloneBuildSubtarget.Default;
             public PlatformAttributes flags = PlatformAttributes.None;
 
+            /// <summary>
+            /// To be used when fetching relevant platform specific colored icons or backgrounds.
+            /// </summary>
+            public string buildProfilePlatformBannerBgColorHex = "#00000000";
+
             public string[] requiredPackage = new string[] {};
             public string[] recommendedPackage = new string[] {};
             public string description = L10n.Tr("");
@@ -441,8 +447,9 @@ namespace UnityEditor
                     buildTarget = BuildTarget.Switch2,
                     link = L10n.Tr("More details coming soon"),
                     iconName = "BuildSettings.Switch2",
-                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
-                }
+                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget,
+                    buildProfilePlatformBannerBgColorHex = "#E60012"
+               }
             },
             // then others
             {
@@ -796,6 +803,14 @@ namespace UnityEditor
                 return true;
 
             return false;
+        }
+
+        public static string GetPlatformColorString(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.buildProfilePlatformBannerBgColorHex;
+
+            return "#FFFFFF";
         }
     }
 }

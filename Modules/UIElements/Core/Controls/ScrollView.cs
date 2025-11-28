@@ -1831,6 +1831,18 @@ namespace UnityEngine.UIElements
         // TODO: Same behaviour as IMGUI Scroll view
         void OnScrollWheel(WheelEvent evt)
         {
+            // We don't want to treat zoom as a scroll anyway on any platform.
+            // Also fixes UUM-104506 - On Windows, control key is used for trackpads to tell if users are pinching (zooming).
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                if (evt.commandKey)
+                    return;
+            }
+            else if (evt.ctrlKey)
+            {
+                return;
+            }
+
             var updateContentViewTransform = false;
             var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;

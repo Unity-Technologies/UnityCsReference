@@ -24,6 +24,7 @@ namespace UnityEditor.Build.Profile
         Label m_SelectedDisplayNameLabel;
         Foldout m_SelectedDescriptionFoldout;
         Label m_SelectedDescriptionLabel;
+        VisualElement m_PlatformBrowserHeaderBG;
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
@@ -67,6 +68,7 @@ namespace UnityEditor.Build.Profile
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
             m_SelectedDescriptionFoldout = rootVisualElement.Q<Foldout>("platform-description-foldout");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
+            m_PlatformBrowserHeaderBG = rootVisualElement.Q<VisualElement>("platform-header-bg");
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
@@ -128,6 +130,12 @@ namespace UnityEditor.Build.Profile
                 m_SelectedDescriptionFoldout.Show();
                 m_SelectedDescriptionLabel.text = description;
             }
+
+            // Only color if not a default color and color can be parsed.
+            if (!card.platformBannerBgColorHex.Equals("#00000000") && ColorUtility.TryParseHtmlString(card.platformBannerBgColorHex, out Color bgColor))
+                m_PlatformBrowserHeaderBG.style.backgroundColor = bgColor;
+            else
+                m_PlatformBrowserHeaderBG.style.backgroundColor = StyleKeyword.Null;
         }
 
         ListView CreateCardListView()
@@ -153,6 +161,7 @@ namespace UnityEditor.Build.Profile
                 card.Set(
                     cardDescription.displayName,
                     BuildProfileModuleUtil.GetPlatformIconSmall(cardDescription.platformId));
+
             };
             cards.selectedIndicesChanged += (indices) =>
             {
@@ -190,7 +199,8 @@ namespace UnityEditor.Build.Profile
                 cards.Add(new BuildProfileCard()
                 {
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
-                    platformId = platformId
+                    platformId = platformId,
+                    platformBannerBgColorHex = BuildProfileModuleUtil.GetPlatformColorString(new GUID(platformId))
                 });
             }
             return cards.ToArray();

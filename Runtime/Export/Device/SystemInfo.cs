@@ -73,6 +73,8 @@ namespace UnityEngine.Device
 
         public static FoveatedRenderingCaps foveatedRenderingCaps => ShimManager.systemInfoShim.foveatedRenderingCaps;
 
+        public static int maxTiledPixelStorageSize => ShimManager.systemInfoShim.maxTiledPixelStorageSize;
+
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.systemInfoShim.hasHiddenSurfaceRemovalOnGPU;
 
         public static bool hasDynamicUniformArrayIndexingInFragmentShaders =>
@@ -268,6 +270,10 @@ namespace UnityEngine.Device
         {
             return ShimManager.systemInfoShim.SupportsRandomWriteOnRenderTextureFormat(format);
         }
-        
+
+        public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount)
+        {
+            return ShimManager.systemInfoShim.GetTiledRenderTargetStorageSize(format, sampleCount);
+        }
     }
 }

@@ -32,7 +32,6 @@ namespace UnityEditor.Build.Profile
         static HashSet<string> s_BuildProfileIconModules = new()
         {
             "Switch",
-            "Switch2",
         };
 
         /// <summary>
@@ -53,6 +52,9 @@ namespace UnityEditor.Build.Profile
         public static Texture2D GetPlatformIcon(string platformId)
         {
             if (LoadBuildProfileIcon(platformId, out Texture2D icon))
+                return icon;
+
+            if (LoadPlatformMipIcon(platformId, out icon))
                 return icon;
 
             return EditorGUIUtility.LoadIcon(GetPlatformIconId(platformId));
@@ -496,6 +498,15 @@ namespace UnityEditor.Build.Profile
             EditorPrefs.SetString(key, value);
         }
 
+        /// <summary>
+        /// Attempts to load the Mip mapped icon for the given platformId.
+        /// </summary>
+        static bool LoadPlatformMipIcon(string platformId, out Texture2D icon)
+        {
+            icon = EditorGUIUtility.FindTexture($"{GetModuleName(platformId)} Icon");
+            return icon != null;
+        }
+
         static bool LoadBuildProfileIcon(string platformId, out Texture2D icon)
         {
             var moduleName = GetModuleName(platformId);
@@ -670,6 +681,11 @@ namespace UnityEditor.Build.Profile
                 settingsText.AppendLine(settingPromptText);
             }
             return settingsText;
+        }
+
+        public static string GetPlatformColorString(GUID platformGuid)
+        {
+            return BuildTargetDiscovery.GetPlatformColorString(platformGuid);
         }
     }
 }

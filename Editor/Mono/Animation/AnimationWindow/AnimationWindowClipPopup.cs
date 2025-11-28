@@ -150,7 +150,6 @@ namespace UnityEditor
                     if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
                         DisplayClipMenu(position, controlID, clip);
-                        GUIUtility.keyboardControl = controlID;
                         evt.Use();
                     }
                     break;

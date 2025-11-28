@@ -496,17 +496,24 @@ namespace UnityEngine.UIElements
             set => m_HidePlaceholderTextOnFocus = value;
         }
 
-        internal bool showPlaceholderText
+        internal bool needsPlaceholderIfTextIsEmpty
         {
             get
             {
                 var isPlaceholderVisible = m_PlaceholderText.Length > 0;
                 var shouldHideOnFocus = edition.hidePlaceholderOnFocus && hasFocus;
+                return isPlaceholderVisible && !shouldHideOnFocus;
+            }
+        }
+
+        internal bool showPlaceholderText
+        {
+            get
+            {
+                if (!needsPlaceholderIfTextIsEmpty)
+                    return false;
+
                 var isTextEmpty = string.IsNullOrEmpty(text);
-
-                if (!isPlaceholderVisible) return false;
-                if (shouldHideOnFocus) return false;
-
                 return isTextEmpty;
             }
         }

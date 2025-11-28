@@ -147,7 +147,8 @@ namespace UnityEditor
         bool m_DidSelectSearchResult = false;
         bool m_ItemSelectedByRightClickThisEvent = false;
         bool m_InternalSelectionChange = false; // to know when selection change originated in project view itself
-        SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.InAssetsOnly;
+        [SerializeField]
+        internal SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.InAssetsOnly;
         PopupList.InputData m_AssetLabels;
         PopupList.InputData m_ObjectTypes;
         PopupList.InputData m_LogTypes;
@@ -563,7 +564,7 @@ namespace UnityEditor
             }
         }
 
-        void SetSearchViewState(SearchViewState state)
+        internal void SetSearchViewState(SearchViewState state)
         {
             switch (state)
             {
@@ -583,6 +584,12 @@ namespace UnityEditor
                     Debug.LogError("Invalid search mode as setter");
                     break;
             }
+
+            if (m_SearchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                m_SearchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly ||
+                m_SearchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly ||
+                m_SearchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
+                m_LastLocalAssetsSearchArea = m_SearchFilter.searchArea;
 
             // Sync gui to state
             InitSearchMenu();
@@ -606,12 +613,6 @@ namespace UnityEditor
             if (!itemClicked.m_On) // Behave like radio buttons: a button that is on cannot be turned off
             {
                 SetSearchViewState((SearchViewState)itemClicked.m_UserData);
-
-                if (m_SearchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
-                    m_SearchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly ||
-                    m_SearchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly ||
-                    m_SearchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
-                    m_LastLocalAssetsSearchArea = m_SearchFilter.searchArea;
             }
         }
 

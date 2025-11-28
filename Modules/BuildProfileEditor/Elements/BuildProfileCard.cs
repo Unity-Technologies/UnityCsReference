@@ -16,10 +16,13 @@ namespace UnityEditor.Build.Profile.Elements
         /// </summary>
         public string platformId { get; set; }
 
+        public string platformBannerBgColorHex { get; set; }
+
         public BuildProfileCard()
         {
             displayName = string.Empty;
             platformId = new GUID(string.Empty).ToString();
+            platformBannerBgColorHex = "#00000000";
         }
     }
 }

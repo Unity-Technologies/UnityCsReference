@@ -74,6 +74,8 @@ namespace UnityEngine
 
         public virtual FoveatedRenderingCaps foveatedRenderingCaps => UnityEngine.SystemInfo.foveatedRenderingCaps;
 
+        public virtual int maxTiledPixelStorageSize => UnityEngine.SystemInfo.maxTiledPixelStorageSize;
+
         public virtual bool hasHiddenSurfaceRemovalOnGPU => UnityEngine.SystemInfo.hasHiddenSurfaceRemovalOnGPU;
 
         public virtual bool hasDynamicUniformArrayIndexingInFragmentShaders =>
@@ -262,6 +264,11 @@ namespace UnityEngine
         public virtual int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc)
         {
             return UnityEngine.SystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
+        }
+
+        public virtual int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount)
+        {
+            return UnityEngine.SystemInfo.GetTiledRenderTargetStorageSize(format, sampleCount);
         }
     }
 }

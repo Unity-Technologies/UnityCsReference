@@ -416,6 +416,11 @@ namespace UnityEngine
             get { return 1; }
         }
 
+        public static int maxTiledPixelStorageSize
+        {
+            get { return MaxTiledPixelStorageSize(); }
+        }
+
         public static bool supportsDynamicResolution
         {
             get { return SupportsDynamicResolution(); }
@@ -1051,6 +1056,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetRenderTextureSupportedMSAASampleCount")]
         extern public static int GetRenderTextureSupportedMSAASampleCount(RenderTextureDescriptor desc);
 
+        [FreeFunction("ScriptingGraphicsCaps::GetTiledRenderTargetStorageSize")]
+        extern public static int GetTiledRenderTargetStorageSize(GraphicsFormat format, int sampleCount);
+
         [FreeFunction("ScriptingGraphicsCaps::UsesLoadStoreActions")]
         static extern bool UsesLoadStoreActions();
 
@@ -1077,6 +1085,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDepthFetchInRenderPass")]
         static extern bool SupportsDepthFetchInRenderPass();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxTiledPixelStorageSize")]
+        static extern int MaxTiledPixelStorageSize();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDynamicResolution")]
         static extern bool SupportsDynamicResolution();

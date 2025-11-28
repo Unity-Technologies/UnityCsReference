@@ -204,7 +204,11 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.env_refl_top);
                 EditorGUI.indentLevel++;
 
+                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_DefaultReflectionMode, Styles.env_refl_src);
+                if (EditorGUI.EndChangeCheck())
+                    if ((DefaultReflectionMode)m_DefaultReflectionMode.intValue == DefaultReflectionMode.FromSkybox)
+                        m_CustomReflection.objectReferenceValue = null;
 
                 DefaultReflectionMode defReflectionMode = (DefaultReflectionMode)m_DefaultReflectionMode.intValue;
                 switch (defReflectionMode)

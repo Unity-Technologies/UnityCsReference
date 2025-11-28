@@ -1348,6 +1348,14 @@ namespace Unity.UI.Builder
             }
         }
 
+        public void PreSaveDocument()
+        {
+            if (focusController is not { focusedElement: VisualElement focusedElement } || !Contains(focusedElement))
+                return;
+
+            PushDelayedValue(focusedElement);
+        }
+
         public void BeforeSelectionChanged()
         {
             if (focusController is not { focusedElement: VisualElement focusedElement } || !Contains(focusedElement))
@@ -1368,6 +1376,11 @@ namespace Unity.UI.Builder
                 return;
             }
 
+            PushDelayedValue(focusedElement);
+        }
+
+        void PushDelayedValue(VisualElement focusedElement)
+        {
             // Ensures that the value in the field is committed before the selection changes.
             // For example, a user sets a value in the text field and then clicks on another element.
             var dimensionStyleField = focusedElement as DimensionStyleField;

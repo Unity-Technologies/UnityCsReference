@@ -1086,11 +1086,30 @@ namespace UnityEngine.UIElements
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void UnregisterTemplate(VisualTreeAsset asset)
+        internal bool TryUnregisterTemplate(string templateName)
         {
-            // Find the entry and remove it
-            var entry = m_Usings.Find(e => e.asset.Equals(asset));
+            // If the template alias in not in use.
+            if (!TryGetUsingEntry(templateName, out var entry))
+                return false;
+
+            // If there are no template nodes, it is safe to remove.
+            if (templateAssets.Count == 0)
+            {
+                RemoveUsingEntry(entry);
+                return true;
+            }
+
+            foreach (var otherTemplate in templateAssets)
+            {
+                if (string.CompareOrdinal(templateName, otherTemplate.templateAlias) == 0)
+                {
+                    return false;
+                }
+            }
+
+            // If no other template nodes are linking it, it is safe to remove.
             RemoveUsingEntry(entry);
+            return true;
         }
 
         private void InsertUsingEntry(UsingEntry entry)

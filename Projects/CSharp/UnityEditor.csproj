@@ -6114,6 +6114,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarError.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarError.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\VersionInfoIcon.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\VersionInfoIcon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs</Link>
     </Compile>

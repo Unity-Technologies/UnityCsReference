@@ -596,7 +596,7 @@ namespace UnityEditorInternal
             if (state.activeAnimationClip != null)
             {
                 var animationPlayer = state.activeAnimationPlayer;
-                bool usePlayableGraph = animationPlayer is Animator;
+                bool usePlayableGraph = animationPlayer is Animator && !state.activeAnimationClip.legacy;
 
                 if (usePlayableGraph)
                 {

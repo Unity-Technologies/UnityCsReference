@@ -72,7 +72,7 @@ namespace UnityEditor
         {
             #region Info
             public static readonly GUIContent numOfItems = EditorGUIUtility.TrTextContent("Number of items per row:");
-            public static readonly GUIContent clearLocked = EditorGUIUtility.TrTextContent("Clear locked  objects");
+            public static readonly GUIContent clearLocked = EditorGUIUtility.TrTextContent("Clear locked objects");
             public static readonly GUIContent drawGizmosFor = EditorGUIUtility.TrTextContent("Draw Gizmos for:");
             public static readonly GUIContent gameObjectField = EditorGUIUtility.TrTextContent("GameObject:");
             public static readonly GUILayoutOption notExpandWidth = GUILayout.ExpandWidth(false);
@@ -415,7 +415,7 @@ namespace UnityEditor
 
             m_CurrentTab.value = GUILayout.Toolbar(m_CurrentTab.value, Style.tabs, Style.tabBarStyle);
 
-            if (GUILayout.Button(Style.resetButton, EditorStyles.toolbarButton, Style.maxWidth75))
+            if (GUILayout.Button(Style.resetButton, EditorStyles.toolbarButtonRight, Style.maxWidth75))
             {
                 PhysicsVisualizationSettings.Reset();
                 ClearAllLockedObjects();
@@ -549,8 +549,8 @@ namespace UnityEditor
             // Selection buttons
             GUILayout.BeginHorizontal();
 
-            bool selectNone = GUILayout.Button(Style.showNone);
-            bool selectAll = GUILayout.Button(Style.showAll);
+            bool selectNone = GUILayout.Button(Style.showNone, EditorStyles.miniButtonLeft);
+            bool selectAll = GUILayout.Button(Style.showAll, EditorStyles.miniButtonRight);
             if (selectNone || selectAll)
                 PhysicsVisualizationSettings.SetShowForAllFilters(selectAll);
 

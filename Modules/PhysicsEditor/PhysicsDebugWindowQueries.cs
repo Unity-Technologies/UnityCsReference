@@ -394,8 +394,8 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
 
-            bool selectNone = GUILayout.Button(Style.showNone);
-            bool selectAll = GUILayout.Button(Style.showAll);
+            bool selectNone = GUILayout.Button(Style.showNone, EditorStyles.miniButtonLeft);
+            bool selectAll = GUILayout.Button(Style.showAll, EditorStyles.miniButtonRight);
             if (selectNone || selectAll)
             {
                 SetQueryFilterState(QueryFilter.All, selectAll);
