@@ -5,12 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
 using UnityEditor.AdaptivePerformance.Editor.Metadata;
-
+using UnityEditor.PackageManager;
 using UnityEngine;
-using UnityEngine.UIElements;
 using UnityEngine.AdaptivePerformance;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
@@ -62,7 +61,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
                             if (!string.IsNullOrEmpty(assetPath))
                             {
                                 assetPath = Path.Combine(assetPath, "AdaptivePerformanceGeneralSettings.asset");
-                                //generalSettings.hideFlags = HideFlags.HideInInspector;
                                 AssetDatabase.CreateAsset(generalSettings, assetPath);
                             }
                         }
@@ -95,7 +93,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
         private Dictionary<BuildTargetGroup, AdaptivePerformanceManagerSettingsEditor> CachedSettingsEditor = new Dictionary<BuildTargetGroup, AdaptivePerformanceManagerSettingsEditor>();
 
 
-        private BuildTargetGroup m_LastBuildTargetGroup = BuildTargetGroup.Unknown;
+        internal BuildTargetGroup m_LastBuildTargetGroup = BuildTargetGroup.Unknown;
 
 
 
@@ -301,6 +299,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         void DisplayEnableToggle()
         {
+            // Disabled/enable AP module here
             float originalValue = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 200;
             if (currentSettings != null)
@@ -322,6 +321,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 {
                     EditorUtilities.CheckEnableFrameTimingState();
                 }
+                EditorUtilities.EnableAPModule(s_EnableAdaptivePerformance);
                 SettingsService.NotifySettingsProviderChanged();
             }
         }

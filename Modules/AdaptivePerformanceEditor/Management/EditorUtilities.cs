@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEditor.Build.Profile;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 
@@ -202,6 +203,45 @@ namespace UnityEditor.AdaptivePerformance.Editor
             }
 
             return copyObject == null? null : ScriptableObject.Instantiate(copyObject);
+        }
+
+        internal static AdaptivePerformanceGeneralSettings GetSettingsOrBuildProfilesSettings(BuildTargetGroup targetGroup = BuildTargetGroup.Unknown)
+        {
+            var activeProfile = BuildProfile.GetActiveBuildProfile();
+            AdaptivePerformanceGeneralSettings settings = null;
+
+            if (activeProfile != null && activeProfile.platformBuildProfile?.adaptivePerformanceEnabled == true)
+            {
+                settings = activeProfile.GetComponent<AdaptivePerformanceGeneralSettings>();
+            }
+
+            if (settings == null)
+            {
+                AdaptivePerformanceGeneralSettingsPerBuildTarget buildTargetSettings = null;
+                EditorBuildSettings.TryGetConfigObject(AdaptivePerformanceGeneralSettings.k_SettingsKey,
+                    out buildTargetSettings);
+                if (buildTargetSettings == null || buildTargetSettings.EnableAdaptivePerformance == false)
+                    return settings;
+
+                settings = buildTargetSettings.SettingsForBuildTarget(targetGroup == BuildTargetGroup.Unknown ? AdaptivePerformanceSettingsManager.Instance.m_LastBuildTargetGroup : targetGroup);
+            }
+            return settings;
+        }
+
+        internal static void EnableAPModule(bool enable)
+        {
+            var packageID = "com.unity.modules.adaptiveperformance";
+
+            if (enable)
+            {
+                Client.Add(packageID);
+            }
+            else
+            {
+                var settings = EditorUtilities.GetSettingsOrBuildProfilesSettings();
+                if (settings == null)
+                    Client.Remove(packageID); // neither classic platforms (Settings) nor build profiles are enabled
+            }
         }
     }
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -62,8 +61,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
 
             inputForm.SetEnabled(true);
-            packageNameField.value = packageNameInitialValue ?? string.Empty;
-            packageVersionField.value = packageVersionInitialValue ?? string.Empty;
+            if (!string.IsNullOrEmpty(packageNameInitialValue))
+            {
+                packageNameField.value = packageNameInitialValue;
+                packageNameInitialValue = string.Empty;
+            }
+            if (!string.IsNullOrEmpty(packageVersionInitialValue))
+            {
+                packageVersionField.value = packageVersionInitialValue;
+                packageVersionInitialValue = string.Empty;
+            }
             if (string.IsNullOrEmpty(errorInfoBox.text) || packageNameField.ClassListContains("error"))
                 packageNameField.Focus();
             else
@@ -158,7 +165,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return compliance != null && compliance.status != PackageComplianceStatus.Compliant;
         }
-
 
         private void CheckComplianceAndInstallPackage(PackageCompliance compliance, string packageName,
             string packageDisplayName, string packageVersion, string productId)

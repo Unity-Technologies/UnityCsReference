@@ -11,7 +11,8 @@ using UnityEditor.AdaptivePerformance.Editor.Metadata;
 
 namespace UnityEditor.AdaptivePerformance.Editor
 {
-    /// <summary>Interface for specifying package initialization information</summary>
+    /// <summary>An interface for automating the initial setup of a provider package.</summary>
+    /// <remarks>Implement this interface to automatically create default [[AdaptivePerformanceLoader]] and settings assets when the package is installed. This one-time initialization process ensures that the necessary assets exist without requiring manual configuration by the user.</remarks>
     public interface AdaptivePerformancePackageInitializationBase
     {
         /// <summary>Package name property</summary>
@@ -39,37 +40,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
         bool PopulateSettingsOnInitialization(ScriptableObject obj);
     }
 
-
-    [InitializeOnLoad]
     class AdaptivePerformancePackageInitializationBootstrap
     {
-        static AdaptivePerformancePackageInitializationBootstrap()
-        {
-            if (!EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                EditorApplication.update += BeginPackageInitialization;
-            }
-
-            EditorApplication.playModeStateChanged += PlayModeStateChanged;
-        }
-
-        private static void PlayModeStateChanged(PlayModeStateChange state)
-        {
-            switch (state)
-            {
-                case PlayModeStateChange.EnteredPlayMode:
-                    BeginPackageInitialization();
-                    break;
-
-                case PlayModeStateChange.EnteredEditMode:
-                    BeginPackageInitialization();
-                    break;
-            }
-        }
-
         internal static void BeginPackageInitialization()
         {
-            EditorApplication.update -= BeginPackageInitialization;
 
             foreach (var t in TypeLoaderExtensions.GetAllTypesWithInterface<IAdaptivePerformancePackage>())
             {

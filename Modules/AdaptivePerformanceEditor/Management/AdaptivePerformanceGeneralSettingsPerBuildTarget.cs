@@ -15,9 +15,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
     /// <summary>
     /// Container class that holds general settings for each build target group installed in Unity.
     /// </summary>
-//#if UNITY_EDITOR
-    [InitializeOnLoad]
-//#endif
     public class AdaptivePerformanceGeneralSettingsPerBuildTarget : ScriptableObject, ISerializationCallbackReceiver
     {
         [SerializeField]
@@ -51,11 +48,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 m_EnableAdaptivePerformance = value;
                 EditorUtility.SetDirty(this);
             }
-        }
-
-        static AdaptivePerformanceGeneralSettingsPerBuildTarget()
-        {
-            EditorApplication.playModeStateChanged += PlayModeStateChanged;
         }
 
         void OnEnable()
@@ -93,21 +85,6 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 m_Version = k_Version;
                 m_EnableAdaptivePerformance = true;
             }
-        }
-
-
-        static void PlayModeStateChanged(PlayModeStateChange state)
-        {
-            AdaptivePerformanceGeneralSettingsPerBuildTarget buildTargetSettings = null;
-            EditorBuildSettings.TryGetConfigObject(AdaptivePerformanceGeneralSettings.k_SettingsKey, out buildTargetSettings);
-            if (buildTargetSettings == null)
-                return;
-
-            AdaptivePerformanceGeneralSettings instance = buildTargetSettings.SettingsForBuildTarget(BuildTargetGroup.Standalone);
-            if (instance == null || !instance.InitManagerOnStart)
-                return;
-
-            //instance.InternalPlayModeStateChanged(state);
         }
 
         internal static bool ContainsLoaderForAnyBuildTarget(string loaderTypeName)

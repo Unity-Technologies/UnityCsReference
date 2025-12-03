@@ -1165,7 +1165,24 @@ namespace UnityEngine.UIElements
             for (var i = 0; i < list.Count; ++i)
             {
                 var child = list[i];
+                if (child is VisualElementAsset vea)
+                {
+                    vea.id = GenerateNewId(vea);
+                    UpdateUxmlObjectAssetsParentId(vea);
+                }
+
                 actualParent.Add(child);
+            }
+        }
+
+        static void UpdateUxmlObjectAssetsParentId(VisualElementAsset visualElementAsset)
+        {
+            using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
+            visualElementAsset.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
+
+            foreach (var uxmlObjectAsset in uxmlObjectAssets)
+            {
+                uxmlObjectAsset.parentId = visualElementAsset.id;
             }
         }
 

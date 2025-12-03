@@ -723,7 +723,7 @@ namespace UnityEditor.Search
                 return;
             }
 
-            var assetPath = SearchUtils.GetObjectPath(objRef, false);
+            var assetPath = SearchUtils.GetObjectPath(objRef);
             if (string.IsNullOrEmpty(assetPath))
                 return;
 

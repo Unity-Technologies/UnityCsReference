@@ -988,18 +988,25 @@ namespace Unity.UI.Builder
             {
                 var tooltip = attribute.serializedField.GetCustomAttribute<TooltipAttribute>();
                 var valueInfo = GetValueInfo(propertyField);
-
-                // Extract value as a string and add it to the description.
-                var result = BuilderAssetUtilities.SynchronizePath(context, propertyField.bindingPath, true);
-                var currentUxmlSerializedData = result.serializedData as UxmlSerializedData;
-                var newValue = attribute.GetSerializedValue(currentUxmlSerializedData);
-                if (newValue == null || !UxmlAttributeConverter.TryConvertToString(newValue, context.visualTree, out var stringValue))
-                    stringValue = "";
-
                 var description = tooltip?.tooltip;
-                if (!string.IsNullOrEmpty(description))
-                    description += "\n\n";
-                description = $"{description}Value: {stringValue}";
+
+                if (inspector.bindingsCache?.TryGetCachedData(inspector.currentVisualElement, attribute.serializedField.Name, out _) == true)
+                {
+                    // Extract value as a string and add it to the description.
+                    var result = BuilderAssetUtilities.SynchronizePath(context, propertyField.bindingPath, true);
+                    var currentUxmlSerializedData = result.serializedData as UxmlSerializedData;
+                    var newValue = attribute.GetSerializedValue(currentUxmlSerializedData);
+                    if (newValue == null || !UxmlAttributeConverter.TryConvertToString(newValue, context.visualTree, out var stringValue))
+                        stringValue = "";
+
+                    const int maxValueStringLength = 64;
+                    if (stringValue.Length > maxValueStringLength)
+                        stringValue = stringValue[..maxValueStringLength] + BuilderConstants.EllipsisText;
+
+                    if (!string.IsNullOrEmpty(description))
+                        description += "\n\n";
+                    description = $"{description}Inline Value: {stringValue}";
+                }
 
                 e.tooltip = BuilderInspector.GetFieldTooltip(propertyField, valueInfo, description, false);
                 e.rect = e.elementTarget.worldBound;

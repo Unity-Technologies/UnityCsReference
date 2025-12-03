@@ -122,7 +122,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         /// </summary>
         protected internal override async Task<Scenario.ValidationResult> ValidateForRunningAsync(CancellationToken cancellationToken)
         {
-            if (m_Settings.ServerSettings.DeployMode != ServerSettings.ServerDeployMode.Simulated) return new Scenario.ValidationResult(true, string.Empty);
+            if (!LocalDeploymentUtility.IsLocalDeploymentAvailable() || m_Settings.ServerSettings.DeployMode != ServerSettings.ServerDeployMode.Simulated)
+                return new Scenario.ValidationResult(true, string.Empty);
 
             try
             {

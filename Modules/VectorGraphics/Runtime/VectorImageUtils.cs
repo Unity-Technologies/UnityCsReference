@@ -390,7 +390,7 @@ namespace Unity.VectorGraphics
 
                     if (shape.PathProps.Stroke != null)
                     {
-                        var pathProps = shape.PathProps; ;
+                        var pathProps = shape.PathProps;
                         var stroke = pathProps.Stroke;
 
                         var gradientFill = stroke.Fill as GradientFill;
@@ -399,6 +399,10 @@ namespace Unity.VectorGraphics
                             ComputeFillGradientFromGradientFill(node, shape, gradientFill, out var fillGradient, out var fillTransform);
                             painter.strokeFillGradient = fillGradient;
                             painter.fillTransform = fillTransform.ToMatrix4x4();
+                        }
+                        else
+                        {
+                            painter.strokeColor = stroke.Color;
                         }
 
                         painter.lineWidth = stroke.HalfThickness * 2.0f;

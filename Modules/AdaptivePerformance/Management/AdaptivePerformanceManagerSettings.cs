@@ -145,6 +145,9 @@ namespace UnityEngine.AdaptivePerformance
             {
                 if (loader != null)
                 {
+                    var settings = loader.GetSettings();
+                    if (settings == null)
+                        break;
                     if (loader.Initialize())
                     {
                         activeLoader = loader;

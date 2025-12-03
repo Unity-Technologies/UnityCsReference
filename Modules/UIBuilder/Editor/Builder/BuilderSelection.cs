@@ -55,6 +55,7 @@ namespace Unity.UI.Builder
         void SelectionChanged();
         void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType);
         void StylingChanged(List<string> styles, BuilderStylingChangeType changeType);
+        void PreSaveDocument() { }
     }
 
     internal class BuilderSelection
@@ -340,6 +341,15 @@ namespace Unity.UI.Builder
             });
 
             QueueUpPostPanelUpdaterChangeAction(NotifyOfStylingChangePostStylingUpdate);
+        }
+
+        public void NotifyPreSaveDocument()
+        {
+            if (m_Notifiers == null)
+                return;
+
+            foreach (var notifier in m_Notifiers)
+                notifier.PreSaveDocument();
         }
 
         void NotifyOfBeforeSelectionChange(IBuilderSelectionNotifier source)

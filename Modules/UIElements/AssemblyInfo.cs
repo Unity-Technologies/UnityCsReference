@@ -40,6 +40,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.InternalAccessTests")] // for UI Test Framework tests that need internal access
 [assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Settings.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Editor")]

@@ -1429,10 +1429,16 @@ namespace UnityEngine.TextCore.Text
                 if (m_Underline.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
                 {
                     // Determine which material to use based on settings
-                    m_Underline.material = generationSettings.textSettings.matchMaterialPreset &&
-                        m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode()
-                            ? MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material)
-                            : m_Underline.fontAsset.material;
+                    if (generationSettings.textSettings.matchMaterialPreset && m_CurrentMaterial != null && m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode())
+                    {
+                        m_Underline.material = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material);
+                        if (m_Underline.material == null)
+                            return false;
+                    }
+                    else
+                    {
+                        m_Underline.material = m_Underline.fontAsset.material;
+                    }
 
                     // Add material reference and reset reference count
                     m_Underline.materialIndex = MaterialReference.AddMaterialReference(

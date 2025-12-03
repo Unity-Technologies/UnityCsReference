@@ -34,7 +34,23 @@ namespace UnityEngine
         }
 
         // Shadow resolution
-        extern public UnityEngine.Rendering.LightShadowResolution shadowResolution
+        public LightShadowResolution shadowResolution
+        {
+            get => ShadowResolution;
+            set
+            {
+                if (RenderPipelineManager.currentPipeline != null)
+                    LogWarningOnlyBuiltIn();
+                ShadowResolution = value;
+            }
+        }
+
+        static void LogWarningOnlyBuiltIn([CallerMemberName] string propertyName = "")
+        {
+            Debug.LogWarning($"Light.{propertyName} is compatible only with the Built-In Render Pipeline.");
+        }
+
+        extern LightShadowResolution ShadowResolution
         {
             get;
             [FreeFunction("Light_Bindings::SetShadowResolution", HasExplicitThis = true, ThrowsException = true)] set;
@@ -114,9 +130,7 @@ namespace UnityEngine
         public void AddCommandBuffer(UnityEngine.Rendering.LightEvent evt, UnityEngine.Rendering.CommandBuffer buffer, UnityEngine.Rendering.ShadowMapPass shadowPassMask)
         {
             if (RenderPipelineManager.currentPipeline != null)
-            {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.AddCommandBuffer only with the built-in renderer.");
-            }
+                LogWarningOnlyBuiltIn();
             AddCommandBufferInternal(evt, buffer, shadowPassMask);
         }
 
@@ -132,7 +146,7 @@ namespace UnityEngine
         {
             if (RenderPipelineManager.currentPipeline != null)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.AddCommandBufferAsync only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             AddCommandBufferAsyncInternal(evt, buffer, shadowPassMask, queueType);
         }
@@ -144,7 +158,7 @@ namespace UnityEngine
         {
             if (RenderPipelineManager.currentPipeline != null)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.RemoveCommandBuffer only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             RemoveCommandBufferInternal(evt, buffer);
         }
@@ -154,7 +168,7 @@ namespace UnityEngine
         {
             if (RenderPipelineManager.currentPipeline != null)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.RemoveCommandBuffer only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             RemoveCommandBuffersInternal(evt);
         }
@@ -164,7 +178,7 @@ namespace UnityEngine
         {
             if (RenderPipelineManager.currentPipeline != null)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.RemoveAllCommandBuffers only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             RemoveAllCommandBuffersInternal();
         }
@@ -174,7 +188,7 @@ namespace UnityEngine
         {
             if(RenderPipelineManager.currentPipeline != null)
             {
-                Debug.LogWarning("Your project uses a scriptable render pipeline. You can use Light.GetCommandBuffers only with the built-in renderer.");
+                LogWarningOnlyBuiltIn();
             }
             return GetCommandBuffersInternal(evt);
         }

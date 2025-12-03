@@ -531,9 +531,7 @@ namespace UnityEditor.Overlays
             ve.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
             m_WindowRoot = ve.Q(k_WindowRootName);
-            var verticalContainer = ve.Q<VisualElement>("overlay-container-group--vertical");
-
-            dockArea = m_ModeDefinition.GetDockArea(this, m_WindowRoot, verticalContainer, ve.Q<VisualElement>("AnchoredContainers"));
+            dockArea = m_ModeDefinition.GetDockArea(this, ve);
             if (dockArea != null)
             {
                 ve.Add(dockArea);
@@ -549,13 +547,17 @@ namespace UnityEditor.Overlays
             if (rootVisualElement == null)
                 return;
 
-            var verticalContainer = rootVisualElement.Q<VisualElement>("overlay-container-group--vertical");
-            if (verticalContainer == null)
+            var displaceContainer = rootVisualElement.Q<VisualElement>("displaced-panel--container");
+            if (displaceContainer == null)
                 return;
 
-            var leftDynamicPanelOverlayContainer = verticalContainer.Q<DynamicPanelOverlayContainer>(className: DynamicPanelOverlayContainer.k_ClassNameLeft);
-            var rightDynamicPanelOverlayContainer = verticalContainer.Q<DynamicPanelOverlayContainer>(className: DynamicPanelOverlayContainer.k_ClassNameRight);
+            var leftDynamicPanelOverlayContainer = displaceContainer.Q<DynamicPanelOverlayContainer>(className: DynamicPanelOverlayContainer.k_ClassNameLeft);
+            var rightDynamicPanelOverlayContainer = displaceContainer.Q<DynamicPanelOverlayContainer>(className: DynamicPanelOverlayContainer.k_ClassNameRight);
             if (leftDynamicPanelOverlayContainer == null || rightDynamicPanelOverlayContainer == null)
+                return;
+
+            var sceneContainers = displaceContainer.Q<VisualElement>(k_SceneContainersName);
+            if (sceneContainers == null)
                 return;
 
             if (dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow)
@@ -563,30 +565,17 @@ namespace UnityEditor.Overlays
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the vertical overlay container group.
                 // If they are, the layout is already correct.
-                if (verticalContainer.Children().Contains(leftDynamicPanelOverlayContainer)
-                    && verticalContainer.Children().Contains(rightDynamicPanelOverlayContainer))
+                if (displaceContainer.Children().Contains(leftDynamicPanelOverlayContainer)
+                    && displaceContainer.Children().Contains(rightDynamicPanelOverlayContainer))
                     return;
 
-                var leftToolbarContainer = verticalContainer.Q<ToolbarOverlayContainer>(ToolbarOverlayContainer.k_LeftToolbarName);
-                if (leftToolbarContainer == null)
-                    return;
-
-                var leftToolbarContainerIndex = verticalContainer.IndexOf(leftToolbarContainer);
-                verticalContainer.Insert(leftToolbarContainerIndex + 1, leftDynamicPanelOverlayContainer);
-
-                var rightToolbarContainer = verticalContainer.Q<ToolbarOverlayContainer>(ToolbarOverlayContainer.k_RightToolbarName);
-                if (rightToolbarContainer == null)
-                    return;
-
-                var rightToolbarContainerIndex = verticalContainer.IndexOf(rightToolbarContainer);
-                verticalContainer.Insert(rightToolbarContainerIndex, rightDynamicPanelOverlayContainer);
+                displaceContainer.Add(leftDynamicPanelOverlayContainer);
+                displaceContainer.Add(rightDynamicPanelOverlayContainer);
+                leftDynamicPanelOverlayContainer.PlaceBehind(sceneContainers);
+                rightDynamicPanelOverlayContainer.PlaceInFront(sceneContainers);
             }
             else if (dynamicPanelBehavior == DynamicPanelBehavior.None)
             {
-                var sceneContainers = verticalContainer.Q<VisualElement>(k_SceneContainersName);
-                if (sceneContainers == null)
-                    return;
-
                 // Verify if the left and right dynamic panel overlay containers
                 // are direct children of the overlay scene container.
                 // If they are, the layout is already correct.

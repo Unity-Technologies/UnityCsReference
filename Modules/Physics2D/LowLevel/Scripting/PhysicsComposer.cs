@@ -486,6 +486,16 @@ namespace UnityEngine.LowLevelPhysics2D
         public readonly int rejectedGeometryCount => PhysicsComposer_GetRejectedGeometryCount(this);
 
         /// <summary>
+        /// Get the geometry islands from a previous polygon geometry composition i.e. a call to <see cref="LowLevelPhysics2D.PhysicsComposer.CreatePolygonGeometry(Vector2, Allocator)"/> or <see cref="LowLevelPhysics2D.PhysicsComposer.CreateConvexHulls(Vector2, Allocator)"/>.
+        /// Each generated polygon or convex-hull belongs to a unique island defining a set of polygons that are connected together as they share edges.
+        /// The array returned contains a series of ranges where each range is a unique connected island where the range indicates both the start index and length of the original polygon indices.
+        /// The number of discovered unique islands is defined by the size of the returned array.
+        /// </summary>
+        /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
+        /// <returns>A NativeArray containing a series of ranges where each range is aunique connected island where the range indicates both the start and end indices of the original polygon indices.</returns>
+        public readonly NativeArray<RangeInt> GetGeometryIslands(Allocator allocator) => PhysicsComposer_GetGeometryIslands(this, allocator).ToNativeArray<RangeInt>();
+
+        /// <summary>
         /// Create <see cref="LowLevelPhysics2D.PolygonGeometry"/> from the composition by iterating all the layers added to the composition in the layer order specified, applying each operation specified.
         /// A limit is imposed on small vertex distances so it is recommended that scaling is applied here rather than on the returned geometry so geometry is not discarded due to it being invalid.
         /// </summary>

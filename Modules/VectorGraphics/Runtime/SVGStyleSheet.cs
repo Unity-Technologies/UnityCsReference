@@ -96,6 +96,10 @@ namespace Unity.VectorGraphics
             while (true)
             {
                 var selectorName = PopToken(tokens);
+
+                while (PeekToken(tokens) != "" && PeekToken(tokens) != "," && PeekToken(tokens) != "{")
+                    selectorName += " " + PopToken(tokens);
+
                 newSheet[selectorName] = new SVGPropertySheet();
 
                 while (PeekToken(tokens) == ",")

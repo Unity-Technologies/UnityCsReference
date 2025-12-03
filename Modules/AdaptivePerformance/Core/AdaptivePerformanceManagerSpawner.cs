@@ -63,7 +63,7 @@ namespace UnityEngine.AdaptivePerformance
             if (m_ManagerGameObject == null)
                 return;
 
-            Destroy(m_ManagerGameObject);
+            DestroyImmediate(m_ManagerGameObject);
 
             m_ManagerGameObject = null;
         }

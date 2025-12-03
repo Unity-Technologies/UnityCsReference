@@ -3792,6 +3792,9 @@
     <Compile Include="..\..\Editor\Mono\SettingsWindow\OtherRenderingEditor.cs">
       <Link>Editor\Mono\SettingsWindow\OtherRenderingEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Settings\AssemblyInfo.cs">
+      <Link>Editor\Mono\Settings\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Settings\Providers\AssetSettingsProvider.cs">
       <Link>Editor\Mono\Settings\Providers\AssetSettingsProvider.cs</Link>
     </Compile>
@@ -4601,9 +4604,6 @@
     </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\ProviderSettingsEditor.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\ProviderSettingsEditor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\SettingsCreator.cs">
-      <Link>Modules\AdaptivePerformanceEditor\Management\SettingsCreator.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AdaptivePerformanceEditor\Management\TypeLoaderExtensions.cs">
       <Link>Modules\AdaptivePerformanceEditor\Management\TypeLoaderExtensions.cs</Link>

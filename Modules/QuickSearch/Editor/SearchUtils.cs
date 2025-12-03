@@ -185,7 +185,7 @@ namespace UnityEditor.Search
             return GetObjectPath(obj, false);
         }
 
-        internal static string GetObjectPath(UnityEngine.Object obj, bool pathAsGlobalObjectId)
+        internal static string GetObjectPath(UnityEngine.Object obj, bool subAssetUseGlobalObjectId)
         {
             if (!obj)
                 return string.Empty;
@@ -194,7 +194,7 @@ namespace UnityEditor.Search
             var assetPath = AssetDatabase.GetAssetPath(obj);
             if (!string.IsNullOrEmpty(assetPath))
             {
-                if (pathAsGlobalObjectId || Utils.IsBuiltInResource(assetPath))
+                if ((subAssetUseGlobalObjectId && !AssetDatabase.IsMainAsset(obj)) || Utils.IsBuiltInResource(assetPath))
                     return GlobalObjectId.GetGlobalObjectIdSlow(obj).ToString();
                 return assetPath;
             }
@@ -1369,10 +1369,10 @@ namespace UnityEditor.Search
 
         internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
         {
-            var objPath = GetObjectPath(obj, pathAsGlobalObjectId: false);
+            var objPath = GetObjectPath(obj);
             if (string.IsNullOrEmpty(objPath))
                 return null;
-            var query = $"ref:\"{objPath}\"";
+            var query = $"ref:{EscapeLiteralString(objPath)}";
             return query;
         }
 
@@ -1495,10 +1495,11 @@ namespace UnityEditor.Search
                         if (value == null)
                             return "none";
 
-                        var path = GetObjectPath(value as UnityEngine.Object, pathAsGlobalObjectId:false);
-                        return $"\"{path}\"";
+                        var path = GetObjectPath(value as UnityEngine.Object, subAssetUseGlobalObjectId: true);
+                        return EscapeLiteralString(path);
                     }
                 case SerializedPropertyType.String:
+                    // Always escape the string value so any of our TypeParser will parse it back as a string.
                     return $"\"{value}\"";
                 default:
                     // TODO Number: When returning a numerical values used in a query, ensure the value uses an explicit formatter.

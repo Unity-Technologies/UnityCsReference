@@ -28,5 +28,6 @@ namespace UnityEngine.LowLevelPhysics2D
         [NativeMethod(Name = "CreatePolygonGeometry", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreatePolygonGeometry(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
         [NativeMethod(Name = "CreateConvexHulls", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_CreateConvexHulls(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
         [NativeMethod(Name = "CreateChainGeometry", IsThreadSafe = true)] extern internal static PhysicsBufferPair PhysicsComposer_CreateChainGeometry(PhysicsComposer composer, Vector2 vertexScale, Allocator allocator);
+        [NativeMethod(Name = "GetGeometryIslands", IsThreadSafe = true)] extern internal static PhysicsBuffer PhysicsComposer_GetGeometryIslands(PhysicsComposer composer, Allocator allocator);
     }
 }

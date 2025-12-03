@@ -671,7 +671,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 SetBottleneck((PerformanceBottleneck)m_Bottleneck.value, Subsystem());
                 SubscribeToAPEvents();
 
-                if (AdaptivePerformanceGeneralSettings.Instance?.Manager.activeLoader?.GetSettings().enableBoostOnStartup == true)
+                if (AdaptivePerformanceGeneralSettings.Instance?.Manager.activeLoader?.GetSettings()?.enableBoostOnStartup == true)
                 {
                     Debug.Log("[Adaptive Performance Simulator] Enabled boost mode on launch");
                 }

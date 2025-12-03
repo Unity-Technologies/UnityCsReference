@@ -1487,9 +1487,10 @@ namespace UnityEditor.Search
             return attrs[0] as T;
         }
 
-        internal static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
+        internal static bool TryParseObjectValue(string value, out UnityEngine.Object objValue)
         {
             objValue = null;
+            value = SearchUtils.UnescapeLiteralString(value);
             if (string.IsNullOrEmpty(value))
             {
                 return false;
@@ -1505,13 +1506,24 @@ namespace UnityEditor.Search
             }
 
             // ADB prints a warning if the path starts with /
-            if (!value.StartsWith("/") && AssetDatabase.AssetPathExists(value))
+            if (!value.StartsWith("/"))
             {
-                var guid = AssetDatabase.AssetPathToGUID(value);
-                if (!string.IsNullOrEmpty(guid))
+                var assetPath = "";
+                if (value.StartsWith("Assets/") || value.StartsWith("Packages/"))
                 {
-                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
-                    return true;
+                    assetPath = value;
+                }
+                else
+                {
+                    assetPath = AssetDatabase.GUIDToAssetPath(value);
+                }
+
+                if (AssetDatabase.AssetPathExists(assetPath))
+                {
+                    objValue = AssetDatabase.LoadMainAssetAtPath(assetPath);
+                    if (objValue)
+                        return true;
+                    return false;
                 }
             }
 

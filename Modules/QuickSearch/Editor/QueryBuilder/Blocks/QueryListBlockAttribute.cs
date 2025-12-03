@@ -61,7 +61,7 @@ namespace UnityEditor.Search
 
         internal static QueryListBlock CreateBlock(Type type, IQuerySource source, string value)
         {
-            var attr = FindBlock(type).attribute;
+            var attr = FindBlock(type)?.attribute;
             if (attr != null)
                 return (QueryListBlock)Activator.CreateInstance(type, new object[] { source, attr.id, value, attr });
             return null;
