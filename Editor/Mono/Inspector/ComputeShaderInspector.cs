@@ -90,7 +90,7 @@ namespace UnityEditor
             {
                 ki.platforms.Sort();
                 var sorted = System.String.Join(" ", ki.platforms.ToArray());
-                EditorGUILayout.LabelField(ki.name, sorted);
+                EditorGUILayout.LabelField(ki.name, sorted, EditorStyles.wordWrappedLabel);
             }
         }
 

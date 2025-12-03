@@ -1611,7 +1611,10 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
+            if(scene.isLoaded)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."));
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
             // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)

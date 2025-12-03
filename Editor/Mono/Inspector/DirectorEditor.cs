@@ -48,6 +48,10 @@ namespace UnityEditor
 
         private GUIContent m_BindingContent = new GUIContent();
 
+        private double m_DirectorLastTime = 0.0;
+
+        private float m_LastDrawTime = 0.0f;
+
         private struct BindingItem
         {
             public PlayableBinding binding;
@@ -98,6 +102,7 @@ namespace UnityEditor
             {
                 m_DirtySceneBindings = true;
             }
+            m_LastDrawTime = Time.realtimeSinceStartup;
 
             serializedObject.Update();
 
@@ -317,7 +322,10 @@ namespace UnityEditor
         // To show the current time field in play mode
         public override bool RequiresConstantRepaint()
         {
-            return Application.isPlaying;
+            return Application.isPlaying
+                && targets.Length == 1
+                && (((PlayableDirector)target).time != m_DirectorLastTime
+                || (m_SceneBindings.isExpanded && Time.realtimeSinceStartup > m_LastDrawTime + 0.5f));
         }
 
         private static void PropertyFieldAsFloat(SerializedProperty property, GUIContent title)
@@ -359,6 +367,7 @@ namespace UnityEditor
                 {
                     director.time = t;
                 }
+                m_DirectorLastTime = director.time;
             }
             else
             {
