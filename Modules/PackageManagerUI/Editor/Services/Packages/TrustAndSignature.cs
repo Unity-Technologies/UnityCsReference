@@ -12,8 +12,10 @@ internal enum TrustAndSignature
     // the org name is not always set for unity signed packages, so we need to do some special handling
     FullTrustUnitySignature,
     FullTrustValidSignature,
-    // There are exceptions for packages without signature to still be fully trusted, for example, packages bundled with Unity
+    // There are exceptions for packages without signature to still be fully trusted, for example, packages from the Asset Store without a signature, while we wait for them to get all signed
     FullTrustNoSignature,
+    // There are exceptions for built-in packages to still be fully trusted even if unsigned, this is only for packages with a builtin source
+    FullTrustBuiltInPackage,
     LimitedTrust,
     UntrustedNoSignature,
     UntrustedInvalidSignature,

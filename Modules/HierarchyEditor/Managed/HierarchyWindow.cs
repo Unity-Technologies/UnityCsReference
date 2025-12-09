@@ -10,7 +10,6 @@ using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Search;
-using UnityEditor.SearchService;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -18,7 +17,6 @@ using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using static UnityEditor.SearchableEditorWindow;
-using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace Unity.Hierarchy.Editor
 {
@@ -76,7 +74,6 @@ namespace Unity.Hierarchy.Editor
         static readonly GUIContent s_SyncSearchWithSceneViewContent = EditorGUIUtility.TrTextContent("Synchronize search in scene view");
         static readonly GUIContent s_NameColumnStretchableContent = EditorGUIUtility.TrTextContent("Auto stretch Name Column");
 
-        internal static readonly string s_AlternatingRowBackground = "HierarchyWindow.AlternatingRowBackground";
         static readonly string s_UssBasePath = "StyleSheets/HierarchyWindow";
         static readonly string s_EditorStyleSheet = $"{s_UssBasePath}/HierarchyWindow.uss";
         static readonly string s_EditorStyleSheetDark = $"{s_UssBasePath}/HierarchyWindow_dark.uss";
@@ -95,17 +92,17 @@ namespace Unity.Hierarchy.Editor
         bool m_HasSceneHandler;
         CommandSubscriberHelper m_CommandSubscriberHelper;
 
-        List<HierarchyViewCellDescriptor> m_CellDescriptors = new();
+        readonly List<HierarchyViewCellDescriptor> m_CellDescriptors = new();
         internal List<HierarchyViewCellDescriptor> CellDescriptors => m_CellDescriptors;
 
-        List<HierarchyViewColumnDescriptor> m_ColumnDescriptors = new();
+        readonly List<HierarchyViewColumnDescriptor> m_ColumnDescriptors = new();
         internal List<HierarchyViewColumnDescriptor> ColumnDescriptors => m_ColumnDescriptors;
         [SerializeField] HierarchyViewState m_ViewState;
 
         [SerializeField]
         string m_WindowGUID;
         [SerializeField]
-        EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
+        readonly EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
         // Note: These internal members are used in testing.
         internal Hierarchy Hierarchy => m_Hierarchy;
@@ -191,7 +188,7 @@ namespace Unity.Hierarchy.Editor
                 var selectedNodes = m_HierarchyView.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected);
                 if (selectedNodes.Length > 0)
                 {
-                    m_HierarchyView.FrameNodes(selectedNodes);
+                    m_HierarchyView.Frame(selectedNodes);
                 }
             }
         }
@@ -218,9 +215,9 @@ namespace Unity.Hierarchy.Editor
 
         void OnEnable()
         {
-            titleContent.image = EditorGUIUtility.LoadIconRequired(typeof(HierarchyWindow).ToString());
-
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).OnEnable()");
+
+            titleContent.image = EditorGUIUtility.LoadIconRequired(typeof(HierarchyWindow).ToString());
 
             s_LastInteractedHierarchy = this;
             s_HierarchyWindows.Add(this);
@@ -245,7 +242,7 @@ namespace Unity.Hierarchy.Editor
 
             m_HierarchyView = new HierarchyView();
             m_HierarchyView.Initializing += OnHierarchyViewInitializing;
-            m_HierarchyView.OnFlagsChanged += OnHierarchyViewFlagsChanged;
+            m_HierarchyView.FlagsChanged += OnHierarchyViewFlagsChanged;
             m_HierarchyView.SourceHierarchyChanged += OnSourceHierarchyChanged;
             m_HierarchyView.BindViewItem += OnBindViewItem;
             m_HierarchyView.UnbindViewItem += OnUnbindViewItem;
@@ -256,6 +253,7 @@ namespace Unity.Hierarchy.Editor
                 ? AlternatingRowBackground.All : AlternatingRowBackground.None;
             m_HierarchyView.ListView.headerContextMenuPopulateEvent += OnHeaderContextMenu;
             m_HierarchyView.ListView.RegisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
+            m_HierarchyView.ListView.RegisterCallback<PointerDownEvent>(OnHierarchyWindowMouseDown);
             m_HierarchyView.ListView.RegisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown); // called when ESC, mouse leave window, or drag successfully finished
             m_HierarchyView.ListView.RegisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
 
@@ -394,6 +392,7 @@ namespace Unity.Hierarchy.Editor
             if (m_HierarchyView != null)
             {
                 m_HierarchyView.ListView?.UnregisterCallback<PointerUpEvent>(OnHierarchyWindowMouseUp);
+                m_HierarchyView.ListView?.UnregisterCallback<PointerDownEvent>(OnHierarchyWindowMouseDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragExitedEvent>(OnHierarchyWindowDragExited, TrickleDown.TrickleDown);
                 m_HierarchyView.ListView?.UnregisterCallback<DragPerformEvent>(OnHierarchyWindowDragPerformed, TrickleDown.TrickleDown);
                 m_HierarchyView.SourceHierarchyChanged -= OnSourceHierarchyChanged;
@@ -427,6 +426,12 @@ namespace Unity.Hierarchy.Editor
             if (!m_HierarchyView.ViewModel.HasAllFlags(HierarchyNodeFlags.Selected))
                 return;
             m_SelectionHandler.SyncGlobalSelectionFromViewModel();
+        }
+
+        void OnHierarchyWindowMouseDown(PointerDownEvent evt)
+        {
+            // Update last interacted hierarchy when user presses mouse button (including right-click).
+            s_LastInteractedHierarchy = this;
         }
 
         void OnHierarchyWindowDragExited(DragExitedEvent evt)
@@ -527,7 +532,16 @@ namespace Unity.Hierarchy.Editor
             if (!HierarchyPreferences.RenameNewObjects || Selection.activeEntityId == EntityId.None)
                 return;
 
+            // All hierarchy windows need to update and frame the new GameObject.
             FrameAndRenameNewGameObjectOrEntity(Selection.activeEntityId);
+
+            // Only the last interacted hierarchy window should get focus and handle renaming.
+            if (this == s_LastInteractedHierarchy)
+            {
+                // Ensure this hierarchy window is focused when handling new GameObject renaming.
+                // This is necessary because GOCreationCommands.Place() focuses the old HierarchyWindow.
+                Focus();
+            }
         }
 
         void UpdateStatusBar()
@@ -559,10 +573,11 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        void OnHierarchyViewFlagsChanged(HierarchyViewFlagChangedEvent evt)
+        void OnHierarchyViewFlagsChanged(HierarchyNodeFlags flags)
         {
-            if (!evt.Flags.HasFlag(HierarchyNodeFlags.Selected))
+            if (!flags.HasFlag(HierarchyNodeFlags.Selected))
                 return;
+
             UpdateStatusBar();
         }
 
@@ -581,7 +596,7 @@ namespace Unity.Hierarchy.Editor
                 m_HierarchyView.Flattened.Update();
                 m_HierarchyView.ViewModel.Update();
 
-                m_HierarchyView.FrameNode(in node);
+                m_HierarchyView.Frame(in node);
                 if (this == s_LastInteractedHierarchy)
                     m_HierarchyView.BeginRename(in node);
             }
@@ -718,22 +733,22 @@ namespace Unity.Hierarchy.Editor
                     break;
 
                 case EventCommandNames.SelectAll:
-                    m_HierarchyView.SelectAll();
+                    m_HierarchyView.SelectAll(exposedOnly: true);
                     evt.StopPropagation();
                     break;
 
                 case EventCommandNames.DeselectAll:
-                    m_HierarchyView.ClearSelection();
+                    m_HierarchyView.DeselectAll();
                     evt.StopPropagation();
                     break;
 
                 case EventCommandNames.InvertSelection:
-                    m_HierarchyView.InvertSelection();
+                    m_HierarchyView.ToggleSelection();
                     evt.StopPropagation();
                     break;
 
                 case EventCommandNames.SelectChildren:
-                    m_HierarchyView.SelectChildrenForSelectedNodes();
+                    m_HierarchyView.SelectChildrenAndExpandRecursive();
                     evt.StopPropagation();
                     break;
 
@@ -754,7 +769,7 @@ namespace Unity.Hierarchy.Editor
             {
                 Span<HierarchyNode> nodes = stackalloc HierarchyNode[1];
                 m_HierarchyView.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, nodes);
-                m_HierarchyView.FrameNode(in nodes[0]);
+                m_HierarchyView.Frame(in nodes[0]);
             }
             else
             {
@@ -764,7 +779,7 @@ namespace Unity.Hierarchy.Editor
                 {
                     m_HierarchyView.ExpandParents(in node);
                 }
-                m_HierarchyView.FrameNode(in rentedNodes.Span[^1]);
+                m_HierarchyView.Frame(in rentedNodes.Span[^1]);
             }
         }
 
@@ -1011,45 +1026,21 @@ namespace Unity.Hierarchy.Editor
 
         IHierarchyWindow IHierarchyWindow.LastInteractedHierarchyWindow => s_LastInteractedHierarchy;
 
-        void IHierarchyWindow.GetSelectedScenes(List<Scene> selectedScenes)
-        {
-            if (selectedScenes == null)
-                return;
-
-            selectedScenes.Clear();
-
-            var sceneHandler = m_Hierarchy.GetNodeTypeHandler<HierarchySceneHandler>();
-            if (sceneHandler == null)
-                return;
-            var sceneNodeType = sceneHandler.GetNodeType();
-
-            var count = m_HierarchyView.ViewModel.HasAllFlagsCount(HierarchyNodeFlags.Selected);
-            if (count == 0)
-                return;
-
-            using var rentedNodes = new RentSpanUnmanaged<HierarchyNode>(count);
-            m_HierarchyView.ViewModel.GetNodesWithAllFlags(HierarchyNodeFlags.Selected, rentedNodes.Span);
-
-            foreach (ref var node in rentedNodes)
-            {
-                if (m_Hierarchy.GetNodeType(in node) != sceneNodeType)
-                    continue;
-
-                selectedScenes.Add(sceneHandler.GetScene(in node));
-            }
-        }
-
         void IHierarchyWindow.SetExpanded(EntityId entityId, bool expanded)
         {
             if (IsLocked)
                 return;
 
             m_HierarchyView.Update();
-            var node = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>().GetOrCreateNode(entityId);
+
+            var node = m_Hierarchy.GetNode(entityId);
+            if (node == HierarchyNode.Null)
+                return;
+
             if (expanded)
-                m_HierarchyView.SetFlags(node, HierarchyNodeFlags.Expanded);
+                m_HierarchyView.Expand(in node);
             else
-                m_HierarchyView.ClearFlags(node, HierarchyNodeFlags.Expanded);
+                m_HierarchyView.Collapse(in node);
         }
 
         void LoadStyleSheet(VisualElement element, string path)
@@ -1208,7 +1199,7 @@ namespace Unity.Hierarchy.Editor
                     }
                 }
             }
-            OpenSearchHelper.OpenSearchInContext(this, query, "jumpButton");
+            UnityEditor.SearchService.OpenSearchHelper.OpenSearchInContext(this, query, "jumpButton");
         }
 
         // internal for testing

@@ -28,7 +28,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeField] private int m_ProcessId;
 
         public UnityPlayer GetPlayer() => MultiplayerPlaymode.Players[GetInput(PlayerInstanceIndex)];
-        public bool IsRunning() => MultiplayerPlaymode.Players[GetInput(PlayerInstanceIndex)].PlayerState == PlayerState.Launched;
+        public bool IsRunning()
+        {
+            var player = GetPlayer();
+            if (player.Type is PlayerType.Main)
+            {
+                return EditorApplication.isPlayingOrWillChangePlaymode;
+            }
+
+            return player.PlayerState == PlayerState.Launched;
+        }
 
         public EditorMultiplayerPlaymodeRunNode(string name) : base(name)
         {
@@ -91,8 +100,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             SetupListeningLogs(GetInput(StreamLogs));
 
-            var playerInstanceIndex = GetInput(PlayerInstanceIndex);
-            var player = MultiplayerPlaymode.Players[playerInstanceIndex];
             while (!cancellationToken.IsCancellationRequested && IsRunning()) { await Task.Delay(100); }
 
             await StopPlayer();

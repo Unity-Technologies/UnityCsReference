@@ -372,7 +372,9 @@ namespace UnityEditor.Search
             ignoreSaveSearches = state.ignoreSaveSearches;
             hideAllGroup = state.hideAllGroup;
             windowTitle = state.windowTitle;
-            activeQuery = state.activeQuery;
+
+            // NOTE: Active query is only used to persist during domain reload. And it shouldn't be assigned during SearchQueryExecution
+
             initialQuery = state.initialQuery;
             title = state.title;
             itemSize = state.itemSize;

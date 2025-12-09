@@ -18,7 +18,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The hierarchy node type handler for sub scenes.
     /// </summary>
-    [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchySubSceneHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchySubSceneHandlerBindings.h")]
     internal sealed partial class HierarchySubSceneHandler :
@@ -33,12 +33,7 @@ namespace Unity.Hierarchy.Editor
             public static IntPtr ConvertToUnmanaged(HierarchySubSceneHandler handler) => handler.m_Ptr;
         }
 
-        class ExcludeFromBindings
-        {
-            public HierarchyNodeType NodeType;
-        }
-
-        ExcludeFromBindings m_State = new();
+        HierarchyNodeType m_NodeType;
 
         HierarchySubSceneHandler()
         {
@@ -128,10 +123,10 @@ namespace Unity.Hierarchy.Editor
         /// <returns>The type of the hierarchy node.</returns>
         public new HierarchyNodeType GetNodeType()
         {
-            if (m_State.NodeType == HierarchyNodeType.Null)
-                m_State.NodeType = new HierarchyNodeType(GetStaticNodeType());
+            if (m_NodeType == HierarchyNodeType.Null)
+                m_NodeType = new HierarchyNodeType(GetStaticNodeType());
 
-            return m_State.NodeType;
+            return m_NodeType;
         }
 
         #region IHierarchyEditorNodeTypeHandler
@@ -262,7 +257,7 @@ namespace Unity.Hierarchy.Editor
             var gameObjectHandler = Hierarchy.GetNodeTypeHandler<HierarchyGameObjectHandler>();
             var customParentNode = gameObjectHandler?.GetCustomParentNode() ?? HierarchyNode.Null;
             menu.AppendAction(L10n.Tr("Delete GameObject"), _ => Unsupported.DeleteGameObjectSelection(),
-                HierarchyViewSelectionExtension.IsChildOfSelectionOrSelected(view, in customParentNode)
+                view.IsSelectedOrAnyAncestorSelected(in customParentNode)
                     ? DropdownMenuAction.Status.Disabled
                     : DropdownMenuAction.Status.Normal);
         }

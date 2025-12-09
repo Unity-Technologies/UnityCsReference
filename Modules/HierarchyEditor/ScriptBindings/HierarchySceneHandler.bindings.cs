@@ -20,7 +20,7 @@ namespace Unity.Hierarchy.Editor
     /// <summary>
     /// The hierarchy node type handler for scenes.
     /// </summary>
-    [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/Public/HierarchySceneHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/HierarchySceneHandlerBindings.h")]
     internal sealed partial class HierarchySceneHandler :
@@ -40,13 +40,8 @@ namespace Unity.Hierarchy.Editor
             public static IntPtr ConvertToUnmanaged(HierarchySceneHandler handler) => handler.m_Ptr;
         }
 
-        class ExcludeFromBindings
-        {
-            public HierarchyNodeType NodeType;
-            public bool IsMainStage = StageUtility.GetCurrentStage() is MainStage;
-        }
-
-        ExcludeFromBindings m_State = new();
+        HierarchyNodeType m_NodeType;
+        bool m_IsMainStage;
 
         HierarchySceneHandler()
         {
@@ -61,6 +56,7 @@ namespace Unity.Hierarchy.Editor
         {
             base.Initialize();
 
+            m_IsMainStage = StageUtility.GetCurrentStage() is MainStage;
             EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
             EditorSceneManager.sceneDirtied += OnSceneDirty;
             EditorSceneManager.sceneSaved += OnSceneSaved;
@@ -105,10 +101,10 @@ namespace Unity.Hierarchy.Editor
         /// <returns>The type of the hierarchy node.</returns>
         public new HierarchyNodeType GetNodeType()
         {
-            if (m_State.NodeType == HierarchyNodeType.Null)
-                m_State.NodeType = new HierarchyNodeType(GetStaticNodeType());
+            if (m_NodeType == HierarchyNodeType.Null)
+                m_NodeType = new HierarchyNodeType(GetStaticNodeType());
 
-            return m_State.NodeType;
+            return m_NodeType;
         }
 
         protected override void OnBindItem(HierarchyViewItem item)
@@ -116,7 +112,7 @@ namespace Unity.Hierarchy.Editor
             item.RowContainer?.AddToClassList(k_SceneNodeContainerUssClass);
             item.AddToClassList(k_SceneNodeUssClass);
 
-            var isMainStage = m_State.IsMainStage;
+            var isMainStage = m_IsMainStage;
             item.EnableInClassList(k_NonMainStageSceneNodeUssClass, !isMainStage);
             item.Toggle.EnableInClassList(k_NonMainStageSceneNodeToggleUssClass, !isMainStage);
 

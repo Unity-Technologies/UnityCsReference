@@ -720,6 +720,12 @@ namespace TreeEditor
                     if (Event.current.commandName == "UndoRedoPerformed")
                     {
                         float materialHash = GenerateMaterialHash(treeData.optimizedCutoutMaterial);
+
+                        //if s_CutoutMaterialHashBeforeUndo is not initialized, fill the init value.
+                        //Using uninitialized values ​​causes undo to not work properly.
+                        if (s_CutoutMaterialHashBeforeUndo == 0)
+                            s_CutoutMaterialHashBeforeUndo = materialHash;
+
                         if (s_CutoutMaterialHashBeforeUndo != materialHash)
                         {
                             // Cutout material's hash has changed, so we're undoing property changes on the

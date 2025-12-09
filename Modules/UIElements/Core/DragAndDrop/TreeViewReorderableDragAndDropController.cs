@@ -180,12 +180,19 @@ namespace UnityEngine.UIElements
         void RestoreExpanded(List<int> ids)
         {
             // We assume that we can only have expanded items during dragging
+            var didCollapse = false;
             foreach (var itemId in m_TreeView.viewController.GetAllItemIds())
             {
                 if (!ids.Contains(itemId))
                 {
-                    m_TreeView.CollapseItem(itemId);
+                    m_TreeView.CollapseItem(itemId, false, false);
+                    didCollapse = true;
                 }
+            }
+
+            if (didCollapse)
+            {
+                m_TreeView.RefreshItems();
             }
         }
 

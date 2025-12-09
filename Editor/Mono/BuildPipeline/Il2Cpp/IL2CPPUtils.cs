@@ -53,7 +53,6 @@ namespace UnityEditorInternal
     internal static class SysrootManager
     {
         private static Dictionary<string, Sysroot> _knownSysroots = null;
-        private static Dictionary<string, string> _archMap = null;
         private static string _hostPlatform = null;
         private static string _hostArch = null;
 
@@ -71,25 +70,14 @@ namespace UnityEditorInternal
         [InitializeOnLoadMethod]
         public static void Initialize()
         {
-            CreateArchMapping();
             RegisterSysroots();
         }
 
-        private static void CreateArchMapping()
-        {
-            _archMap = new Dictionary<string, string>();
-            _archMap.Add("amd64", "x86_64");
-            _archMap.Add("i686", "x86");
-        }
-
-        private static string MapArch(string arch)
-        {
-            string mapped;
-            if (_archMap.TryGetValue(arch.ToLower(), out mapped))
-                return mapped;
-            return arch.ToLower();
-        }
-
+        /// <summary>
+        /// Registers Sysroot and Toolchain packages to the Editor. Could occur in following two scenarios:
+        /// 1. Editor Start-up
+        /// 2. Adding a sysroot/toolchain package through UPM.
+        /// </summary>
         private static void RegisterSysroots()
         {
             _knownSysroots = new Dictionary<string, Sysroot>();
@@ -105,46 +93,109 @@ namespace UnityEditorInternal
             }
         }
 
-        private static bool GetTargetPlatformAndArchFromBuildTarget(BuildTarget target, out string targetPlatform, out string targetArch)
+        /// <summary>
+        /// Returns target platform given build target
+        /// Note: At sysroot/toolchain package level. Desktop, Embedded and Linux Server is identified as Linux
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="arch"></param>
+        /// <param name="targetPlatform"></param>
+        /// <param name="targetArch"></param>
+        /// <returns></returns>
+        private static bool GetTargetPlatform(BuildTarget target, out string targetPlatform)
         {
             switch (target)
             {
                 case BuildTarget.StandaloneLinux64:
                 case BuildTarget.LinuxHeadlessSimulation:
-                    targetPlatform = "linux";
-                    targetArch = "x86_64";
-                    return true;
-                case BuildTarget.WebGL:
-                    targetPlatform = "webgl";
-                    targetArch = "";
-                    return true;
                 case BuildTarget.EmbeddedLinux:
-                    targetPlatform = "embeddedlinux";
-                    targetArch = "";
+                    targetPlatform = "linux";
                     return true;
             }
 
             targetPlatform = null;
-            targetArch = null;
             return false;
         }
 
-        private static void GetPosixPlatformAndArch()
+        /// <summary>
+        /// Public method to retrieve target architecture as a string given OSArchitecture enum
+        /// </summary>
+        /// <param name="targetArch"></param>
+        /// <param name="arch"></param>
+        /// <returns></returns>
+        public static bool GetTargetArchName(OSArchitecture targetArch, out string arch)
         {
-            var p = new Process();
-            p.StartInfo.FileName = "uname";
-            p.StartInfo.Arguments = "-s -m";
-            p.StartInfo.RedirectStandardError = true;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.UseShellExecute = false;
-            p.Start();
-            var parts = p.StandardOutput.ReadToEnd().Split(new char[] { ' ', '\r', '\n' });
-            p.WaitForExit();
-            if (parts.Length > 1)
+            switch (targetArch)
             {
-                _hostPlatform = parts[0].ToLower();
-                _hostArch = MapArch(parts[1]);
+                case OSArchitecture.ARM64:
+                    arch = "arm64";
+                    return true;
+                case OSArchitecture.x64:
+                    arch = "x86_64";
+                    return true;
             }
+
+            arch = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Given Build Target and target architecture, returns installed toolchain for the build target
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="arch"></param>
+        /// <returns></returns>
+        public static Sysroot FindSysrootPackage(BuildTarget target, OSArchitecture arch)
+        {
+            Sysroot sysrootPackage = null;
+            string targetPlatform = "";
+            string targetArch = "";
+
+            if (!GetTargetPlatform(target, out targetPlatform) || !GetTargetArchName(arch, out targetArch))
+                return null;
+
+            if (!_knownSysroots.TryGetValue(MakeKey(String.Empty, String.Empty, targetPlatform, targetArch), out sysrootPackage))
+                return null;
+
+            if (!sysrootPackage.Initialize())
+            {
+                Debug.Log($"Failed to initialize sysroot {sysrootPackage.Name}");
+                return null;
+            }
+
+            return sysrootPackage;
+        }
+
+        /// <summary>
+        /// Given Build Target, returns installed toolchain for the build target
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns>Returns toolchain package installed/registered for build target </returns>
+        public static Sysroot FindToolchainPackage(BuildTarget target)
+        {
+            Sysroot toolchainPackage = null;
+            string targetPlatform = "";
+
+            // Handling unsupported host platforms
+            if (!GetHostPlatformAndArch() || !GetTargetPlatform(target, out targetPlatform))
+                return null;
+
+            foreach (Sysroot package in _knownSysroots.Values)
+            {
+                if (package.HostPlatform == _hostPlatform && package.HostArch == _hostArch && package.TargetPlatform == targetPlatform)
+                {
+                    toolchainPackage = package;
+                    break;
+                }
+            }
+
+            if (toolchainPackage != null && !toolchainPackage.Initialize())
+            {
+                Debug.Log($"Failed to initialize toolchain {toolchainPackage.Name}");
+                return null;
+            }
+
+            return toolchainPackage;
         }
 
         private static string AllowEnvironmentOverride(string origValue, string envVar)
@@ -158,16 +209,20 @@ namespace UnityEditorInternal
             if (_hostPlatform != null && _hostArch != null)
                 return true;
 
-            switch (Environment.OSVersion.Platform)
+            _hostPlatform = (true) switch
             {
-                case PlatformID.Win32NT:
-                    _hostPlatform = "windows";
-                    _hostArch = MapArch(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
-                    break;
-                case PlatformID.Unix:
-                    GetPosixPlatformAndArch();
-                    break;
-            }
+                _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => "windows",
+                _ when RuntimeInformation.IsOSPlatform(OSPlatform.Linux) => "linux",
+                _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => "macos",
+                _ => "Unknown"
+            };
+
+            _hostArch = RuntimeInformation.OSArchitecture switch
+            {
+                Architecture.X64   => "x86_64",
+                Architecture.Arm64 => "arm64",
+                _ => RuntimeInformation.OSArchitecture.ToString()
+            };
 
             _hostPlatform = AllowEnvironmentOverride(_hostPlatform, "UNITY_SYSROOT_HOST_PLATFORM");
             _hostArch = AllowEnvironmentOverride(_hostArch, "UNITY_SYSROOT_HOST_ARCH");
@@ -175,45 +230,47 @@ namespace UnityEditorInternal
             return _hostPlatform != null && _hostArch != null;
         }
 
-        public static Sysroot FindSysroot(BuildTarget target)
+        /// <summary>
+        /// Public method to retrieve host platform and its architecture
+        /// </summary>
+        /// <returns></returns>
+        public static string GetHostPlatformAndArchitecture()
         {
-            string targetPlatform, targetArch;
-            if (!GetTargetPlatformAndArchFromBuildTarget(target, out targetPlatform, out targetArch))
-                return null;
+            if (_hostPlatform == null || _hostArch == null)
+                GetHostPlatformAndArch();
 
-            return FindSysroot(targetPlatform, targetArch);
-        }
-
-        private static Sysroot FindSysroot(string targetPlatform, string targetArch)
-        {
-            if (!GetHostPlatformAndArch())
-                return null;
-
-            Sysroot sysroot;
-            if (!_knownSysroots.TryGetValue(MakeKey(targetPlatform, targetArch), out sysroot))
-                return null;
-
-            if (!sysroot.Initialize())
+            switch (_hostPlatform)
             {
-                UnityEngine.Debug.Log($"Failed to initialize sysroot {sysroot.Name}");
-                return null;
+                case "macos":
+                    return $"macos-{_hostArch}";
+                case "windows":
+                    return $"win-{_hostArch}";
+                case "linux":
+                    return $"linux-{_hostArch}";
+                default:
+                    return $"{_hostPlatform}-{_hostArch}";
             }
-
-            return sysroot;
         }
 
-        public static string HostTargetTuple(BuildTarget buildTarget)
+        /// <summary>
+        /// Given Build Target and target architecture returns host target tuple in following format
+        /// [HOST PLATFORM]-[HOST ARCH]-[TARGET PLATFORM]-[TARGET ARCH]
+        /// </summary>
+        /// <param name="buildTarget"></param>
+        /// <param name="arch"></param>
+        /// <returns>Host target tuple in "[HOST PLATFORM]-[HOST ARCH]-[TARGET PLATFORM]-[TARGET ARCH]" format</returns>
+        public static string HostTargetTuple(BuildTarget buildTarget, OSArchitecture arch)
         {
             if (GetHostPlatformAndArch())
             {
                 string targetPlatform;
                 string targetArch;
-                if (GetTargetPlatformAndArchFromBuildTarget(buildTarget, out targetPlatform, out targetArch))
+                if (GetTargetPlatform(buildTarget, out targetPlatform) && GetTargetArchName(arch, out targetArch))
                 {
                     string host;
                     switch (_hostPlatform)
                     {
-                        case "darwin":
+                        case "macos":
                             host = $"macos-{_hostArch}";
                             break;
                         case "windows":
@@ -230,6 +287,11 @@ namespace UnityEditorInternal
             return null;
         }
 
+        /// <summary>
+        /// Public method to enumerate through all the toolchain and sysroot packages
+        /// currently installed in the unity project
+        /// </summary>
+        /// <returns></returns>
         public static IEnumerable<Sysroot> EnumerateSysroots()
         {
             foreach (Sysroot sysroot in _knownSysroots.Values)

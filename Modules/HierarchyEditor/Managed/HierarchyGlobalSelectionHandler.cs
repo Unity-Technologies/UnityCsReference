@@ -23,12 +23,12 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView = view;
             m_LockTracker = lockTracker;
             Selection.selectionChanged += OnGlobalSelectionChanged;
-            m_HierarchyView.OnFlagsChanged += OnHierarchyViewFlagsChanged;
+            m_HierarchyView.FlagsChanged += OnHierarchyViewFlagsChanged;
         }
 
         public void Dispose()
         {
-            m_HierarchyView.OnFlagsChanged -= OnHierarchyViewFlagsChanged;
+            m_HierarchyView.FlagsChanged -= OnHierarchyViewFlagsChanged;
             Selection.selectionChanged -= OnGlobalSelectionChanged;
         }
 
@@ -43,7 +43,7 @@ namespace Unity.Hierarchy.Editor
 
             // Set the selection
             var nodes = FillNodeBufferFromEntityIds(globalSelection);
-            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyView.ViewModel))
+            using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyView.ViewModel, notify: false))
             {
                 m_HierarchyView.ViewModel.ClearFlags(HierarchyNodeFlags.Selected);
                 m_HierarchyView.ViewModel.SetFlags(nodes, HierarchyNodeFlags.Selected);
@@ -51,7 +51,7 @@ namespace Unity.Hierarchy.Editor
 
             // Frame the selection if requested
             if (frameSelection && !m_LockTracker.isLocked)
-                m_HierarchyView.FrameNodes(nodes);
+                m_HierarchyView.Frame(nodes);
         }
 
         /// <summary>
@@ -69,9 +69,9 @@ namespace Unity.Hierarchy.Editor
             Selection.SetEntityIdsUnsafe(viewModelSelection);
         }
 
-        void OnHierarchyViewFlagsChanged(HierarchyViewFlagChangedEvent evt)
+        void OnHierarchyViewFlagsChanged(HierarchyNodeFlags flags)
         {
-            if (!evt.Flags.HasFlag(HierarchyNodeFlags.Selected))
+            if (!flags.HasFlag(HierarchyNodeFlags.Selected))
                 return;
 
             SyncGlobalSelectionFromViewModel();

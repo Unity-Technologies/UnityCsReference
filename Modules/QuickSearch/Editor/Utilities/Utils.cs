@@ -16,6 +16,8 @@ using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
+using UnityEditor.PackageManager;
+
 
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
@@ -727,6 +729,8 @@ namespace UnityEditor.Search
 
         internal static string CleanPath(string path)
         {
+            if (path == null)
+                return null;
             return path.Replace("\\", "/");
         }
 
@@ -1611,6 +1615,28 @@ namespace UnityEditor.Search
                     onEnumeration(objType.FullName, true);
                 objType = objType.BaseType;
             }
+        }
+
+        internal static bool IsPackageReadOnly(PackageManager.PackageInfo pi)
+        {
+            if (pi.source == PackageSource.Embedded || pi.source == PackageSource.Local)
+                return false;
+            return true;
+        }
+
+        internal static bool IsAssetReadOnly(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath) || assetPath.StartsWith("Library/"))
+                return true;
+
+            if (assetPath.StartsWith("Packages/"))
+            {
+                var pi = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+                return pi != null && IsPackageReadOnly(pi);
+            }
+
+            // Assumes all assets in projects are writable. 
+            return false;
         }
     }
 

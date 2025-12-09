@@ -24,7 +24,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// A shape is automatically destroyed when the body it is attached to is destroyed. A shape cannot exist unattached from a body.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct PhysicsShape : IEquatable<PhysicsShape>
+    public readonly partial struct PhysicsShape : IEquatable<PhysicsShape>
     {
         #region Id
 
@@ -100,7 +100,7 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct SurfaceMaterial
+        public partial struct SurfaceMaterial
         {
             /// <summary>
             /// The method used to mix friction or bounciness values.
@@ -158,18 +158,10 @@ namespace UnityEngine.LowLevelPhysics2D
             /// </summary>
             public MixingMode frictionMixing { readonly get => m_FrictionMixing; set => m_FrictionMixing = value; }
 
-            /// <undoc/>
-            [Obsolete("PhysicsShape.SurfaceMaterial.frictionCombine has been deprecated. Please use PhysicsShape.SurfaceMaterial.frictionMixing instead.", false)]
-            public PhysicsMaterialCombine2D frictionCombine { readonly get => (PhysicsMaterialCombine2D)frictionMixing; set => frictionMixing = (MixingMode)value; }
-
             /// <summary>
             /// Defines the method used when mixing the bounciness values of two shapes to form a contact.
             /// </summary>
             public MixingMode bouncinessMixing { readonly get => m_BouncinessMixing; set => m_BouncinessMixing = value; }
-
-            /// <undoc/>
-            [Obsolete("PhysicsShape.SurfaceMaterial.bouncinessCombine has been deprecated. Please use PhysicsShape.SurfaceMaterial.bouncinessMixing instead.", false)]
-            public PhysicsMaterialCombine2D bouncinessCombine { readonly get => (PhysicsMaterialCombine2D)bouncinessMixing; set => bouncinessMixing = (MixingMode)value; }
 
             /// <summary>
             /// The priority for mixing the <see cref="LowLevelPhysics2D.PhysicsShape.friction"/> properties when two shapes come into contact.
@@ -1168,19 +1160,11 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public readonly SurfaceMaterial.MixingMode frictionMixing { get => PhysicsShape_GetFrictionMixing(this); set => PhysicsShape_SetFrictionMixing(this, value); }
 
-        /// <undoc/>
-        [Obsolete("PhysicsShape.frictionCombine has been deprecated. Please use PhysicsShape.frictionMixing instead.", false)]
-        public readonly PhysicsMaterialCombine2D frictionCombine { get => (PhysicsMaterialCombine2D)frictionMixing; set => frictionMixing = (SurfaceMaterial.MixingMode)value; }
-
         /// <summary>
         /// Defines the method used when mixing the friction values of two shapes to form a contact.
         /// This is assigned to the current <see cref="LowLevelPhysics2D.PhysicsShape.surfaceMaterial"/>.
         /// </summary>
         public readonly SurfaceMaterial.MixingMode bouncinessMixing { get => PhysicsShape_GetBouncinessMixing(this); set => PhysicsShape_SetBouncinessMixing(this, value); }
-
-        /// <undoc/>
-        [Obsolete("PhysicsShape.bouncinessCombine has been deprecated. Please use PhysicsShape.bouncinessMixing instead.", false)]
-        public readonly PhysicsMaterialCombine2D bouncinessCombine { get => (PhysicsMaterialCombine2D)bouncinessMixing; set => bouncinessMixing = (SurfaceMaterial.MixingMode)value; }
 
         /// <summary>
         /// The priority for combining the <see cref="LowLevelPhysics2D.PhysicsShape.friction"/> properties when two shapes come into contact.

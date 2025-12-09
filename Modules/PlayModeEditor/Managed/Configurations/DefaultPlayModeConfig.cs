@@ -16,6 +16,10 @@ namespace Unity.PlayMode.Editor
             // Save assets before entering Playmode to synchronize project settings for virtual player and main editor
             AssetDatabase.SaveAssets();
             EditorApplication.EnterPlaymode();
+
+            if (EditorUtility.scriptCompilationFailed)
+                throw new TaskCanceledException();
+
             return Task.CompletedTask;
         }
 

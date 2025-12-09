@@ -3906,11 +3906,14 @@ namespace UnityEditor
             {
                 using (var propertyScope = new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_StackTraceTypes))
                 {
+                    var logTypeLabelWidth = 80;
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        GUILayout.Label("Log Type");
+                        GUIStyle centeredStyle = new GUIStyle(GUI.skin.label);
+                        centeredStyle.alignment = TextAnchor.MiddleCenter;
+                        EditorGUILayout.LabelField("Log Type", GUILayout.Width(EditorGUIUtility.labelWidth - logTypeLabelWidth / 2));
                         foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
-                            GUILayout.Label(stackTraceLogType.ToString(), GUILayout.Width(70));
+                            EditorGUILayout.LabelField(stackTraceLogType.ToString(), centeredStyle, GUILayout.Width(logTypeLabelWidth));
                     }
 
                     foreach (LogType logType in Enum.GetValues(typeof(LogType)))
@@ -3918,12 +3921,12 @@ namespace UnityEditor
                         var logProperty = m_StackTraceTypes.GetArrayElementAtIndex((int)logType);
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            GUILayout.Label(logType.ToString(), GUILayout.MinWidth(60));
+                            EditorGUILayout.LabelField(logType.ToString(), GUILayout.Width(EditorGUIUtility.labelWidth - EditorGUI.kIndentPerLevel));
                             foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
                             {
                                 StackTraceLogType inStackTraceLogType = (StackTraceLogType)logProperty.intValue;
                                 EditorGUI.BeginChangeCheck();
-                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(65));
+                                bool val = EditorGUILayout.ToggleLeft(" ", inStackTraceLogType == stackTraceLogType, GUILayout.Width(logTypeLabelWidth));
                                 if (EditorGUI.EndChangeCheck() && val)
                                 {
                                     logProperty.intValue = (int)stackTraceLogType;

@@ -781,6 +781,21 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Allow to set the value without being notified.
+        /// </summary>
+        /// <param name="newValue">The new value to set.</param>
+        public override void SetValueWithoutNotify(TValueType newValue)
+        {
+            base.SetValueWithoutNotify(newValue);
+
+            // Preemptively set back the placeholder state if we're about to set to an empty string.
+            if (textInputBase.textElement.needsPlaceholderIfTextIsEmpty && string.IsNullOrEmpty(ValueToString(newValue)))
+            {
+                visualInput.AddToClassList(placeholderUssClassName);
+            }
+        }
+
+        /// <summary>
         /// Converts a value of the specified generic type from the subclass to a string representation.
         /// </summary>
         /// <remarks>Subclasses must implement this method.</remarks>

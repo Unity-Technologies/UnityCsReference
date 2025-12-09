@@ -252,7 +252,7 @@ namespace UnityEditor
 
         void OnDropdownClicked()
         {
-            OverlayPopupWindow.Show<CameraOverscanSettingsWindow>(this, new Vector2(300, 88));
+            OverlayPopupWindow.Show<CameraOverscanSettingsWindow>(this, new Vector2(300, 40));
         }
 
         void EnableCameraViewTool()
@@ -557,7 +557,7 @@ namespace UnityEditor
                 var targetHeight = resizeTarget.resolvedStyle.height;
                 if (collapsed && popup != null)
                     targetHeight = popup.resolvedStyle.height;
-                
+
                 m_CurrentBaseHeight = targetHeight - delta + 5f;
 
                 // Lock the height. User can't resize the Overlay vertically in reduce mode.

@@ -221,6 +221,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                             return TrustAndSignature.FullTrustUnitySignature;
                         return TrustAndSignature.FullTrustValidSignature;
                     }
+
+                    if (packageInfo.source == PackageSource.BuiltIn)
+                        return TrustAndSignature.FullTrustBuiltInPackage;
+
                     return TrustAndSignature.FullTrustNoSignature;
                 }
                 case TrustLevel.LimitedTrust:

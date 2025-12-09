@@ -431,6 +431,9 @@ namespace UnityEngine.UIElements.UIR
                         m_Block.SetVectorArray("unity_uie_UVRect", s_UVRects);
 
 #pragma warning disable 618
+
+                        bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
+
                         if (op.FilterPass.prepareMaterialPropertyBlockCallback != null || op.FilterPass.applySettingsCallback != null)
                         {
                             if (op.FilterPass.prepareMaterialPropertyBlockCallback != null)
@@ -440,13 +443,13 @@ namespace UnityEngine.UIElements.UIR
                                 {
                                     filterFunction = op.filter,
                                     filterPassIndex = op.FilterPassIndex,
-                                    readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma,
+                                    readsGamma = readsGamma,
                                     writesGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma && isLastFilterPass,
                                 });
                         }
 #pragma warning restore 618
                         else
-                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement);
+                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
 
                         Utility.SetPropertyBlock(m_Block);
 
@@ -499,7 +502,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source)
+        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source, bool readsGamma)
         {
             if (effect.parameterBindings == null)
                 return;
@@ -515,7 +518,7 @@ namespace UnityEngine.UIElements.UIR
                 if (p.type == FilterParameterType.Float)
                     m_Block.SetFloat(binding.name, p.floatValue);
                 else if (p.type == FilterParameterType.Color)
-                    m_Block.SetColor(binding.name, p.colorValue);
+                    m_Block.SetVector(binding.name, readsGamma ? p.colorValue : p.colorValue.linear );
             }
         }
 

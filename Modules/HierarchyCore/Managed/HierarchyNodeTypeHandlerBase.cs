@@ -18,7 +18,7 @@ namespace Unity.Hierarchy
     /// </summary>
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyNodeTypeHandlerBaseBindings.h")]
-    [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
     public abstract partial class HierarchyNodeTypeHandlerBase : IDisposable
     {
         internal static class BindingsMarshaller

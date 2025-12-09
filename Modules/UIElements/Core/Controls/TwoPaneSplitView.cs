@@ -289,6 +289,8 @@ namespace UnityEngine.UIElements
             }
 
             m_CollapseMode = true;
+
+            AdjustPanesBasedOnAnchor();
         }
 
         /// <summary>
@@ -323,6 +325,8 @@ namespace UnityEngine.UIElements
             m_CollapsedChildIndex = -1;
 
             Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, m_Orientation);
+
+            AdjustPanesBasedOnAnchor();
 
             // Update the position of the drag line anchor after one of the pane gets uncollapsed.
             // However, the computation of the position requires the resolved style of the panes to be computed.
@@ -397,15 +401,37 @@ namespace UnityEngine.UIElements
             UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
 
             // Initially, consider the size of the anchor in the placement of the second pane, no matter if fixed or not.
-            ReplacePanesBasedOnAnchor();
+            AdjustPanesBasedOnAnchor();
         }
 
-        void ReplacePanesBasedOnAnchor()
+        void AdjustPanesBasedOnAnchor()
         {
-            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
-                m_RightPane.style.left = m_DragLineAnchor.worldBound.width;
+            if (m_LeftPane.style.display == DisplayStyle.None || m_RightPane.style.display == DisplayStyle.None)
+            {
+                if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                {
+                    m_RightPane.style.left = 0;
+                    m_Content.style.paddingRight = 0;
+                }
+                else
+                {
+                    m_RightPane.style.top = 0;
+                    m_Content.style.paddingBottom = 0;
+                }
+            }
             else
-                m_RightPane.style.top = m_DragLineAnchor.worldBound.height;
+            {
+                if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                {
+                    m_RightPane.style.left = m_DragLineAnchor.layout.width;
+                    m_Content.style.paddingRight = m_DragLineAnchor.layout.width;
+                }
+                else
+                {
+                    m_RightPane.style.top = m_DragLineAnchor.layout.height;
+                    m_Content.style.paddingBottom = m_DragLineAnchor.layout.height;
+                }
+            }
         }
 
         void IdentifyLeftAndRightPane()
@@ -552,27 +578,33 @@ namespace UnityEngine.UIElements
             else if (maxLength >= fixedPaneMinLength + fixedPaneMargins + flexedPaneMinLength + flexedPaneMargins)
             {
                 var newDimension = maxLength - flexedPaneMinLength - flexedPaneMargins - fixedPaneMargins;
-                var dimensionToAnchorOffset = 0f;
-                dimensionToAnchorOffset = (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
-                ? Math.Abs(m_DragLineAnchor.worldBound.width - (m_DragLine.resolvedStyle.width - Math.Abs(m_DragLine.resolvedStyle.left)))
-                : Math.Abs(m_DragLineAnchor.worldBound.height - (m_DragLine.resolvedStyle.height - Math.Abs(m_DragLine.resolvedStyle.top)));
+                var dimensionToAnchorOffset = m_Orientation == TwoPaneSplitViewOrientation.Horizontal
+                    ? m_DragLineAnchor.layout.width
+                    : m_DragLineAnchor.layout.height;
                 newDimension -= dimensionToAnchorOffset;
 
                 var fixedPaneMinLengthReached = newDimension < fixedPaneMinLength;
                 var currentFixedPaneLenghtGreaterThanMin = fixedPaneLength > fixedPaneMinLength;
-                if (updateFixedPane && !fixedPaneMinLengthReached)
-                    SetFixedPaneDimension(newDimension);
-                else if (updateFixedPane && fixedPaneMinLengthReached && currentFixedPaneLenghtGreaterThanMin)
-                    SetFixedPaneDimension(fixedPaneMinLength);
+
+                if (updateFixedPane)
+                {
+                    if (!fixedPaneMinLengthReached)
+                        SetFixedPaneDimension(newDimension);
+                    else if (currentFixedPaneLenghtGreaterThanMin)
+                        SetFixedPaneDimension(fixedPaneMinLength);
+                }
 
                 if (updateDragLine)
                 {
                     // Recalculate drag line offset
                     if (fixedPaneMinLengthReached)
-                        SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneMinLength: maxLength - fixedPaneMinLength - fixedPaneMargins);
+                        SetDragLineOffset(m_FixedPaneIndex == 0
+                            ? fixedPaneMinLength
+                            : maxLength - fixedPaneMinLength - fixedPaneMargins);
                     else
-                        SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension + fixedPaneMargins + dimensionToAnchorOffset: flexedPaneMinLength + flexedPaneMargins);
-
+                        SetDragLineOffset(m_FixedPaneIndex == 0
+                            ? newDimension + fixedPaneMargins
+                            : flexedPaneMinLength + flexedPaneMargins);
                 }
             }
             // Not big enough for fixed and flexed pane minimum sizes

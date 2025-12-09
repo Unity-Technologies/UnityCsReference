@@ -17,7 +17,7 @@ namespace Unity.Hierarchy
     /// </summary>
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyViewModel.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyViewModelBindings.h")]
-    [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyViewModel : IDisposable
     {
         internal static class BindingsMarshaller
@@ -28,12 +28,21 @@ namespace Unity.Hierarchy
         IntPtr m_Ptr;
         internal readonly Hierarchy m_Hierarchy;
         internal readonly HierarchyFlattened m_HierarchyFlattened;
-        IntPtr m_NodesPtr;
-        int m_NodesCount;
-        IntPtr m_IndicesPtr;
-        int m_IndicesCount;
+        ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
+        ReadOnlyNativeVector<HierarchyNode> m_Nodes;
         int m_Version;
         readonly bool m_IsOwner;
+
+        /// <summary>
+        /// Delegate that is invoked when flags on hierarchy nodes are changed.
+        /// </summary>
+        /// <param name="flags"></param>
+        public delegate void FlagsChangedEventHandler(HierarchyNodeFlags flags);
+
+        /// <summary>
+        /// Event that is invoked when flags on hierarchy nodes are changed.
+        /// </summary>
+        public event FlagsChangedEventHandler FlagsChanged;
 
         /// <summary>
         /// Whether this object is valid and uses memory.
@@ -46,7 +55,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// The total does not include the <see cref="Hierarchy.Root"/> node.
         /// </remarks>
-        public int Count => m_IndicesCount;
+        public int Count => m_Nodes.Count;
 
         /// <summary>
         /// Whether the hierarchy view model is currently updating.
@@ -72,28 +81,16 @@ namespace Unity.Hierarchy
         /// </remarks>
         public extern bool Filtering { [NativeMethod("Filtering", IsThreadSafe = true)] get; }
 
-        unsafe internal HierarchyFlattenedNode* NodesPtr
+        internal ReadOnlyNativeVector<HierarchyFlattenedNode> FlattenedNodes
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (HierarchyFlattenedNode*)m_NodesPtr;
+            get => m_FlattenedNodes;
         }
 
-        internal int NodesCount
+        internal ReadOnlyNativeVector<HierarchyNode> Nodes
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => m_NodesCount;
-        }
-
-        unsafe internal int* IndicesPtr
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (int*)m_IndicesPtr;
-        }
-
-        internal int IndicesCount
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => m_IndicesCount;
+            get => m_Nodes;
         }
 
         internal int Version
@@ -135,13 +132,11 @@ namespace Unity.Hierarchy
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public HierarchyViewModel(HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
-            m_Ptr = Create(GCHandle.ToIntPtr(GCHandle.Alloc(this)), hierarchyFlattened, defaultFlags, out var nodesPtr, out var nodesCount, out var indicesPtr, out var indicesCount, out var version);
+            m_Ptr = Create(GCHandle.ToIntPtr(GCHandle.Alloc(this)), hierarchyFlattened, defaultFlags, out var flattenedNodesPtr, out var flattenedNodesCount, out var nodesPtr, out var nodesCount, out var version);
             m_Hierarchy = hierarchyFlattened.m_Hierarchy;
             m_HierarchyFlattened = hierarchyFlattened;
-            m_NodesPtr = nodesPtr;
-            m_NodesCount = nodesCount;
-            m_IndicesPtr = indicesPtr;
-            m_IndicesCount = indicesCount;
+            m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);
+            m_Nodes = new ReadOnlyNativeVector<HierarchyNode>(nodesPtr, nodesCount);
             m_Version = version;
             m_IsOwner = true;
 
@@ -153,20 +148,18 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="nativePtr">The native pointer.</param>
         /// <param name="hierarchyFlattened">The flattened hierarchy that serves as the hierarchy model.</param>
+        /// <param name="flattenedNodesPtr">The native pointer to the flattened nodes.</param>
+        /// <param name="flattenedNodesCount">The number of flattened nodes.</param>
         /// <param name="nodesPtr">The native pointer to the nodes.</param>
         /// <param name="nodesCount">The number of nodes.</param>
-        /// <param name="indicesPtr">The native pointer to the indices.</param>
-        /// <param name="indicesCount">The number of indices.</param>
         /// <param name="version">The hierarchy view model version.</param>
-        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr nodesPtr, int nodesCount, IntPtr indicesPtr, int indicesCount, int version)
+        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version)
         {
             m_Ptr = nativePtr;
             m_Hierarchy = hierarchyFlattened.m_Hierarchy;
             m_HierarchyFlattened = hierarchyFlattened;
-            m_NodesPtr = nodesPtr;
-            m_NodesCount = nodesCount;
-            m_IndicesPtr = indicesPtr;
-            m_IndicesCount = indicesCount;
+            m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);
+            m_Nodes = new ReadOnlyNativeVector<HierarchyNode>(nodesPtr, nodesCount);
             m_Version = version;
             m_IsOwner = false;
 
@@ -196,6 +189,9 @@ namespace Unity.Hierarchy
 
                 m_Ptr = IntPtr.Zero;
             }
+
+            m_FlattenedNodes = default;
+            m_Nodes = default;
         }
 
         /// <summary>
@@ -206,21 +202,7 @@ namespace Unity.Hierarchy
         public ref readonly HierarchyNode this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (index < 0 || index >= m_IndicesCount)
-                    throw new ArgumentOutOfRangeException(nameof(index));
-
-                unsafe
-                {
-                    var nodeIndex = IndicesPtr[index];
-                    if (nodeIndex < 0 || nodeIndex >= m_NodesCount)
-                        throw new IndexOutOfRangeException(nameof(nodeIndex));
-
-                    ref readonly var flattenedNode = ref NodesPtr[nodeIndex];
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in flattenedNode);
-                }
-            }
+            get => ref m_Nodes[index];
         }
 
         /// <summary>
@@ -575,8 +557,14 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Ends a batch of flags changes.
         /// </summary>
-        [NativeMethod(IsThreadSafe = true)]
-        public extern void EndFlagsChange();
+        /// <returns>The flags that were changed during the batch.</returns>
+        public HierarchyNodeFlags EndFlagsChange() => EndFlagsChange(true);
+
+        /// <summary>
+        /// Ends a batch of flags changes without notifying listeners.
+        /// </summary>
+        /// <returns>The flags that were changed during the batch.</returns>
+        public HierarchyNodeFlags EndFlagsChangeWithoutNotify() => EndFlagsChange(false);
 
         /// <summary>
         /// Gets all hierarchy nodes that have all of the specified flags set.
@@ -840,24 +828,18 @@ namespace Unity.Hierarchy
         /// <summary>
         /// An enumerator of <see cref="HierarchyNode"/>. Enumerates and filters items at the same time.
         /// </summary>
-        public unsafe struct Enumerator
+        public struct Enumerator
         {
             readonly HierarchyViewModel m_ViewModel;
-            readonly HierarchyFlattenedNode* m_NodesPtr;
-            readonly int m_NodesCount;
-            readonly int* m_IndicesPtr;
-            readonly int m_IndicesCount;
+            readonly ReadOnlyNativeVector<HierarchyNode> m_Nodes;
             readonly int m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyViewModel hierarchyViewModel)
             {
                 m_ViewModel = hierarchyViewModel;
-                m_NodesPtr = hierarchyViewModel.NodesPtr;
-                m_NodesCount = hierarchyViewModel.NodesCount;
-                m_IndicesPtr = hierarchyViewModel.IndicesPtr;
-                m_IndicesCount = hierarchyViewModel.IndicesCount;
-                m_Version = hierarchyViewModel.Version;
+                m_Nodes = hierarchyViewModel.m_Nodes;
+                m_Version = hierarchyViewModel.m_Version;
                 m_Index = -1;
             }
 
@@ -872,9 +854,7 @@ namespace Unity.Hierarchy
                     if (m_Version != m_ViewModel.m_Version)
                         throw new InvalidOperationException("HierarchyViewModel was modified.");
 
-                    var nodeIndex = m_IndicesPtr[m_Index];
-                    ref readonly var flattenedNode = ref m_NodesPtr[nodeIndex];
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in flattenedNode);
+                    return ref m_Nodes[m_Index];
                 }
             }
 
@@ -883,8 +863,14 @@ namespace Unity.Hierarchy
             /// </summary>
             /// <returns>Returns true if Current item is valid</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool MoveNext() => ++m_Index < m_IndicesCount;
+            public bool MoveNext() => ++m_Index < m_Nodes.Count;
         }
+
+        /// <summary>
+        /// Returns a read-only span of all hierarchy nodes in the view model.
+        /// </summary>
+        /// <returns>A read-only span of hierarchy nodes.</returns>
+        public ReadOnlySpan<HierarchyNode> AsReadOnlySpan() => m_Nodes.AsReadOnlySpan();
 
         // Currently required to feed UI Toolkit containers itemsSource property, which requires the collection to
         // be an IList. We do not want HierarchyViewModel to be an IList, so we provide a read-only list wrapper.
@@ -1053,6 +1039,9 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyViewModelBindings::ToggleFlagsRecursiveNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern void ToggleFlagsRecursiveNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
 
+        [FreeFunction("HierarchyViewModelBindings::EndFlagsChange", HasExplicitThis = true, IsThreadSafe = true)]
+        extern HierarchyNodeFlags EndFlagsChange(bool notify);
+
         [FreeFunction("HierarchyViewModelBindings::GetNodesWithAllFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetNodesWithAllFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
 
@@ -1079,18 +1068,23 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr nodesPtr, int nodesCount, IntPtr indicesPtr, int indicesCount, int version) =>
-            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), nodesPtr, nodesCount, indicesPtr, indicesCount, version)));
+        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version) =>
+            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), flattenedNodesPtr, flattenedNodesCount, nodesPtr, nodesCount, version)));
 
         [RequiredByNativeCode]
-        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr nodesPtr, int nodesCount, IntPtr indicesPtr, int indicesCount, int version)
+        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version)
         {
             var viewModel = FromIntPtr(handlePtr);
-            viewModel.m_NodesPtr = nodesPtr;
-            viewModel.m_NodesCount = nodesCount;
-            viewModel.m_IndicesPtr = indicesPtr;
-            viewModel.m_IndicesCount = indicesCount;
+            viewModel.m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);
+            viewModel.m_Nodes = new ReadOnlyNativeVector<HierarchyNode>(nodesPtr, nodesCount);
             viewModel.m_Version = version;
+        }
+
+        [RequiredByNativeCode]
+        static void InvokeFlagsChanged(IntPtr handlePtr, HierarchyNodeFlags flags)
+        {
+            var viewModel = FromIntPtr(handlePtr);
+            viewModel.FlagsChanged?.Invoke(flags);
         }
 
         [RequiredByNativeCode]

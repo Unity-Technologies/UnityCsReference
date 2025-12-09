@@ -293,6 +293,7 @@ namespace UnityEditor.Search
         [NonSerialized] private int m_InstanceID = 0;
         [NonSerialized] private Task m_CurrentResolveTask;
         [NonSerialized] private Task m_CurrentUpdateTask;
+        [NonSerialized] private Task m_CurrentIncrementalLoadTask;
         [NonSerialized] private int m_UpdateTasks = 0;
         [NonSerialized] private string m_IndexSettingsPath;
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
@@ -305,6 +306,7 @@ namespace UnityEditor.Search
         public bool loaded { get; private set; }
         public bool ready => this && loaded && index != null && index.IsReady() && LoadingState == LoadState.Complete;
         public bool updating => m_UpdateTasks > 0 || !loaded || m_CurrentResolveTask != null || !ready;
+        internal bool hasPendingTasks => m_CurrentResolveTask != null || m_CurrentUpdateTask != null || m_CurrentIncrementalLoadTask != null;
 
         // TODO: It might be possible that m_UpdateQueue.Count == 0 while an incrementalUpdate task is still in the Dispatcher.
         public bool needsUpdate => !m_UpdateQueue.IsEmpty;
@@ -358,31 +360,11 @@ namespace UnityEditor.Search
 
         public SearchDatabase Reload(Settings settings)
         {
-            m_IndexSettingsPath = settings.source;
-            SearchMonitor.RaiseContentRefreshed(new[] { settings.source }, new string[0], new string[0]);
-
-            LoadingState = LoadState.Loading;
-            loaded = false;
-
-            m_IndexingRequestTrackerId = EditorPerformanceTracker.StartTracker("SearchImporter.IndexingRequest");
-
-            // TODO: Remove this
-            using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
-            if (!writeLockScope.locked)
-            {
-                Dispatcher.Enqueue(() => Reload(settings));
-                return this;
-            }
-
-            this.settings = settings;
-            index?.Dispose();
-            index = CreateIndexer(settings);
-            name = settings.name;
-            LoadAsync();
+            if (ReloadWithoutIndexing(settings))
+                LoadAsync();
             return this;
         }
 
-        // Used by performance tests
         public bool ReloadWithoutIndexing(Settings settings)
         {
             m_IndexSettingsPath = settings.source;
@@ -401,7 +383,7 @@ namespace UnityEditor.Search
             }
 
             this.settings = settings;
-            index?.Dispose();
+            DisposeIndex();
             index = CreateIndexer(settings);
             name = settings.name;
 
@@ -597,7 +579,7 @@ namespace UnityEditor.Search
         public void Import(string settingsPath)
         {
             settings = LoadSettings(settingsPath);
-            index?.Dispose();
+            DisposeIndex();
             DeleteBackupIndex();
             index = CreateIndexer(settings, null, new LMDBIndexStorage(GetBackupIndexPath(true)));
             name = settings.name;
@@ -618,7 +600,7 @@ namespace UnityEditor.Search
             var currentDb = Find(settingsPath);
             if (currentDb)
             {
-                currentDb.index?.Dispose();
+                currentDb.DisposeIndex();
                 currentDb.DeleteBackupIndex();
             }
 
@@ -659,7 +641,7 @@ namespace UnityEditor.Search
                 return;
             }
             // In the off chance we call OnEnable on an existing SearchDatabase.
-            index?.Dispose();
+            DisposeIndex();
             index = CreateIndexer(settings, path);
 
             if (settings.source == null)
@@ -676,11 +658,24 @@ namespace UnityEditor.Search
             Log("OnDisable");
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             SearchMonitor.contentRefreshed -= OnContentRefreshed;
+            DisposeIndex();
+        }
+
+        internal void DisposeIndex()
+        {
+            // We need to cancel all pending tasks that might be using the index before we can dispose it.
+            CancelAllPendingTasksImmediately();
+            index?.Dispose();
+        }
+
+        internal void CancelAllPendingTasksImmediately()
+        {
             m_CurrentResolveTask?.Dispose();
             m_CurrentResolveTask = null;
+            m_CurrentIncrementalLoadTask?.Dispose();
+            m_CurrentIncrementalLoadTask = null;
             m_CurrentUpdateTask?.Dispose();
             m_CurrentUpdateTask = null;
-            index?.Dispose();
         }
 
         private void LoadAsync()
@@ -744,17 +739,18 @@ namespace UnityEditor.Search
             LoadingState = LoadState.Loading;
             loaded = false;
             var deletedAssets = new HashSet<string>();
-            var loadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", OnIncrementalLoadFinished, this);
-            loadTask.RunThread(() =>
+            m_CurrentIncrementalLoadTask?.Dispose();
+            m_CurrentIncrementalLoadTask = new Task("Read", $"Loading {name.ToLowerInvariant()} search index", OnIncrementalLoadFinished, this);
+            m_CurrentIncrementalLoadTask.RunThread(() =>
             {
-                loadTask.Report($"Loading {indexPath}...", -1);
+                m_CurrentIncrementalLoadTask.Report($"Loading {indexPath}...", -1);
 
                 foreach (var d in index.GetDocuments())
                 {
                     if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
                         deletedAssets.Add(d.source);
                 }
-            }, finalize: () => IncrementLoadBytes(loadTask, deletedAssets));
+            }, finalize: () => IncrementLoadBytes(m_CurrentIncrementalLoadTask, deletedAssets));
         }
 
         private void IncrementLoadBytes(Task loadTask, HashSet<string> deletedAssets)
@@ -981,6 +977,8 @@ namespace UnityEditor.Search
 
         private void OnIncrementalLoadFinished(Task task, TaskData data)
         {
+            m_CurrentIncrementalLoadTask?.Dispose();
+            m_CurrentIncrementalLoadTask = null;
             if (!this || task.error != null)
             {
                 LoadingState = LoadState.Error;
@@ -1042,6 +1040,9 @@ namespace UnityEditor.Search
         {
             try
             {
+                // Make sure the index is correctly disposed before we delete the backup index file.
+                // With the LMDB storage, an opened index means this file is actively used.
+                DisposeIndex();
                 var backupIndexPath = GetBackupIndexPath(false);
                 if (File.Exists(backupIndexPath))
                     File.Delete(backupIndexPath);

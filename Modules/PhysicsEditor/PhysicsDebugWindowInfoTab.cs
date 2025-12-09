@@ -167,7 +167,7 @@ namespace UnityEditor
             EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.LabelField("Tracked objects: " + m_TransformsToRender.Count);
-            if (GUILayout.Button(Style.clearLocked, Style.maxWidth150))
+            if (GUILayout.Button(Style.clearLocked, EditorStyles.miniButtonRight, Style.maxWidth150))
                 ClearAllLockedObjects();
 
             EditorGUILayout.EndHorizontal();

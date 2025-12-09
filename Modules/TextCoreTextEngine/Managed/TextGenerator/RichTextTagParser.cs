@@ -19,6 +19,8 @@ namespace UnityEngine.TextCore
     {
         internal static readonly Color32 k_HighlightColor = new Color32(255, 255, 0, 64);
         internal static readonly char k_PrivateArea = '\uE000';
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static readonly Dictionary<string, System.IntPtr> s_FontAssetCache = new();
 
         public enum TagType
         {
@@ -614,6 +616,28 @@ namespace UnityEngine.TextCore
             return hash.ToHashCode();
         }
 
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void PreloadFontAssetsFromTags(string text, TextSettings textSettings)
+        {
+            if (!HasFontTags(text, textSettings, out var fontAssetNames))
+                return;
+
+            foreach (var fontAssetName in fontAssetNames)
+            {
+                // Skip if already cached
+                if (s_FontAssetCache.ContainsKey(fontAssetName))
+                    continue;
+
+                var fontAsset = Resources.Load<FontAsset>(textSettings.defaultFontAssetPath + fontAssetName);
+                if (fontAsset == null)
+                    continue;
+
+                fontAsset.EnsureNativeFontAssetIsCreated();
+                s_FontAssetCache[fontAssetName] = fontAsset.nativeFontAsset;
+            }
+        }
+
         internal static List<Tag> FindTags(ref string inputStr, TextSettings textSettings, List<ParseError>? errors = null)
         {
             var input = inputStr.ToCharArray();
@@ -814,6 +838,75 @@ namespace UnityEngine.TextCore
                             value = new TagValue(parsedValue, tagUnitType);
                         }
 
+                        if (tagType == TagType.Font)
+                        {
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            var fontAssetName = attributeSection.ToString();
+
+                            if (!string.IsNullOrEmpty(fontAssetName))
+                            {
+                                value = new TagValue(fontAssetName);
+                            }
+                            else
+                            {
+                                errors?.Add(new("Font name cannot be empty", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                        }
+
+                        if (tagType == TagType.Size)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+
+                            // Check for relative sizing indicators (+ or - prefix)
+                            bool isRelative = false;
+                            if (attributeSection.Length > 0 && (attributeSection[0] == '+' || attributeSection[0] == '-'))
+                            {
+                                isRelative = true;
+                            }
+
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                errors?.Add(new("Invalid size value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+
+                            value = new TagValue(parsedValue, tagUnitType);
+                            value2 = new TagValue(isRelative); // Store relative flag in value2
+                        }
+
+                        if (tagType == TagType.FontWeight)
+                        {
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            if (int.TryParse(attributeSection, NumberStyles.Integer, CultureInfo.InvariantCulture, out int weightValue))
+                            {
+                                if (Enum.IsDefined(typeof(TextFontWeight), weightValue))
+                                {
+                                    value = new TagValue(weightValue);
+                                }
+                                else
+                                {
+                                    errors?.Add(new($"Invalid font-weight value: {weightValue}", start));
+                                    pos = start + 1;
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                errors?.Add(new("Invalid font-weight value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                        }
+
                         result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value, value2 = value2 });
 
                         if (tagType == TagType.NoParse)
@@ -1004,7 +1097,7 @@ namespace UnityEngine.TextCore
         //Return a list of text setgment that will share the same text generation settings between two tags
         internal static Segment[] GenerateSegments(string input, List<Tag> tags)
         {
-            List<Segment> segments = new List<Segment>();
+            var segments = new List<Segment>();
             int afterPreviousTagEnd = 0;
             for (int i = 0; i < tags.Count; i++)
             {
@@ -1119,7 +1212,22 @@ namespace UnityEngine.TextCore
                         //TODO : Add support for style
                         break;
                     case TagType.Font:
-                        //TODO : Add support for font
+                        string fontAssetName = segment.tags[i].value?.StringValue ?? "";
+                        if (!string.IsNullOrEmpty(fontAssetName))
+                        {
+                            // Check static cache first
+                            if (s_FontAssetCache.TryGetValue(fontAssetName, out var cachedNativeFontAsset))
+                            {
+                                textSpan.fontAsset = cachedNativeFontAsset;
+                            }
+                            // Otherwise, fail silently and use the default font asset
+                        }
+                        break;
+                    case TagType.FontWeight:
+                        if (segment.tags[i].value?.type == TagValueType.NumericalValue)
+                        {
+                            textSpan.fontWeight = (TextFontWeight)(int)segment.tags[i].value!.NumericalValue;
+                        }
                         break;
                     case TagType.Hyperlink:
                         textSpan.linkID = AddLink(TagType.Hyperlink, segment.tags[i].value?.StringValue ?? "", links);
@@ -1147,8 +1255,51 @@ namespace UnityEngine.TextCore
 
                     //Layout/Positioning
                     case TagType.Size:
-                        // TODO: Add support for size
-                        //textSpan.fontSize = (int)(segment.tags[i].value!.NumericalValue/64f);
+                        float sizeValue = segment.tags[i].value!.NumericalValue;
+                        TagUnitType sizeUnit = segment.tags[i].value!.unit;
+                        bool isRelative = segment.tags[i].value2?.BoolValue ?? false;
+
+                        if (isRelative)
+                        {
+                            // For relative sizing, compute final size by adding/subtracting from base fontSize
+                            float baseFontSizeInUnits = tgs.fontSize / 64.0f;
+                            float relativeSizeInUnits = sizeValue * pixelsPerPoint;
+                            float finalSize = baseFontSizeInUnits + relativeSizeInUnits;
+                            textSpan.fontSize = (int)Math.Round(finalSize * 64.0f, MidpointRounding.AwayFromZero);
+                        }
+                        else
+                        {
+                            // For absolute sizing, handle unit conversion
+                            if (sizeValue <= 0)
+                            {
+                                // Invalid absolute size - use 0 to indicate fallback to global fontSize
+                                textSpan.fontSize = 0;
+                            }
+                            else
+                            {
+                                switch (sizeUnit)
+                                {
+                                    case TagUnitType.FontUnits: // em units
+                                        {
+                                            float baseFontSizeInUnits = tgs.fontSize / 64.0f;
+                                            float finalSize = sizeValue * baseFontSizeInUnits;
+                                            textSpan.fontSize = (int)Math.Round(finalSize * 64.0f, MidpointRounding.AwayFromZero);
+                                            break;
+                                        }
+                                    case TagUnitType.Percentage:
+                                        {
+                                            float baseFontSizeInUnits = tgs.fontSize / 64.0f;
+                                            float finalSize = (sizeValue / 100.0f) * baseFontSizeInUnits;
+                                            textSpan.fontSize = (int)Math.Round(finalSize * 64.0f, MidpointRounding.AwayFromZero);
+                                            break;
+                                        }
+                                    case TagUnitType.Pixels:
+                                    default:
+                                        textSpan.fontSize = (int)Math.Round((sizeValue) * pixelsPerPoint * 64.0f, MidpointRounding.AwayFromZero);
+                                        break;
+                                }
+                            }
+                        }
                         break;
                     case TagType.CSpace:
                         float cspaceMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
@@ -1237,25 +1388,63 @@ namespace UnityEngine.TextCore
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static bool MayNeedParsing(string text)
         {
-            if (String.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
                 return false;
 
-            // If the string contains a '<' followed later by a '>', there might be a valid tag.
-            int length = text.Length;
-            for (int i = 0; i < length; i++)
+            ReadOnlySpan<char> source = text.AsSpan();
+            int openIndex = source.IndexOf('<');
+
+            if (openIndex < 0 || openIndex >= source.Length - 1)
+                return false;
+
+            return source.Slice(openIndex + 1).IndexOf('>') >= 0;
+        }
+
+        const string k_FontTag = "<font=";
+        static bool ContainsFontTag(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            ReadOnlySpan<char> source = text.AsSpan();
+            ReadOnlySpan<char> tag = k_FontTag.AsSpan();
+
+            int tagIndex = source.IndexOf(tag, StringComparison.Ordinal);
+
+            if (tagIndex < 0)
+                return false;
+
+            int startIndex = tagIndex + tag.Length;
+            for (int i = startIndex; i < source.Length; i++)
             {
-                if (text[i] == '<')
-                {
-                    for (int j = i + 1; j < length; j++)
-                    {
-                        if (text[j] == '>')
-                            return true;
-                    }
-                    return false;
-                }
+                if (source[i] == '>')
+                    return true;
             }
 
             return false;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+        internal static bool HasFontTags(string text, TextSettings textSettings, out List<string> fontAssetNames)
+        {
+            fontAssetNames = new();
+
+            if (!ContainsFontTag(text))
+                return false;
+
+            var tags = FindTags(ref text, textSettings);
+
+            foreach (var tag in tags)
+            {
+                if (tag.tagType == TagType.Font && !tag.isClosing && tag.value?.StringValue != null)
+                {
+                    string fontName = tag.value.StringValue;
+                    if (!fontAssetNames.Contains(fontName))
+                        fontAssetNames.Add(fontName);
+                }
+            }
+
+            return fontAssetNames.Count > 0;
         }
     }
 }

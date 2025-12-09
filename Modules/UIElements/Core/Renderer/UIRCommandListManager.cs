@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements.UIR
         CommandList m_DefaultCommandList = new CommandList(IntPtr.Zero, IntPtr.Zero);
         List<CommandList>[] m_CommandListsArray; // Each index represents a frame
         List<CommandList> m_CurrentFrameCommandLists; // For the current frame
+        List<UIRenderer> m_UIRenderersWithDrawCallData = new();
 
         TextureSlotCount m_TextureSlotCount;
 
@@ -65,30 +66,15 @@ namespace UnityEngine.UIElements.UIR
             m_CurrentFrameCommandLists = m_CommandListsArray[m_CurrentIndex];
 
             // Release the contents
-            UIRenderer lastRenderer = null; 
             for (int i = 0 ; i < m_CurrentFrameCommandLists.Count ; ++i)
             {
                 CommandList cmdList = m_CurrentFrameCommandLists[i];
-
-                // Reset the data stored on the UIDocument.
-                var rootUIDocumentElement = cmdList.m_Owner as UIDocumentRootElement;
-                UIRenderer renderer = rootUIDocumentElement.uiRenderer;
-
-                Debug.Assert(renderer == cmdList.m_Renderer);
-
-                // A UIRenderer might contain multiple command lists (e.g. 1 per material). We make this check
-                // to avoid reseting the same UIRenderer many times.
-                if (lastRenderer != renderer)
-                {
-                    if (renderer != null) // It could have been destroyed since the last frame
-                        renderer.ResetDrawCallData();
-                    lastRenderer = renderer;
-                }
-
                 cmdList.Reset();
                 m_CommandListPool.Push(cmdList);
             }
             m_CurrentFrameCommandLists.Clear();
+
+            ResetUIRendererDrawCallData();
         }
 
         public void BeginSerialize(TextureSlotCount textureSlotCount)
@@ -113,6 +99,9 @@ namespace UnityEngine.UIElements.UIR
                     bool forceSingleTexture = (cmdList.flags & CommandFlags.ForceSingleTextureSlot) != 0;
                     uint forceRenderType = (uint)(cmdList.flags & CommandFlags.ForceRenderTypeBits) >> (int)CommandFlags.ForceRenderTypeBitOffset;
                     renderer.AddDrawCallData((int)m_CurrentIndex, i, cmdList.m_Material, forceSingleTexture ? 1 : (uint)m_TextureSlotCount, forceRenderType);
+
+                    if (m_UIRenderersWithDrawCallData.Count == 0 || m_UIRenderersWithDrawCallData[m_UIRenderersWithDrawCallData.Count - 1] != renderer)
+                        m_UIRenderersWithDrawCallData.Add(renderer);
                 }
             }
 
@@ -132,34 +121,17 @@ namespace UnityEngine.UIElements.UIR
             Dispose(true);
         }
 
-        public void ResetCommandListUIRenderer()
+        public void ResetUIRendererDrawCallData()
         {
-            // This method is called from UIRenderDevice.Dispose() to ensure that all UIRenderer
-            // instances have been properly reset before we dispose of the CommandListManager.
-            // Since the UIRenderer can be reused by another CommandListManager instance, we must
-            // reset the DrawCallData associated with the current CommandListManager instance.
-            if (m_CommandListsArray != null)
+            foreach (var renderer in m_UIRenderersWithDrawCallData)
             {
-                UIRenderer lastRenderer = null;
-                for (int i = 0; i < m_CommandListsArray.Length; ++i)
-                {
-                    List<CommandList> commandLists = m_CommandListsArray[i];
-                    for (int j = 0; j < commandLists.Count; ++j)
-                    {
-                        UIRenderer renderer = commandLists[j].m_Renderer;
-                        // A UIRenderer might contain multiple command lists (e.g. 1 per material). We make this check
-                        // to avoid reseting the same UIRenderer many times.
-                        if (lastRenderer != renderer)
-                        {
-                            if (renderer != null)
-                            {
-                                renderer.ResetDrawCallData();
-                            }
-                            lastRenderer = renderer;
-                        }
-                    }
-                }
+                // The renderer may become (fake-)null if the managed part has been destroyed,
+                // so it's important to do the null test.
+                if (renderer != null)
+                    renderer.ResetDrawCallData();
             }
+
+            m_UIRenderersWithDrawCallData.Clear();
         }
 
         protected void Dispose(bool disposing)

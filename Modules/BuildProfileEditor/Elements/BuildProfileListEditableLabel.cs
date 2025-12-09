@@ -41,8 +41,6 @@ namespace UnityEditor.Build.Profile.Elements
 
         internal void UnbindItem()
         {
-            m_TextField.UnregisterCallback<FocusOutEvent>(OnEditTextFinished);
-            m_TextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
             m_RenameOverlay.OnRenameEnd();
         }
 

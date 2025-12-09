@@ -592,6 +592,8 @@ namespace UnityEditor.Search
             }
         }
 
+        private static int s_KeywordCount { get; set; } = -1;
+
         // Per project settings
         internal static bool trackSelection
         {
@@ -852,6 +854,8 @@ namespace UnityEditor.Search
             return settings;
         }
 
+        static Action s_OffSearchReady;
+
         [SettingsProvider]
         internal static SettingsProvider CreateSearchIndexSettings()
         {
@@ -860,20 +864,22 @@ namespace UnityEditor.Search
                 guiHandler = DrawSearchIndexingSettings,
                 activateHandler = (_, root) =>
                 {
-                    SearchDatabase.indexLoaded -= RepaintSettingsOnIndexLoaded;
-                    SearchDatabase.indexLoaded += RepaintSettingsOnIndexLoaded;
+                    s_OffSearchReady?.Invoke();
+                    s_OffSearchReady = Dispatcher.On(SearchEvent.SearchIndexReady, OnIndexLoaded);
+                    s_KeywordCount = -1;
                 },
                 deactivateHandler = () =>
                 {
-                    SearchDatabase.indexLoaded -= RepaintSettingsOnIndexLoaded;
+                    s_OffSearchReady?.Invoke();
                 },
                 keywords = new[] { "search", "index", "indexer", "custom" }
             };
         }
 
-        static void RepaintSettingsOnIndexLoaded(SearchDatabase db)
+        static void OnIndexLoaded(ISearchEvent evt)
         {
             SettingsService.RepaintAllSettingsWindow();
+            s_KeywordCount = -1;
         }
 
         static void DrawSearchServiceSettings()
@@ -1103,9 +1109,14 @@ namespace UnityEditor.Search
         {
             if (db.ready)
             {
-                return $"Index Size: {EditorUtility.FormatBytes(db.indexSize)}\nNb of properties: {db.index.indexCount}\nNb of documents: {db.index.documentCount}\nNb of Keywords: {db.index.keywordCount}";
+                if (s_KeywordCount == -1)
+                {
+                    s_KeywordCount = db.index.keywordCount;
+                }
+                return $"Index Size: {EditorUtility.FormatBytes(db.indexSize)}\nNb of properties: {db.index.indexCount}\nNb of documents: {db.index.documentCount}\nNb of Keywords: {s_KeywordCount}";
             }
-            
+
+            s_KeywordCount = -1;
             return "Index is not ready yet.";
         }
 

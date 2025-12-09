@@ -12,11 +12,13 @@ namespace UnityEditor.Search
     class SearchQueryTreeConfig
     {
         internal const string ProjectQueriesFolder = "Assets";
+        internal const string PackagesQueriesFolder = "Packages";
         internal const string BuiltInQueriesFolder = "searchqueries";
 
         internal const string UserQueriesLabel = "User";
         internal const string ProjectQueriesLabel = "Project";
         internal const string BuiltinQueriesLabel = "Builtins";
+        internal const string PackagesQueriesLabel = "Packages";
 
         [SerializeField] internal SearchFunctor<Func<ISearchQueryNodeHandler>>[] NodeSources;
 
@@ -44,11 +46,17 @@ namespace UnityEditor.Search
             return new ProjectSearchQueryTreeNodeHandler(isEditorResources: true, BuiltInQueriesFolder, BuiltinQueriesLabel);
         }
 
+        public static ISearchQueryNodeHandler DefaultPackageQueryTreeNodeHandlerCreator()
+        {
+            return new ProjectSearchQueryTreeNodeHandler(isEditorResources: false, PackagesQueriesFolder, PackagesQueriesLabel);
+        }
+
         public static SearchQueryTreeConfig CreateDefault()
         {
             return new SearchQueryTreeConfig(
                 DefaultUserQueryTreeNodeHandlerCreator,
                 DefaultProjectQueryTreeNodeHandlerCreator,
+                DefaultPackageQueryTreeNodeHandlerCreator,
                 DefaultResourceQueryTreeNodeHandlerCreator);
         }
     }

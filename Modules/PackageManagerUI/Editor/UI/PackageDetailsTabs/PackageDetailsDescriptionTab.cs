@@ -94,6 +94,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                         iconTooltip = L10n.Tr("Unity has verified the identity of this publisher.");
                     }
                     break;
+                case TrustAndSignature.FullTrustBuiltInPackage:
+                    signatureText = L10n.Tr("Made by Unity Technologies");
+                    icon = Icon.Verified;
+                    iconTooltip = L10n.Tr("Unity has verified the identity of this publisher.");
+                    break;
                 case TrustAndSignature.LimitedTrust:
                     signatureText = string.Format(L10n.Tr("Signed for {0}"), version.signatureOrgName);
                     icon = Icon.Info;

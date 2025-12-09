@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -289,7 +290,17 @@ namespace UnityEditor.VersionControl
                 return true;
 
             var assetList = new AssetList();
-            assetList.AddRange(paths.Select(GetAssetByPath).Where(a => a != null));
+            var reservedPaths = new HashSet<string>();
+
+            foreach (var path in paths)
+            {
+                var asset = GetAssetByPath(path);
+
+                if (asset != null)
+                    assetList.Add(asset);
+                else
+                    reservedPaths.Add(path);
+            }
 
             try
             {
@@ -306,7 +317,7 @@ namespace UnityEditor.VersionControl
                         return false;
                     }
 
-                    paths = assetList.Where(a => a != null).Select(a => a.path).ToArray();
+                    paths = reservedPaths.Concat(assetList.Where(a => a != null).Select(a => a.path)).ToArray();
                 }
                 else
                 {

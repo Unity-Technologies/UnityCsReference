@@ -192,7 +192,7 @@ namespace UnityEditor
         [UsedImplicitly, RequiredByNativeCode]
         static void BuildPlayerAndRun()
         {
-            var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
+            var buildTarget = EditorUserBuildSettings.activeBuildTarget;
             var lastBuildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
             bool buildLocationIsValid = BuildLocationIsValid(lastBuildLocation);
 

@@ -55,8 +55,10 @@ namespace UnityEngine
         {
             try
             {
+                // NOTE: C++ defaults to ECMAScript so we need to at least ensure the string
+                // is ECMAScript compliant.
                 // Try to create a regex from the input string to determine if it is a valid regex
-                Regex regex = new Regex(value);
+                Regex regex = new Regex(value, RegexOptions.ECMAScript);
             }
             catch (ArgumentException e)
             {

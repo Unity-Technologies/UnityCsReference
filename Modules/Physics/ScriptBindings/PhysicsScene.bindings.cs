@@ -100,6 +100,15 @@ namespace UnityEngine
             Physics.Simulate_Internal(this, step, stages, options);
         }
 
+        [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
+        [NativeMethod("ReleasePhysicsSceneSimulationBuffers")]
+        private extern static void ReleasePhysicsSceneSimulationBuffers_Internal(PhysicsScene handle);
+
+        public void ReleaseLastSimulationStepBuffers()
+        {
+            ReleasePhysicsSceneSimulationBuffers_Internal(this);
+        }
+
         public void InterpolateBodies()
         {
             if (!IsValid())

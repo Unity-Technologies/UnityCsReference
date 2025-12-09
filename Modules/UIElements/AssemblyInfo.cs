@@ -24,6 +24,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.UIToolkitAuthoring.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 

@@ -20,7 +20,7 @@ namespace Unity.Hierarchy
     /// </remarks>
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyFlattened.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyFlattenedBindings.h")]
-    [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyFlattened : IDisposable
     {
         internal static class BindingsMarshaller
@@ -30,8 +30,7 @@ namespace Unity.Hierarchy
 
         IntPtr m_Ptr;
         internal readonly Hierarchy m_Hierarchy;
-        IntPtr m_NodesPtr;
-        int m_NodesCount;
+        ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
         int m_Version;
         readonly bool m_IsOwner;
 
@@ -41,12 +40,12 @@ namespace Unity.Hierarchy
         public bool IsCreated => m_Ptr != IntPtr.Zero;
 
         /// <summary>
-        /// The total number of nodes.
+        /// The total number of flattned nodes.
         /// </summary>
         /// <remarks>
         /// The total includes the <see cref="Hierarchy.Root"/> node.
         /// </remarks>
-        public int Count => m_NodesCount;
+        public int Count => m_FlattenedNodes.Count;
 
         /// <summary>
         /// Whether the flattened hierarchy is currently updating.
@@ -64,16 +63,10 @@ namespace Unity.Hierarchy
         /// </remarks>
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
 
-        internal unsafe HierarchyFlattenedNode* NodesPtr
+        internal ReadOnlyNativeVector<HierarchyFlattenedNode> FlattenedNodes
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (HierarchyFlattenedNode*)m_NodesPtr;
-        }
-
-        internal int NodesCount
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => m_NodesCount;
+            get => m_FlattenedNodes;
         }
 
         internal int Version
@@ -90,8 +83,7 @@ namespace Unity.Hierarchy
         {
             m_Ptr = Create(GCHandle.ToIntPtr(GCHandle.Alloc(this)), hierarchy, out var nodesPtr, out var nodesCount, out var version);
             m_Hierarchy = hierarchy;
-            m_NodesPtr = nodesPtr;
-            m_NodesCount = nodesCount;
+            m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(nodesPtr, nodesCount);
             m_Version = version;
             m_IsOwner = true;
         }
@@ -101,15 +93,14 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="nativePtr">The native pointer.</param>
         /// <param name="hierarchy">The hierarchy.</param>
-        /// <param name="nodesPtr">The nodes native pointer.</param>
-        /// <param name="nodesCount">The node count.</param>
+        /// <param name="flattenedNodesPtr">The flattened nodes native pointer.</param>
+        /// <param name="flattenedNodesCount">The flattened node count.</param>
         /// <param name="version">The version.</param>
-        HierarchyFlattened(IntPtr nativePtr, Hierarchy hierarchy, IntPtr nodesPtr, int nodesCount, int version)
+        HierarchyFlattened(IntPtr nativePtr, Hierarchy hierarchy, IntPtr flattenedNodesPtr, int flattenedNodesCount, int version)
         {
             m_Ptr = nativePtr;
             m_Hierarchy = hierarchy;
-            m_NodesPtr = nodesPtr;
-            m_NodesCount = nodesCount;
+            m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);
             m_Version = version;
             m_IsOwner = false;
         }
@@ -137,26 +128,19 @@ namespace Unity.Hierarchy
 
                 m_Ptr = IntPtr.Zero;
             }
+
+            m_FlattenedNodes = default;
         }
 
         /// <summary>
         /// Gets the <see cref="HierarchyFlattenedNode"/> at a specified index.
         /// </summary>
-        /// <param name="index">The node index.</param>
+        /// <param name="index">The flattened node index.</param>
         /// <returns>A flattened hierarchy node.</returns>
         public ref readonly HierarchyFlattenedNode this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (index < 0 || index >= m_NodesCount)
-                    throw new ArgumentOutOfRangeException(nameof(index));
-
-                unsafe
-                {
-                    return ref ((HierarchyFlattenedNode*)m_NodesPtr)[index];
-                }
-            }
+            get => ref m_FlattenedNodes[index];
         }
 
         /// <summary>
@@ -269,20 +253,18 @@ namespace Unity.Hierarchy
         /// <summary>
         /// An enumerator of <see cref="HierarchyFlattenedNode"/>.
         /// </summary>
-        public unsafe struct Enumerator
+        public struct Enumerator
         {
             readonly HierarchyFlattened m_HierarchyFlattened;
-            readonly HierarchyFlattenedNode* m_NodesPtr;
-            readonly int m_NodesCount;
+            readonly ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
             readonly int m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyFlattened hierarchyFlattened)
             {
                 m_HierarchyFlattened = hierarchyFlattened;
-                m_NodesPtr = (HierarchyFlattenedNode*)hierarchyFlattened.m_NodesPtr;
-                m_NodesCount = hierarchyFlattened.m_NodesCount;
-                m_Version = hierarchyFlattened.Version;
+                m_FlattenedNodes = hierarchyFlattened.m_FlattenedNodes;
+                m_Version = hierarchyFlattened.m_Version;
                 m_Index = -1;
             }
 
@@ -297,7 +279,7 @@ namespace Unity.Hierarchy
                     if (m_Version != m_HierarchyFlattened.m_Version)
                         throw new InvalidOperationException("HierarchyFlattened was modified.");
 
-                    return ref m_NodesPtr[m_Index];
+                    return ref m_FlattenedNodes[m_Index];
                 }
             }
 
@@ -306,8 +288,14 @@ namespace Unity.Hierarchy
             /// </summary>
             /// <returns>Returns true if the current value is valid. </returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool MoveNext() => ++m_Index < m_NodesCount;
+            public bool MoveNext() => ++m_Index < m_FlattenedNodes.Count;
         }
+
+        /// <summary>
+        /// Returns a read-only span of all hierarchy flattened nodes in the hierarchy flattened.
+        /// </summary>
+        /// <returns>A read-only span of hierarchy flattened nodes.</returns>
+        public ReadOnlySpan<HierarchyFlattenedNode> AsReadOnlySpan() => m_FlattenedNodes.AsReadOnlySpan();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyFlattened FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyFlattened)GCHandle.FromIntPtr(handlePtr).Target : null;
@@ -320,15 +308,14 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyFlattened(IntPtr nativePtr, IntPtr hierarchyPtr, IntPtr nodesPtr, int nodesCount, int version) =>
-            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyFlattened(nativePtr, Hierarchy.FromIntPtr(hierarchyPtr), nodesPtr, nodesCount, version)));
+        static IntPtr CreateHierarchyFlattened(IntPtr nativePtr, IntPtr hierarchyPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, int version) =>
+            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyFlattened(nativePtr, Hierarchy.FromIntPtr(hierarchyPtr), flattenedNodesPtr, flattenedNodesCount, version)));
 
         [RequiredByNativeCode]
-        static void UpdateHierarchyFlattened(IntPtr handlePtr, IntPtr nodesPtr, int nodesCount, int version)
+        static void UpdateHierarchyFlattened(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, int version)
         {
             var hierarchyFlattened = FromIntPtr(handlePtr);
-            hierarchyFlattened.m_NodesPtr = nodesPtr;
-            hierarchyFlattened.m_NodesCount = nodesCount;
+            hierarchyFlattened.m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);
             hierarchyFlattened.m_Version = version;
         }
         #endregion

@@ -88,19 +88,6 @@ namespace UnityEditor.Shaders
 
             var variantGenerationModeDropdown = customFoldout.Q<DropdownField>("VariantGenerationModeDropdown");
             variantGenerationModeDropdown.SetIndexWithoutNotify((int)dataItem.variantGenerationMode);
-
-            // If we're binding the first time after loading the data from the settings
-            // we want to set the pruning checkbox state based on the settings data.
-            // Also make sure that items are not expanded after load.
-            if (index < m_LoadedItemInitialized.Length && !m_LoadedItemInitialized[index])
-            {
-                customFoldout.ResetPruningCheckboxBasedOnLoadedData();
-                m_LoadedItemInitialized[index] = true;
-            }
-            else // If loading has happened already then we trigger an update logic
-            {
-                customFoldout.UpdatePruningCheckbox();
-            }
         }
 
         public void SettingsChanged()

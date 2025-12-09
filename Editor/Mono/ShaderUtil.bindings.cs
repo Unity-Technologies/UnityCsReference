@@ -166,7 +166,16 @@ namespace UnityEditor
         extern internal static int GetSRPBatcherCompatibilityCode(Shader s, int subShaderIdx);
         extern internal static string GetSRPBatcherCompatibilityIssueReason(Shader s, int subShaderIdx, int err);
 
-        extern internal static ulong            GetVariantCount(Shader s, bool usedBySceneOnly);
+        // Counts the given shader's variants. Returns false if the operation was interrupted by the user, true otherwise.
+        [NativeName("GetVariantCount")]
+        extern internal static bool GetVariantCountInterruptable(Shader s, bool usedBySceneOnly, out ulong outCount);
+        // Counts the given shader's variants. Returns a partial count if the operation was interrupted by the user.
+        internal static ulong GetVariantCount(Shader s, bool usedBySceneOnly)
+        {
+            GetVariantCountInterruptable(s, usedBySceneOnly, out ulong outCount);
+            return outCount;
+        }
+
         extern internal static int              GetComputeShaderPlatformCount(ComputeShader s);
         extern internal static ShaderPlatform   GetComputeShaderPlatformType(ComputeShader s, int platformIndex);
         extern internal static int              GetComputeShaderPlatformKernelCount(ComputeShader s, int platformIndex);
