@@ -61,6 +61,7 @@ namespace UnityEngine.UIElements
                 m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
             }
             var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo);
+            m_IsEllided = textInfo.isElided;
             return (textInfo, true);
         }
 

@@ -43,6 +43,10 @@ namespace UnityEditor.Build.Profile.Handlers
             return new ContextualMenuManipulator((evt) =>
             {
                 BuildProfileListEditableLabel label = evt.target as BuildProfileListEditableLabel;
+                if (label == null)
+                {
+                    return;
+                }
                 BuildProfile targetProfile = label.dataSource as BuildProfile;
                 if (targetProfile == null)
                 {

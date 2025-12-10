@@ -60,6 +60,9 @@ namespace UnityEditorInternal
                 case 17:
                     return "2022";
 
+                case 18:
+                    return "2026";
+
                 default:
                     return vsVersion.ToString();
             }

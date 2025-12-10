@@ -1119,7 +1119,7 @@ namespace UnityEngine
 
         extern internal TextureFormat atlasFormat
         {
-            [NativeName(k_DetailDatabasePrefix + "GetAtlasTexture()->GetTextureFormat")]
+            [NativeName(k_DetailDatabasePrefix + "GetAtlasTextureFormat")]
             get;
         }
 

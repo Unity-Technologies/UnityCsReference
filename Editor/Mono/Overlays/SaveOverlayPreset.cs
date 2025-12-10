@@ -17,7 +17,7 @@ namespace UnityEditor.Overlays
         const int k_Height = 48;
         const int k_HelpBoxHeight = 40;
 
-        static readonly string k_InvalidChars = EditorUtility.GetInvalidFilenameChars();
+        static string s_InvalidChars;
         static readonly string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
         string m_CurrentInvalidChars = "";
 
@@ -40,11 +40,12 @@ namespace UnityEditor.Overlays
 
         void UpdateCurrentInvalidChars()
         {
-            m_CurrentInvalidChars = new string(m_PresetName.Intersect(k_InvalidChars).Distinct().ToArray());
+            m_CurrentInvalidChars = new string(m_PresetName.Intersect(s_InvalidChars).Distinct().ToArray());
         }
 
         void OnEnable()
         {
+            s_InvalidChars = EditorUtility.GetInvalidFilenameChars();
             titleContent = GetLocalizedTitleContent();
         }
 

@@ -21,7 +21,9 @@ namespace UnityEditor
     internal class ReflectionProbeEditor : Editor
     {
         static ReflectionProbeEditor s_LastInteractedEditor;
-        static HashSet<ReflectionProbe> s_CurrentlyEditedProbes = new HashSet<ReflectionProbe>();
+        // The Dictionary is tracking the active Reflection Probe. It is also keeping a counter (int) to track active editor instances as multiple intances
+        // could be created simultaneously. We want to remove the ReflectionProbe from that Dictionary only when the last reference has been destroyed.
+        static Dictionary<ReflectionProbe,int> s_CurrentlyEditedProbes = new Dictionary<ReflectionProbe, int>();
 
         SerializedProperty m_Mode;
         SerializedProperty m_RefreshMode;
@@ -218,7 +220,9 @@ namespace UnityEditor
 
             for (int i = 0; i < targets.Length; ++i)
             {
-                s_CurrentlyEditedProbes.Add((ReflectionProbe)targets[i]);
+                var reflectionProbe = (ReflectionProbe)targets[i];
+                if (!s_CurrentlyEditedProbes.TryAdd(reflectionProbe,1))
+                    s_CurrentlyEditedProbes[reflectionProbe] += 1;
             }
         }
 
@@ -235,7 +239,14 @@ namespace UnityEditor
 
             for (int i = 0; i < targets.Length; ++i)
             {
-                s_CurrentlyEditedProbes.Remove((ReflectionProbe)targets[i]);
+                var reflectionProbe = (ReflectionProbe)targets[i];
+                if (s_CurrentlyEditedProbes.TryGetValue(reflectionProbe, out int instanceCount))
+                {
+                    if(instanceCount <= 1)
+                        s_CurrentlyEditedProbes.Remove(reflectionProbe);
+                    else
+                        s_CurrentlyEditedProbes[reflectionProbe] -= 1;
+                }
             }
         }
 
@@ -774,7 +785,7 @@ namespace UnityEditor
         [DrawGizmo(GizmoType.Selected)]
         static void RenderBoxOutline(ReflectionProbe reflectionProbe, GizmoType gizmoType)
         {
-            if (!s_CurrentlyEditedProbes.Contains(reflectionProbe))
+            if (!s_CurrentlyEditedProbes.ContainsKey(reflectionProbe))
                 return;
 
             Color oldColor = Gizmos.color;

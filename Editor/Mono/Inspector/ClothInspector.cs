@@ -1881,6 +1881,7 @@ namespace UnityEditor
             if (Tools.current != Tool.None)
                 state.ToolMode = (ToolMode)(-1);
 
+            GUILayout.FlexibleSpace();
             CollToolMode oldCollToolMode = state.CollToolMode;
             state.CollToolMode = (CollToolMode)GUILayout.Toolbar((int)state.CollToolMode, Styles.collToolModeIcons);
             if (state.CollToolMode != oldCollToolMode)
@@ -1889,6 +1890,7 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = 0;
                 SceneView.RepaintAll();
             }
+            GUILayout.FlexibleSpace();
 
             if (cloth != null)
             {

@@ -9,49 +9,120 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Build.Profile.Elements
 {
     /// <summary>
-    /// Dropdown Button exported from <see cref="BuildPlayerWindow"/>,
-    /// as UIToolkit does not support DropdownButton.
+    /// UI Toolkit version of DropdownButton that looks like a single button
+    /// It is required to make this button focusable after constructor
+    /// "focusable = true" can't be in constructor since it's virtual member call in constructor
     /// </summary>
     internal class DropdownButton : VisualElement
     {
-        const int k_ButtonWidth = 120;
+        const int k_DropdownWidth = 16;
+
         readonly GenericMenu m_Menu;
-        readonly GUIContent m_BuildButton;
         readonly Action m_DefaultClicked;
+        readonly Label m_Label;
+        readonly VisualElement m_ArrowContainer;
 
         public DropdownButton(string text, Action defaultClicked, GenericMenu menu)
         {
-            this.m_Menu = menu;
-            m_BuildButton = new GUIContent(text);
+            m_Menu = menu;
             m_DefaultClicked = defaultClicked;
-            Add(new IMGUIContainer(RenderIMGUI));
+
+            style.flexDirection = FlexDirection.Row;
+            style.alignItems = Align.Center;
+
+            m_Label = new Label(text);
+            m_Label.style.flexGrow = 1;
+            m_Label.pickingMode = PickingMode.Ignore;
+
+            Add(m_Label);
+
+            if (m_Menu != null)
+            {
+                var separator = new VisualElement();
+                separator.style.width = 1;
+                separator.style.height = 12;
+                separator.style.backgroundColor = new Color(0, 0, 0, 0.3f);
+                separator.style.alignSelf = Align.Center;
+                separator.pickingMode = PickingMode.Ignore;
+                Add(separator);
+
+                m_ArrowContainer = new VisualElement();
+                m_ArrowContainer.style.width = k_DropdownWidth;
+                m_ArrowContainer.style.alignSelf = Align.Stretch;
+                m_ArrowContainer.style.alignItems = Align.Center;
+                m_ArrowContainer.style.justifyContent = Justify.Center;
+                m_ArrowContainer.style.marginRight = -6;
+
+                var arrow = new Label("▼");
+                arrow.style.fontSize = 6;
+                arrow.pickingMode = PickingMode.Ignore;
+
+                m_ArrowContainer.Add(arrow);
+                Add(m_ArrowContainer);
+
+                m_ArrowContainer.RegisterCallback<ClickEvent>(OnDropdownClicked);
+            }
+
+            RegisterCallback<ClickEvent>(OnMainClicked);
+            RegisterCallback<KeyDownEvent>(OnKeyDown);
+
+            AddToClassList("unity-button");
+            AddToClassList("form-button");
+            AddToClassList("mx-none");
         }
 
         public void SetText(string text)
         {
-            m_BuildButton.text = text;
+            m_Label.text = text;
         }
 
-        void RenderIMGUI()
+        void OnKeyDown(KeyDownEvent evt)
         {
-            Rect buildRect = GUILayoutUtility.GetRect(m_BuildButton, BuildProfileModuleUtil.dropDownToggleButton, GUILayout.Width(k_ButtonWidth));
-            Rect buildRectPopupButton = buildRect;
-            buildRectPopupButton.x += buildRect.width - 16;
-            buildRectPopupButton.width = 16;
+            switch (evt.keyCode)
+            {
+                case KeyCode.Return:
+                case KeyCode.Space:
+                    ExecuteMainAction();
+                    evt.StopPropagation();
+                    break;
 
-            if (m_Menu != null && EditorGUI.DropdownButton(buildRectPopupButton, GUIContent.none, FocusType.Passive,
-                    GUIStyle.none))
-            {
-                m_Menu.DropDown(buildRect);
-            }
-            else
-            {
-                GUIStyle style = m_Menu == null ? GUI.skin.button : BuildProfileModuleUtil.dropDownToggleButton;
-                if (GUI.Button(buildRect, m_BuildButton, style))
-                {
-                    m_DefaultClicked();
-                }
+                case KeyCode.DownArrow:
+                    if (m_Menu != null)
+                    {
+                        OpenDropdown();
+                        evt.StopPropagation();
+                    }
+                    break;
             }
         }
+
+        void OnMainClicked(ClickEvent evt)
+        {
+            if (m_Menu != null && evt.target == m_ArrowContainer)
+            {
+                return;
+            }
+
+            ExecuteMainAction();
+            evt.StopPropagation();
+        }
+
+        void OnDropdownClicked(ClickEvent evt)
+        {
+            OpenDropdown();
+            evt.StopPropagation();
+        }
+
+        void OpenDropdown()
+        {
+            if (m_Menu != null)
+            {
+                var worldBound = this.worldBound;
+                var rect = new Rect(worldBound.x, worldBound.y + worldBound.height, worldBound.width, 0);
+                m_Menu.DropDown(rect);
+            }
+        }
+
+        void ExecuteMainAction() => m_DefaultClicked?.Invoke();
     }
 }

@@ -512,6 +512,9 @@ namespace UnityEditor
         private static string[] s_ShaderPlatformNames;
         private static int[] s_ShaderPlatformIndices;
 
+        private const ulong kVariantCountUninitialized = 0;
+        private const ulong kVariantCountCancelled = ulong.MaxValue;
+
         const float kFrameWidth = 1f;
         const float kSeparatorHeight = 6;
 
@@ -577,8 +580,8 @@ namespace UnityEditor
         {
             m_Shader = shader;
             InitializeShaderPlatforms();
-            totalVariants = 0;
-            variantsWithUsage = 0;
+            totalVariants = kVariantCountUninitialized;
+            variantsWithUsage = kVariantCountUninitialized;
         }
 
         static void InitializeShaderPlatforms()
@@ -693,6 +696,8 @@ namespace UnityEditor
 
         static string FormatCount(ulong count)
         {
+            if (count == kVariantCountCancelled)
+                return "-";
             if (count > 1000 * 1000 * 1000)
                 return ((double)count / 1000000000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "B";
             if (count > 1000 * 1000)
@@ -700,6 +705,15 @@ namespace UnityEditor
             if (count > 1000)
                 return ((double)count / 1000.0).ToString("f2", CultureInfo.InvariantCulture.NumberFormat) + "K";
             return count.ToString();
+        }
+
+        // Counts the variants for the currently active shader and returns the result
+        ulong CountVariants(bool shouldStrip)
+        {
+            if (ShaderUtil.GetVariantCountInterruptable(m_Shader, shouldStrip, out ulong count))
+                return count;
+            else
+                return kVariantCountCancelled;
         }
 
         void DoShaderVariants(EditorWindow caller, ref Rect drawPos)
@@ -716,14 +730,14 @@ namespace UnityEditor
             ulong variantCount = 0;
             if (strip)
             {
-                if (variantsWithUsage == 0)
-                    variantsWithUsage = ShaderUtil.GetVariantCount(m_Shader, true);
+                if (variantsWithUsage == kVariantCountUninitialized)
+                    variantsWithUsage = CountVariants(true);
                 variantCount = variantsWithUsage;
             }
             else
             {
-                if (totalVariants == 0)
-                    totalVariants = ShaderUtil.GetVariantCount(m_Shader, false);
+                if (totalVariants == kVariantCountUninitialized)
+                    totalVariants = CountVariants(false);
                 variantCount = totalVariants;
             }
             var variantText = FormatCount(variantCount) +
@@ -735,12 +749,14 @@ namespace UnityEditor
             buttonRect.width -= Styles.menuItem.padding.left + 4;
             GUI.Label(buttonRect, variantText);
             buttonRect.xMin = buttonRect.xMax - 40;
+            EditorGUI.BeginDisabled(variantCount == kVariantCountCancelled);
             if (GUI.Button(buttonRect, "Show", EditorStyles.miniButtonMid))
             {
                 ShaderUtil.OpenShaderCombinations(m_Shader, strip);
                 caller.Close();
                 GUIUtility.ExitGUI();
             }
+            EditorGUI.EndDisabled();
         }
     }
 }

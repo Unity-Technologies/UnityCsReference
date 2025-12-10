@@ -631,6 +631,14 @@ namespace UnityEngine.TextCore.Text
                 bottomRight.y = bottomLeft.y;
                 bottomRight.z = 0;
 
+                if (charCode == k_ZeroWidthSpace)
+                {
+                    topLeft = Vector3.zero;
+                    bottomLeft = Vector3.zero;
+                    topRight = Vector3.zero;
+                    bottomRight = Vector3.zero;
+                }
+
                 #endregion
 
                 // Check if we need to Shear the rectangles for Italic styles

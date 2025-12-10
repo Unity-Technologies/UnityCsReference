@@ -389,6 +389,9 @@ namespace UnityEngine.UIElements
                 DrawNativeHighlighting(mgc);
             else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);
+
+            if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
+                isElided = uitkTextHandle.IsElided();
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
