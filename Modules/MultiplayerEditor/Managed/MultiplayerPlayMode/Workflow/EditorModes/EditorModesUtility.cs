@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Text;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
@@ -52,7 +53,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 if (SessionState.GetBool(k_CurrentWindowSetKey, false))
                 {
                     var value = SessionState.GetInt(k_CurrentWindowIdKey, 0);
-                    return ContainerWindowProxy.FromInstanceID(value);
+                    return ContainerWindowProxy.FromInstanceID(EntityId.From(value));
                 }
 
                 return null;
@@ -66,7 +67,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 }
                 else
                 {
-                    SessionState.SetInt(k_CurrentWindowIdKey, value.GetEntityId());
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    SessionState.SetInt(k_CurrentWindowIdKey, (int)value.GetEntityId().GetRawData());
                     SessionState.SetBool(k_CurrentWindowSetKey, true);
                 }
             }

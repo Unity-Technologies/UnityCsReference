@@ -306,6 +306,11 @@ namespace UnityEditor.ShortcutManagement
             var oldBinding = new ShortcutBinding(shortcutEntry.combinations);
 
             shortcutEntry.SetOverride(combinationSequence);
+            // Setting a shortcut to the same value should be marked as an override (by design, covered by tests)
+            // However, setting removing a shortcut should not be considered as an override when the default value is null.
+            if(shortcutEntry.combinations.Count == 0 // Checking if the current override is actually an empty string
+                && shortcutEntry.FullyMatches(shortcutEntry.GetDefaultCombinations())) // And that empty string corresponds to the default value
+                shortcutEntry.ResetToDefault(); // Reset to default (removing override value) in that case
 
             if (!m_BindingValidator.IsBindingValid(shortcutEntry, out invalidBindingMessage))
             {

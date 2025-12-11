@@ -235,7 +235,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public IEnumerable<Sample> GetSamples(IPackageVersion version)
         {
-            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString) : null;
+            // Null check for version.package is necessary for domain reload test that uses the UpmPackageVersion directly without a package without mocking it
+            var packageInfo = version != null ? m_UpmCache.GetBestMatchPackageInfo(version.name, version.package?.product?.id ?? 0, version.isInstalled, version.versionString) : null;
             if (packageInfo == null || packageInfo.version != version.version?.ToString())
                 return Enumerable.Empty<Sample>();
 

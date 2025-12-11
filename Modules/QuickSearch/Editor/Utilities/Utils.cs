@@ -11,11 +11,14 @@ using System.IO;
 using System.Reflection;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
+using UnityEditor.PackageManager;
+using Debug = UnityEngine.Debug;
 
 using UnityEditor.Connect;
 using UnityEditor.StyleSheets;
@@ -727,6 +730,8 @@ namespace UnityEditor.Search
 
         internal static string CleanPath(string path)
         {
+            if (path == null)
+                return null;
             return path.Replace("\\", "/");
         }
 
@@ -1259,6 +1264,12 @@ namespace UnityEditor.Search
                 success = ulong.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
+            else if (typeof(T) == typeof(EntityId))
+            {
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                success = int.TryParse(expression, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)EntityId.From(temp);
+            }
             return success;
         }
 
@@ -1487,9 +1498,10 @@ namespace UnityEditor.Search
             return attrs[0] as T;
         }
 
-        internal static bool TryParseObjectValue(in string value, out UnityEngine.Object objValue)
+        internal static bool TryParseObjectValue(string value, out UnityEngine.Object objValue)
         {
             objValue = null;
+            value = SearchUtils.UnescapeLiteralString(value);
             if (string.IsNullOrEmpty(value))
             {
                 return false;
@@ -1505,13 +1517,24 @@ namespace UnityEditor.Search
             }
 
             // ADB prints a warning if the path starts with /
-            if (!value.StartsWith("/") && AssetDatabase.AssetPathExists(value))
+            if (!value.StartsWith("/"))
             {
-                var guid = AssetDatabase.AssetPathToGUID(value);
-                if (!string.IsNullOrEmpty(guid))
+                var assetPath = "";
+                if (value.StartsWith("Assets/") || value.StartsWith("Packages/"))
                 {
-                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
-                    return true;
+                    assetPath = value;
+                }
+                else
+                {
+                    assetPath = AssetDatabase.GUIDToAssetPath(value);
+                }
+
+                if (AssetDatabase.AssetPathExists(assetPath))
+                {
+                    objValue = AssetDatabase.LoadMainAssetAtPath(assetPath);
+                    if (objValue)
+                        return true;
+                    return false;
                 }
             }
 
@@ -1599,6 +1622,28 @@ namespace UnityEditor.Search
                     onEnumeration(objType.FullName, true);
                 objType = objType.BaseType;
             }
+        }
+
+        internal static bool IsPackageReadOnly(PackageManager.PackageInfo pi)
+        {
+            if (pi.source == PackageSource.Embedded || pi.source == PackageSource.Local)
+                return false;
+            return true;
+        }
+
+        internal static bool IsAssetReadOnly(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath) || assetPath.StartsWith("Library/"))
+                return true;
+
+            if (assetPath.StartsWith("Packages/"))
+            {
+                var pi = PackageManager.PackageInfo.FindForAssetPath(assetPath);
+                return pi != null && IsPackageReadOnly(pi);
+            }
+
+            // Assumes all assets in projects are writable.
+            return false;
         }
     }
 

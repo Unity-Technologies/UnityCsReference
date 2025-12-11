@@ -234,4 +234,28 @@ namespace Unity.GraphToolkit.Editor
         const KeyCode k_KeyCode = KeyCode.U;
         const ShortcutModifiers k_Modifiers = ShortcutModifiers.Action | ShortcutModifiers.Shift;
     }
+
+    /// <summary>
+    /// An event sent by the Save shortcut.
+    /// </summary>
+    [ToolShortcutEvent(null, id, k_KeyCode, k_Modifiers)]
+    [UnityRestricted]
+    internal class ShortcutFileSaveEvent : ShortcutEventBase<ShortcutFileSaveEvent>
+    {
+        public const string id = "Save";
+        const KeyCode k_KeyCode = KeyCode.S;
+        const ShortcutModifiers k_Modifiers = ShortcutModifiers.Action;
+    }
+
+    /// <summary>
+    /// An event sent by the Save As... shortcut.
+    /// </summary>
+    [ToolShortcutEvent(null, id, k_KeyCode, k_Modifiers)]
+    [UnityRestricted]
+    internal class ShortcutSaveAsEvent : ShortcutEventBase<ShortcutSaveAsEvent>
+    {
+        public const string id = "Save As...";
+        const KeyCode k_KeyCode = KeyCode.S;
+        const ShortcutModifiers k_Modifiers = ShortcutModifiers.Action | ShortcutModifiers.Shift;
+    }
 }

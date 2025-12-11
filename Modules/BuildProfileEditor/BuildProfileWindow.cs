@@ -57,6 +57,7 @@ namespace UnityEditor.Build.Profile
 
         Label m_PlatformListLabel;
         VisualElement m_AdditionalActionsDropdown;
+        VisualElement m_BuildButtonContainer;
         DropdownButton m_BuildButton;
         ToolbarButton m_AssetImportButton;
         Button m_BuildAndRunButton;
@@ -128,8 +129,9 @@ namespace UnityEditor.Build.Profile
 
             // Capture static visual element reference.
             m_AdditionalActionsDropdown = rootVisualElement.Q<VisualElement>("additional-actions-dropdown-button");
+            m_BuildButtonContainer = rootVisualElement.Q<VisualElement>("build-dropdown-button");
             m_BuildButton = CreateBuildDropdownButton();
-            rootVisualElement.Q<VisualElement>("build-dropdown-button").Add(m_BuildButton);
+            m_BuildButtonContainer.Add(m_BuildButton);
             m_BuildProfileInspectorElement = rootVisualElement.Q<ScrollView>(buildProfileInspectorVisualElement);
             m_BuildProfileInspectorHeaderElement = rootVisualElement.Q<VisualElement>(buildProfileInspectorHeaderVisualElement);
             m_BuildAndRunButton = rootVisualElement.Q<Button>("build-and-run-button");
@@ -498,6 +500,15 @@ namespace UnityEditor.Build.Profile
 
             m_BuildAndRunButton.text = child.buildAndRunButtonDisplayName;
             m_BuildButton.SetText(child.buildButtonDisplayName);
+
+            if (m_BuildButton.enabledInHierarchy)
+            {
+                m_BuildButtonContainer.Show();
+            }
+            else
+            {
+                m_BuildButtonContainer.Hide();
+            }
 
             // Additional actions are always directly applied to the parent window state.
             if (parent.additionalActions == child.additionalActions)

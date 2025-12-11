@@ -13,9 +13,9 @@ namespace Unity.GraphToolkit.Editor
     {
         const string k_LogIdentifier = "GraphToolkit";
 
-        public static void LogSticky(string message, string file, LogType logType, LogOption logOptions, int instanceId, string windowId)
+        public static void LogSticky(string message, string file, LogType logType, LogOption logOptions, EntityId entityId, string windowId)
         {
-            EditorBridge.AddMessageWithDoubleClickCallback(message, file, logType, logOptions, instanceId, (k_LogIdentifier + windowId).GetHashCode());
+            EditorBridge.AddMessageWithDoubleClickCallback(message, file, logType, logOptions, entityId, (k_LogIdentifier + windowId).GetHashCode());
         }
 
 

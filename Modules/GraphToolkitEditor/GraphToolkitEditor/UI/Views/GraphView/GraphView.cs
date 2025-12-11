@@ -437,6 +437,7 @@ namespace Unity.GraphToolkit.Editor
                 RegisterCallback<ShortcutToggleNodeCollapseEvent>(OnShortcutToggleNodeCollapseEvent);
                 RegisterCallback<ShortcutExtractContentsToPlacematEvent>(OnShortcutExtractContentsToPlacematEvent);
                 RegisterCallback<ShortcutDeleteAndReconnectEvent>(OnShortcutDeleteAndReconnect);
+
                 RegisterCallback<KeyDownEvent>(OnRenameKeyDown);
             }
             else
@@ -3768,14 +3769,23 @@ namespace Unity.GraphToolkit.Editor
                 Debug.LogError("Cannot save. Window is not a GraphViewEditorWindow.");
                 return;
             }
-            menu.AddItem(new GUIContent("Save All"), false, () =>
+
+            var saveAllGUI = new GUIContent("Save All");
+            if (GraphTool?.ToolState?.CurrentGraph != null
+                && GraphTool.ToolState.SubgraphStack.Count > 0)
             {
-                graphViewEditorWindow.SaveAll();
-            });
-            menu.AddItem(new GUIContent("Save As..."), false, () =>
-            {
-                graphViewEditorWindow.SaveAs();
-            });
+                menu.AddItem(saveAllGUI, false, () =>
+                    {
+                        graphViewEditorWindow.SaveAll();
+                    });
+            }
+            else
+                menu.AddDisabledItem(saveAllGUI);
+
+            menu.AddItem(new GUIContent(ShortcutEventBase<ShortcutSaveAsEvent>.GetMenuItemName(GraphTool)), false, () =>
+                {
+                    graphViewEditorWindow.SaveAs();
+                });
         }
 
         /// <summary>

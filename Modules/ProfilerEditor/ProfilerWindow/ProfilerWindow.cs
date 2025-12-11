@@ -727,6 +727,14 @@ namespace UnityEditor
 
         void OnSettingsChanged()
         {
+            // Don't apply changed settings when we could be outside of a GUI call (e.g. when a setting was changed from closing a context menu, like Color Blind mode).
+            // Event.current seems to be null even in a scheduled callback so, always schedule this for later.
+            rootVisualElement.schedule.Execute(ApplySettingsChange).StartingIn(0);
+            Repaint();
+        }
+
+        void ApplySettingsChange()
+        {
             SaveViewSettings();
 
             foreach (var module in m_AllModules)

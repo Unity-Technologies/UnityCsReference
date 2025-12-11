@@ -133,6 +133,7 @@ namespace Unity.GraphToolkit.Editor
 
             m_WireControl.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveWire);
             m_WireControl.RegisterCallback<MouseDownEvent>(OnMouseDownWire);
+            m_WireControl.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             Insert(0, m_WireControl);
         }

@@ -601,36 +601,6 @@ namespace UnityEditor
                 }
             },
             {
-               new("d80a96315208455a9ba318d697981cfc"),
-               new PlatformInfo
-               {
-                    displayName = "Facebook Instant Games",
-                    downloadLinkName = "WebGL",
-                    description = L10n.Tr(
-                        "Build for Facebook Instant Games to take advantage of the extensive user base and social features within the Facebook and Messenger app. " +
-                        "This platform offers default settings for both mobile and desktop builds, along with optimization tools and a streamlined publishing process."
-                    ),
-                    subtitle = "From <b>Meta</b>",
-                    buildTarget = BuildTarget.WebGL,
-                    iconName = "BuildSettings.Facebook",
-                    settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
-                    internalPackages = new PlatformPackageList
-                    {
-                        requiredPackages = new[]
-                        {
-                            new PlatformPackageInfo(L10n.Tr("Facebook Instant Games SDK"), "com.unity.meta-instant-games-sdk",
-                                L10n.Tr("This package provides C# bindings to the Facebook Instant Games SDK, making it easy to integrate Facebook Instant Games with your Unity project. Since the Facebook Instant Games SDK is originally a JavaScript SDK, this package is compatible only with web builds.")),
-                        },
-                        recommendedPackages = new[]
-                        {
-                            new PlatformPackageInfo(L10n.Tr("Web Stripping Tool"), "com.unity.web.stripping-tool", L10n.Tr("A package for optimizing the code size of Unity Web builds.")),
-                        }
-                    },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget,
-                    buildProfilePlatformBannerBgColorHex = "#FFFFFF"
-                }
-            },
-            {
                new("80657fe557de4d17822398b3a01b8c9e"),
                new PlatformInfo
                {
@@ -851,7 +821,6 @@ namespace UnityEditor
                 platforms = new GUID []
                 {
                     new("84a3bb9e7420477f885e98145999eb20"), // Web
-                    new("d80a96315208455a9ba318d697981cfc"), // Facebook Instant Games
                 }
             },
             new PlatformGroup

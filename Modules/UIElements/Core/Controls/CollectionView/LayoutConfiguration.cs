@@ -105,7 +105,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         void BindCell(VisualElement element, int index)
         {
             var i = 0;
-            element.style.width = header.worldBoundingBox.width;
+            element.style.width = header.columnContainer.layout.size.x;
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
@@ -208,7 +208,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             foreach (var displayItem in m_View.m_DisplayedList)
             {
                 // We need to make sure that the item's width is updated as well.
-                displayItem.element.style.width = header.worldBoundingBox.width;
+                displayItem.element.style.width = header.columnContainer.layout.size.x;
                 // Update the cell's width
                 displayItem.element[index].style.width = width;
             }

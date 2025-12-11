@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -63,6 +64,7 @@ namespace Unity.GraphToolkit.Editor
     internal class VariableFieldsInspector : GraphElementFieldInspector
     {
         DisplayFlags m_DisplayFlags;
+        ModifierFlags m_PreviousModifiers;
 
         /// <summary>
         /// The flags that controls which properties are displayed.
@@ -222,31 +224,35 @@ namespace Unity.GraphToolkit.Editor
             {
                 // Selected Variables must all have an Initialization model of the same TypeHandle to display their default value.
                 var variableDeclaration = variableModels[0];
-                var constants = new List<Constant>();
-                bool valid = variableDeclaration.InitializationModel != null && (variableDeclaration.Modifiers & ModifierFlags.Write) == 0;
-                TypeHandle firstHandle = default;
-                if (valid)
+                if (!variableDeclaration.Modifiers.HasFlag(ModifierFlags.Write))
                 {
-                    firstHandle = variableDeclaration.DataType;
-                    constants.Add(variableDeclaration.InitializationModel);
-                    for (var i = 1; i < variableModels.Count; i++)
+                    using var dispose = ListPool<Constant>.Get(out var constants);
+
+                    bool valid = variableDeclaration.InitializationModel != null;
+                    TypeHandle firstHandle = default;
+                    if (valid)
                     {
-                        variableDeclaration = variableModels[i];
-                        if (variableDeclaration.InitializationModel == null || variableDeclaration.DataType != firstHandle || (variableDeclaration.Modifiers & ModifierFlags.Write) == 0)
-                        {
-                            valid = false;
-                            break;
-                        }
-
+                        firstHandle = variableDeclaration.DataType;
                         constants.Add(variableDeclaration.InitializationModel);
-                    }
-                }
+                        for (var i = 1; i < variableModels.Count; i++)
+                        {
+                            variableDeclaration = variableModels[i];
+                            if (variableDeclaration.InitializationModel == null || variableDeclaration.DataType != firstHandle)
+                            {
+                                valid = false;
+                                break;
+                            }
 
-                if (valid)
-                {
-                    m_CurrentDefaultValueFieldType = firstHandle;
-                    var field = InlineValueEditor.CreateEditorForConstants(OwnerRootView, variableModels, constants, "Default Value");
-                    fieldList.Insert(insertIndex++, field);
+                            constants.Add(variableDeclaration.InitializationModel);
+                        }
+                    }
+
+                    if (valid)
+                    {
+                        m_CurrentDefaultValueFieldType = firstHandle;
+                        var field = InlineValueEditor.CreateEditorForConstants(OwnerRootView, variableModels, constants, "Default Value");
+                        fieldList.Insert(insertIndex++, field);
+                    }
                 }
             }
 
@@ -288,15 +294,18 @@ namespace Unity.GraphToolkit.Editor
         {
             bool valid;
             TypeHandle firstHandle = default;
+            ModifierFlags firstModifiers = ModifierFlags.None;
+
             using (m_Models.OfTypeToPooledList<VariableDeclarationModelBase, Model>(out var variableModels))
             {
                 valid = variableModels[0].InitializationModel != null;
                 if (valid)
                 {
                     firstHandle = variableModels[0].DataType;
-                    for (var i = 1; i < variableModels.Count; i++)
+                    firstModifiers = variableModels[0].Modifiers;
+                    for (var i = 0; i < variableModels.Count; i++)
                     {
-                        if (variableModels[i].InitializationModel == null || variableModels[i].DataType != firstHandle)
+                        if (variableModels[i].InitializationModel == null || variableModels[i].DataType != firstHandle || variableModels[i].Modifiers != firstModifiers || m_PreviousModifiers != variableModels[i].Modifiers)
                         {
                             valid = false;
                             break;
@@ -305,9 +314,10 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            if ((m_CurrentDefaultValueFieldType.IsValid != valid) || (valid && m_CurrentDefaultValueFieldType != firstHandle))
+            if ((m_CurrentDefaultValueFieldType.IsValid != valid) || (valid && m_CurrentDefaultValueFieldType != firstHandle) || (m_PreviousModifiers != firstModifiers))
             {
                 BuildFields();
+                m_PreviousModifiers = firstModifiers;
             }
 
             base.UpdateUIFromModel(visitor);

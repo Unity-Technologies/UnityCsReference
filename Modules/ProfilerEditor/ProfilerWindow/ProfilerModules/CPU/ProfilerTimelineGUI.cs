@@ -297,7 +297,7 @@ namespace UnityEditorInternal
             {
                 base.Reset();
 
-                this.instanceId = 0;
+                this.instanceId = EntityId.None;
                 this.metaData = string.Empty;
 
                 this.totalDurationForThread = invalidDuration;
@@ -1007,7 +1007,7 @@ namespace UnityEditorInternal
                         m_SelectedEntry.frameId = frameData.frameIndex;
                         m_SelectedEntry.threadIndex = frameData.threadIndex;
                         m_SelectedEntry.sampleIndex = indexHelper.sampleIndex;
-                        m_SelectedEntry.instanceId = instanceInfoArgs.out_Id;
+                        m_SelectedEntry.instanceId = instanceInfoArgs.out_EntityId;
                         m_SelectedEntry.time = timingInfoArgs.out_LocalStartTime;
                         m_SelectedEntry.duration = timingInfoArgs.out_Duration;
                         m_SelectedEntry.totalDurationForThread = timingInfoArgs.out_TotalDurationForThread;

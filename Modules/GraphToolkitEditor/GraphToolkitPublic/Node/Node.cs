@@ -360,7 +360,7 @@ namespace Unity.GraphToolkit.Editor
         /// Retrieves an input port using its name.
         /// </summary>
         /// <param name="name">The unique name of the input port within this node.</param>
-        /// <returns>The input port with the specified name.</returns>
+        /// <returns>The input port with the specified name, or null if no match is found.</returns>
         /// <remarks>The input port's name is unique within the node's input ports and node options.</remarks>
         public IPort GetInputPortByName(string name) => ((INode)m_Implementation).GetInputPortByName(name);
 

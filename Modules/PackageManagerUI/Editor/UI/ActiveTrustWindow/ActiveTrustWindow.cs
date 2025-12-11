@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -9,13 +10,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class ActiveTrustWindow
     {
-        public static ActiveTrustReturnValue ShowActiveTrustWindow(PackageInfo[] invalidSignaturePackages, PackageInfo[] missingSignaturePackages, PackageInfo[] limitedTrustPackages)
+        public static ActiveTrustReturnValue ShowActiveTrustWindow(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
         {
             var content = new ActiveTrustContent(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages);
             return ModalWindowContainer.ShowModal(content) ? content.returnValue : ActiveTrustReturnValue.Error;
         }
 
-        private class ActiveTrustContent: ModalContent
+        internal class ActiveTrustContent: ModalContent
         {
             private const int k_WindowWidth = 680;
 
@@ -26,82 +27,62 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             private readonly IResourceLoader m_ResourceLoader;
             private readonly IApplicationProxy m_Application;
-            private readonly IUpmClient m_UpmClient;
-            public ActiveTrustContent(PackageInfo[] invalidSignaturePackages, PackageInfo[] missingSignaturePackages, PackageInfo[] limitedTrustPackages)
+            public ActiveTrustContent(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
             {
                 m_ResourceLoader = ServicesContainer.instance.Resolve<IResourceLoader>();
                 m_Application = ServicesContainer.instance.Resolve<IApplicationProxy>();
-                m_UpmClient = ServicesContainer.instance.Resolve<IUpmClient>();
                 Init(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages);
             }
 
-            private void Init(PackageInfo[] invalidSignaturePackages, PackageInfo[] missingSignaturePackages, PackageInfo[] limitedTrustPackages)
+            private void Init(IList<PackageInfo> invalidSignaturePackages, IList<PackageInfo> missingSignaturePackages, IList<PackageInfo> limitedTrustPackages)
             {
                 var root = m_ResourceLoader.GetTemplate("ActiveTrustWindow.uxml");
                 cache = new VisualElementCache(root);
                 styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
                 styleSheets.Add(m_ResourceLoader.activeTrustWindowStyleSheet);
-                UIUtils.SetElementDisplay(upperContainer, invalidSignaturePackages.Length > 0 || missingSignaturePackages.Length > 1);
-                if (invalidSignaturePackages.Length > 0)
-                {
-                    helpBoxIcon.AddToClassList(Icon.Error.ClassName());
-                    helpBoxLabel.AddToClassList("error");
-                    helpBoxLabel.text = L10n.Tr("Installing is not recommended. Review the packages carefully, or choose Cancel to abort the installation.");
-                }else if (missingSignaturePackages.Length > 1)
-                {
-                    helpBoxIcon.AddToClassList(Icon.Warning.ClassName());
-                    helpBoxContainer.AddToClassList("warning");
-                    upperContainer.AddToClassList("warning");
-                    helpBoxLabel.text = L10n.Tr("Some of the packages are unsigned. A signature verifies the packages source and integrity. You can install them now, and ask the publisher to sign the packages in the future.");
-                }
+
+                var hasInvalidSignature = invalidSignaturePackages?.Count > 0;
+                var hasMissingSignature = missingSignaturePackages?.Count > 0;
+                var hasLimitedTrust = limitedTrustPackages?.Count > 0;
+
+                InitializeTitleAndHelpBox(hasInvalidSignature, hasMissingSignature, hasLimitedTrust);
 
                 string docUrl = null;
-                if (invalidSignaturePackages.Length > 0)
+                if (hasInvalidSignature)
                 {
-                    windowTitle = L10n.Tr("Invalid signature");
-                    var message = invalidSignaturePackages.Length == 1
-                        ? L10n.Tr("This package has an invalid signature")
-                        : string.Format(L10n.Tr("{0} packages have invalid signatures"), invalidSignaturePackages.Length);
+                    var message = invalidSignaturePackages.Count == 1
+                        ? L10n.Tr("This package has an invalid signature.")
+                        : string.Format(L10n.Tr("{0} packages have invalid signatures."), invalidSignaturePackages.Count);
                     var packageStateInvalidSignatures = new ActiveTrustPackageState(m_ResourceLoader, message, Icon.PackageErrorLarge, invalidSignaturePackages);
                     bodyScroll.Add(packageStateInvalidSignatures);
                     docUrl ??= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig";
                 }
-                if (missingSignaturePackages.Length > 0)
+                if (hasMissingSignature)
                 {
-                    if (invalidSignaturePackages.Length == 0)
-                        windowTitle = L10n.Tr("Missing signature");
-
-                    var message = missingSignaturePackages.Length == 1
-                        ? L10n.Tr("This package is missing a signature")
-                        : string.Format(L10n.Tr("{0} packages are missing a signature"), missingSignaturePackages.Length);
+                    var message = missingSignaturePackages.Count == 1
+                        ? L10n.Tr("This package is missing a signature.")
+                        : string.Format(L10n.Tr("{0} packages are missing a signature."), missingSignaturePackages.Count);
                     var packagesStateMissingSignatures = new ActiveTrustPackageState(m_ResourceLoader, message, Icon.PackageWarningLarge, missingSignaturePackages, false);
                     bodyScroll.Add(packagesStateMissingSignatures);
                     docUrl ??= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
                 }
-                if (limitedTrustPackages.Length > 0)
+                if (hasLimitedTrust)
                 {
-                    if (invalidSignaturePackages.Length == 0 && missingSignaturePackages.Length == 0)
-                        windowTitle = L10n.Tr("Install Package");
-
-                    windowTitle = L10n.Tr("Install Package");
-                    var message = limitedTrustPackages.Length == 1
-                        ? L10n.Tr("This package is signed but not from official Unity sources")
-                        : string.Format(L10n.Tr("{0} packages are signed but not from official Unity sources"), limitedTrustPackages.Length);
+                    var message = limitedTrustPackages.Count == 1
+                        ? L10n.Tr("This package is signed but not from official Unity sources.")
+                        : string.Format(L10n.Tr("{0} packages are signed but not from official Unity sources."), limitedTrustPackages.Count);
                     var packageStateLimitedTrust = new ActiveTrustPackageState(m_ResourceLoader, message, Icon.PackageOptionLarge, limitedTrustPackages);
                     bodyScroll.Add(packageStateLimitedTrust);
                     docUrl ??= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html";
                 }
                 if (!string.IsNullOrEmpty(docUrl))
-                {
                     readMoreButton.clicked += () => m_Application.OpenURL(docUrl);
-                }
 
                 m_CancelButton = new Button { text = L10n.Tr("Cancel") };
                 m_CancelButton.clicked += () =>
                 {
                     returnValue = ActiveTrustReturnValue.Cancel;
                     container.Close();
-                    m_UpmClient.Resolve();
                 };
                 m_InstallAnywayButton = new Button { text = L10n.Tr("Install Anyway") };
                 m_InstallAnywayButton.clicked += () =>
@@ -114,6 +95,32 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Add(root);
 
                 RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
+            }
+
+            private void InitializeTitleAndHelpBox(bool hasInvalidSignature, bool hasMissingSignature, bool hasLimitedTrust)
+            {
+                if (hasInvalidSignature)
+                {
+                    helpBoxIcon.AddToClassList(Icon.Error.ClassName());
+                    helpBoxLabel.AddToClassList("error");
+                    helpBoxContainer.AddToClassList("error");
+                    upperContainer.AddToClassList("error");
+                    helpBoxLabel.text = L10n.Tr("These packages have an invalid signature which can indicate unsafe or malicious content. Remove these packages to reduce risk to your project.");
+                    windowTitle = L10n.Tr("Invalid signature");
+                }
+                else if (hasMissingSignature)
+                {
+                    windowTitle = L10n.Tr("Missing signature");
+                    helpBoxIcon.AddToClassList(Icon.Warning.ClassName());
+                    helpBoxLabel.text = L10n.Tr("Unity can't verify these packages because they don't have a signature. Use signed packages to reduce risk to your project.");
+                }
+                else if (hasLimitedTrust)
+                {
+                    windowTitle = L10n.Tr("Install package");
+                    helpBoxIcon.AddToClassList(Icon.Info.ClassName());
+                    helpBoxContainer.AddToClassList("info");
+                    helpBoxLabel.text = L10n.Tr("These packages are signed, but their publishers are not verified by Unity. Please ensure you understand where these packages originated from.");
+                }
             }
 
             private void OnFirstLayout(GeometryChangedEvent evt)

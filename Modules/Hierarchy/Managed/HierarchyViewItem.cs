@@ -55,8 +55,8 @@ namespace Unity.Hierarchy
         readonly VisualElement m_LeftContainer;
         internal VisualElement LeftContainer => m_LeftContainer;
 
-        internal delegate void ExpandedStateChangedDelegate(in HierarchyNode node, bool isExpanded, bool recursive);
-        internal event ExpandedStateChangedDelegate ExpandedStateChanged;
+        internal delegate void ExpandedStateChangedEventHandler(in HierarchyNode node, bool isExpanded, bool recursive);
+        internal event ExpandedStateChangedEventHandler ExpandedStateChanged;
 
         /// <summary>
         /// The <see cref="HierarchyNodeType"/> of the <see cref="HierarchyNode"/> bound to this <see cref="HierarchyViewItem"/>.

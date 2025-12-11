@@ -299,7 +299,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 AddRegistryAndAuthorLabel(L10n.Tr("Unity Registry"), true, L10n.Tr("Unity Technologies"), null);
             else
             {
-                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.package.product?.id ?? 0, m_Version.isInstalled, m_Version.versionString);
                 // Null check for the package info is needed here because sometimes the PackageDetails would be refreshed mid-package generation (due to selection change),
                 // and sometimes an installed package would exist in the PackageDatabase, but the corresponding installed package info has been removed mid-generation.
                 // This won't cause any UI issues as the UI will be refreshed again after all packages are generated (and some packages removed).

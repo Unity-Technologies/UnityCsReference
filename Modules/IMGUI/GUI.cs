@@ -1871,7 +1871,7 @@ namespace UnityEngine
         // Call at the beginning of a frame.
         // e event to process
         // windowInfo - the list of windows we're currently using.
-        internal static void BeginWindows(int skinMode, int editorWindowInstanceID)
+        internal static void BeginWindows(int skinMode, EntityId editorWindowInstanceID)
         {
             // Let's just remember where we came from
             GUILayoutGroup oldTopLevel = GUILayoutUtility.current.topLevel;

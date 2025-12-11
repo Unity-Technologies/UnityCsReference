@@ -25,7 +25,9 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
             NativeObjects_NativeTypeArrayIndex,
             NativeObjects_HideFlags,
             NativeObjects_Flags,
-            NativeObjects_InstanceId,
+            NativeObjects_EntityId,
+            [Obsolete("NativeObjects_InstanceId is deprecated. Use NativeObjects_EntityId instead. (UnityUpgradable) -> NativeObjects_EntityId")]
+            NativeObjects_InstanceId = NativeObjects_EntityId,
             NativeObjects_Name,
             NativeObjects_NativeObjectAddress,
             NativeObjects_Size,

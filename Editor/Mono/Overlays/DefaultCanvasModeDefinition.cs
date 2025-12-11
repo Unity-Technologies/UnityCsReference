@@ -18,6 +18,6 @@ namespace UnityEditor.Overlays
             return m_UXML;
         }
 
-        public override OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement horizontalParent, VisualElement verticalParent, VisualElement anchoredParent) => new DefaultModeDockArea(canvas, horizontalParent, verticalParent, anchoredParent);
+        public override OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement parent) => new DefaultModeDockArea(canvas, parent);
     }
 }

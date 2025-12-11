@@ -505,6 +505,9 @@ namespace UnityEditor
         [StaticAccessor("GetLightmapSettings()")]
         public static extern LightingDataAsset lightingDataAsset { get; set; }
 
+        [StaticAccessor("GetLightmapSettings().GetReadOnlySharedData()")]
+        public static extern bool HasDynamicGILightmapTextures();
+
         public static bool TryGetLightingSettings(out LightingSettings settings)
         {
             settings = lightingSettingsInternal;

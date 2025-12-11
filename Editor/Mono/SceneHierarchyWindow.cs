@@ -310,10 +310,7 @@ namespace UnityEditor
             m_SceneHierarchy.AddItemsToWindowMenu(menu);
         }
 
-        public void GetSelectedScenes(List<Scene> scenes)
-        {
-            m_SceneHierarchy.GetSelectedScenes(scenes);
-        }
+        public void GetSelectedScenes(List<Scene> scenes) => IHierarchyWindow.GetSelectedScenes(scenes);
 
         internal static void RebuildStageHeaderInAll()
         {

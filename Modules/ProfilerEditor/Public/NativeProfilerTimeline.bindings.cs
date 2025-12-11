@@ -102,7 +102,9 @@ namespace UnityEditorInternal
         public int threadIndex;
         public int entryIndex;
 
-        public int out_Id;
+        [Obsolete("out_Id is deprecated. Use out_EntityId instead.")]
+        public int out_Id { get => out_EntityId; set => out_EntityId = value; }
+        public EntityId out_EntityId;
         public string out_Path;
         public int[] out_PathMarkerIds;
         public string out_CallstackInfo;
@@ -114,7 +116,7 @@ namespace UnityEditorInternal
             threadIndex = -1;
             entryIndex = -1;
 
-            out_Id = 0;
+            out_EntityId = EntityId.None;
             out_Path = string.Empty;
             out_CallstackInfo = string.Empty;
             out_MetaData = string.Empty;

@@ -74,7 +74,7 @@ namespace UnityEditor.Search
             On(SearchEvent.RefreshBuilder, RefreshBuilder);
             On(SearchEvent.SearchContextChanged, Rebuild);
 
-            m_TextField = m_SearchField.Q<TextField>();
+            m_TextField = m_SearchField.textInputField;
             m_TextField.RemoveFromHierarchy();
 
             RefreshBuilder();

@@ -26,7 +26,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [SerializeReference] public NodeOutput<PlayerIdentifier> PlayerIdentifier; // Nodes needs to be public fields since they are serialized
         [SerializeReference] public NodeOutput<TypeDependentPlayerInfo> TypeDependentPlayerInfo; // Nodes needs to be public fields since they are serialized
         [SerializeField] private SceneSetup[] m_CurrentSceneSetup;
-        public bool IsRunning() => MultiplayerPlaymode.Players[GetInput(PlayerInstanceIndex)].PlayerState == PlayerState.Launched;
+        public bool IsRunning()
+        {
+            var player = MultiplayerPlaymode.Players[GetInput(PlayerInstanceIndex)];
+            if (player.Type is PlayerType.Main)
+            {
+                return EditorApplication.isPlayingOrWillChangePlaymode;
+            }
+
+            return player.PlayerState == PlayerState.Launched;
+        }
 
         public EditorMultiplayerPlaymodeDeployNode(string name) : base(name)
         {

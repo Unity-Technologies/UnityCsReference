@@ -998,6 +998,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\Managed\NativeSparseArray.cs">
       <Link>Modules\HierarchyCore\Managed\NativeSparseArray.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\ReadOnlyNativeVector.cs">
+      <Link>Modules\HierarchyCore\Managed\ReadOnlyNativeVector.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\ScriptBindings\Hierarchy.bindings.cs">
       <Link>Modules\HierarchyCore\ScriptBindings\Hierarchy.bindings.cs</Link>
     </Compile>
@@ -1091,9 +1094,6 @@
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewDragHandler.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewDragHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewFlagChangedEvent.cs">
-      <Link>Modules\Hierarchy\Managed\HierarchyViewFlagChangedEvent.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewItem.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewItem.cs</Link>
     </Compile>
@@ -1108,9 +1108,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewOperationExtension.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewOperationExtension.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewSelectionExtension.cs">
-      <Link>Modules\Hierarchy\Managed\HierarchyViewSelectionExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Hierarchy\Managed\HierarchyViewState.cs">
       <Link>Modules\Hierarchy\Managed\HierarchyViewState.cs</Link>
@@ -1504,6 +1501,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsGeometry.cs">
       <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsLowLevel2D.Obsolete.cs">
+      <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsLowLevel2D.Obsolete.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics2D\LowLevel\Scripting\PhysicsMath.cs">
       <Link>Modules\Physics2D\LowLevel\Scripting\PhysicsMath.cs</Link>

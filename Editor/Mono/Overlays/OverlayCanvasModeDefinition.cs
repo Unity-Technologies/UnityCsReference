@@ -9,6 +9,6 @@ namespace UnityEditor.Overlays
     abstract class OverlayCanvasModeDefinition
     {
         public abstract VisualTreeAsset GetUXML();
-        public abstract OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement horizontalParent, VisualElement verticalParent, VisualElement anchoredParent);
+        public abstract OverlayDockArea GetDockArea(OverlayCanvas canvas, VisualElement parent);
     }
 }

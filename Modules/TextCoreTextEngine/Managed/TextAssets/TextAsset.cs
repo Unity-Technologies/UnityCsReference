@@ -101,10 +101,10 @@ namespace UnityEngine.TextCore.Text
 
         internal int m_MaterialHashCode;
 
-        private static Dictionary<int, WeakReference<TextAsset>> kTextAssetByInstanceId = new Dictionary<int, WeakReference<TextAsset>>();
+        private static Dictionary<EntityId, WeakReference<TextAsset>> kTextAssetByInstanceId = new Dictionary<EntityId, WeakReference<TextAsset>>();
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static TextAsset GetTextAssetByID(int id)
+        internal static TextAsset GetTextAssetByID(EntityId id)
         {
             if (kTextAssetByInstanceId.TryGetValue(id, out var weakRef) && weakRef.TryGetTarget(out var asset))
                 return asset;

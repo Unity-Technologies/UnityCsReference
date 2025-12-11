@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections;
+using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.UIElements;
 
@@ -15,13 +17,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = resourceLoader;
         }
 
-        public ActiveTrustPackageState(IResourceLoader resourceLoader, string headerText, Icon icon, PackageInfo[] items, bool isOrgKnown = true)
+        public ActiveTrustPackageState(IResourceLoader resourceLoader, string headerText, Icon icon, IList<PackageInfo> items, bool isOrgKnown = true)
         {
             ResolveDependencies(resourceLoader);
             Init(headerText, icon, items, isOrgKnown);
         }
 
-        private void Init(string headerText, Icon icon, PackageInfo[] items, bool isOrgKnown)
+        private void Init(string headerText, Icon icon, IList<PackageInfo> items, bool isOrgKnown)
         {
             var root = m_ResourceLoader.GetTemplate("ActiveTrustPackageState.uxml");
             cache = new VisualElementCache(root);
@@ -32,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageMultiColumnListView.reorderable = false;
             packageMultiColumnListView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
             packageMultiColumnListView.selectionType = SelectionType.None;
-            packageMultiColumnListView.itemsSource = items;
+            packageMultiColumnListView.itemsSource = (IList) items;
             packageMultiColumnListView.fixedItemHeight = 20;
             packageMultiColumnListView.columns.reorderable = false;
             packageMultiColumnListView.columns.resizable = false;

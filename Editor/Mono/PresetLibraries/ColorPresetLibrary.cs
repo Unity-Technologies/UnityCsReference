@@ -133,7 +133,7 @@ namespace UnityEditor
             }
 
             // comparing as Color32 is more robust due to floating point precision issues in Color comparison
-            if (((Color32)ColorPicker.color).Equals((Color32)preset))
+            if (ColorPicker.visible && ((Color32)ColorPicker.color).Equals((Color32)preset))
                 DrawSelection(rect);
 
             GUI.color = orgColor;

@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.MPE;
 using UnityEditor.Profiling;
 using UnityEditor.Profiling.Analytics;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -115,7 +116,9 @@ namespace UnityEditorInternal
     [System.Serializable]
     public struct EventMarker
     {
-        public int objectInstanceId;
+        public EntityId objectEntityId;
+        [Obsolete("objectInstanceId is deprecated, use objectEntityId instead.", false)]
+        public int objectInstanceId { get => objectEntityId; set => objectEntityId = value; }
         public int nameOffset;
         public int frame;
     }

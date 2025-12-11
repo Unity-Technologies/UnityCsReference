@@ -539,23 +539,28 @@ namespace UnityEditor.Search.Providers
             if (string.IsNullOrEmpty(searchQuery))
                 yield break;
 
-            // Search by GUID
-            var guidPath = AssetDatabase.GUIDToAssetPath(searchQuery);
-            if (!string.IsNullOrEmpty(guidPath))
-            {
-                var info = new AssetMetaInfo(guidPath, GetGID(guidPath), SearchDocumentFlags.Asset);
-                yield return provider.CreateItem(context, info.gid.ToString(), -1, $"{Path.GetFileName(guidPath)} ({searchQuery})", null, null, info);
-            }
-
             if (searchQuery.StartsWith("GlobalObjectId", StringComparison.Ordinal))
             {
                 if (GlobalObjectId.TryParse(searchQuery, out var gid))
                 {
                     var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
-                    var objPath = SearchUtils.GetObjectPath(obj, false);
+                    var objPath = SearchUtils.GetObjectPath(obj);
                     var info = new AssetMetaInfo(objPath, gid,
                         gid.identifierType == (int)IdentifierType.kImportedAsset ? SearchDocumentFlags.Asset : SearchDocumentFlags.Nested | SearchDocumentFlags.Object);
                     yield return provider.CreateItem(context, gid.ToString(), -1, objPath, null, null, info);
+                }
+            }
+            else
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(searchQuery);
+                if (string.IsNullOrEmpty(assetPath) && Guid.TryParse(searchQuery, out var guid))
+                {
+                    var guidStr = searchQuery.Replace("-", "");
+                    assetPath = AssetDatabase.GUIDToAssetPath(guidStr);
+                }
+                if (!string.IsNullOrEmpty(assetPath))
+                {
+                    yield return CreateItemFromPath(context, provider, assetPath);
                 }
             }
 
@@ -602,6 +607,12 @@ namespace UnityEditor.Search.Providers
             var parsedQuery = queryEngine.ParseQuery(query);
             var resultsLimit = parsedQuery.toggles.Any(t => t.value.Equals(k_NoResultsLimitToggle, StringComparison.InvariantCultureIgnoreCase)) ? int.MaxValue : 2999;
             return resultsLimit;
+        }
+
+        internal static SearchItem CreateItemFromPath(SearchContext context, SearchProvider provider, string assetPath)
+        {
+            var info = new AssetMetaInfo(assetPath, GetGID(assetPath), SearchDocumentFlags.Asset);
+            return provider.CreateItem(context, info.gid.ToString(), -1, $"{Path.GetFileName(assetPath)} ({context.searchQuery})", null, null, info);
         }
 
         private static IEnumerator SearchIndexes(string searchQuery, SearchContext context, SearchProvider provider, SearchDatabase db)

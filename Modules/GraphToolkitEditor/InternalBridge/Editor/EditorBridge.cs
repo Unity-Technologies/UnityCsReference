@@ -41,7 +41,7 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             return KeyCombination.SequenceToMenuString(binding.keyCombinationSequence);
         }
 
-        public static void SetEntryDoubleClickedDelegate(Action<string, int> doubleClickedCallback)
+        public static void SetEntryDoubleClickedDelegate(Action<string, EntityId> doubleClickedCallback)
         {
             ConsoleWindow.entryWithManagedCallbackDoubleClicked += CallEntryDoubleClickedCallback;
 
@@ -50,7 +50,7 @@ namespace Unity.GraphToolsAuthoringFramework.InternalEditorBridge
             void CallEntryDoubleClickedCallback(LogEntry logEntry) => doubleClickedCallback(logEntry.file, logEntry.entityId);
         }
 
-        public static void AddMessageWithDoubleClickCallback(string message, string file, LogType logType, LogOption logOptions, int instanceId, int logIdentifier)
+        public static void AddMessageWithDoubleClickCallback(string message, string file, LogType logType, LogOption logOptions, EntityId instanceId, int logIdentifier)
         {
             int mode = LogTypeOptionsToMode(logType, logOptions) | (int)ConsoleWindow.Mode.StickyError;
 

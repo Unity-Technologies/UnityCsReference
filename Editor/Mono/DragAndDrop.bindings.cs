@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
@@ -142,6 +143,7 @@ namespace UnityEditor
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(int) && args[0] is EntityId e)
                 {
                     Debug.LogWarning("Using int based drop handlers is deprecated. Please use EntityId based ones instead.");
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
                     args[0] = e.GetRawData();
                 }
                 if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(EntityId) && args[0] is int number)

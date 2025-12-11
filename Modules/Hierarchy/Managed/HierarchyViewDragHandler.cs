@@ -339,7 +339,7 @@ class HierarchyViewDragHandler
                     if (node == HierarchyNode.Null || node == m_HierarchyView.Source.Root)
                         continue;
 
-                    m_HierarchyView.FrameNode(in node);
+                    m_HierarchyView.Frame(in node);
                     break;
                 }
             });

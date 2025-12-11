@@ -250,7 +250,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                m_CommandListManager.ResetCommandListUIRenderer();
+                m_CommandListManager.ResetUIRendererDrawCallData();
 
                 DeviceToFree free = new DeviceToFree
                 {

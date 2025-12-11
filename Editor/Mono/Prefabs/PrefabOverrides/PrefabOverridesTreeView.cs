@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
@@ -234,12 +235,21 @@ namespace UnityEditor
             Dictionary<EntityId, PrefabOverrides> entityIdToPrefabOverridesMap;
             BuildPrefabOverridesPerObject(out entityIdToPrefabOverridesMap);
 
-            var hiddenRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Hidden Root" };
+            var hiddenRoot = new TreeViewItem { id = EntityId.None, depth = -1, displayName = "Hidden Root" };
 
             hasApplicableModifications = false;
             hasModifications = AddTreeViewItemRecursive(hiddenRoot, m_PrefabInstanceRoot, entityIdToPrefabOverridesMap);
             if (!hasModifications)
-                hiddenRoot.AddChild(new TreeViewItem { id = 1, depth = 0, displayName = "No Overrides" });
+            {
+                int noOverridesItemId = SessionState.GetInt("NoOverridesItemId", 0);
+                if (noOverridesItemId == 0)
+                {
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    noOverridesItemId = (int)EntityId.AllocateNextLowestEntityId().GetRawData();
+                    SessionState.SetInt("NoOverridesItemId", noOverridesItemId);
+                }
+                hiddenRoot.AddChild(new TreeViewItem { id = EntityId.From(noOverridesItemId), depth = 0, displayName = "No Overrides" });
+            }
             else
             {
                 bool CanAnyPropertiesBeApplied()

@@ -2503,19 +2503,43 @@ namespace Unity.VectorGraphics
                 return false;
             }
 
-            bool hasSelector = false;
+            string matchingSelector = "";
+
             foreach (var s in sheet.selectors)
             {
-                if (s == selector)
+                bool partMatches = false;
+
+                var selectorParts = s.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in selectorParts)
                 {
-                    hasSelector = true;
-                    break;
+                    if (part == selector)
+                    {
+                        partMatches = true;
+                        break;
+                    }
+                }
+
+                if (partMatches)
+                {
+                    if (selectorParts.Length == 1)
+                    {
+                        matchingSelector = selectorParts[0];
+                        break;
+                    }
+                    else if (selectorParts.Length > 1)
+                    {
+                        if (MatchesDescendants(selectorParts, selectorParts.Length - 1))
+                        {
+                            matchingSelector = s;
+                            break;
+                        }
+                    }
                 }
             }
 
-            if (hasSelector)
+            if (!string.IsNullOrEmpty(matchingSelector))
             {
-                var props = sheet[selector];
+                var props = sheet[matchingSelector];
                 if (props.ContainsKey(attribName))
                 {
                     val = props[attribName];
@@ -2524,6 +2548,31 @@ namespace Unity.VectorGraphics
             }
 
             val = null;
+            return false;
+        }
+
+        bool MatchesDescendants(string[] selectorParts, int partIndexToMatch, int layerIndex = -1)
+        {
+            if (selectorParts.Length == 0)
+                return false;
+
+            if (partIndexToMatch < 0)
+                return true; // All parts matched
+
+            if (layerIndex < 0)
+                layerIndex = layers.Count - 1;
+
+            var partToMatch = selectorParts[partIndexToMatch];
+            for (int i = layerIndex; i >= 0; --i)
+            {
+                var layer = layers[i];
+                var nodeData = layer.nodeData;
+                bool matchesName = (partToMatch == nodeData.name);
+                bool matchesID = (partToMatch == ("#" + nodeData.id));
+                bool matchesClass = (nodeData.classes != null && nodeData.classes.Contains(partToMatch.StartsWith(".") ? partToMatch.Substring(1) : partToMatch));
+                if (matchesName || matchesID || matchesClass)
+                    return MatchesDescendants(selectorParts, partIndexToMatch - 1, i - 1);
+            }
             return false;
         }
 
@@ -2547,11 +2596,15 @@ namespace Unity.VectorGraphics
 
             foreach (var sel in reversedSelectors)
             {
-                if (sel[0] != '.')
-                    continue;
-                var klass = sel.Substring(1);
-                if (classes.Contains(klass))
-                    yield return klass;
+                var parts = sel.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
+                {
+                    if (part[0] != '.')
+                        continue;
+                    var klass = part.Substring(1);
+                    if (classes.Contains(klass))
+                        yield return klass;
+                }
             }
         }
 

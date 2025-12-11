@@ -43,6 +43,8 @@ namespace UnityEditor
         }
 
         const string k_layerMatrixFoldoutPref = "project-settings-collision-matrix-unfold";
+        const string k_FrameMaintenanceFoldoutPref = "project-settings-physics-frame-maintenance-unfold";
+
         const int k_MaxLayers = 32;
 
         static class Content
@@ -520,6 +522,19 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaxAngularSpeed")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ScratchBufferChunkCount")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_FastMotionThreshold")));
+
+            bool frameMaintenanceFold = false;
+            if (EditorPrefs.HasKey(k_FrameMaintenanceFoldoutPref))
+                frameMaintenanceFold = EditorPrefs.GetBool(k_FrameMaintenanceFoldoutPref);
+
+            var frameMaintenanceFoldOut = new Foldout() { text = "Release Simulation Buffers", value = true };
+
+            frameMaintenanceFoldOut.RegisterValueChangedCallback((evt) => { EditorPrefs.SetBool(k_FrameMaintenanceFoldoutPref, evt.newValue); });
+            frameMaintenanceFoldOut.SetValueWithoutNotify(frameMaintenanceFold);
+
+            frameMaintenanceFoldOut.Add(new PropertyField(serializedObject.FindProperty("m_ReleaseSceneBuffers")));
+            frameMaintenanceFoldOut.Add(new PropertyField(serializedObject.FindProperty("m_SceneBuffersReleaseInterval")));
+            tab.Add(frameMaintenanceFoldOut);
         }
 
         static void SetupClothTab(VisualElement tab, SerializedObject serializedObject)

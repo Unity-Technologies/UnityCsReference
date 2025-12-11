@@ -398,7 +398,11 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.EndVertical();
 
             if (m_IsFallbackGlyphCacheDirty || evt_cmd == k_UndoRedo)
+            {
                 TextResourceManager.RebuildFontAssetCache();
+                (target as TextSettings)?.SetNativeTextSettingsDirty();
+                (target as TextSettings)?.UpdateNativeTextSettings();
+            }
 
             if (serializedObject.ApplyModifiedProperties() || evt_cmd == k_UndoRedo)
             {

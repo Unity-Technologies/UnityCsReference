@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
-using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEngine;
 
@@ -60,11 +59,13 @@ namespace Unity.ProjectAuditor.Editor
 
             public void DoGUI()
             {
-                String[] keys = m_Params.Keys.ToArray();
+                var diagnosticParams = ProjectAuditorSettings.instance.DiagnosticParams;
+                string[] keys = m_Params.Keys.ToArray();
+
                 float maxWidth = 0.0f;
                 foreach (var key in keys)
                 {
-                    float width = EditorStyles.label.CalcSize(new GUIContent(ProjectAuditorSettings.instance.DiagnosticParams.GetUserFriendlyName(key))).x;
+                    float width = EditorStyles.label.CalcSize(new GUIContent(diagnosticParams.GetParameterData(key).UserFriendlyName)).x;
                     if (width > maxWidth)
                         maxWidth = width;
                 }
@@ -77,9 +78,16 @@ namespace Unity.ProjectAuditor.Editor
                 EditorGUI.indentLevel++;
                 foreach (var key in keys)
                 {
+                    var paaramData = diagnosticParams.GetParameterData(key);
+
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent(ProjectAuditorSettings.instance.DiagnosticParams.GetUserFriendlyName(key), ProjectAuditorSettings.instance.DiagnosticParams.GetTooltip(key)), GUILayout.MinWidth(maxWidth + 40), GUILayout.ExpandWidth(false));
-                    m_Params[key] = EditorGUILayout.IntField(m_Params[key], GUILayout.ExpandWidth(true));
+                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent(paaramData.UserFriendlyName, paaramData.Tooltip), GUILayout.MinWidth(maxWidth + 40), GUILayout.ExpandWidth(false));
+
+                    EditorGUI.BeginChangeCheck();
+                    int newValue = EditorGUILayout.IntField(m_Params[key], GUILayout.ExpandWidth(true));
+                    if (EditorGUI.EndChangeCheck())
+                        m_Params[key] = Mathf.Clamp(newValue, paaramData.MinValue, paaramData.MaxValue);
+
                     EditorGUILayout.EndHorizontal();
                 }
                 EditorGUI.indentLevel--;
@@ -94,7 +102,7 @@ namespace Unity.ProjectAuditor.Editor
                     {
                         foreach (var key in keys)
                         {
-                            m_Params[key] = ProjectAuditorSettings.instance.DiagnosticParams.GetDefault(key);
+                            m_Params[key] = diagnosticParams.GetDefault(key);
                         }
                         // Remove focus from IntFields to make sure they update their displayed value
                         GUIUtility.keyboardControl = 0;
@@ -274,13 +282,33 @@ namespace Unity.ProjectAuditor.Editor
         /// Register a parameter by declaring its name and default value. Parameters are registered on the "default" platform, so are available for retrieval on every target platform.
         /// </summary>
         /// <param name="paramName">Parameter name.</param>
-        /// <param name="userFriendlyName">A user friendly name to show in project settings.</param>
-        /// <param name="tooltip">Text to show on a tooltip in project settings.</param>
-        /// <param name="defaultValue">The default value this parameter will have, unless it has already been register.</param>
+        /// <param name="userFriendlyName">A user friendly name to show in the Project Settings.</param>
+        /// <param name="tooltip">Text to show on a tooltip in the Project Settings.</param>
+        /// <param name="defaultValue">The default value this parameter will have, unless it has already been registered.</param>
         public void RegisterParameter(string paramName, string userFriendlyName, string tooltip, int defaultValue)
         {
-            m_UserFriendlyNames[paramName] = userFriendlyName;
-            m_Tooltips[paramName] = tooltip;
+            RegisterParameter(paramName, userFriendlyName, tooltip, defaultValue, 0, int.MaxValue);
+        }
+
+        /// <summary>
+        /// Register a parameter by declaring its name and default value. Parameters are registered on the "default" platform, so are available for retrieval on every target platform.
+        /// </summary>
+        /// <param name="paramName">Parameter name.</param>
+        /// <param name="userFriendlyName">A user friendly name to show in the Project Settings.</param>
+        /// <param name="tooltip">Text to show on a tooltip in the Project Settings.</param>
+        /// <param name="defaultValue">The default value this parameter will have, unless it has already been registered.</param>
+        /// <param name="minValue">The minimum valid value this parameter may have.</param>
+        /// <param name="maxValue">The maximum valid value this parameter may have.</param>
+        public void RegisterParameter(string paramName, string userFriendlyName, string tooltip, int defaultValue, int minValue, int maxValue)
+        {
+            m_ParameterData[paramName] = new ParameterData()
+            {
+                UserFriendlyName = userFriendlyName,
+                Tooltip = tooltip,
+                MinValue = minValue,
+                MaxValue = maxValue
+            };
+
             // Does this check mean that parameter default values can't be automatically changed if they change in future versions of the package?
             // Yep. Nothing is perfect. This is better than the risk of over-writing values that users may have tweaked.
             if (!m_ParamsStack[0].TryGetParameter(paramName, out var paramValue))
@@ -333,8 +361,9 @@ namespace Unity.ProjectAuditor.Editor
                 }
             }
 
-            m_UserFriendlyNames[paramName] = userFriendlyName;
-            m_Tooltips[paramName] = tooltip;
+            var ParameterData = m_ParameterData[paramName];
+            ParameterData.UserFriendlyName = userFriendlyName;
+            ParameterData.Tooltip = tooltip;
 
             var newParams = new PlatformParams(platform);
             newParams.SetParameter(paramName, value);
@@ -367,33 +396,28 @@ namespace Unity.ProjectAuditor.Editor
             EnsureDefaults();
         }
 
+        [Serializable]
+        internal class ParameterData
+        {
+            public string UserFriendlyName;
+            public string Tooltip;
+            public int MinValue;
+            public int MaxValue;
+        }
 
-        Dictionary<string, string> m_UserFriendlyNames = new Dictionary<string, string>();
-        Dictionary<string, string> m_Tooltips = new Dictionary<string, string>();
+        Dictionary<string, ParameterData> m_ParameterData = new Dictionary<string, ParameterData>();
+
         /// <summary>
         /// Get the user friendly name for this parameter.
         /// </summary>
         /// <param name="paramKey">Parameter key to look up.</param>
-        /// <returns>The user friendly name if the paramKey can be found, or the paramKey itself if not.</returns>
-        public string GetUserFriendlyName(string paramKey)
+        /// <returns>The extra parameter data if the paramKey can be found, otherwise, a default.</returns>
+        internal ParameterData GetParameterData(string paramKey)
         {
-            if (m_UserFriendlyNames.ContainsKey(paramKey))
-                return m_UserFriendlyNames[paramKey];
+            if (m_ParameterData.TryGetValue(paramKey, out var data))
+                return data;
             else
-                return paramKey;
-        }
-
-        /// <summary>
-        /// Get the tooltip for this parameter.
-        /// </summary>
-        /// <param name="paramKey">Parameter key to look up.</param>
-        /// <returns>The tooltip if the paramKey can be found, or null if not.</returns>
-        public string GetTooltip(string paramKey)
-        {
-            if (m_Tooltips.ContainsKey(paramKey))
-                return m_Tooltips[paramKey];
-            else
-                return null;
+                return new ParameterData() { UserFriendlyName = paramKey, Tooltip = null, MinValue = 0, MaxValue = int.MaxValue };
         }
 
         /// <summary>
@@ -459,9 +483,9 @@ namespace Unity.ProjectAuditor.Editor
 
             // Next, we need to remove any params that are no longer registered, but remain in serialized data.
             // Make use of the fact that tooltips aren't serialized to see what should stay.
-            if (m_Tooltips.Any())
+            if (m_ParameterData.Count > 0)
             {
-                var keysThatNeedRemoving = m_ParamsStack[0].GetKeys().Except(m_Tooltips.Keys).ToList();
+                var keysThatNeedRemoving = m_ParamsStack[0].GetKeys().Except(m_ParameterData.Keys).ToList();
                 var numKeysToRemove = keysThatNeedRemoving.Count;
 
                 if (numKeysToRemove > 0)

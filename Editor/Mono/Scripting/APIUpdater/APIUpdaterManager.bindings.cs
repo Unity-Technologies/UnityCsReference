@@ -688,15 +688,17 @@ namespace UnityEditorInternal.APIUpdating
             {
                 if (File.Exists(assemblyDependencyGraphFilePath))
                 {
-                    using (var stream = File.OpenRead(assemblyDependencyGraphFilePath))
-                    {
-                        return AssemblyDependencyGraph.LoadFrom(stream);
-                    }
+                    using var stream = File.OpenRead(assemblyDependencyGraphFilePath);
+                    return AssemblyDependencyGraph.LoadFrom(stream);
                 }
             }
             catch (IOException e)
             {
-                APIUpdaterLogger.WriteToFile(string.Format(L10n.Tr("Failed to read assembly dependency graph ({0}). Exception: {1}")), assemblyDependencyGraphFilePath, e);
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Exception: {e}"));
+            }
+            catch (InvalidDataException ide)
+            {
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Message: {ide.Message}"));
             }
 
             return new AssemblyDependencyGraph();

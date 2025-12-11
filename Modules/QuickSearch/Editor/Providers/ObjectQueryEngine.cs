@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace UnityEditor.Search.Providers
@@ -387,7 +388,8 @@ namespace UnityEditor.Search.Providers
                 var gocs = go.GetComponents<Component>();
                 if (gocs.Length > 1)
                 {
-                    refs.Add((ulong)(int)obj.GetEntityId());
+                    Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                    refs.Add(obj.GetEntityId().GetRawData());
                 }
                 for (int componentIndex = 1; componentIndex < gocs.Length; ++componentIndex)
                 {
@@ -448,10 +450,13 @@ namespace UnityEditor.Search.Providers
 
             if (!string.IsNullOrEmpty(refValue))
                 AddReference(p.objectReferenceValue, refValue, refs);
-            refs.Add((ulong)(int)p.objectReferenceValue.GetEntityId());
+
+            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+            refs.Add(p.objectReferenceValue.GetEntityId().GetRawData());
             if (p.objectReferenceValue is Component c)
             {
-                refs.Add((ulong)(int)c.gameObject.GetEntityId());
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                refs.Add(c.gameObject.GetEntityId().GetRawData());
                 var compRefValue = SearchUtils.GetTransformPath(c.gameObject.transform);
                 AddReference(c.gameObject, compRefValue, refs);
             }
@@ -472,7 +477,8 @@ namespace UnityEditor.Search.Providers
             if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
             {
                 var mainEntityId = AssetDatabase.GetMainAssetEntityId(refValue);
-                refs.Add((ulong)(int)mainEntityId);
+                Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+                refs.Add(mainEntityId.GetRawData());
             }
 
             refValue = refValue.ToLowerInvariant();
@@ -567,8 +573,8 @@ namespace UnityEditor.Search.Providers
         {
             if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
                 return ParseResult<ulong>.none;
-
-            return new ParseResult<ulong>(true, (ulong)(int)GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid));
+            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+            return new ParseResult<ulong>(true, GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(gid).GetRawData());
         }
 
         static ParseResult<ulong> AssetPathTypeParser(string filterValue)
@@ -576,7 +582,7 @@ namespace UnityEditor.Search.Providers
             if (!filterValue.StartsWith("/") && AssetDatabase.AssetPathExists(filterValue))
             {
                 var entityId = AssetDatabase.GetMainAssetEntityId(filterValue);
-                return new ParseResult<ulong>(true, (ulong)(int)entityId);
+                return new ParseResult<ulong>(true, entityId.GetRawData());
             }
             return ParseResult<ulong>.none;
         }
@@ -597,7 +603,7 @@ namespace UnityEditor.Search.Providers
         static ParseResult<EntityId> EntityIdTypeParser(string filterValue)
         {
             var potentialId = filterValue;
-            if (Utils.TryParse(potentialId, out int entityId))
+            if (Utils.TryParse(potentialId, out EntityId entityId))
                 return new ParseResult<EntityId>(true, entityId);
             return ParseResult<EntityId>.none;
         }

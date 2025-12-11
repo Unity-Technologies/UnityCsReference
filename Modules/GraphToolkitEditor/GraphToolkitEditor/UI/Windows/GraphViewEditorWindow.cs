@@ -219,7 +219,7 @@ Would you like to save these changes?
             }
         }
 
-        static int s_LastFocusedEditor = -1;
+        static EntityId s_LastFocusedEditor = EntityId.None;
 
         static int s_GraphViewNameCounter;
 
@@ -893,6 +893,9 @@ Would you like to save these changes?
                 rootVisualElement.panel.visualTree.RegisterCallback<ShortcutToggleBlackboardEvent>(OnShortcutToggleBlackboardEvent);
                 rootVisualElement.panel.visualTree.RegisterCallback<ShortcutToggleInspectorEvent>(OnShortcutToggleInspectorEvent);
                 rootVisualElement.panel.visualTree.RegisterCallback<ShortcutToggleMinimapEvent>(OnShortcutToggleMinimapEvent);
+
+                rootVisualElement.panel.visualTree.RegisterCallback<ShortcutFileSaveEvent>(OnShortcutFileSaveEvent);
+                rootVisualElement.panel.visualTree.RegisterCallback<ShortcutSaveAsEvent>(OnShortcutSaveAsEvent);
             }
             void OnDetach(DetachFromPanelEvent _)
             {
@@ -901,6 +904,9 @@ Would you like to save these changes?
                 rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutToggleBlackboardEvent>(OnShortcutToggleBlackboardEvent);
                 rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutToggleInspectorEvent>(OnShortcutToggleInspectorEvent);
                 rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutToggleMinimapEvent>(OnShortcutToggleMinimapEvent);
+
+                rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutFileSaveEvent>(OnShortcutFileSaveEvent);
+                rootVisualElement.panel.visualTree.UnregisterCallback<ShortcutSaveAsEvent>(OnShortcutSaveAsEvent);
             }
 
             // on a domain reload with the window opened, the panel is already attached to the rootVisualElement
@@ -1010,6 +1016,24 @@ Would you like to save these changes?
             // Use the minimap panel toggle
             if (TryGetOverlay(MiniMapOverlay.idValue, out var minimapOverlay))
                 minimapOverlay.displayed = !minimapOverlay.displayed;
+        }
+
+        protected void OnShortcutFileSaveEvent(ShortcutFileSaveEvent e)
+        {
+            if (!m_Focused)
+                return;
+
+            Save();
+            e.StopPropagation();
+        }
+
+        protected void OnShortcutSaveAsEvent(ShortcutSaveAsEvent evt)
+        {
+            if (!m_Focused)
+                return;
+
+            SaveAs();
+            evt.StopPropagation();
         }
 
         internal void SaveOverlayPositions()

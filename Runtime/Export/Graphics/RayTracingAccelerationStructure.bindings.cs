@@ -134,7 +134,10 @@ namespace UnityEngine.Rendering
     [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingInstanceMaterialCRC
     {
-        public int instanceID;
+        [Obsolete("instanceID is deprecated. Use entityId instead.")]
+        public int instanceID { get => entityId; set => entityId = value; }
+
+        [Serialization.FormerlySerializedAs(@"instanceID")] public EntityId entityId;
         public int crc;
     }
 

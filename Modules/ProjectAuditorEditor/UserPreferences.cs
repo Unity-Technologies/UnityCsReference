@@ -236,6 +236,8 @@ namespace Unity.ProjectAuditor.Editor
         {
             const float labelWidth = 300f;
 
+            using var _ = new SettingsWindow.GUIScope();
+
             EditorGUIUtility.labelWidth = labelWidth;
 
 

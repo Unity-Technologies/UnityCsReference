@@ -72,6 +72,9 @@ namespace UnityEngine
         public void GetPropertyBlock(MaterialPropertyBlock properties, int materialIndex) { Internal_GetPropertyBlockMaterialIndex(properties, materialIndex); }
 
         [FreeFunction(Name = "RendererScripting::GetClosestReflectionProbes", HasExplicitThis = true)] extern private void GetClosestReflectionProbesInternal(object result);
+
+        [NativeName("Renderer::GetMaskInteraction")] extern internal SpriteMaskInteraction Internal_GetSpriteMaskInteraction();
+        [NativeName("Renderer::SetMaskInteraction")] extern internal void Internal_SetSpriteMaskInteraction(SpriteMaskInteraction maskInteraction);
     }
 
     [NativeHeader("Runtime/Graphics/Renderer.h")]

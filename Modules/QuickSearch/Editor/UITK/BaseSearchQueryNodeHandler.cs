@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
-    abstract partial class BaseSearchQueryNodeHandler : ISearchQueryNodeHandler
+    abstract class BaseSearchQueryNodeHandler : ISearchQueryNodeHandler
     {
         protected static readonly string k_SaveMenuLabel = L10n.Tr("Save");
         protected static readonly string k_OpenInNewWindowMenuLabel = L10n.Tr("Open in new window");
@@ -19,46 +19,25 @@ namespace UnityEditor.Search
         protected static readonly string k_DeleteMenuLabel = L10n.Tr("Delete");
         protected static readonly string k_EditInInspectorMenuLabel = L10n.Tr("Edit in Inspector");
 
-        public static Texture2D FolderIcon = EditorGUIUtility.FindTexture("Folder Icon");
-
-        public abstract string Name { get; }
-
-        public abstract int HandlerId { get; }
-
         protected static SearchQueryNodeComparer s_SearchQueryNodeComparer = new();
-
         protected static TreeViewItemComparer s_TreeViewItemComparer = new();
-
         protected IEnumerable<ISearchQuery> m_Queries;
         protected Dictionary<int, ISearchQuery> m_QueryIdLookup = new();
-
         protected TreeViewItemData<SearchQueryNodeData>? m_RootItem;
+
+        public static Texture2D FolderIcon = EditorGUIUtility.FindTexture("Folder Icon");
+
+        #region ISearchQueryNodeHandler API
+        public abstract string Name { get; }
+        public abstract int HandlerId { get; }
         public TreeViewItemData<SearchQueryNodeData>? RootItem => m_RootItem;
 
         public abstract void BuildRoots(SearchContext context, string queryFilter = null);
-        protected void BuildRoots(SearchContext context, IEnumerable<ISearchQuery> queries, string queryFilter = null)
-        {
-            m_Queries = GetValidQueries(queries, context.GetProviders());
-            var filteredQueries = GetFilteredQueries(m_Queries, queryFilter);
-
-            List<TreeViewItemData<SearchQueryNodeData>> queryTreeItems = new();
-            foreach (var query in filteredQueries)
-            {
-                var treeId = query.GetTreeId();
-                var queryItem = SearchQueryPanelTreeView.CreateItemData(HandlerId, query.displayName, query.guid, treeId);
-                queryTreeItems.Add(queryItem);
-                m_QueryIdLookup[treeId] = query;
-            }
-
-            queryTreeItems.Sort(s_TreeViewItemComparer);
-            m_RootItem = queryTreeItems.Count > 0 ? SearchQueryPanelTreeView.CreateItemData(isRoot: true, HandlerId, Name, queryTreeItems) : null;
-        }
+        public event Action<ISearchQueryNodeHandler> queryListChanged;
 
         public abstract void Rename(SearchQueryTreeViewItem item, string newName);
-        public abstract void AddQuery(ISearchQuery query);
-        public abstract void UpdateQuery(ISearchQuery query);
-        public abstract void RemoveQuery(ISearchQuery query);
-        public abstract void RemoveQuery(int queryId);
+
+        public abstract void Dispose();
 
         public ISearchQuery GetQuery(int treeId)
         {
@@ -81,16 +60,22 @@ namespace UnityEditor.Search
         {
             return true;
         }
-
-        internal static IEnumerable<ISearchQuery> GetFilteredQueries(IEnumerable<ISearchQuery> queries, string queryFilter)
+        
+        internal IEnumerable<ISearchQuery> GetFilteredQueries(IEnumerable<ISearchQuery> queries, string queryFilter)
         {
             var filteredQueries = new List<ISearchQuery>();
             foreach (var q in queries)
             {
-                if (SearchQueryPanelTreeUtils.IsQueryNameMatchingFilter(queryFilter, q.displayName))
-                    filteredQueries.Add(q);
+                if (!IsQueryVisible(queryFilter, q))
+                    continue;
+                filteredQueries.Add(q);
             }
             return filteredQueries;
+        }
+
+        public virtual bool IsQueryVisible(string queryFilter, ISearchQuery query)
+        {
+            return SearchQueryPanelTreeUtils.IsQueryNameMatchingFilter(queryFilter, query.displayName);
         }
 
         public virtual void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item, DropdownMenu menu)
@@ -131,6 +116,11 @@ namespace UnityEditor.Search
             }
 
             var query = GetValidQuery(item);
+            BindItemToQuery(tree, item, query);
+        }
+        
+        public virtual void BindItemToQuery(TreeView tree, SearchQueryTreeViewItem item, ISearchQuery query)
+        {
             if (query != null)
             {
                 item.Bind(SearchQuery.GetIcon(query), query.displayName, query.itemCount);
@@ -148,6 +138,30 @@ namespace UnityEditor.Search
 
             var query = GetQuery(item.Data.TreeId);
             return query;
+        }
+        #endregion
+
+        protected void BuildRoots(SearchContext context, IEnumerable<ISearchQuery> queries, string queryFilter = null)
+        {
+            m_Queries = GetValidQueries(queries, context.GetProviders());
+            var filteredQueries = GetFilteredQueries(m_Queries, queryFilter);
+
+            List<TreeViewItemData<SearchQueryNodeData>> queryTreeItems = new();
+            foreach (var query in filteredQueries)
+            {
+                var treeId = query.GetTreeId();
+                var queryItem = SearchQueryPanelTreeView.CreateItemData(HandlerId, query.displayName, query.guid, treeId);
+                queryTreeItems.Add(queryItem);
+                m_QueryIdLookup[treeId] = query;
+            }
+
+            queryTreeItems.Sort(s_TreeViewItemComparer);
+            m_RootItem = queryTreeItems.Count > 0 ? SearchQueryPanelTreeView.CreateItemData(isRoot: true, HandlerId, Name, queryTreeItems) : null;
+        }
+
+        protected void NotifyQueryListChanged()
+        {
+            queryListChanged?.Invoke(this);
         }
 
         public static IEnumerable<ISearchQuery> GetValidQueries(IEnumerable<ISearchQuery> queries, IEnumerable<SearchProvider> providers)

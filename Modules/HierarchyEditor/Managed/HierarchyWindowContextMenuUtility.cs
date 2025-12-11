@@ -56,10 +56,10 @@ namespace Unity.Hierarchy.Editor
 
                 menu.AppendSeparator();
 
-                AppendAction(menu, k_SelectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), view.SelectAll);
-                AppendAction(menu, k_DeselectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), view.ClearSelection, hasSelection);
-                AppendAction(menu, k_InvertSelection, Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), view.InvertSelection, hasSelection);
-                AppendAction(menu, k_SelectChildren, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), view.SelectChildrenForSelectedNodes, view.DoesSelectedNodesHaveChildren());
+                AppendAction(menu, k_SelectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectAll}"), () => view.SelectAll(exposedOnly: true));
+                AppendAction(menu, k_DeselectAll, Menu.GetHotkey($"{k_EditFolderName}/{k_DeselectAll}"), view.DeselectAll, hasSelection);
+                AppendAction(menu, k_InvertSelection, Menu.GetHotkey($"{k_EditFolderName}/{k_InvertSelection}"), view.ToggleSelection, hasSelection);
+                AppendAction(menu, k_SelectChildren, Menu.GetHotkey($"{k_EditFolderName}/{k_SelectChildren}"), () => view.SelectChildrenAndExpandRecursive(), view.DoesSelectedNodesHaveChildren());
 
                 menu.AppendSeparator();
 

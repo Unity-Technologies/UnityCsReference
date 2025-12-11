@@ -8,8 +8,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine.AdaptivePerformance
 {
     /// <summary>
-    /// General settings container used to house the instance of the active settings, as well as the manager
-    /// instance used to load the loaders with.
+    /// A `ScriptableObject` that contains global settings applicable to all Adaptive Performance providers.
     /// </summary>
     public class AdaptivePerformanceGeneralSettings : ScriptableObject
     {

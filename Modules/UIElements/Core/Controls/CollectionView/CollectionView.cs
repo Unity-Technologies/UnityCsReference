@@ -365,10 +365,10 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
 
             this.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
-            RegisterCallback<PointerDownEvent>(OnPointerDown);
-            RegisterCallback<PointerUpEvent>(OnPointerUp);
-            RegisterCallback<PointerMoveEvent>(OnPointerMove);
-            RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            m_ScrollView.RegisterCallback<PointerDownEvent>(OnPointerDown);
+            m_ScrollView.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.RegisterCallback<PointerUpEvent>(OnPointerUp);
             // Triggered the scroller(s) appears/disappears
             m_HorizontalScroller.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollerGeometryChange);
             m_VerticalScroller.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollerGeometryChange);
@@ -380,10 +380,10 @@ namespace UnityEngine.UIElements.HierarchyV2
                 return;
 
             this.RemoveManipulator(m_NavigationManipulator);
-            UnregisterCallback<PointerDownEvent>(OnPointerDown);
-            UnregisterCallback<PointerUpEvent>(OnPointerUp);
-            UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-            UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+            m_ScrollView.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+            m_ScrollView.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+            m_ScrollView.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             m_HorizontalScroller.UnregisterCallback<GeometryChangedEvent>(OnHorizontalScrollerGeometryChange);
             m_VerticalScroller.UnregisterCallback<GeometryChangedEvent>(OnVerticalScrollerGeometryChange);
 
@@ -567,10 +567,17 @@ namespace UnityEngine.UIElements.HierarchyV2
         }
 
         /// <summary>
+        /// Event fired at the beginning of <see cref="RefreshItems"/> to allow users to make sure the underlying data is ready to be iterated on.
+        /// </summary>
+        public event Action BeforeRefreshingItems;
+
+        /// <summary>
         /// Rebinds all items currently visible.
         /// </summary>
         public void RefreshItems()
         {
+            BeforeRefreshingItems?.Invoke();
+
             // Clean up all items if itemsSource is null or empty, or makeCell is null
             if (itemsSource == null || layoutConfiguration?.makeCell == null || itemsSource.Count == 0)
             {
@@ -760,7 +767,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             if (layoutConfiguration is MultiColumnLayoutConfiguration columnLayout)
             {
-                maxWidth = columnLayout.header.worldBoundingBox.width - verticalScrollerWidth;
+                maxWidth = columnLayout.header.columnContainer.layout.size.x - verticalScrollerWidth;
             }
             else
             {
@@ -1040,12 +1047,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             }
             else
             {
-                Vector2 scrollOffset = new();
-                // Temporary fix: Adjust the scrollable height as multi-columns have headers.
-                if (layoutConfiguration is MultiColumnLayoutConfiguration multiColumnLayoutConfiguration)
-                    scrollOffset = new Vector2(0, multiColumnLayoutConfiguration.headerContainer.rect.height);
-
-                var clickedIndex = GetIndexFromPosition((Vector2)evt.localPosition - scrollOffset);
+                var clickedIndex = GetIndexFromPosition(evt.localPosition);
                 if (selectionType == SelectionType.Multiple
                     && evt.button == (int)MouseButton.LeftMouse
                     && !evt.shiftKey
@@ -1112,12 +1114,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
         void DoSelect(Vector2 localPosition, bool actionKey, bool shiftKey)
         {
-            Vector2 scrollOffset = new();
-            // Temporary fix: Adjust the scrollable height as multi-columns have headers.
-            if (layoutConfiguration is MultiColumnLayoutConfiguration multiColumnLayoutConfiguration)
-                scrollOffset = new Vector2(0, multiColumnLayoutConfiguration.headerContainer.rect.height);
-
-            var clickedIndex = GetIndexFromPosition(localPosition - scrollOffset);
+            var clickedIndex = GetIndexFromPosition(localPosition);
             if (clickedIndex > itemsSource.Count - 1)
                 return;
 

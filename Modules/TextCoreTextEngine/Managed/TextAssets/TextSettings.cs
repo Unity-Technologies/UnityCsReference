@@ -454,7 +454,19 @@ namespace UnityEngine.TextCore.Text
                     return;
                 }
                 globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+            });
 
+            emojiFallbackTextAssets?.ForEach(fallback =>
+            {
+                if (fallback is FontAsset fontAsset)
+                {
+                    if (fontAsset.atlasPopulationMode == AtlasPopulationMode.Static && fontAsset.characterTable.Count > 0)
+                    {
+                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                        return;
+                    }
+                    globalFontAssetFallbacks.Add(fontAsset.nativeFontAsset);
+                }
             });
 
             fallbackOSFontAssets?.ForEach(fallback =>
@@ -489,6 +501,10 @@ namespace UnityEngine.TextCore.Text
         }
 
         bool m_IsNativeTextSettingsDirty = true;
+        internal void SetNativeTextSettingsDirty()
+        {
+            m_IsNativeTextSettingsDirty = true;
+        }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void UpdateNativeTextSettings()

@@ -2155,18 +2155,7 @@ namespace UnityEditor
             return height;
         }
 
-        public void GetSelectedScenes(List<Scene> scenes)
-        {
-            foreach (var selectedID in treeViewState.selectedIDs)
-            {
-                var scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(selectedID));
-
-                if (scene.IsValid())
-                {
-                    scenes.Add(scene);
-                }
-            }
-        }
+        public void GetSelectedScenes(List<Scene> scenes) => IHierarchyWindow.GetSelectedScenes(scenes);
 
         static class TransformPath
         {

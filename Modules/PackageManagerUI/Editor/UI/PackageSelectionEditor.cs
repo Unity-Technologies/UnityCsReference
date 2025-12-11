@@ -107,7 +107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void GetPackageVersionFromSelection(string selectedPackageUniqueId)
         {
             m_Version = m_PackageDatabase.GetPackage(selectedPackageUniqueId)?.versions.primary;
-            m_PackageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version?.name, m_Version?.isInstalled ?? false, m_Version?.versionString);
+            m_PackageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version?.name, m_Version?.package.product?.id ?? 0, m_Version?.isInstalled ?? false, m_Version?.versionString);
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)

@@ -151,7 +151,10 @@ namespace UnityEditor
             string savedFilterName = "New Saved Search";
 
             m_IsCreatingSavedFilter = true;
+
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
             EntityId entityId = SavedSearchFilters.AddSavedFilter(savedFilterName, filter, GetListAreaGridSize());
+#pragma warning restore 618
             m_TreeView.Frame(entityId, true, false);
 
             // Start naming the asset
@@ -168,6 +171,7 @@ namespace UnityEditor
                 // Create saved filter
                 m_IsCreatingSavedFilter = false;
 
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
                 if (GetRenameOverlay().userAcceptedRename)
                 {
                     SavedSearchFilters.SetName(entityId,  GetRenameOverlay().name);
@@ -175,13 +179,16 @@ namespace UnityEditor
                 }
                 else
                     SavedSearchFilters.RemoveSavedFilter(entityId);
+#pragma warning restore 618
             }
             else if (type == ProjectBrowser.ItemType.SavedFilter)
             {
                 // Renamed saved filter
                 if (GetRenameOverlay().userAcceptedRename)
                 {
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
                     SavedSearchFilters.SetName(entityId,  GetRenameOverlay().name);
+#pragma warning restore 618
                 }
             }
             else
@@ -421,6 +428,7 @@ namespace UnityEditor
 
         protected override void GetParentsAbove(EntityId id, HashSet<EntityId> parentsAbove)
         {
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
             if (SavedSearchFilters.IsSavedFilter(id))
             {
                 parentsAbove.Add(SavedSearchFilters.GetRootInstanceID());
@@ -432,6 +440,7 @@ namespace UnityEditor
                 if (Directory.Exists(path))
                     parentsAbove.UnionWith(ProjectWindowUtil.GetAncestors(id));
             }
+#pragma warning restore 618
         }
 
         protected override void GetParentsBelow(EntityId id, HashSet<EntityId> parentsBelow)
@@ -483,13 +492,15 @@ namespace UnityEditor
 
         public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
+
             if (SavedSearchFilters.IsSavedFilter(draggedItem.id))
             {
                 // Root Filters Item is not allowed to be dragged
                 if (draggedItem.id == SavedSearchFilters.GetRootInstanceID())
                     return;
             }
-
+#pragma warning restore 618
             ProjectWindowUtil.StartDrag(draggedItem.id, draggedItemIDs);
         }
 
@@ -506,10 +517,12 @@ namespace UnityEditor
                 var entityId = (EntityId)savedFilterData;
                 if (targetItem is SearchFilterTreeItem && parentItem is SearchFilterTreeItem)// && targetItem.id != draggedInstanceID && parentItem.id != draggedInstanceID)
                 {
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
                     bool validMove = SavedSearchFilters.CanMoveSavedFilter(entityId, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
                     if (validMove && perform)
                     {
                         SavedSearchFilters.MoveSavedFilter(entityId, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
+#pragma warning restore 618
                         m_TreeView.SetSelection(new[] { entityId }, false);
                         m_TreeView.NotifyListenersThatSelectionChanged();
                     }
@@ -541,7 +554,9 @@ namespace UnityEditor
                                     bool addAsChild = targetItem == parentItem;
 
                                     float previewSize = ProjectBrowserColumnOneTreeViewGUI.GetListAreaGridSize();
+#pragma warning disable 618 // Todo (emilie.thaulow): update when #82459 lands
                                     EntityId entityId = SavedSearchFilters.AddSavedFilterAfterInstanceID(folderName, searchFilter, previewSize, targetItem.id, addAsChild);
+#pragma warning restore 618
                                     m_TreeView.SetSelection(new[] { entityId }, false);
                                     m_TreeView.NotifyListenersThatSelectionChanged();
                                 }

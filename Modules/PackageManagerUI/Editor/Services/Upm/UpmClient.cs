@@ -251,6 +251,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (addAndRemoveOperation.isSpecialInstall)
                 onSpecialInstallStart?.Invoke(addAndRemoveOperation.packageIdOrName);
 
+            addAndRemoveOperation.SetDryRunFunction(FindTrustIssuePackagesAndShowPopUp);
+
             addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
             addAndRemoveOperation.onOperationError += (_, error) =>
             {
@@ -273,6 +275,41 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onPackagesProgressChange?.Invoke(allIdOrNames.Select(idOrName => (idOrName, PackageProgress.None)));
             };
             addAndRemoveOperation.logErrorInConsole = true;
+        }
+
+       private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
+       {
+            var invalidSignaturePackages = new List<PackageInfo>();
+            var missingSignaturePackages = new List<PackageInfo>();
+            var limitedTrustPackages = new List<PackageInfo>();
+
+            foreach (var info in requestResult)
+            {
+                if (info == null)
+                    continue;
+
+                var trustAndSignature = UpmPackageVersion.GetTrustAndSignature(info, true);
+                var currentlyInstalled = m_UpmCache.GetInstalledPackageInfo(info.name);
+                if (currentlyInstalled?.packageId == info.packageId && UpmPackageVersion.GetTrustAndSignature(currentlyInstalled, true) == trustAndSignature)
+                    continue;
+                switch (trustAndSignature)
+                {
+                    case TrustAndSignature.UntrustedInvalidSignature:
+                        invalidSignaturePackages.Add(info);
+                        break;
+                    case TrustAndSignature.UntrustedNoSignature:
+                        missingSignaturePackages.Add(info);
+                        break;
+                    case TrustAndSignature.LimitedTrust:
+                        limitedTrustPackages.Add(info);
+                        break;
+                }
+            }
+
+            if (invalidSignaturePackages.Count == 0 && missingSignaturePackages.Count == 0 && limitedTrustPackages.Count == 0)
+                return true;
+
+            return ActiveTrustWindow.ShowActiveTrustWindow(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages) == ActiveTrustReturnValue.InstallAnyway;
         }
 
         private void OnProcessAddAndRemoveResult(Request<PackageCollection> request)
@@ -491,13 +528,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()
         {
-            if (operation != null)
-            {
-                operation.ResolveDependencies(m_ClientProxy, m_Application);
-                return operation;
-            }
-
-            operation = new T();
+            operation ??= new T();
             operation.ResolveDependencies(m_ClientProxy, m_Application);
             return operation;
         }

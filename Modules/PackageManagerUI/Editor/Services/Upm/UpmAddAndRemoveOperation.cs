@@ -18,21 +18,29 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             public override RefreshOptions refreshOptions => RefreshOptions.None;
 
-            public IEnumerable<PackageInfo> dryRunResult;
-            private string[] packageIdsToAdd { get; set; }
-            private string[] packagesNamesToRemove { get; set; }
+            [SerializeField]
+            protected string[] m_PackageIdsToAdd = new string[0];
+
+            [SerializeField]
+            protected string[] m_PackagesNamesToRemove = new string[0];
 
             protected override AddAndRemoveRequest CreateRequest()
             {
-                return m_ClientProxy.AddAndRemove(packageIdsToAdd, packagesNamesToRemove, true);
+                return m_ClientProxy.AddAndRemove(m_PackageIdsToAdd, m_PackagesNamesToRemove, true);
             }
 
             public void StartDryRun(string[] packageIdsToAdd, string[] packagesNamesToRemove)
             {
-                this.packageIdsToAdd = packageIdsToAdd;
-                this.packagesNamesToRemove = packagesNamesToRemove;
+                m_PackageIdsToAdd = packageIdsToAdd;
+                m_PackagesNamesToRemove = packagesNamesToRemove;
                 Start();
             }
+        }
+
+        private Func<PackageCollection, bool> m_ShouldProceedAfterDryRun;
+        public void SetDryRunFunction(Func<PackageCollection, bool> shouldProceedAfterDryRun)
+        {
+            m_ShouldProceedAfterDryRun = shouldProceedAfterDryRun;
         }
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
@@ -62,19 +70,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmAddAndRemoveDryRun m_DryRun = new ();
 
         [SerializeField]
-        public bool isDryRunInProgress = false;
-
-        [SerializeField]
         private string m_SpecialUniqueId = string.Empty;
         public bool isSpecialInstall => !string.IsNullOrEmpty(m_SpecialUniqueId);
 
         public override string packageIdOrName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageIdOrName : m_SpecialUniqueId;
         public override string packageName => string.IsNullOrEmpty(m_SpecialUniqueId) ? base.packageName : m_SpecialUniqueId;
-        public override bool isInProgress => (m_Request != null && m_Request.Id != 0 && !m_IsCompleted) || isDryRunInProgress;
+        public override bool isInProgress => base.isInProgress || m_DryRun?.isInProgress == true;
 
         public PackageInfo FindMainPackageInfoFromResult()
         {
-            var result = m_Request?.Result ?? m_DryRun?.dryRunResult;
+            var result = m_Request?.Result;
             if (result == null)
                 return null;
 
@@ -155,70 +160,33 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected new void Start()
         {
-            m_DryRun = new UpmAddAndRemoveDryRun();
+            m_DryRun ??= new UpmAddAndRemoveDryRun();
             m_DryRun.ResolveDependencies(m_ClientProxy, m_Application);
-            m_DryRun.onProcessResult += HandleDryRunProcessResult;
+            m_DryRun.onProcessResult += request =>
+            {
+                if (m_ShouldProceedAfterDryRun?.Invoke(request.Result) == true)
+                    base.Start();
+                else
+                {
+                    Cancel();
+                    // The Resolve() call below is used to clean up the project cache after an add/remove operation is cancelled by the user.
+                    // Since core unpacks the package in the project cache during the dry run, we need to resolve the cache to ensure consistency.
+                    m_ClientProxy.Resolve();
+                }
+            };
             m_DryRun.onOperationError += (_, error) =>
             {
-                isDryRunInProgress = false;
                 OnError(error);
-                Cancel();
-            };
-            m_DryRun.onOperationFinalized += _ =>
-            {
-                isDryRunInProgress = false;
+                OnFinalize();
             };
             m_DryRun.StartDryRun(m_PackageIdsToAdd, m_PackagesNamesToRemove);
-            isDryRunInProgress = true;
-        }
-
-        private void HandleDryRunProcessResult(AddAndRemoveRequest request)
-        {
-            isDryRunInProgress = false;
-            m_DryRun.dryRunResult = request?.Result;
-            var upmCache = ServicesContainer.instance.Resolve<IUpmCache>();
-            var newPackageInfos = upmCache.PreviewIncomingTrustIssuePackageInfos(request.Result);
-
-            var trustIssuePackages = new List<PackageInfo>();
-            foreach (var info in newPackageInfos)
-            {
-                if (info?.trustLevel == TrustLevel.FullTrust || info == null)
-                    continue;
-
-                // Some Unity packages with legacy signatures sometimes return both Error and Untrusted, in that case we don't want to show the dialog
-                if (info?.signature.status == SignatureStatus.Error && info?.trustLevel == TrustLevel.Untrusted)
-                    continue;
-
-                if (info?.trustLevel == TrustLevel.LimitedTrust
-                         || info?.trustLevel == TrustLevel.Untrusted
-                         || info?.signature.status == SignatureStatus.Invalid
-                         || info?.signature.status == SignatureStatus.Unsigned)
-                {
-                    trustIssuePackages.Add(info);
-                }
-            }
-
-            if (trustIssuePackages.Count == 0)
-            {
-                base.Start();
-                return;
-            }
-
-            var invalidSignaturePackages = trustIssuePackages.Where(p => p.signature.status == SignatureStatus.Invalid).ToArray();
-            var missingSignaturePackages = trustIssuePackages.Where(p => p.signature.status == SignatureStatus.Unsigned).ToArray();
-            var limitedTrustPackages = trustIssuePackages.Where(p => p.signature.status == SignatureStatus.Valid && p.trustLevel == TrustLevel.LimitedTrust).ToArray();
-            if (ActiveTrustWindow.ShowActiveTrustWindow(invalidSignaturePackages, missingSignaturePackages, limitedTrustPackages) == ActiveTrustReturnValue.InstallAnyway)
-                base.Start();
-            else
-                Cancel();
         }
 
         public new void RestoreProgress()
         {
-            if (isDryRunInProgress)
+            if (m_DryRun?.isInProgress == true)
             {
                 m_DryRun.Cancel();
-                isDryRunInProgress = false;
                 Start();
             }
             else

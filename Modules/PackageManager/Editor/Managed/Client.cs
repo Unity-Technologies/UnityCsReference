@@ -188,6 +188,7 @@ namespace UnityEditor.PackageManager
             return new ResetToEditorDefaultsRequest(operationId, status);
         }
 
+        [Obsolete("Pack(string, string) is deprecated and will be removed in a later version. Use Pack(string, string, string) instead.", false)]
         public static PackRequest Pack(string packageFolder, string targetFolder)
         {
             if (string.IsNullOrWhiteSpace(packageFolder))
@@ -199,7 +200,7 @@ namespace UnityEditor.PackageManager
             return SendPackRequest(packageFolder, targetFolder);
         }
 
-        internal static PackRequest Pack(string packageFolder, string targetFolder, string ownerOrgId)
+        public static PackRequest Pack(string packageFolder, string targetFolder, string ownerOrgId)
         {
             if (string.IsNullOrWhiteSpace(packageFolder))
                 throw new ArgumentException("Package folder cannot be null, empty or whitespace", nameof(packageFolder));

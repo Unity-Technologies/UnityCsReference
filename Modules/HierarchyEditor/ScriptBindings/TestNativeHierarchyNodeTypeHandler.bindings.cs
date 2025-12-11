@@ -16,7 +16,7 @@ namespace Unity.Hierarchy.Editor.Tests
     /// <remarks>
     /// This handler is part of Editor module, because we want to avoid it being included in runtime builds.
     /// </remarks>
-    [RequiredByNativeCode(GenerateProxy = true, Optional = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode(Optional = true), StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/HierarchyEditor/TestNativeHierarchyNodeTypeHandler.h")]
     [NativeHeader("Modules/HierarchyEditor/TestNativeHierarchyNodeTypeHandlerBindings.h")]
     internal sealed partial class TestNativeHierarchyNodeTypeHandler : HierarchyNodeTypeHandler

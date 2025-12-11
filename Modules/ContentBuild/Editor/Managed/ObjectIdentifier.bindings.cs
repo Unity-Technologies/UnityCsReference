@@ -129,6 +129,7 @@ namespace UnityEditor.Build.Content
             return GetObjectIdentifierFromObject(targetObject, out objectId);
         }
 
+        [Obsolete("TryGetObjectIdentifier(int, out ObjectIdentifier) is deprecated. Use TryGetObjectIdentifier(EntityId, out ObjectIdentifier) instead.")]
         public static bool TryGetObjectIdentifier(int instanceID, out ObjectIdentifier objectId) => GetObjectIdentifierFromEntityId((EntityId)instanceID, out objectId);
 
         public static bool TryGetObjectIdentifier(EntityId entityId, out ObjectIdentifier objectId)

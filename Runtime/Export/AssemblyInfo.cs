@@ -264,4 +264,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Modules.AssetBundle.AssetBundles.Tests.Runtime")]
 [assembly: InternalsVisibleTo("BuildPipelineTestUtilities")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.EditorUtils.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.SceneTemplateEditor.Tests.Editor")]
 

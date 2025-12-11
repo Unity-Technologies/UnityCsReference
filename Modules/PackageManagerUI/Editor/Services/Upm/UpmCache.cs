@@ -23,11 +23,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         void SetLoadAllVersions(string packageUniqueId, bool value);
         void AddExtraPackageInfo(PackageInfo packageInfo);
         PackageInfo GetExtraPackageInfo(string packageId);
-        IReadOnlyCollection<PackageInfo> PreviewIncomingTrustIssuePackageInfos(IEnumerable<PackageInfo> packageInfos);
         PackageInfo GetInstalledPackageInfo(string packageName);
         IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> SetInstalledPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp = 0, PackagesChangedSource changedSource = PackagesChangedSource.Other);
         PackageInfo GetSearchPackageInfo(string packageName);
-        PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null);
+        PackageInfo GetBestMatchPackageInfo(string packageName, long productId, bool isInstalled, string version = null);
         IUpmPackageData GetPackageData(string packageName);
         IUpmPackageData GetPackageData(long productId);
         void SetSearchPackageInfos(IEnumerable<PackageInfo> packageInfos, long timestamp);
@@ -91,40 +90,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SettingsProxy = RegisterDependency(settingsProxy);
         }
 
-        private bool HasDifferenceInTrustLevel(PackageInfo p1, PackageInfo p2)
-        {
-            var registryChanged = p1?.registry != null && p2?.registry != null
-                ? !p1.registry.IsEquivalentTo(p2.registry)
-                : p1?.registry != p2?.registry;
-            var complianceChanged = p1?.compliance != null && p2?.compliance != null
-                ? !p1.compliance.IsEquivalentTo(p2.compliance)
-                : p1?.compliance != p2?.compliance;
-
-            return p1?.packageId != p2?.packageId
-                   || p1?.source != p2?.source
-                   || p1?.signature?.status != p2?.signature?.status
-                   || p1?.trustLevel != p2?.trustLevel
-                   || registryChanged
-                   || complianceChanged;
-        }
-
-        public IReadOnlyCollection<PackageInfo> PreviewIncomingTrustIssuePackageInfos(IEnumerable<PackageInfo> packageInfos)
-        {
-            var newDict = packageInfos?.ToDictionary(p => p.name, p => p) ?? new Dictionary<string, PackageInfo>();
-            var result = new List<PackageInfo>();
-            foreach (var p in FindUpdatedPackageInfos(m_PackageNameToInstalledPackageInfosMap, newDict))
-            {
-                if (p.oldInfo == null)
-                {
-                    result.Add(p.newInfo);
-                    continue;
-                }
-                if (HasDifferenceInTrustLevel(p.oldInfo, p.newInfo))
-                    result.Add(p.newInfo);
-            }
-            return result;
-        }
-
         private static List<(PackageInfo oldInfo, PackageInfo newInfo)> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
         {
             var result = new List<(PackageInfo oldInfo, PackageInfo newInfo)>();
@@ -158,6 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.resolvedDependencies.Length != p2.resolvedDependencies.Length || !p1.resolvedDependencies.SequenceEqual(p2.resolvedDependencies) ||
                 p1.projectDependenciesEntry != p2.projectDependenciesEntry ||
                 p1.signature.status != p2.signature.status ||
+                p1.trustLevel != p2.trustLevel ||
                 p1.documentationUrl != p2.documentationUrl ||
                 p1.changelogUrl != p2.changelogUrl ||
                 p1.licensesUrl != p2.licensesUrl ||
@@ -292,12 +258,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public PackageInfo GetSearchPackageInfo(string packageName) => m_SearchPackageInfos.Get(packageName);
 
-        public PackageInfo GetBestMatchPackageInfo(string packageName, bool isInstalled, string version = null)
+        public PackageInfo GetBestMatchPackageInfo(string packageName, long productId, bool isInstalled, string version = null)
         {
-            if (string.IsNullOrEmpty(packageName))
+            if (string.IsNullOrEmpty(packageName) && productId == 0)
                 return null;
             if (isInstalled)
                 return GetInstalledPackageInfo(packageName);
+            if (productId > 0)
+                return GetProductSearchPackageInfo(productId);
             var searchInfo = GetSearchPackageInfo(packageName) ?? GetInstalledPackageInfo(packageName);
             if (string.IsNullOrEmpty(version) || searchInfo?.version == version)
                 return searchInfo;

@@ -1162,7 +1162,7 @@ namespace UnityEditor
                 List<EntityId> assetIds;
                 GetAssetIds(out assetIds);
                 var selectedIds = m_Owner.m_State.m_SelectedInstanceIDs;
-                int lastClickedAssetId = m_Owner.m_State.m_LastClickedEntityId;
+                EntityId lastClickedAssetId = m_Owner.m_State.m_LastClickedEntityId;
                 bool allowMultiselection = m_Owner.allowMultiSelect;
 
                 return InternalEditorUtility.HandleMultiSelectionWithCurrentModifiers(clickedAssetEntityId, assetIds, selectedIds, lastClickedAssetId, beginOfDrag, allowMultiselection, useShiftAsActionKey);

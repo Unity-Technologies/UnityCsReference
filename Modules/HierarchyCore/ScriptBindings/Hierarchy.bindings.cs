@@ -19,7 +19,7 @@ namespace Unity.Hierarchy
     [NativeHeader("Modules/HierarchyCore/Public/Hierarchy.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyBindings.h")]
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
-    [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
     public sealed class Hierarchy : IDisposable
     {
         internal static class BindingsMarshaller
@@ -99,13 +99,13 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="handler">The hierarchy node type handler that was created.</param>
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-        internal delegate void HandlerCreatedDelegate(HierarchyNodeTypeHandlerBase handler);
+        internal delegate void HandlerCreatedEventHandler(HierarchyNodeTypeHandlerBase handler);
 
         /// <summary>
         /// Event that is invoked when a new hierarchy node type handler is created.
         /// </summary>
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
-        internal event HandlerCreatedDelegate HandlerCreated;
+        internal event HandlerCreatedEventHandler HandlerCreated;
 
         /// <summary>
         /// Constructs a new <see cref="Hierarchy"/>.

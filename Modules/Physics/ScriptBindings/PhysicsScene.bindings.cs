@@ -49,7 +49,7 @@ namespace UnityEngine
             //!!!Keep this in sync with the declaration of kDefaultPhysicsSceneHandle inside PhysicsSceneHandle.h!!!
             var scene = new PhysicsScene();
             scene.m_index = 0;
-            scene.m_version = 1;
+            scene.m_version = 0;
 
             return scene;
         }
@@ -98,6 +98,15 @@ namespace UnityEngine
             }
 
             Physics.Simulate_Internal(this, step, stages, options);
+        }
+
+        [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
+        [NativeMethod("ReleasePhysicsSceneSimulationBuffers")]
+        private extern static void ReleasePhysicsSceneSimulationBuffers_Internal(PhysicsScene handle);
+
+        public void ReleaseLastSimulationStepBuffers()
+        {
+            ReleasePhysicsSceneSimulationBuffers_Internal(this);
         }
 
         public void InterpolateBodies()

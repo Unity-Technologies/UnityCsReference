@@ -203,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return PackageTag.None;
         }
 
-        private static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
+        public static TrustAndSignature GetTrustAndSignature(PackageInfo packageInfo, bool isInstalled)
         {
             if (!isInstalled)
                 return TrustAndSignature.NotApplicable;
@@ -221,6 +221,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                             return TrustAndSignature.FullTrustUnitySignature;
                         return TrustAndSignature.FullTrustValidSignature;
                     }
+
+                    if (packageInfo.source == PackageSource.BuiltIn)
+                        return TrustAndSignature.FullTrustBuiltInPackage;
+
                     return TrustAndSignature.FullTrustNoSignature;
                 }
                 case TrustLevel.LimitedTrust:

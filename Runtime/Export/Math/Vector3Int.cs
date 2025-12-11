@@ -106,7 +106,7 @@ namespace UnityEngine
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static float Distance(Vector3Int a, Vector3Int b) => Distance(in a, in b);
+        public static float Distance(Vector3Int a, Vector3Int b) => (a - b).magnitude;
 
         // Returns the distance between /a/ and /b/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -114,7 +114,7 @@ namespace UnityEngine
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Min(Vector3Int lhs, Vector3Int rhs) => Min(in lhs, in rhs);
+        public static Vector3Int Min(Vector3Int lhs, Vector3Int rhs) => new Vector3Int(Mathf.Min(lhs.m_X, rhs.m_X), Mathf.Min(lhs.m_Y, rhs.m_Y), Mathf.Min(lhs.m_Z, rhs.m_Z));
 
         // Returns a vector that is made from the smallest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -122,7 +122,7 @@ namespace UnityEngine
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Max(Vector3Int lhs, Vector3Int rhs) => Max(in lhs, in rhs);
+        public static Vector3Int Max(Vector3Int lhs, Vector3Int rhs) => new Vector3Int(Mathf.Max(lhs.m_X, rhs.m_X), Mathf.Max(lhs.m_Y, rhs.m_Y), Mathf.Max(lhs.m_Z, rhs.m_Z));
 
         // Returns a vector that is made from the largest components of two vectors.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -130,7 +130,7 @@ namespace UnityEngine
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int Scale(Vector3Int a, Vector3Int b) => Scale(in a, in b);
+        public static Vector3Int Scale(Vector3Int a, Vector3Int b) => new Vector3Int(a.m_X * b.m_X, a.m_Y * b.m_Y, a.m_Z * b.m_Z);
 
         // Multiplies two vectors component-wise.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
@@ -138,36 +138,42 @@ namespace UnityEngine
 
         // Multiplies every component of this vector by the same component of /scale/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Scale(Vector3Int scale) => Scale(in scale);
+        public void Scale(Vector3Int scale) { m_X *= scale.m_X; m_Y *= scale.m_Y; m_Z *= scale.m_Z; }
 
         // Multiplies every component of this vector by the same component of /scale/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Scale(in Vector3Int scale) { m_X *= scale.m_X; m_Y *= scale.m_Y; m_Z *= scale.m_Z; }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public void Clamp(Vector3Int min, Vector3Int max) => Clamp(in min, in max);
+        public void Clamp(Vector3Int min, Vector3Int max)
+        {
+            m_X = Mathf.Clamp(m_X, min.m_X, max.m_X);
+            m_Y = Mathf.Clamp(m_Y, min.m_Y, max.m_Y);
+            m_Z = Mathf.Clamp(m_Z, min.m_Z, max.m_Z);
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Clamp(in Vector3Int min, in Vector3Int max)
         {
-            m_X = Math.Max(min.m_X, m_X);
-            m_X = Math.Min(max.m_X, m_X);
-            m_Y = Math.Max(min.m_Y, m_Y);
-            m_Y = Math.Min(max.m_Y, m_Y);
-            m_Z = Math.Max(min.m_Z, m_Z);
-            m_Z = Math.Min(max.m_Z, m_Z);
+            m_X = Mathf.Clamp(m_X, min.m_X, max.m_X);
+            m_Y = Mathf.Clamp(m_Y, min.m_Y, max.m_Y);
+            m_Z = Mathf.Clamp(m_Z, min.m_Z, max.m_Z);
         }
 
         // Converts a Vector3Int to a [[Vector3]].
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static implicit operator Vector3(in Vector3Int v) => new Vector3(v.m_X, v.m_Y, v.m_Z);
+        public static implicit operator Vector3(Vector3Int v) => new Vector3() { x = v.m_X, y = v.m_Y, z = v.m_Z };
 
         // Converts a Vector3Int to a [[Vector2Int]].
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static explicit operator Vector2Int(in Vector3Int v) => new Vector2Int(v.m_X, v.m_Y);
+        public static explicit operator Vector2Int(Vector3Int v) => new Vector2Int(v.m_X, v.m_Y);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int FloorToInt(Vector3 v) => FloorToInt(in v);
+        public static Vector3Int FloorToInt(Vector3 v) => new Vector3Int(
+                Mathf.FloorToInt(v.x),
+                Mathf.FloorToInt(v.y),
+                Mathf.FloorToInt(v.z)
+            );
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3Int FloorToInt(in Vector3 v) => new Vector3Int(
@@ -177,7 +183,11 @@ namespace UnityEngine
             );
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int CeilToInt(Vector3 v) => CeilToInt(in v);
+        public static Vector3Int CeilToInt(Vector3 v) => new Vector3Int(
+                Mathf.CeilToInt(v.x),
+                Mathf.CeilToInt(v.y),
+                Mathf.CeilToInt(v.z)
+            );
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3Int CeilToInt(in Vector3 v) => new Vector3Int(
@@ -187,7 +197,11 @@ namespace UnityEngine
             );
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int RoundToInt(Vector3 v) => RoundToInt(in v);
+        public static Vector3Int RoundToInt(Vector3 v) => new Vector3Int(
+                Mathf.RoundToInt(v.x),
+                Mathf.RoundToInt(v.y),
+                Mathf.RoundToInt(v.z)
+            );
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Vector3Int RoundToInt(in Vector3 v) => new Vector3Int(
@@ -197,42 +211,46 @@ namespace UnityEngine
             );
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator+(in Vector3Int a, in Vector3Int b) => new Vector3Int(a.m_X + b.m_X, a.m_Y + b.m_Y, a.m_Z + b.m_Z);
+        public static Vector3Int operator+(Vector3Int a, Vector3Int b) => new Vector3Int(a.m_X + b.m_X, a.m_Y + b.m_Y, a.m_Z + b.m_Z);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator-(in Vector3Int a, in Vector3Int b) => new Vector3Int(a.m_X - b.m_X, a.m_Y - b.m_Y, a.m_Z - b.m_Z);
+        public static Vector3Int operator-(Vector3Int a, Vector3Int b) => new Vector3Int(a.m_X - b.m_X, a.m_Y - b.m_Y, a.m_Z - b.m_Z);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator*(in Vector3Int a, in Vector3Int b) => new Vector3Int(a.m_X * b.m_X, a.m_Y * b.m_Y, a.m_Z * b.m_Z);
+        public static Vector3Int operator*(Vector3Int a, Vector3Int b) => new Vector3Int(a.m_X * b.m_X, a.m_Y * b.m_Y, a.m_Z * b.m_Z);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator-(in Vector3Int a) => new Vector3Int(-a.m_X, -a.m_Y, -a.m_Z);
+        public static Vector3Int operator-(Vector3Int a) => new Vector3Int(-a.m_X, -a.m_Y, -a.m_Z);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator*(in Vector3Int a, int b) => new Vector3Int(a.m_X * b, a.m_Y * b, a.m_Z * b);
+        public static Vector3Int operator*(Vector3Int a, int b) => new Vector3Int(a.m_X * b, a.m_Y * b, a.m_Z * b);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator*(int a, in Vector3Int b) => new Vector3Int(a * b.m_X, a * b.m_Y, a * b.m_Z);
+        public static Vector3Int operator*(int a, Vector3Int b) => new Vector3Int(a * b.m_X, a * b.m_Y, a * b.m_Z);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Vector3Int operator/(in Vector3Int a, int b) => new Vector3Int(a.m_X / b, a.m_Y / b, a.m_Z / b);
+        public static Vector3Int operator/(Vector3Int a, int b) => new Vector3Int(a.m_X / b, a.m_Y / b, a.m_Z / b);
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator==(in Vector3Int lhs, in Vector3Int rhs) => lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y && lhs.m_Z == rhs.m_Z;
+        public static bool operator==(Vector3Int lhs, Vector3Int rhs) => lhs.m_X == rhs.m_X && lhs.m_Y == rhs.m_Y && lhs.m_Z == rhs.m_Z;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static bool operator!=(in Vector3Int lhs, in Vector3Int rhs) => !(lhs == rhs);
+        public static bool operator!=(Vector3Int lhs, Vector3Int rhs) => !(lhs == rhs);
+
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly bool Equals(object other)
         {
             if (other is Vector3Int v)
-                return Equals(v);
+                return Equals(in v);
             return false;
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public readonly bool Equals(Vector3Int other) => this == other;
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public readonly bool Equals(in Vector3Int other) => this == other;
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly int GetHashCode()

@@ -19,7 +19,7 @@ namespace UnityEditor.Overlays
         // Enough width to show all overlay actions. This is validated in a test for future proofing of style changes and additional actions.
         public const float minWidth = 56;
 
-        public const float maxPercentWidth = 50;
+        public const float maxPercentWidth = 40;
 
         [Serializable]
         public new class UxmlSerializedData : OverlayContainer.UxmlSerializedData

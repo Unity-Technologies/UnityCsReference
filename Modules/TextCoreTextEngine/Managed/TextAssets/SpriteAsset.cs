@@ -135,6 +135,12 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public void UpdateLookupTables()
         {
+            if (m_SpriteAtlasTexture == null)
+            {
+                Debug.LogWarning("Invalid Sprite Atlas Texture assigned to sprite asset [" + this.name + "]. Cannot update lookup tables.");
+                return;
+            }
+
             width = m_SpriteAtlasTexture.width;
             height = m_SpriteAtlasTexture.height;
             //Debug.Log("Updating [" + this.name + "] Lookup tables.");

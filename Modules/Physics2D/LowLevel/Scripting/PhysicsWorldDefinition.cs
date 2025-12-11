@@ -14,7 +14,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct PhysicsWorldDefinition
+    public partial struct PhysicsWorldDefinition
     {
         /// <summary>
         /// Create a default <see cref="LowLevelPhysics2D.PhysicsWorld"/> definition.
@@ -45,10 +45,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// See <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType"/> and <see cref="LowLevelPhysics2D.PhysicsWorld.Simulate(float)"/>.
         /// </summary>
         public PhysicsWorld.SimulationType simulateType { readonly get => m_SimulationType; set => m_SimulationType = value; }
-
-        /// <undoc/>
-        [Obsolete("PhysicsWorldDefinition.simulationMode has been deprecated. Please use PhysicsWorldDefinition.simulateType instead.", false)]
-        public SimulationMode2D simulationMode { readonly get => (SimulationMode2D)simulateType; set => simulateType = (PhysicsWorld.SimulationType)value; }
 
         /// <summary>
         /// Get/Set the simulation sub-steps to use during simulation.

@@ -16,10 +16,20 @@ namespace UnityEngine
 
         // Creates a ray starting at /origin/ along /direction/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public Ray2D(in Vector2 origin, in Vector2 direction)
+        public Ray2D(Vector2 origin, Vector2 direction)
         {
             m_Origin = origin; 
-            m_Direction = direction.normalized;
+            m_Direction = direction;
+            m_Direction.Normalize();
+        }
+
+        // Creates a ray starting at /origin/ along /direction/.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public Ray2D(in Vector2 origin, in Vector2 direction)
+        {
+            m_Origin = origin;
+            m_Direction = direction;
+            m_Direction.Normalize();
         }
 
         // The origin point of the ray.
@@ -33,12 +43,15 @@ namespace UnityEngine
         public Vector2 direction
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] readonly get => m_Direction;
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set => m_Direction = value.normalized;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Direction = value; m_Direction.Normalize(); }
         }
 
         // Returns a point at /distance/ units along the ray.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public readonly Vector2 GetPoint(float distance) => m_Origin + m_Direction * distance;
+        public readonly Vector2 GetPoint(float distance) => new Vector2() {
+            x = m_Origin.x + m_Direction.x * distance,
+            y = m_Origin.y + m_Direction.y * distance
+        };
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override readonly string ToString() => ToString(null, null);

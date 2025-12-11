@@ -15,6 +15,7 @@ namespace Unity.GraphToolkit.Editor
     {
         public new static readonly string ussClassName = "ge-blackboard-variable-property-view";
         public static readonly string inspectorPartName = "inspectorPart";
+        public static readonly string hiddenUssClassName = ussClassName.WithUssModifier(GraphElementHelper.hiddenUssModifier);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BlackboardVariablePropertyView"/> class.

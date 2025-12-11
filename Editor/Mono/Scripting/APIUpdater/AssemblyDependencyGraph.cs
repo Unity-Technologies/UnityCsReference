@@ -4,18 +4,23 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 
 namespace UnityEditor.Scripting.APIUpdater
 {
     [Serializable]
-    [DataContract]
-    internal class AssemblyDependencyGraph
+    class AssemblyDependencyGraph
     {
+        public static readonly byte[] Signature = new byte[] {0x55, 0x41, 0x44, 0x47}; // UADG
+
+        // Version 1 used binary serialization, version 2 uses DataContractSerializer and extends the format to include a signature and version.
+        public static readonly byte Version = 2;
+
         public AssemblyDependencyGraph()
         {
             m_Graph = new List<DependencyEntry>();
@@ -131,7 +136,7 @@ namespace UnityEditor.Scripting.APIUpdater
         public IEnumerable<string> SortedDependents()
         {
             if (m_Graph.Count == 0)
-                return new string[0];
+                return Array.Empty<string>();
 
             var array = m_Graph.ToArray();
 
@@ -140,26 +145,7 @@ namespace UnityEditor.Scripting.APIUpdater
 
             m_Processed.Clear();
 
-            bool exchangeElementsInLastPass;
-            var arrayLength = array.Length - 1;
-            do
-            {
-                exchangeElementsInLastPass = false;
-                for (int i = 0; i < arrayLength; i++)
-                {
-                    if (CompareElements(array[i], array[i + 1]) > 0)
-                    {
-                        var temp = array[i];
-                        array[i] = array[i + 1];
-                        array[i + 1] = temp;
-
-                        exchangeElementsInLastPass = true;
-                    }
-                }
-
-                arrayLength--;
-            }
-            while (exchangeElementsInLastPass);
+            Array.Sort(array, CompareElements);
 
             return array.Select(e => e.m_Name);
         }
@@ -244,21 +230,30 @@ namespace UnityEditor.Scripting.APIUpdater
 
         /// <summary>
         /// Serialized format:
-        ///
-        /// +---------------+------------------+-----------------------------+
-        /// |   Hash Length | Hash of Payload  | Payload (serialized data)   |
-        /// +---------------+------------------+-----------------------------+
+        /// +-----------+----------+-------------+------------------+---------------------------+
+        /// | Signature | Version | Hash Length | Hash of Payload  | Payload (serialized data) |
+        /// +-----------+---------+-------------+------------------+--------------------------+
+        /// Signature: 4 bytes = `UADG` (0x55, 0x41, 0x44, 0x47) (Unity Assembly Dependency Graph)
+        /// Version: 1 byte = 2 (current version)
+        /// Hash Length: 8 bytes = sizeof(long)
+        /// Hash: 32 bytes = SHA256 hash of the serialized data
+        /// Payload: Serialized data
         /// </summary>
         public void SaveTo(Stream stream)
         {
+            stream.Write(Signature, 0, Signature.Length);
+            stream.WriteByte(Version);
+
             var hasher = SHA256.Create();
-            var hash = hasher.ComputeHash(BitConverter.GetBytes(42));
+            long hashLength = hasher.HashSize / 8;
 
-            long hashLength = hash.Length;
-            var h = BitConverter.GetBytes(hashLength);
+            Span<byte> hashLengthSpan = stackalloc byte[sizeof(long)];
+            MemoryMarshal.TryWrite(hashLengthSpan, ref hashLength);
 
-            stream.Write(h, 0, h.Length); // Write the hash length
-            stream.Write(hash, 0, hash.Length); // and reserve space of the "payload" hash.
+            stream.Write(hashLengthSpan); // Write the hash length
+            var hashOffset = stream.Position;
+            stream.Position += hashLength; // and reserve space of the "payload" hash.
+            var payloadOffset = stream.Position;
 
             var serializer = new DataContractSerializer(
                 typeof(AssemblyDependencyGraph),
@@ -267,40 +262,61 @@ namespace UnityEditor.Scripting.APIUpdater
 
             var endOfStream = stream.Position;
 
-            stream.Position = hash.Length + h.Length; // Position the stream in the first byte of the serialized data (i.e, skip *hash length* and *hash*
-            hash = hasher.ComputeHash(stream);
-
-            stream.Position = h.Length; // position the stream past the *hash length* (i.e, *hash first byte*)
-            stream.Write(hash, 0, hash.Length);
+            stream.Position = payloadOffset; // Position the stream in the first byte of the serialized data (i.e, skip *hash length* and *hash*
+            var hash = hasher.ComputeHash(stream);
+            stream.Position = hashOffset; // position the stream past the *hash length* (i.e, *hash-first byte*)
+            stream.Write(hash);
 
             stream.Position = endOfStream;
         }
 
         public static AssemblyDependencyGraph LoadFrom(Stream stream)
         {
-            var hashLengthArray = new byte[sizeof(long)];
-            stream.Read(hashLengthArray, 0, hashLengthArray.Length);
+            ValidateMinimumLength(stream);
 
-            long hashLengthSize = BitConverter.ToInt64(hashLengthArray, 0);
-            var storedHash = new byte[hashLengthSize];
-            stream.Read(storedHash, 0, storedHash.Length);
+            Span<byte> signatureHashSpan = stackalloc byte[Signature.Length];
+            var read = stream.Read(signatureHashSpan);
+            Debug.Assert(read == signatureHashSpan.Length); // ValidateMinimumLength() guarantees there's enough data to fulfill the request.
+
+            if (!signatureHashSpan.SequenceEqual(Signature))
+            {
+                throw new InvalidDataException($"""
+                                                Invalid signature ({BitConverter.ToString(signatureHashSpan.ToArray())}) found (Expected: {BitConverter.ToString(Signature)}).{Environment.NewLine}
+                                                DependencyGraph file is either corrupted or from a previous version of Unity. If you observe inexplicable runtime/compilation errors, please delete `Library/` folder and reopen the project.
+                                                """);
+            }
+
+            int version = stream.ReadByte();
+            if (version != Version)
+            {
+                throw new InvalidDataException($"""
+                                                Unsupported DependencyGraph version ({version}).{Environment.NewLine}
+                                                DependencyGraph file is either corrupted or from a newer version of Unity.
+                                                """);
+            }
+
+            Span<byte> hashLengthSpan = stackalloc byte[sizeof(long)];
+            read = stream.Read(hashLengthSpan);
+            if(read != hashLengthSpan.Length)
+                throw new InvalidDataException($"Read only {read} out of {hashLengthSpan.Length} bytes for hash length.");
+
+            long hashLengthSize = BitConverter.ToInt64(hashLengthSpan);
+            Debug.Assert(hashLengthSize < 256);
+            Span<byte> storedHash = stackalloc byte[(int)hashLengthSize];
+            read = stream.Read(storedHash);
+            if (read != hashLengthSize)
+                throw new InvalidDataException($"Read only {read} out of {storedHash.Length} bytes for hash.");
 
             var startOfSerializedData = stream.Position;
             var hasher = SHA256.Create();
             var computedHash = hasher.ComputeHash(stream);
-
             if (storedHash.Length != computedHash.Length)
             {
                 return null;
             }
 
-            for (int i = 0; i < hashLengthSize; i++)
-            {
-                if (storedHash[i] != computedHash[i])
-                {
-                    return null;
-                }
-            }
+            if (!computedHash.AsSpan().SequenceEqual(storedHash))
+                return null;
 
             stream.Position = startOfSerializedData;
 
@@ -308,6 +324,19 @@ namespace UnityEditor.Scripting.APIUpdater
                 typeof(AssemblyDependencyGraph),
                 new DataContractSerializerSettings { PreserveObjectReferences = true });
             return (AssemblyDependencyGraph)serializer.ReadObject(stream);
+        }
+
+        static void ValidateMinimumLength(Stream stream)
+        {
+            var lengthOfDataExcludingPayload =
+                                Signature.Length +
+                                1 + // Version
+                                sizeof(long) + // hash length
+                                32; // actual SHA256 hash
+            if (stream.Length < lengthOfDataExcludingPayload + 1)
+            {
+                throw new InvalidDataException($"Dependency graph data seems to be corrupted. Expected {lengthOfDataExcludingPayload} bytes but got {stream.Length} bytes.");
+            }
         }
 
         internal DependencyEntry FindAssembly(string dependent)
@@ -350,7 +379,7 @@ namespace UnityEditor.Scripting.APIUpdater
 
             public override string ToString()
             {
-                return string.Format("{0} ({1})", m_Name, m_Dependencies.Count);
+                return $"{m_Name} ({m_Dependencies.Count})";
             }
         }
 

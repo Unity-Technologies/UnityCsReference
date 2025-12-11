@@ -276,7 +276,16 @@ namespace UnityEngine.UIElements.StyleSheets
             // All sub expressions are mandatory but they may match in any order.
             int matchCount = MatchMany(exp);
             int subExpCount = exp.subExpressions.Length;
-            return matchCount == subExpCount;
+
+            // If we matched everything, success
+            if (matchCount == subExpCount)
+                return true;
+
+            // If we have variables and no more values to consume, assume variables cover the rest
+            if (matchCount > 0 && !hasCurrent && matchedVariableCount > 0)
+                return true;
+
+            return false;
         }
 
         private unsafe int MatchMany(Expression exp)
@@ -322,10 +331,14 @@ namespace UnityEngine.UIElements.StyleSheets
             int* matchedExp = stackalloc int[subExpCount];
 
             int matchCount = 0;
-            int matchVariableCount = 0;
+            int startVariableCount = matchedVariableCount;
+            int currentMatchVariableCount = startVariableCount;
 
-            for (int i = 0; i < subExpCount && matchCount + matchVariableCount < subExpCount;)
+            for (int i = 0; hasCurrent;)
             {
+                int totalMatched = matchCount + (matchedVariableCount - startVariableCount);
+                if (totalMatched >= subExpCount) break;
+
                 int expressionIndex = matchOrder[i];
                 bool alreadyMatched = false;
                 for (int j = 0; j < matchCount; j++)
@@ -345,14 +358,14 @@ namespace UnityEngine.UIElements.StyleSheets
 
                 if (result)
                 {
-                    if (matchVariableCount == matchedVariableCount)
+                    if (currentMatchVariableCount == matchedVariableCount)
                     {
                         matchedExp[matchCount] = expressionIndex;
                         ++matchCount;
                     }
                     else
                     {
-                        matchVariableCount = matchedVariableCount;
+                        currentMatchVariableCount = matchedVariableCount;
                     }
 
                     // Reset the loop to try the next value on all unmatched sub expressions
@@ -361,10 +374,11 @@ namespace UnityEngine.UIElements.StyleSheets
                 else
                 {
                     ++i;
+                    if (i >= subExpCount) break;
                 }
             }
-
-            return matchCount + matchVariableCount;
+            int variablesMatchedInGroup = matchedVariableCount - startVariableCount;
+            return matchCount + variablesMatchedInGroup;
         }
 
         private bool MatchJuxtaposition(Expression exp)

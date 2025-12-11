@@ -262,7 +262,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Saves the asset to the file.
+        /// Saves the asset to the file if dirty.
         /// </summary>
         /// <seealso cref="OnBeforeSavingGraphObject"/>
         /// <seealso cref="OnGraphObjectSaved"/>
@@ -270,6 +270,10 @@ namespace Unity.GraphToolkit.Editor
         {
             if (!OnBeforeSavingGraphObject())
                 return;
+
+            if (Dirty == false)
+                return;
+
             // AssetFileGuid != default if and only if asset has an ADB asset file and is not just in memory.
             if (AssetFileGuid != default)
             {

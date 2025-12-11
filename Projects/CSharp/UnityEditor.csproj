@@ -3833,6 +3833,9 @@
     <Compile Include="..\..\Editor\Mono\SettingsWindow\OtherRenderingEditor.cs">
       <Link>Editor\Mono\SettingsWindow\OtherRenderingEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Settings\AssemblyInfo.cs">
+      <Link>Editor\Mono\Settings\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Settings\Providers\AssetSettingsProvider.cs">
       <Link>Editor\Mono\Settings\Providers\AssetSettingsProvider.cs</Link>
     </Compile>
@@ -14618,7 +14621,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_a429/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_4431/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/netstandard2.0/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

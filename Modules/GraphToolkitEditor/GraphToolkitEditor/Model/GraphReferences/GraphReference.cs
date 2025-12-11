@@ -23,8 +23,6 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal struct GraphReference : IEquatable<GraphReference>
     {
-        public const InstanceID InstanceIDNone = 0;
-
         [SerializeField]
         Hash128 m_AssetGuidAsHash;
 
@@ -32,7 +30,7 @@ namespace Unity.GraphToolkit.Editor
         Hash128 m_GraphModelGuid;
 
         [SerializeField]
-        InstanceID m_GraphObjectInstanceID;
+        EntityId m_GraphObjectEntityId;
 
         /// <summary>
         /// The GUID of the asset referenced by this <see cref="GraphReference"/>.
@@ -47,7 +45,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// The InstanceID of the GraphObject if AssetGuid == default.
         /// </summary>
-        public InstanceID graphObjectInstanceID => m_GraphObjectInstanceID;
+        public EntityId graphObjectInstanceID => m_GraphObjectEntityId;
 
         /// <summary>
         /// The path of the asset referenced by this <see cref="GraphReference"/>.
@@ -58,7 +56,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// True if the reference has an asset reference. False otherwise.
         /// </summary>
-        public bool HasAssetReference => AssetGuid != default || m_GraphObjectInstanceID != InstanceIDNone;
+        public bool HasAssetReference => AssetGuid != default || m_GraphObjectEntityId != EntityId.None;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphReference"/> struct from a <see cref="GraphModel"/>.
@@ -71,7 +69,7 @@ namespace Unity.GraphToolkit.Editor
         public GraphReference(GraphModel graphModel)
         {
             m_AssetGuidAsHash = default;
-            m_GraphObjectInstanceID = InstanceIDNone;
+            m_GraphObjectEntityId = EntityId.None;
             if (graphModel == null)
             {
                 m_GraphModelGuid = default;
@@ -82,7 +80,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_AssetGuidAsHash = Hash128Helpers.FromGUID(graphModel.GraphObject?.AssetFileGuid ?? default);
                 if (m_AssetGuidAsHash == default)
-                    m_GraphObjectInstanceID = graphModel.GraphObject.GetEntityId();
+                    m_GraphObjectEntityId = graphModel.GraphObject.GetEntityId();
             }
             m_GraphModelGuid = graphModel.Guid;
         }
@@ -93,12 +91,12 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="graphModelGuid">The GUID of the <see cref="GraphModel"/>. </param>
         /// <param name="assetGuid">The GUID of the <see cref="GraphObject"/> asset. </param>
-        /// <param name="graphObjectInstanceID">The instance id of the <see cref="GraphObject"/> used if the object is not stored in an asset.</param>
-        public GraphReference(Hash128 graphModelGuid, GUID assetGuid, InstanceID graphObjectInstanceID = InstanceIDNone)
+        /// <param name="graphObjectIEntityId">The instance id of the <see cref="GraphObject"/> used if the object is not stored in an asset.</param>
+        public GraphReference(Hash128 graphModelGuid, GUID assetGuid, EntityId graphObjectIEntityId)
         {
             m_GraphModelGuid = graphModelGuid;
             m_AssetGuidAsHash = Hash128Helpers.FromGUID(assetGuid);
-            m_GraphObjectInstanceID = m_AssetGuidAsHash == default ? graphObjectInstanceID : InstanceIDNone;
+            m_GraphObjectEntityId = m_AssetGuidAsHash == default ? graphObjectIEntityId : EntityId.None;
         }
 
         /// <summary>
@@ -111,9 +109,9 @@ namespace Unity.GraphToolkit.Editor
             var graphObject = graphReference.ResolveAsset();
 
             // Try to rebind the graph object using the instance ID if the object is not loaded.
-            if (graphObject == null && graphReference.m_GraphObjectInstanceID != InstanceIDNone)
+            if (graphObject == null && graphReference.m_GraphObjectEntityId != EntityId.None)
             {
-                graphObject = EditorUtility.EntityIdToObject(graphReference.m_GraphObjectInstanceID) as GraphObject;
+                graphObject = EditorUtility.EntityIdToObject(graphReference.m_GraphObjectEntityId) as GraphObject;
             }
             return graphObject?.GetGraphModelByGuid(graphReference.m_GraphModelGuid);
         }
@@ -150,9 +148,9 @@ namespace Unity.GraphToolkit.Editor
                     return asset;
                 }
             }
-            else if (m_GraphObjectInstanceID != InstanceIDNone)
+            else if (m_GraphObjectEntityId != EntityId.None)
             {
-                return EditorUtility.EntityIdToObject(m_GraphObjectInstanceID) as GraphObject;
+                return EditorUtility.EntityIdToObject(m_GraphObjectEntityId) as GraphObject;
             }
 
             return null;
@@ -171,17 +169,17 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public bool Equals(GraphReference other)
         {
-            if (m_GraphObjectInstanceID == default && other.m_GraphObjectInstanceID == default &&
+            if (m_GraphObjectEntityId == default && other.m_GraphObjectEntityId == default &&
                 AssetGuid == default && other.AssetGuid == default &&
                 m_GraphModelGuid == default && other.m_GraphModelGuid == default)
             {
                 return true;
             }
 
-            if (m_GraphObjectInstanceID != default && other.m_GraphObjectInstanceID != default)
+            if (m_GraphObjectEntityId != default && other.m_GraphObjectEntityId != default)
             {
                 return m_GraphModelGuid == other.m_GraphModelGuid &&
-                    m_GraphObjectInstanceID.Equals(other.m_GraphObjectInstanceID);
+                    m_GraphObjectEntityId.Equals(other.m_GraphObjectEntityId);
             }
 
             if (AssetGuid != default && other.AssetGuid != default)
@@ -204,7 +202,7 @@ namespace Unity.GraphToolkit.Editor
         public override int GetHashCode()
         {
             // ReSharper disable NonReadonlyMemberInGetHashCode
-            return HashCode.Combine(AssetGuid, m_GraphObjectInstanceID, m_GraphModelGuid);
+            return HashCode.Combine(AssetGuid, m_GraphObjectEntityId, m_GraphModelGuid);
             // ReSharper restore NonReadonlyMemberInGetHashCode
         }
 
@@ -233,7 +231,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"Type: {GetType()}\n\tInstanceID: {m_GraphObjectInstanceID}\n\tGraphModelGuid: {m_GraphModelGuid}\n\tPath: {AssetDatabase.GUIDToAssetPath(AssetGuid)}";
+            return $"Type: {GetType()}\n\tInstanceID: {m_GraphObjectEntityId}\n\tGraphModelGuid: {m_GraphModelGuid}\n\tPath: {AssetDatabase.GUIDToAssetPath(AssetGuid)}";
         }
     }
 }

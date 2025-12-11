@@ -241,7 +241,7 @@ namespace UnityEngine.UIElements
             {
                 case FilterFunctionType.Tint:
                     Color tint = func.parameters[0].colorValue;
-                    if (!context.writesGamma)
+                    if (!context.readsGamma)
                         tint = tint.linear;
 
                     tint.a = Mathf.Clamp01(tint.a);

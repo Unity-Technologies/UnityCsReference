@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
@@ -10,6 +9,14 @@ namespace UnityEditor.Search
 {
     class UserSearchQueryNodeHandler : BaseSearchQueryNodeHandler
     {
+        #region Overrides
+        public UserSearchQueryNodeHandler()
+        {
+            Dispatcher.On(SearchEvent.UserQueryAdded, HandleUserQueriesAdded, SearchEventManager.GetSearchEventHandlerHashCode(HandleUserQueriesAdded));
+            Dispatcher.On(SearchEvent.UserQueryChanged, HandleUserQueriesChanged, SearchEventManager.GetSearchEventHandlerHashCode(HandleUserQueriesChanged));
+            Dispatcher.On(SearchEvent.UserQueryRemoved, HandleUserQueriesRemoved, SearchEventManager.GetSearchEventHandlerHashCode(HandleUserQueriesRemoved));
+        }
+
         public override string Name => SearchQueryTreeConfig.UserQueriesLabel;
         public override int HandlerId => HashingUtils.GetHashCode(nameof(UserSearchQueryNodeHandler));
 
@@ -26,15 +33,83 @@ namespace UnityEditor.Search
             SearchQuery.SaveSearchQuery(userQuery);
         }
 
-        public override void AddQuery(ISearchQuery query)
+        public override void Dispose()
+        {
+            Dispatcher.Off(SearchEvent.UserQueryAdded, HandleUserQueriesAdded);
+            Dispatcher.Off(SearchEvent.UserQueryChanged, HandleUserQueriesChanged);
+            Dispatcher.Off(SearchEvent.UserQueryRemoved, HandleUserQueriesRemoved);
+        }
+
+        public override void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item, DropdownMenu menu)
+        {
+            var query = GetQuery(item.Data.TreeId);
+            if (query == null)
+                return;
+
+            base.PopulateContextualMenu(tree, context, item, menu);
+
+            menu.AppendAction(k_SetIconMenuLabel, (_) => SearchUtils.ShowIconPicker((newIcon, canceled) =>
+            {
+                if (canceled)
+                    return;
+                query.thumbnail = newIcon;
+                SearchQuery.SaveSearchQuery((SearchQuery)query);
+            }));
+            menu.AppendAction(k_SearchTemplateMenuLabel, (_) => ((SearchQuery)query).isSearchTemplate = !query.isSearchTemplate, action =>
+            {
+                return query.isSearchTemplate ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
+            });
+            menu.AppendAction(Utils.GetRevealInFinderLabel(), (_) => EditorUtility.RevealInFinder(query.filePath));
+            menu.AppendSeparator();
+            menu.AppendAction(k_DeleteMenuLabel, (_) =>
+            {
+                if (item.viewState.activeQuery == query)
+                    item.viewState.activeQuery = null;
+                SearchQuery.RemoveSearchQuery((SearchQuery)query);
+            });
+        }
+        #endregion
+
+        void HandleUserQueriesAdded(ISearchEvent evt)
+        {
+            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
+            if (queries.GetCount() <= 0)
+                return;
+
+            foreach (var query in queries)
+                AddQuery(query);
+            NotifyQueryListChanged();
+        }
+
+        void HandleUserQueriesChanged(ISearchEvent evt)
+        {
+            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
+            if (queries.GetCount() <= 0)
+                return;
+            foreach (var query in queries)
+                UpdateQuery(query);
+            NotifyQueryListChanged();
+        }
+
+        void HandleUserQueriesRemoved(ISearchEvent evt)
+        {
+            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
+            if (queries.GetCount() <= 0)
+                return;
+            foreach (var query in queries)
+            {
+                RemoveQuery(query);
+            }
+            NotifyQueryListChanged();
+        }
+
+        public void AddQuery(ISearchQuery query)
         {
             var treeId = HashingUtils.GetHashCode(query.guid);
-
             if (!m_QueryIdLookup.TryAdd(treeId, query))
                 return;
 
             var queryItem = SearchQueryPanelTreeView.CreateItemData(HandlerId, query.displayName, query.guid, treeId);
-
             if (m_RootItem == null)
                 m_RootItem = SearchQueryPanelTreeView.CreateItemData(isRoot: true, HandlerId, Name, new() { queryItem });
             else
@@ -45,13 +120,13 @@ namespace UnityEditor.Search
             }
         }
 
-        public override void UpdateQuery(ISearchQuery query)
+
+        private void UpdateQuery(ISearchQuery query)
         {
             // Determine if the query is already in the tree
             // If not add it, else update the existing query
 
             var treeId = HashingUtils.GetHashCode(query.guid);
-
             var rootChildren = m_RootItem?.children;
             TreeViewItemData<SearchQueryNodeData>? queryItem = null;
             if (rootChildren != null && rootChildren.GetCount() > 0)
@@ -83,48 +158,19 @@ namespace UnityEditor.Search
             }
         }
 
-        public override void RemoveQuery(ISearchQuery query)
+        private void RemoveQuery(ISearchQuery query)
         {
             var treeId = HashingUtils.GetHashCode(query.guid);
             RemoveQuery(treeId);
         }
 
-        public override void RemoveQuery(int queryId)
+        private void RemoveQuery(int queryId)
         {
             m_RootItem?.RemoveChild(queryId);
             m_QueryIdLookup.Remove(queryId, out _);
 
             if (m_RootItem?.children.GetCount() == 0)
                 m_RootItem = null;
-        }
-
-        public override void PopulateContextualMenu(TreeView tree, SearchContext context, SearchQueryTreeViewItem item, DropdownMenu menu)
-        {
-            var query = GetQuery(item.Data.TreeId);
-            if (query == null)
-                return;
-
-            base.PopulateContextualMenu(tree, context, item, menu);
-
-            menu.AppendAction(k_SetIconMenuLabel, (_) => SearchUtils.ShowIconPicker((newIcon, canceled) =>
-            {
-                if (canceled)
-                    return;
-                query.thumbnail = newIcon;
-                SearchQuery.SaveSearchQuery((SearchQuery)query);
-            }));
-            menu.AppendAction(k_SearchTemplateMenuLabel, (_) => ((SearchQuery)query).isSearchTemplate = !query.isSearchTemplate, action =>
-            {
-                return query.isSearchTemplate ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-            });
-            menu.AppendAction(Utils.GetRevealInFinderLabel(), (_) => EditorUtility.RevealInFinder(query.filePath));
-            menu.AppendSeparator();
-            menu.AppendAction(k_DeleteMenuLabel, (_) =>
-            {
-                if (item.viewState.activeQuery == query)
-                    item.viewState.activeQuery = null;
-                SearchQuery.RemoveSearchQuery((SearchQuery)query);
-            });
         }
     }
 }

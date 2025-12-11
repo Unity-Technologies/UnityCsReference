@@ -171,10 +171,15 @@ namespace UnityEngine
 
         public bool Equals(int other) => m_Data == (int)other;
 
+        [Obsolete("Use GetRawData() instead. This will be removed in a future version.", false)]
         public static implicit operator int(EntityId entityId) => entityId.m_Data;
+
+        [Obsolete("Use From(int) instead. This will be removed in a future version.", false)]
         public static implicit operator EntityId(int intValue) => new EntityId {m_Data = intValue};
 
+        [Obsolete("",false)]
         public static implicit operator EntityId(InstanceID entityId) => new EntityId {m_Data = entityId};
+        [Obsolete("",false)]
         public static implicit operator InstanceID(EntityId entityId) => (int)entityId;
 
         public override string ToString() => m_Data.ToString();
@@ -184,6 +189,9 @@ namespace UnityEngine
         internal static EntityId From(int input) => new EntityId {m_Data = input};
 
         internal static EntityId From(ulong input) => new EntityId { m_Data = (int)input };
+
+        [FreeFunction("AllocateNextLowestEntityId")]
+        internal static extern EntityId AllocateNextLowestEntityId();
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static EntityId Parse(string input)

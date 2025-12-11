@@ -431,7 +431,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.ValidateCommand:
-                    if (evt.commandName == EventCommandNames.Delete)
+                    if (evt.commandName is EventCommandNames.Delete or EventCommandNames.SoftDelete)
                         Event.current.Use();
                     break;
 
@@ -443,7 +443,7 @@ namespace UnityEditor
                         AssignBack();
                         HandleUtility.Repaint();
                     }
-                    else if (evt.commandName == EventCommandNames.Delete)
+                    else if (evt.commandName is EventCommandNames.Delete or EventCommandNames.SoftDelete)
                     {
                         if (swatches.Count > 1)
                         {

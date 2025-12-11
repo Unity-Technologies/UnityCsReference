@@ -31,7 +31,7 @@ namespace UnityEditor.Search
                 if (m_isReadOnlyQuery == null)
                 {
                     var path = AssetDatabase.GetAssetPath(this);
-                    m_isReadOnlyQuery = !string.IsNullOrEmpty(path) && path.StartsWith("Library/");
+                    m_isReadOnlyQuery = Utils.IsAssetReadOnly(path);
                 }
                 return m_isReadOnlyQuery.Value;
             }
@@ -104,7 +104,7 @@ namespace UnityEditor.Search
             get
             {
                 if (string.IsNullOrEmpty(m_FilePath))
-                    m_FilePath = AssetDatabase.GetAssetPath(this);
+                    return AssetDatabase.GetAssetPath(this);
                 return m_FilePath;
             }
 
@@ -153,14 +153,8 @@ namespace UnityEditor.Search
 
         public bool isSearchTemplate
         {
-            get
-            {
-                return m_IsSearchTemplate;
-            }
-            set
-            {
-                m_IsSearchTemplate = value;
-            }
+            get => m_IsSearchTemplate;
+            set => m_IsSearchTemplate = value;
         }
 
         // TODO LightExplorer: we currently only support deriving from SearchQueryAsset, but it would be great if we could support any ISearchQuery. But how to serialize it?
@@ -196,9 +190,6 @@ namespace UnityEditor.Search
                 if (hasMoved)
                 {
                     var movedQueries = moved.Select(AssetDatabase.LoadAssetAtPath<SearchQueryAsset>).Where(q => q).ToList();
-                    foreach (var query in movedQueries)
-                        query.filePath = AssetDatabase.GetAssetPath(query);
-
                     Dispatcher.Emit(SearchEvent.PostProcessProjectQueryMoved, new SearchEventPayload((ISearchElement)null, movedQueries));
                 }
 

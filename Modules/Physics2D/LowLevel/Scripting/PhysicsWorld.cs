@@ -19,7 +19,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// A world is completely isolated from all other worlds.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct PhysicsWorld : IEquatable<PhysicsWorld>
+    public readonly partial struct PhysicsWorld : IEquatable<PhysicsWorld>
     {
         #region Id
 
@@ -459,10 +459,6 @@ namespace UnityEngine.LowLevelPhysics2D
         /// See <see cref="LowLevelPhysics2D.PhysicsWorld.SimulationType"/>.
         /// </summary>
         public readonly SimulationType simulationType { get => PhysicsWorld_GetSimulationType(this); set => PhysicsWorld_SetSimulationType(this, value); }
-
-        /// <undoc/>
-        [Obsolete("PhysicsWorld.simulationMode has been deprecated. Please use PhysicsWorld.simulationType instead.", false)]
-        public readonly SimulationMode2D simulationMode { get => (SimulationMode2D)simulationType; set => simulationType = (PhysicsWorld.SimulationType)value; }
 
         /// <summary>
         /// Get/Set the simulation sub-steps to use during simulation.

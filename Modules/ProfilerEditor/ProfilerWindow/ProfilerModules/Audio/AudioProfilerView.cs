@@ -330,7 +330,7 @@ namespace UnityEditorInternal
                 if (audioNode != null)
                 {
                     EditorGUIUtility.PingObject(audioNode.info.info.assetEntityId);
-                    delayedPingObject = audioNode.info.info.objectInstanceId;
+                    delayedPingObject = audioNode.info.info.objectEntityId;
                     EditorApplication.CallDelayed(PingObjectDelayed, 1.0f);
                 }
             }

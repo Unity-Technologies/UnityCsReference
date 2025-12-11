@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Profiling;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
@@ -106,6 +107,20 @@ internal class ATGTextJobSystem
         m_AddDrawEntriesCallback = AddDrawEntries;
     }
 
+
+    static void PrepareTextElementForJobsOnMainThread(TextElement textElement)
+    {
+        textElement.uitkTextHandle.EnsureIsReadyForJobs();
+
+        // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
+        if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
+            textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+
+        // Pre-load font assets from font tags before jobs
+        if (textElement.enableRichText)
+            RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, TextUtilities.GetTextSettingsFrom(textElement));
+    }
+
     List<TextElement> m_PrepareShapingDataList = new();
 
     struct PrepareShapingJob : IJobFor
@@ -149,11 +164,7 @@ internal class ATGTextJobSystem
                 if (TextUtilities.IsAdvancedTextEnabledForElement(textElement) // Only advanced text elements need shaping
                     && TextElement.AnySizeAutoOrNone(textElement.computedStyle)) // Only elements without fixed width/height get measured
                 {
-                    textElement.uitkTextHandle.EnsureIsReadyForJobs();
-                    // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
-                    if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
-                        textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
-
+                    PrepareTextElementForJobsOnMainThread(textElement);
                     m_PrepareShapingDataList.Add(textElement);
                 }
             }
@@ -259,11 +270,7 @@ internal class ATGTextJobSystem
         {
             var textData = textJobDatas[i];
             var textElement = textData.textElement;
-            textElement.uitkTextHandle.EnsureIsReadyForJobs();
-
-            // Unity Font object needs a call to GetCachedFontAsset() which needs to be called from the main thread.
-            if (textElement.computedStyle.unityFontDefinition.fontAsset == null)
-                textElement.uitkTextHandle.ConvertUssToNativeTextGenerationSettings();
+            PrepareTextElementForJobsOnMainThread(textElement);
         }
 
         // This ensures Fallbacks are properly created.
@@ -440,7 +447,7 @@ internal class ATGTextJobSystem
 
                     bool hasGradientScale = !isSprite && fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
                     // TODO, update once ATG supports SpriteAssets
-                    bool isDynamicColor = /*meshInfo.applySDF &&*/ !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+                    bool isDynamicColor = /*meshInfo.applySDF &&*/ visualElement.PostProcessTextVertices == null && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 

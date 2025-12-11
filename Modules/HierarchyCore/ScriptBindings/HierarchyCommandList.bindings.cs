@@ -16,7 +16,7 @@ namespace Unity.Hierarchy
     /// </summary>
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyCommandList.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyCommandListBindings.h")]
-    [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode, StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyCommandList : IDisposable
     {
         internal static class BindingsMarshaller

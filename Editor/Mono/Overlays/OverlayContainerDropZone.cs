@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.ComponentModel;
 using UnityEngine.UIElements;
 
@@ -34,7 +33,7 @@ namespace UnityEditor.Overlays
         public override void Activate(Overlay draggedOverlay)
         {
             base.Activate(draggedOverlay);
-
+            style.display = ShouldEnable(draggedOverlay) ? DisplayStyle.Flex : DisplayStyle.None;
             SetHidden(false);
         }
 
@@ -42,16 +41,6 @@ namespace UnityEditor.Overlays
         {
             return !m_Container.GetContainerSection(GetSection()).HasVisibleOverlays()
                 && !m_Container.ContainsOverlay(draggedOverlay, GetSection());
-        }
-
-        public override void UpdateHover(OverlayDropZoneBase hovered)
-        {
-            base.UpdateHover(hovered);
-
-            // Hide this dropzone if the hovered dropzone should hide this one
-            var shouldHide = Array.IndexOf(m_HideIfHovered, hovered) >= 0 || hovered is OverlayDropZone && HasSameTargetContainer(hovered);
-            pickingMode = shouldHide ? PickingMode.Ignore : PickingMode.Position;
-            SetHidden(shouldHide);
         }
 
         protected virtual OverlayContainerSection GetSection()

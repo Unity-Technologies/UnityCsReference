@@ -430,16 +430,19 @@ namespace UnityEngine.UIElements.UIR
                         s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
                         m_Block.SetVectorArray("unity_uie_UVRect", s_UVRects);
 
+
+                        bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma;
+
                         if (op.FilterPass.applySettingsCallback != null)
                             op.FilterPass.applySettingsCallback(m_Block, new FilterPassContext
                             {
                                 filterFunction = op.filter,
                                 filterPassIndex = op.FilterPassIndex,
-                                readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma,
+                                readsGamma = readsGamma,
                                 writesGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma || forceGamma && isLastFilterPass,
                             });
                         else
-                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement);
+                            ApplyEffectParameters(op.FilterPass, op.filter, op.visualElement, readsGamma);
 
                         Utility.SetPropertyBlock(m_Block);
 
@@ -492,7 +495,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source)
+        void ApplyEffectParameters(PostProcessingPass effect, FilterFunction filter, VisualElement source, bool readsGamma)
         {
             if (effect.parameterBindings == null)
                 return;
@@ -508,7 +511,7 @@ namespace UnityEngine.UIElements.UIR
                 if (p.type == FilterParameterType.Float)
                     m_Block.SetFloat(binding.name, p.floatValue);
                 else if (p.type == FilterParameterType.Color)
-                    m_Block.SetColor(binding.name, p.colorValue);
+                    m_Block.SetVector(binding.name, readsGamma ? p.colorValue : p.colorValue.linear );
             }
         }
 

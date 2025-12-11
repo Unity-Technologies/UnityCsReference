@@ -102,7 +102,7 @@ namespace UnityEditor
             for (int i = 0; i < memoryObjectList.Length; i++)
             {
                 ObjectInfo info = new ObjectInfo();
-                info.entityId = memoryObjectList[i].instanceId;
+                info.entityId = memoryObjectList[i].entityId;
                 info.memorySize = memoryObjectList[i].memorySize;
                 info.reason = memoryObjectList[i].reason;
                 info.name = memoryObjectList[i].name;

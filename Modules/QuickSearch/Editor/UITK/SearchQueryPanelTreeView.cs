@@ -228,6 +228,8 @@ namespace UnityEditor.Search
                 if (handler == null)
                     continue;
                 Handlers.Add(handler.Name, handler);
+                handler.queryListChanged -= OnQueryListChanged;
+                handler.queryListChanged += OnQueryListChanged;
             }
 
             RebuildTreeViewFromAllSources();
@@ -270,17 +272,6 @@ namespace UnityEditor.Search
             RegisterCallback<KeyDownEvent>(HandleKeyDown);
 
             OnAll(SearchEvent.ActiveQueryChanged, HandleActiveQueryChanged);
-
-            OnAll(SearchEvent.UserQueryAdded, HandleUserQueriesAdded);
-            OnAll(SearchEvent.UserQueryChanged, HandleUserQueriesChanged);
-            OnAll(SearchEvent.UserQueryRemoved, HandleUserQueriesRemoved);
-
-            OnAll(SearchEvent.ProjectQueryAdded, HandleProjectQueriesAdded);
-            OnAll(SearchEvent.ProjectQueryChanged, HandleProjectQueriesChanged);
-            OnAll(SearchEvent.ProjectQueryRemoved, HandleProjectQueriesRemoved);
-            OnAll(SearchEvent.PostProcessProjectQueryAdded, HandleProjectQueriesAdded);
-            OnAll(SearchEvent.PostProcessProjectQueryMoved, HandleProjectQueriesMoved);
-            OnAll(SearchEvent.PostProcessProjectQueryRemoved, HandlePostProcessProjectQueriesRemoved);
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -288,19 +279,14 @@ namespace UnityEditor.Search
             UnregisterCallback<KeyDownEvent>(HandleKeyDown);
 
             Off(SearchEvent.ActiveQueryChanged, HandleActiveQueryChanged);
-
-            Off(SearchEvent.UserQueryAdded, HandleUserQueriesAdded);
-            Off(SearchEvent.UserQueryChanged, HandleUserQueriesChanged);
-            Off(SearchEvent.UserQueryRemoved, HandleUserQueriesRemoved);
-
-            Off(SearchEvent.ProjectQueryAdded, HandleProjectQueriesAdded);
-            Off(SearchEvent.ProjectQueryChanged, HandleProjectQueriesChanged);
-            Off(SearchEvent.ProjectQueryRemoved, HandleProjectQueriesRemoved);
-            Off(SearchEvent.PostProcessProjectQueryAdded, HandleProjectQueriesAdded);
-            Off(SearchEvent.PostProcessProjectQueryMoved, HandleProjectQueriesMoved);
-            Off(SearchEvent.PostProcessProjectQueryRemoved, HandlePostProcessProjectQueriesRemoved);
-
             base.OnDetachFromPanel(evt);
+
+            foreach (var handler in Handlers.Values)
+            {
+                handler.queryListChanged -= OnQueryListChanged;
+                handler.Dispose();
+            }
+            Handlers.Clear();
         }
 
         TreeView CreateSearchQueryTreeView()
@@ -499,6 +485,11 @@ namespace UnityEditor.Search
             RefreshTreeView();
         }
 
+        void OnQueryListChanged(ISearchQueryNodeHandler handler)
+        {
+            RefreshTreeView();
+        }
+
         void RefreshTreeView()
         {
             m_TreeView.SetRootItems(TreeRoots);
@@ -573,146 +564,6 @@ namespace UnityEditor.Search
             {
                 var query = evt.GetArgument<ISearchQuery>(0);
                 SetActiveQuery(query);
-            }
-        }
-
-        void HandleUserQueriesAdded(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.UserQueriesLabel, out var userQueryHandler))
-                return;
-
-            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() > 0)
-            {
-                foreach (var query in queries)
-                    userQueryHandler.AddQuery(query);
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandleUserQueriesChanged(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.UserQueriesLabel, out var userQueryHandler))
-                return;
-
-            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() > 0)
-            {
-                foreach (var query in queries)
-                    userQueryHandler.UpdateQuery(query);
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandleUserQueriesRemoved(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.UserQueriesLabel, out var userQueryHandler))
-                return;
-
-            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() > 0)
-            {
-                foreach (var query in queries)
-                {
-                    userQueryHandler.RemoveQuery(query);
-                    m_TreeView.TryRemoveItem(query.GetTreeId(), false);
-                }
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandleProjectQueriesAdded(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.ProjectQueriesLabel, out var projectQueryHandler))
-                return;
-
-            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() > 0)
-            {
-                foreach (var query in queries)
-                    projectQueryHandler.AddQuery(query);
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandleProjectQueriesChanged(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.ProjectQueriesLabel, out var projectQueryHandler))
-                return;
-
-            var queries = SearchQueryPanelTreeUtils.ParseQueries(evt);
-            if (queries.GetCount() > 0)
-            {
-                foreach (var query in queries)
-                    projectQueryHandler.UpdateQuery(query);
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandleProjectQueriesMoved(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.ProjectQueriesLabel, out var projectQueryHandler))
-                return;
-
-            var queryPaths = SearchQueryPanelTreeUtils.ParseQueryPaths(evt);
-            if (queryPaths.GetCount() > 0)
-            {
-                var queries = new List<SearchQueryAsset>();
-                foreach (var queryPath in queryPaths)
-                {
-                    var query = AssetDatabase.LoadAssetAtPath<SearchQueryAsset>(queryPath);
-                    if (query != null)
-                    {
-                        queries.Add(query);
-                    }
-                }
-
-                foreach (var query in queries)
-                    projectQueryHandler.UpdateQuery(query);
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandleProjectQueriesRemoved(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.ProjectQueriesLabel, out var projectQueryHandler))
-                return;
-
-            var queryIds = SearchQueryPanelTreeUtils.ParseQueryIds(evt);
-            if (queryIds.GetCount() > 0)
-            {
-                foreach (var queryId in queryIds)
-                {
-                    var queryIdHash = HashingUtils.GetHashCode(queryId);
-                    projectQueryHandler.RemoveQuery(queryIdHash);
-                }
-
-                RefreshTreeView();
-            }
-        }
-
-        void HandlePostProcessProjectQueriesRemoved(ISearchEvent evt)
-        {
-            if (!Handlers.TryGetValue(SearchQueryTreeConfig.ProjectQueriesLabel, out var queryHandler))
-                return;
-
-            var queryPaths = SearchQueryPanelTreeUtils.ParseQueryPaths(evt);
-            if (queryPaths.GetCount() > 0 && queryHandler is ProjectSearchQueryTreeNodeHandler projectQueryHandler)
-            {
-                foreach (var queryPath in queryPaths)
-                {
-                    var removedId = projectQueryHandler.RemoveQuery(queryPath);
-                    if (removedId != null && viewState.activeQuery != null && viewState.activeQuery.guid == removedId)
-                        viewState.activeQuery = null;
-                }
-
-                RefreshTreeView();
             }
         }
     }

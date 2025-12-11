@@ -14,7 +14,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct PhysicsBodyDefinition
+    public partial struct PhysicsBodyDefinition
     {
         /// <summary>
         /// Create a default <see cref="LowLevelPhysics2D.PhysicsBody"/> definition.
@@ -37,18 +37,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public PhysicsBody.BodyType type { readonly get => m_BodyType; set => m_BodyType = value; }
 
-        /// <undoc/>
-        [Obsolete("PhysicsBodyDefinition.bodyType has been deprecated. Please use PhysicsBodyDefinition.type instead.", false)]
-        public RigidbodyType2D bodyType { readonly get => (RigidbodyType2D)m_BodyType; set => m_BodyType = (PhysicsBody.BodyType)value; }
-
         /// <summary>
         /// The degrees of freedom constraints (locks) for the body of Linear X, Linear Y and Rotation Z.
         /// </summary>
         public PhysicsBody.BodyConstraints constraints { readonly get => m_BodyConstraints; set => m_BodyConstraints = value; }
-
-        /// <undoc/>
-        [Obsolete("PhysicsBodyDefinition.bodyConstraints has been deprecated. Please use PhysicsBodyDefinition.constraints instead.", false)]
-        public RigidbodyConstraints2D bodyConstraints { readonly get => (RigidbodyConstraints2D)m_BodyConstraints; set => m_BodyConstraints = (PhysicsBody.BodyConstraints)value; }
 
         /// <summary>
         /// The method used to Write the body pose to the Transform.

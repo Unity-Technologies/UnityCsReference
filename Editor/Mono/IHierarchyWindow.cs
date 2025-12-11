@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -16,8 +17,6 @@ namespace UnityEditor
     internal interface IHierarchyWindow
     {
         IHierarchyWindow LastInteractedHierarchyWindow { get; }
-
-        void GetSelectedScenes(List<Scene> selectedScenes);
 
         void SetExpanded(EntityId entityId, bool expanded);
 
@@ -52,6 +51,24 @@ namespace UnityEditor
             }
             else
                 windows.AddRange(SceneHierarchyWindow.GetAllSceneHierarchyWindows());
+        }
+
+        static void GetSelectedScenes(List<Scene> scenes)
+        {
+            scenes.Clear();
+            var selectedEntityIds = Selection.GetEntityIdsUnsafe();
+            foreach (ref readonly var entityId in selectedEntityIds)
+            {
+                var sceneHandle = SceneHandle.From(entityId);
+                if (sceneHandle == SceneHandle.None)
+                    continue;
+
+                var scene = EditorSceneManager.GetSceneByHandle(sceneHandle);
+                if (!scene.IsValid())
+                    continue;
+
+                scenes.Add(scene);
+            }
         }
     }
 }

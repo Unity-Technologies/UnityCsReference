@@ -4942,7 +4942,7 @@ namespace Unity.GraphToolkit.Editor
         {
             if (graphModel.GraphObject == GraphObject && allowLocalReference)
             {
-                return new GraphReference(graphModel.Guid, default, GraphReference.InstanceIDNone);
+                return new GraphReference(graphModel.Guid, default, EntityId.None);
             }
 
             return new GraphReference(graphModel);

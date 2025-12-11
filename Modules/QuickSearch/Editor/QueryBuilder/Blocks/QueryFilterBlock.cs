@@ -632,7 +632,7 @@ namespace UnityEditor.Search
             }
             else if (value is UnityEngine.Object obj)
             {
-                this.value = SearchUtils.GetObjectPath(obj, true) ?? string.Empty;
+                this.value = SearchUtils.GetObjectPath(obj, subAssetUseGlobalObjectId: true) ?? string.Empty;
             }
             else if (value is Enum e)
             {

@@ -20,8 +20,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (isEnabled)
                     return L10n.Tr("Right click to see viewing options: in browser or local.");
-                else if (version?.isInstalled != true && version?.package.product != null)
-                    return L10n.Tr("Install to view changelog");
                 else
                     return L10n.Tr("Changelog unavailable");
             }

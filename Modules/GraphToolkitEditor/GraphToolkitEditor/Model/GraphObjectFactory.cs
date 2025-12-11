@@ -111,9 +111,9 @@ namespace Unity.GraphToolkit.Editor
 
         static readonly string k_NativeAssetExtension = "asset";
         [OnOpenAsset(1000)]
-        public static bool OpenGraphAsset(InstanceID instanceId, int line)
+        public static bool OpenGraphAsset(EntityId entityId, int line)
         {
-            var graphObject = TryLoadGraphObjectFromInstanceId(instanceId);
+            var graphObject = TryLoadGraphObjectFromInstanceId(entityId);
             if (graphObject != null)
             {
                 var windowType = GetWindowTypeForGraphObject(graphObject.GetType());
@@ -239,9 +239,9 @@ namespace Unity.GraphToolkit.Editor
         static Dictionary<Type, Type> s_WindowTypeForGraphObjectType = new();
         static Dictionary<GUID, GraphObject> s_LoadedGraphObjects;
 
-        static string InstanceIdToFileExtension(InstanceID instanceId)
+        static string InstanceIdToFileExtension(EntityId entityId)
         {
-            var filePath = AssetDatabase.GetAssetPath((EntityId)instanceId);
+            var filePath = AssetDatabase.GetAssetPath(entityId);
             if (!string.IsNullOrEmpty(filePath))
             {
                 var extension = Path.GetExtension(filePath);
@@ -252,19 +252,19 @@ namespace Unity.GraphToolkit.Editor
             return null;
         }
 
-        static GraphObject TryLoadGraphObjectFromInstanceId(InstanceID instanceId)
+        static GraphObject TryLoadGraphObjectFromInstanceId(EntityId entityId)
         {
-            if (AssetDatabase.IsNativeAsset((EntityId)instanceId))
+            if (AssetDatabase.IsNativeAsset(entityId))
             {
-                return EditorUtility.EntityIdToObject((EntityId)instanceId) as GraphObject;
+                return EditorUtility.EntityIdToObject(entityId) as GraphObject;
             }
 
-            var extension = InstanceIdToFileExtension(instanceId);
+            var extension = InstanceIdToFileExtension(entityId);
             if (extension == null)
                 return null;
             if (s_GraphObjectInfosByExtension.TryGetValue(extension, out var graphObjectInfos) && graphObjectInfos.loaderFunction != null)
             {
-                var filePath = AssetDatabase.GetAssetPath((EntityId)instanceId);
+                var filePath = AssetDatabase.GetAssetPath(entityId);
                 return LoadGraphObjectAtPath(graphObjectInfos.loaderFunction, filePath, false);
             }
 

@@ -22,7 +22,7 @@ namespace UnityEngine.LowLevelPhysics2D
     /// A body is automatically destroyed when the world it is in is destroyed. A body cannot exist outside a world.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct PhysicsBody : IEquatable<PhysicsBody>
+    public readonly partial struct PhysicsBody : IEquatable<PhysicsBody>
     {
         #region Id
 
@@ -626,18 +626,10 @@ namespace UnityEngine.LowLevelPhysics2D
         /// </summary>
         public readonly PhysicsBody.BodyType type { get => PhysicsBody_GetBodyType(this); set => PhysicsBody_SetBodyType(this, value); }
 
-        /// <undoc/>
-        [Obsolete("PhysicsBody.bodyType has been deprecated. Please use PhysicsBody.type instead.", false)]
-        public readonly RigidbodyType2D bodyType { get => (RigidbodyType2D)type; set => type = (PhysicsBody.BodyType)value; }
-
         /// <summary>
         /// Get/Set the degrees of freedom constraints (locks) for the body of Linear X, Linear Y and Rotation Z.
         /// </summary>
         public readonly PhysicsBody.BodyConstraints constraints { get => PhysicsBody_GetBodyConstraints(this); set => PhysicsBody_SetBodyConstraints(this, value); }
-
-        /// <undoc/>
-        [Obsolete("PhysicsBody.bodyConstraints has been deprecated. Please use PhysicsBody.constraints instead.", false)]
-        public readonly RigidbodyConstraints2D bodyConstraints { get => (RigidbodyConstraints2D)constraints; set => constraints = (PhysicsBody.BodyConstraints)value; }
 
         /// <summary>
         /// The position of the body in the world.

@@ -1470,7 +1470,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 }
 
                 activeView.VerticalScrollViewPos = EditorGUILayout.BeginScrollView(activeView.VerticalScrollViewPos,
-                    false, true, GUIStyle.none,
+                    false, false, GUIStyle.none,
                     GUI.skin.verticalScrollbar, GUI.skin.scrollView);
 
                 Rect clipRect = new Rect(activeView.VerticalScrollViewPos.x, activeView.VerticalScrollViewPos.y,

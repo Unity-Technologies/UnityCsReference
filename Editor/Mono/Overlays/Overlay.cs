@@ -80,7 +80,7 @@ namespace UnityEditor.Overlays
         internal bool m_DisableContentModification = false;
 
         // Connections
-        public EditorWindow containerWindow => canvas.containerWindow;
+        public EditorWindow containerWindow => canvas?.containerWindow;
         internal OverlayCanvas canvas
         {
             get => m_Canvas;

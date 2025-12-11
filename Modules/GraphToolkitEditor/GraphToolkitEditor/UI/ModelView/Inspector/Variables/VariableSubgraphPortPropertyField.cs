@@ -56,6 +56,11 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public static readonly string changeButtonUncheckedUssClassName = changeButtonUssClassName.WithUssModifier("unchecked");
 
+        /// <summary>
+        /// Name for the display settings field.
+        /// </summary>
+        public static readonly string displaySettingsName = "display-settings";
+
         Toggle m_ChangeButton;
         ToggleButtonGroup m_InputOutput;
 
@@ -115,6 +120,7 @@ namespace Unity.GraphToolkit.Editor
 
             var directionLabel = new Label("Flow Direction");
             directionLabel.AddToClassList(BaseModelPropertyField.labelUssClassName);
+            directionLabel.EnableInClassList(withToggleUssClassName, showToggle);
             secondLine.Add(directionLabel);
 
             var spacer = new VisualElement();
@@ -131,24 +137,22 @@ namespace Unity.GraphToolkit.Editor
             secondLine.Add(m_InputOutput);
             m_ToggleContentContainer.Add(secondLine);
 
-            var thirdLine = new VisualElement();
-            thirdLine.AddToClassList(lineUssClassName);
-
-            var displaySettingsLabel = new Label("Show on");
-            displaySettingsLabel.AddToClassList(BaseModelPropertyField.labelUssClassName);
-            thirdLine.Add(displaySettingsLabel);
-
-            m_DisplaySettingsDropdown = new DropdownField { choices = k_DisplaySettings };
-            m_DisplaySettingsDropdown.AddToClassList(controlUssClassName);
-            m_DisplaySettingsDropdown.RegisterCallback<ChangeEvent<string>>(OnDisplaySettingsChange);
-            thirdLine.Add(m_DisplaySettingsDropdown);
-
-            m_ToggleContentContainer.Add(thirdLine);
-
-            if (showToggle)
+            // If at least one output is selected, we don't show the display settings as it is not relevant.
+            if (!m_Variables.Any(f => f.IsOutput))
             {
-                directionLabel.AddToClassList(withToggleUssClassName);
-                displaySettingsLabel.AddToClassList(withToggleUssClassName);
+                var thirdLine = new VisualElement();
+                thirdLine.AddToClassList(lineUssClassName);
+
+                var displaySettingsLabel = new Label("Show on") { name = displaySettingsName };
+                displaySettingsLabel.AddToClassList(BaseModelPropertyField.labelUssClassName);
+                thirdLine.Add(displaySettingsLabel);
+
+                m_DisplaySettingsDropdown = new DropdownField { name = displaySettingsName, choices = k_DisplaySettings };
+                m_DisplaySettingsDropdown.AddToClassList(controlUssClassName);
+                m_DisplaySettingsDropdown.RegisterCallback<ChangeEvent<string>>(OnDisplaySettingsChange);
+                thirdLine.Add(m_DisplaySettingsDropdown);
+                m_ToggleContentContainer.Add(thirdLine);
+                displaySettingsLabel.EnableInClassList(withToggleUssClassName, showToggle);
             }
         }
 
@@ -238,13 +242,16 @@ namespace Unity.GraphToolkit.Editor
                 m_InputOutput.SetValueWithoutNotify(new ToggleButtonGroupState(0, k_InputOutputValuesCount));
             }
 
-            if (sameDisplaySettings)
+            if (m_DisplaySettingsDropdown != null)
             {
-                m_DisplaySettingsDropdown.SetValueWithoutNotify(m_Variables[0].ShowOnInspectorOnly ? k_DisplaySettings[1] : k_DisplaySettings[0]);
-            }
-            else
-            {
-                m_DisplaySettingsDropdown.showMixedValue = true;
+                if (sameDisplaySettings)
+                {
+                    m_DisplaySettingsDropdown.SetValueWithoutNotify(m_Variables[0].ShowOnInspectorOnly ? k_DisplaySettings[1] : k_DisplaySettings[0]);
+                }
+                else
+                {
+                    m_DisplaySettingsDropdown.showMixedValue = true;
+                }
             }
         }
     }

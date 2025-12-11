@@ -45,8 +45,7 @@ namespace Unity.Hierarchy
             readonly HierarchyViewModel m_HierarchyViewModel;
             readonly Predicate m_Predicate;
             readonly HierarchyNodeFlags m_Flags;
-            readonly HierarchyFlattenedNode* m_NodesPtr;
-            readonly int m_NodesCount;
+            readonly ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
             readonly int m_Version;
             int m_Index;
 
@@ -55,8 +54,7 @@ namespace Unity.Hierarchy
                 m_HierarchyViewModel = enumerable.m_HierarchyViewModel;
                 m_Predicate = enumerable.m_Predicate;
                 m_Flags = enumerable.m_Flags;
-                m_NodesPtr = m_HierarchyViewModel.NodesPtr;
-                m_NodesCount = m_HierarchyViewModel.NodesCount;
+                m_FlattenedNodes = m_HierarchyViewModel.FlattenedNodes;
                 m_Version = m_HierarchyViewModel.Version;
                 m_Index = 0; // We initialize at 0 instead of -1 to skip the root node in the hierarchy flattened
             }
@@ -70,7 +68,7 @@ namespace Unity.Hierarchy
                 get
                 {
                     ThrowIfVersionChanged();
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_NodesPtr[m_Index]);
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_FlattenedNodes[m_Index]);
                 }
             }
 
@@ -84,10 +82,10 @@ namespace Unity.Hierarchy
                 ThrowIfVersionChanged();
                 while (true)
                 {
-                    if (++m_Index >= m_NodesCount)
+                    if (++m_Index >= m_FlattenedNodes.Count)
                         return false;
 
-                    if (m_Predicate(in HierarchyFlattenedNode.GetNodeByRef(in m_NodesPtr[m_Index]), m_Flags))
+                    if (m_Predicate(in HierarchyFlattenedNode.GetNodeByRef(in m_FlattenedNodes[m_Index]), m_Flags))
                         return true;
                 }
             }

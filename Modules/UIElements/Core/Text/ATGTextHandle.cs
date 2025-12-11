@@ -212,8 +212,9 @@ namespace UnityEngine.UIElements
                 nativeSettings.text = textToMeasure;
             if (nativeSettings.text == null)
                 nativeSettings.text = "";
-            var effectiveFontsize = (int)Math.Round((fontsize ?? style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
-            nativeSettings.fontSize = effectiveFontsize * 64;
+
+            var effectiveFontSize = (fontsize ?? style.fontSize.value) * scale;
+            nativeSettings.fontSize = (int)Math.Round(effectiveFontSize * 64.0f, MidpointRounding.AwayFromZero);
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
             nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);
@@ -267,7 +268,7 @@ namespace UnityEngine.UIElements
                 return false;
 
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
-                fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
+                fa = GetCorrespondingBitmapFontAsset(fa, (int)Math.Round(effectiveFontSize, MidpointRounding.AwayFromZero));
 
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
             {
@@ -304,7 +305,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var scale = GetPixelsPerPoint();
-            var effectiveFontsize = (int)(style.fontSize.value * scale);
+            var effectiveFontsize = (int)Math.Round((style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
 
             GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             GenerateBitmapFallbackFontAssets(effectiveFontsize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());

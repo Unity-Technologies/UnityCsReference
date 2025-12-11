@@ -29,9 +29,10 @@ namespace Unity.GraphToolkit.Editor
         protected VisualElement m_Root;
         protected List<BaseModelPropertyField> m_Fields;
         bool m_SetupLabelWidth = true;
-        float m_MaxLabelWidth = float.PositiveInfinity;
+        float m_MaxLabelWidthOverride = float.PositiveInfinity;
         bool m_LayoutDirty;
         bool m_RelayoutScheduled;
+        float m_PreviousValidMinLabelWidth;
 
         /// <summary>
         /// The number of fields displayed by the inspector.
@@ -61,12 +62,12 @@ namespace Unity.GraphToolkit.Editor
 
         public float MaxLabelWidth
         {
-            get => m_MaxLabelWidth;
+            get => m_MaxLabelWidthOverride;
             set
             {
-                if (m_MaxLabelWidth != value)
+                if (!Mathf.Approximately(m_MaxLabelWidthOverride, value))
                 {
-                    m_MaxLabelWidth = value;
+                    m_MaxLabelWidthOverride = value;
                     m_LayoutDirty = true;
                 }
             }
@@ -151,6 +152,23 @@ namespace Unity.GraphToolkit.Editor
 
 
             m_Root.EnableInClassList(emptyUssClassName, m_Fields.Count == 0);
+
+            EnsurePropertyViewIsHiddenIfNeeded();
+        }
+
+        void EnsurePropertyViewIsHiddenIfNeeded()
+        {
+            // If the inspector is in a BlackboardField, hide the property view of the blackboard field when there are no fields to display.
+            var blackboardField = m_Root.GetFirstAncestorOfType<BlackboardField>();
+
+            if (blackboardField == null)
+            {
+                // If the blackboard field is not found, it might be because the inspector is not yet added to the blackboard field.
+                m_Root.schedule.Execute(EnsurePropertyViewIsHiddenIfNeeded).ExecuteLater(0);
+                return;
+            }
+
+            blackboardField.HidePropertyView(m_Fields.Count == 0);
         }
 
         /// <summary>
@@ -164,45 +182,75 @@ namespace Unity.GraphToolkit.Editor
             m_RelayoutScheduled = false;
             if (SetupLabelWidth)
             {
-                float maxLabelWidth = 0;
+                float minLabelWidth = 0;
 
-                UpdateMaxLabelWidth(m_Root, false, ref maxLabelWidth);
+                // Find the minimum label width required so that each label is as large as the largest label.
+                ComputeMinLabelWidth(m_Root, ref minLabelWidth);
 
-                if (float.IsFinite(m_MaxLabelWidth))
-                    maxLabelWidth = Mathf.Min(m_MaxLabelWidth, maxLabelWidth);
+                // Set the minimum label width for each label.
+                SetMinLabelWidth(m_Root, minLabelWidth);
+            }
+        }
 
-                UpdateMaxLabelWidth(m_Root, true, ref maxLabelWidth);
+        void ComputeMinLabelWidth(VisualElement root, ref float minLabelWidth)
+        {
+            foreach (var child in root.Children())
+            {
+                var field = child as BaseModelPropertyField;
+                var label = field?.LabelElement ?? child as Label;
+                var isPropertyField = label?.ClassListContains(BaseModelPropertyField.labelUssClassName) ?? false;
+
+                if (label is { panel: not null } && isPropertyField)
+                {
+                    var labelPosition = label.parent.ChangeCoordinatesTo(Root, label.localBound.position); //needed for sub ports label that are offset.
+                    if (!float.IsNaN(label.resolvedStyle.fontSize))
+                    {
+                        var width = label.MeasureTextSize(label.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined).x + labelPosition.x;
+                        if (width > minLabelWidth)
+                            minLabelWidth = width;
+                    }
+                }
+
+                ComputeMinLabelWidth(child, ref minLabelWidth);
             }
 
-            return;
+            // If the m_MaxLabelWidthOverride is set, use the smallest between it and the computed minLabelWidth.
+            if (float.IsFinite(m_MaxLabelWidthOverride))
+                minLabelWidth = Mathf.Min(m_MaxLabelWidthOverride, minLabelWidth);
 
-            void UpdateMaxLabelWidth(VisualElement root, bool shouldSetLabelsWidth, ref float maxLabelWidth)
+            if (minLabelWidth > 0 && float.IsFinite(minLabelWidth))
             {
-                foreach (var child in root.Children())
+                // If valid, store the minLabelWidth as the last valid one.
+                m_PreviousValidMinLabelWidth = minLabelWidth;
+            }
+            else
+            {
+                // If the current minLabelWidth is not valid, use the previous valid one.
+                minLabelWidth = m_PreviousValidMinLabelWidth;
+            }
+        }
+
+        void SetMinLabelWidth(VisualElement root, float minLabelWidth)
+        {
+            foreach (var child in root.Children())
+            {
+                SetMinLabelWidth(child, minLabelWidth);
+
+                var field = child as BaseModelPropertyField;
+                var label = field?.LabelElement ?? child as Label;
+                var isPropertyField = label?.ClassListContains(BaseModelPropertyField.labelUssClassName) ?? false;
+
+                if (label is not { panel: not null } || !isPropertyField)
+                    continue;
+
+                // If the m_MaxLabelWidthOverride is set, use it for the label's max width.
+                if (float.IsFinite(m_MaxLabelWidthOverride))
                 {
-                    var field = child as BaseModelPropertyField;
-                    var label = field?.LabelElement ?? child as Label;
-                    var isPropertyField = label?.ClassListContains(BaseModelPropertyField.labelUssClassName) ?? false;
-
-                    if (label is { panel: not null } && isPropertyField)
-                    {
-                        var labelPosition = label.parent.ChangeCoordinatesTo(Root, label.localBound.position); //needed for sub ports label that are offset.
-                        if (shouldSetLabelsWidth)
-                        {
-                            label.style.minWidth = maxLabelWidth + label.resolvedStyle.paddingLeft + label.resolvedStyle.paddingRight + label.resolvedStyle.marginLeft + label.resolvedStyle.marginRight - labelPosition.x;
-                            if (float.IsFinite(m_MaxLabelWidth))
-                                label.style.maxWidth = m_MaxLabelWidth;
-                        }
-                        else if (!float.IsNaN(label.resolvedStyle.fontSize))
-                        {
-                            var width = label.MeasureTextSize(label.text, float.NaN, VisualElement.MeasureMode.Undefined, float.NaN, VisualElement.MeasureMode.Undefined).x + labelPosition.x;
-                            if (width > maxLabelWidth)
-                                maxLabelWidth = width;
-                        }
-                    }
-
-                    UpdateMaxLabelWidth(child, shouldSetLabelsWidth, ref maxLabelWidth);
+                    label.style.maxWidth = m_MaxLabelWidthOverride;
                 }
+
+                var labelPosition = label.parent.ChangeCoordinatesTo(Root, label.localBound.position); //needed for sub ports label that are offset.
+                label.style.minWidth = minLabelWidth + label.resolvedStyle.paddingLeft + label.resolvedStyle.paddingRight + label.resolvedStyle.marginLeft + label.resolvedStyle.marginRight - labelPosition.x;
             }
         }
 

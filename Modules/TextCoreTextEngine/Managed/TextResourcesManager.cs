@@ -60,10 +60,10 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        static readonly Dictionary<int, FontAssetRef> s_FontAssetReferences = new Dictionary<int, FontAssetRef>();
+        static readonly Dictionary<EntityId, FontAssetRef> s_FontAssetReferences = new Dictionary<EntityId, FontAssetRef>();
         static readonly Dictionary<int, FontAsset> s_FontAssetNameReferenceLookup = new Dictionary<int, FontAsset>();
         static readonly Dictionary<long, FontAsset> s_FontAssetFamilyNameAndStyleReferenceLookup = new Dictionary<long, FontAsset>();
-        static readonly List<int> s_FontAssetRemovalList = new List<int>(16);
+        static readonly List<EntityId> s_FontAssetRemovalList = new List<EntityId>(16);
 
         static readonly int k_RegularStyleHashCode = TextUtilities.GetHashCodeCaseInSensitive("Regular");
 
@@ -130,13 +130,13 @@ namespace UnityEngine.TextCore.Text
         /// <param name="fontAsset">Font asset to be removed from the resource manager.</param>
         public static void RemoveFontAsset(FontAsset fontAsset)
         {
-            int instanceID = fontAsset.entityId;
+            EntityId entityId = fontAsset.entityId;
 
-            if (s_FontAssetReferences.TryGetValue(instanceID, out FontAssetRef reference))
+            if (s_FontAssetReferences.TryGetValue(entityId, out FontAssetRef reference))
             {
                 s_FontAssetNameReferenceLookup.Remove(reference.nameHashCode);
                 s_FontAssetFamilyNameAndStyleReferenceLookup.Remove(reference.familyNameAndStyleHashCode);
-                s_FontAssetReferences.Remove(instanceID);
+                s_FontAssetReferences.Remove(entityId);
             }
         }
 

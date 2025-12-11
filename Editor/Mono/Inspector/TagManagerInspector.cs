@@ -164,7 +164,7 @@ namespace UnityEditor
                     return;
 
                 var indexForRemoval = listView.selectedIndex;
-                if (indexForRemoval == -1)
+                if (indexForRemoval == -1 || indexForRemoval >= tagsProperty.arraySize)
                     indexForRemoval = tagsProperty.arraySize - 1;
 
                 var tag = tagsProperty.GetArrayElementAtIndex(indexForRemoval).stringValue;
@@ -195,6 +195,7 @@ namespace UnityEditor
             var sortingLayers = content.Q<ListView>("SortingLayers");
             sortingLayers.fixedItemHeight = Styles.elementHeight;
             sortingLayers.headerTitle = Styles.sortingLayers.text;
+            sortingLayers.allowRemove = CanEditSortLayerEntry(sortingLayers.selectedIndex);
             sortingLayers.makeItem = () => new TextField
             {
                 classList = { Styles.tagListElement }
@@ -242,6 +243,7 @@ namespace UnityEditor
                 serializedObject.Update();
 
                 listView.selectedIndex = tagManager.GetSortingLayerCount() - 1; // select just added one
+                listView.allowRemove = CanEditSortLayerEntry(listView.selectedIndex);
 
                 if (SortingLayer.onLayerAdded != null)
                     SortingLayer.onLayerAdded(SortingLayer.layers[listView.selectedIndex]);
@@ -262,8 +264,14 @@ namespace UnityEditor
                 serializedObject.Update();
                 tagManager.UpdateSortingLayersOrder();
 
+                listView.allowRemove = CanEditSortLayerEntry(listView.selectedIndex);
+
                 if (SortingLayer.onLayerChanged != null)
                     SortingLayer.onLayerChanged();
+            };
+            sortingLayers.selectionChanged += (item) =>
+            {
+                sortingLayers.allowRemove = CanEditSortLayerEntry(sortingLayers.selectedIndex);
             };
             //TextFields in Array are not bind correctly so we need to refresh them manually
             content.TrackPropertyValue(sortingLayersProperty, sp => sortingLayers.RefreshItems());

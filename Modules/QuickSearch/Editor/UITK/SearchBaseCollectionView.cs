@@ -132,7 +132,8 @@ namespace UnityEditor.Search
             {
                 if (disposing)
                 {
-                    m_Throttler.Dispose();
+                    // Dispose can be called without attaching to a panel first, so some members could still be null.
+                    m_Throttler?.Dispose();
                     m_Throttler = null;
                 }
 
@@ -198,6 +199,11 @@ namespace UnityEditor.Search
         {
             if (((IList)m_ListView.activeItems).Count < m_ViewModel.results.Count)
                 return true;
+                
+            // This is a local workaround for https://jira.unity3d.com/browse/UUM-127210 until UITk fixes it directly in the BaseListView.
+            if (m_ViewModel.results.Count > 0 && m_ListView.Q<Label>(null, BaseListView.emptyLabelUssClassName) != null)
+                return true;
+
             foreach (var e in m_ListView.activeItems)
             {
                 if (e.index < 0 || e.index >= m_ViewModel.results.Count)

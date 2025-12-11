@@ -677,7 +677,7 @@ namespace UnityEditor.U2D
                 if (secondaryTextureSelected)
                 {
                     // trash can button
-                    if (GUILayout.Button(s_Styles.trashIcon, EditorStyles.iconButton, GUILayout.ExpandWidth(false)))
+                    if (GUILayout.Button(s_Styles.trashIcon, EditorStyles.miniButtonMid, GUILayout.ExpandWidth(false)))
                     {
                         EditorGUI.EndEditingActiveTextField();
 

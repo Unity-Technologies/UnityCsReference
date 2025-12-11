@@ -149,10 +149,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (RefreshSpinner())
                 return;
 
-            if (RefreshLockIcons())
-                return;
+            var state = package?.state ?? PackageState.None;
+            var isHighPriorityState =
+                state == PackageState.Error ||
+                state == PackageState.Warning ||
+                state == PackageState.Restricted;
 
-            RefreshRightStateIcons();
+            // The lock and state icon occupy the same space. Showing the lock icon hides the package state.
+            // We prioritize displaying error, warning, or restricted state icons over the lock icon since it's more important information.
+            if (isHighPriorityState || !RefreshLockIcons())
+                RefreshRightStateIcons();
         }
 
         // Returns true if package is in progress and spinner is visible

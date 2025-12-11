@@ -14,6 +14,13 @@ namespace UnityEngine
     public struct GradientColorKey
     {
         // Gradient color key
+        public GradientColorKey(Color col, float time)
+        {
+            color = col;
+            this.time = time;
+        }
+
+        // Gradient color key
         public GradientColorKey(in Color col, float time)
         {
             color = col;
@@ -166,21 +173,10 @@ namespace UnityEngine
 
         public override bool Equals(object o)
         {
-            if (ReferenceEquals(null, o))
-            {
-                return false;
-            }
+            if (o is Gradient graident)
+                return Equals(graident);
 
-            if (ReferenceEquals(this, o))
-            {
-                return true;
-            }
-
-            if (o.GetType() != this.GetType())
-            {
-                return false;
-            }
-            return Equals((Gradient)o);
+            return false;
         }
 
         public bool Equals(Gradient other)
