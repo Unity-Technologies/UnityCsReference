@@ -53,26 +53,29 @@ namespace UnityEditor.SearchService
             Styles.gotoSearch.tooltip = L10n.Tr($"Open in Search ({s_ShortcutBinding})");
         }
 
-        public static void HandleSearchEvent(EditorWindow window, Event evt, string searchText)
+        public static object HandleSearchEvent(EditorWindow window, Event evt, string searchText)
         {
             if (evt.type != EventType.KeyDown)
-                return;
+                return null;
 
             var keyCombination = KeyCombination.FromKeyboardInput(evt);
             if (shortcutBinding.keyCombinationSequence.Any(shortcutCombination => keyCombination.Equals(shortcutCombination)))
             {
                 evt.Use();
-                OpenSearchInContext(window, searchText, "jumpShortcut");
+                return OpenSearchInContext(window, searchText, "jumpShortcut");
             }
+
+            return null;
         }
 
-        public static void OpenSearchInContext(EditorWindow window, string searchText, string openContext)
+        public static object OpenSearchInContext(EditorWindow window, string searchText, string openContext)
         {
             if (!CommandService.Exists(k_OpenSearchInContextCommand))
-                return;
+                return null;
 
-            CommandService.Execute(k_OpenSearchInContextCommand, CommandHint.Any, searchText, openContext);
+            var result = CommandService.Execute(k_OpenSearchInContextCommand, CommandHint.Any, searchText, openContext);
             window?.Repaint();
+            return result;
         }
 
         public static void DrawOpenButton(EditorWindow window, string searchText)

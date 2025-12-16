@@ -268,7 +268,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal async Task RunOrResumeAsync(CancellationToken cancellationToken)
         {
-            RefreshStatus();
+            RefreshStatus(cancellationToken.IsCancellationRequested);
 
             var state = Status.State;
             if (state != ScenarioState.Idle && state != ScenarioState.Running)
@@ -304,7 +304,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                     allInstanceTaskForStage.Add(instanceTask);
                 }
 
-                await Task.WhenAll(allInstanceTaskForStage);
+                await WhenAllButAbort(cancellationToken, allInstanceTaskForStage);
 
                 bool success = true;
                 foreach (var result in allInstanceTaskForStage)
@@ -319,15 +319,41 @@ namespace Unity.Multiplayer.PlayMode.Editor
             Completed?.Invoke(this);
 
             // At this point, all instances ran successfully. Now simply monitor the ExecutionStage until it is complete.
-            await MonitorAllInstances();
+            await MonitorAllInstances(cancellationToken);
 
             // This will make sure that the status will be updated after the last ExecutionStage is finished
             // even in the case where the scenario has no nodes.
-            RefreshAndNotifyStatus();
+            RefreshAndNotifyStatus(cancellationToken.IsCancellationRequested);
+        }
+
+        // While we're waiting a domain reload can be requested, which would abruptly terminate the execution.
+        // That would prevent the status from being updated properly, so when resuming we might end up with an incorrect status.
+        // This method awaits for the task, but make sure the status is set to aborted as soon as a cancellation is requested.
+        private async Task WhenAllButAbort(CancellationToken cancellationToken, IEnumerable<Task> tasks)
+        {
+            var completed = false;
+            while (!completed)
+            {
+                completed = true;
+                foreach (var task in tasks)
+                {
+                    if (!task.IsCompleted)
+                    {
+                        completed = false;
+                        break;
+                    }
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    RefreshAndNotifyStatus(true);
+
+                if (!completed)
+                    await Task.Yield();
+            }
         }
 
         // TODO MTT-10016 This is part of the Migration - Remove this in favor of a single Monitoring Task at Instance Level
-        private async Task MonitorAllInstances()
+        private async Task MonitorAllInstances(CancellationToken cancellationToken)
         {
             var allInstanceMonitors = new List<Task>();
             foreach (var instance in m_Instances)
@@ -338,7 +364,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 allInstanceMonitors.AddRange(instance.GetCurrentMonitoringTasksForScenario());
             }
 
-            await Task.WhenAll(allInstanceMonitors);
+            await WhenAllButAbort(cancellationToken, allInstanceMonitors);
         }
 
         internal ReadOnlyCollection<Node> GetNodes(ExecutionStage executionStage)
@@ -354,13 +380,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return nodes.AsReadOnly();
         }
 
-        private void RefreshAndNotifyStatus()
+        private void RefreshAndNotifyStatus(bool aborted = false)
         {
-            RefreshStatus();
+            RefreshStatus(aborted);
             StatusRefreshed?.Invoke(Status);
         }
 
-        private void RefreshStatus()
+        private void RefreshStatus(bool aborted)
         {
             if (!m_HasStarted)
             {
@@ -476,7 +502,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
             var progress = progressSum / totalNodes;
             ScenarioState scenarioState;
 
-            if (idleNodes == totalNodes && totalNodes > 0)
+            if (aborted && completedNodes < totalNodes)
+                scenarioState = ScenarioState.Aborted;
+            else if (idleNodes == totalNodes && totalNodes > 0)
                 scenarioState = ScenarioState.Idle;
             else if (failedNodes > 0)
                 scenarioState = ScenarioState.Failed;

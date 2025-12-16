@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
@@ -19,7 +18,6 @@ using UnityEngine.Audio;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
-using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditor
 {
@@ -70,6 +68,61 @@ namespace UnityEditor
         public const string ObjectSelectorCanceledCommand = "ObjectSelectorCanceled";
         public const string ObjectSelectorSelectionDoneCommand = "ObjectSelectorSelectionDone";
 
+        // Used for testing purposes
+        internal class TestHelper
+        {
+            public static void SetListViewMode(ObjectSelector os)
+            {
+                if (os?.m_ListArea != null)
+                    os.m_ListArea.gridSize = os.m_ListArea.minGridSize;
+            }
+
+            public static void SetGridViewMode(ObjectSelector os)
+            {
+                if (os?.m_ListArea != null)
+                    os.m_ListArea.gridSize = os.m_ListArea.maxGridSize;
+            }
+
+            public static void ExpandTreeViewItem(ObjectSelector os, EntityId id)
+            {
+                if (os?.m_ObjectTreeWithSearch.IsInitialized() ?? false)
+                    os.m_ObjectTreeWithSearch.ChangeExpandedState(id, true, false);
+            }
+
+            public static void CollapseTreeViewItem(ObjectSelector os, EntityId id)
+            {
+                if (os?.m_ObjectTreeWithSearch.IsInitialized() ?? false)
+                    os.m_ObjectTreeWithSearch.ChangeExpandedState(id, false, false);
+            }
+
+            public static bool IsTreeViewItemExpanded(ObjectSelector os, EntityId id)
+            {
+                if (os?.m_ObjectTreeWithSearch.IsInitialized() ?? false)
+                    return os.m_ObjectTreeWithSearch.IsExpanded(id);
+                return false;
+            }
+
+            public static void GraphKeyboardFocus(ObjectSelector os)
+            {
+                os?.GrabKeyboardFocus();
+            }
+
+            public static void NotifySelectionChanged(ObjectSelector os, UnityObject selectedObject, bool exitGUI)
+            {
+                os?.NotifySelectionChanged(selectedObject, exitGUI);
+            }
+
+            public static void NotifySelectorClosed(ObjectSelector os, UnityObject selectedObject, bool exitGUI)
+            {
+                os?.NotifySelectorClosed(selectedObject, exitGUI);
+            }
+
+            public static void TriggerFilterSettingsChanged(ObjectSelector os)
+            {
+                os?.FilterSettingsChanged();
+            }
+        }
+
         // Filters
         RequiredTypeList        m_RequiredTypes;
         string          m_SearchFilter;
@@ -96,6 +149,7 @@ namespace UnityEditor
         GUIView         m_DelegateView;
         PreviewResizer  m_PreviewResizer = new PreviewResizer();
         List<int> m_AllowedIDs;
+        bool m_GrabKeyboardFocus;
 
         // Callbacks
         Action<UnityObject> m_OnObjectSelectorClosed;
@@ -128,7 +182,7 @@ namespace UnityEditor
         AnimBool m_ShowWidePreview = new AnimBool();
         AnimBool m_ShowOverlapPreview = new AnimBool();
 
-        static HashSet<Event> s_GridAreaPriorityKeyboardEvents;
+        static HashSet<Event> s_IMGUIPriorityKeyboardEvents;
 
         // Delayer for debouncing search inputs
         private Delayer m_Debounce;
@@ -255,12 +309,16 @@ namespace UnityEditor
             m_PreviewResizer.Init("ObjectPickerPreview");
             m_PreviewSize = m_PreviewResizer.GetPreviewSize(); // Init size
 
-            if (s_GridAreaPriorityKeyboardEvents == null)
+            if (s_IMGUIPriorityKeyboardEvents == null)
             {
-                s_GridAreaPriorityKeyboardEvents = new HashSet<Event>
+                s_IMGUIPriorityKeyboardEvents = new HashSet<Event>
                 {
                     Event.KeyboardEvent("up"),
                     Event.KeyboardEvent("down"),
+                    Event.KeyboardEvent("page up"),
+                    Event.KeyboardEvent("page down"),
+                    Event.KeyboardEvent("[enter]"),
+                    Event.KeyboardEvent("return"),
                 };
             }
 
@@ -320,17 +378,31 @@ namespace UnityEditor
             get { return m_SearchFilter; }
             set
             {
+                // Only check and set the session handler here and not in SetSearchFilter.
+                // SetSearchFilter is used internally by the default window.
                 if (ObjectSelectorSearch.HasEngineOverride())
                 {
                     m_SearchSessionHandler.SetSearchFilter(value);
                     return;
                 }
-                m_SearchFilter = value;
-                if (m_ObjectTreeWithSearch.IsInitialized())
-                    m_ObjectTreeWithSearch.SetSearchFilter(m_SearchFilter);
-                else
-                    m_Debounce?.Execute();
+                SetSearchFilter(value);
+
+                // Update the search field UI element. searchFilter can be set externally after
+                // Show is called. At that point, the search field may have already been created.
+                m_SearchField?.SetValueWithoutNotify(m_SearchFilter);
             }
+        }
+
+        // This method only updates the search filter, it should not update
+        // the search field UI element as it is used by the search field to update
+        // the search filter.
+        void SetSearchFilter(string searchFilter)
+        {
+            m_SearchFilter = searchFilter;
+            if (m_ObjectTreeWithSearch.IsInitialized())
+                m_ObjectTreeWithSearch.SetSearchFilter(m_SearchFilter);
+            else
+                m_Debounce?.Execute();
         }
 
         public ObjectSelectorReceiver objectSelectorReceiver
@@ -350,12 +422,6 @@ namespace UnityEditor
                 return component.gameObject.scene;
 
             return new Scene();
-        }
-
-        // Used by tests
-        internal void Internal_TriggerFilterSettingsChanged()
-        {
-            FilterSettingsChanged();
         }
 
         void FilterSettingsChanged()
@@ -658,7 +724,7 @@ namespace UnityEditor
 
             if (typeList.typeNames.All(t => ShouldTreeViewBeUsed(t)))
             {
-                m_ObjectTreeWithSearch.Init(position, this, CreateAndSetTreeView, TreeViewSelection, ItemWasDoubleClicked, initialSelection, 0);
+                m_ObjectTreeWithSearch.Init(position, this, CreateAndSetTreeView, TreeViewSelection, ItemWasDoubleClicked, initialSelection, 0, s_IMGUIPriorityKeyboardEvents);
             }
             else
             {
@@ -742,20 +808,24 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// Returns true if the selection was canceled.
+        /// </summary>
+        /// <returns>True if the selection was canceled, false if the selection was accepted.</returns>
+        /// <remarks>This method is only valid during the lifetime of the <see cref="ObjectSelector"/>. You should call this method when you receive a notification that the selector is closing.</remarks>
         public static bool SelectionCanceled()
         {
             return ObjectSelector.get.m_SelectionCancelled;
         }
 
+        /// <summary>
+        /// Returns the currently selected object in the Object Selector.
+        /// </summary>
+        /// <returns>The selected object.</returns>
+        /// <remarks>This method is only valid during the lifetime of the <see cref="ObjectSelector"/>. You can call this method when receiving events/commands when the selector is closing.</remarks>
         public static UnityObject GetCurrentObject()
         {
             return EditorUtility.EntityIdToObject(ObjectSelector.get.GetSelectedInstanceID());
-        }
-
-        // This is the public Object that the inspector might revert to
-        public static UnityObject GetInitialObject()
-        {
-            return ObjectSelector.get.m_OriginalSelection;
         }
 
         [UsedImplicitly]
@@ -1142,14 +1212,33 @@ namespace UnityEditor
             if (evt.keyCode == KeyCode.Escape)
             {
                 // If we hit esc and the string WAS empty, it's an actual cancel event.
+                // Otherwise, clear the search filter which clears the search field.
+                // This is needed to avoid losing keyboard focus on the search field. If we let
+                // the search field handle the Escape event, it will clear the search field but also
+                // lose keyboard focus.
                 if (string.IsNullOrEmpty(m_SearchFilter))
                     Cancel();
+                else
+                {
+                    searchFilter = string.Empty;
+                    evt.StopPropagation();
+                }
+            }
+
+            Event equivalentIMGUIEvent = new Event();
+            evt.GetEquivalentImguiEvent(equivalentIMGUIEvent);
+            if (s_IMGUIPriorityKeyboardEvents.Contains(equivalentIMGUIEvent))
+            {
+                if (m_ImGUIContainer.SendEventToIMGUI(evt))
+                    evt.StopPropagation();
             }
         }
 
         void OnSearchFieldChanged(ChangeEvent<string> evt)
         {
-            searchFilter = evt.newValue;
+            // Do not set the searchFilter property directly, use the SetSearchFilter method to avoid
+            // setting the same value again on the search field.
+            SetSearchFilter(evt.newValue);
         }
 
         void OnObjectTreeGUI()
@@ -1175,12 +1264,13 @@ namespace UnityEditor
 
             GUI.BeginGroup(new Rect(0, 0, m_Position.width, m_Position.height), GUIContent.none);
 
-            // Let grid/list area take priority over search area on up/down arrow keys
-            if (s_GridAreaPriorityKeyboardEvents.Contains(Event.current))
+            // For these priority events to work when called from the SearchField, we need to
+            // call "m_ListArea.HandleKeyboard(false);" to bypass the keyboard control check.
+            // We also cannot give keyboard control to the ObjectListArea, otherwise the SearchField
+            // will lose keyboard focus. When the focus is on the ObjectListArea, this call also works
+            // because it will be handled once here and not in the ObjectListArea.OnGUI.
+            if (s_IMGUIPriorityKeyboardEvents.Contains(Event.current))
                 m_ListArea.HandleKeyboard(false);
-
-            // Let grid/list area handle any keyboard events not used by search area
-            m_ListArea.HandleKeyboard(false);
 
             GridListArea();
             PreviewArea();
@@ -1194,17 +1284,22 @@ namespace UnityEditor
         void GridListArea()
         {
             int listKeyboardControlID = GUIUtility.GetControlID(FocusType.Keyboard);
+            // This is used for testing purposes.
+            if (m_GrabKeyboardFocus)
+            {
+                m_GrabKeyboardFocus = false;
+                GUIUtility.keyboardControl = listKeyboardControlID;
+            }
             m_ListArea.OnGUI(listPosition, listKeyboardControlID);
         }
 
         void NotifySelectionChanged(bool exitGUI)
         {
             var currentObject = GetCurrentObject();
-            Internal_NotifySelectionChanged(currentObject, exitGUI);
+            NotifySelectionChanged(currentObject, exitGUI);
         }
 
-        // Used by tests
-        internal void Internal_NotifySelectionChanged(UnityObject selectedObject, bool exitGUI)
+        void NotifySelectionChanged(UnityObject selectedObject, bool exitGUI)
         {
             if (m_ObjectSelectorReceiver != null)
             {
@@ -1219,11 +1314,10 @@ namespace UnityEditor
         void NotifySelectorClosed(bool exitGUI)
         {
             var currentObject = GetCurrentObject();
-            Internal_NotifySelectorClosed(currentObject, exitGUI);
+            NotifySelectorClosed(currentObject, exitGUI);
         }
 
-        // Used by tests
-        internal void Internal_NotifySelectorClosed(UnityObject selectedObject, bool exitGUI)
+        void NotifySelectorClosed(UnityObject selectedObject, bool exitGUI)
         {
             if (m_ObjectSelectorReceiver != null)
             {
@@ -1238,6 +1332,14 @@ namespace UnityEditor
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
             Undo.CollapseUndoOperations(m_ModalUndoGroup);
             m_ModalUndoGroup = -1;
+        }
+
+        void GrabKeyboardFocus()
+        {
+            if (m_ObjectTreeWithSearch.IsInitialized())
+                m_ObjectTreeWithSearch.GrabKeyboardFocus();
+            else
+                m_GrabKeyboardFocus = true;
         }
 
         [Shortcut(EventCommandNames.Find, typeof(ObjectSelector), KeyCode.F, ShortcutModifiers.Action)]

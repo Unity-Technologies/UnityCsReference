@@ -225,9 +225,9 @@ namespace UnityEditor.SearchService
             syncSearchChanged?.Invoke(evt, syncViewId, searchQuery);
         }
 
-        public static void HandleSearchEvent(EditorWindow window, Event evt, string searchText)
+        public static object HandleSearchEvent(EditorWindow window, Event evt, string searchText)
         {
-            OpenSearchHelper.HandleSearchEvent(window, evt, searchText);
+            return OpenSearchHelper.HandleSearchEvent(window, evt, searchText);
         }
 
         public static void DrawOpenSearchButton(EditorWindow window, string searchText)

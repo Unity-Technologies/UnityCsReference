@@ -278,6 +278,8 @@ namespace UnityEngine.UIElements
 
             nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);
             nativeSettings.fontAsset = fa.nativeFontAsset;
+            if (fa.nativeFontAsset == IntPtr.Zero)
+                return false;
             nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
 
             if (m_TextElement.enableRichText && RichTextTagParser.MayNeedParsing(nativeSettings.text))

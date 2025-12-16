@@ -105,15 +105,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Create the Instance Titles and add the instances
             var editorContainer = new VisualElement() { name = k_EditorContainerName };
             var editorTitle = new Label("Editor") { name = k_HeadlineName };
-            editorTitle.style.left = -5;
             editorContainer.Add(editorTitle);
             var localContainer = new VisualElement();
             var localTitle = new Label("Local Instances") { name = k_HeadlineName };
-            localTitle.style.left = -5;
             localContainer.Add(localTitle);
             var remoteContainer = new VisualElement();
             var remoteTitle = new Label("Remote Instances") { name = k_HeadlineName };
-            remoteTitle.style.left = -5;
             remoteContainer.Add(remoteTitle);
 
             m_InstanceViewList.Clear();

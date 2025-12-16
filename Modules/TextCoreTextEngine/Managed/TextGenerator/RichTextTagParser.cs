@@ -21,6 +21,7 @@ namespace UnityEngine.TextCore
         internal static readonly char k_PrivateArea = '\uE000';
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static readonly Dictionary<string, System.IntPtr> s_FontAssetCache = new();
+        internal static readonly Dictionary<string, WeakReference<SpriteAsset>> s_SpriteAssetCache = new();
 
         public enum TagType
         {
@@ -451,7 +452,7 @@ namespace UnityEngine.TextCore
             return true;
         }
 
-        private static bool ParseSpriteAttributes(ReadOnlySpan<char> attributeSection, TextSettings textSettings, out char unicode, out TagValue? spriteAssetValue, out TagValue? glyphMetricsValue, out TagValue? tintValue, out TagValue? scaleValue, out TagValue? colorValue)
+        private static bool ParseSpriteAttributes(ReadOnlySpan<char> attributeSection, TextSettings textSettings, out char unicode, out TagValue? spriteAssetValue, out TagValue? glyphMetricsValue, out TagValue? tintValue, out TagValue? scaleValue, out TagValue? colorValue, out string? spriteAssetNameOut)
         {
             int spriteIndex = -1;
             unicode = default;
@@ -460,6 +461,7 @@ namespace UnityEngine.TextCore
             tintValue = null;
             scaleValue = null;
             colorValue = null;
+            spriteAssetNameOut = null;
             ReadOnlySpan<char> spriteAssetName = ReadOnlySpan<char>.Empty;
             ReadOnlySpan<char> spriteName = ReadOnlySpan<char>.Empty;
             SpriteAsset? spriteAsset = null;
@@ -544,27 +546,15 @@ namespace UnityEngine.TextCore
             // We specified the SpriteAsset
             if (!spriteAssetName.IsEmpty)
             {
-                // TODO: This is not supported on a thread...
-                return false;
-                //var spriteAssetHashCode = GetHashCode(spriteAssetName);
-                //if (MaterialReferenceManager.TryGetSpriteAsset(spriteAssetHashCode, out var tempSpriteAsset))
-                //{
-                //    spriteAsset = tempSpriteAsset;
-                //}
-                //else
-                //{
-                //    // Load Sprite Asset
-                //    if (tempSpriteAsset == null)
-                //    {
-                //        tempSpriteAsset = Resources.Load<SpriteAsset>(textSettings.defaultSpriteAssetPath + spriteAssetName.ToString());
-                //    }
+                spriteAssetNameOut = spriteAssetName.ToString();
 
-                //    if (tempSpriteAsset == null)
-                //        return false;
-
-                //    MaterialReferenceManager.AddSpriteAsset(spriteAssetHashCode, tempSpriteAsset);
-                //    spriteAsset = tempSpriteAsset;
-                //}
+                // Check cache for preloaded sprite asset
+                if (!s_SpriteAssetCache.TryGetValue(spriteAssetNameOut, out var weakRef) ||
+                    !weakRef.TryGetTarget(out spriteAsset))
+                {
+                    // Asset not preloaded or was GC'd, return false but keep the asset name for HasSpriteTags extraction
+                    return false;
+                }
             }
             // We use the default Sprite Asset
             else
@@ -638,7 +628,28 @@ namespace UnityEngine.TextCore
             }
         }
 
-        internal static List<Tag> FindTags(ref string inputStr, TextSettings textSettings, List<ParseError>? errors = null)
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void PreloadSpriteAssetsFromTags(string text, TextSettings textSettings)
+        {
+            if (!HasSpriteTags(text, textSettings, out var spriteAssetNames))
+                return;
+
+            foreach (var spriteAssetName in spriteAssetNames)
+            {
+                // Skip if already cached
+                if (s_SpriteAssetCache.ContainsKey(spriteAssetName))
+                    continue;
+
+                var spriteAsset = Resources.Load<SpriteAsset>(textSettings.defaultSpriteAssetPath + spriteAssetName);
+                if (spriteAsset == null)
+                    continue;
+
+                spriteAsset.UpdateLookupTables();
+                s_SpriteAssetCache[spriteAssetName] = new WeakReference<SpriteAsset>(spriteAsset);
+            }
+        }
+
+        internal static List<Tag> FindTags(ref string inputStr, TextSettings textSettings, bool preprocessingOnly = false, List<ParseError>? errors = null)
         {
             var input = inputStr.ToCharArray();
             var result = new List<Tag>();
@@ -746,9 +757,17 @@ namespace UnityEngine.TextCore
 
                         if (tagType == TagType.Sprite)
                         {
-                            bool success = ParseSpriteAttributes(attributeSection, textSettings, out char unicode, out value, out value2, out TagValue? value3, out TagValue? value4, out TagValue? value5);
+                            bool success = ParseSpriteAttributes(attributeSection, textSettings, out char unicode, out value, out value2, out TagValue? value3, out TagValue? value4, out TagValue? value5, out string? spriteAssetName);
+
                             if (!success)
+                            {
+                                // Only add incomplete tag during preprocessing (for HasSpriteTags extraction)
+                                // During rendering, skip the tag so it remains visible in output text
+                                if (preprocessingOnly && spriteAssetName != null)
+                                    result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = new TagValue(spriteAssetName) });
+
                                 continue;
+                            }
 
                             result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = value, value2 = value2, value3 = value3, value4 = value4, value5 = value5 });
                             // TODO: This is really inefficient, we should do this at the end of parsing instead, which isn't straightforward.
@@ -843,16 +862,28 @@ namespace UnityEngine.TextCore
                             attributeSection = GetAttributeSpan(attributeSection);
                             var fontAssetName = attributeSection.ToString();
 
-                            if (!string.IsNullOrEmpty(fontAssetName))
-                            {
-                                value = new TagValue(fontAssetName);
-                            }
-                            else
+                            if (string.IsNullOrEmpty(fontAssetName))
                             {
                                 errors?.Add(new("Font name cannot be empty", start));
                                 pos = start + 1;
                                 continue;
                             }
+
+                            // Check if font asset is preloaded in cache
+                            bool fontIsPreloaded = s_FontAssetCache.ContainsKey(fontAssetName);
+
+                            if (!fontIsPreloaded)
+                            {
+                                // Only add incomplete tag during preprocessing (for HasFontTags extraction)
+                                // During rendering, skip the tag so it remains visible in output text
+                                if (preprocessingOnly)
+                                    result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = new TagValue(fontAssetName) });
+
+                                pos = start + 1;
+                                continue;
+                            }
+
+                            value = new TagValue(fontAssetName);
                         }
 
                         if (tagType == TagType.Size)
@@ -1424,6 +1455,31 @@ namespace UnityEngine.TextCore
             return false;
         }
 
+        const string k_SpriteTag = "<sprite";
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool ContainsSpriteTag(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            ReadOnlySpan<char> source = text.AsSpan();
+            ReadOnlySpan<char> tag = k_SpriteTag.AsSpan();
+
+            int tagIndex = source.IndexOf(tag, StringComparison.Ordinal);
+
+            if (tagIndex < 0)
+                return false;
+
+            int startIndex = tagIndex + tag.Length;
+            for (int i = startIndex; i < source.Length; i++)
+            {
+                if (source[i] == '>')
+                    return true;
+            }
+
+            return false;
+        }
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
         internal static bool HasFontTags(string text, TextSettings textSettings, out List<string> fontAssetNames)
         {
@@ -1432,7 +1488,7 @@ namespace UnityEngine.TextCore
             if (!ContainsFontTag(text))
                 return false;
 
-            var tags = FindTags(ref text, textSettings);
+            var tags = FindTags(ref text, textSettings, preprocessingOnly: true);
 
             foreach (var tag in tags)
             {
@@ -1445,6 +1501,35 @@ namespace UnityEngine.TextCore
             }
 
             return fontAssetNames.Count > 0;
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
+        internal static bool HasSpriteTags(string text, TextSettings textSettings, out List<string> spriteAssetNames)
+        {
+            spriteAssetNames = new();
+
+            if (!ContainsSpriteTag(text))
+                return false;
+
+            var tags = FindTags(ref text, textSettings, preprocessingOnly: true);
+
+            foreach (var tag in tags)
+            {
+                if (tag.tagType == TagType.Sprite && !tag.isClosing)
+                {
+                    // Check if there's a sprite asset name specified
+                    // The sprite asset name is stored as a StringValue when tag parsing fails (asset not cached)
+                    // Successfully parsed sprites use EntityId values, not strings
+                    if (tag.value?.type == TagValueType.StringValue)
+                    {
+                        string? spriteAssetName = tag.value.StringValue;
+                        if (!string.IsNullOrEmpty(spriteAssetName) && !spriteAssetNames.Contains(spriteAssetName))
+                            spriteAssetNames.Add(spriteAssetName);
+                    }
+                }
+            }
+
+            return spriteAssetNames.Count > 0;
         }
     }
 }

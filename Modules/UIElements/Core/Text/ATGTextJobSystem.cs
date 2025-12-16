@@ -118,7 +118,11 @@ internal class ATGTextJobSystem
 
         // Pre-load font assets from font tags before jobs
         if (textElement.enableRichText)
-            RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, TextUtilities.GetTextSettingsFrom(textElement));
+        {
+            var textSettings = TextUtilities.GetTextSettingsFrom(textElement);
+            RichTextTagParser.PreloadFontAssetsFromTags(textElement.renderedTextString, textSettings);
+            RichTextTagParser.PreloadSpriteAssetsFromTags(textElement.renderedTextString, textSettings);
+        }
     }
 
     List<TextElement> m_PrepareShapingDataList = new();
